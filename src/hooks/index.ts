@@ -4,5 +4,8 @@ export { useAuthSession } from "./useAuthSession";
 export { useRequireAuth } from "./useRequireAuth";
 export { useRecentSearches } from "./useRecentSearches";
 export { useSavedTrainers } from "./useSavedTrainers";
+export { useHiddenTrainers } from "./useHiddenTrainers";
+export { useTrainerWithOverrides } from "./useTrainerWithOverrides";
+export { useManagedSpecialistProfile } from "./useManagedSpecialistProfile";
 export type { SavedTrainersContextValue } from "./useSavedTrainers";
 export type { AuthSessionContextValue } from "./useAuthSession";

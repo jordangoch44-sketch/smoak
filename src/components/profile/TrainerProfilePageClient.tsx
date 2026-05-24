@@ -2,9 +2,9 @@
 
 import type { Trainer } from "@/types";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
-import { ProfileHeroToolbar } from "@/components/profile/ProfileHeroToolbar";
 import {
   ProfileHero,
+  ProfileHeroToolbar,
   ProfileCuratedDetails,
   ProfileSessionExperience,
   Bio,

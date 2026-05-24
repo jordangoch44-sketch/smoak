@@ -10,11 +10,16 @@ src/
 │   ├── brand/           # SMOAC wordmark image (mark stays in public/smoac-mark.png)
 │   ├── layout/          # Global chrome (Navbar, Footer, MobileNavMenu)
 │   ├── trainers/        # Trainer listing cards (grid + compact variants)
-│   ├── auth/            # /login UI
+│   ├── auth/            # Login, create-account, specialist onboarding
+│   ├── dashboard/       # Client + specialist dashboards
 │   ├── explore/         # /explore feature UI
 │   ├── home/            # / landing sections
-│   └── profile/         # /trainers/[id] sections
-├── contexts/            # React providers (saved trainers, save toast)
+│   ├── profile/         # /trainers/[id] sections + floating toolbar
+│   ├── providers/       # App-level React providers wrapper
+│   ├── rankings/        # /rankings
+│   ├── saved/           # /saved specialists
+│   └── trainers/        # Trainer listing cards (grid + compact)
+├── contexts/            # Auth session, saved trainers, save toast
 ├── data/                # Static mock data + accessors (swap for API later)
 ├── hooks/               # Client state hooks (e.g. useExploreTrainers, useCarousel)
 ├── lib/                 # Pure functions (filters, formatting, navigation config)

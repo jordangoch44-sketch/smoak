@@ -11,9 +11,7 @@ import {
   CLIENT_ACCOUNT_OPTION,
   CLIENT_GOAL_OPTIONS,
   CREATE_ACCOUNT_TOTAL_STEPS,
-  SESSION_FORMAT_OPTIONS,
   SPECIALIST_ACCOUNT_OPTION,
-  SPECIALIST_TYPE_OPTIONS,
   TRAINING_STYLE_OPTIONS,
 } from "@/constants/create-account-options";
 import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
@@ -52,22 +50,12 @@ function isStepValid(step: WizardStep, state: CreateAccountWizardState): boolean
         state.password.trim().length >= 6
       );
     case 3:
-      if (state.accountType === "client") {
-        return state.clientGoals.length > 0;
-      }
-      return state.specialistType.length > 0;
+      return state.clientGoals.length > 0;
     case 4:
-      if (state.accountType === "client") {
-        return (
-          state.clientCity.trim().length > 0 &&
-          state.clientBudget.length > 0 &&
-          state.clientTrainingStyle.length > 0
-        );
-      }
       return (
-        state.specialistCity.trim().length > 0 &&
-        state.specialistFormat.length > 0 &&
-        state.specialistStartingPrice.trim().length > 0
+        state.clientCity.trim().length > 0 &&
+        state.clientBudget.length > 0 &&
+        state.clientTrainingStyle.length > 0
       );
     case 5:
       return (
@@ -203,36 +191,6 @@ function AccountTypeCard({
   );
 }
 
-interface OptionCardProps {
-  title: string;
-  description?: string;
-  selected: boolean;
-  onSelect: () => void;
-}
-
-function OptionCard({ title, description, selected, onSelect }: OptionCardProps) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={cn(
-        "wizard-option-card",
-        selected && "wizard-option-card--active"
-      )}
-    >
-      <span className="wizard-option-card__indicator" aria-hidden>
-        <span className="wizard-option-card__indicator-dot" />
-      </span>
-      <span className="wizard-option-card__copy">
-        <span className="wizard-option-card__title">{title}</span>
-        {description ? (
-          <span className="wizard-option-card__desc">{description}</span>
-        ) : null}
-      </span>
-    </button>
-  );
-}
-
 export function CreateAccountWizardClient() {
   const router = useRouter();
   const { isReady, session, signIn } = useAuthSession();
@@ -247,7 +205,6 @@ export function CreateAccountWizardClient() {
 
   const progressPercent = stepProgressPercent(step);
   const canContinue = isStepValid(step, state);
-  const isClient = state.accountType === "client";
 
   useEffect(() => {
     if (!isReady || !session) return;
@@ -335,27 +292,14 @@ export function CreateAccountWizardClient() {
   }
 
   const reviewSummary = useMemo(() => {
-    const locationLine =
-      state.accountType === "client"
-        ? [state.clientCity, state.clientNeighborhood].filter(Boolean).join(", ")
-        : [state.specialistCity, state.specialistNeighborhood]
-            .filter(Boolean)
-            .join(", ");
-
-    const goalsOrSpecialty =
-      state.accountType === "client"
-        ? state.clientGoals.join(", ")
-        : state.specialistType;
-
-    const extraLine =
-      state.accountType === "client"
-        ? `${state.clientBudget} · ${state.clientTrainingStyle}`
-        : `${state.specialistFormat} · ${state.specialistStartingPrice}`;
+    const locationLine = [state.clientCity, state.clientNeighborhood]
+      .filter(Boolean)
+      .join(", ");
 
     return {
       locationLine,
-      goalsOrSpecialty,
-      extraLine,
+      goalsOrSpecialty: state.clientGoals.join(", "),
+      extraLine: `${state.clientBudget} · ${state.clientTrainingStyle}`,
     };
   }, [state]);
 
@@ -448,9 +392,8 @@ export function CreateAccountWizardClient() {
         );
 
       case 3:
-        if (isClient) {
-          return (
-            <WizardStepPanel key="step-3-client">
+        return (
+          <WizardStepPanel key="step-3-client">
               <h2 className="wizard-question">
                 What are you looking for help with?
               </h2>
@@ -479,29 +422,11 @@ export function CreateAccountWizardClient() {
                 })}
               </div>
             </WizardStepPanel>
-          );
-        }
-
-        return (
-          <WizardStepPanel key="step-3-specialist">
-            <h2 className="wizard-question">What type of specialist are you?</h2>
-            <div className="wizard-option-list wizard-option-list--compact">
-              {SPECIALIST_TYPE_OPTIONS.map((type) => (
-                <OptionCard
-                  key={type}
-                  title={type}
-                  selected={state.specialistType === type}
-                  onSelect={() => patchState({ specialistType: type })}
-                />
-              ))}
-            </div>
-          </WizardStepPanel>
         );
 
       case 4:
-        if (isClient) {
-          return (
-            <WizardStepPanel key="step-4-client">
+        return (
+          <WizardStepPanel key="step-4-client">
               <h2 className="wizard-question">Where are you looking?</h2>
               <div className="login-fields">
                 <label className="login-field">
@@ -571,81 +496,6 @@ export function CreateAccountWizardClient() {
                 </label>
               </div>
             </WizardStepPanel>
-          );
-        }
-
-        return (
-          <WizardStepPanel key="step-4-specialist">
-            <h2 className="wizard-question">Where do you work with clients?</h2>
-            <div className="login-fields">
-              <label className="login-field">
-                <span className="login-field__label">City</span>
-                <input
-                  type="text"
-                  name="specialistCity"
-                  autoComplete="address-level2"
-                  value={state.specialistCity}
-                  onChange={(e) =>
-                    patchState({ specialistCity: e.target.value })
-                  }
-                  placeholder="e.g. Austin"
-                  className="login-field__input"
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Neighborhood</span>
-                <input
-                  type="text"
-                  name="specialistNeighborhood"
-                  value={state.specialistNeighborhood}
-                  onChange={(e) =>
-                    patchState({ specialistNeighborhood: e.target.value })
-                  }
-                  placeholder="Optional"
-                  className="login-field__input"
-                />
-              </label>
-              <fieldset className="login-field">
-                <legend className="login-field__label">
-                  In-person, online, or both
-                </legend>
-                <div className="wizard-pill-grid" role="group">
-                  {SESSION_FORMAT_OPTIONS.map((format) => {
-                    const active = state.specialistFormat === format;
-                    return (
-                      <button
-                        key={format}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() =>
-                          patchState({ specialistFormat: format })
-                        }
-                        className={cn(
-                          "wizard-pill",
-                          active && "wizard-pill--active"
-                        )}
-                      >
-                        {format}
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-              <label className="login-field">
-                <span className="login-field__label">Starting price</span>
-                <input
-                  type="text"
-                  name="specialistStartingPrice"
-                  value={state.specialistStartingPrice}
-                  onChange={(e) =>
-                    patchState({ specialistStartingPrice: e.target.value })
-                  }
-                  placeholder="e.g. $120 / session"
-                  className="login-field__input"
-                />
-              </label>
-            </div>
-          </WizardStepPanel>
         );
 
       case 5:
@@ -670,9 +520,7 @@ export function CreateAccountWizardClient() {
                 <span className="wizard-review__value">{state.email.trim()}</span>
               </div>
               <div className="wizard-review__row">
-                <span className="wizard-review__label">
-                  {isClient ? "Goals" : "Specialty"}
-                </span>
+                <span className="wizard-review__label">Goals</span>
                 <span className="wizard-review__value">
                   {reviewSummary.goalsOrSpecialty}
                 </span>
