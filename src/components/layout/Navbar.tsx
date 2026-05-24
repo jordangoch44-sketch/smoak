@@ -2,101 +2,116 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
-
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/explore", label: "Explore" },
-];
+import { primaryNavLinks } from "@/lib/navigation";
+import { MobileNavMenu } from "./MobileNavMenu";
+import { NavbarSavedLink } from "./NavbarSavedLink";
+import { NavbarProfileLink } from "./NavbarProfileLink";
 
 export function Navbar() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
+  useEffect(() => {
+    document.body.classList.toggle("menu-open", menuOpen);
+    return () => document.body.classList.remove("menu-open");
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [menuOpen]);
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/5 bg-black/80 backdrop-blur-xl">
-      <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:h-[72px]">
-        <Link
-          href="/"
-          className="text-lg font-semibold tracking-[0.2em] text-white transition-opacity hover:opacity-70"
-        >
-          SMOAK
-        </Link>
+    <header className="fixed top-0 right-0 left-0 z-50 supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)]">
+      <nav
+        className={cn(
+          "site-navbar relative z-50 border-b backdrop-blur-xl transition-[border-color,background-color] duration-500",
+          menuOpen ? "border-white/10" : "border-white/5"
+        )}
+      >
+        <div className="site-navbar__inner mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:h-16 sm:px-6 lg:h-[72px]">
+          <Logo href="/" size="md" priority className="navbar-brand" />
 
-        <div className="hidden items-center gap-10 md:flex">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "text-sm tracking-wide transition-colors",
-                pathname === link.href
-                  ? "text-white"
-                  : "text-silver-400 hover:text-white"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <Link
-            href="/explore"
-            className="rounded-full bg-white px-6 py-2.5 text-sm font-medium text-black transition-opacity hover:opacity-90"
-          >
-            Find a Trainer
-          </Link>
-        </div>
-
-        <button
-          type="button"
-          className="flex flex-col gap-1.5 md:hidden"
-          onClick={() => setMenuOpen(!menuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span
-            className={cn(
-              "block h-0.5 w-6 bg-white transition-transform",
-              menuOpen && "translate-y-2 rotate-45"
-            )}
-          />
-          <span
-            className={cn(
-              "block h-0.5 w-6 bg-white transition-opacity",
-              menuOpen && "opacity-0"
-            )}
-          />
-          <span
-            className={cn(
-              "block h-0.5 w-6 bg-white transition-transform",
-              menuOpen && "-translate-y-2 -rotate-45"
-            )}
-          />
-        </button>
-      </nav>
-
-      {menuOpen && (
-        <div className="border-t border-white/5 bg-black px-6 py-6 md:hidden">
-          <div className="flex flex-col gap-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="text-lg text-silver-300 hover:text-white"
-              >
-                {link.label}
-              </Link>
-            ))}
+          <div className="hidden items-center gap-8 md:flex lg:gap-10">
+            {primaryNavLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "text-sm tracking-wide transition-colors",
+                    pathname === link.href
+                      ? "text-white"
+                      : "text-silver-400 hover:text-white"
+                  )}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            <NavbarSavedLink showLabel />
+            <NavbarProfileLink />
             <Link
               href="/explore"
-              onClick={() => setMenuOpen(false)}
-              className="mt-2 rounded-full bg-white px-6 py-3 text-center text-sm font-medium text-black"
+              className="inline-flex min-h-11 items-center rounded-full bg-white px-6 text-sm font-medium text-black transition-opacity hover:opacity-90"
             >
-              Find a Trainer
+              Find Your Specialist
             </Link>
           </div>
+
+          <div className="flex items-center gap-1 md:hidden">
+            <NavbarSavedLink />
+            <NavbarProfileLink />
+            <button
+            type="button"
+            className={cn(
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-all duration-300",
+              menuOpen
+                ? "bg-white/10 text-white"
+                : "text-white active:bg-white/5"
+            )}
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav-menu"
+          >
+            <span className="relative flex h-4 w-6 flex-col justify-between">
+              <span
+                className={cn(
+                  "block h-0.5 w-full origin-center rounded-full bg-white transition-all duration-300",
+                  menuOpen && "translate-y-[7px] rotate-45"
+                )}
+              />
+              <span
+                className={cn(
+                  "block h-0.5 w-full rounded-full bg-white transition-all duration-300",
+                  menuOpen && "scale-x-0 opacity-0"
+                )}
+              />
+              <span
+                className={cn(
+                  "block h-0.5 w-full origin-center rounded-full bg-white transition-all duration-300",
+                  menuOpen && "-translate-y-[7px] -rotate-45"
+                )}
+              />
+            </span>
+          </button>
+          </div>
         </div>
-      )}
+      </nav>
+
+      <MobileNavMenu
+        open={menuOpen}
+        pathname={pathname}
+        onClose={() => setMenuOpen(false)}
+      />
     </header>
   );
 }

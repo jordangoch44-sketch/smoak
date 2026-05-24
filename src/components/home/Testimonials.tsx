@@ -2,16 +2,16 @@ import { testimonials } from "@/data/testimonials";
 
 export function Testimonials() {
   return (
-    <section className="px-6 py-20 lg:py-28">
+    <section className="px-4 py-16 sm:px-6 sm:py-20 lg:py-28">
       <div className="mx-auto max-w-7xl">
         <p className="text-center text-xs font-medium uppercase tracking-[0.3em] text-silver-400">
           Client Stories
         </p>
-        <h2 className="mt-2 text-center text-3xl font-light tracking-tight text-white sm:text-4xl">
+        <h2 className="mt-2 text-center text-2xl font-light tracking-tight text-white sm:text-3xl md:text-4xl">
           Trusted by Leaders
         </h2>
 
-        <div className="mt-16 grid gap-8 md:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:mt-16 sm:gap-8 md:grid-cols-3">
           {testimonials.map((t) => (
             <blockquote
               key={t.id}

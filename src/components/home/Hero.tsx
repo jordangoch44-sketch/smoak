@@ -1,45 +1,51 @@
+import Link from "next/link";
 import { SearchBar } from "./SearchBar";
-import { Button } from "@/components/ui/Button";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[90vh] flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-20 lg:min-h-screen lg:pt-32">
-      <div className="absolute inset-0 bg-gradient-to-b from-graphite-800/50 via-black to-black" />
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 50%)`,
-        }}
-      />
-
-      <div className="relative z-10 mx-auto w-full max-w-4xl text-center">
-        <p className="mb-6 text-xs font-medium uppercase tracking-[0.3em] text-silver-400">
-          Luxury Personal Training
-        </p>
-        <h1 className="text-4xl font-light leading-[1.1] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl">
-          Train with the
-          <br />
-          <span className="font-medium">world&apos;s finest</span>
-        </h1>
-        <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-silver-400 sm:text-lg">
-          A curated marketplace of elite personal trainers. Discover your
-          perfect coach and elevate your performance.
-        </p>
-
-        <div className="mt-10 flex justify-center">
-          <SearchBar />
+    <section className="home-hero relative overflow-hidden px-4 sm:px-6">
+      <div className="home-hero__canvas" aria-hidden>
+        <div className="atmosphere-mesh">
+          <div className="atmosphere-blob atmosphere-blob--indigo" />
+          <div className="atmosphere-blob atmosphere-blob--blue" />
+          <div className="atmosphere-blob atmosphere-blob--violet" />
+          <div className="atmosphere-blob atmosphere-blob--magenta" />
+          <div className="atmosphere-blob atmosphere-blob--pink" />
+          <div className="atmosphere-blob atmosphere-blob--core" />
         </div>
-
-        <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button href="/explore">Explore Trainers</Button>
-          <Button href="/explore" variant="outline">
-            View Categories
-          </Button>
-        </div>
+        <div className="home-hero__search-light" />
+        <div className="atmosphere-vignette atmosphere-vignette--hero" />
+        <div className="atmosphere-grain" />
       </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-        <div className="h-8 w-px bg-gradient-to-b from-silver-400 to-transparent" />
+      <div className="home-hero__content">
+        <div className="home-hero__headline">
+          <h1 className="home-hero__title">
+            Find the right health &amp; wellness specialist.
+          </h1>
+          <p className="home-hero__lede">
+            Search vetted specialists by specialty, location, price, and coaching
+            style.
+          </p>
+        </div>
+
+        <div className="home-hero__search-stage">
+          <div className="home-hero__search-mesh" aria-hidden>
+            <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--violet" />
+            <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--magenta" />
+            <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--indigo" />
+          </div>
+          <SearchBar showFilterChips variant="hero" />
+        </div>
+
+        <p className="home-hero__cta-mobile md:hidden">
+          <Link
+            href="/explore"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold text-black transition-opacity active:opacity-90"
+          >
+            Find Your Specialist
+          </Link>
+        </p>
       </div>
     </section>
   );

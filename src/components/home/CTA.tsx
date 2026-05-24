@@ -2,17 +2,19 @@ import { Button } from "@/components/ui/Button";
 
 export function CTA() {
   return (
-    <section className="px-6 py-20 lg:py-28">
-      <div className="mx-auto max-w-4xl rounded-3xl border border-white/5 bg-gradient-to-br from-graphite-800 to-graphite-900 px-8 py-16 text-center sm:px-16 lg:py-20">
-        <h2 className="text-3xl font-light tracking-tight text-white sm:text-4xl">
-          Ready to elevate your training?
+    <section className="home-section-aurora px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
+      <div className="home-cta-panel mx-auto max-w-3xl rounded-2xl border border-white/10 bg-graphite-800/80 px-6 py-10 text-center sm:rounded-3xl sm:px-12 sm:py-14">
+        <h2 className="text-2xl font-light tracking-tight text-white sm:text-3xl">
+          Ready to find your specialist?
         </h2>
-        <p className="mx-auto mt-4 max-w-md text-silver-400">
-          Join thousands of discerning clients who trust SMOAK for their
-          fitness journey.
+        <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-silver-400 sm:text-base">
+          Browse vetted health, fitness, and wellness specialists. Compare
+          reviews and rates, and book when you&apos;re ready.
         </p>
-        <div className="mt-8">
-          <Button href="/explore">Start Exploring</Button>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button href="/explore" className="w-full sm:w-auto">
+            Explore specialists
+          </Button>
         </div>
       </div>
     </section>

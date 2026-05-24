@@ -1,0 +1,15 @@
+export { DashboardPageShell } from "./shared/DashboardPageShell";
+export { DashboardHeader } from "./shared/DashboardHeader";
+export { DashboardSection } from "./shared/DashboardSection";
+export { DashboardButton } from "./shared/DashboardButton";
+export type { DashboardButtonProps } from "./shared/DashboardButton";
+export { StatTile } from "./shared/StatTile";
+export { DashboardMetricCard } from "./shared/DashboardMetricCard";
+export { DashboardListItem } from "./shared/DashboardListItem";
+export { DashboardEmptyState } from "./shared/DashboardEmptyState";
+export { DashboardComingSoonModal } from "./shared/DashboardComingSoonModal";
+export { DashboardLoadingState } from "./shared/DashboardLoadingState";
+export { DashboardGrid } from "./shared/DashboardGrid";
+export { ClientDashboardPageClient } from "./ClientDashboardPageClient";
+export { SpecialistDashboardPageClient } from "./specialist/SpecialistDashboardPageClient";
+export { SpecialistEditProfilePageClient } from "./SpecialistEditProfilePageClient";

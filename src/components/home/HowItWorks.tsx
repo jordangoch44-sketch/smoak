@@ -1,21 +1,21 @@
 const steps = [
   {
-    number: "01",
-    title: "Discover",
+    number: "1",
+    title: "Search your criteria",
     description:
-      "Browse our curated roster of elite trainers filtered by specialty, location, and expertise.",
+      "Filter by specialty, city, price range, and coaching style—like shopping for the right home, but for your health.",
   },
   {
-    number: "02",
-    title: "Connect",
+    number: "2",
+    title: "Compare vetted pros",
     description:
-      "Review profiles, certifications, and client reviews to find your ideal coach.",
+      "Read credentials, client reviews, and per-session rates before you reach out.",
   },
   {
-    number: "03",
-    title: "Transform",
+    number: "3",
+    title: "Book with confidence",
     description:
-      "Book a consultation and begin your journey toward exceptional results.",
+      "Schedule a consultation with a specialist who fits your goals and your schedule.",
   },
 ];
 
@@ -23,26 +23,26 @@ export function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="border-t border-white/5 px-6 py-20 lg:py-28"
+      className="home-section-aurora px-4 py-12 sm:px-6 sm:py-16 lg:py-20"
     >
       <div className="mx-auto max-w-7xl">
-        <p className="text-xs font-medium uppercase tracking-[0.3em] text-silver-400">
-          Simple Process
-        </p>
-        <h2 className="mt-2 text-3xl font-light tracking-tight text-white sm:text-4xl">
-          How SMOAK Works
+        <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">
+          How SMOAC works
         </h2>
+        <p className="mt-1 text-sm text-silver-400">
+          Three steps from search to your first session.
+        </p>
 
-        <div className="mt-16 grid gap-12 md:grid-cols-3">
+        <div className="mt-8 grid gap-8 md:grid-cols-3 md:gap-10">
           {steps.map((step) => (
-            <div key={step.number} className="relative">
-              <span className="text-5xl font-light text-white/10">
-                {step.number}
+            <div key={step.number} className="border-t border-white/10 pt-6">
+              <span className="text-sm font-medium text-silver-400">
+                Step {step.number}
               </span>
-              <h3 className="mt-4 text-xl font-medium text-white">
+              <h3 className="mt-2 text-lg font-medium text-white">
                 {step.title}
               </h3>
-              <p className="mt-3 text-sm leading-relaxed text-silver-400">
+              <p className="mt-2 text-sm leading-relaxed text-silver-400">
                 {step.description}
               </p>
             </div>

@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { Logo } from "@/components/ui/Logo";
 
 const footerLinks = {
   Platform: [
-    { label: "Explore Trainers", href: "/explore" },
+    { label: "Explore Specialists", href: "/explore" },
     { label: "Categories", href: "/#categories" },
     { label: "How It Works", href: "/#how-it-works" },
   ],
@@ -21,18 +22,13 @@ const footerLinks = {
 export function Footer() {
   return (
     <footer className="border-t border-white/5 bg-graphite-900">
-      <div className="mx-auto max-w-7xl px-6 py-16 lg:py-20">
-        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <Link
-              href="/"
-              className="text-lg font-semibold tracking-[0.2em] text-white"
-            >
-              SMOAK
-            </Link>
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
+        <div className="grid grid-cols-2 gap-8 sm:gap-12 md:grid-cols-2 lg:grid-cols-5">
+          <div className="col-span-2 lg:col-span-2">
+            <Logo href="/" size="lg" />
             <p className="mt-4 max-w-sm text-sm leading-relaxed text-silver-400">
-              The premier marketplace for elite personal training. Curated
-              coaches. Exceptional results.
+              The premier marketplace for health, fitness, and wellness
+              specialists. Curated talent. Exceptional results.
             </p>
           </div>
 
@@ -59,7 +55,7 @@ export function Footer() {
 
         <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 sm:flex-row">
           <p className="text-xs text-silver-400">
-            © {new Date().getFullYear()} SMOAK. All rights reserved.
+            © {new Date().getFullYear()} SMOAC. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link

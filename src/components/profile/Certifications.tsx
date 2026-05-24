@@ -1,31 +1,28 @@
-import type { Trainer } from "@/types/trainer";
+import type { Certification } from "@/types";
+import { ProfileSection } from "./ProfileSection";
+import { ProfileSectionHeader } from "./ProfileSectionHeader";
 
 interface CertificationsProps {
-  certifications: Trainer["certifications"];
+  certifications: Certification[];
 }
 
 export function Certifications({ certifications }: CertificationsProps) {
   return (
-    <section>
-      <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-silver-400">
-        Certifications
-      </h2>
-      <ul className="mt-6 space-y-4">
+    <ProfileSection variant="panel" aria-label="Certifications">
+      <ProfileSectionHeader title="Certifications" />
+      <ul className="profile-section-body profile-section-body--loose">
         {certifications.map((cert) => (
-          <li
-            key={`${cert.name}-${cert.year}`}
-            className="flex items-start justify-between gap-4 border-b border-white/5 pb-4 last:border-0"
-          >
+          <li key={`${cert.name}-${cert.year}`} className="profile-cert-row">
             <div>
               <p className="font-medium text-white">{cert.name}</p>
               <p className="mt-0.5 text-sm text-silver-400">{cert.issuer}</p>
             </div>
-            <span className="shrink-0 text-sm text-silver-400">
+            <span className="shrink-0 text-sm tabular-nums text-silver-400">
               {cert.year}
             </span>
           </li>
         ))}
       </ul>
-    </section>
+    </ProfileSection>
   );
 }

@@ -1,0 +1,172 @@
+/* SMOAC aurora — cinematic mesh atmosphere (static, GPU-light) */
+
+/* ── Saved page shell ── */
+.saved-page {
+  position: relative;
+  isolation: isolate;
+}
+
+.saved-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(100%, 56rem);
+  height: 22rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 0%,
+    rgba(var(--aurora-indigo-rgb), 0.14) 0%,
+    rgba(var(--aurora-violet-rgb), 0.06) 42%,
+    transparent 72%
+  );
+  filter: blur(48px);
+  opacity: 0.85;
+  z-index: 0;
+}
+
+.saved-page > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Navbar atmosphere ── */
+.site-navbar {
+  background: rgba(6, 6, 9, 0.68) !important;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 40px rgba(0, 0, 0, 0.35),
+    0 -1px 32px rgba(var(--aurora-indigo-rgb), 0.06);
+}
+
+.site-navbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(var(--aurora-violet-rgb), 0.05) 0%,
+    transparent 55%
+  );
+  opacity: 0.9;
+}
+
+.site-navbar::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--aurora-lavender-rgb), 0.22) 35%,
+    rgba(var(--aurora-magenta-rgb), 0.18) 65%,
+    transparent 100%
+  );
+  opacity: 0.7;
+}
+
+/* ── Trainer cards (explore + saved) — floating smoked glass ── */
+.trainer-card > a > article {
+  background: rgba(14, 14, 20, 0.34) !important;
+  backdrop-filter: blur(24px) saturate(1.18);
+  -webkit-backdrop-filter: blur(24px) saturate(1.18);
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -12px 24px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 0 40px rgba(var(--aurora-indigo-rgb), 0.06),
+    0 12px 36px rgba(0, 0, 0, 0.28) !important;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    background-color 0.3s ease,
+    transform 0.3s ease !important;
+}
+
+@media (hover: hover) {
+  .trainer-card > a:hover > article {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    background: rgba(18, 18, 26, 0.42) !important;
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.12),
+      0 0 48px rgba(var(--aurora-violet-rgb), 0.12),
+      0 0 72px rgba(var(--aurora-indigo-rgb), 0.07),
+      0 16px 40px rgba(0, 0, 0, 0.32) !important;
+  }
+}
+
+/* ── Profile hero aurora ── */
+.profile-hero__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 45% at 85% 15%,
+      rgba(var(--aurora-magenta-rgb), 0.12) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 10% 70%,
+      rgba(var(--aurora-indigo-rgb), 0.1) 0%,
+      transparent 55%
+    );
+}
+
+.profile-hero__scrim {
+  z-index: 2 !important;
+}
+
+/* ── Glass panels — profile, login, drawers ── */
+.profile-section--panel {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 -12px 28px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.03),
+    0 0 48px rgba(var(--aurora-indigo-rgb), 0.06),
+    0 16px 48px rgba(0, 0, 0, 0.32);
+}
+
+.login-card {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.02),
+    0 0 64px rgba(var(--aurora-violet-rgb), 0.12),
+    0 0 100px rgba(var(--aurora-indigo-rgb), 0.08),
+    0 24px 56px rgba(0, 0, 0, 0.42);
+}
+
+.profile-hero__stats,
+.profile-hero__gallery {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Mobile nav drawer */
+#mobile-nav-menu {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(var(--aurora-violet-rgb), 0.08),
+    0 0 48px rgba(var(--aurora-indigo-rgb), 0.1),
+    0 24px 80px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* Trust pillar cards — subtle ambient rim */
+.home-section-aurora .rounded-2xl.border {
+  background: rgba(10, 10, 12, 0.55) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 32px rgba(var(--aurora-indigo-rgb), 0.04);
+}

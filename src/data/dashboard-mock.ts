@@ -1,0 +1,43 @@
+import { getTrainerById } from "@/data/trainers";
+import { getTrainerCityRanking } from "@/data/city-rankings";
+import {
+  DEMO_SPECIALIST_ID,
+  DEMO_SPECIALIST_LEADS,
+  DEMO_SPECIALIST_SUBSCRIPTION,
+} from "@/constants/specialist-dashboard-mock";
+
+export { DEMO_SPECIALIST_ID } from "@/constants/specialist-dashboard-mock";
+
+export function getDemoSpecialistDashboardData() {
+  const trainer = getTrainerById(DEMO_SPECIALIST_ID);
+  const ranking = getTrainerCityRanking(DEMO_SPECIALIST_ID);
+
+  return {
+    trainer,
+    ranking,
+    newLeads: [...DEMO_SPECIALIST_LEADS],
+    subscription: { ...DEMO_SPECIALIST_SUBSCRIPTION },
+  };
+}
+
+export const CLIENT_COMPARE_PLACEHOLDER = {
+  count: 2,
+  label: "Compare up to 3 specialists side by side",
+};
+
+export const CLIENT_MESSAGES_PLACEHOLDER = [
+  {
+    id: "msg-1",
+    specialist: "Dr. Elena Ramirez",
+    preview: "Thanks for reaching out — I have openings Thursday…",
+    time: "1h ago",
+    unread: true,
+  },
+  {
+    id: "msg-2",
+    specialist: "Anthony Brooks",
+    preview: "Happy to walk through your athletic goals on a quick call.",
+    time: "Yesterday",
+    unread: false,
+  },
+];

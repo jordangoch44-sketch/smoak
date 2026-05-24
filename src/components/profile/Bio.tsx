@@ -1,4 +1,6 @@
-import type { Trainer } from "@/types/trainer";
+import type { Trainer } from "@/types";
+import { ProfileSection } from "./ProfileSection";
+import { ProfileSectionHeader } from "./ProfileSectionHeader";
 
 interface BioProps {
   trainer: Trainer;
@@ -6,23 +8,20 @@ interface BioProps {
 
 export function Bio({ trainer }: BioProps) {
   return (
-    <section>
-      <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-silver-400">
-        About
-      </h2>
-      <p className="mt-4 text-base leading-relaxed text-silver-200 lg:text-lg">
-        {trainer.bio}
-      </p>
-      <div className="mt-6 flex flex-wrap gap-2">
-        {trainer.specialty.map((s) => (
-          <span
-            key={s}
-            className="rounded-full border border-white/10 px-4 py-1.5 text-sm text-silver-300"
-          >
-            {s}
-          </span>
-        ))}
+    <ProfileSection variant="panel" aria-label="About">
+      <ProfileSectionHeader title="About" />
+      <div className="profile-section-body profile-section-body--loose">
+        <p className="profile-body-text">
+          {trainer.bio}
+        </p>
+        <ul className="profile-pill-grid mt-5 sm:mt-6">
+          {trainer.specialty.map((s) => (
+            <li key={s}>
+              <span className="profile-tag-pill profile-tag-pill--grid">{s}</span>
+            </li>
+          ))}
+        </ul>
       </div>
-    </section>
+    </ProfileSection>
   );
 }

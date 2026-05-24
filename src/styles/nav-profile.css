@@ -1,0 +1,198 @@
+/* Navbar profile control — login status ring + dropdown */
+
+.nav-profile {
+  position: relative;
+}
+
+.nav-profile__trigger {
+  position: relative;
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.22s ease,
+    background-color 0.22s ease,
+    color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.nav-profile__trigger:hover {
+  color: #fff;
+  transform: scale(1.04);
+}
+
+.nav-profile__trigger:active {
+  transform: scale(0.97);
+}
+
+.nav-profile__trigger--open {
+  transform: scale(1.02);
+}
+
+/* Signed out — muted gray glass */
+.nav-profile__trigger--guest {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.nav-profile__trigger--guest:hover {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 18px rgba(255, 255, 255, 0.05);
+}
+
+/* Signed in — subtle mint glow */
+.nav-profile__trigger--signed-in {
+  border-color: rgba(134, 212, 178, 0.38);
+  background: rgba(134, 212, 178, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.12),
+    0 0 0 1px rgba(134, 212, 178, 0.12),
+    0 0 20px rgba(110, 200, 160, 0.18),
+    0 0 36px rgba(90, 180, 140, 0.1);
+  color: rgba(230, 255, 245, 0.95);
+}
+
+.nav-profile__trigger--signed-in:hover {
+  border-color: rgba(150, 228, 190, 0.48);
+  background: rgba(134, 212, 178, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(200, 255, 230, 0.16),
+    0 0 0 1px rgba(134, 212, 178, 0.18),
+    0 0 24px rgba(110, 200, 160, 0.26),
+    0 0 40px rgba(90, 180, 140, 0.14);
+}
+
+.nav-profile__status {
+  position: absolute;
+  right: 0.125rem;
+  bottom: 0.125rem;
+  height: 0.4375rem;
+  width: 0.4375rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(8, 8, 10, 0.9);
+  pointer-events: none;
+}
+
+.nav-profile__status--guest {
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.08);
+}
+
+.nav-profile__status--signed-in {
+  background: #86d4b2;
+  box-shadow:
+    0 0 8px rgba(134, 212, 178, 0.65),
+    0 0 14px rgba(110, 200, 160, 0.35);
+}
+
+.nav-profile__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 60;
+  min-width: 11.5rem;
+  padding: 0.375rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 12, 16, 0.72);
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 0 1px rgba(var(--aurora-violet-rgb), 0.1),
+    0 12px 40px rgba(0, 0, 0, 0.5);
+  animation: nav-profile-menu-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.nav-profile__item {
+  display: flex;
+  width: 100%;
+  min-height: 2.5rem;
+  align-items: center;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: 0.625rem;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.82);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+@media (hover: hover) {
+  .nav-profile__item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+}
+
+.nav-profile__item:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-profile__item--danger {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+@media (hover: hover) {
+  .nav-profile__item--danger:hover {
+    color: rgba(255, 200, 200, 0.92);
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.nav-profile__divider {
+  height: 1px;
+  margin: 0.25rem 0.375rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@keyframes nav-profile-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-profile__menu {
+    animation: none;
+  }
+
+  .nav-profile__trigger {
+    transition: none;
+  }
+}
+
+/* Legacy class aliases — keep login.css imports harmless */
+.nav-profile-link {
+  /* replaced by .nav-profile__trigger */
+}

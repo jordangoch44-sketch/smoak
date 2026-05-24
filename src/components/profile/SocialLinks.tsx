@@ -1,10 +1,12 @@
-import type { Trainer } from "@/types/trainer";
+import type { SocialLinks as SocialLinksType } from "@/types";
+import { ProfileSection } from "./ProfileSection";
+import { ProfileSectionHeader } from "./ProfileSectionHeader";
 
 interface SocialLinksProps {
-  social: Trainer["social"];
+  social: SocialLinksType;
 }
 
-const socialLabels: Record<keyof Trainer["social"], string> = {
+const socialLabels: Record<keyof SocialLinksType, string> = {
   instagram: "Instagram",
   twitter: "X",
   linkedin: "LinkedIn",
@@ -17,23 +19,22 @@ export function SocialLinks({ social }: SocialLinksProps) {
   if (links.length === 0) return null;
 
   return (
-    <section>
-      <h2 className="text-xs font-medium uppercase tracking-[0.3em] text-silver-400">
-        Connect
-      </h2>
-      <div className="mt-4 flex flex-wrap gap-3">
+    <ProfileSection variant="panel" aria-label="Connect">
+      <ProfileSectionHeader title="Connect" />
+      <ul className="profile-section-body profile-pill-grid">
         {links.map(([key, url]) => (
-          <a
-            key={key}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full border border-white/10 px-5 py-2.5 text-sm text-silver-300 transition-colors hover:border-white/20 hover:text-white"
-          >
-            {socialLabels[key as keyof Trainer["social"]]}
-          </a>
+          <li key={key}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="profile-tag-pill profile-tag-pill--grid transition-colors active:border-white/12 active:text-white/90 sm:hover:border-white/10 sm:hover:text-white/85"
+            >
+              {socialLabels[key as keyof SocialLinksType]}
+            </a>
+          </li>
         ))}
-      </div>
-    </section>
+      </ul>
+    </ProfileSection>
   );
 }

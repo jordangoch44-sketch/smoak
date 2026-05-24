@@ -1,0 +1,1 @@
+export { SmoacWordmark } from "./SmoacWordmark";

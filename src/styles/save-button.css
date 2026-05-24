@@ -1,0 +1,204 @@
+/* Save / favorite button — single source for trainer cards & profile */
+
+.trainer-card {
+  position: relative;
+}
+
+/* Pinned top-right on trainer cards — outside the <a> so it never gets clipped or removed */
+.trainer-card-save {
+  position: absolute !important;
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  z-index: 50 !important;
+  width: 2.25rem;
+  height: 2.25rem;
+  pointer-events: none;
+}
+
+.trainer-card-save .save-button {
+  pointer-events: auto;
+  visibility: visible;
+  opacity: 1;
+}
+
+.save-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    transform 0.15s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* Profile hero and other custom placements */
+.save-button--overlay {
+  position: absolute;
+  z-index: 20;
+}
+
+.save-button:active {
+  transform: scale(0.94);
+}
+
+/* Save microinteraction — fill, pulse, violet glow */
+.save-button--burst {
+  animation: save-button-pop 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.save-button--burst.save-button--saved {
+  border-color: rgba(var(--accent-glow-rgb), 0.38);
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-glow-rgb), 0.2),
+    0 0 20px rgba(var(--accent-glow-rgb), 0.28),
+    0 0 32px rgba(var(--accent-glow-rgb), 0.12);
+}
+
+.save-button--burst .save-button__icon--filled {
+  animation: save-heart-fill-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  fill: var(--accent-glow);
+}
+
+@keyframes save-button-pop {
+  0% {
+    transform: scale(1);
+  }
+  38% {
+    transform: scale(1.14);
+  }
+  62% {
+    transform: scale(0.96);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes save-heart-fill-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+    fill: rgba(var(--accent-glow-rgb), 0.45);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12);
+    fill: var(--accent-glow);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    fill: #ffffff;
+  }
+}
+
+.save-button__icons {
+  position: relative;
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.save-button__icon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.save-button__icon--outline {
+  stroke: #ffffff;
+}
+
+/* Unsaved: white outline heart only */
+.save-button--unsaved .save-button__icon--outline {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.save-button--unsaved .save-button__icon--filled {
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+/* Saved: solid white heart on dark chip — stays visible on light photos */
+.save-button--saved {
+  border-color: rgba(255, 255, 255, 0.55);
+  background: rgba(0, 0, 0, 0.62);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.2),
+    0 0 16px rgba(255, 255, 255, 0.22);
+}
+
+.save-button--saved .save-button__icon--outline {
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+.save-button--saved .save-button__icon--filled {
+  opacity: 1;
+  transform: scale(1);
+  fill: #ffffff;
+  stroke: none;
+}
+
+.save-button__icon--outline,
+.save-button__icon--filled {
+  transition:
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    fill 0.35s ease;
+}
+
+.save-button--saved:not(.save-button--burst) .save-button__icon--filled {
+  fill: #ffffff;
+}
+
+/* Mobile: stronger contrast over card imagery */
+@media (max-width: 767px) {
+  .save-button--unsaved {
+    background: rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-color: rgba(255, 255, 255, 0.24);
+  }
+
+  .save-button--saved {
+    background: rgba(0, 0, 0, 0.68);
+    border-color: rgba(255, 255, 255, 0.58);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.22),
+      0 0 18px rgba(255, 255, 255, 0.24);
+  }
+
+  .save-button--saved .save-button__icon--filled {
+    fill: #ffffff;
+  }
+}
+
+/* Desktop: light hover on unsaved only */
+@media (min-width: 768px) {
+  .save-button--unsaved:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.42);
+  }
+
+  .save-button--saved:hover {
+    border-color: rgba(255, 255, 255, 0.6);
+    background: rgba(0, 0, 0, 0.7);
+  }
+}

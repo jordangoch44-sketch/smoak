@@ -26,7 +26,7 @@ export function Button({
   type = "button",
 }: ButtonProps) {
   const classes = cn(
-    "inline-flex items-center justify-center rounded-full px-8 py-3.5 text-sm font-medium tracking-wide transition-all",
+    "inline-flex min-h-11 items-center justify-center rounded-full px-8 py-3 text-sm font-medium tracking-wide transition-all active:scale-[0.98]",
     variants[variant],
     className
   );

@@ -1,0 +1,10 @@
+<svg width="120" height="24" viewBox="0 0 120 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="silver" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="45%" stop-color="#C7C7CC"/>
+      <stop offset="100%" stop-color="#E5E5EA"/>
+    </linearGradient>
+  </defs>
+  <text x="0" y="18" fill="url(#silver)" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="300" letter-spacing="5.32">SMOAC</text>
+</svg>

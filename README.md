@@ -1,4 +1,4 @@
-# SMOAK
+# SMOAC
 
 A modern luxury personal trainer marketplace. Apple/Tesla-inspired minimal design with a premium black, white, and graphite aesthetic.
 

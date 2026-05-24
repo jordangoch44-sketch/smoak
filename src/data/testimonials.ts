@@ -1,9 +1,9 @@
-import type { Testimonial } from "@/types/trainer";
+import type { Testimonial } from "@/types";
 
 export const testimonials: Testimonial[] = [
   {
     id: "1",
-    quote: "SMOAK connected me with a trainer who understood my goals at a level I'd never experienced. The platform feels as refined as the coaches on it.",
+    quote: "SMOAC connected me with a trainer who understood my goals at a level I'd never experienced. The platform feels as refined as the coaches on it.",
     author: "Victoria Ashford",
     role: "CEO, Ashford Ventures",
   },
@@ -15,7 +15,7 @@ export const testimonials: Testimonial[] = [
   },
   {
     id: "3",
-    quote: "The booking experience is seamless, and the quality of coaches is unmatched. SMOAK has become essential to my wellness routine.",
+    quote: "The booking experience is seamless, and the quality of coaches is unmatched. SMOAC has become essential to my wellness routine.",
     author: "Priya Sharma",
     role: "Partner, Meridian Capital",
   },
