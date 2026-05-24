@@ -6,11 +6,15 @@
 @import "./save-toast.css";
 @import "./toast.css";
 @import "./profile.css";
+@import "./page-transition.css";
+@import "./trainer-market-value.css";
 @import "./home.css";
 @import "./login.css";
 @import "./create-account-wizard.css";
 @import "./login-gate.css";
 @import "./nav-profile.css";
+@import "./login-suggestion-popover.css";
+@import "./saved-panel.css";
 @import "./explore.css";
 @import "./rankings.css";
 @import "./dashboard.css";
@@ -66,11 +70,29 @@
 }
 
 html {
+  width: 100%;
+  max-width: 100%;
   scroll-behavior: smooth;
   overflow-x: hidden;
 }
 
+html,
+body,
+#root {
+  box-sizing: border-box;
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   background-color: #050506;
   background-image:
     radial-gradient(
@@ -99,7 +121,8 @@ body {
 
 /* Scroll lock when mobile nav or filter drawer is open */
 body.menu-open,
-body.drawer-open {
+body.drawer-open,
+body.saved-panel-open {
   overflow: hidden;
   touch-action: none;
 }

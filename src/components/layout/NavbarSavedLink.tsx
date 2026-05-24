@@ -1,43 +1,55 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { HeartIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 interface NavbarSavedLinkProps {
+  open: boolean;
+  onToggle: () => void;
   className?: string;
   showLabel?: boolean;
 }
 
 export function NavbarSavedLink({
+  open,
+  onToggle,
   className,
   showLabel = false,
 }: NavbarSavedLinkProps) {
   const pathname = usePathname();
   const { savedCount } = useSavedTrainers();
-  const active = pathname === "/saved";
+  const onSavedRoute = pathname === "/saved";
+  const active = open || onSavedRoute;
 
   return (
-    <Link
-      href="/saved"
+    <button
+      type="button"
       className={cn(
-        "relative inline-flex min-h-11 items-center justify-center rounded-full transition-colors",
+        "navbar-saved-trigger relative inline-flex min-h-11 items-center justify-center rounded-full transition-all duration-300",
         showLabel ? "gap-2 px-3" : "h-11 w-11",
         active
-          ? "text-white"
+          ? "navbar-saved-trigger--active text-white"
           : "text-silver-400 active:text-white md:hover:text-white",
         className
       )}
       aria-label={
-        savedCount > 0
-          ? `Saved specialists, ${savedCount} saved`
-          : "Saved specialists"
+        open
+          ? "Close saved specialists"
+          : savedCount > 0
+            ? `Saved specialists, ${savedCount} saved`
+            : "Saved specialists"
       }
+      aria-expanded={open}
+      aria-controls="saved-panel-dropdown"
+      onClick={onToggle}
     >
       <span className="inline-flex items-center justify-center">
-        <HeartIcon className="h-5 w-5" filled={savedCount > 0} />
+        <HeartIcon
+          className="h-5 w-5"
+          filled={open || savedCount > 0}
+        />
       </span>
       {showLabel && (
         <span className="text-sm tracking-wide">Saved</span>
@@ -52,6 +64,6 @@ export function NavbarSavedLink({
           {savedCount > 9 ? "9+" : savedCount}
         </span>
       )}
-    </Link>
+    </button>
   );
 }

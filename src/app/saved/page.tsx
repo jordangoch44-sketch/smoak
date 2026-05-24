@@ -1,4 +1,4 @@
-import { SavedPageClient } from "@/components/saved/SavedPageClient";
+import { SavedPageClient } from "@/components/saved";
 
 export const metadata = {
   title: "Saved Specialists",

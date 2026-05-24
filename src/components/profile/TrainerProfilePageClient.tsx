@@ -2,17 +2,14 @@
 
 import type { Trainer } from "@/types";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
-import {
-  ProfileHero,
-  ProfileHeroToolbar,
-  ProfileCuratedDetails,
-  ProfileSessionExperience,
-  Bio,
-  Certifications,
-  Reviews,
-  SocialLinks,
-  BookConsultation,
-} from "@/components/profile";
+import { ProfileHero } from "./ProfileHero";
+import { ProfileCuratedDetails } from "./ProfileCuratedDetails";
+import { ProfileSessionExperience } from "./ProfileSessionExperience";
+import { Bio } from "./Bio";
+import { Certifications } from "./Certifications";
+import { Reviews } from "./Reviews";
+import { SocialLinks } from "./SocialLinks";
+import { BookConsultation } from "./BookConsultation";
 
 interface TrainerProfilePageClientProps {
   trainerId: string;
@@ -29,10 +26,6 @@ export function TrainerProfilePageClient({
   return (
     <>
       <ProfileHero trainer={trainer} />
-      <ProfileHeroToolbar
-        trainerId={trainer.id}
-        trainerName={trainer.name}
-      />
 
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-4 sm:px-6 sm:pb-20 sm:pt-6 lg:py-16">
         <div className="lg:grid lg:grid-cols-3 lg:gap-16">

@@ -1,7 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
 import { useToast } from "@/components/ui/toast";
@@ -12,6 +19,8 @@ import {
   shareTrainerProfile,
 } from "@/lib/profile-share";
 import { cn } from "@/lib/utils";
+
+const EXPLORE_FALLBACK_PATH = "/explore";
 
 interface ProfileHeroToolbarProps {
   trainerId: string;
@@ -49,9 +58,14 @@ export function ProfileHeroToolbar({
   const { showToast } = useToast();
   const { isHidden, toggleHidden } = useHiddenTrainers();
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const actionsRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const hidden = isHidden(trainerId);
+  const canPortal = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -59,7 +73,7 @@ export function ProfileHeroToolbar({
     if (!menuOpen) return;
 
     function handlePointerDown(event: MouseEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) {
+      if (!actionsRef.current?.contains(event.target as Node)) {
         closeMenu();
       }
     }
@@ -75,6 +89,15 @@ export function ProfileHeroToolbar({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [menuOpen, closeMenu]);
+
+  function handleClose() {
+    closeMenu();
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(EXPLORE_FALLBACK_PATH);
+  }
 
   async function handleShare() {
     closeMenu();
@@ -120,7 +143,7 @@ export function ProfileHeroToolbar({
         type: "info",
         message: `${trainerName} hidden from Explore.`,
       });
-      router.push("/explore");
+      router.push(EXPLORE_FALLBACK_PATH);
       return;
     }
     showToast({
@@ -142,110 +165,122 @@ export function ProfileHeroToolbar({
     scrollToProfileConsultation();
   }
 
-  return (
-    <div
-      ref={menuRef}
-      className="profile-toolbar"
-      data-menu-open={menuOpen ? "true" : "false"}
-    >
-      <div className="profile-toolbar__bar" role="toolbar" aria-label="Profile actions">
-        <Link
-          href="/explore"
-          className="profile-toolbar__btn profile-toolbar__btn--close"
-          aria-label="Back to Explore"
-        >
-          <ToolbarIcon>
-            <path d="M15 18 9 12l6-6" />
-          </ToolbarIcon>
-        </Link>
-        <div className="profile-toolbar__save">
-          <SaveTrainerButton trainerId={trainerId} overlay={false} />
-        </div>
+  if (!canPortal) return null;
 
-        <button
-          type="button"
-          className="profile-toolbar__btn"
-          aria-label="Share profile"
-          onClick={handleShare}
-        >
-          <ToolbarIcon>
-            <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
-            <path d="M12 3v12" />
-            <path d="m7 8 5-5 5 5" />
-          </ToolbarIcon>
-        </button>
+  return createPortal(
+    <div className="profile-toolbar" aria-hidden={false}>
+      <button
+        type="button"
+        className="profile-toolbar__close"
+        aria-label="Close profile"
+        onClick={handleClose}
+      >
+        <ToolbarIcon className="profile-toolbar__icon--close">
+          <path d="M18 6 6 18" />
+          <path d="m6 6 12 12" />
+        </ToolbarIcon>
+      </button>
 
-        <button
-          type="button"
-          className={cn(
-            "profile-toolbar__btn",
-            hidden && "profile-toolbar__btn--active"
-          )}
-          aria-label={hidden ? "Show in Explore" : "Hide from Explore"}
-          aria-pressed={hidden}
-          onClick={handleHide}
-        >
-          <ToolbarIcon>
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-            <path d="M1 1l22 22" />
-            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
-          </ToolbarIcon>
-        </button>
-
-        <button
-          type="button"
-          className={cn(
-            "profile-toolbar__btn profile-toolbar__btn--more",
-            menuOpen && "profile-toolbar__btn--active"
-          )}
-          aria-label="More options"
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          aria-controls={menuId}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <ToolbarIcon>
-            <circle cx="5" cy="12" r="1" />
-            <circle cx="12" cy="12" r="1" />
-            <circle cx="19" cy="12" r="1" />
-          </ToolbarIcon>
-        </button>
-      </div>
-
-      {menuOpen ? (
+      <div
+        ref={actionsRef}
+        className="profile-toolbar__actions"
+        data-menu-open={menuOpen ? "true" : "false"}
+      >
         <div
-          id={menuId}
-          role="menu"
-          className="profile-toolbar__menu"
-          aria-label="More profile actions"
+          className="profile-toolbar__bar"
+          role="toolbar"
+          aria-label="Profile actions"
         >
+          <div className="profile-toolbar__save">
+            <SaveTrainerButton trainerId={trainerId} overlay={false} />
+          </div>
+
           <button
             type="button"
-            role="menuitem"
-            className="profile-toolbar__menu-item"
-            onClick={handleReport}
+            className="profile-toolbar__btn"
+            aria-label="Share profile"
+            onClick={handleShare}
           >
-            Report profile
+            <ToolbarIcon>
+              <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
+              <path d="M12 3v12" />
+              <path d="m7 8 5-5 5 5" />
+            </ToolbarIcon>
           </button>
+
           <button
             type="button"
-            role="menuitem"
-            className="profile-toolbar__menu-item"
-            onClick={handleCopyLink}
+            className={cn(
+              "profile-toolbar__btn",
+              hidden && "profile-toolbar__btn--active"
+            )}
+            aria-label={hidden ? "Show in Explore" : "Hide from Explore"}
+            aria-pressed={hidden}
+            onClick={handleHide}
           >
-            Copy profile link
+            <ToolbarIcon>
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+              <path d="M1 1l22 22" />
+              <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+            </ToolbarIcon>
           </button>
+
           <button
             type="button"
-            role="menuitem"
-            className="profile-toolbar__menu-item"
-            onClick={handleContact}
+            className={cn(
+              "profile-toolbar__btn profile-toolbar__btn--more",
+              menuOpen && "profile-toolbar__btn--active"
+            )}
+            aria-label="More options"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-controls={menuId}
+            onClick={() => setMenuOpen((open) => !open)}
           >
-            Contact specialist
+            <ToolbarIcon>
+              <circle cx="5" cy="12" r="1" />
+              <circle cx="12" cy="12" r="1" />
+              <circle cx="19" cy="12" r="1" />
+            </ToolbarIcon>
           </button>
         </div>
-      ) : null}
-    </div>
+
+        {menuOpen ? (
+          <div
+            id={menuId}
+            role="menu"
+            className="profile-toolbar__menu"
+            aria-label="More profile actions"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className="profile-toolbar__menu-item"
+              onClick={handleReport}
+            >
+              Report profile
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="profile-toolbar__menu-item"
+              onClick={handleCopyLink}
+            >
+              Copy profile link
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="profile-toolbar__menu-item"
+              onClick={handleContact}
+            >
+              Contact specialist
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </div>,
+    document.body,
   );
 }

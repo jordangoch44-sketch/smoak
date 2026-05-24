@@ -54,23 +54,30 @@ export function ClientDashboardPageClient() {
 
   const firstName = session.email.split("@")[0] || "there";
 
+  function handleSignOut() {
+    signOut();
+    afterLogoutNavigation(() => router.push("/login"));
+  }
+
   return (
     <DashboardPageShell
+      variant="client"
       eyebrow="Client dashboard"
       title={`Welcome back, ${firstName}`}
       subtitle="Your saved specialists, searches, and inquiries in one place."
-      roleLabel="Client"
-      actions={
+      utilityBar={
         <button
           type="button"
-          className="dashboard-signout"
-          onClick={() => {
-            signOut();
-            afterLogoutNavigation(() => router.push("/login"));
-          }}
+          className="dashboard-signout dashboard-signout--utility"
+          onClick={handleSignOut}
         >
           Sign out
         </button>
+      }
+      introActions={
+        <Link href="/" className="dashboard-intro-cta">
+          Search more specialists
+        </Link>
       }
     >
       <div className="dashboard-grid">

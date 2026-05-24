@@ -6,6 +6,8 @@ import { formatProviderLocation } from "@/lib/provider-location";
 import { formatPrice } from "@/lib/utils";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { ProfileHeroBio } from "./ProfileHeroBio";
+import { TrainerMarketValueCard } from "./TrainerMarketValueCard";
+import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileResultsSnapshot } from "./ProfileResultsSnapshot";
 import { ProfileMediaSlider } from "./ProfileMediaSlider";
@@ -18,7 +20,8 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
   const ranking = getTrainerCityRanking(trainer.id);
 
   return (
-    <section className="profile-hero relative w-full overflow-hidden">
+    <>
+      <section className="profile-hero relative w-full overflow-hidden">
       <div className="profile-hero__stage relative h-[58vh] min-h-[380px] w-full sm:h-[54vh] sm:min-h-[420px] lg:h-[58vh]">
         <TrainerThumbnail
           src={trainer.heroImage}
@@ -81,10 +84,16 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
       <div className="profile-hero__content relative px-4 pb-8 sm:px-6 sm:pb-10 lg:pb-12">
         <div className="mx-auto max-w-7xl">
           <ProfileHeroBio bio={trainer.bio} />
+          <TrainerMarketValueCard trainer={trainer} />
           <ProfileResultsSnapshot trainer={trainer} embedded />
           <ProfileMediaSlider items={trainer.gallery} />
         </div>
       </div>
     </section>
+      <ProfileHeroToolbar
+        trainerId={trainer.id}
+        trainerName={trainer.name}
+      />
+    </>
   );
 }

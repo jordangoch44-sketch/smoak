@@ -1,36 +1,5 @@
 /* SMOAC aurora — cinematic mesh atmosphere (static, GPU-light) */
 
-/* ── Saved page shell ── */
-.saved-page {
-  position: relative;
-  isolation: isolate;
-}
-
-.saved-page::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: min(100%, 56rem);
-  height: 22rem;
-  transform: translateX(-50%);
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse 75% 65% at 50% 0%,
-    rgba(var(--aurora-indigo-rgb), 0.14) 0%,
-    rgba(var(--aurora-violet-rgb), 0.06) 42%,
-    transparent 72%
-  );
-  filter: blur(48px);
-  opacity: 0.85;
-  z-index: 0;
-}
-
-.saved-page > * {
-  position: relative;
-  z-index: 1;
-}
-
 /* ── Navbar atmosphere ── */
 .site-navbar {
   background: rgba(6, 6, 9, 0.68) !important;

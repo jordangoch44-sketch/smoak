@@ -1,0 +1,179 @@
+/* Saved specialists — header dropdown overlay + /saved route */
+
+/* ── Navbar heart toggle ── */
+.navbar-saved-trigger--active {
+  background: rgba(118, 214, 172, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(118, 214, 172, 0.22),
+    0 0 22px rgba(118, 214, 172, 0.2);
+  color: rgba(230, 255, 245, 0.98);
+}
+
+/* ── Dropdown overlay (slides from under header) ── */
+.saved-dropdown__panel {
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  z-index: 1;
+  display: flex;
+  max-height: calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px));
+  flex-direction: column;
+  overflow: hidden;
+  border-bottom-left-radius: 1.25rem;
+  border-bottom-right-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(18, 20, 26, 0.94) 0%,
+      rgba(8, 9, 12, 0.97) 100%
+    );
+  backdrop-filter: blur(28px) saturate(1.25);
+  -webkit-backdrop-filter: blur(28px) saturate(1.25);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 0 48px rgba(118, 214, 172, 0.08);
+}
+
+@media (min-width: 640px) {
+  .saved-dropdown__panel {
+    top: calc(4rem + env(safe-area-inset-top, 0px));
+    max-height: calc(100dvh - 4rem - env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .saved-dropdown__panel {
+    top: calc(72px + env(safe-area-inset-top, 0px));
+    max-height: calc(100dvh - 72px - env(safe-area-inset-top, 0px));
+    right: max(0px, calc((100vw - 80rem) / 2));
+    left: max(0px, calc((100vw - 80rem) / 2));
+    border-bottom-left-radius: 1.5rem;
+    border-bottom-right-radius: 1.5rem;
+  }
+}
+
+.saved-dropdown__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 80% 45% at 50% 0%,
+      rgba(var(--aurora-lavender-rgb), 0.2) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 55% 40% at 85% 20%,
+      rgba(118, 214, 172, 0.1) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 10% 30%,
+      rgba(var(--aurora-violet-rgb), 0.12) 0%,
+      transparent 52%
+    );
+  opacity: 0.95;
+}
+
+.saved-dropdown__scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.saved-dropdown__content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 1.25rem 1rem 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .saved-dropdown__content {
+    padding: 1.375rem 1.5rem 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .saved-dropdown__content {
+    padding: 1.5rem 2rem 2rem;
+  }
+}
+
+.saved-dropdown__title {
+  margin: 0;
+  padding: 0;
+  font-size: clamp(1.375rem, 4.5vw, 1.75rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.saved-dropdown__subtitle {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.saved-dropdown__list {
+  margin-top: 1.25rem;
+  min-width: 0;
+}
+
+.saved-dropdown__empty {
+  margin-top: 1.25rem;
+}
+
+.saved-dropdown__footer {
+  margin: 1.25rem 0 0;
+  text-align: center;
+}
+
+/* ── Full /saved route (direct access) ── */
+.saved-page-route {
+  position: relative;
+  isolation: isolate;
+}
+
+.saved-page-route::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(100%, 56rem);
+  height: 22rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 65% at 50% 0%,
+    rgba(var(--aurora-indigo-rgb), 0.14) 0%,
+    rgba(var(--aurora-violet-rgb), 0.06) 42%,
+    transparent 72%
+  );
+  filter: blur(48px);
+  opacity: 0.85;
+  z-index: 0;
+}
+
+.saved-page-route > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saved-dropdown__panel {
+    transition: opacity 0.15s ease !important;
+  }
+}

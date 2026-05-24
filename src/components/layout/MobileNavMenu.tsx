@@ -9,9 +9,17 @@ interface MobileNavMenuProps {
   open: boolean;
   pathname: string;
   onClose: () => void;
+  onOpenSavedPanel: () => void;
+  savedPanelOpen: boolean;
 }
 
-export function MobileNavMenu({ open, pathname, onClose }: MobileNavMenuProps) {
+export function MobileNavMenu({
+  open,
+  pathname,
+  onClose,
+  onOpenSavedPanel,
+  savedPanelOpen,
+}: MobileNavMenuProps) {
   return (
     <div
       className={cn(
@@ -80,20 +88,22 @@ export function MobileNavMenu({ open, pathname, onClose }: MobileNavMenuProps) {
               </Link>
             ))}
 
-            <Link
-              href="/saved"
-              onClick={onClose}
+            <button
+              type="button"
+              onClick={() => {
+                onOpenSavedPanel();
+              }}
               className={cn(
-                "flex min-h-[52px] items-center gap-3 rounded-xl px-4 text-[17px] tracking-wide transition-[background-color,color] duration-200 active:bg-white/[0.08]",
+                "flex min-h-[52px] w-full items-center gap-3 rounded-xl px-4 text-left text-[17px] tracking-wide transition-[background-color,color] duration-200 active:bg-white/[0.08]",
                 open && "mobile-nav-link",
-                pathname === "/saved"
+                savedPanelOpen || pathname === "/saved"
                   ? "bg-white/[0.08] font-medium text-white"
                   : "text-silver-200 active:text-white"
               )}
               style={open ? { animationDelay: "165ms" } : undefined}
             >
               Saved specialists
-            </Link>
+            </button>
 
             <div
               className={cn("mt-2 pt-2", open && "mobile-nav-link")}

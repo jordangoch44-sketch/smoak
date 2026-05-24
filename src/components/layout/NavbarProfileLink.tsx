@@ -14,14 +14,21 @@ import {
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
 import { afterLogoutNavigation, logoutWithToast } from "@/lib/logout-with-toast";
 import { cn } from "@/lib/utils";
+import { LoginSuggestionPopover } from "./LoginSuggestionPopover";
 
 const SAVED_PATH = "/saved";
 
 interface NavbarProfileLinkProps {
   className?: string;
+  isHomePage?: boolean;
+  navMenuOpen?: boolean;
 }
 
-export function NavbarProfileLink({ className }: NavbarProfileLinkProps) {
+export function NavbarProfileLink({
+  className,
+  isHomePage = false,
+  navMenuOpen = false,
+}: NavbarProfileLinkProps) {
   const router = useRouter();
   const pathname = usePathname();
   const menuId = useId();
@@ -31,6 +38,7 @@ export function NavbarProfileLink({ className }: NavbarProfileLinkProps) {
   const [openPath, setOpenPath] = useState(pathname);
 
   const signedIn = isReady && isLoggedIn(session);
+  const suppressLoginTip = !isReady || signedIn;
   const role = getUserRole(session);
 
   if (pathname !== openPath) {
@@ -96,7 +104,9 @@ export function NavbarProfileLink({ className }: NavbarProfileLinkProps) {
         aria-expanded={open}
         aria-haspopup="menu"
         aria-controls={menuId}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
       >
         <UserIcon className="h-5 w-5" />
         <span
@@ -109,6 +119,15 @@ export function NavbarProfileLink({ className }: NavbarProfileLinkProps) {
           aria-hidden
         />
       </button>
+
+      <LoginSuggestionPopover
+        isLoggedIn={suppressLoginTip}
+        isHomePage={isHomePage}
+        profileMenuOpen={open}
+        navMenuOpen={navMenuOpen}
+        anchorRef={rootRef}
+        onLoginClick={() => setOpen(true)}
+      />
 
       {open ? (
         <div

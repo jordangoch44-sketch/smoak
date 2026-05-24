@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
+import { AppMain } from "@/components/layout/AppMain";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AppProviders } from "@/components/providers/AppProviders";
@@ -70,11 +71,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="min-h-full flex flex-col bg-black text-white antialiased">
+      <body
+        id="root"
+        className="app-shell min-h-full flex flex-col bg-black text-white antialiased"
+      >
         <ToastProvider>
           <AppProviders>
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <AppMain>{children}</AppMain>
             <Footer />
           </AppProviders>
         </ToastProvider>
