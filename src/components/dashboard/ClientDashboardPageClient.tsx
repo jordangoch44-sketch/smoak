@@ -83,7 +83,7 @@ export function ClientDashboardPageClient() {
       <div className="dashboard-grid">
         <DashboardSection
           title="Saved specialists"
-          description={`${saved.length} saved on this device`}
+          description={`${saved.length} in your shortlist`}
           href="/saved"
           linkLabel="Open saved"
           className="dashboard-grid__span-2"

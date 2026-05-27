@@ -7,8 +7,11 @@
 .nav-profile__trigger {
   position: relative;
   display: inline-flex;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
   height: 2.75rem;
   width: 2.75rem;
+  touch-action: manipulation;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -107,7 +110,7 @@
   position: absolute;
   right: 0;
   top: calc(100% + 0.5rem);
-  z-index: 60;
+  z-index: 120;
   min-width: 11.5rem;
   padding: 0.375rem;
   border-radius: 0.875rem;

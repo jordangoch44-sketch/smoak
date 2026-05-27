@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { TrainerFilters } from "@/types";
 import { cn } from "@/lib/utils";
 import { CloseIcon } from "@/components/ui/icons";
@@ -55,28 +56,25 @@ export function ExploreFiltersDrawer({
     onClose();
   }
 
-  return (
+  if (!open || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(
     <div
-      className={cn(
-        "fixed inset-0 z-[60] lg:hidden",
-        open ? "pointer-events-auto" : "pointer-events-none"
-      )}
-      aria-hidden={!open}
+      className="explore-filters-drawer-root fixed inset-0 z-[var(--z-header-overlay)] lg:hidden"
+      role="presentation"
     >
       <button
         type="button"
         aria-label="Close filters"
+        className="smoac-control explore-filters-drawer__backdrop absolute inset-0 bg-black/75 backdrop-blur-sm"
         onClick={onClose}
-        className={cn(
-          "absolute inset-0 bg-black/75 backdrop-blur-sm transition-opacity duration-300",
-          open ? "opacity-100" : "opacity-0"
-        )}
       />
 
       <div
         className={cn(
-          "explore-filters-drawer absolute right-0 bottom-0 left-0 flex max-h-[min(88dvh,640px)] flex-col rounded-t-3xl transition-transform duration-300 ease-out",
-          open ? "translate-y-0" : "translate-y-full"
+          "explore-filters-drawer absolute right-0 bottom-0 left-0 flex max-h-[min(88dvh,640px)] flex-col rounded-t-3xl"
         )}
         role="dialog"
         aria-modal="true"
@@ -87,7 +85,7 @@ export function ExploreFiltersDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full text-silver-400 transition-colors hover:bg-white/5 hover:text-white"
+            className="smoac-control inline-flex h-11 w-11 items-center justify-center rounded-full text-silver-400 transition-colors hover:bg-white/5 hover:text-white"
             aria-label="Close"
           >
             <CloseIcon />
@@ -108,7 +106,7 @@ export function ExploreFiltersDrawer({
             <button
               type="button"
               onClick={handleClear}
-              className="explore-clear-btn min-w-[7rem]"
+              className="smoac-control explore-clear-btn min-w-[7rem]"
             >
               Clear all
             </button>
@@ -116,12 +114,13 @@ export function ExploreFiltersDrawer({
           <button
             type="button"
             onClick={handleApply}
-            className="explore-filters-drawer__apply"
+            className="smoac-control explore-filters-drawer__apply"
           >
             Apply · {resultCount} result{resultCount !== 1 ? "s" : ""}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

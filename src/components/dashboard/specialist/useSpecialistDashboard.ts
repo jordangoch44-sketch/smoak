@@ -8,12 +8,13 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
+import { isSpecialistPremium } from "@/lib/specialist-premium";
 
 export function useSpecialistDashboard() {
   const router = useRouter();
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
-  const data = getDemoSpecialistDashboardData();
+  const data = getDemoSpecialistDashboardData(session);
   const { trainer: managedTrainer, profileCompletion } = useManagedSpecialistProfile();
   const trainer = managedTrainer ?? data.trainer;
 
@@ -23,7 +24,12 @@ export function useSpecialistDashboard() {
   });
 
   const firstName =
-    trainer?.name.split(" ")[0] ?? session?.email.split("@")[0] ?? "Specialist";
+    session?.displayName?.split(" ")[0] ??
+    trainer?.name.split(" ")[0] ??
+    session?.email.split("@")[0] ??
+    "Specialist";
+
+  const isPremium = isSpecialistPremium(data.subscription);
 
   function handleSignOut() {
     signOut();
@@ -37,6 +43,7 @@ export function useSpecialistDashboard() {
     trainer,
     profileCompletion,
     analytics,
+    isPremium,
     firstName,
     handleSignOut,
   };

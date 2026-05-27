@@ -1,16 +1,25 @@
 "use client";
 
+import { useRef } from "react";
 import type { Trainer } from "@/types";
 import { getTrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
+import {
+  buildTrainerGalleryImages,
+  getProfileGalleryMedia,
+} from "@/lib/trainer-gallery";
 import { formatPrice } from "@/lib/utils";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { ProfileHeroBio } from "./ProfileHeroBio";
+import {
+  ProfileHeroCoverGallery,
+  type ProfileHeroGalleryControl,
+} from "./ProfileHeroCoverGallery";
 import { TrainerMarketValueCard } from "./TrainerMarketValueCard";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileResultsSnapshot } from "./ProfileResultsSnapshot";
-import { ProfileMediaSlider } from "./ProfileMediaSlider";
+import { ProfileReviewMeta } from "./ProfileReviewMeta";
 
 interface ProfileHeroProps {
   trainer: Trainer;
@@ -18,24 +27,45 @@ interface ProfileHeroProps {
 
 export function ProfileHero({ trainer }: ProfileHeroProps) {
   const ranking = getTrainerCityRanking(trainer.id);
+  const coverImages = buildTrainerGalleryImages(
+    trainer.gallery,
+    trainer.heroImage,
+    trainer.galleryImages
+  );
+  const galleryMedia = getProfileGalleryMedia(
+    trainer.gallery,
+    trainer.galleryImages,
+    trainer.heroImage
+  );
+  const galleryControlRef = useRef<ProfileHeroGalleryControl | null>(null);
+  const hasGallery = galleryMedia.length > 0;
 
   return (
     <>
       <section className="profile-hero relative w-full overflow-hidden">
       <div className="profile-hero__stage relative h-[58vh] min-h-[380px] w-full sm:h-[54vh] sm:min-h-[420px] lg:h-[58vh]">
-        <TrainerThumbnail
-          src={trainer.heroImage}
-          name={trainer.name}
-          size="hero"
-          priority
-          className="profile-hero__media absolute inset-0 z-0"
+        <ProfileHeroCoverGallery
+          images={coverImages}
+          media={galleryMedia}
+          trainerName={trainer.name}
+          fallbackHeroImage={trainer.heroImage}
+          galleryControlRef={galleryControlRef}
         />
         <div className="profile-hero__scrim profile-hero__scrim--top absolute inset-x-0 top-0 z-[1] h-[42%]" aria-hidden />
         <div className="profile-hero__scrim absolute inset-0 z-[1]" aria-hidden />
         <div className="profile-hero__scrim-fade absolute inset-x-0 bottom-0 z-[1] h-[70%]" aria-hidden />
 
         <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-10 px-4 pb-5 sm:px-6 sm:pb-7">
-          <div className="mx-auto max-w-7xl">
+          {hasGallery ? (
+            <button
+              type="button"
+              className="profile-hero__view-gallery"
+              onClick={() => galleryControlRef.current?.openGallery()}
+            >
+              View Gallery
+            </button>
+          ) : null}
+          <div className="mx-auto max-w-7xl profile-hero__identity-inner">
             <div className="profile-hero__identity-row flex items-end gap-3.5 sm:gap-5">
               <TrainerThumbnail
                 src={trainer.image}
@@ -61,18 +91,12 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
               </div>
             </div>
 
-            <div className="profile-hero__meta mt-4 flex items-center gap-3 overflow-x-auto text-sm sm:mt-5">
-              <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-                <span className="text-white">★</span>
-                <span className="font-medium text-white">{trainer.rating}</span>
-                <span className="text-silver-300">
-                  ({trainer.reviewCount} reviews)
-                </span>
-              </div>
-              <span className="shrink-0 text-silver-500" aria-hidden>
+            <div className="profile-hero__meta mt-4 flex items-end gap-3 text-sm sm:mt-5">
+              <ProfileReviewMeta trainer={trainer} />
+              <span className="profile-hero__meta-divider shrink-0 text-silver-500" aria-hidden>
                 ·
               </span>
-              <span className="shrink-0 whitespace-nowrap font-medium text-white">
+              <span className="shrink-0 whitespace-nowrap pb-0.5 font-medium text-white">
                 {formatPrice(trainer.pricePerSession)}
                 <span className="font-normal text-silver-400"> / session</span>
               </span>
@@ -86,7 +110,6 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
           <ProfileHeroBio bio={trainer.bio} />
           <TrainerMarketValueCard trainer={trainer} />
           <ProfileResultsSnapshot trainer={trainer} embedded />
-          <ProfileMediaSlider items={trainer.gallery} />
         </div>
       </div>
     </section>

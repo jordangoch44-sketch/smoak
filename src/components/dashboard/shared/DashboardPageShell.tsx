@@ -3,13 +3,13 @@ import { DashboardHeader } from "./DashboardHeader";
 
 interface DashboardPageShellProps {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   subtitle: string;
   roleLabel?: string;
   actions?: ReactNode;
   utilityBar?: ReactNode;
   introActions?: ReactNode;
-  variant?: "default" | "client";
+  variant?: "default" | "client" | "admin" | "specialist";
   children: ReactNode;
 }
 
@@ -25,11 +25,19 @@ export function DashboardPageShell({
   children,
 }: DashboardPageShellProps) {
   const isClient = variant === "client";
+  const isAdmin = variant === "admin";
+  const isSpecialist = variant === "specialist";
 
   return (
     <div
       className={
-        isClient ? "dashboard-page dashboard-page--client" : "dashboard-page"
+        isClient
+          ? "dashboard-page dashboard-page--client"
+          : isAdmin
+            ? "dashboard-page dashboard-page--admin"
+            : isSpecialist
+              ? "dashboard-page dashboard-page--specialist"
+              : "dashboard-page"
       }
     >
       <div className="dashboard-page__canvas" aria-hidden>

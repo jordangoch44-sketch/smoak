@@ -2,19 +2,53 @@
 
 import Link from "next/link";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { TrainerList } from "@/components/trainers";
 import { Button } from "@/components/ui/Button";
-
+import { SavedPanelAuthCta } from "@/components/saved/SavedPanelAuthCta";
+import {
+  buildJoinFlowHrefForSaved,
+  buildLoginHrefForSaved,
+} from "@/lib/auth-return";
 interface SavedPanelContentProps {
-  /** Overlay dropdown vs full /saved page */
+  /** Overlay dropdown vs full /saved route */
   variant?: "overlay" | "page";
+  titleId?: string;
+  /** Close header overlay before navigating to auth (mobile panel) */
+  onAuthNavigate?: () => void;
 }
 
 /** Shared saved specialists list — overlay panel and /saved route */
-export function SavedPanelContent({ variant = "overlay" }: SavedPanelContentProps) {
-  const { getSavedTrainers, isReady } = useSavedTrainers();
+export function SavedPanelContent({
+  variant = "overlay",
+  titleId = "saved-panel-title",
+  onAuthNavigate,
+}: SavedPanelContentProps) {
+  const { isReady, isClientWithSaves, getSavedTrainers } = useSavedTrainers();
+  const { session } = useAuthSession();
   const saved = getSavedTrainers();
   const isOverlay = variant === "overlay";
+  const isLoggedOut = isReady && !session;
+  const isEmptyClient = isReady && isClientWithSaves && saved.length === 0;
+  const isSpecialistSignedIn =
+    isReady && session?.role === "specialist" && saved.length === 0;
+
+  const loginHref = buildLoginHrefForSaved();
+  const joinHref = buildJoinFlowHrefForSaved();
+
+  function handleAuthNavigate() {
+    onAuthNavigate?.();
+  }
+
+  function subtitleText(): string {
+    if (!isReady) return "Loading saved specialists…";
+    if (isLoggedOut) return "Sign in to access your shortlist.";
+    if (saved.length > 0) {
+      return `${saved.length} specialist${saved.length !== 1 ? "s" : ""} in your shortlist`;
+    }
+    if (isClientWithSaves) return "Your saved library is empty.";
+    return "Sign in as a client to save specialists.";
+  }
 
   return (
     <div
@@ -29,7 +63,7 @@ export function SavedPanelContent({ variant = "overlay" }: SavedPanelContentProp
               ? "saved-dropdown__title"
               : "text-2xl font-medium tracking-tight text-white sm:text-3xl md:text-4xl"
           }
-          id="saved-panel-title"
+          id={titleId}
         >
           Saved specialists
         </h2>
@@ -40,21 +74,57 @@ export function SavedPanelContent({ variant = "overlay" }: SavedPanelContentProp
               : "mt-2 text-sm text-silver-400 sm:text-base"
           }
         >
-          {isReady
-            ? saved.length > 0
-              ? `${saved.length} specialist${saved.length !== 1 ? "s" : ""} saved on this device`
-              : "Your saved library is empty."
-            : "Loading saved specialists…"}
+          {subtitleText()}
         </p>
       </div>
 
-      {isReady && saved.length > 0 ? (
+      {isReady && isLoggedOut ? (
+        <div
+          className={
+            isOverlay
+              ? "saved-dropdown__empty saved-dropdown__auth-block"
+              : "explore-empty saved-dropdown__auth-block mt-10"
+          }
+        >
+          <p className="saved-dropdown__auth-headline">
+            Log in to view your saved specialists.
+          </p>
+          <p className="saved-dropdown__auth-lede">
+            Save trainers, compare profiles, and build your shortlist when you
+            sign in.
+          </p>
+          <SavedPanelAuthCta
+            loginHref={loginHref}
+            joinHref={joinHref}
+            onNavigate={handleAuthNavigate}
+          />
+        </div>
+      ) : isReady && saved.length > 0 ? (
         <div className={isOverlay ? "saved-dropdown__list" : "mt-8"}>
           <TrainerList trainers={saved} variant="explore" priorityCount={4} />
         </div>
-      ) : isReady ? (
+      ) : isSpecialistSignedIn ? (
+        <div
+          className={
+            isOverlay
+              ? "saved-dropdown__empty saved-dropdown__auth-block"
+              : "explore-empty saved-dropdown__auth-block mt-10"
+          }
+        >
+          <p className="saved-dropdown__auth-headline">Client account required</p>
+          <p className="saved-dropdown__auth-lede">
+            Specialist accounts cannot save trainers. Sign in as a client to
+            build your shortlist.
+          </p>
+          <SavedPanelAuthCta
+            loginHref={loginHref}
+            loginLabel="Log in as client"
+            onNavigate={handleAuthNavigate}
+          />
+        </div>
+      ) : isEmptyClient ? (
         <div className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}>
-          <p className="explore-empty__title">No saved specialists yet</p>
+          <p className="explore-empty__title">No specialists saved yet.</p>
           <p className="explore-empty__text">
             Tap the heart on a specialist profile to save them here.
           </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { TapLink } from "@/components/ui/TapLink";
 import type { Trainer } from "@/types";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
@@ -33,7 +33,7 @@ export function Top50RankCard({
       )}
       role="listitem"
     >
-      <Link href={href} className="top50-card__link">
+      <TapLink href={href} className="top50-card__link">
         <article className="top50-card__article">
           <div className="top50-card__rank" aria-hidden>
             <span className="top50-card__rank-hash">#</span>
@@ -84,7 +84,7 @@ export function Top50RankCard({
             </div>
           </div>
         </article>
-      </Link>
+      </TapLink>
       <TrainerCardSaveSlot trainerId={trainer.id} />
     </div>
   );

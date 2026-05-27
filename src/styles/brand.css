@@ -100,9 +100,12 @@
   display: inline-flex;
   align-items: center;
   align-self: center;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
   height: 100%;
   margin-right: 0.125rem;
   padding: 0.125rem 0.5rem 0.125rem 0.25rem;
+  touch-action: manipulation;
 }
 
 @media (max-width: 767px) {

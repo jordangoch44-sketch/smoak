@@ -3,12 +3,13 @@ import { getTrainerCityRanking } from "@/data/city-rankings";
 import {
   DEMO_SPECIALIST_ID,
   DEMO_SPECIALIST_LEADS,
-  DEMO_SPECIALIST_SUBSCRIPTION,
 } from "@/constants/specialist-dashboard-mock";
+import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-subscription";
+import type { AuthSession } from "@/types/auth";
 
 export { DEMO_SPECIALIST_ID } from "@/constants/specialist-dashboard-mock";
 
-export function getDemoSpecialistDashboardData() {
+export function getDemoSpecialistDashboardData(session?: AuthSession | null) {
   const trainer = getTrainerById(DEMO_SPECIALIST_ID);
   const ranking = getTrainerCityRanking(DEMO_SPECIALIST_ID);
 
@@ -16,7 +17,7 @@ export function getDemoSpecialistDashboardData() {
     trainer,
     ranking,
     newLeads: [...DEMO_SPECIALIST_LEADS],
-    subscription: { ...DEMO_SPECIALIST_SUBSCRIPTION },
+    subscription: getSpecialistSubscriptionForSession(session),
   };
 }
 

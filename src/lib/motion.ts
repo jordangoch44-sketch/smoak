@@ -25,9 +25,8 @@ export const desktopPageTransition: Transition = {
   filter: { duration: 0.92, ease: PAGE_TRANSITION_EASE_FROST },
 };
 
-/** Mobile — no scale; slower frost fade */
+/** Mobile — opacity/y only (no filter: Safari GPU + tap reliability) */
 export const mobilePageTransition: Transition = {
   opacity: { duration: 0.68, ease: PAGE_TRANSITION_EASE },
   y: { duration: 0.74, ease: PAGE_TRANSITION_EASE_SETTLE },
-  filter: { duration: 0.86, ease: PAGE_TRANSITION_EASE_FROST },
 };

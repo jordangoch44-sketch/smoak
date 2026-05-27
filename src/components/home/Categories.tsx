@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { TapLink } from "@/components/ui/TapLink";
 import { trainingGoals } from "@/data/goals";
 import { categories } from "@/data/categories";
 
@@ -18,19 +20,19 @@ export function Categories() {
 
         <div className="mt-5 flex flex-wrap gap-2 md:hidden">
           {trainingGoals.map((goal) => (
-            <Link
+            <TapLink
               key={goal.id}
               href={goal.href}
-              className="inline-flex min-h-10 items-center rounded-full border border-white/10 bg-black/40 px-4 text-sm text-silver-200 active:bg-white/10 active:text-white"
+              className="inline-flex min-h-11 items-center rounded-full border border-white/10 bg-black/40 px-4 text-sm text-silver-200 active:bg-white/10 active:text-white"
             >
               {goal.label}
-            </Link>
+            </TapLink>
           ))}
         </div>
 
         <div className="mt-6 hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
           {categories.map((category) => (
-            <Link
+            <TapLink
               key={category.id}
               href={category.exploreHref}
               className="group rounded-2xl border border-white/5 bg-black p-5 transition-all hover:border-white/10 hover:bg-graphite-800"
@@ -41,7 +43,7 @@ export function Categories() {
               <p className="mt-1 text-sm leading-relaxed text-silver-400">
                 {category.description}
               </p>
-            </Link>
+            </TapLink>
           ))}
         </div>
       </div>

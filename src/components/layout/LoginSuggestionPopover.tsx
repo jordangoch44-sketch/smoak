@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CloseIcon } from "@/components/ui/icons";
-import { LOGIN_PATH } from "@/lib/auth-routes";
+import { buildJoinFlowHref } from "@/lib/join-flow";
 import {
   hasSeenLoginSuggestion,
   markLoginSuggestionSeen,
@@ -161,7 +161,7 @@ export function LoginSuggestionPopover({
           Save trainers, compare specialists, and build your shortlist.
         </p>
         <Link
-          href={LOGIN_PATH}
+          href={buildJoinFlowHref()}
           className="login-suggestion__cta"
           onClick={() => {
             dismiss(true);

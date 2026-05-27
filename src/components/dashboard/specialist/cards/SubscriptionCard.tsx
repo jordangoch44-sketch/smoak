@@ -1,4 +1,5 @@
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
+import { SMOAC_PRO_PRICE_LABEL } from "@/lib/specialist-premium";
 import { DashboardButton, DashboardSection } from "@/components/dashboard/shared";
 
 interface SubscriptionCardProps {
@@ -20,10 +21,17 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
           <span className="dashboard-account-card__label">Status</span>
           <span className="dashboard-account-card__value">{subscription.status}</span>
         </div>
-        <div className="dashboard-account-card__row">
-          <span className="dashboard-account-card__label">Renews</span>
-          <span className="dashboard-account-card__value">{subscription.renewsOn}</span>
-        </div>
+        {subscription.isPremium ? (
+          <div className="dashboard-account-card__row">
+            <span className="dashboard-account-card__label">Renews</span>
+            <span className="dashboard-account-card__value">{subscription.renewsOn}</span>
+          </div>
+        ) : (
+          <div className="dashboard-account-card__row">
+            <span className="dashboard-account-card__label">Pro</span>
+            <span className="dashboard-account-card__value">{SMOAC_PRO_PRICE_LABEL}</span>
+          </div>
+        )}
         <DashboardButton variant="link" href="/login">
           Manage account →
         </DashboardButton>

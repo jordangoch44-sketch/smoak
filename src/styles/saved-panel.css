@@ -1,6 +1,15 @@
 /* Saved specialists — header dropdown overlay + /saved route */
 
 /* ── Navbar heart toggle ── */
+.navbar-saved-trigger {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.navbar-saved-trigger--has-saves:not(.navbar-saved-trigger--active) {
+  color: rgba(200, 255, 230, 0.88);
+}
+
 .navbar-saved-trigger--active {
   background: rgba(118, 214, 172, 0.12);
   box-shadow:
@@ -10,14 +19,21 @@
 }
 
 /* ── Dropdown overlay (slides from under header) ── */
+.saved-dropdown__backdrop {
+  z-index: 0;
+}
+
 .saved-dropdown__panel {
   position: absolute;
   right: 0;
   left: 0;
-  top: calc(3.5rem + env(safe-area-inset-top, 0px));
-  z-index: 1;
+  top: 0;
+  z-index: 2;
+  pointer-events: auto;
   display: flex;
-  max-height: calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px));
+  max-height: calc(
+    100dvh - var(--site-navbar-height) - env(safe-area-inset-top, 0px)
+  );
   flex-direction: column;
   overflow: hidden;
   border-bottom-left-radius: 1.25rem;
@@ -40,15 +56,17 @@
 
 @media (min-width: 640px) {
   .saved-dropdown__panel {
-    top: calc(4rem + env(safe-area-inset-top, 0px));
-    max-height: calc(100dvh - 4rem - env(safe-area-inset-top, 0px));
+    max-height: calc(
+      100dvh - var(--site-navbar-height) - env(safe-area-inset-top, 0px)
+    );
   }
 }
 
 @media (min-width: 1024px) {
   .saved-dropdown__panel {
-    top: calc(72px + env(safe-area-inset-top, 0px));
-    max-height: calc(100dvh - 72px - env(safe-area-inset-top, 0px));
+    max-height: calc(
+      100dvh - var(--site-navbar-height) - env(safe-area-inset-top, 0px)
+    );
     right: max(0px, calc((100vw - 80rem) / 2));
     left: max(0px, calc((100vw - 80rem) / 2));
     border-bottom-left-radius: 1.5rem;
@@ -133,7 +151,34 @@
 }
 
 .saved-dropdown__empty {
+  position: relative;
+  z-index: 3;
   margin-top: 1.25rem;
+}
+
+/* ── Unauthenticated auth CTAs (overlay + /saved) ── */
+.saved-dropdown__auth-block {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+}
+
+.saved-dropdown__auth-headline {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.35;
+  color: #fff;
+}
+
+.saved-dropdown__auth-lede {
+  margin: 0.625rem auto 0;
+  max-width: 17rem;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.44);
 }
 
 .saved-dropdown__footer {
@@ -176,4 +221,15 @@
   .saved-dropdown__panel {
     transition: opacity 0.15s ease !important;
   }
+
+}
+
+/* Page route: auth block inside explore-empty — drop duplicate card padding */
+.explore-empty.saved-dropdown__auth-block {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 2.5rem 1.25rem 1.5rem;
 }

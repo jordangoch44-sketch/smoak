@@ -191,7 +191,7 @@ export function ProfileHeroToolbar({
           role="toolbar"
           aria-label="Profile actions"
         >
-          <div className="profile-toolbar__save">
+          <div className="profile-toolbar__save" data-save-control>
             <SaveTrainerButton trainerId={trainerId} overlay={false} />
           </div>
 

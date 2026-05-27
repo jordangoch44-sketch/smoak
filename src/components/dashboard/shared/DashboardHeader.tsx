@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 export interface DashboardHeaderProps {
   eyebrow: string;
-  title: string;
+  title: ReactNode;
   subtitle: string;
   roleLabel?: string;
   actions?: ReactNode;

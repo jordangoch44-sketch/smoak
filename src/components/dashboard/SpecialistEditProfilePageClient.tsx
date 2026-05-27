@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -11,7 +11,13 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { computeProfileCompletion } from "@/lib/specialist-profile-overrides";
 import type { Certification, Gender } from "@/types/trainer";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
-import { DashboardPageShell, DashboardSection } from "@/components/dashboard";
+import {
+  DashboardPageShell,
+  DashboardSection,
+  DashboardSignOutButton,
+} from "@/components/dashboard/shared";
+import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
+import { useToast } from "@/components/ui/toast";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
@@ -30,11 +36,21 @@ export function SpecialistEditProfilePageClient() {
   const router = useRouter();
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
+  const { showToast } = useToast();
   const { formDefaults, saveForm } = useManagedSpecialistProfile();
 
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
-  const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const form = draft ?? formDefaults;
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (!draft || !formDefaults) return false;
+    return JSON.stringify(draft) !== JSON.stringify(formDefaults);
+  }, [draft, formDefaults]);
+
+  const handleSignOut = useCallback(() => {
+    signOut();
+    afterLogoutNavigation(() => router.push("/login"));
+  }, [router, signOut]);
 
   if (!isReady || !session || !form) {
     return (
@@ -56,7 +72,6 @@ export function SpecialistEditProfilePageClient() {
       const current = prev ?? formDefaults;
       return current ? { ...current, [key]: value } : prev;
     });
-    setSavedMessage(null);
   }
 
   function toggleSpecialty(specialty: string) {
@@ -71,7 +86,6 @@ export function SpecialistEditProfilePageClient() {
           : [...current.specialty, specialty],
       };
     });
-    setSavedMessage(null);
   }
 
   function updateCert(index: number, patch: Partial<Certification>) {
@@ -83,7 +97,6 @@ export function SpecialistEditProfilePageClient() {
       );
       return { ...current, certifications };
     });
-    setSavedMessage(null);
   }
 
   function addCertification() {
@@ -93,7 +106,6 @@ export function SpecialistEditProfilePageClient() {
         ? { ...current, certifications: [...current.certifications, { ...EMPTY_CERT }] }
         : prev;
     });
-    setSavedMessage(null);
   }
 
   function removeCertification(index: number) {
@@ -106,47 +118,36 @@ export function SpecialistEditProfilePageClient() {
         certifications: certifications.length > 0 ? certifications : [{ ...EMPTY_CERT }],
       };
     });
-    setSavedMessage(null);
   }
 
   function handleSave() {
     if (!form) return;
     saveForm(form);
     setDraft(null);
-    setSavedMessage("Profile saved. Your live public profile has been updated.");
+    showToast({ type: "success", message: "Changes saved" });
   }
 
   return (
     <DashboardPageShell
+      variant="specialist"
       eyebrow="Specialist dashboard"
       title="Edit profile"
-      subtitle="Update what clients see on your live SMOAC profile."
+      subtitle="Shape how clients discover and book you on SMOAC."
       roleLabel="Specialist"
+      utilityBar={<DashboardSignOutButton onClick={handleSignOut} />}
       actions={
-        <>
-          <Link href="/specialist-dashboard" className="dashboard-back-link">
-            ← Dashboard
-          </Link>
-          <button
-            type="button"
-            className="dashboard-signout"
-            onClick={() => {
-              signOut();
-              afterLogoutNavigation(() => router.push("/login"));
-            }}
-          >
-            Sign out
-          </button>
-        </>
+        <Link href="/specialist-dashboard" className="dashboard-back-link">
+          ← Dashboard
+        </Link>
       }
     >
-      <div className="dashboard-edit">
+      <div className="dashboard-edit dashboard-edit--profile">
         <div className="dashboard-edit__summary">
           <p className="dashboard-edit__summary-label">Profile strength</p>
           <p className="dashboard-edit__summary-value">{completion}% complete</p>
-          {savedMessage ? (
-            <p className="dashboard-edit__saved" role="status">
-              {savedMessage}
+          {hasUnsavedChanges ? (
+            <p className="dashboard-edit__unsaved" role="status">
+              Unsaved changes
             </p>
           ) : null}
         </div>
@@ -158,7 +159,29 @@ export function SpecialistEditProfilePageClient() {
             handleSave();
           }}
         >
-          <DashboardSection title="Basic Info" description="Name and headline on your profile">
+          <DashboardSection
+            title="Profile & cover"
+            description="Hero imagery clients see first"
+          >
+            <div className="dashboard-edit-media-grid">
+              <ProfileMediaUploadField
+                label="Cover / banner"
+                hint="Wide banner for your profile header"
+                value={form.coverImageUrl}
+                onChange={(value) => updateField("coverImageUrl", value)}
+                aspect="cover"
+              />
+              <ProfileMediaUploadField
+                label="Profile photo"
+                hint="Square headshot or brand portrait"
+                value={form.profilePhotoUrl}
+                onChange={(value) => updateField("profilePhotoUrl", value)}
+                aspect="square"
+              />
+            </div>
+          </DashboardSection>
+
+          <DashboardSection title="Basic info" description="Name and headline">
             <div className="dashboard-edit-fields">
               <label className="login-field">
                 <span className="login-field__label">Full name</span>
@@ -197,8 +220,63 @@ export function SpecialistEditProfilePageClient() {
             </div>
           </DashboardSection>
 
+          <DashboardSection title="Bio / about" description="Your story and approach">
+            <label className="login-field">
+              <span className="login-field__label">Bio</span>
+              <textarea
+                className="login-field__input dashboard-edit-textarea"
+                rows={6}
+                value={form.bio}
+                onChange={(event) => updateField("bio", event.target.value)}
+                required
+              />
+            </label>
+          </DashboardSection>
+
           <DashboardSection
-            title="Professional Role"
+            title="Experience & training"
+            description="Credentials clients trust"
+          >
+            <div className="dashboard-edit-fields">
+              <label className="login-field">
+                <span className="login-field__label">Years of experience</span>
+                <input
+                  className="login-field__input"
+                  value={form.experienceYears}
+                  onChange={(event) =>
+                    updateField("experienceYears", event.target.value)
+                  }
+                  placeholder="8+ years coaching athletes"
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">Training style</span>
+                <input
+                  className="login-field__input"
+                  value={form.trainingStyle}
+                  onChange={(event) =>
+                    updateField("trainingStyle", event.target.value)
+                  }
+                  placeholder="High-accountability strength & conditioning"
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">Services offered</span>
+                <textarea
+                  className="login-field__input dashboard-edit-textarea"
+                  rows={3}
+                  value={form.servicesOffered}
+                  onChange={(event) =>
+                    updateField("servicesOffered", event.target.value)
+                  }
+                  placeholder="1:1 coaching, small-group training, online programming"
+                />
+              </label>
+            </div>
+          </DashboardSection>
+
+          <DashboardSection
+            title="Professional role"
             description="Your main profession category"
           >
             <label className="login-field">
@@ -217,7 +295,7 @@ export function SpecialistEditProfilePageClient() {
             </label>
           </DashboardSection>
 
-          <DashboardSection title="Specialties" description="Tags shown on cards and filters">
+          <DashboardSection title="Specialties" description="Tags on cards and filters">
             <div className="dashboard-edit-chip-grid">
               {marketplaceSpecialtyOptions.map((specialty) => {
                 const active = form.specialty.includes(specialty);
@@ -240,7 +318,7 @@ export function SpecialistEditProfilePageClient() {
             </div>
           </DashboardSection>
 
-          <DashboardSection title="Credentials" description="Certifications and licenses">
+          <DashboardSection title="Certifications" description="Licenses and credentials">
             <div className="dashboard-edit-stack">
               {form.certifications.map((cert, index) => (
                 <div key={`cert-${index}`} className="dashboard-edit-cert">
@@ -267,7 +345,7 @@ export function SpecialistEditProfilePageClient() {
           </DashboardSection>
 
           <DashboardSection
-            title="Service Area / Neighborhood"
+            title="Location"
             description="Where you train and neighborhoods you serve"
           >
             <div className="dashboard-edit-fields">
@@ -285,7 +363,9 @@ export function SpecialistEditProfilePageClient() {
                 <input
                   className="login-field__input"
                   value={form.neighborhood}
-                  onChange={(event) => updateField("neighborhood", event.target.value)}
+                  onChange={(event) =>
+                    updateField("neighborhood", event.target.value)
+                  }
                   required
                 />
               </label>
@@ -327,55 +407,8 @@ export function SpecialistEditProfilePageClient() {
           </DashboardSection>
 
           <DashboardSection
-            title="Photos"
-            description="Gallery image URLs (one per line)"
-          >
-            <label className="login-field">
-              <span className="login-field__label">Photo URLs</span>
-              <textarea
-                className="login-field__input dashboard-edit-textarea"
-                rows={4}
-                value={form.photoNotes}
-                onChange={(event) => updateField("photoNotes", event.target.value)}
-                placeholder={"https://example.com/photo-1.jpg\nhttps://example.com/photo-2.jpg"}
-              />
-            </label>
-          </DashboardSection>
-
-          <DashboardSection title="Bio / About" description="Your story and approach">
-            <label className="login-field">
-              <span className="login-field__label">Bio</span>
-              <textarea
-                className="login-field__input dashboard-edit-textarea"
-                rows={6}
-                value={form.bio}
-                onChange={(event) => updateField("bio", event.target.value)}
-                required
-              />
-            </label>
-          </DashboardSection>
-
-          <DashboardSection
-            title="Transformations"
-            description="Client transformation image URLs (one per line)"
-          >
-            <label className="login-field">
-              <span className="login-field__label">Transformation photo URLs</span>
-              <textarea
-                className="login-field__input dashboard-edit-textarea"
-                rows={4}
-                value={form.transformationNotes}
-                onChange={(event) =>
-                  updateField("transformationNotes", event.target.value)
-                }
-                placeholder={"https://example.com/before-after-1.jpg"}
-              />
-            </label>
-          </DashboardSection>
-
-          <DashboardSection
-            title="Booking Availability"
-            description="Session types and availability shown on profile"
+            title="Availability"
+            description="Session types and booking windows"
           >
             <label className="login-field">
               <span className="login-field__label">Availability & session types</span>
@@ -394,7 +427,103 @@ export function SpecialistEditProfilePageClient() {
             </label>
           </DashboardSection>
 
-          <div className="dashboard-edit__actions">
+          <DashboardSection
+            title="Contact"
+            description="How clients reach you"
+          >
+            <div className="dashboard-edit-fields">
+              <label className="login-field">
+                <span className="login-field__label">Phone</span>
+                <input
+                  className="login-field__input"
+                  type="tel"
+                  value={form.phone}
+                  onChange={(event) => updateField("phone", event.target.value)}
+                  placeholder="(555) 123-4567"
+                  autoComplete="tel"
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">Email</span>
+                <input
+                  className="login-field__input"
+                  type="email"
+                  value={form.email}
+                  onChange={(event) => updateField("email", event.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+              </label>
+            </div>
+          </DashboardSection>
+
+          <DashboardSection title="Social links" description="Profiles and website">
+            <div className="dashboard-edit-fields">
+              <label className="login-field">
+                <span className="login-field__label">Instagram</span>
+                <input
+                  className="login-field__input"
+                  value={form.instagram}
+                  onChange={(event) => updateField("instagram", event.target.value)}
+                  placeholder="@yourhandle or full URL"
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">TikTok</span>
+                <input
+                  className="login-field__input"
+                  value={form.tiktok}
+                  onChange={(event) => updateField("tiktok", event.target.value)}
+                  placeholder="@yourhandle or full URL"
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">Website</span>
+                <input
+                  className="login-field__input"
+                  value={form.website}
+                  onChange={(event) => updateField("website", event.target.value)}
+                  placeholder="https://yoursite.com"
+                />
+              </label>
+            </div>
+          </DashboardSection>
+
+          <DashboardSection
+            title="Gallery & media"
+            description="Portfolio image URLs (one per line)"
+          >
+            <label className="login-field">
+              <span className="login-field__label">Gallery photos</span>
+              <textarea
+                className="login-field__input dashboard-edit-textarea"
+                rows={4}
+                value={form.photoNotes}
+                onChange={(event) => updateField("photoNotes", event.target.value)}
+                placeholder={"https://example.com/photo-1.jpg\nhttps://example.com/photo-2.jpg"}
+              />
+            </label>
+          </DashboardSection>
+
+          <DashboardSection
+            title="Transformations"
+            description="Before/after image URLs (one per line)"
+          >
+            <label className="login-field">
+              <span className="login-field__label">Transformation photos</span>
+              <textarea
+                className="login-field__input dashboard-edit-textarea"
+                rows={4}
+                value={form.transformationNotes}
+                onChange={(event) =>
+                  updateField("transformationNotes", event.target.value)
+                }
+                placeholder={"https://example.com/before-after-1.jpg"}
+              />
+            </label>
+          </DashboardSection>
+
+          <div className="dashboard-edit__actions dashboard-edit__actions--inline">
             <button type="submit" className="dashboard-primary-btn">
               Save profile
             </button>
@@ -403,6 +532,16 @@ export function SpecialistEditProfilePageClient() {
             </Link>
           </div>
         </form>
+
+        <div className="dashboard-edit__sticky-save">
+          <button
+            type="button"
+            className="dashboard-primary-btn dashboard-edit__sticky-btn"
+            onClick={handleSave}
+          >
+            {hasUnsavedChanges ? "Save changes" : "Save profile"}
+          </button>
+        </div>
       </div>
     </DashboardPageShell>
   );

@@ -1,10 +1,11 @@
 "use client";
 
 import {
-  DashboardButton,
+  DashboardEditProfileLink,
   DashboardGrid,
   DashboardLoadingState,
   DashboardPageShell,
+  DashboardSignOutButton,
 } from "@/components/dashboard/shared";
 import {
   AnalyticsCard,
@@ -24,6 +25,7 @@ export function SpecialistDashboardPageClient() {
     trainer,
     profileCompletion,
     analytics,
+    isPremium,
     firstName,
     handleSignOut,
   } = useSpecialistDashboard();
@@ -34,25 +36,27 @@ export function SpecialistDashboardPageClient() {
 
   return (
     <DashboardPageShell
+      variant="specialist"
       eyebrow="Specialist dashboard"
       title={`Good to see you, ${firstName}`}
       subtitle="Manage your profile, leads, and marketplace visibility."
       roleLabel="Specialist"
-      actions={
-        <DashboardButton variant="ghost" onClick={handleSignOut}>
-          Sign out
-        </DashboardButton>
-      }
+      utilityBar={<DashboardSignOutButton onClick={handleSignOut} />}
+      introActions={<DashboardEditProfileLink />}
     >
       <DashboardGrid>
-        <AnalyticsCard analytics={analytics} />
+        <AnalyticsCard analytics={analytics} isPremium={isPremium} />
         <ProfileCompletionCard
           profileCompletion={profileCompletion}
           trainer={trainer}
         />
         <LeadsCard leads={data.newLeads} />
-        <VisibilityRankingCard ranking={data.ranking ?? null} trainer={trainer} />
-        <ReviewsCard trainer={trainer} />
+        <VisibilityRankingCard
+          ranking={data.ranking ?? null}
+          trainer={trainer}
+          isPremium={isPremium}
+        />
+        <ReviewsCard trainer={trainer} isPremium={isPremium} />
         <SubscriptionCard subscription={data.subscription} />
         {/*
           Future dashboard slots (see SpecialistFutureSlots.ts):

@@ -14,6 +14,7 @@ import {
   setAuthSession,
   subscribeAuthSession,
 } from "@/lib/auth-session-store";
+import { getDevSessionFields } from "@/lib/dev-auth";
 import { logoutWithToast } from "@/lib/logout-with-toast";
 
 export interface AuthSessionContextValue {
@@ -26,12 +27,15 @@ export interface AuthSessionContextValue {
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
-function subscribeReady() {
+function subscribeClientReady(onStoreChange: () => void) {
+  if (typeof window !== "undefined") {
+    onStoreChange();
+  }
   return () => {};
 }
 
-function getReadySnapshot() {
-  return true;
+function getClientReadySnapshot() {
+  return typeof window !== "undefined";
 }
 
 function getServerReadySnapshot() {
@@ -44,8 +48,8 @@ export function AuthSessionProvider({
   children: React.ReactNode;
 }) {
   const isReady = useSyncExternalStore(
-    subscribeReady,
-    getReadySnapshot,
+    subscribeClientReady,
+    getClientReadySnapshot,
     getServerReadySnapshot
   );
   const session = useSyncExternalStore(
@@ -55,11 +59,14 @@ export function AuthSessionProvider({
   );
 
   const signIn = useCallback((role: AuthRole, email: string) => {
+    const trimmedEmail = email.trim();
+    const devFields = getDevSessionFields(role, trimmedEmail);
     /* DEV ONLY — session persisted in localStorage for dashboard QA */
     setAuthSession({
       role,
-      email: email.trim(),
+      email: trimmedEmail,
       signedInAt: new Date().toISOString(),
+      ...devFields,
     });
   }, []);
 

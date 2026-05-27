@@ -443,6 +443,58 @@ body:has(.login-page) footer a:hover {
   box-shadow: 0 0 0 2px rgba(var(--accent-glow-rgb), 0.14);
 }
 
+.login-fields--error .login-field__input {
+  border-color: rgba(210, 110, 120, 0.42);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(48, 14, 22, 0.42) 0%,
+      rgba(24, 8, 12, 0.38) 100%
+    ),
+    rgba(0, 0, 0, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(210, 90, 105, 0.18),
+    0 0 18px rgba(180, 70, 95, 0.14),
+    inset 0 1px 0 rgba(255, 180, 190, 0.04);
+  transition:
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.login-fields--error .login-field__input:focus {
+  border-color: rgba(220, 120, 130, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(210, 90, 105, 0.22),
+    0 0 22px rgba(190, 80, 100, 0.18);
+}
+
+.login-fields--shake {
+  animation: login-fields-shake 420ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes login-fields-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  16% {
+    transform: translateX(-5px);
+  }
+  32% {
+    transform: translateX(5px);
+  }
+  48% {
+    transform: translateX(-3px);
+  }
+  64% {
+    transform: translateX(3px);
+  }
+  80% {
+    transform: translateX(-1px);
+  }
+}
+
 .login-card__message {
   margin: 0;
   border-radius: 0.625rem;
@@ -452,6 +504,38 @@ body:has(.login-page) footer a:hover {
   font-size: 0.75rem;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.68);
+}
+
+.login-card__message--error {
+  margin-top: 0.125rem;
+  border-color: rgba(210, 100, 115, 0.22);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(56, 16, 26, 0.55) 0%,
+      rgba(28, 10, 16, 0.4) 100%
+    );
+  padding: 0.6875rem 0.8125rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  color: rgba(255, 210, 215, 0.88);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.32s ease,
+    transform 0.32s ease;
+}
+
+.login-card__message--error-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.login-card__message--error-hidden {
+  opacity: 0;
+  transform: translateY(4px);
 }
 
 /* CTA */
@@ -479,7 +563,8 @@ body:has(.login-page) footer a:hover {
   transition:
     background-color 0.2s ease,
     box-shadow 0.2s ease,
-    opacity 0.2s ease;
+    opacity 0.2s ease,
+    transform 0.14s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @media (hover: hover) {
@@ -492,8 +577,19 @@ body:has(.login-page) footer a:hover {
   }
 }
 
-.login-submit:active {
-  opacity: 0.92;
+.login-submit:active,
+.login-submit--pressed {
+  transform: scale(0.985);
+  opacity: 0.94;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 0 12px rgba(255, 255, 255, 0.06),
+    0 4px 14px rgba(0, 0, 0, 0.32);
+}
+
+.login-submit--loading {
+  opacity: 0.88;
+  cursor: wait;
 }
 
 /* Footer links */
@@ -555,5 +651,35 @@ body:has(.login-page) footer a:hover {
   .login-submit,
   .login-field__input {
     transition: none;
+  }
+
+  .login-fields--shake {
+    animation: login-fields-shake-reduced 380ms ease both;
+  }
+
+  @keyframes login-fields-shake-reduced {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    40% {
+      transform: translateX(-2px);
+    }
+    70% {
+      transform: translateX(2px);
+    }
+  }
+
+  .login-card__message--error {
+    transform: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .login-card__message--error-visible {
+    transform: none;
+  }
+
+  .login-submit--pressed {
+    transform: none;
   }
 }

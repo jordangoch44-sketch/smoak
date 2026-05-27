@@ -5,9 +5,10 @@ import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/ui/icons";
 import { LOGIN_PATH } from "@/lib/auth-routes";
+import { buildJoinFlowHref } from "@/lib/join-flow";
 import { cn } from "@/lib/utils";
 
-export const CREATE_ACCOUNT_PATH = "/create-account";
+export { CREATE_ACCOUNT_PATH } from "@/lib/join-flow";
 
 interface LoginGateModalProps {
   open: boolean;
@@ -18,13 +19,8 @@ export function LoginGateModal({ open, onClose }: LoginGateModalProps) {
   useEffect(() => {
     if (!open) return;
 
-    const previousBodyOverflow = document.body.style.overflow;
-    const previousHtmlOverflow = document.documentElement.style.overflow;
-
     document.body.classList.add("login-gate-open");
     document.documentElement.classList.add("login-gate-open");
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overflow = "hidden";
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -34,8 +30,6 @@ export function LoginGateModal({ open, onClose }: LoginGateModalProps) {
     return () => {
       document.body.classList.remove("login-gate-open");
       document.documentElement.classList.remove("login-gate-open");
-      document.body.style.overflow = previousBodyOverflow;
-      document.documentElement.style.overflow = previousHtmlOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open, onClose]);
@@ -60,7 +54,7 @@ export function LoginGateModal({ open, onClose }: LoginGateModalProps) {
 
         <button
           type="button"
-          className="login-gate__close"
+          className="smoac-control login-gate__close"
           onClick={onClose}
           aria-label="Close"
         >
@@ -79,21 +73,21 @@ export function LoginGateModal({ open, onClose }: LoginGateModalProps) {
           <div className="login-gate__actions">
             <Link
               href={LOGIN_PATH}
-              className="login-gate__btn login-gate__btn--primary"
+              className="smoac-control login-gate__btn login-gate__btn--primary"
               onClick={onClose}
             >
               Log in
             </Link>
             <Link
-              href={CREATE_ACCOUNT_PATH}
-              className="login-gate__btn login-gate__btn--secondary"
+              href={buildJoinFlowHref()}
+              className="smoac-control login-gate__btn login-gate__btn--secondary"
               onClick={onClose}
             >
               Create account
             </Link>
             <button
               type="button"
-              className="login-gate__btn login-gate__btn--ghost"
+              className="smoac-control login-gate__btn login-gate__btn--ghost"
               onClick={onClose}
             >
               Continue browsing

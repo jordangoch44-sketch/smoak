@@ -11,6 +11,8 @@ export interface SpecialistSubscription {
   plan: string;
   status: string;
   renewsOn: string;
+  /** Full analytics + visibility insights (SMOAC Pro) */
+  isPremium: boolean;
 }
 
 export interface SpecialistDashboardRanking {

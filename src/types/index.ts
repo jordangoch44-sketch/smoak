@@ -5,6 +5,7 @@ export type {
   Gender,
   Specialty,
   Review,
+  TrainerReviewSources,
   Certification,
   SocialLinks,
   TrainerMediaItem,

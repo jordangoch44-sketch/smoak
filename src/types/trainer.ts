@@ -38,6 +38,14 @@ export interface ClientTransformationPhoto {
   alt: string;
 }
 
+/** Per-platform review counts — `reviewCount` is derived from these when present */
+export interface TrainerReviewSources {
+  smoac?: number;
+  google?: number;
+  yelp?: number;
+  other?: number;
+}
+
 /**
  * Marketplace provider record.
  * TODO: Rename type Trainer → Provider and route /trainers → /providers when safe.
@@ -61,7 +69,11 @@ export interface Trainer {
   gender: Gender;
   pricePerSession: number;
   rating: number;
+  /** Sum of `reviewSources` when set; otherwise legacy total */
   reviewCount: number;
+  reviewSources?: TrainerReviewSources;
+  /** Hero slideshow URLs — falls back to `heroImage` when empty */
+  galleryImages: string[];
   image: string;
   heroImage: string;
   bio: string;

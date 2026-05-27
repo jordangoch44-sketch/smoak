@@ -1,3 +1,5 @@
+import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
+import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import type { Trainer } from "@/types";
 import type {
   SpecialistProfileEditForm,
@@ -66,8 +68,16 @@ export function applySpecialistProfileOverrides(
         src,
         alt: `${merged.name} gallery photo ${index + 1}`,
       }));
+      merged.galleryImages = photoUrls;
     }
   }
+
+  merged.galleryImages = buildTrainerGalleryImages(
+    merged.gallery,
+    merged.heroImage,
+    merged.galleryImages
+  );
+  merged.reviewCount = computeTrainerReviewCount(merged);
 
   if (overrides.transformationNotes?.trim()) {
     const transformUrls = parseLineList(overrides.transformationNotes).filter(isUrl);
@@ -80,7 +90,7 @@ export function applySpecialistProfileOverrides(
     }
   }
 
-  return syncLocation(merged);
+  return syncLocation(syncTrainerGalleryImages(merged));
 }
 
 export function overridesFromTrainer(
@@ -106,6 +116,16 @@ export function overridesFromTrainer(
     bookingAvailability:
       stored?.bookingAvailability ??
       trainer.sessionExperience.slice(0, 3).join(", "),
+    profilePhotoUrl: stored?.profilePhotoUrl ?? "",
+    coverImageUrl: stored?.coverImageUrl ?? "",
+    phone: stored?.phone ?? "",
+    email: stored?.email ?? "",
+    instagram: stored?.instagram ?? "",
+    website: stored?.website ?? "",
+    tiktok: stored?.tiktok ?? "",
+    experienceYears: stored?.experienceYears ?? "",
+    trainingStyle: stored?.trainingStyle ?? "",
+    servicesOffered: stored?.servicesOffered ?? "",
   };
 }
 
@@ -125,6 +145,16 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     photoNotes: form.photoNotes.trim(),
     transformationNotes: form.transformationNotes.trim(),
     bookingAvailability: form.bookingAvailability.trim(),
+    profilePhotoUrl: form.profilePhotoUrl.trim(),
+    coverImageUrl: form.coverImageUrl.trim(),
+    phone: form.phone.trim(),
+    email: form.email.trim(),
+    instagram: form.instagram.trim(),
+    website: form.website.trim(),
+    tiktok: form.tiktok.trim(),
+    experienceYears: form.experienceYears.trim(),
+    trainingStyle: form.trainingStyle.trim(),
+    servicesOffered: form.servicesOffered.trim(),
   };
 }
 
@@ -142,9 +172,12 @@ export function computeProfileCompletion(
     form.serviceArea.length > 0,
     form.pricePerSession > 0,
     Boolean(form.bio.trim()),
-    Boolean(form.photoNotes.trim()),
+    Boolean(form.photoNotes.trim() || form.profilePhotoUrl.trim()),
     Boolean(form.transformationNotes.trim()),
     Boolean(form.bookingAvailability.trim()),
+    Boolean(form.profilePhotoUrl.trim() || form.photoNotes.trim()),
+    Boolean(form.phone.trim() || form.email.trim()),
+    Boolean(form.servicesOffered.trim() || form.trainingStyle.trim()),
   ];
   const done = checks.filter(Boolean).length;
   return Math.round((done / checks.length) * 100);

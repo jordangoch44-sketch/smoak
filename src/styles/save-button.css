@@ -9,14 +9,16 @@
   position: absolute !important;
   top: 0.5rem !important;
   right: 0.5rem !important;
-  z-index: 50 !important;
+  z-index: 90 !important;
+  isolation: isolate;
   width: 2.25rem;
   height: 2.25rem;
-  pointer-events: none;
+  pointer-events: auto !important;
+  touch-action: manipulation;
 }
 
 .trainer-card-save .save-button {
-  pointer-events: auto;
+  pointer-events: auto !important;
   visibility: visible;
   opacity: 1;
 }
@@ -168,8 +170,20 @@
   fill: #ffffff;
 }
 
-/* Mobile: stronger contrast over card imagery */
+/* Mobile: stronger contrast + 44px tap target */
 @media (max-width: 767px) {
+  .trainer-card-save {
+    top: 0.375rem !important;
+    right: 0.375rem !important;
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .save-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
   .save-button--unsaved {
     background: rgba(0, 0, 0, 0.38);
     backdrop-filter: blur(8px);

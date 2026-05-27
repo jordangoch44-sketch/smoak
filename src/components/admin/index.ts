@@ -1,0 +1,1 @@
+export { AdminDashboardPageClient } from "./AdminDashboardPageClient";

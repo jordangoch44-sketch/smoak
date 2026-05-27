@@ -1,5 +1,7 @@
 export { AppMain } from "./AppMain";
-export { Navbar } from "./Navbar";
+export { SiteHeader } from "./SiteHeader";
+/** @deprecated Use SiteHeader */
+export { SiteHeader as Navbar } from "./SiteHeader";
 export { Footer } from "./Footer";
 export { PageTransition } from "./PageTransition";
 export { SitePageBackdrop } from "./SitePageBackdrop";

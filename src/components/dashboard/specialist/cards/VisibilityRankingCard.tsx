@@ -8,14 +8,20 @@ import {
 interface VisibilityRankingCardProps {
   ranking: SpecialistDashboardRanking | null;
   trainer: Trainer | undefined;
+  isPremium: boolean;
 }
 
-export function VisibilityRankingCard({ ranking, trainer }: VisibilityRankingCardProps) {
+export function VisibilityRankingCard({
+  ranking,
+  trainer,
+  isPremium,
+}: VisibilityRankingCardProps) {
   return (
     <DashboardSection
       title="Visibility / ranking"
       description="How you appear in SMOAC rankings"
-      href="/rankings"
+      href={isPremium ? "/rankings" : undefined}
+      linkLabel="View rankings"
     >
       <div className="dashboard-metrics-row">
         <DashboardMetricCard
@@ -24,11 +30,13 @@ export function VisibilityRankingCard({ ranking, trainer }: VisibilityRankingCar
           detail={
             ranking ? ranking.listingTitle : "Complete profile to enter rankings"
           }
+          lockValues={!isPremium}
         />
         <DashboardMetricCard
           label="Rating"
           value={trainer ? trainer.rating.toFixed(1) : "—"}
           detail={trainer ? `${trainer.reviewCount} reviews` : undefined}
+          lockValues={!isPremium}
         />
       </div>
     </DashboardSection>

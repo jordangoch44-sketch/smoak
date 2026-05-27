@@ -75,6 +75,20 @@
   transform-origin: center center;
 }
 
+/* Exiting route layer must not steal touches (iOS Safari) */
+.page-transition__layer:not(:last-child) {
+  pointer-events: none !important;
+}
+
+@media (max-width: 767px) {
+  /* Mobile route uses .page-transition__content only — no blocking layer */
+  .page-transition__layer {
+    transform: none !important;
+    filter: none !important;
+    will-change: opacity;
+  }
+}
+
 .page-transition__content {
   display: flex;
   flex: 1;

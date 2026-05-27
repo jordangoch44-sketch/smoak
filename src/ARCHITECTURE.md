@@ -1,65 +1,136 @@
-# SMOAC — Source Architecture
+# SMOAC — Source architecture
+
+High-level map for humans and Cursor. **Behavior > file count** — extend existing systems before adding parallel ones.
 
 ## Folder layout
 
 ```
 src/
-├── app/                 # Next.js routes only (thin pages, metadata, loading)
+├── app/
+│   ├── layout.tsx              # Root: globals.css, fonts
+│   ├── (site)/                 # Main product (header, footer, providers)
+│   │   ├── layout.tsx
+│   │   ├── page.tsx            # Homepage
+│   │   ├── explore/
+│   │   ├── trainers/[id]/
+│   │   ├── saved/, login/, rankings/, create-account/
+│   │   ├── client-dashboard/, specialist-dashboard/
+│   │   └── admin/              # Owner + Staff (not public marketplace)
+│   └── (diagnostics)/
+│       └── tap-test/           # DEV-only — no site chrome (see components/dev/README.md)
 ├── components/
-│   ├── ui/              # Reusable primitives (Button, Logo, icons)
-│   ├── brand/           # SMOAC wordmark image (mark stays in public/smoac-mark.png)
-│   ├── layout/          # Global chrome (Navbar, Footer, MobileNavMenu)
-│   ├── trainers/        # Trainer listing cards (grid + compact variants)
-│   ├── auth/            # Login, create-account, specialist onboarding
-│   ├── dashboard/       # Client + specialist dashboards
-│   ├── explore/         # /explore feature UI
-│   ├── home/            # / landing sections
-│   ├── profile/         # /trainers/[id] sections + floating toolbar
-│   ├── providers/       # App-level React providers wrapper
-│   ├── rankings/        # /rankings
-│   ├── saved/           # /saved specialists
-│   └── trainers/        # Trainer listing cards (grid + compact)
-├── contexts/            # Auth session, saved trainers, save toast
-├── data/                # Static mock data + accessors (swap for API later)
-├── hooks/               # Client state hooks (e.g. useExploreTrainers, useCarousel)
-├── lib/                 # Pure functions (filters, formatting, navigation config)
-├── styles/              # Global CSS + design tokens
-└── types/               # Shared TypeScript types
-public/                  # Static assets (logo, favicons)
+│   ├── ui/                     # Primitives: Button, SaveButton, Logo, icons
+│   ├── layout/                 # SiteHeader, Footer, overlays, page transition
+│   ├── providers/              # AppProviders wrapper
+│   ├── home/                   # Hero, SearchBar, Top50, sections
+│   ├── explore/                # Explore page client + filters
+│   ├── trainers/               # Cards + SaveTrainerButton
+│   ├── profile/                # Trainer profile sections
+│   ├── saved/                  # Saved list UI
+│   ├── auth/                   # Login, create-account, onboarding
+│   ├── dashboard/              # Client + specialist dashboards
+│   ├── admin/                  # Owner/Staff admin UI only
+│   ├── brand/                  # SmoacWelcomeIntro, wordmark
+│   ├── rankings/
+│   └── dev/                    # Dev-only utilities (SW cleanup)
+├── contexts/                   # Auth, saved trainers, save toast
+├── hooks/                      # Feature hooks (explore, header panels, hydration)
+├── lib/                        # Pure TS: filters, stores, navigation (see lib/README.md)
+├── data/                       # Static mock data (swap for API later)
+├── types/                      # Shared interfaces
+├── styles/                     # Global + feature CSS
+└── constants/                  # Form options, dashboard mock constants
 ```
 
-## Conventions
+## Layer responsibilities
 
 | Layer | Responsibility | Example |
-|-------|----------------|---------|
-| `app/` | Routing, SEO, page composition | `explore/page.tsx` imports `ExplorePageClient` |
-| `components/ui/` | Design-system pieces, no business rules | `Button`, `TrainerThumbnail` |
-| `components/{feature}/` | Feature-specific UI | `ExploreFiltersDrawer` |
-| `data/` | Raw data + simple getters | `getTrainerById` |
-| `lib/` | Domain logic without React | `filterExploreTrainers` |
-| `hooks/` | React state + effects | `useExploreTrainers` |
-| `types/` | Interfaces shared across layers | `Trainer`, `TrainerFilters` |
+|-------|------------------|---------|
+| `app/` | Routes, metadata, thin composition | `explore/page.tsx` → `ExplorePageClient` |
+| `components/ui/` | Design system, no domain rules | `SaveButton`, `TrainerThumbnail` |
+| `components/{feature}/` | Feature UI | `ExploreFiltersDrawer` |
+| `data/` | Static lists, simple getters | `trainers.ts`, `getTrainerById` |
+| `lib/` | Domain logic + localStorage stores | `filterExploreTrainers`, `saved-trainers-store` |
+| `hooks/` | React state, subscriptions | `useExploreTrainers`, `useHeaderPanels` |
+| `contexts/` | App-wide client providers | `SavedTrainersProvider` |
+| `types/` | Cross-cutting interfaces | `Trainer`, `AuthSession` |
 
-## Mobile vs desktop
+## Core product flows
 
-- **Trainer cards**: `TrainerCard` renders `TrainerCardCompact` (`md:hidden`) + `TrainerCardGrid` (`hidden md:flex`). Same responsive behavior on Explore and home.
-- **Navigation**: `MobileNavMenu` is mobile-only; desktop links live in `Navbar`.
-- **Explore filters**: `ExploreFiltersDrawer` (mobile sheet) vs sidebar in `ExplorePageClient` (lg+).
+### Save / heart
+
+```
+SaveTrainerButton (trainers/)
+  → useSavedTrainers()     isSaved, toggleSaved, openLoginGate
+  → useSaveToast()         confirmation toast
+  → SavedTrainersProvider  LoginGateModal (single modal)
+  → saved-trainers-store   per-client localStorage
+```
+
+Hearts sit in `TrainerCardSaveSlot` **outside** the card link.
+
+### Site header (mobile + desktop)
+
+```
+SiteHeader
+  ├── SiteHeaderMobile / SiteHeaderDesktop
+  ├── useHeaderPanels()     menu, saved, profile state + body classes
+  ├── HeaderOverlayRoot     mobile portaled overlays (md:hidden)
+  └── SavedPanelDropdown    desktop saved panel (md+, when open)
+```
+
+### Homepage search
+
+```
+SearchBar (home/)
+  └── HeroSearchSuggestionsLayer (portal to body when open)
+```
+
+One overlay system for hero; Explore uses `ExploreSearchToolbar` + `ExploreFiltersDrawer` (no hero portal).
+
+### Welcome intro
+
+```
+SiteWelcomeIntroGateLazy → SiteWelcomeIntroGate → SmoacWelcomeIntro (brand/)
+```
+
+Site variant: overlay captures taps; do not disable `.app-main` with `pointer-events: none`.
+
+## Mobile vs desktop patterns
+
+| Area | Mobile | Desktop |
+|------|--------|---------|
+| Trainer cards | `TrainerCardCompact` | `TrainerCardGrid` |
+| Nav | `SiteHeaderMobile` + `HeaderOverlayRoot` | `SiteHeaderDesktop` + inline saved dropdown |
+| Explore filters | `ExploreFiltersDrawer` | Sidebar in `ExplorePageClient` |
+| Page transition | No exit layer (`PageTransition`) | `AnimatePresence` + subtle motion |
+
+## Z-index tokens (`site-chrome.css`)
+
+Use these instead of magic numbers:
+
+- `--z-hero-search-suggestions` (8500)
+- `--z-header-overlay` (9000)
+- `--z-site-header` (10000)
+- `--z-modal` (1000000) — login gate
+- `--z-welcome-intro` (1000001) — welcome splash
 
 ## Imports
 
-Prefer barrel exports where provided:
+Prefer path aliases and barrels:
 
-- `@/types` — all shared types
+- `@/types`, `@/hooks`, `@/contexts`, `@/data`
 - `@/components/ui`, `@/components/trainers`, `@/components/layout`
-- `@/components/auth`, `@/components/explore`, `@/components/home`, `@/components/profile`
-- `@/contexts` — client providers (`SavedTrainersProvider`, `SaveToastProvider`)
-- `@/data` — mock data accessors
-- `@/hooks` — client hooks
+- `@/components/explore`, `@/components/home`, `@/components/profile`, `@/components/auth`
 
-## Adding features
+Import from the **feature barrel** or the concrete file — avoid deep cross-feature imports when a hook/context already exists.
 
-1. Add types in `types/`, re-export from `types/index.ts`.
-2. Add data or API helpers in `data/` or `lib/`.
-3. Build UI in `components/{feature}/`.
-4. Keep `app/{route}/page.tsx` as a thin wrapper.
+## Scaling checklist (new feature)
+
+1. Types in `types/` → export from `types/index.ts`.
+2. Logic in `lib/` or API client (no React in `lib/`).
+3. UI in `components/{feature}/` with colocated CSS only if feature-specific.
+4. Shared client state: one context or store — no duplicate modals/gates.
+5. Thin `app/(site)/.../page.tsx`.
+6. Document non-obvious behavior in feature `README` or this file.
+7. `npm run typecheck` + `npm run build`.

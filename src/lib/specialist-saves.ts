@@ -5,24 +5,25 @@ import type { AuthRole, AuthSession } from "@/types/auth";
 import { setAuthSession } from "@/lib/auth-session-store";
 import { consumePendingSave } from "@/lib/pending-save-storage";
 import {
+  clearSavedTrainersActiveSession,
   getSavedTrainersSnapshot,
   setSavedTrainerIds,
 } from "@/lib/saved-trainers-store";
-import { loadSavedTrainerIds } from "@/lib/saved-trainers-storage";
 
 export { isLoggedIn, getUserRole, canSaveSpecialists } from "@/lib/auth-session-helpers-core";
 
-/** DEV ONLY — clears localStorage session */
+/** DEV ONLY — clears session and in-memory saved specialists (per-user data kept) */
 export function logoutUser(): void {
+  clearSavedTrainersActiveSession();
   setAuthSession(null);
 }
 
-/** DEV ONLY — all saved specialist ids from localStorage */
+/** DEV ONLY — saved specialist ids for the active signed-in client */
 export function getSavedSpecialists(): string[] {
   if (typeof window === "undefined") {
     return [];
   }
-  return [...loadSavedTrainerIds()];
+  return [...getSavedTrainersSnapshot()];
 }
 
 /** DEV ONLY — persist one specialist id without duplicates */

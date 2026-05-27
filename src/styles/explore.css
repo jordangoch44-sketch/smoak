@@ -122,10 +122,11 @@
 
 .explore-page__content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   margin-inline: auto;
   max-width: 80rem;
   padding: calc(3.5rem + env(safe-area-inset-top, 0px) + 1.25rem) 1rem 2.5rem;
+  pointer-events: auto;
 }
 
 @media (min-width: 640px) {
@@ -806,7 +807,15 @@
   color: #fff;
 }
 
-/* Mobile filter drawer */
+/* Mobile filter drawer — portaled when open (never an invisible full-screen tap shield) */
+.explore-filters-drawer-root {
+  pointer-events: auto;
+}
+
+.explore-filters-drawer__backdrop {
+  touch-action: manipulation;
+}
+
 .explore-filters-drawer {
   background: rgba(10, 10, 14, 0.94) !important;
   backdrop-filter: blur(28px) saturate(1.12);

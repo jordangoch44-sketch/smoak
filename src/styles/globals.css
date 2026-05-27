@@ -1,23 +1,14 @@
 @import "tailwindcss";
+@import "./interaction.css";
 @import "./brand.css";
 @import "./atmosphere.css";
 @import "./aurora.css";
 @import "./save-button.css";
 @import "./save-toast.css";
 @import "./toast.css";
-@import "./profile.css";
-@import "./page-transition.css";
-@import "./trainer-market-value.css";
-@import "./home.css";
-@import "./login.css";
-@import "./create-account-wizard.css";
+@import "./site-chrome.css";
 @import "./login-gate.css";
-@import "./nav-profile.css";
-@import "./login-suggestion-popover.css";
-@import "./saved-panel.css";
-@import "./explore.css";
-@import "./rankings.css";
-@import "./dashboard.css";
+@import "./mobile-safari.css";
 
 /* Design tokens — single source for Tailwind @theme and CSS variables */
 :root {
@@ -119,12 +110,51 @@ body {
   overflow-x: hidden;
 }
 
-/* Scroll lock when mobile nav or filter drawer is open */
+/* Scroll lock — avoid touch-action:none (blocks taps on iOS Safari) */
 body.menu-open,
 body.drawer-open,
-body.saved-panel-open {
+body.saved-panel-open,
+body.profile-menu-open,
+body.login-gate-open,
+body.site-intro-open,
+body.hero-search-suggestions-open,
+body.admin-review-open {
   overflow: hidden;
-  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/* iOS: body overflow:hidden breaks fixed-header taps — lock scroll on main only */
+@supports (-webkit-touch-callout: none) {
+  body.menu-open,
+  body.drawer-open,
+  body.saved-panel-open,
+  body.profile-menu-open,
+  body.login-gate-open,
+  body.site-intro-open,
+  body.hero-search-suggestions-open,
+  body.admin-review-open {
+    overflow: visible;
+    overscroll-behavior: none;
+  }
+
+  body.menu-open .app-main,
+  body.drawer-open .app-main,
+  body.saved-panel-open .app-main,
+  body.profile-menu-open .app-main,
+  body.login-gate-open .app-main,
+  body.site-intro-open .app-main,
+  body.hero-search-suggestions-open .app-main,
+  body.admin-review-open .app-main {
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: pan-y;
+  }
+
+  html.login-gate-open,
+  html.site-intro-open,
+  html.hero-search-suggestions-open {
+    overflow: visible;
+  }
 }
 
 @keyframes mobile-nav-link-in {

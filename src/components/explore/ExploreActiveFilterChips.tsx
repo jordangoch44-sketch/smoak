@@ -23,7 +23,7 @@ export function ExploreActiveFilterChips({
           <span className="explore-filter-chip__label">{chip.label}</span>
           <button
             type="button"
-            className="explore-filter-chip__remove"
+            className="smoac-control explore-filter-chip__remove"
             onClick={() => onRemove(chip.key)}
             aria-label={`Remove ${chip.label} filter`}
           >
@@ -34,7 +34,7 @@ export function ExploreActiveFilterChips({
       {chips.length > 1 && onClearAll ? (
         <button
           type="button"
-          className="explore-filter-chips__clear-all"
+          className="smoac-control explore-filter-chips__clear-all"
           onClick={onClearAll}
         >
           Clear all

@@ -1,4 +1,7 @@
-import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
+import type {
+  SpecialistAnalyticsMetric,
+  SpecialistProfileAnalytics,
+} from "@/types/specialist-analytics";
 
 export interface AnalyticsStatTile {
   id: string;
@@ -11,35 +14,39 @@ function formatCount(value: number): string {
   return value.toLocaleString("en-US");
 }
 
-export function buildAnalyticsStatTiles(
+export function formatAnalyticsMetricValue(value: number): string {
+  if (value >= 10_000) {
+    return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}K`;
+  }
+  return formatCount(value);
+}
+
+export function formatTrendLabel(trend: SpecialistAnalyticsMetric["trend"]): string {
+  const { change, period } = formatTrendParts(trend);
+  return `${change} ${period}`;
+}
+
+export function formatTrendParts(trend: SpecialistAnalyticsMetric["trend"]): {
+  change: string;
+  period: string;
+} {
+  const arrow = trend.direction === "up" ? "↗" : trend.direction === "down" ? "↘" : "→";
+  const sign =
+    trend.direction === "up" ? "+" : trend.direction === "down" ? "-" : "";
+  const pct =
+    trend.direction === "flat"
+      ? "0%"
+      : `${sign}${Math.abs(trend.percentChange)}%`;
+  return {
+    change: `${arrow} ${pct}`,
+    period: trend.comparisonLabel,
+  };
+}
+
+export function buildSecondaryStatTiles(
   analytics: SpecialistProfileAnalytics
 ): AnalyticsStatTile[] {
   return [
-    {
-      id: "profile-views",
-      label: "Profile views",
-      value: formatCount(analytics.profileViews),
-    },
-    {
-      id: "search-appearances",
-      label: "Search appearances",
-      value: formatCount(analytics.searchAppearances),
-    },
-    {
-      id: "saved-by-clients",
-      label: "Saved by clients",
-      value: formatCount(analytics.savedByClients),
-    },
-    {
-      id: "contact-clicks",
-      label: "Contact clicks",
-      value: formatCount(analytics.contactClicks),
-    },
-    {
-      id: "booking-clicks",
-      label: "Booking clicks",
-      value: formatCount(analytics.bookingClicks),
-    },
     {
       id: "profile-completion",
       label: "Profile completion",
@@ -52,4 +59,16 @@ export function buildAnalyticsStatTiles(
       detail: `Visibility score ${analytics.visibilityScore}`,
     },
   ];
+}
+
+/** @deprecated Use coreMetrics from analytics — kept for any legacy callers */
+export function buildAnalyticsStatTiles(
+  analytics: SpecialistProfileAnalytics
+): AnalyticsStatTile[] {
+  const core = analytics.coreMetrics.map((metric) => ({
+    id: metric.id,
+    label: metric.label,
+    value: formatAnalyticsMetricValue(metric.value),
+  }));
+  return [...core, ...buildSecondaryStatTiles(analytics)];
 }

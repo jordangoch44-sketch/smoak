@@ -1,18 +1,16 @@
 /* Login gate modal — portaled to document.body, above all page layers */
 
-body.login-gate-open {
-  overflow: hidden !important;
-  touch-action: none;
-}
-
+/* Avoid touch-action:none on body — blocks iOS taps (see globals.css scroll lock) */
+body.login-gate-open,
 html.login-gate-open {
   overflow: hidden !important;
+  overscroll-behavior: none;
 }
 
 .login-gate {
   position: fixed;
   inset: 0;
-  z-index: 99999;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

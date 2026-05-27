@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { SearchBar } from "./SearchBar";
 
 export function Hero() {
@@ -21,11 +20,14 @@ export function Hero() {
       <div className="home-hero__content">
         <div className="home-hero__headline">
           <h1 className="home-hero__title">
-            Find the right health &amp; wellness specialist.
+            <span className="home-hero__title-line">Find your</span>
+            <span className="home-hero__title-line home-hero__title-line--accent">
+              perfect specialist.
+            </span>
           </h1>
           <p className="home-hero__lede">
-            Search vetted specialists by specialty, location, price, and coaching
-            style.
+            Search vetted specialists by specialty, neighborhood, and coaching
+            style — instantly.
           </p>
         </div>
 
@@ -35,17 +37,13 @@ export function Hero() {
             <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--magenta" />
             <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--indigo" />
           </div>
-          <SearchBar showFilterChips variant="hero" />
+          <SearchBar
+            showFilterChips
+            showTrustIndicators
+            enableSuggestions
+            variant="hero"
+          />
         </div>
-
-        <p className="home-hero__cta-mobile md:hidden">
-          <Link
-            href="/explore"
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-white px-8 text-sm font-semibold text-black transition-opacity active:opacity-90"
-          >
-            Find Your Specialist
-          </Link>
-        </p>
       </div>
     </section>
   );

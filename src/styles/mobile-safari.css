@@ -1,0 +1,81 @@
+/* Mobile Safari — supplemental tuning (stacking rules live in site-chrome.css) */
+
+@media (max-width: 767px) {
+  :root {
+    --mesh-blur: 52px;
+    --mesh-blur-lg: 64px;
+  }
+
+  /* Glass panels on page content — reduced blur, opaque fallback on iOS */
+  @supports (-webkit-touch-callout: none) {
+    .hero-search__glass.glass-panel,
+    .top50-card__article,
+    .explore-search-shell,
+    .explore-filter-panel,
+    .glass-panel:not(.site-header__frost),
+    .save-button,
+    .nav-profile__trigger {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .hero-search__glass.glass-panel {
+      background: rgba(8, 8, 14, 0.94) !important;
+    }
+
+    .hero-search__glass--focused.glass-panel {
+      background: rgba(10, 10, 18, 0.96) !important;
+    }
+
+    .hero-search-suggestions-layer__panel {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(8, 8, 14, 0.98) !important;
+    }
+
+    .hero-search-suggestions-layer__backdrop {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .top50-card__article {
+      background: rgba(8, 8, 12, 0.92) !important;
+    }
+
+    .explore-search-shell {
+      background: rgba(14, 14, 20, 0.92) !important;
+    }
+
+    .explore-filter-panel {
+      background: rgba(12, 12, 18, 0.94) !important;
+    }
+  }
+
+  .home-hero {
+    contain: none;
+  }
+
+  .atmosphere-blob,
+  .home-hero__canvas .atmosphere-blob,
+  .home-hero__search-light,
+  .home-hero__search-mesh-blob {
+    animation: none !important;
+    will-change: auto !important;
+  }
+
+  .page-transition__layer {
+    filter: none !important;
+  }
+
+  .site-page-backdrop__blob {
+    filter: blur(64px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .atmosphere-blob,
+  .home-hero__search-light,
+  .home-hero__search-mesh-blob {
+    animation: none !important;
+  }
+}

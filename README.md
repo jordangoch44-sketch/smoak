@@ -1,44 +1,77 @@
 # SMOAC
 
-A modern luxury personal trainer marketplace. Apple/Tesla-inspired minimal design with a premium black, white, and graphite aesthetic.
+A luxury wellness specialist marketplace — Next.js 16, TypeScript, Tailwind v4.
 
-## Tech Stack
+**For Cursor / contributors:** read [`AGENTS.md`](AGENTS.md) first, then [`src/ARCHITECTURE.md`](src/ARCHITECTURE.md).
 
-- **Next.js 16** (App Router)
-- **TypeScript**
-- **Tailwind CSS v4**
+## Tech stack
 
-## Getting Started
+- Next.js 16 (App Router)
+- React 19
+- Tailwind CSS v4
+- Framer Motion (desktop transitions, reduced on mobile)
+
+## Getting started
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000).
 
-## Pages
+### iPhone / LAN testing
 
-| Route | Description |
-|-------|-------------|
-| `/` | Homepage — hero, search, featured trainers, categories, testimonials |
-| `/explore` | Trainer grid with location, specialty, gender, and price filters |
-| `/trainers/[id]` | Trainer profile — bio, certifications, reviews, social links, book consultation |
+Use **one dev server on port 3000**. From a phone, use your Mac’s LAN IP (not `localhost`):
 
-## Project Structure
-
+```bash
+npm run dev:lan
 ```
-src/
-├── app/              # Next.js pages & layouts
-├── components/       # UI components (home, explore, profile, layout)
-├── data/             # Placeholder trainer, category, testimonial data
-├── lib/              # Utilities (filtering, formatting)
-└── types/            # TypeScript interfaces
-```
+
+Verify hydration: `http://<mac-ip>:3000/tap-test` — inline script YES, React hydration YES, taps increment.
+
+Details: [`AGENTS.md`](AGENTS.md) and [`src/app/(diagnostics)/tap-test/page.tsx`](src/app/(diagnostics)/tap-test/page.tsx).
 
 ## Scripts
 
-- `npm run dev` — Start development server
-- `npm run build` — Production build
-- `npm run start` — Start production server
-- `npm run lint` — Run ESLint
+| Command | Purpose |
+|---------|---------|
+| `npm run dev` | Dev server (port 3000) |
+| `npm run dev:lan` | Dev on `0.0.0.0` for device testing |
+| `npm run build` | Production build |
+| `npm run start` | Production server |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run lint` | ESLint |
+
+## Routes
+
+| Route | Feature folder |
+|-------|----------------|
+| `/` | `components/home/` |
+| `/explore` | `components/explore/` |
+| `/trainers/[id]` | `components/profile/` |
+| `/saved` | `components/saved/` |
+| `/login`, `/create-account` | `components/auth/` |
+| `/rankings` | `components/rankings/` |
+| `/client-dashboard`, `/specialist-dashboard` | `components/dashboard/` |
+| `/tap-test` | Diagnostics only (no site chrome) |
+
+## Project structure
+
+```
+src/
+├── app/              # Routes — (site) product, (diagnostics) tap-test
+├── components/       # Feature UI (+ ui/, layout/, providers/)
+├── contexts/         # Auth, saved trainers, save toast
+├── hooks/            # Client hooks
+├── lib/              # Pure TS stores & domain logic
+├── data/             # Mock data (replace with API later)
+├── types/            # Shared TypeScript types
+└── styles/           # Global + feature CSS
+```
+
+See [`src/components/README.md`](src/components/README.md), [`src/lib/README.md`](src/lib/README.md), [`src/contexts/README.md`](src/contexts/README.md).
+
+## Dev login (mock)
+
+- Client: `client@smoac.com` / `client123`

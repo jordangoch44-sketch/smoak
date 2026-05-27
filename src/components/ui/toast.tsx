@@ -111,27 +111,6 @@ export function ToastContainer() {
   );
 }
 
-function ToastDevControls() {
-  if (process.env.NODE_ENV === "production") {
-    return null;
-  }
-
-  return (
-    <button
-      type="button"
-      className="smoac-toast-dev-test"
-      onClick={() =>
-        showToastGlobal({
-          type: "success",
-          message: "Logged in as test@email.com",
-        })
-      }
-    >
-      Test toast
-    </button>
-  );
-}
-
 declare global {
   interface Window {
     smoacShowToast?: typeof showToastGlobal;
@@ -150,7 +129,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <>
       {children}
       <ToastContainer />
-      <ToastDevControls />
     </>
   );
 }

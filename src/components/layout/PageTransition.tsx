@@ -15,6 +15,10 @@ import {
   isTrainerProfilePath,
   mobilePageTransition,
 } from "@/lib/motion";
+import {
+  getMobileMaxWidthSnapshot,
+  subscribeMobileMaxWidth,
+} from "@/lib/viewport";
 
 interface PageTransitionProps {
   children: React.ReactNode;
@@ -28,17 +32,7 @@ const reducedVariants: Variants = {
   exit: { opacity: 0 },
 };
 
-function subscribeMobileViewport(onStoreChange: () => void) {
-  const mq = window.matchMedia("(max-width: 767px)");
-  mq.addEventListener("change", onStoreChange);
-  return () => mq.removeEventListener("change", onStoreChange);
-}
-
-function getMobileViewport() {
-  return window.matchMedia("(max-width: 767px)").matches;
-}
-
-/** Mobile — no scale (prevents horizontal overflow / crop) */
+/** Mobile — no scale/filter (Safari GPU + hit-testing) */
 function buildMobileVariants(profileReveal: boolean): Variants {
   const enterY = profileReveal ? 7 : 5;
 
@@ -46,17 +40,14 @@ function buildMobileVariants(profileReveal: boolean): Variants {
     initial: {
       opacity: 0,
       y: enterY,
-      filter: "blur(7px)",
     },
     animate: {
       opacity: 1,
       y: 0,
-      filter: "blur(0px)",
     },
     exit: {
       opacity: 0,
       y: -3,
-      filter: "blur(5px)",
     },
   };
 }
@@ -67,17 +58,14 @@ function buildSavedMobileVariants(): Variants {
     initial: {
       opacity: 0,
       y: -14,
-      filter: "blur(6px)",
     },
     animate: {
       opacity: 1,
       y: 0,
-      filter: "blur(0px)",
     },
     exit: {
       opacity: 0,
       y: -10,
-      filter: "blur(4px)",
     },
   };
 }
@@ -136,9 +124,10 @@ export function PageTransition({ children }: PageTransitionProps) {
   const pathname = usePathname();
   const reducedMotion = useReducedMotion();
   const mobile = useSyncExternalStore(
-    subscribeMobileViewport,
-    getMobileViewport,
-    () => false
+    subscribeMobileMaxWidth,
+    getMobileMaxWidthSnapshot,
+    /* Mobile-first snapshot — avoids SSR/desktop layer with pointer-events:none blocking iOS taps */
+    () => true
   );
   const profileReveal = isTrainerProfilePath(pathname);
   const savedReveal = isSavedPath(pathname);
@@ -153,11 +142,20 @@ export function PageTransition({ children }: PageTransitionProps) {
         ? buildSavedDesktopVariants()
         : buildDesktopVariants(profileReveal);
 
-  const transition = reducedMotion
+  const transition: Transition = reducedMotion
     ? reducedTransition
     : mobile
       ? mobilePageTransition
       : desktopPageTransition;
+
+  /* Mobile: no AnimatePresence — exit layers steal iOS Safari taps */
+  if (mobile) {
+    return (
+      <div className="page-transition">
+        <div className="page-transition__content">{children}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-transition">

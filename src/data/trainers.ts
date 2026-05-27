@@ -6,6 +6,10 @@ import {
 import { trainerCuratedById } from "@/data/trainer-curated";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
+/** Demo review breakdowns — see `@/constants/trainer-reputation-demo` */
+import { TRAINER_DEMO_REVIEW_SOURCES } from "@/constants/trainer-reputation-demo";
+import { buildTrainerGalleryImages } from "@/lib/trainer-gallery";
+import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import {
   getTrainerGallery,
   getTrainerTransformations,
@@ -20,6 +24,8 @@ type TrainerRecord = Omit<
   | "sessionExperience"
   | "gallery"
   | "clientTransformations"
+  | "galleryImages"
+  | "reviewSources"
 >;
 
 /** Seed location fields — onboarding will set city, neighborhood, serviceArea */
@@ -353,13 +359,24 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
   if (!curated) {
     throw new Error(`Missing curated profile for trainer: ${trainer.id}`);
   }
-  return {
+  const heroImage = getTrainerHeroPlaceholder(trainer.id);
+  const gallery = getTrainerGallery(trainer.id);
+  const reviewSources = TRAINER_DEMO_REVIEW_SOURCES[trainer.id];
+  const galleryImages = buildTrainerGalleryImages(gallery, heroImage);
+  const enriched = {
     ...trainer,
     ...curated,
     image: getTrainerCardPlaceholder(trainer.id),
-    heroImage: getTrainerHeroPlaceholder(trainer.id),
-    gallery: getTrainerGallery(trainer.id),
+    heroImage,
+    gallery,
+    galleryImages,
+    reviewSources,
     clientTransformations: getTrainerTransformations(trainer.id),
+  };
+
+  return {
+    ...enriched,
+    reviewCount: computeTrainerReviewCount(enriched),
   };
 });
 

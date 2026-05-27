@@ -1,10 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+
+const SmoacWelcomeIntro = dynamic(
+  () =>
+    import("@/components/brand/SmoacWelcomeIntro").then(
+      (mod) => mod.SmoacWelcomeIntro
+    ),
+  { ssr: false }
+);
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/components/ui/toast";
+import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
   BUDGET_RANGE_OPTIONS,
@@ -15,6 +26,8 @@ import {
   TRAINING_STYLE_OPTIONS,
 } from "@/constants/create-account-options";
 import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
+import { isAuthReturnToSaved } from "@/lib/auth-return";
+import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
 import { persistCreateAccountProfile } from "@/lib/create-account-profile-storage";
 import { validateDevSignup } from "@/lib/dev-auth";
 import type { AuthRole } from "@/types/auth";
@@ -25,6 +38,7 @@ import {
 } from "@/types/create-account";
 import { cn } from "@/lib/utils";
 import { SpecialistOnboardingWizard } from "@/components/auth/specialist/SpecialistOnboardingWizard";
+import { useCreateAccountIntroGate } from "@/hooks/useCreateAccountIntroGate";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -191,10 +205,19 @@ function AccountTypeCard({
   );
 }
 
-export function CreateAccountWizardClient() {
+interface CreateAccountWizardClientProps {
+  initialJoinIntro?: boolean;
+  initialReturnToSaved?: boolean;
+}
+
+export function CreateAccountWizardClient({
+  initialJoinIntro = false,
+  initialReturnToSaved = false,
+}: CreateAccountWizardClientProps) {
   const router = useRouter();
   const { isReady, session, signIn } = useAuthSession();
   const { showToast } = useToast();
+  const { showToast: showSaveToast } = useSaveToast();
   const [step, setStep] = useState<WizardStep>(1);
   const [state, setState] = useState<CreateAccountWizardState>(
     INITIAL_CREATE_ACCOUNT_STATE
@@ -202,14 +225,43 @@ export function CreateAccountWizardClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(false);
+  const { ready: introReady, showIntro, completeIntro } =
+    useCreateAccountIntroGate(initialJoinIntro);
+  const [portalReady, setPortalReady] = useState(false);
+  const [introVisible, setIntroVisible] = useState(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("join-intro-open", showIntro && introVisible);
+    return () => document.body.classList.remove("join-intro-open");
+  }, [showIntro, introVisible]);
+
+  useEffect(() => {
+    if (!showIntro) {
+      setIntroVisible(false);
+    }
+  }, [showIntro]);
 
   const progressPercent = stepProgressPercent(step);
   const canContinue = isStepValid(step, state);
 
+  function wantsReturnToSaved(): boolean {
+    if (initialReturnToSaved) return true;
+    if (typeof window === "undefined") return false;
+    return isAuthReturnToSaved(new URLSearchParams(window.location.search));
+  }
+
   useEffect(() => {
     if (!isReady || !session) return;
+    if (wantsReturnToSaved() && session.role === "client") {
+      router.replace("/saved");
+      return;
+    }
     router.replace(getDashboardPathForRole(session.role));
-  }, [isReady, session, router]);
+  }, [isReady, session, router, initialReturnToSaved]);
 
   function patchState(partial: Partial<CreateAccountWizardState>) {
     setState((prev) => ({ ...prev, ...partial }));
@@ -285,8 +337,15 @@ export function CreateAccountWizardClient() {
       message: "Account created — welcome to SMOAC",
     });
 
+    const { path, toast } = resolvePostLoginNavigation(validatedRole, {
+      returnToSaved: wantsReturnToSaved(),
+    });
+    if (toast) {
+      showSaveToast(toast);
+    }
+
     window.setTimeout(() => {
-      router.push(getDashboardPathForRole(validatedRole));
+      router.push(path);
       setSubmitting(false);
     }, 80);
   }
@@ -544,6 +603,20 @@ export function CreateAccountWizardClient() {
       default:
         return null;
     }
+  }
+
+  if (showIntro) {
+    if (!introReady) {
+      return null;
+    }
+    const intro = (
+      <SmoacWelcomeIntro
+        variant="join"
+        onComplete={completeIntro}
+        onVisible={() => setIntroVisible(true)}
+      />
+    );
+    return portalReady ? createPortal(intro, document.body) : intro;
   }
 
   if (showSpecialistOnboarding) {

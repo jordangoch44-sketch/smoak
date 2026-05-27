@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { cn } from "@/lib/utils";
 
 const HEART_OUTLINE_PATH =
@@ -13,7 +13,6 @@ export interface SaveButtonProps {
   saved: boolean;
   onToggle: () => void;
   className?: string;
-  /** Pin to top-right of a relative card shell */
   overlay?: boolean;
   ariaLabel?: string;
 }
@@ -38,25 +37,17 @@ export function SaveButton({
     prevSavedRef.current = saved;
   }, [saved]);
 
-  function handleClick(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
+  function handleClick(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
     onToggle();
-  }
-
-  function blockLinkNavigation(e: React.SyntheticEvent) {
-    e.preventDefault();
-    e.stopPropagation();
   }
 
   return (
     <button
       type="button"
-      onClick={handleClick}
-      onPointerDown={blockLinkNavigation}
-      onMouseDown={blockLinkNavigation}
+      data-save-control
       className={cn(
-        "save-button inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white",
+        "smoac-control smoac-tap save-button inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white",
         saved ? "save-button--saved" : "save-button--unsaved",
         burst && "save-button--burst",
         overlay && "save-button--overlay",
@@ -67,6 +58,7 @@ export function SaveButton({
         ariaLabel ?? (saved ? "Remove from saved specialists" : "Save specialist")
       }
       aria-pressed={saved}
+      onClick={handleClick}
     >
       <span className="save-button__icons" aria-hidden>
         <svg

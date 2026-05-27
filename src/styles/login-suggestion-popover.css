@@ -137,6 +137,7 @@
 .login-suggestion__cta {
   display: inline-flex;
   margin-top: 0.625rem;
+  touch-action: manipulation;
   font-size: 0.6875rem;
   font-weight: 500;
   letter-spacing: 0.06em;
@@ -157,13 +158,21 @@
 }
 
 @media (max-width: 767px) {
+  /* Fixed below header row — avoids overlapping heart / menu icons */
   .login-suggestion {
-    right: -0.25rem;
-    width: min(16.75rem, calc(100vw - 1.5rem));
+    position: fixed;
+    top: calc(
+      var(--site-navbar-height) + env(safe-area-inset-top, 0px) + 0.375rem
+    );
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-width: none;
+    z-index: 95;
   }
 
   .login-suggestion__caret {
-    right: 0.75rem;
+    display: none;
   }
 }
 

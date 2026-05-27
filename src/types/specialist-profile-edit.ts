@@ -16,6 +16,16 @@ export interface SpecialistProfileOverrides {
   photoNotes?: string;
   transformationNotes?: string;
   bookingAvailability?: string;
+  profilePhotoUrl?: string;
+  coverImageUrl?: string;
+  phone?: string;
+  email?: string;
+  instagram?: string;
+  website?: string;
+  tiktok?: string;
+  experienceYears?: string;
+  trainingStyle?: string;
+  servicesOffered?: string;
 }
 
 export type SpecialistProfileEditForm = Required<
@@ -35,5 +45,15 @@ export type SpecialistProfileEditForm = Required<
     | "photoNotes"
     | "transformationNotes"
     | "bookingAvailability"
+    | "profilePhotoUrl"
+    | "coverImageUrl"
+    | "phone"
+    | "email"
+    | "instagram"
+    | "website"
+    | "tiktok"
+    | "experienceYears"
+    | "trainingStyle"
+    | "servicesOffered"
   >
 >;

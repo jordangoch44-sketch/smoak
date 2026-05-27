@@ -8,11 +8,20 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
+import { LoginGateModal } from "@/components/auth/LoginGateModal";
+import { applyPendingSaveAfterLogin, setPendingSave } from "@/lib/specialist-saves";
 import { trainers } from "@/data/trainers";
 import type { Trainer } from "@/types";
+import { getActiveClientUserId } from "@/lib/saved-trainers-user";
+import {
+  getAuthSessionSnapshot,
+  subscribeAuthSession,
+} from "@/lib/auth-session-store";
 import {
   getSavedTrainersServerSnapshot,
   getSavedTrainersSnapshot,
@@ -22,11 +31,15 @@ import {
 
 export interface SavedTrainersContextValue {
   isReady: boolean;
+  /** Signed-in client — saved list is scoped to this account */
+  isClientWithSaves: boolean;
   savedIds: readonly string[];
   savedCount: number;
   isSaved: (trainerId: string) => boolean;
   toggleSaved: (trainerId: string) => void;
   getSavedTrainers: () => Trainer[];
+  /** Queue pending save + open login gate (logged-out save hearts) */
+  openLoginGate: (specialistId: string) => void;
 }
 
 const SavedTrainersContext = createContext<SavedTrainersContextValue | null>(
@@ -45,12 +58,15 @@ function getServerSnapshot() {
   return getSavedTrainersServerSnapshot();
 }
 
-function subscribeClientReady() {
-  return () => {};
+function subscribeClientReady(onStoreChange: () => void) {
+  if (typeof window !== "undefined") {
+    onStoreChange();
+  }
+  return subscribeAuthSession(onStoreChange);
 }
 
 function getClientReadySnapshot() {
-  return true;
+  return typeof window !== "undefined";
 }
 
 function getServerReadySnapshot() {
@@ -62,6 +78,8 @@ export function SavedTrainersProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const [loginGateOpen, setLoginGateOpen] = useState(false);
+
   const savedIds = useSyncExternalStore(
     subscribe,
     getSnapshot,
@@ -74,6 +92,26 @@ export function SavedTrainersProvider({
     getServerReadySnapshot
   );
 
+  const isClientWithSaves = useSyncExternalStore(
+    subscribeAuthSession,
+    () => Boolean(getActiveClientUserId(getAuthSessionSnapshot())),
+    () => false
+  );
+
+  useEffect(() => {
+    if (!isClientWithSaves) return;
+    applyPendingSaveAfterLogin("client");
+  }, [isClientWithSaves]);
+
+  const openLoginGate = useCallback((specialistId: string) => {
+    setPendingSave(specialistId);
+    setLoginGateOpen(true);
+  }, []);
+
+  const closeLoginGate = useCallback(() => {
+    setLoginGateOpen(false);
+  }, []);
+
   const savedIdSet = useMemo(() => new Set(savedIds), [savedIds]);
 
   const isSaved = useCallback(
@@ -82,6 +120,8 @@ export function SavedTrainersProvider({
   );
 
   const toggleSaved = useCallback((trainerId: string) => {
+    if (!getActiveClientUserId(getAuthSessionSnapshot())) return;
+
     const current = getSavedTrainersSnapshot();
     const next = current.includes(trainerId)
       ? current.filter((id) => id !== trainerId)
@@ -97,18 +137,29 @@ export function SavedTrainersProvider({
   const value = useMemo(
     () => ({
       isReady,
+      isClientWithSaves,
       savedIds,
       savedCount: savedIds.length,
       isSaved,
       toggleSaved,
       getSavedTrainers,
+      openLoginGate,
     }),
-    [isReady, savedIds, isSaved, toggleSaved, getSavedTrainers]
+    [
+      isReady,
+      isClientWithSaves,
+      savedIds,
+      isSaved,
+      toggleSaved,
+      getSavedTrainers,
+      openLoginGate,
+    ]
   );
 
   return (
     <SavedTrainersContext.Provider value={value}>
       {children}
+      <LoginGateModal open={loginGateOpen} onClose={closeLoginGate} />
     </SavedTrainersContext.Provider>
   );
 }

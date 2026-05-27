@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/Button";
+import { TapLink } from "@/components/ui/TapLink";
 
 export function CTA() {
   return (
@@ -12,9 +12,12 @@ export function CTA() {
           reviews and rates, and book when you&apos;re ready.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Button href="/explore" className="w-full sm:w-auto">
+          <TapLink
+            href="/explore"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-medium tracking-wide text-black transition-all active:scale-[0.98] sm:w-auto"
+          >
             Explore specialists
-          </Button>
+          </TapLink>
         </div>
       </div>
     </section>

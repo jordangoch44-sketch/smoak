@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
-import { CREATE_ACCOUNT_PATH } from "@/components/auth/LoginGateModal";
+import { buildJoinFlowHref } from "@/lib/join-flow";
 import { UserIcon } from "@/components/ui/icons";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { isAdminSession } from "@/lib/admin-auth";
 import {
   getDashboardPathForRole,
   isDashboardPath,
@@ -13,6 +14,7 @@ import {
 } from "@/lib/auth-routes";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
 import { afterLogoutNavigation, logoutWithToast } from "@/lib/logout-with-toast";
+import { useStableClientState } from "@/hooks/useStableClientState";
 import { cn } from "@/lib/utils";
 import { LoginSuggestionPopover } from "./LoginSuggestionPopover";
 
@@ -21,35 +23,39 @@ const SAVED_PATH = "/saved";
 interface NavbarProfileLinkProps {
   className?: string;
   isHomePage?: boolean;
+  /** When true, suppresses login suggestion (e.g. saved panel open on desktop) */
   navMenuOpen?: boolean;
+  savedPanelOpen?: boolean;
+  onCloseSavedPanel?: () => void;
 }
 
 export function NavbarProfileLink({
   className,
   isHomePage = false,
   navMenuOpen = false,
+  savedPanelOpen = false,
+  onCloseSavedPanel,
 }: NavbarProfileLinkProps) {
   const router = useRouter();
   const pathname = usePathname();
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const { isReady, session } = useAuthSession();
+  const { clientReady } = useStableClientState();
   const [open, setOpen] = useState(false);
-  const [openPath, setOpenPath] = useState(pathname);
 
-  const signedIn = isReady && isLoggedIn(session);
-  const suppressLoginTip = !isReady || signedIn;
+  const signedIn = clientReady && isReady && isLoggedIn(session);
+  const suppressLoginTip = !clientReady || !isReady || signedIn;
   const role = getUserRole(session);
 
-  if (pathname !== openPath) {
-    setOpenPath(pathname);
-    if (open) setOpen(false);
-  }
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     if (!open) return;
 
-    function onPointerDown(e: MouseEvent | TouchEvent) {
+    function onClickOutside(e: MouseEvent) {
       const target = e.target as Node;
       if (rootRef.current && !rootRef.current.contains(target)) {
         setOpen(false);
@@ -60,12 +66,10 @@ export function NavbarProfileLink({
       if (e.key === "Escape") setOpen(false);
     }
 
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("click", onClickOutside);
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("click", onClickOutside);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open]);
@@ -84,16 +88,16 @@ export function NavbarProfileLink({
 
   const dashboardHref =
     role != null ? getDashboardPathForRole(role) : LOGIN_PATH;
+  const showAdminLink = isAdminSession(session);
 
   return (
     <div ref={rootRef} className={cn("nav-profile", className)}>
       <button
         type="button"
+        data-header-control="profile"
         className={cn(
-          "nav-profile__trigger",
-          signedIn
-            ? "nav-profile__trigger--signed-in"
-            : "nav-profile__trigger--guest",
+          "nav-profile__trigger smoac-hit-target nav-profile__trigger--guest",
+          clientReady && signedIn && "nav-profile__trigger--signed-in",
           open && "nav-profile__trigger--open"
         )}
         aria-label={
@@ -105,14 +109,15 @@ export function NavbarProfileLink({
         aria-haspopup="menu"
         aria-controls={menuId}
         onClick={() => {
+          if (savedPanelOpen) onCloseSavedPanel?.();
           setOpen((prev) => !prev);
         }}
       >
-        <UserIcon className="h-5 w-5" />
+        <UserIcon className="pointer-events-none h-5 w-5" />
         <span
           className={cn(
-            "nav-profile__status",
-            signedIn
+            "nav-profile__status pointer-events-none",
+            clientReady && signedIn
               ? "nav-profile__status--signed-in"
               : "nav-profile__status--guest"
           )}
@@ -120,14 +125,16 @@ export function NavbarProfileLink({
         />
       </button>
 
-      <LoginSuggestionPopover
-        isLoggedIn={suppressLoginTip}
-        isHomePage={isHomePage}
-        profileMenuOpen={open}
-        navMenuOpen={navMenuOpen}
-        anchorRef={rootRef}
-        onLoginClick={() => setOpen(true)}
-      />
+      <div className="hidden md:block">
+        <LoginSuggestionPopover
+          isLoggedIn={suppressLoginTip}
+          isHomePage={isHomePage}
+          profileMenuOpen={open}
+          navMenuOpen={navMenuOpen}
+          anchorRef={rootRef}
+          onLoginClick={() => setOpen(true)}
+        />
+      </div>
 
       {open ? (
         <div
@@ -140,24 +147,26 @@ export function NavbarProfileLink({
             <>
               <Link
                 href={dashboardHref}
-                className="nav-profile__item"
+                className="nav-profile__item smoac-tap"
                 role="menuitem"
                 onClick={() => setOpen(false)}
               >
-                Dashboard
+                {showAdminLink ? "Admin dashboard" : "Dashboard"}
               </Link>
+              {showAdminLink ? null : (
               <Link
                 href={SAVED_PATH}
-                className="nav-profile__item"
+                className="nav-profile__item smoac-tap"
                 role="menuitem"
                 onClick={() => setOpen(false)}
               >
                 Saved specialists
               </Link>
+              )}
               <div className="nav-profile__divider" role="separator" />
               <button
                 type="button"
-                className="nav-profile__item nav-profile__item--danger"
+                className="nav-profile__item nav-profile__item--danger smoac-tap"
                 role="menuitem"
                 onClick={handleLogout}
               >
@@ -168,15 +177,15 @@ export function NavbarProfileLink({
             <>
               <Link
                 href={LOGIN_PATH}
-                className="nav-profile__item"
+                className="nav-profile__item smoac-tap"
                 role="menuitem"
                 onClick={() => setOpen(false)}
               >
                 Log in
               </Link>
               <Link
-                href={CREATE_ACCOUNT_PATH}
-                className="nav-profile__item"
+                href={buildJoinFlowHref()}
+                className="nav-profile__item smoac-tap"
                 role="menuitem"
                 onClick={() => setOpen(false)}
               >

@@ -67,12 +67,12 @@ export function ExploreSearchToolbar({
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Specialist name, specialty, or city"
               aria-label="Search specialists"
-              className="explore-search-shell__input"
+              className="smoac-control explore-search-shell__input"
             />
             {hasDraft ? (
               <button
                 type="button"
-                className="explore-search-shell__clear"
+                className="smoac-control explore-search-shell__clear"
                 aria-label="Clear search"
                 onClick={handleClear}
               >
@@ -80,7 +80,10 @@ export function ExploreSearchToolbar({
               </button>
             ) : null}
           </div>
-          <button type="submit" className="explore-search-shell__submit">
+          <button
+            type="submit"
+            className="smoac-control explore-search-shell__submit"
+          >
             Search
           </button>
         </div>
@@ -96,7 +99,7 @@ export function ExploreSearchToolbar({
         <button
           type="button"
           onClick={onOpenFilters}
-          className="explore-filter-btn"
+          className="smoac-control explore-filter-btn"
         >
           <FilterIcon className="text-silver-400" />
           Filters

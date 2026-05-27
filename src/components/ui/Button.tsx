@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -26,21 +28,21 @@ export function Button({
   type = "button",
 }: ButtonProps) {
   const classes = cn(
-    "inline-flex min-h-11 items-center justify-center rounded-full px-8 py-3 text-sm font-medium tracking-wide transition-all active:scale-[0.98]",
+    "smoac-control smoac-tap inline-flex min-h-11 items-center justify-center rounded-full px-8 py-3 text-sm font-medium tracking-wide transition-all active:scale-[0.98]",
     variants[variant],
     className
   );
 
   if (href) {
     return (
-      <Link href={href} className={classes}>
+      <Link href={href} className={classes} onClick={onClick}>
         {children}
       </Link>
     );
   }
 
   return (
-    <button type={type} onClick={onClick} className={classes}>
+    <button type={type} className={classes} onClick={onClick}>
       {children}
     </button>
   );

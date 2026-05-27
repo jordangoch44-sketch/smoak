@@ -101,6 +101,7 @@ export function applicationToPreviewTrainer(
   const pricePerSession = parsePrice(state.pricing.oneOnOnePrice) || 120;
   const location = [state.neighborhood, state.city].filter(Boolean).join(", ");
   const photo = state.media.profilePhotoUrl.trim() || "/trainers/placeholder.jpg";
+  const mediaUrls = linesToUrls(state.media.trainingVideoUrls);
 
   return {
     id,
@@ -116,6 +117,7 @@ export function applicationToPreviewTrainer(
     pricePerSession,
     rating: 0,
     reviewCount: 0,
+    galleryImages: mediaUrls.length > 0 ? mediaUrls : [photo],
     image: photo,
     heroImage: photo,
     bio: state.bio.trim() || "Your bio will appear here after approval.",

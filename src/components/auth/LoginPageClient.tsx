@@ -1,21 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { CREATE_ACCOUNT_PATH } from "@/components/auth/LoginGateModal";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useReducedMotion } from "framer-motion";
+import { buildJoinFlowHref } from "@/lib/join-flow";
 import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
+import { isDevAdminLoginEnabled } from "@/lib/admin-routes";
 import {
   DEV_INVALID_LOGIN_MESSAGE,
   validateDevLogin,
 } from "@/lib/dev-auth";
+import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
 import type { AuthRole } from "@/types/auth";
 import { cn } from "@/lib/utils";
+
+const LOGIN_FAILURE_DELAY_MS = 300;
+const ERROR_FADE_MS = 220;
 
 const ROLES: {
   id: AuthRole;
@@ -32,41 +38,126 @@ const ROLES: {
     title: "Continue as Specialist",
     description: "Manage your profile, leads, and marketplace visibility.",
   },
+  {
+    id: "admin",
+    title: "Continue as Admin",
+    description: "Manage applications, specialists, clients, and platform settings.",
+  },
 ];
+
+const PUBLIC_LOGIN_ROLES = ROLES.filter((r) => r.id !== "admin");
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
 
 export function LoginPageClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnToSaved = isAuthReturnToSaved(searchParams);
+  const devAdminLogin = isDevAdminLoginEnabled(searchParams);
+  const reducedMotion = useReducedMotion();
   const { isReady, session, signIn } = useAuthSession();
   const { showToast: showSaveToast } = useSaveToast();
   const { showToast } = useToast();
-  const [role, setRole] = useState<AuthRole>("client");
+  const [role, setRole] = useState<AuthRole>(
+    devAdminLogin ? "admin" : "client"
+  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [errorVisible, setErrorVisible] = useState(false);
+  const [fieldsError, setFieldsError] = useState(false);
+  const [shakeFields, setShakeFields] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitPressed, setSubmitPressed] = useState(false);
+  const errorFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!isReady || !session) return;
+    if (returnToSaved && session.role === "client") {
+      router.replace("/saved");
+      return;
+    }
     router.replace(getDashboardPathForRole(session.role));
-  }, [isReady, session, router]);
+  }, [isReady, session, router, returnToSaved]);
 
-  function handleSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    return () => {
+      if (errorFadeTimerRef.current) {
+        clearTimeout(errorFadeTimerRef.current);
+      }
+    };
+  }, []);
+
+  function clearLoginError() {
+    if (!fieldsError && !error) return;
+
+    setFieldsError(false);
+    setShakeFields(false);
+    setErrorVisible(false);
+
+    if (errorFadeTimerRef.current) {
+      clearTimeout(errorFadeTimerRef.current);
+    }
+
+    errorFadeTimerRef.current = setTimeout(() => {
+      setError(null);
+      errorFadeTimerRef.current = null;
+    }, ERROR_FADE_MS);
+  }
+
+  function triggerFieldsShake() {
+    if (reducedMotion) return;
+    setShakeFields(false);
+    requestAnimationFrame(() => setShakeFields(true));
+  }
+
+  async function showLoginFailure() {
+    setError(DEV_INVALID_LOGIN_MESSAGE);
+    setFieldsError(true);
+    setErrorVisible(true);
+    triggerFieldsShake();
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+
+    if (errorFadeTimerRef.current) {
+      clearTimeout(errorFadeTimerRef.current);
+      errorFadeTimerRef.current = null;
+    }
+
+    setErrorVisible(false);
+    setFieldsError(false);
+    setShakeFields(false);
+
+    setSubmitPressed(true);
+    setSubmitting(true);
+
+    await delay(LOGIN_FAILURE_DELAY_MS);
 
     const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password.trim()) {
-      setError(DEV_INVALID_LOGIN_MESSAGE);
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail || !trimmedPassword) {
+      setSubmitPressed(false);
+      setSubmitting(false);
+      await showLoginFailure();
       return;
     }
 
-    const validatedRole = validateDevLogin(role, trimmedEmail, password);
+    const validatedRole = validateDevLogin(role, trimmedEmail, trimmedPassword);
     if (!validatedRole) {
-      setError(DEV_INVALID_LOGIN_MESSAGE);
+      setSubmitPressed(false);
+      setSubmitting(false);
+      await showLoginFailure();
       return;
     }
 
-    setSubmitting(true);
+    setSubmitPressed(false);
     signIn(validatedRole, trimmedEmail);
 
     showToast({
@@ -74,10 +165,13 @@ export function LoginPageClient() {
       message: `Logged in as ${trimmedEmail}`,
     });
 
-    const { path, toast } = resolvePostLoginNavigation(validatedRole);
+    const { path, toast } = resolvePostLoginNavigation(validatedRole, {
+      returnToSaved,
+    });
     if (toast) {
       showSaveToast(toast);
     }
+
     window.setTimeout(() => {
       router.push(path);
       setSubmitting(false);
@@ -109,7 +203,9 @@ export function LoginPageClient() {
           <div className="login-card__header">
             <h1 className="login-card__title">Welcome back</h1>
             <p className="login-card__subtitle">
-              Choose how you want to continue.
+              {devAdminLogin
+                ? "DEV admin sign-in — Owner: admin@smoac.com · Staff: staff@smoac.com"
+                : "Choose how you want to continue."}
             </p>
           </div>
 
@@ -119,7 +215,7 @@ export function LoginPageClient() {
               role="radiogroup"
               aria-label="Account type"
             >
-              {ROLES.map((option) => {
+              {(devAdminLogin ? ROLES : PUBLIC_LOGIN_ROLES).map((option) => {
                 const selected = role === option.id;
                 return (
                   <button
@@ -127,7 +223,10 @@ export function LoginPageClient() {
                     type="button"
                     role="radio"
                     aria-checked={selected}
-                    onClick={() => setRole(option.id)}
+                    onClick={() => {
+                      setRole(option.id);
+                      clearLoginError();
+                    }}
                     className={cn(
                       "login-role-card",
                       selected && "login-role-card--active"
@@ -149,7 +248,14 @@ export function LoginPageClient() {
               })}
             </div>
 
-            <div className="login-form__section login-fields">
+            <div
+              className={cn(
+                "login-form__section login-fields",
+                fieldsError && "login-fields--error",
+                shakeFields && "login-fields--shake"
+              )}
+              onAnimationEnd={() => setShakeFields(false)}
+            >
               <label className="login-field">
                 <span className="login-field__label">Email</span>
                 <input
@@ -157,9 +263,13 @@ export function LoginPageClient() {
                   name="email"
                   autoComplete="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    clearLoginError();
+                  }}
                   placeholder="you@example.com"
                   className="login-field__input"
+                  aria-invalid={fieldsError}
                 />
               </label>
 
@@ -170,34 +280,61 @@ export function LoginPageClient() {
                   name="password"
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    clearLoginError();
+                  }}
                   placeholder="Password"
                   className="login-field__input"
+                  aria-invalid={fieldsError}
                 />
               </label>
-            </div>
 
-            <div className="login-form__section login-form__section--cta">
               {error ? (
-                <p className="login-card__message" role="alert">
+                <p
+                  className={cn(
+                    "login-card__message login-card__message--error",
+                    errorVisible && "login-card__message--error-visible",
+                    !errorVisible && "login-card__message--error-hidden"
+                  )}
+                  role="alert"
+                  aria-live="polite"
+                >
                   {error}
                 </p>
               ) : null}
+            </div>
 
+            <div className="login-form__section login-form__section--cta">
               <button
                 type="submit"
-                className="login-submit"
+                className={cn(
+                  "login-submit",
+                  submitting && "login-submit--loading",
+                  submitPressed && "login-submit--pressed"
+                )}
                 disabled={submitting}
+                aria-busy={submitting}
               >
                 {submitting ? "Signing in…" : "Continue"}
               </button>
             </div>
 
             <div className="login-card__links">
-              <Link href={CREATE_ACCOUNT_PATH} className="login-card__link">
+              <Link href={buildJoinFlowHref()} className="login-card__link">
                 Create account
               </Link>
-              <button type="button" className="login-card__link">
+              <button
+                type="button"
+                className="login-card__link"
+                onClick={() =>
+                  showToast({
+                    type: "info",
+                    message:
+                      "Password reset is not available in this preview build.",
+                  })
+                }
+              >
                 Forgot password?
               </button>
             </div>

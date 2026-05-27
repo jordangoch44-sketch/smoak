@@ -11,7 +11,9 @@ function migrateLegacyAuth(): AuthSession | null {
     if (!legacyRaw) return null;
     const parsed = JSON.parse(legacyRaw) as AuthSession;
     if (
-      (parsed.role === "client" || parsed.role === "specialist") &&
+      (parsed.role === "client" ||
+        parsed.role === "specialist" ||
+        parsed.role === "admin") &&
       typeof parsed.email === "string"
     ) {
       window.localStorage.setItem(DEV_AUTH_STORAGE_KEY, legacyRaw);
@@ -35,7 +37,9 @@ export function loadAuthSession(): AuthSession | null {
     }
     const parsed = JSON.parse(raw) as AuthSession;
     if (
-      (parsed.role === "client" || parsed.role === "specialist") &&
+      (parsed.role === "client" ||
+        parsed.role === "specialist" ||
+        parsed.role === "admin") &&
       typeof parsed.email === "string"
     ) {
       return parsed;

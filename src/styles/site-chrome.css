@@ -1,0 +1,383 @@
+/* Site chrome — stacking + pointer-events (structural mobile interaction fix) */
+
+:root {
+  --z-decorative: 0;
+  --z-page-content: 1;
+  --z-header-overlay: 9000;
+  --z-hero-search-suggestions: 8500;
+  --z-hero-search-active: 9010;
+  --z-site-header: 10000;
+  --z-toast: 999950;
+  --z-modal: 1000000;
+  --site-header-total-height: calc(
+    var(--site-navbar-height) + env(safe-area-inset-top, 0px)
+  );
+}
+
+/* ═══ Decorative layers NEVER receive pointer events ═══ */
+.site-page-backdrop,
+.site-page-backdrop *,
+.atmosphere-mesh,
+.atmosphere-blob,
+.atmosphere-vignette,
+.atmosphere-grain,
+.home-hero__canvas,
+.home-hero__canvas *,
+.home-hero::before,
+.home-hero::after,
+.home-hero__search-light,
+.home-hero__search-mesh,
+.home-hero__search-mesh-blob,
+.home-hero__content::before,
+.home-section-aurora::before,
+.hero-search__glass::before,
+.hero-search__glass::after,
+.top50-card__media-scrim,
+.top50-card__rank,
+.top50-card__badge,
+.saved-dropdown__glow,
+.explore-page__canvas,
+.explore-page__canvas *,
+.explore-page__header-glow,
+.page-transition__layer:not(:last-child),
+.login-page--intro,
+.create-account-intro__glass,
+.smoac-welcome-intro .login-page__canvas {
+  pointer-events: none !important;
+}
+
+/* Re-assert decorative inside hero/sections */
+.home-hero__canvas,
+.home-hero::before,
+.home-hero::after,
+.home-hero__search-light,
+.home-hero__search-mesh,
+.home-section-aurora::before {
+  pointer-events: none !important;
+}
+
+/* ═══ Fixed site header — single top interactive chrome layer ═══ */
+#site-header.site-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: var(--z-site-header);
+  isolation: isolate;
+  color: #fff;
+  pointer-events: auto;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: transparent;
+}
+
+.site-header__frost {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none !important;
+  background: rgba(8, 8, 12, 0.72);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+}
+
+@supports (-webkit-touch-callout: none) {
+  .site-header__frost {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(8, 8, 12, 0.94) !important;
+  }
+}
+
+.site-header__toolbar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--site-navbar-height);
+  max-width: 80rem;
+  margin-inline: auto;
+  padding-inline: 0.75rem;
+  pointer-events: auto;
+}
+
+.site-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  pointer-events: auto;
+}
+
+/* Header controls — 44px targets, simple :active */
+.site-header__btn {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+  pointer-events: auto !important;
+  transition:
+    transform 120ms ease,
+    opacity 120ms ease,
+    background-color 120ms ease;
+}
+
+.site-header__btn:active {
+  transform: scale(0.96);
+  opacity: 0.8;
+}
+
+.site-header__btn svg,
+.site-header__btn .nav-profile__status,
+.site-header__btn .brand-logo,
+.site-header__btn .brand-logo *,
+.site-header__btn img,
+.site-header__badge {
+  pointer-events: none !important;
+}
+
+.site-header__btn--logo {
+  border-radius: 0.125rem;
+}
+
+.site-header__btn--saved {
+  color: rgba(142, 142, 147, 1);
+}
+
+.site-header__btn--saved.site-header__btn--active,
+.site-header__btn--saved.site-header__btn--has-saves {
+  color: rgba(200, 255, 230, 0.88);
+}
+
+.site-header__btn--menu {
+  color: #fff;
+}
+
+.site-header__btn--menu.site-header__btn--active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.site-header__badge {
+  position: absolute;
+  top: -0.125rem;
+  right: -0.125rem;
+  display: flex;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #fff;
+  padding: 0 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #000;
+  opacity: 0;
+  transform: scale(0.75);
+}
+
+.site-header__badge--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Mobile logo sizing (was .site-navbar scoped) */
+.site-header--mobile .navbar-brand.brand-logo {
+  align-items: center;
+  gap: 0.6875rem;
+}
+
+.site-header--mobile .navbar-brand .brand-logo__mark,
+.site-header--mobile .navbar-brand .brand-logo__wordmark {
+  display: block;
+}
+
+.site-header--mobile .navbar-brand .brand-logo__wordmark.smoac-wordmark--primary {
+  height: 0.54125rem;
+}
+
+/* Hamburger icon */
+.site-header__menu-bars {
+  display: flex;
+  width: 1.5rem;
+  height: 1rem;
+  flex-direction: column;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.site-header__menu-line {
+  display: block;
+  height: 2px;
+  width: 100%;
+  border-radius: 9999px;
+  background: currentColor;
+  transition: transform 300ms ease, opacity 300ms ease;
+  pointer-events: none;
+}
+
+.site-header__menu-line--top-open {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.site-header__menu-line--mid-open {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.site-header__menu-line--bottom-open {
+  transform: translateY(-7px) rotate(-45deg);
+}
+
+@supports (-webkit-touch-callout: none) {
+  .site-header__btn--profile.nav-profile__trigger {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+/* ═══ App layout offset ═══ */
+/* Real controls always receive taps (decorative layers use pointer-events:none above) */
+.smoac-control,
+#site-header button,
+#site-header a[href],
+#site-header .site-header__btn,
+.app-main button:not(:disabled),
+.app-main a[href],
+.app-main input:not(:disabled),
+.app-main select:not(:disabled),
+.app-main textarea:not(:disabled),
+.app-main [role="button"]:not([aria-disabled="true"]) {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+.home-page,
+.home-hero__content,
+.home-hero__search-stage,
+.hero-search,
+.hero-search__overlay-root,
+.hero-search__composer,
+.hero-search__glass,
+.hero-search__clear,
+.hero-search-suggestions-layer__backdrop,
+.hero-search-suggestions-layer__panel,
+.hero-search-suggestions-layer__panel *,
+.hero-search__suggestion,
+.hero-search__trust,
+.hero-search__chips,
+.explore-page,
+.explore-page__content,
+.explore-toolbar,
+.explore-search-shell,
+.explore-filter-btn,
+.explore-search-shell__input,
+.explore-search-shell__submit,
+.explore-search-shell__clear,
+.explore-filter-chip__remove,
+.explore-empty__btn,
+.saved-panel-auth__login,
+.saved-panel-auth__join,
+.saved-panel-auth__cta,
+.saved-dropdown__auth-block,
+.top50-card,
+.top50-card__link,
+.trainer-card,
+.trainer-card > a,
+[data-save-control],
+.trainer-card-save,
+.trainer-card-save .save-button,
+.save-button,
+.profile-toolbar__save,
+.profile-toolbar__save .save-button {
+  pointer-events: auto !important;
+  touch-action: manipulation;
+}
+
+@media (max-width: 767px) {
+  #root.app-shell,
+  .app-shell {
+    padding-top: var(--site-header-total-height);
+  }
+
+  .app-main {
+    position: relative;
+    z-index: var(--z-page-content);
+    isolation: isolate;
+  }
+
+  .site-page-backdrop {
+    z-index: var(--z-decorative);
+  }
+}
+
+@media (min-width: 768px) {
+  #root.app-shell,
+  .app-shell {
+    padding-top: 0;
+  }
+
+  .site-header--desktop {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* ═══ Header overlay host (portaled panels, below header bar) ═══ */
+#header-overlay-root {
+  position: fixed;
+  top: var(--site-header-total-height);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: var(--z-header-overlay);
+  pointer-events: none;
+}
+
+#header-overlay-root > * {
+  pointer-events: auto;
+}
+
+.mobile-nav-overlay,
+.saved-dropdown {
+  z-index: 1 !important;
+}
+
+.header-profile-menu {
+  position: fixed;
+  top: calc(var(--site-header-total-height) + 0.375rem);
+  right: 0.75rem;
+  z-index: 2;
+  min-width: 11.5rem;
+  padding: 0.375rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(12, 12, 16, 0.96);
+  pointer-events: auto;
+}
+
+.header-profile-menu__backdrop {
+  position: fixed;
+  top: var(--site-header-total-height);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.45);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
