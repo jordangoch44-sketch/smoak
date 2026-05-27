@@ -8,6 +8,8 @@
 @import "./toast.css";
 @import "./site-chrome.css";
 @import "./login-gate.css";
+@import "./location-personalization.css";
+@import "./mobile-bottom-nav.css";
 @import "./mobile-safari.css";
 
 /* Design tokens — single source for Tailwind @theme and CSS variables */
@@ -28,6 +30,10 @@
   --accent-glow-rgb: 139, 124, 168;
   --accent-glow-soft-rgb: 108, 98, 132;
   --accent-glow-bright: #b4a8d4;
+  --save-heart: #c4475a;
+  --save-heart-deep: #9e3344;
+  --save-heart-rgb: 196, 71, 90;
+  --save-heart-glow-rgb: 220, 88, 108;
 
   /* Aurora mesh palette */
   --aurora-violet-rgb: 139, 124, 168;
@@ -114,9 +120,9 @@ body {
 body.menu-open,
 body.drawer-open,
 body.saved-panel-open,
-body.profile-menu-open,
 body.login-gate-open,
 body.site-intro-open,
+body.location-personalization-open,
 body.hero-search-suggestions-open,
 body.admin-review-open {
   overflow: hidden;
@@ -128,9 +134,9 @@ body.admin-review-open {
   body.menu-open,
   body.drawer-open,
   body.saved-panel-open,
-  body.profile-menu-open,
   body.login-gate-open,
   body.site-intro-open,
+  body.location-personalization-open,
   body.hero-search-suggestions-open,
   body.admin-review-open {
     overflow: visible;
@@ -140,37 +146,27 @@ body.admin-review-open {
   body.menu-open .app-main,
   body.drawer-open .app-main,
   body.saved-panel-open .app-main,
-  body.profile-menu-open .app-main,
   body.login-gate-open .app-main,
   body.site-intro-open .app-main,
-  body.hero-search-suggestions-open .app-main,
+  body.location-personalization-open .app-main,
   body.admin-review-open .app-main {
     overflow: hidden;
     overscroll-behavior: none;
     touch-action: pan-y;
   }
 
+  body.hero-search-suggestions-open .app-main {
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+
   html.login-gate-open,
   html.site-intro-open,
+  html.location-personalization-open,
   html.hero-search-suggestions-open {
     overflow: visible;
   }
-}
-
-@keyframes mobile-nav-link-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.mobile-nav-link {
-  animation: mobile-nav-link-in 0.45s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-  opacity: 0;
 }
 
 ::selection {

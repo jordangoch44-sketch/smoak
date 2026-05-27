@@ -37,7 +37,8 @@ AuthSessionProvider
               └── children
 ```
 
-- **Save heart**: `SaveTrainerButton` → `useSavedTrainers()` + `useSaveToast()`. Gate is **only** `LoginGateModal` in `SavedTrainersProvider`.
+- **Save heart**: `SaveTrainerButton` → `useSavedTrainers()` + `useSaveToast()`. Copy/toasts: `lib/saved-ui.ts`. Gate is **only** `LoginGateModal` in `SavedTrainersProvider`.
+- **Mobile tabs**: `MobileBottomNavLazy` in `(site)/layout.tsx`; menu: `MobileUtilityDrawer`.
 - **Auth**: `useAuthSession()` — dev sessions in `localStorage` via `lib/auth-session-store.ts`.
 
 ## Interaction rules (do not regress)

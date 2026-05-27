@@ -4,24 +4,21 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { subscribeMobileMaxWidth } from "@/lib/viewport";
 
-/** Header panel state — shared mobile + desktop */
+/** Header panel state — mobile utility menu + desktop saved panel */
 export function useHeaderPanels() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [savedPanelOpen, setSavedPanelOpen] = useState(false);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
-  const anyPanelOpen = menuOpen || savedPanelOpen || profileMenuOpen;
+  const anyPanelOpen = menuOpen || savedPanelOpen;
 
   const closeAll = useCallback(() => {
     setMenuOpen(false);
     setSavedPanelOpen(false);
-    setProfileMenuOpen(false);
   }, []);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const closeSavedPanel = useCallback(() => setSavedPanelOpen(false), []);
-  const closeProfileMenu = useCallback(() => setProfileMenuOpen(false), []);
 
   useEffect(() => {
     closeAll();
@@ -36,11 +33,6 @@ export function useHeaderPanels() {
     document.body.classList.toggle("saved-panel-open", savedPanelOpen);
     return () => document.body.classList.remove("saved-panel-open");
   }, [savedPanelOpen]);
-
-  useEffect(() => {
-    document.body.classList.toggle("profile-menu-open", profileMenuOpen);
-    return () => document.body.classList.remove("profile-menu-open");
-  }, [profileMenuOpen]);
 
   useEffect(() => {
     return subscribeMobileMaxWidth(() => {
@@ -92,41 +84,23 @@ export function useHeaderPanels() {
 
   const onSavedClick = useCallback(() => {
     setMenuOpen(false);
-    setProfileMenuOpen(false);
     setSavedPanelOpen((open) => !open);
-  }, []);
-
-  const onProfileClick = useCallback(() => {
-    setMenuOpen(false);
-    setSavedPanelOpen(false);
-    setProfileMenuOpen((open) => !open);
   }, []);
 
   const onMenuClick = useCallback(() => {
     setSavedPanelOpen(false);
-    setProfileMenuOpen(false);
     setMenuOpen((open) => !open);
-  }, []);
-
-  const openSavedFromMenu = useCallback(() => {
-    setMenuOpen(false);
-    setProfileMenuOpen(false);
-    setSavedPanelOpen(true);
   }, []);
 
   return {
     menuOpen,
     savedPanelOpen,
-    profileMenuOpen,
     anyPanelOpen,
     closeAll,
     closeMenu,
     closeSavedPanel,
-    closeProfileMenu,
     onLogoClick,
     onSavedClick,
-    onProfileClick,
     onMenuClick,
-    openSavedFromMenu,
   };
 }

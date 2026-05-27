@@ -1,10 +1,25 @@
+"use client";
+
 import Link from "next/link";
-import { getFeaturedTrainers } from "@/data/trainers";
 import { TrainerList } from "@/components/trainers";
+import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
+import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
+import { buildExploreSearchParams } from "@/lib/explore-url";
+import { getPersonalizedFeaturedTrainers } from "@/lib/personalized-trainers";
 
 /** TODO: Rename to FeaturedProviders when internal trainer types are refactored */
 export function FeaturedTrainers() {
-  const featured = getFeaturedTrainers().slice(0, 4);
+  const personalizationCity = usePersonalizationCity();
+  const featured = getPersonalizedFeaturedTrainers(personalizationCity).slice(
+    0,
+    4
+  );
+  const exploreHref = personalizationCity
+    ? `/explore?${buildExploreSearchParams(
+        { ...EMPTY_TRAINER_FILTERS, city: personalizationCity },
+        ""
+      )}`
+    : "/explore";
 
   return (
     <section className="home-featured home-section-aurora px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
@@ -18,12 +33,13 @@ export function FeaturedTrainers() {
               Featured specialists
             </h2>
             <p className="mt-1 text-sm text-silver-400">
-              Vetted specialists with verified reviews and clear session
-              pricing.
+              {personalizationCity
+                ? `Vetted specialists near you in ${personalizationCity}.`
+                : "Vetted specialists with verified reviews and clear session pricing."}
             </p>
           </div>
           <Link
-            href="/explore"
+            href={exploreHref}
             className="hidden shrink-0 text-sm text-silver-400 transition-colors hover:text-white sm:inline-flex sm:min-h-11 sm:items-center"
           >
             View all →
@@ -38,7 +54,7 @@ export function FeaturedTrainers() {
         />
 
         <Link
-          href="/explore"
+          href={exploreHref}
           className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/10 text-sm text-silver-300 active:bg-white/5 active:text-white sm:hidden"
         >
           Explore specialists

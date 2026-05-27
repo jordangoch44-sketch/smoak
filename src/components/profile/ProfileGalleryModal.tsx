@@ -13,7 +13,7 @@ import { useHorizontalSwipe } from "@/hooks/useHorizontalSwipe";
 import type { ProfileGalleryMedia } from "@/types/profile-gallery";
 import { cn } from "@/lib/utils";
 
-const EXIT_MS = 220;
+const CLOSE_MS = 300;
 const PROTECTED_SELECTOR = "[data-gallery-protected]";
 const CLOSE_SELECTOR = "[data-gallery-close]";
 
@@ -34,11 +34,15 @@ export function ProfileGalleryModal({
 }: ProfileGalleryModalProps) {
   const { index, goTo, count } = useCarousel(media.length);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const [exiting, setExiting] = useState(false);
-  const [mounted, setMounted] = useState(open);
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [mediaReady, setMediaReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
-  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeFinishedRef = useRef(false);
 
   const pauseVideo = useCallback(() => {
     setVideoPlaying(false);
@@ -61,33 +65,43 @@ export function ProfileGalleryModal({
   );
 
   const { onTouchStart, onTouchEnd } = useHorizontalSwipe({
-    enabled: mounted && !exiting && count > 1,
+    enabled: mounted && visible && !isClosing && count > 1,
     onSwipeLeft: () => goToSlide(index + 1),
     onSwipeRight: () => goToSlide(index - 1),
   });
 
+  const finishClose = useCallback(() => {
+    if (closeFinishedRef.current) return;
+    closeFinishedRef.current = true;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsClosing(false);
+    setVisible(false);
+    setMediaReady(false);
+    setMounted(false);
+    onClose();
+  }, [onClose]);
+
   const requestClose = useCallback(() => {
-    if (exiting) return;
+    if (isClosing || !mounted) return;
     pauseVideo();
-    setExiting(true);
-    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
-    exitTimerRef.current = setTimeout(() => {
-      setExiting(false);
-      setMounted(false);
-      onClose();
-      exitTimerRef.current = null;
-    }, EXIT_MS);
-  }, [exiting, onClose, pauseVideo]);
+    setVisible(false);
+    setIsClosing(true);
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(finishClose, CLOSE_MS);
+  }, [finishClose, isClosing, mounted, pauseVideo]);
 
   const handleDismissPointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (exiting) return;
+      if (isClosing || !visible) return;
       const target = event.target as HTMLElement;
       if (target.closest(CLOSE_SELECTOR)) return;
       if (target.closest(PROTECTED_SELECTOR)) return;
       requestClose();
     },
-    [exiting, requestClose]
+    [isClosing, requestClose, visible]
   );
 
   const handleCloseClick = useCallback(
@@ -99,16 +113,37 @@ export function ProfileGalleryModal({
     [requestClose]
   );
 
+  const handleModalTransitionEnd = useCallback(
+    (event: React.TransitionEvent<HTMLDivElement>) => {
+      if (event.target !== modalRef.current) return;
+      if (event.propertyName !== "opacity") return;
+      if (!isClosing) return;
+      finishClose();
+    },
+    [finishClose, isClosing]
+  );
+
   useEffect(() => {
-    if (open) {
-      setMounted(true);
-      setExiting(false);
-      goTo(initialIndex);
-    }
+    if (!open) return;
+    closeFinishedRef.current = false;
+    setMounted(true);
+    setIsClosing(false);
+    setMediaReady(false);
+    goTo(initialIndex);
   }, [open, initialIndex, goTo]);
 
   useEffect(() => {
-    if (!mounted || exiting) return;
+    if (!mounted || isClosing) return;
+
+    const frame = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setVisible(true));
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [mounted, isClosing]);
+
+  useEffect(() => {
+    if (!mounted) return;
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -126,11 +161,21 @@ export function ProfileGalleryModal({
       document.body.classList.remove("gallery-modal-open");
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [mounted, exiting, requestClose, goToSlide, index]);
+  }, [mounted, requestClose, goToSlide, index]);
+
+  useEffect(() => {
+    setMediaReady(false);
+  }, [index]);
+
+  useEffect(() => {
+    if (!visible || mediaReady || isClosing) return;
+    const fallback = window.setTimeout(() => setMediaReady(true), 480);
+    return () => window.clearTimeout(fallback);
+  }, [visible, mediaReady, isClosing, index]);
 
   useEffect(() => {
     return () => {
-      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
       document.body.classList.remove("gallery-modal-open");
       document.body.style.overflow = "";
     };
@@ -160,23 +205,43 @@ export function ProfileGalleryModal({
     }
   }, [index, media]);
 
+  const handleMediaReady = useCallback(() => {
+    setMediaReady(true);
+  }, []);
+
   if (!mounted || typeof document === "undefined" || count === 0) return null;
 
   return createPortal(
-    <>
-      <div
-        className={cn(
-          "profile-gallery-modal",
-          exiting && "profile-gallery-modal--exit"
-        )}
-        role="dialog"
-        aria-modal="true"
-        aria-label={`${trainerName} gallery`}
-        onPointerUp={handleDismissPointerUp}
-      >
-        <div className="profile-gallery-modal__backdrop" aria-hidden />
+    <div
+      ref={modalRef}
+      className={cn(
+        "profile-gallery-modal",
+        visible && !isClosing && "profile-gallery-modal--visible",
+        isClosing && "profile-gallery-modal--exit",
+        mediaReady && "profile-gallery-modal--media-ready"
+      )}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${trainerName} gallery`}
+      onPointerUp={handleDismissPointerUp}
+      onTransitionEnd={handleModalTransitionEnd}
+    >
+      <div className="profile-gallery-modal__backdrop" aria-hidden />
 
-        <div className="profile-gallery-modal__content">
+      <button
+        type="button"
+        className="profile-gallery-modal__close"
+        data-gallery-close
+        aria-label="Close gallery"
+        onClick={handleCloseClick}
+        onPointerUp={handleCloseClick}
+      >
+        <span className="profile-gallery-modal__close-glyph" aria-hidden>
+          ×
+        </span>
+      </button>
+
+      <div className="profile-gallery-modal__content">
         <div
           className="profile-gallery-modal__main"
           onTouchStart={onTouchStart}
@@ -199,8 +264,15 @@ export function ProfileGalleryModal({
                     fill
                     sizes="100vw"
                     className="profile-gallery-modal__media object-contain"
-                    priority={slideIndex === 0}
+                    priority={slideIndex === index}
+                    loading={slideIndex === index ? "eager" : "lazy"}
                     draggable={false}
+                    onLoad={
+                      slideIndex === index ? handleMediaReady : undefined
+                    }
+                    onError={
+                      slideIndex === index ? handleMediaReady : undefined
+                    }
                   />
                 ) : slideIndex === index ? (
                   <>
@@ -213,6 +285,7 @@ export function ProfileGalleryModal({
                       muted
                       controls={videoPlaying}
                       preload="metadata"
+                      onLoadedData={handleMediaReady}
                       onEnded={() => setVideoPlaying(false)}
                       onPause={() => setVideoPlaying(false)}
                     />
@@ -287,6 +360,7 @@ export function ProfileGalleryModal({
                   fill
                   sizes="80px"
                   className="object-cover"
+                  loading="lazy"
                   draggable={false}
                 />
                 {item.type === "video" ? (
@@ -298,22 +372,8 @@ export function ProfileGalleryModal({
             ))}
           </div>
         </footer>
-        </div>
       </div>
-
-      <button
-        type="button"
-        className="profile-gallery-modal__close"
-        data-gallery-close
-        aria-label="Close gallery"
-        onClick={handleCloseClick}
-        onPointerUp={handleCloseClick}
-      >
-        <span className="profile-gallery-modal__close-glyph" aria-hidden>
-          ×
-        </span>
-      </button>
-    </>,
+    </div>,
     document.body
   );
 }

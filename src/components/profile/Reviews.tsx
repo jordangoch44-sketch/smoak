@@ -1,4 +1,5 @@
 import type { Review } from "@/types";
+import { formatTrainerRating } from "@/lib/utils";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
 
@@ -12,7 +13,7 @@ export function Reviews({ reviews, rating, reviewCount }: ReviewsProps) {
   const ratingSummary = (
     <div className="flex shrink-0 items-center gap-1.5 text-sm">
       <span className="text-white">★</span>
-      <span className="font-medium text-white">{rating}</span>
+      <span className="font-medium text-white">{formatTrainerRating(rating)}</span>
       <span className="text-silver-400">({reviewCount})</span>
     </div>
   );

@@ -5,11 +5,14 @@ import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { TrainerList } from "@/components/trainers";
 import { Button } from "@/components/ui/Button";
+import { SavedAuthGlassCard } from "@/components/saved/SavedAuthGlassCard";
 import { SavedPanelAuthCta } from "@/components/saved/SavedPanelAuthCta";
+import { cn } from "@/lib/utils";
 import {
   buildJoinFlowHrefForSaved,
   buildLoginHrefForSaved,
 } from "@/lib/auth-return";
+import { formatSavedSpecialistsTitle } from "@/lib/saved-ui";
 interface SavedPanelContentProps {
   /** Overlay dropdown vs full /saved route */
   variant?: "overlay" | "page";
@@ -50,12 +53,20 @@ export function SavedPanelContent({
     return "Sign in as a client to save specialists.";
   }
 
+  const showPageAuthStage = !isOverlay && isReady && isLoggedOut;
+
   return (
     <div
       className={
-        isOverlay ? "saved-dropdown__content" : "saved-page mx-auto max-w-7xl"
+        isOverlay
+          ? "saved-dropdown__content"
+          : cn(
+              "saved-page mx-auto w-full max-w-7xl",
+              showPageAuthStage ? undefined : "saved-page--padded"
+            )
       }
     >
+      {showPageAuthStage ? null : (
       <div className={isOverlay ? undefined : "max-w-2xl"}>
         <h2
           className={
@@ -65,7 +76,7 @@ export function SavedPanelContent({
           }
           id={titleId}
         >
-          Saved specialists
+          {formatSavedSpecialistsTitle(saved.length)}
         </h2>
         <p
           className={
@@ -77,28 +88,27 @@ export function SavedPanelContent({
           {subtitleText()}
         </p>
       </div>
+      )}
 
       {isReady && isLoggedOut ? (
-        <div
-          className={
-            isOverlay
-              ? "saved-dropdown__empty saved-dropdown__auth-block"
-              : "explore-empty saved-dropdown__auth-block mt-10"
-          }
-        >
-          <p className="saved-dropdown__auth-headline">
-            Log in to view your saved specialists.
-          </p>
-          <p className="saved-dropdown__auth-lede">
-            Save trainers, compare profiles, and build your shortlist when you
-            sign in.
-          </p>
-          <SavedPanelAuthCta
-            loginHref={loginHref}
-            joinHref={joinHref}
-            onNavigate={handleAuthNavigate}
-          />
-        </div>
+        isOverlay ? (
+          <div className="saved-dropdown__empty saved-dropdown__auth-block">
+            <SavedAuthGlassCard
+              compact
+              loginHref={loginHref}
+              joinHref={joinHref}
+              onNavigate={handleAuthNavigate}
+            />
+          </div>
+        ) : (
+          <div className="saved-page-auth-stage">
+            <SavedAuthGlassCard
+              loginHref={loginHref}
+              joinHref={joinHref}
+              onNavigate={handleAuthNavigate}
+            />
+          </div>
+        )
       ) : isReady && saved.length > 0 ? (
         <div className={isOverlay ? "saved-dropdown__list" : "mt-8"}>
           <TrainerList trainers={saved} variant="explore" priorityCount={4} />

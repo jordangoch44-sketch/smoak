@@ -63,20 +63,30 @@ src/
 ```
 SaveTrainerButton (trainers/)
   → useSavedTrainers()     isSaved, toggleSaved, openLoginGate
-  → useSaveToast()         confirmation toast
+  → useSaveToast()         centered glass toast (lib/saved-ui copy)
   → SavedTrainersProvider  LoginGateModal (single modal)
   → saved-trainers-store   per-client localStorage
 ```
 
-Hearts sit in `TrainerCardSaveSlot` **outside** the card link.
+Hearts sit in `TrainerCardSaveSlot` **outside** the card link. Nav badges use `formatSavedCountBadge` from `lib/saved-ui.ts`.
+
+### Mobile chrome
+
+```
+(site)/layout.tsx
+  ├── SiteHeader
+  └── MobileBottomNavLazy   floating tabs ≤1023px (Search, Saved, Home, Discover, Profile)
+```
+
+`MobileUtilityDrawer` — hamburger menu (primary nav + legal). Saved count badge on bottom nav + desktop header heart.
 
 ### Site header (mobile + desktop)
 
 ```
 SiteHeader
   ├── SiteHeaderMobile / SiteHeaderDesktop
-  ├── useHeaderPanels()     menu, saved, profile state + body classes
-  ├── HeaderOverlayRoot     mobile portaled overlays (md:hidden)
+  ├── useHeaderPanels()     utility drawer + desktop saved panel
+  ├── MobileUtilityDrawer   portaled menu (mobile)
   └── SavedPanelDropdown    desktop saved panel (md+, when open)
 ```
 
@@ -110,6 +120,8 @@ Site variant: overlay captures taps; do not disable `.app-main` with `pointer-ev
 
 Use these instead of magic numbers:
 
+- `--z-mobile-bottom-nav` (8200)
+- `--z-save-toast` (8600)
 - `--z-hero-search-suggestions` (8500)
 - `--z-header-overlay` (9000)
 - `--z-site-header` (10000)

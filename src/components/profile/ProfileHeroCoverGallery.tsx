@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
   type MutableRefObject,
-  type MouseEvent as ReactMouseEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
@@ -30,26 +29,6 @@ interface ProfileHeroCoverGalleryProps {
   galleryControlRef?: MutableRefObject<ProfileHeroGalleryControl | null>;
 }
 
-function CoverNavChevron({ direction }: { direction: "prev" | "next" }) {
-  return (
-    <svg
-      className="profile-hero-cover__chevron"
-      viewBox="0 0 24 24"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
-    >
-      <path
-        d={direction === "prev" ? "M15 6l-6 6 6 6" : "M9 6l6 6-6 6"}
-        stroke="currentColor"
-        strokeWidth="1.35"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function ProfileHeroCoverGallery({
   images,
   media,
@@ -63,75 +42,36 @@ export function ProfileHeroCoverGallery({
     [images, fallbackHeroImage]
   );
 
-  const [engaged, setEngaged] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryStartIndex, setGalleryStartIndex] = useState(0);
-  const disengageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showViewGallery = media.length > 0;
 
-  const {
-    index,
-    canSlide,
-    goNext,
-    goPrev,
-    registerInteraction,
-    onTouchStart,
-    onTouchEnd,
-  } = useProfileHeroCoverGallery({ imageCount: slides.length });
+  const { index, canSlide, onTouchStart, onTouchEnd } = useProfileHeroCoverGallery({
+    imageCount: slides.length,
+  });
 
-  const markEngaged = useCallback(() => {
-    if (disengageTimerRef.current) {
-      clearTimeout(disengageTimerRef.current);
-      disengageTimerRef.current = null;
-    }
-    setEngaged(true);
+  const preloadGalleryImage = useCallback((url: string) => {
+    return new Promise<void>((resolve) => {
+      const img = new window.Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.src = url;
+    });
   }, []);
 
-  const scheduleDisengage = useCallback(() => {
-    if (galleryOpen) return;
-    if (disengageTimerRef.current) clearTimeout(disengageTimerRef.current);
-    disengageTimerRef.current = setTimeout(() => {
-      setEngaged(false);
-      disengageTimerRef.current = null;
-    }, 2400);
-  }, [galleryOpen]);
-
-  const handleHeroTap = useCallback(
-    (event: ReactMouseEvent<HTMLElement>) => {
-      if ((event.target as HTMLElement).closest("button")) return;
-      markEngaged();
-      scheduleDisengage();
-    },
-    [markEngaged, scheduleDisengage]
-  );
-
-  const handleTouchStart = useCallback(
-    (event: ReactTouchEvent<HTMLElement>) => {
-      markEngaged();
-      onTouchStart(event);
-    },
-    [markEngaged, onTouchStart]
-  );
-
-  const handleTouchEnd = useCallback(
-    (event: ReactTouchEvent<HTMLElement>) => {
-      onTouchEnd(event);
-      scheduleDisengage();
-    },
-    [onTouchEnd, scheduleDisengage]
-  );
-
-  const openGallery = useCallback(() => {
-    setGalleryStartIndex(
-      resolveGalleryIndexForCover(media, slides, index)
-    );
-    setGalleryOpen(true);
-    if (disengageTimerRef.current) {
-      clearTimeout(disengageTimerRef.current);
-      disengageTimerRef.current = null;
+  const openGallery = useCallback(async () => {
+    const startIndex = resolveGalleryIndexForCover(media, slides, index);
+    const item = media[startIndex];
+    if (item) {
+      const preloadUrl =
+        item.type === "image" ? item.url : item.thumbnail ?? item.url;
+      await preloadGalleryImage(preloadUrl);
     }
-  }, [media, slides, index]);
+
+    setGalleryStartIndex(startIndex);
+    setGalleryOpen(true);
+  }, [index, media, preloadGalleryImage, slides]);
 
   useEffect(() => {
     if (!galleryControlRef) return;
@@ -143,8 +83,7 @@ export function ProfileHeroCoverGallery({
 
   const closeGallery = useCallback(() => {
     setGalleryOpen(false);
-    scheduleDisengage();
-  }, [scheduleDisengage]);
+  }, []);
 
   if (slides.length === 0) {
     return (
@@ -161,15 +100,9 @@ export function ProfileHeroCoverGallery({
   return (
     <>
       <div
-        className={cn(
-          "profile-hero-cover absolute inset-0 z-0",
-          engaged && "profile-hero-cover--engaged"
-        )}
-        onClick={handleHeroTap}
-        onPointerEnter={markEngaged}
-        onPointerLeave={scheduleDisengage}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        className="profile-hero-cover absolute inset-0 z-0"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
         aria-roledescription={canSlide ? "carousel" : undefined}
         aria-label={`${trainerName} photos`}
       >
@@ -194,40 +127,6 @@ export function ProfileHeroCoverGallery({
             </div>
           ))}
         </div>
-
-        {canSlide ? (
-          <div className="profile-hero-cover__nav-rail" aria-hidden>
-            <button
-              type="button"
-              className="profile-hero-cover__nav profile-hero-cover__nav--prev"
-              aria-label="Previous photo"
-              onClick={(event) => {
-                event.stopPropagation();
-                markEngaged();
-                registerInteraction();
-                goPrev();
-                scheduleDisengage();
-              }}
-            >
-              <CoverNavChevron direction="prev" />
-            </button>
-            <button
-              type="button"
-              className="profile-hero-cover__nav profile-hero-cover__nav--next"
-              aria-label="Next photo"
-              onClick={(event) => {
-                event.stopPropagation();
-                markEngaged();
-                registerInteraction();
-                goNext();
-                scheduleDisengage();
-              }}
-            >
-              <CoverNavChevron direction="next" />
-            </button>
-          </div>
-        ) : null}
-
       </div>
 
       {showViewGallery ? (

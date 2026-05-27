@@ -2,6 +2,7 @@ import { trainers } from "@/data/trainers";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { buildExploreSearchParams } from "@/lib/explore-url";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
+import { getPersonalizationCity } from "@/lib/user-location-storage";
 
 export type HeroSuggestionKind =
   | "specialist"
@@ -129,6 +130,18 @@ const KIND_ORDER: Record<HeroSuggestionKind, number> = {
   neighborhood: 4,
 };
 
+function personalizationBoost(item: HeroSearchSuggestion): number {
+  const city = getPersonalizationCity();
+  if (!city) return 0;
+  const target = city.toLowerCase();
+  const label = item.label.toLowerCase();
+  const sub = (item.sublabel ?? "").toLowerCase();
+  if (item.kind === "specialist" && sub.includes(target)) return 24;
+  if (item.kind === "city" && label === target) return 20;
+  if (item.kind === "neighborhood" && sub.includes(target)) return 12;
+  return 0;
+}
+
 function scoreMatch(item: HeroSearchSuggestion, q: string): number {
   const label = item.label.toLowerCase();
   const sub = (item.sublabel ?? "").toLowerCase();
@@ -148,18 +161,25 @@ export function getHeroSearchSuggestions(
   const q = trimmed.toLowerCase();
 
   if (!q) {
-    return POOL.filter(
-      (item) => item.kind === "trending" || item.kind === "specialist"
-    )
+    const personalizationCity = getPersonalizationCity();
+    return POOL.filter((item) => {
+      if (item.kind === "trending" || item.kind === "specialist") return true;
+      if (!personalizationCity) return false;
+      return item.kind === "city" || item.kind === "neighborhood";
+    })
       .sort(
         (a, b) =>
+          personalizationBoost(b) - personalizationBoost(a) ||
           KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
           a.label.localeCompare(b.label)
       )
       .slice(0, limit);
   }
 
-  return POOL.map((item) => ({ item, score: scoreMatch(item, q) }))
+  return POOL.map((item) => ({
+    item,
+    score: scoreMatch(item, q) + personalizationBoost(item),
+  }))
     .filter((row) => row.score > 0)
     .sort(
       (a, b) =>

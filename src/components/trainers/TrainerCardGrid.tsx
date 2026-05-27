@@ -1,6 +1,6 @@
 import type { Trainer } from "@/types";
 import { formatProviderLocation } from "@/lib/provider-location";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatTrainerRating } from "@/lib/utils";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 
 interface TrainerCardGridProps {
@@ -30,7 +30,9 @@ export function TrainerCardGrid({
         <div className="pointer-events-none absolute right-4 bottom-4 left-4">
           <div className="flex items-center gap-1 text-sm text-silver-200">
             <span className="text-white">★</span>
-            <span className="font-medium text-white">{trainer.rating}</span>
+            <span className="font-medium text-white">
+              {formatTrainerRating(trainer.rating)}
+            </span>
             <span className="text-silver-400">({trainer.reviewCount})</span>
           </div>
         </div>

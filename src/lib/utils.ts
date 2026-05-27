@@ -8,6 +8,11 @@ export function formatPrice(amount: number): string {
   }).format(amount);
 }
 
+/** Trainer aggregate rating — always one decimal (e.g. 5 → 5.0) */
+export function formatTrainerRating(rating: number): string {
+  return rating.toFixed(1);
+}
+
 export function cn(...classes: (string | boolean | undefined)[]): string {
   return classes.filter(Boolean).join(" ");
 }

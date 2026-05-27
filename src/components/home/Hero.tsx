@@ -32,16 +32,18 @@ export function Hero() {
         </div>
 
         <div className="home-hero__search-stage">
-          <div className="home-hero__search-mesh" aria-hidden>
-            <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--violet" />
-            <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--magenta" />
-            <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--indigo" />
-          </div>
           <SearchBar
             showFilterChips
             showTrustIndicators
             enableSuggestions
             variant="hero"
+            composerBackdrop={
+              <div className="home-hero__search-mesh" aria-hidden>
+                <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--violet" />
+                <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--magenta" />
+                <span className="home-hero__search-mesh-blob home-hero__search-mesh-blob--indigo" />
+              </div>
+            }
           />
         </div>
       </div>

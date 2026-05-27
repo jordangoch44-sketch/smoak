@@ -5,7 +5,7 @@ import {
   SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
 import { applyPendingSaveAfterLogin } from "@/lib/specialist-saves";
-import type { SaveToastOptions } from "@/contexts/SaveToastContext";
+import { SAVE_TOAST_ADDED, type SaveToastOptions } from "@/lib/saved-ui";
 
 export interface PostLoginNavigation {
   path: string;
@@ -46,6 +46,7 @@ export function resolvePostLoginNavigation(
       toast: {
         title:
           "Specialist accounts cannot save trainers. Switch to a client account to save specialists.",
+        variant: "neutral",
       },
     };
   }

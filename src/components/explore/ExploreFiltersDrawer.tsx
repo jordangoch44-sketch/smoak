@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TrainerFilters } from "@/types";
+import { countActiveFilters } from "@/lib/explore";
 import { cn } from "@/lib/utils";
 import { CloseIcon } from "@/components/ui/icons";
 import { TrainerFilters as FiltersPanel } from "./TrainerFilters";
@@ -12,9 +13,13 @@ interface ExploreFiltersDrawerProps {
   onClose: () => void;
   filters: TrainerFilters;
   onApply: (filters: TrainerFilters) => void;
-  activeFilterCount: number;
-  resultCount: number;
+  getMatchCount: (filters: TrainerFilters) => number;
   onClearFilters: () => void;
+}
+
+function formatApplyLabel(count: number): string {
+  if (count === 0) return "Apply · No results";
+  return `Apply · ${count} result${count !== 1 ? "s" : ""}`;
 }
 
 function filtersSnapshot(filters: TrainerFilters): string {
@@ -26,12 +31,20 @@ export function ExploreFiltersDrawer({
   onClose,
   filters,
   onApply,
-  activeFilterCount,
-  resultCount,
+  getMatchCount,
   onClearFilters,
 }: ExploreFiltersDrawerProps) {
   const [draft, setDraft] = useState(filters);
   const [syncedKey, setSyncedKey] = useState("");
+
+  const draftMatchCount = useMemo(
+    () => getMatchCount(draft),
+    [draft, getMatchCount]
+  );
+  const draftActiveFilterCount = useMemo(
+    () => countActiveFilters(draft),
+    [draft]
+  );
 
   const filtersKey = filtersSnapshot(filters);
   if (open && syncedKey !== filtersKey) {
@@ -102,7 +115,7 @@ export function ExploreFiltersDrawer({
         </div>
 
         <div className="explore-filters-drawer__footer">
-          {activeFilterCount > 0 ? (
+          {draftActiveFilterCount > 0 ? (
             <button
               type="button"
               onClick={handleClear}
@@ -116,7 +129,7 @@ export function ExploreFiltersDrawer({
             onClick={handleApply}
             className="smoac-control explore-filters-drawer__apply"
           >
-            Apply · {resultCount} result{resultCount !== 1 ? "s" : ""}
+            {formatApplyLabel(draftMatchCount)}
           </button>
         </div>
       </div>

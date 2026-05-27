@@ -56,22 +56,22 @@
   transform: scale(0.94);
 }
 
-/* Save microinteraction — fill, pulse, violet glow */
+/* Save microinteraction — red fill, pulse, luxury glow */
 .save-button--burst {
   animation: save-button-pop 0.52s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .save-button--burst.save-button--saved {
-  border-color: rgba(var(--accent-glow-rgb), 0.38);
+  border-color: rgba(var(--save-heart-rgb), 0.55);
   box-shadow:
-    0 0 0 1px rgba(var(--accent-glow-rgb), 0.2),
-    0 0 20px rgba(var(--accent-glow-rgb), 0.28),
-    0 0 32px rgba(var(--accent-glow-rgb), 0.12);
+    0 0 0 1px rgba(var(--save-heart-rgb), 0.28),
+    0 0 22px rgba(var(--save-heart-glow-rgb), 0.45),
+    0 0 40px rgba(var(--save-heart-rgb), 0.22);
 }
 
 .save-button--burst .save-button__icon--filled {
   animation: save-heart-fill-in 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  fill: var(--accent-glow);
+  fill: var(--save-heart);
 }
 
 @keyframes save-button-pop {
@@ -93,17 +93,33 @@
   0% {
     opacity: 0;
     transform: scale(0.55);
-    fill: rgba(var(--accent-glow-rgb), 0.45);
+    fill: rgba(var(--save-heart-rgb), 0.45);
   }
   55% {
     opacity: 1;
     transform: scale(1.12);
-    fill: var(--accent-glow);
+    fill: var(--save-heart);
   }
   100% {
     opacity: 1;
     transform: scale(1);
-    fill: #ffffff;
+    fill: var(--save-heart);
+  }
+}
+
+@keyframes save-heart-glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(var(--save-heart-rgb), 0.22),
+      0 0 14px rgba(var(--save-heart-glow-rgb), 0.28),
+      0 0 24px rgba(var(--save-heart-rgb), 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(var(--save-heart-rgb), 0.32),
+      0 0 20px rgba(var(--save-heart-glow-rgb), 0.42),
+      0 0 32px rgba(var(--save-heart-rgb), 0.2);
   }
 }
 
@@ -123,10 +139,10 @@
 }
 
 .save-button__icon--outline {
-  stroke: #ffffff;
+  stroke: rgba(255, 255, 255, 0.92);
 }
 
-/* Unsaved: white outline heart only */
+/* Unsaved: neutral outline heart */
 .save-button--unsaved .save-button__icon--outline {
   opacity: 1;
   transform: scale(1);
@@ -137,13 +153,21 @@
   transform: scale(0.85);
 }
 
-/* Saved: solid white heart on dark chip — stays visible on light photos */
+/* Saved: deep red filled heart with soft glow */
 .save-button--saved {
-  border-color: rgba(255, 255, 255, 0.55);
-  background: rgba(0, 0, 0, 0.62);
+  border-color: rgba(var(--save-heart-rgb), 0.42);
+  background: rgba(0, 0, 0, 0.58);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.2),
-    0 0 16px rgba(255, 255, 255, 0.22);
+    0 0 0 1px rgba(var(--save-heart-rgb), 0.22),
+    0 0 16px rgba(var(--save-heart-glow-rgb), 0.32),
+    0 0 28px rgba(var(--save-heart-rgb), 0.14);
+  animation: save-heart-glow-pulse 3.2s ease-in-out infinite;
+}
+
+.save-button--saved.save-button--burst {
+  animation:
+    save-button-pop 0.52s cubic-bezier(0.22, 1, 0.36, 1),
+    save-heart-glow-pulse 3.2s ease-in-out 0.52s infinite;
 }
 
 .save-button--saved .save-button__icon--outline {
@@ -154,7 +178,8 @@
 .save-button--saved .save-button__icon--filled {
   opacity: 1;
   transform: scale(1);
-  fill: #ffffff;
+  fill: var(--save-heart);
+  filter: drop-shadow(0 0 6px rgba(var(--save-heart-glow-rgb), 0.55));
   stroke: none;
 }
 
@@ -163,11 +188,22 @@
   transition:
     opacity 0.22s ease,
     transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    fill 0.35s ease;
+    fill 0.35s ease,
+    filter 0.35s ease;
 }
 
 .save-button--saved:not(.save-button--burst) .save-button__icon--filled {
-  fill: #ffffff;
+  fill: var(--save-heart);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .save-button--saved {
+    animation: none;
+  }
+
+  .save-button--burst.save-button--saved {
+    animation: save-button-pop 0.52s cubic-bezier(0.22, 1, 0.36, 1);
+  }
 }
 
 /* Mobile: stronger contrast + 44px tap target */
@@ -192,15 +228,12 @@
   }
 
   .save-button--saved {
-    background: rgba(0, 0, 0, 0.68);
-    border-color: rgba(255, 255, 255, 0.58);
-    box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.22),
-      0 0 18px rgba(255, 255, 255, 0.24);
+    background: rgba(0, 0, 0, 0.62);
+    border-color: rgba(var(--save-heart-rgb), 0.48);
   }
 
   .save-button--saved .save-button__icon--filled {
-    fill: #ffffff;
+    fill: var(--save-heart);
   }
 }
 
@@ -212,7 +245,7 @@
   }
 
   .save-button--saved:hover {
-    border-color: rgba(255, 255, 255, 0.6);
-    background: rgba(0, 0, 0, 0.7);
+    border-color: rgba(var(--save-heart-rgb), 0.52);
+    background: rgba(0, 0, 0, 0.66);
   }
 }

@@ -1,6 +1,6 @@
 import type { Trainer } from "@/types";
 import { formatProviderLocation } from "@/lib/provider-location";
-import { formatPrice } from "@/lib/utils";
+import { formatPrice, formatTrainerRating } from "@/lib/utils";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 
 interface TrainerCardCompactProps {
@@ -50,7 +50,9 @@ export function TrainerCardCompact({
           <div className="shrink-0 text-right">
             <div className="flex items-center justify-end gap-0.5 text-[11px] leading-none">
               <span className="text-white/90">★</span>
-              <span className="font-medium text-white">{trainer.rating}</span>
+              <span className="font-medium text-white">
+                {formatTrainerRating(trainer.rating)}
+              </span>
               <span className="text-silver-500">({trainer.reviewCount})</span>
             </div>
             <p className="mt-0.5 text-xs font-medium leading-none text-white">

@@ -1,4 +1,6 @@
 export { Hero } from "./Hero";
+export { HeroTrustStats } from "./HeroTrustStats";
+export { LocationPersonalizationGate } from "./LocationPersonalizationGate";
 export { SearchBar } from "./SearchBar";
 export { Top50InYourCity } from "./Top50InYourCity";
 export { FeaturedTrainers } from "./FeaturedTrainers";

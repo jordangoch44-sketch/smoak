@@ -4,6 +4,7 @@ import "@/styles/site-shell.css";
 import { AppMain } from "@/components/layout/AppMain";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Footer } from "@/components/layout/Footer";
+import { MobileBottomNavLazy } from "@/components/layout/MobileBottomNavLazy";
 import { SiteWelcomeIntroGateLazy } from "@/components/layout/SiteWelcomeIntroGateLazy";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { ToastProvider } from "@/components/ui/toast";
@@ -36,6 +37,7 @@ export default function SiteLayout({
           <SiteHeader />
           <AppMain>{children}</AppMain>
           <Footer />
+          <MobileBottomNavLazy />
         </AppProviders>
       </ToastProvider>
     </div>

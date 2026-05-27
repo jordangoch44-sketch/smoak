@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { TrainerFilters as FiltersPanel } from "./TrainerFilters";
@@ -10,6 +11,7 @@ import { ExploreResults } from "./ExploreResults";
 
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
+  const didFocusSearchRef = useRef(false);
   const {
     filters,
     setFilters,
@@ -18,6 +20,7 @@ export function ExplorePageClient() {
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
+    getExploreMatchCount,
     activeFilterCount,
     activeFilterChips,
     hasSearch,
@@ -29,6 +32,19 @@ export function ExplorePageClient() {
     initialSpecialty: searchParams.get("specialty") ?? "",
     initialQuery: searchParams.get("q") ?? "",
   });
+
+  useEffect(() => {
+    if (searchParams.get("focus") !== "search" || didFocusSearchRef.current) {
+      return;
+    }
+    didFocusSearchRef.current = true;
+    const input = document.getElementById("explore-search-input");
+    if (!(input instanceof HTMLInputElement)) return;
+    requestAnimationFrame(() => {
+      input.focus({ preventScroll: true });
+      input.select();
+    });
+  }, [searchParams]);
 
   return (
     <div className="explore-page">
@@ -87,8 +103,7 @@ export function ExplorePageClient() {
         onClose={() => setMobileFiltersOpen(false)}
         filters={filters}
         onApply={setFilters}
-        activeFilterCount={activeFilterCount}
-        resultCount={filtered.length}
+        getMatchCount={getExploreMatchCount}
         onClearFilters={clearFilters}
       />
     </div>

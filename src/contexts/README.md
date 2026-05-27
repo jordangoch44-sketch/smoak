@@ -7,7 +7,7 @@ App-wide **client** state. Mounted in `components/providers/AppProviders.tsx` in
 ```
 AuthSessionProvider
   └── SavedTrainersProvider   // LoginGateModal portal lives here
-        └── SaveToastProvider
+        └── SaveToastProvider // Centered glass save toast (portaled)
 ```
 
 Changing order can break hooks (`SaveTrainerButton` needs both saved + toast contexts).
@@ -18,12 +18,13 @@ Changing order can break hooks (`SaveTrainerButton` needs both saved + toast con
 |---------|------|----------------|
 | `AuthSessionContext` | `useAuthSession()` | Dev session, signIn/signOut |
 | `SavedTrainersContext` | `useSavedTrainers()` | Saved IDs, toggle, **openLoginGate** |
-| `SaveToastContext` | `useSaveToast()` | Bottom “saved” toast |
+| `SaveToastContext` | `useSaveToast()` | Centered save/remove confirmation toast |
 
 ## Rules
 
 - **One login gate** — `LoginGateModal` only in `SavedTrainersProvider`.
 - **One saved list source** — `saved-trainers-store`; components use `useSavedTrainers()`, not raw `localStorage`.
+- **One save copy source** — toast text and nav formatters live in `lib/saved-ui.ts`.
 - New global UI state: add a provider here only if multiple unrelated features need it; otherwise use a feature hook.
 
 ## Barrel

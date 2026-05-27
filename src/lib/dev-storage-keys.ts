@@ -15,6 +15,13 @@ export const DEV_ADMIN_NOTIFICATION_DISMISSED_KEY =
   "smoac_admin_notification_dismissed";
 export const DEV_PENDING_SAVE_KEY = "smoac_pending_save";
 
+/** Homepage location personalization (geo / ZIP / skip) */
+export const USER_LATITUDE_KEY = "userLatitude";
+export const USER_LONGITUDE_KEY = "userLongitude";
+export const HAS_LOCATION_PERMISSION_KEY = "hasLocationPermission";
+export const USER_ZIP_CODE_KEY = "userZipCode";
+export const HAS_SKIPPED_LOCATION_PROMPT_KEY = "hasSkippedLocationPrompt";
+
 /** @deprecated DEV migration source */
 export const LEGACY_AUTH_STORAGE_KEY = "smoac-auth-session";
 /** @deprecated DEV migration source */

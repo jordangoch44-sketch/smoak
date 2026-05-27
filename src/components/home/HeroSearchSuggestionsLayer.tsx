@@ -4,14 +4,6 @@ import { useLayoutEffect, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { kindLabel, type HeroSearchSuggestion } from "@/lib/hero-search-suggestions";
 
-export interface HeroSearchSuggestionsGeometry {
-  panelTop: number;
-  backdropTop: number;
-  left: number;
-  width: number;
-  maxHeight: number;
-}
-
 interface HeroSearchSuggestionsLayerProps {
   open: boolean;
   listboxId: string;
@@ -26,6 +18,12 @@ interface HeroSearchSuggestionsLayerProps {
 
 const PANEL_GAP_PX = 12;
 const VIEWPORT_PAD_PX = 12;
+/** One visible suggestion row (matches `.hero-search__suggestion` min-height) */
+const SUGGESTION_ROW_PX = 44;
+const PANEL_PADDING_PX = 12;
+const VISIBLE_SUGGESTION_ROWS = 3;
+const THREE_ROW_PANEL_MAX_PX =
+  PANEL_PADDING_PX + VISIBLE_SUGGESTION_ROWS * SUGGESTION_ROW_PX;
 
 export function HeroSearchSuggestionsLayer({
   open,
@@ -53,47 +51,46 @@ export function HeroSearchSuggestionsLayer({
       const panelTop = rect.bottom + PANEL_GAP_PX;
       const availableBelow =
         viewportHeight + viewportOffsetTop - panelTop - VIEWPORT_PAD_PX;
+      const maxHeight = Math.min(THREE_ROW_PANEL_MAX_PX, availableBelow);
 
       panel.style.top = `${panelTop}px`;
       panel.style.left = `${rect.left}px`;
       panel.style.width = `${rect.width}px`;
-      panel.style.maxHeight = `${Math.max(160, availableBelow)}px`;
-
-      const backdrop = layerRef.current?.querySelector(
-        ".hero-search-suggestions-layer__backdrop"
-      ) as HTMLElement | null;
-      if (backdrop) {
-        backdrop.style.top = `${rect.bottom}px`;
-      }
+      panel.style.maxHeight = `${maxHeight}px`;
     }
 
     measure();
 
     const viewport = window.visualViewport;
     viewport?.addEventListener("resize", measure);
-    viewport?.addEventListener("scroll", measure);
     window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
 
     return () => {
       viewport?.removeEventListener("resize", measure);
-      viewport?.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
     };
-  }, [open, anchorRef, resultsPanelRef, layerRef, suggestions.length]);
+  }, [open, anchorRef, resultsPanelRef, layerRef]);
 
   useEffect(() => {
     const panel = resultsPanelRef.current;
-    if (!open || !panel || !onPanelInteract) return;
+    if (!open || !panel) return;
 
-    const keepFocus = () => onPanelInteract();
-    panel.addEventListener("touchstart", keepFocus, { passive: true });
-    panel.addEventListener("touchmove", keepFocus, { passive: true });
+    const onPanelTouch = () => onPanelInteract?.();
+
+    const containTouch = (event: TouchEvent) => {
+      event.stopPropagation();
+    };
+
+    panel.addEventListener("touchstart", onPanelTouch, { passive: true });
+    panel.addEventListener("touchmove", onPanelTouch, { passive: true });
+    panel.addEventListener("touchstart", containTouch, { passive: true });
+    panel.addEventListener("touchmove", containTouch, { passive: true });
 
     return () => {
-      panel.removeEventListener("touchstart", keepFocus);
-      panel.removeEventListener("touchmove", keepFocus);
+      panel.removeEventListener("touchstart", onPanelTouch);
+      panel.removeEventListener("touchmove", onPanelTouch);
+      panel.removeEventListener("touchstart", containTouch);
+      panel.removeEventListener("touchmove", containTouch);
     };
   }, [open, onPanelInteract, resultsPanelRef]);
 
@@ -111,8 +108,12 @@ export function HeroSearchSuggestionsLayer({
         type="button"
         className="smoac-control hero-search-suggestions-layer__backdrop"
         aria-label="Dismiss search suggestions"
-        onPointerDown={(e) => e.preventDefault()}
-        onClick={onDismiss}
+        tabIndex={-1}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onDismiss();
+        }}
       />
 
       <ul
@@ -121,6 +122,7 @@ export function HeroSearchSuggestionsLayer({
         role="listbox"
         className="hero-search-suggestions-layer__panel"
         aria-label="Search suggestions"
+        onPointerDown={(event) => event.stopPropagation()}
       >
         {suggestions.map((item) => (
           <li key={item.id} role="presentation">
@@ -129,7 +131,6 @@ export function HeroSearchSuggestionsLayer({
               role="option"
               className="smoac-control smoac-tap hero-search__suggestion"
               onMouseDown={(e) => e.preventDefault()}
-              onTouchStart={(e) => e.preventDefault()}
               onClick={() => onSelect(item)}
             >
               <span className="hero-search__suggestion-text">

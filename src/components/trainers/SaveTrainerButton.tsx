@@ -2,6 +2,7 @@
 
 import { SaveButton } from "@/components/ui/SaveButton";
 import { useSaveToast } from "@/contexts/SaveToastContext";
+import { SAVE_TOAST_ADDED, SAVE_TOAST_REMOVED } from "@/lib/saved-ui";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
   canSaveSpecialists,
@@ -32,6 +33,7 @@ export function SaveTrainerButton({
     if (saved) {
       if (canSaveSpecialists(session)) {
         toggleSaved(trainerId);
+        showToast(SAVE_TOAST_REMOVED);
       }
       return;
     }
@@ -45,6 +47,7 @@ export function SaveTrainerButton({
     if (role === "specialist") {
       showToast({
         title: "Switch to a client account to save specialists.",
+        variant: "neutral",
       });
       return;
     }
@@ -55,11 +58,7 @@ export function SaveTrainerButton({
     }
 
     toggleSaved(trainerId);
-    showToast({
-      title: "Added to your saved specialists.",
-      linkHref: "/saved",
-      linkLabel: "View saved specialists →",
-    });
+    showToast(SAVE_TOAST_ADDED);
   }
 
   return (

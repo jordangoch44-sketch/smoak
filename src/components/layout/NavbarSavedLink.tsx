@@ -6,6 +6,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { canSaveSpecialists } from "@/lib/specialist-saves";
 import { HeartIcon } from "@/components/ui/icons";
 import { useStableClientState } from "@/hooks/useStableClientState";
+import { formatSavedCountBadge } from "@/lib/saved-ui";
 import { cn } from "@/lib/utils";
 
 interface NavbarSavedLinkProps {
@@ -54,21 +55,22 @@ export function NavbarSavedLink({
       aria-controls="saved-panel-dropdown"
     >
       <span className="inline-flex items-center justify-center pointer-events-none">
-        <HeartIcon className="h-5 w-5" filled={open} />
+        <HeartIcon className="h-5 w-5" filled={open || showBadge} />
       </span>
       {showLabel && (
         <span className="pointer-events-none text-sm tracking-wide">Saved</span>
       )}
-      <span
-        className={cn(
-          "pointer-events-none flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-white px-1 text-[10px] font-bold leading-none text-black transition-opacity duration-150",
-          showLabel ? "ml-0.5" : "absolute -top-0.5 -right-1",
-          showBadge ? "opacity-100" : "opacity-0 scale-75"
-        )}
-        aria-hidden={!showBadge}
-      >
-        {showBadge ? (savedCount > 9 ? "9+" : savedCount) : "0"}
-      </span>
+      {showBadge ? (
+        <span
+          className={cn(
+            "pointer-events-none flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[var(--save-heart)] px-1 text-[10px] font-semibold leading-none text-white shadow-[0_0_12px_rgba(var(--save-heart-rgb),0.45)]",
+            showLabel ? "ml-0.5" : "absolute -top-0.5 -right-1"
+          )}
+          aria-hidden
+        >
+          {formatSavedCountBadge(savedCount)}
+        </span>
+      ) : null}
     </button>
   );
 }

@@ -6,36 +6,27 @@ import {
   getMobileMaxWidthSnapshot,
   subscribeMobileMaxWidth,
 } from "@/lib/viewport";
-import { MobileNavMenu } from "./MobileNavMenu";
-import { MobileHeaderProfileMenu } from "./MobileHeaderProfileMenu";
+import { MobileUtilityDrawer } from "./MobileUtilityDrawer";
 import { SavedPanelDropdown } from "./SavedPanelDropdown";
 
 interface HeaderOverlayRootProps {
-  pathname: string;
   menuOpen: boolean;
   savedPanelOpen: boolean;
-  profileMenuOpen: boolean;
   onCloseMenu: () => void;
   onCloseSaved: () => void;
-  onCloseProfile: () => void;
-  onOpenSavedFromMenu: () => void;
 }
 
 /**
- * Mobile header panels — portaled below fixed header; CSS hides on md+ (no JS viewport gate).
+ * Header overlays — mobile utility drawer; desktop saved specialists panel.
  */
 export function HeaderOverlayRoot({
-  pathname,
   menuOpen,
   savedPanelOpen,
-  profileMenuOpen,
   onCloseMenu,
   onCloseSaved,
-  onCloseProfile,
-  onOpenSavedFromMenu,
 }: HeaderOverlayRootProps) {
   const [mounted, setMounted] = useState(false);
-  const mobileOverlay = useSyncExternalStore(
+  const isMobile = useSyncExternalStore(
     subscribeMobileMaxWidth,
     getMobileMaxWidthSnapshot,
     () => false
@@ -46,35 +37,20 @@ export function HeaderOverlayRoot({
   }, []);
 
   if (!mounted) return null;
-  if (!menuOpen && !savedPanelOpen && !profileMenuOpen) return null;
+  if (!menuOpen && !savedPanelOpen) return null;
 
   return createPortal(
-    <div id="header-overlay-root" className="md:hidden" data-header-overlay>
-      {menuOpen ? (
-        <MobileNavMenu
-          open
-          pathname={pathname}
-          onClose={onCloseMenu}
-          onOpenSavedPanel={onOpenSavedFromMenu}
-          savedPanelOpen={savedPanelOpen}
-        />
+    <div id="header-overlay-root" data-header-overlay>
+      {isMobile && menuOpen ? (
+        <div className="header-overlay-root__mobile md:hidden">
+          <MobileUtilityDrawer open onClose={onCloseMenu} />
+        </div>
       ) : null}
-      {mobileOverlay && savedPanelOpen ? (
-        <SavedPanelDropdown open onClose={onCloseSaved} />
-      ) : null}
-      {profileMenuOpen ? (
-        <>
-          <button
-            type="button"
-            className="smoac-control header-profile-menu__backdrop"
-            aria-label="Close account menu"
-            onClick={onCloseProfile}
-          />
-          <MobileHeaderProfileMenu
-            className="header-profile-menu"
-            onClose={onCloseProfile}
-          />
-        </>
+
+      {!isMobile && savedPanelOpen ? (
+        <div className="header-overlay-root__desktop hidden md:block">
+          <SavedPanelDropdown open onClose={onCloseSaved} />
+        </div>
       ) : null}
     </div>,
     document.body

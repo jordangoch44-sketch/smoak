@@ -1,14 +1,23 @@
+"use client";
+
 import Link from "next/link";
 import {
+  DEFAULT_RANKING_CITY_SLUG,
   getCityTop50Listing,
   getRankedSpecialistsForCity,
 } from "@/data/city-rankings";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
+import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
+import { marketplaceCityToSlug } from "@/lib/marketplace-city-centers";
 import { Top50RankCard } from "./Top50RankCard";
 
 export function Top50InYourCity() {
-  const listing = getCityTop50Listing();
-  const ranked = getRankedSpecialistsForCity();
+  const personalizationCity = usePersonalizationCity();
+  const citySlug = personalizationCity
+    ? marketplaceCityToSlug(personalizationCity)
+    : DEFAULT_RANKING_CITY_SLUG;
+  const listing = getCityTop50Listing(citySlug);
+  const ranked = getRankedSpecialistsForCity(citySlug);
 
   return (
     <section
@@ -24,7 +33,11 @@ export function Top50InYourCity() {
             <h2 id="home-top50-heading" className="home-top50__title">
               Top 50 in Your City
             </h2>
-            <p className="home-top50__subtitle">{listing.subtitle}</p>
+            <p className="home-top50__subtitle">
+              {personalizationCity
+                ? `The highest-rated health & wellness specialists near you in ${personalizationCity}.`
+                : listing.subtitle}
+            </p>
             <p className="home-top50__city-line">{listing.displayTitle}</p>
           </div>
           <Link

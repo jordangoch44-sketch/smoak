@@ -20,6 +20,16 @@ export function formatReviewSourceBreakdown(sources: TrainerReviewSources): stri
   return parts.join(" · ");
 }
 
+/** Compact platform labels for profile hero (no counts) */
+export function getReviewSourceLabels(sources: TrainerReviewSources): string[] {
+  const labels: string[] = [];
+  if (sources.google && sources.google > 0) labels.push("Google");
+  if (sources.yelp && sources.yelp > 0) labels.push("Yelp");
+  if (sources.smoac && sources.smoac > 0) labels.push("SMOAC");
+  if (sources.other && sources.other > 0) labels.push("Other");
+  return labels;
+}
+
 export function getDemoReviewSourcesForTrainer(
   trainerId: string
 ): TrainerReviewSources | undefined {
@@ -44,16 +54,18 @@ export function computeTrainerReviewCount(
 export function resolveTrainerReviewDisplay(trainer: Trainer): {
   total: number;
   breakdown: string | null;
+  sourceLabels: string[];
 } {
   const sources = resolveTrainerReviewSources(trainer);
   const total = computeTrainerReviewCount(trainer);
 
   if (!sources) {
-    return { total, breakdown: null };
+    return { total, breakdown: null, sourceLabels: [] };
   }
 
   return {
     total,
     breakdown: formatReviewSourceBreakdown(sources),
+    sourceLabels: getReviewSourceLabels(sources),
   };
 }

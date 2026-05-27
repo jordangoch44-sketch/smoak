@@ -61,7 +61,8 @@ export function ExploreSearchToolbar({
           <div className="explore-search-shell__field">
             <SearchIcon className="explore-search-shell__icon" />
             <input
-              type="text"
+              id="explore-search-input"
+              type="search"
               enterKeyHint="search"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}

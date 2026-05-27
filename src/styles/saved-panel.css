@@ -7,15 +7,19 @@
 }
 
 .navbar-saved-trigger--has-saves:not(.navbar-saved-trigger--active) {
-  color: rgba(200, 255, 230, 0.88);
+  color: rgba(var(--save-heart-glow-rgb), 0.92);
+}
+
+.navbar-saved-trigger--has-saves:not(.navbar-saved-trigger--active) svg {
+  filter: drop-shadow(0 0 8px rgba(var(--save-heart-rgb), 0.35));
 }
 
 .navbar-saved-trigger--active {
-  background: rgba(118, 214, 172, 0.12);
+  background: rgba(var(--save-heart-rgb), 0.12);
   box-shadow:
-    0 0 0 1px rgba(118, 214, 172, 0.22),
-    0 0 22px rgba(118, 214, 172, 0.2);
-  color: rgba(230, 255, 245, 0.98);
+    0 0 0 1px rgba(var(--save-heart-rgb), 0.24),
+    0 0 22px rgba(var(--save-heart-glow-rgb), 0.22);
+  color: rgba(255, 228, 232, 0.98);
 }
 
 /* ── Dropdown overlay (slides from under header) ── */

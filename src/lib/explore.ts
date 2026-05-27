@@ -41,3 +41,12 @@ export function filterExploreTrainers(
   if (!searchQuery.trim()) return filtered;
   return filtered.filter((t) => matchesSearchQuery(t, searchQuery));
 }
+
+/** Shared match count for Explore results and filter modal live preview */
+export function countExploreTrainerMatches(
+  trainers: Trainer[],
+  filters: TrainerFilters,
+  searchQuery: string
+): number {
+  return filterExploreTrainers(trainers, filters, searchQuery).length;
+}

@@ -260,14 +260,28 @@ export function useExploreTrainers({
     getHiddenTrainersServerSnapshot
   );
 
-  const filtered = useMemo(() => {
-    void profileOverridesRevision;
-    void hiddenRevision;
-    const hiddenSet = new Set(getHiddenTrainersSnapshot());
-    return filterExploreTrainers(trainers, filters, searchQuery)
-      .filter((trainer) => !hiddenSet.has(trainer.id))
-      .map((trainer) => getTrainerWithOverrides(trainer.id) ?? trainer);
-  }, [filters, searchQuery, profileOverridesRevision, hiddenRevision]);
+  const getVisibleExploreMatches = useCallback(
+    (candidateFilters: TrainerFilters) => {
+      void profileOverridesRevision;
+      void hiddenRevision;
+      const hiddenSet = new Set(getHiddenTrainersSnapshot());
+      return filterExploreTrainers(trainers, candidateFilters, searchQuery)
+        .filter((trainer) => !hiddenSet.has(trainer.id))
+        .map((trainer) => getTrainerWithOverrides(trainer.id) ?? trainer);
+    },
+    [searchQuery, profileOverridesRevision, hiddenRevision]
+  );
+
+  const filtered = useMemo(
+    () => getVisibleExploreMatches(filters),
+    [filters, getVisibleExploreMatches]
+  );
+
+  const getExploreMatchCount = useCallback(
+    (candidateFilters: TrainerFilters) =>
+      getVisibleExploreMatches(candidateFilters).length,
+    [getVisibleExploreMatches]
+  );
 
   const activeFilterCount = countActiveFilters(filters);
   const activeFilterChips = useMemo(
@@ -368,6 +382,7 @@ export function useExploreTrainers({
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
+    getExploreMatchCount,
     activeFilterCount,
     activeFilterChips,
     hasSearch,

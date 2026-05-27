@@ -56,15 +56,6 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
         <div className="profile-hero__scrim-fade absolute inset-x-0 bottom-0 z-[1] h-[70%]" aria-hidden />
 
         <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-10 px-4 pb-5 sm:px-6 sm:pb-7">
-          {hasGallery ? (
-            <button
-              type="button"
-              className="profile-hero__view-gallery"
-              onClick={() => galleryControlRef.current?.openGallery()}
-            >
-              View Gallery
-            </button>
-          ) : null}
           <div className="mx-auto max-w-7xl profile-hero__identity-inner">
             <div className="profile-hero__identity-row flex items-end gap-3.5 sm:gap-5">
               <TrainerThumbnail
@@ -91,15 +82,23 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
               </div>
             </div>
 
-            <div className="profile-hero__meta mt-4 flex items-end gap-3 text-sm sm:mt-5">
-              <ProfileReviewMeta trainer={trainer} />
-              <span className="profile-hero__meta-divider shrink-0 text-silver-500" aria-hidden>
-                ·
-              </span>
-              <span className="shrink-0 whitespace-nowrap pb-0.5 font-medium text-white">
-                {formatPrice(trainer.pricePerSession)}
-                <span className="font-normal text-silver-400"> / session</span>
-              </span>
+            <div className="profile-hero__meta mt-4 text-sm sm:mt-5">
+              <div className="profile-hero__meta-primary">
+                <ProfileReviewMeta trainer={trainer} />
+                <span className="profile-hero__meta-price shrink-0 whitespace-nowrap font-medium text-white">
+                  {formatPrice(trainer.pricePerSession)}
+                  <span className="font-normal text-silver-400"> / session</span>
+                </span>
+              </div>
+              {hasGallery ? (
+                <button
+                  type="button"
+                  className="profile-hero__view-gallery"
+                  onClick={() => galleryControlRef.current?.openGallery()}
+                >
+                  View Gallery
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
