@@ -32,6 +32,10 @@ Verify hydration: `http://<mac-ip>:3000/tap-test` — inline script YES, React h
 
 Details: [`AGENTS.md`](AGENTS.md) and [`src/app/(diagnostics)/tap-test/page.tsx`](src/app/(diagnostics)/tap-test/page.tsx).
 
+## Supabase Storage (optional)
+
+Specialist profile/cover/gallery uploads are prepared under `src/lib/supabase/`. Copy `.env.example` → `.env.local` and see [`docs/SUPABASE_STORAGE.md`](docs/SUPABASE_STORAGE.md). The app runs without Supabase in local mock mode.
+
 ## Scripts
 
 | Command | Purpose |

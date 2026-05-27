@@ -36,6 +36,7 @@ src/
 ├── contexts/                   # Auth, saved trainers, save toast
 ├── hooks/                      # Feature hooks (explore, header panels, hydration)
 ├── lib/                        # Pure TS: filters, stores, navigation (see lib/README.md)
+│   └── supabase/               # Storage clients, paths, upload helpers (optional env)
 ├── data/                       # Static mock data (swap for API later)
 ├── types/                      # Shared interfaces
 ├── styles/                     # Global + feature CSS
