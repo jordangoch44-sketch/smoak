@@ -10,6 +10,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -79,6 +80,18 @@ const INACTIVE_PANEL: BottomNavPanelTransitionState = {
 const MobileBottomNavTransitionContext =
   createContext<MobileBottomNavTransitionContextValue | null>(null);
 
+function subscribeClientMounted(): () => void {
+  return () => {};
+}
+
+function getClientMountedSnapshot(): boolean {
+  return true;
+}
+
+function getClientMountedServerSnapshot(): boolean {
+  return false;
+}
+
 export function MobileBottomNavTransitionProvider({
   children,
 }: {
@@ -88,7 +101,11 @@ export function MobileBottomNavTransitionProvider({
   const pathname = usePathname();
   const reducedMotion = usePrefersReducedMotion();
   const isTabletViewport = useTabletViewport();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    subscribeClientMounted,
+    getClientMountedSnapshot,
+    getClientMountedServerSnapshot
+  );
   const [showDirectoryOverlay, setShowDirectoryOverlay] = useState(false);
   const [directoryLoaderPhase, setDirectoryLoaderPhase] =
     useState<SmoacDirectoryLoaderPhase>("exit");
@@ -104,10 +121,6 @@ export function MobileBottomNavTransitionProvider({
     enterOnly: boolean;
   } | null>(null);
   const panelCompleteGuardRef = useRef(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
