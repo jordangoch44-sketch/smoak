@@ -1,0 +1,39 @@
+/* Bottom nav stacked panel slides — transform + opacity only */
+
+:root {
+  --bottom-nav-panel-ms: 420ms;
+  --bottom-nav-panel-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+body.bottom-nav-panel-active {
+  overflow: hidden;
+}
+
+.page-transition--bottom-nav-panel {
+  isolation: isolate;
+}
+
+.page-transition--bottom-nav-panel .page-transition__layer--panel {
+  z-index: 1;
+  will-change: transform, opacity;
+  transform-origin: center top;
+  backface-visibility: hidden;
+}
+
+.page-transition--bottom-nav-panel .page-transition__layer--panel:not(:last-child) {
+  z-index: 0;
+  pointer-events: none !important;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .page-transition--bottom-nav-panel .page-transition__layer--panel {
+    transform: translateZ(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition--bottom-nav-panel .page-transition__layer--panel {
+    transform: none !important;
+    will-change: opacity;
+  }
+}

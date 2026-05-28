@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/site-shell.css";
@@ -37,7 +38,9 @@ export default function SiteLayout({
           <SiteHeader />
           <AppMain>{children}</AppMain>
           <Footer />
-          <MobileBottomNavLazy />
+          <Suspense fallback={null}>
+            <MobileBottomNavLazy />
+          </Suspense>
         </AppProviders>
       </ToastProvider>
     </div>

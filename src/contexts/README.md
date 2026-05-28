@@ -7,7 +7,8 @@ App-wide **client** state. Mounted in `components/providers/AppProviders.tsx` in
 ```
 AuthSessionProvider
   └── SavedTrainersProvider   // LoginGateModal portal lives here
-        └── SaveToastProvider // Centered glass save toast (portaled)
+        └── SaveToastProvider
+              └── MobileBottomNavTransitionProvider  // Search → cinematic loader; other tabs → panel slides
 ```
 
 Changing order can break hooks (`SaveTrainerButton` needs both saved + toast contexts).

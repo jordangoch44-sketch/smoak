@@ -30,3 +30,17 @@ export const mobilePageTransition: Transition = {
   opacity: { duration: 0.68, ease: PAGE_TRANSITION_EASE },
   y: { duration: 0.74, ease: PAGE_TRANSITION_EASE_SETTLE },
 };
+
+/** Bottom nav stacked panels — iOS sheet / Wallet depth */
+export const BOTTOM_NAV_PANEL_EASE = [0.32, 0.72, 0, 1] as const;
+
+export const bottomNavPanelTransition: Transition = {
+  opacity: { duration: 0.42, ease: BOTTOM_NAV_PANEL_EASE },
+  y: { duration: 0.44, ease: BOTTOM_NAV_PANEL_EASE },
+  scale: { duration: 0.44, ease: BOTTOM_NAV_PANEL_EASE },
+};
+
+export const bottomNavPanelReducedTransition: Transition = {
+  duration: 0.14,
+  ease: "easeOut",
+};

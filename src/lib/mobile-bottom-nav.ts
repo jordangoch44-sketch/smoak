@@ -41,6 +41,50 @@ export function getMobileBottomNavItems(
   ];
 }
 
+/** Profile tab auth presentation — derived from session + client hydration */
+export type MobileBottomNavProfileAuthState = "signed-in" | "signed-out";
+
+export function getMobileBottomNavProfileAuthState(
+  clientReady: boolean,
+  authReady: boolean,
+  session: AuthSession | null
+): MobileBottomNavProfileAuthState {
+  if (!clientReady || !authReady) return "signed-out";
+  return isLoggedIn(session) ? "signed-in" : "signed-out";
+}
+
+/** Active bottom-nav tab for panel direction + scroll keys */
+export function getActiveMobileBottomNavItemId(
+  pathname: string,
+  searchParams?: URLSearchParams
+): MobileBottomNavItemId | null {
+  const ids: MobileBottomNavItemId[] = [
+    "search",
+    "saved",
+    "home",
+    "discover",
+    "profile",
+  ];
+
+  for (const id of ids) {
+    if (id === "search" && searchParams?.get("focus") === "search") {
+      if (
+        pathname === SITE_ROUTES.explore ||
+        pathname.startsWith(`${SITE_ROUTES.explore}/`)
+      ) {
+        return "search";
+      }
+      continue;
+    }
+
+    if (isMobileBottomNavItemActive(id, pathname)) {
+      return id;
+    }
+  }
+
+  return null;
+}
+
 export function isMobileBottomNavItemActive(
   itemId: MobileBottomNavItemId,
   pathname: string

@@ -1,7 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { useSyncExternalStore, type MouseEvent } from "react";
 import { TapLink } from "@/components/ui/TapLink";
 import {
   CompassIcon,
@@ -10,17 +10,23 @@ import {
   SearchIcon,
   UserIcon,
 } from "@/components/ui/icons";
+import { useMobileBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useMobileBottomNavHidden } from "@/hooks/useMobileBottomNavHidden";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
 import {
+  getActiveMobileBottomNavItemId,
   getMobileBottomNavItems,
+  getMobileBottomNavProfileAuthState,
   isMobileBottomNavItemActive,
+  type MobileBottomNavItem,
   type MobileBottomNavItemId,
+  type MobileBottomNavProfileAuthState,
 } from "@/lib/mobile-bottom-nav";
 import { formatSavedCountBadge } from "@/lib/saved-ui";
-import { canSaveSpecialists, isLoggedIn } from "@/lib/specialist-saves";
+import { getBottomNavTransitionKind } from "@/lib/mobile-bottom-nav-transition";
+import { canSaveSpecialists } from "@/lib/specialist-saves";
 import {
   getTabletMaxWidthSnapshot,
   subscribeTabletMaxWidth,
@@ -66,16 +72,61 @@ function NavIcon({
       return <HomeIcon className={className} />;
     case "discover":
       return <CompassIcon className={className} />;
-    case "profile":
-      return <UserIcon className={className} />;
     default:
       return null;
   }
 }
 
+function ProfileNavItem({
+  item,
+  active,
+  authState,
+  onNavigate,
+}: {
+  item: MobileBottomNavItem;
+  active: boolean;
+  authState: MobileBottomNavProfileAuthState;
+  onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void;
+}) {
+  const signedIn = authState === "signed-in";
+
+  return (
+    <TapLink
+      href={item.href}
+      onClick={onNavigate}
+      className={cn(
+        "mobile-bottom-nav__item smoac-hit-target mobile-bottom-nav__item--profile",
+        active && "mobile-bottom-nav__item--active",
+        signedIn
+          ? "mobile-bottom-nav__item--profile-signed-in"
+          : "mobile-bottom-nav__item--profile-signed-out"
+      )}
+      aria-label={signedIn ? "Profile, logged in" : "Sign in"}
+      aria-current={active ? "page" : undefined}
+      data-profile-auth={authState}
+    >
+      <span
+        className={cn(
+          "mobile-bottom-nav__icon-shell mobile-bottom-nav__icon-shell--profile",
+          signedIn && "mobile-bottom-nav__icon-shell--profile-signed-in"
+        )}
+      >
+        <UserIcon
+          className={cn(
+            "mobile-bottom-nav__icon mobile-bottom-nav__icon--profile",
+            active && "mobile-bottom-nav__icon--active"
+          )}
+        />
+      </span>
+    </TapLink>
+  );
+}
+
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const hidden = useMobileBottomNavHidden();
+  const { beginBottomNavTransition } = useMobileBottomNavTransition();
   const isTabletViewport = useSyncExternalStore(
     subscribeTabletMaxWidth,
     getIsTabletSnapshot,
@@ -85,7 +136,11 @@ export function MobileBottomNav() {
   const { isReady, session } = useAuthSession();
   const { isReady: savesReady, savedCount } = useSavedTrainers();
 
-  const signedIn = clientReady && isReady && isLoggedIn(session);
+  const profileAuthState = getMobileBottomNavProfileAuthState(
+    clientReady,
+    isReady,
+    session
+  );
   const showSaveBadge =
     clientReady &&
     savesReady &&
@@ -93,6 +148,28 @@ export function MobileBottomNav() {
     savedCount > 0;
   const saveBadgeLabel = formatSavedCountBadge(savedCount);
   const items = getMobileBottomNavItems(session);
+
+  function handleNavClick(
+    item: MobileBottomNavItem,
+    event: MouseEvent<HTMLAnchorElement>
+  ) {
+    const kind = getBottomNavTransitionKind(
+      item.id,
+      pathname,
+      searchParams,
+      item.href
+    );
+    if (kind === "none") return;
+
+    const fromId =
+      getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
+
+    event.preventDefault();
+    beginBottomNavTransition(item.href, kind, {
+      fromId,
+      toId: item.id,
+    });
+  }
 
   if (!isTabletViewport) return null;
 
@@ -115,20 +192,29 @@ export function MobileBottomNav() {
           <ul className="mobile-bottom-nav__list">
             {items.map((item) => {
               const active = isMobileBottomNavItemActive(item.id, pathname);
-              const isProfile = item.id === "profile";
+
+              if (item.id === "profile") {
+                return (
+                  <li key={item.id} className="mobile-bottom-nav__item-wrap">
+                    <ProfileNavItem
+                      item={item}
+                      active={active}
+                      authState={profileAuthState}
+                      onNavigate={(event) => handleNavClick(item, event)}
+                    />
+                  </li>
+                );
+              }
 
               return (
                 <li key={item.id} className="mobile-bottom-nav__item-wrap">
                   <TapLink
                     href={item.href}
+                    onClick={(event) => handleNavClick(item, event)}
                     className={cn(
                       "mobile-bottom-nav__item smoac-hit-target",
                       item.isPrimary && "mobile-bottom-nav__item--primary",
-                      active && "mobile-bottom-nav__item--active",
-                      isProfile &&
-                        signedIn &&
-                        "mobile-bottom-nav__item--signed-in",
-                      isProfile && active && signedIn && "mobile-bottom-nav__item--profile-active"
+                      active && "mobile-bottom-nav__item--active"
                     )}
                     aria-label={
                       item.id === "saved" && showSaveBadge
@@ -140,14 +226,17 @@ export function MobileBottomNav() {
                     <span
                       className={cn(
                         "mobile-bottom-nav__icon-shell",
-                        item.isPrimary && "mobile-bottom-nav__icon-shell--primary"
+                        item.isPrimary &&
+                          "mobile-bottom-nav__icon-shell--primary"
                       )}
                     >
                       <NavIcon
                         id={item.id}
                         active={active}
                         savedCount={
-                          item.id === "saved" && showSaveBadge ? savedCount : 0
+                          item.id === "saved" && showSaveBadge
+                            ? savedCount
+                            : 0
                         }
                       />
                       {item.id === "saved" && showSaveBadge ? (
@@ -157,12 +246,6 @@ export function MobileBottomNav() {
                         >
                           {saveBadgeLabel}
                         </span>
-                      ) : null}
-                      {isProfile && signedIn ? (
-                        <span
-                          className="mobile-bottom-nav__profile-glow"
-                          aria-hidden
-                        />
                       ) : null}
                     </span>
                   </TapLink>

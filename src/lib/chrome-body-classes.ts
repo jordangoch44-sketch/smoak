@@ -13,6 +13,7 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "hero-search-suggestions-open",
   "gallery-modal-open",
   "admin-review-open",
+  "bottom-nav-directory-active",
 ] as const;
 
 export type ChromeBodyOverlayClass = (typeof CHROME_BODY_OVERLAY_CLASSES)[number];

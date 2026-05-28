@@ -80,9 +80,9 @@
   pointer-events: none !important;
 }
 
-@media (max-width: 767px) {
-  /* Mobile route uses .page-transition__content only — no blocking layer */
-  .page-transition__layer {
+@media (max-width: 1023px) {
+  /* Tablet / phone: panel layers use transform; legacy layers stay inert */
+  .page-transition:not(.page-transition--bottom-nav-panel) .page-transition__layer {
     transform: none !important;
     filter: none !important;
     will-change: opacity;

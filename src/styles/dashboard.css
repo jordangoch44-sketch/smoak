@@ -359,6 +359,58 @@
     0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
+/* Client dashboard — tighter hero under fixed header (mobile shell already offsets chrome) */
+@media (max-width: 767px) {
+  .dashboard-page--client .dashboard-page__content {
+    padding-top: 0.625rem;
+    padding-inline: max(1rem, env(safe-area-inset-left, 0px))
+      max(1rem, env(safe-area-inset-right, 0px));
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dashboard-page--client .dashboard-page__utility-bar {
+    min-height: 1.25rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .dashboard-page--client .dashboard-page__header {
+    margin-bottom: 1.5rem;
+  }
+
+  .dashboard-page--client .dashboard-page__title {
+    margin-top: 0.25rem;
+  }
+
+  .dashboard-page--client .dashboard-page__intro-actions {
+    margin-top: 0.875rem;
+  }
+
+  .dashboard-page--client.dashboard-page--loading .dashboard-page__content {
+    padding-top: 1rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .dashboard-page--client .dashboard-page__content {
+    padding-top: calc(var(--site-header-total-height) + 0.75rem);
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .dashboard-page--client .dashboard-page__utility-bar {
+    margin-bottom: 0.5rem;
+  }
+
+  .dashboard-page--client .dashboard-page__header {
+    margin-bottom: 1.625rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-page--client .dashboard-page__content {
+    padding-top: calc(var(--site-header-total-height) + 1.75rem);
+  }
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr;
