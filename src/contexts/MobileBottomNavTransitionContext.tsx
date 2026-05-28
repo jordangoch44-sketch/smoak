@@ -1,28 +1,33 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { useSyncExternalStore } from "react";
-import {
-  SmoacDirectoryLoader,
-  type SmoacDirectoryLoaderPhase,
-} from "@/components/brand/SmoacDirectoryLoader";
+import type { SmoacDirectoryLoaderPhase } from "@/components/brand/SmoacDirectoryLoader";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useTabletViewport } from "@/hooks/useTabletViewport";
+import type { MobileBottomNavItemId } from "@/lib/mobile-bottom-nav";
 import {
-  getActiveMobileBottomNavItemId,
-  type MobileBottomNavItemId,
-} from "@/lib/mobile-bottom-nav";
+  getClientRouteSearch,
+  restoreBottomNavScroll,
+  saveBottomNavScroll,
+  setBottomNavDirectoryBodyActive,
+  setBottomNavPanelBodyActive,
+} from "@/lib/mobile-chrome";
 import {
   BOTTOM_NAV_DIRECTORY_OUT_MS,
+  BOTTOM_NAV_DIRECTORY_REDUCED_OUT_MS,
+  BOTTOM_NAV_DIRECTORY_REDUCED_TOTAL_MS,
   BOTTOM_NAV_DIRECTORY_TOTAL_MS,
   BOTTOM_NAV_PANEL_MS,
   BOTTOM_NAV_PANEL_REDUCED_MS,
@@ -32,17 +37,19 @@ import {
   type BottomNavPanelDirection,
   type BottomNavTransitionKind,
 } from "@/lib/mobile-bottom-nav-transition";
-import {
-  getTabletMaxWidthSnapshot,
-  subscribeTabletMaxWidth,
-} from "@/lib/viewport";
+
+const SmoacDirectoryLoader = dynamic(
+  () =>
+    import("@/components/brand/SmoacDirectoryLoader").then(
+      (mod) => mod.SmoacDirectoryLoader
+    ),
+  { ssr: false }
+);
 
 export interface BottomNavPanelTransitionState {
   active: boolean;
   direction: BottomNavPanelDirection;
-  /** Unique key for AnimatePresence — bumps each transition */
   motionKey: string;
-  /** After directory loader — enter only, no outgoing layer */
   enterOnly: boolean;
 }
 
@@ -53,7 +60,6 @@ interface BeginBottomNavTransitionOptions {
 
 interface MobileBottomNavTransitionContextValue {
   isTransitioning: boolean;
-  isDirectoryLoading: boolean;
   panel: BottomNavPanelTransitionState;
   beginBottomNavTransition: (
     href: string,
@@ -73,52 +79,6 @@ const INACTIVE_PANEL: BottomNavPanelTransitionState = {
 const MobileBottomNavTransitionContext =
   createContext<MobileBottomNavTransitionContextValue | null>(null);
 
-const BODY_DIRECTORY_ATTR = "data-bottom-nav-transition";
-
-const DIRECTORY_REDUCED_TOTAL_MS = 720;
-const DIRECTORY_REDUCED_OUT_MS = 180;
-
-const scrollPositions = new Map<string, number>();
-
-function getIsTabletSnapshot(): boolean {
-  return getTabletMaxWidthSnapshot();
-}
-
-function getIsTabletServerSnapshot(): boolean {
-  return false;
-}
-
-function setDirectoryBodyActive(active: boolean): void {
-  if (active) {
-    document.body.setAttribute(BODY_DIRECTORY_ATTR, "directory");
-    document.documentElement.setAttribute(BODY_DIRECTORY_ATTR, "directory");
-    document.body.classList.add("bottom-nav-directory-active");
-    document.documentElement.classList.add("bottom-nav-directory-active");
-  } else {
-    document.body.removeAttribute(BODY_DIRECTORY_ATTR);
-    document.documentElement.removeAttribute(BODY_DIRECTORY_ATTR);
-    document.body.classList.remove("bottom-nav-directory-active");
-    document.documentElement.classList.remove("bottom-nav-directory-active");
-  }
-}
-
-function setPanelBodyActive(active: boolean): void {
-  document.body.classList.toggle("bottom-nav-panel-active", active);
-  document.documentElement.classList.toggle("bottom-nav-panel-active", active);
-}
-
-function saveScrollForKey(key: string): void {
-  scrollPositions.set(key, window.scrollY);
-}
-
-function restoreScrollForKey(key: string): void {
-  const y = scrollPositions.get(key);
-  if (y === undefined) return;
-  requestAnimationFrame(() => {
-    window.scrollTo(0, y);
-  });
-}
-
 export function MobileBottomNavTransitionProvider({
   children,
 }: {
@@ -127,17 +87,13 @@ export function MobileBottomNavTransitionProvider({
   const router = useRouter();
   const pathname = usePathname();
   const reducedMotion = usePrefersReducedMotion();
-  const isTabletViewport = useSyncExternalStore(
-    subscribeTabletMaxWidth,
-    getIsTabletSnapshot,
-    getIsTabletServerSnapshot
-  );
+  const isTabletViewport = useTabletViewport();
   const [mounted, setMounted] = useState(false);
   const [showDirectoryOverlay, setShowDirectoryOverlay] = useState(false);
   const [directoryLoaderPhase, setDirectoryLoaderPhase] =
     useState<SmoacDirectoryLoaderPhase>("exit");
   const [panel, setPanel] = useState<BottomNavPanelTransitionState>(INACTIVE_PANEL);
-  const [isLocked, setIsLocked] = useState(false);
+  const [isNavLocked, setIsNavLocked] = useState(false);
   const lockRef = useRef(false);
   const timersRef = useRef<number[]>([]);
   const motionKeyRef = useRef(0);
@@ -166,8 +122,8 @@ export function MobileBottomNavTransitionProvider({
   const releaseLock = useCallback(() => {
     clearTimers();
     lockRef.current = false;
-    setIsLocked(false);
-    setPanelBodyActive(false);
+    setIsNavLocked(false);
+    setBottomNavPanelBodyActive(false);
     pendingTargetScrollKeyRef.current = null;
   }, [clearTimers]);
 
@@ -178,7 +134,7 @@ export function MobileBottomNavTransitionProvider({
     const targetKey = pendingTargetScrollKeyRef.current;
     setPanel(INACTIVE_PANEL);
     releaseLock();
-    if (targetKey) restoreScrollForKey(targetKey);
+    if (targetKey) restoreBottomNavScroll(targetKey);
 
     requestAnimationFrame(() => {
       panelCompleteGuardRef.current = false;
@@ -197,7 +153,7 @@ export function MobileBottomNavTransitionProvider({
       pendingPanelRef.current = null;
 
       motionKeyRef.current += 1;
-      setPanelBodyActive(true);
+      setBottomNavPanelBodyActive(true);
       setPanel({
         active: true,
         direction,
@@ -213,9 +169,7 @@ export function MobileBottomNavTransitionProvider({
     if (!pending || !lockRef.current) return;
 
     const target = parseBottomNavHref(pending.href);
-    const currentSearch =
-      typeof window !== "undefined" ? window.location.search : "";
-    const currentKey = getBottomNavRouteKey(pathname, currentSearch);
+    const currentKey = getBottomNavRouteKey(pathname, getClientRouteSearch());
     const targetKey = getBottomNavRouteKey(target.pathname, target.search);
     if (currentKey !== targetKey) return;
 
@@ -228,10 +182,9 @@ export function MobileBottomNavTransitionProvider({
         options.fromId,
         options.toId
       );
-      const currentSearch =
-        typeof window !== "undefined" ? window.location.search : "";
-      const fromScrollKey = getBottomNavRouteKey(pathname, currentSearch);
-      saveScrollForKey(fromScrollKey);
+      saveBottomNavScroll(
+        getBottomNavRouteKey(pathname, getClientRouteSearch())
+      );
 
       pendingPanelRef.current = { href, direction, enterOnly: false };
       router.push(href);
@@ -241,56 +194,47 @@ export function MobileBottomNavTransitionProvider({
         : BOTTOM_NAV_PANEL_MS;
       schedule(completePanelTransition, panelMs + 80);
     },
-    [
-      completePanelTransition,
-      pathname,
-      reducedMotion,
-      router,
-      schedule,
-    ]
+    [completePanelTransition, pathname, reducedMotion, router, schedule]
   );
 
   const runDirectoryTransition = useCallback(
     (href: string) => {
       const totalMs = reducedMotion
-        ? DIRECTORY_REDUCED_TOTAL_MS
+        ? BOTTOM_NAV_DIRECTORY_REDUCED_TOTAL_MS
         : BOTTOM_NAV_DIRECTORY_TOTAL_MS;
       const outMs = reducedMotion
-        ? DIRECTORY_REDUCED_OUT_MS
+        ? BOTTOM_NAV_DIRECTORY_REDUCED_OUT_MS
         : BOTTOM_NAV_DIRECTORY_OUT_MS;
       const panelMs = reducedMotion
         ? BOTTOM_NAV_PANEL_REDUCED_MS
         : BOTTOM_NAV_PANEL_MS;
 
-      const currentSearch =
-        typeof window !== "undefined" ? window.location.search : "";
-      saveScrollForKey(getBottomNavRouteKey(pathname, currentSearch));
+      saveBottomNavScroll(
+        getBottomNavRouteKey(pathname, getClientRouteSearch())
+      );
 
-      setDirectoryBodyActive(true);
+      setBottomNavDirectoryBodyActive(true);
       setShowDirectoryOverlay(true);
       setDirectoryLoaderPhase("active");
-
       router.push(href);
 
-      schedule(() => {
-        setDirectoryLoaderPhase("exit");
-      }, totalMs - outMs);
+      schedule(() => setDirectoryLoaderPhase("exit"), totalMs - outMs);
 
       schedule(() => {
         setShowDirectoryOverlay(false);
-        setDirectoryBodyActive(false);
+        setBottomNavDirectoryBodyActive(false);
         activatePanel(href, 1, true);
       }, totalMs);
 
       schedule(completePanelTransition, totalMs + panelMs + 80);
     },
     [
+      activatePanel,
       completePanelTransition,
       pathname,
       reducedMotion,
       router,
       schedule,
-      activatePanel,
     ]
   );
 
@@ -308,7 +252,7 @@ export function MobileBottomNavTransitionProvider({
       }
 
       lockRef.current = true;
-      setIsLocked(true);
+      setIsNavLocked(true);
       clearTimers();
 
       if (kind === "directory") {
@@ -329,28 +273,37 @@ export function MobileBottomNavTransitionProvider({
 
   useEffect(() => clearTimers, [clearTimers]);
 
-  const value: MobileBottomNavTransitionContextValue = {
-    isTransitioning: isLocked || panel.active || showDirectoryOverlay,
-    isDirectoryLoading: showDirectoryOverlay,
-    panel,
-    beginBottomNavTransition,
-    completePanelTransition,
-  };
+  const value = useMemo<MobileBottomNavTransitionContextValue>(
+    () => ({
+      isTransitioning: isNavLocked || panel.active || showDirectoryOverlay,
+      panel,
+      beginBottomNavTransition,
+      completePanelTransition,
+    }),
+    [
+      isNavLocked,
+      panel,
+      showDirectoryOverlay,
+      beginBottomNavTransition,
+      completePanelTransition,
+    ]
+  );
 
   return (
     <MobileBottomNavTransitionContext.Provider value={value}>
       {children}
-      {mounted && typeof document !== "undefined"
+      {mounted && showDirectoryOverlay
         ? createPortal(
-            showDirectoryOverlay ? (
-              <div
-                className="bottom-nav-transition-overlay bottom-nav-transition-overlay--directory"
-                role="presentation"
-                aria-hidden={directoryLoaderPhase === "exit"}
-              >
-                <SmoacDirectoryLoader phase={directoryLoaderPhase} />
-              </div>
-            ) : null,
+            <div
+              className="bottom-nav-transition-overlay bottom-nav-transition-overlay--directory"
+              role="presentation"
+              aria-hidden={directoryLoaderPhase === "exit"}
+            >
+              <SmoacDirectoryLoader
+                phase={directoryLoaderPhase}
+                reducedMotion={reducedMotion}
+              />
+            </div>,
             document.body
           )
         : null}
@@ -368,17 +321,7 @@ export function useMobileBottomNavTransition(): MobileBottomNavTransitionContext
   return ctx;
 }
 
+/** Panel state for PageTransition — stable inactive default outside provider */
 export function useBottomNavPanelTransition(): BottomNavPanelTransitionState {
-  const ctx = useContext(MobileBottomNavTransitionContext);
-  return ctx?.panel ?? INACTIVE_PANEL;
-}
-
-export function useBottomNavDirectoryLoading(): boolean {
-  const ctx = useContext(MobileBottomNavTransitionContext);
-  return ctx?.isDirectoryLoading ?? false;
-}
-
-export function useCompleteBottomNavPanelTransition(): () => void {
-  const ctx = useContext(MobileBottomNavTransitionContext);
-  return ctx?.completePanelTransition ?? (() => {});
+  return useContext(MobileBottomNavTransitionContext)?.panel ?? INACTIVE_PANEL;
 }

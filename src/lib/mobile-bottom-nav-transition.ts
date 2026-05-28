@@ -12,6 +12,10 @@ export const BOTTOM_NAV_DIRECTORY_TOTAL_MS = 2500;
 
 export const BOTTOM_NAV_DIRECTORY_OUT_MS = 450;
 
+export const BOTTOM_NAV_DIRECTORY_REDUCED_TOTAL_MS = 720;
+
+export const BOTTOM_NAV_DIRECTORY_REDUCED_OUT_MS = 180;
+
 const TAB_ORDER: MobileBottomNavItemId[] = [
   "search",
   "saved",
@@ -74,23 +78,4 @@ export function getBottomNavTransitionKind(
   if (isSameBottomNavDestination(pathname, searchParams, href)) return "none";
   if (itemId === "search") return "directory";
   return "panel";
-}
-
-export function shouldAnimateBottomNavTransition(
-  itemId: MobileBottomNavItemId,
-  pathname: string,
-  searchParams: URLSearchParams,
-  href: string
-): boolean {
-  return getBottomNavTransitionKind(itemId, pathname, searchParams, href) !== "none";
-}
-
-/** @deprecated Use getBottomNavTransitionKind */
-export function shouldUseBottomNavDirectoryLoader(
-  itemId: MobileBottomNavItemId,
-  pathname: string,
-  searchParams: URLSearchParams,
-  href: string
-): boolean {
-  return getBottomNavTransitionKind(itemId, pathname, searchParams, href) === "directory";
 }

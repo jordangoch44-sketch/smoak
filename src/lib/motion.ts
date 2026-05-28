@@ -1,4 +1,5 @@
-import type { Transition } from "framer-motion";
+import type { Transition, Variants } from "framer-motion";
+import type { BottomNavPanelDirection } from "@/lib/mobile-bottom-nav-transition";
 
 /** Primary ease — long luxury deceleration */
 export const PAGE_TRANSITION_EASE = [0.1, 0.92, 0.2, 1] as const;
@@ -34,13 +35,32 @@ export const mobilePageTransition: Transition = {
 /** Bottom nav stacked panels — iOS sheet / Wallet depth */
 export const BOTTOM_NAV_PANEL_EASE = [0.32, 0.72, 0, 1] as const;
 
+/** Bottom nav panels — opacity + y only (Safari-friendly) */
 export const bottomNavPanelTransition: Transition = {
-  opacity: { duration: 0.42, ease: BOTTOM_NAV_PANEL_EASE },
-  y: { duration: 0.44, ease: BOTTOM_NAV_PANEL_EASE },
-  scale: { duration: 0.44, ease: BOTTOM_NAV_PANEL_EASE },
+  opacity: { duration: 0.4, ease: BOTTOM_NAV_PANEL_EASE },
+  y: { duration: 0.42, ease: BOTTOM_NAV_PANEL_EASE },
 };
 
 export const bottomNavPanelReducedTransition: Transition = {
   duration: 0.14,
   ease: "easeOut",
+};
+
+export function buildBottomNavPanelVariants(
+  direction: BottomNavPanelDirection
+): Variants {
+  const enterY = direction === 1 ? 22 : -18;
+  const exitY = direction === 1 ? -12 : 14;
+
+  return {
+    initial: { opacity: 0, y: enterY },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0.84, y: exitY },
+  };
+}
+
+export const bottomNavPanelReducedVariants: Variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 };

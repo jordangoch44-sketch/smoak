@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useSyncExternalStore, type MouseEvent } from "react";
+import { useCallback, type MouseEvent } from "react";
 import { TapLink } from "@/components/ui/TapLink";
 import {
   CompassIcon,
@@ -15,6 +15,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useMobileBottomNavHidden } from "@/hooks/useMobileBottomNavHidden";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
+import { useTabletViewport } from "@/hooks/useTabletViewport";
 import {
   getActiveMobileBottomNavItemId,
   getMobileBottomNavItems,
@@ -24,22 +25,10 @@ import {
   type MobileBottomNavItemId,
   type MobileBottomNavProfileAuthState,
 } from "@/lib/mobile-bottom-nav";
-import { formatSavedCountBadge } from "@/lib/saved-ui";
 import { getBottomNavTransitionKind } from "@/lib/mobile-bottom-nav-transition";
+import { formatSavedCountBadge } from "@/lib/saved-ui";
 import { canSaveSpecialists } from "@/lib/specialist-saves";
-import {
-  getTabletMaxWidthSnapshot,
-  subscribeTabletMaxWidth,
-} from "@/lib/viewport";
 import { cn } from "@/lib/utils";
-
-function getIsTabletSnapshot(): boolean {
-  return getTabletMaxWidthSnapshot();
-}
-
-function getIsTabletServerSnapshot(): boolean {
-  return false;
-}
 
 function NavIcon({
   id,
@@ -53,9 +42,7 @@ function NavIcon({
   const className = cn(
     "mobile-bottom-nav__icon",
     active && "mobile-bottom-nav__icon--active",
-    id === "saved" &&
-      savedCount > 0 &&
-      "mobile-bottom-nav__icon--has-saves"
+    id === "saved" && savedCount > 0 && "mobile-bottom-nav__icon--has-saves"
   );
 
   switch (id) {
@@ -63,10 +50,7 @@ function NavIcon({
       return <SearchIcon className={className} />;
     case "saved":
       return (
-        <HeartIcon
-          className={className}
-          filled={active || savedCount > 0}
-        />
+        <HeartIcon className={className} filled={active || savedCount > 0} />
       );
     case "home":
       return <HomeIcon className={className} />;
@@ -127,11 +111,7 @@ export function MobileBottomNav() {
   const searchParams = useSearchParams();
   const hidden = useMobileBottomNavHidden();
   const { beginBottomNavTransition } = useMobileBottomNavTransition();
-  const isTabletViewport = useSyncExternalStore(
-    subscribeTabletMaxWidth,
-    getIsTabletSnapshot,
-    getIsTabletServerSnapshot
-  );
+  const isTabletViewport = useTabletViewport();
   const { clientReady } = useStableClientState();
   const { isReady, session } = useAuthSession();
   const { isReady: savesReady, savedCount } = useSavedTrainers();
@@ -142,43 +122,34 @@ export function MobileBottomNav() {
     session
   );
   const showSaveBadge =
-    clientReady &&
-    savesReady &&
-    canSaveSpecialists(session) &&
-    savedCount > 0;
+    clientReady && savesReady && canSaveSpecialists(session) && savedCount > 0;
   const saveBadgeLabel = formatSavedCountBadge(savedCount);
   const items = getMobileBottomNavItems(session);
 
-  function handleNavClick(
-    item: MobileBottomNavItem,
-    event: MouseEvent<HTMLAnchorElement>
-  ) {
-    const kind = getBottomNavTransitionKind(
-      item.id,
-      pathname,
-      searchParams,
-      item.href
-    );
-    if (kind === "none") return;
+  const handleNavClick = useCallback(
+    (item: MobileBottomNavItem, event: MouseEvent<HTMLAnchorElement>) => {
+      const kind = getBottomNavTransitionKind(
+        item.id,
+        pathname,
+        searchParams,
+        item.href
+      );
+      if (kind === "none") return;
 
-    const fromId =
-      getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
+      const fromId =
+        getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
 
-    event.preventDefault();
-    beginBottomNavTransition(item.href, kind, {
-      fromId,
-      toId: item.id,
-    });
-  }
+      event.preventDefault();
+      beginBottomNavTransition(item.href, kind, { fromId, toId: item.id });
+    },
+    [beginBottomNavTransition, pathname, searchParams]
+  );
 
   if (!isTabletViewport) return null;
 
   return (
     <nav
-      className={cn(
-        "mobile-bottom-nav",
-        hidden && "mobile-bottom-nav--hidden"
-      )}
+      className={cn("mobile-bottom-nav", hidden && "mobile-bottom-nav--hidden")}
       aria-label="Mobile navigation"
       aria-hidden={hidden}
     >
@@ -226,17 +197,14 @@ export function MobileBottomNav() {
                     <span
                       className={cn(
                         "mobile-bottom-nav__icon-shell",
-                        item.isPrimary &&
-                          "mobile-bottom-nav__icon-shell--primary"
+                        item.isPrimary && "mobile-bottom-nav__icon-shell--primary"
                       )}
                     >
                       <NavIcon
                         id={item.id}
                         active={active}
                         savedCount={
-                          item.id === "saved" && showSaveBadge
-                            ? savedCount
-                            : 0
+                          item.id === "saved" && showSaveBadge ? savedCount : 0
                         }
                       />
                       {item.id === "saved" && showSaveBadge ? (

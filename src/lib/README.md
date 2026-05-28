@@ -20,6 +20,7 @@
 | `utility-drawer-menu.ts` | Mobile utility drawer rows |
 | `mobile-bottom-nav.ts` | Bottom tab items + active state |
 | `mobile-bottom-nav-transition.ts` | Search → cinematic loader; other tabs → stacked panel slides |
+| `mobile-chrome.ts` | Bottom nav body classes, scroll cache, route search helper |
 | `chrome-body-classes.ts` | Scroll-lock / overlay body class list |
 | `user-location-storage.ts` / `user-location-store.ts` | Geo + ZIP personalization |
 | `personalized-trainers.ts` / `marketplace-city-centers.ts` | Location-aware lists |

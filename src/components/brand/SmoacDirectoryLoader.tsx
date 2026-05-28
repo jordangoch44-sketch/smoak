@@ -1,25 +1,24 @@
 "use client";
 
 import { Logo } from "@/components/ui/Logo";
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 
 export type SmoacDirectoryLoaderPhase = "active" | "exit";
 
 interface SmoacDirectoryLoaderProps {
   phase: SmoacDirectoryLoaderPhase;
+  reducedMotion?: boolean;
   className?: string;
 }
 
 /**
  * Cinematic directory splash — Search → Explore route transition.
- * Full-screen atmosphere, large mark, sequenced logo + tagline reveal.
  */
 export function SmoacDirectoryLoader({
   phase,
+  reducedMotion = false,
   className,
 }: SmoacDirectoryLoaderProps) {
-  const reducedMotion = usePrefersReducedMotion();
   const isActive = phase === "active";
 
   return (
