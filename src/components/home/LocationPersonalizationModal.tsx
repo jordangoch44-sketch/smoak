@@ -39,12 +39,14 @@ export function LocationPersonalizationModal({
 
   const handleSkip = useCallback(() => {
     skipLocationPrompt();
+    resetState();
     onClose();
-  }, [onClose]);
+  }, [onClose, resetState]);
 
-  useEffect(() => {
-    if (!open) resetState();
-  }, [open, resetState]);
+  const handleClose = useCallback(() => {
+    resetState();
+    onClose();
+  }, [onClose, resetState]);
 
   useEffect(() => {
     if (!open) return;
@@ -83,7 +85,7 @@ export function LocationPersonalizationModal({
           position.coords.longitude
         );
         setGeoLoading(false);
-        onClose();
+        handleClose();
       },
       () => {
         setGeoLoading(false);
@@ -96,7 +98,7 @@ export function LocationPersonalizationModal({
         maximumAge: 300_000,
       }
     );
-  }, [onClose]);
+  }, [handleClose]);
 
   const handleZipSubmit = useCallback(
     (event: React.FormEvent) => {
@@ -105,9 +107,9 @@ export function LocationPersonalizationModal({
       const normalized = normalizeZipCode(zip);
       if (!isValidZipCode(normalized)) return;
       completeZipEntry(normalized);
-      onClose();
+      handleClose();
     },
-    [onClose, zip]
+    [handleClose, zip]
   );
 
   const zipInvalid = zipTouched && !isValidZipCode(normalizeZipCode(zip));

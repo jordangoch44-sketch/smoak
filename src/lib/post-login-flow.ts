@@ -5,7 +5,7 @@ import {
   SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
 import { applyPendingSaveAfterLogin } from "@/lib/specialist-saves";
-import { SAVE_TOAST_ADDED, type SaveToastOptions } from "@/lib/saved-ui";
+import type { SaveToastOptions } from "@/lib/saved-ui";
 
 export interface PostLoginNavigation {
   path: string;

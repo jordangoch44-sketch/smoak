@@ -62,19 +62,15 @@ export function useAdminDashboard() {
     getSpecialistApplicationsServerSnapshot
   );
 
-  const clients = useMemo(
-    () => listAdminClients(authSession),
-    [authSession, applications]
-  );
+  const clients = useMemo(() => listAdminClients(authSession), [authSession]);
 
-  const stats = useMemo(
-    () => computeAdminOverviewStats(clients),
-    [clients, applications, specialistMeta, hiddenIds]
-  );
+  const stats = useMemo(() => computeAdminOverviewStats(clients), [clients]);
 
   const specialists = useMemo(
     () => listAdminSpecialists(),
-    [applications, clients, specialistMeta, hiddenIds]
+    // External stores above trigger re-renders; deps bust stale memoization.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store-driven list
+    [applications, hiddenIds, specialistMeta]
   );
 
   const refreshKey = applications.length;
@@ -82,6 +78,7 @@ export function useAdminDashboard() {
   const getApplications = useCallback(
     (filter: AdminApplicationStatusLabel | "all") =>
       listApplicationsByStatus(filter),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refresh when application list length changes
     [refreshKey]
   );
 

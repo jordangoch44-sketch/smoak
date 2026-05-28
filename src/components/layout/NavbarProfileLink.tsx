@@ -49,7 +49,7 @@ export function NavbarProfileLink({
   const role = getUserRole(session);
 
   useEffect(() => {
-    setOpen(false);
+    queueMicrotask(() => setOpen(false));
   }, [pathname]);
 
   useEffect(() => {

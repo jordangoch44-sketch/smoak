@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { useHydrated } from "@/hooks/useHydrated";
 import {
   SAVE_TOAST_ADDED,
   SAVE_TOAST_REMOVED,
@@ -88,13 +89,9 @@ export function SaveToastProvider({ children }: { children: React.ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [exiting, setExiting] = useState(false);
   const [toast, setToast] = useState<SaveToastOptions>(SAVE_TOAST_ADDED);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const clearTimers = useCallback(() => {
     if (dismissTimerRef.current) {

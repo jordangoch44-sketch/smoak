@@ -125,12 +125,18 @@ export function ProfileGalleryModal({
 
   useEffect(() => {
     if (!open) return;
-    closeFinishedRef.current = false;
-    setMounted(true);
-    setIsClosing(false);
-    setMediaReady(false);
-    goTo(initialIndex);
+    queueMicrotask(() => {
+      closeFinishedRef.current = false;
+      setMounted(true);
+      setIsClosing(false);
+      setMediaReady(false);
+      goTo(initialIndex);
+    });
   }, [open, initialIndex, goTo]);
+
+  useEffect(() => {
+    queueMicrotask(() => setMediaReady(false));
+  }, [index]);
 
   useEffect(() => {
     if (!mounted || isClosing) return;
@@ -162,10 +168,6 @@ export function ProfileGalleryModal({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [mounted, requestClose, goToSlide, index]);
-
-  useEffect(() => {
-    setMediaReady(false);
-  }, [index]);
 
   useEffect(() => {
     if (!visible || mediaReady || isClosing) return;

@@ -63,7 +63,7 @@ export function SearchBar({
     isHero && enableSuggestions && suggestionsOpen && suggestions.length > 0;
 
   useEffect(() => {
-    setSubmitting(false);
+    queueMicrotask(() => setSubmitting(false));
   }, [pathname]);
 
   const navigateExplore = useCallback(

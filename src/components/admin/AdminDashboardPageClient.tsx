@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { DashboardLoadingState, DashboardPageShell } from "@/components/dashboard";
 import {
   AdminSectionNav,
@@ -71,12 +71,10 @@ export function AdminDashboardPageClient() {
     isOwnerAdmin: access?.isOwnerAdmin ?? false,
   });
 
-  useEffect(() => {
-    if (!access) return;
-    if (!access.allowedSectionIds.includes(activeSection)) {
-      setActiveSection(access.defaultSection);
-    }
-  }, [access, activeSection]);
+  const resolvedSection: AdminSectionId =
+    access && !access.allowedSectionIds.includes(activeSection)
+      ? access.defaultSection
+      : activeSection;
 
   if (!isReady || !session || !access) {
     return <DashboardLoadingState message="Loading admin dashboard…" />;
@@ -141,7 +139,7 @@ export function AdminDashboardPageClient() {
     >
       <div className="admin-app">
         <AdminSectionNav
-          activeId={activeSection}
+          activeId={resolvedSection}
           allowedSectionIds={allowedSectionIds}
           badgeCounts={sectionBadgeCounts}
           onSelect={setActiveSection}
@@ -150,10 +148,10 @@ export function AdminDashboardPageClient() {
         <div
           className="admin-app__panel"
           role="tabpanel"
-          id={`admin-panel-${activeSection}`}
-          aria-labelledby={`admin-tab-${activeSection}`}
+          id={`admin-panel-${resolvedSection}`}
+          aria-labelledby={`admin-tab-${resolvedSection}`}
         >
-          {activeSection === "overview" && permissions.canViewOverview ? (
+          {resolvedSection === "overview" && permissions.canViewOverview ? (
             <AdminOverviewPanel
               stats={stats}
               clients={clients}
@@ -161,7 +159,7 @@ export function AdminDashboardPageClient() {
               isOwnerAdmin={isOwnerAdmin}
             />
           ) : null}
-          {activeSection === "applications" ? (
+          {resolvedSection === "applications" ? (
             <AdminApplicationsPanel
               applications={allApplications}
               permissions={permissions}
@@ -171,7 +169,7 @@ export function AdminDashboardPageClient() {
               onActivate={handleActivate}
             />
           ) : null}
-          {activeSection === "specialists" ? (
+          {resolvedSection === "specialists" ? (
             <AdminSpecialistsPanel
               specialists={specialists}
               permissions={permissions}
@@ -195,21 +193,21 @@ export function AdminDashboardPageClient() {
               }}
             />
           ) : null}
-          {activeSection === "clients" && permissions.canViewClients ? (
+          {resolvedSection === "clients" && permissions.canViewClients ? (
             <AdminClientsPanel clients={clients} />
           ) : null}
-          {activeSection === "revenue" && permissions.canViewRevenue ? (
+          {resolvedSection === "revenue" && permissions.canViewRevenue ? (
             <AdminOwnerRevenuePanel specialists={specialists} />
           ) : null}
-          {activeSection === "team" && permissions.canManageAdmins ? (
+          {resolvedSection === "team" && permissions.canManageAdmins ? (
             <AdminTeamPanel />
           ) : null}
-          {activeSection === "settings" && permissions.canManageSettings ? (
+          {resolvedSection === "settings" && permissions.canManageSettings ? (
             <AdminSettingsPanel />
           ) : null}
         </div>
 
-        {activeSection === "overview" ? (
+        {resolvedSection === "overview" ? (
           <p className="admin-dev-note">
             DEV admin ·{" "}
             <Link href={buildDevAdminLoginHref()}>{buildDevAdminLoginHref()}</Link>

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 import { createPortal } from "react-dom";
 
 const SmoacWelcomeIntro = dynamic(
@@ -227,23 +228,13 @@ export function CreateAccountWizardClient({
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(false);
   const { ready: introReady, showIntro, completeIntro } =
     useCreateAccountIntroGate(initialJoinIntro);
-  const [portalReady, setPortalReady] = useState(false);
+  const portalReady = useHydrated();
   const [introVisible, setIntroVisible] = useState(false);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
 
   useEffect(() => {
     document.body.classList.toggle("join-intro-open", showIntro && introVisible);
     return () => document.body.classList.remove("join-intro-open");
   }, [showIntro, introVisible]);
-
-  useEffect(() => {
-    if (!showIntro) {
-      setIntroVisible(false);
-    }
-  }, [showIntro]);
 
   const progressPercent = stepProgressPercent(step);
   const canContinue = isStepValid(step, state);
@@ -254,14 +245,19 @@ export function CreateAccountWizardClient({
     return isAuthReturnToSaved(new URLSearchParams(window.location.search));
   }
 
+  const wantsSaved =
+    initialReturnToSaved ||
+    (typeof window !== "undefined" &&
+      isAuthReturnToSaved(new URLSearchParams(window.location.search)));
+
   useEffect(() => {
     if (!isReady || !session) return;
-    if (wantsReturnToSaved() && session.role === "client") {
+    if (wantsSaved && session.role === "client") {
       router.replace("/saved");
       return;
     }
     router.replace(getDashboardPathForRole(session.role));
-  }, [isReady, session, router, initialReturnToSaved]);
+  }, [isReady, session, router, wantsSaved]);
 
   function patchState(partial: Partial<CreateAccountWizardState>) {
     setState((prev) => ({ ...prev, ...partial }));

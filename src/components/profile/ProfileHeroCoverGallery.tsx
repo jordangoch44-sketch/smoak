@@ -5,10 +5,8 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type MutableRefObject,
-  type TouchEvent as ReactTouchEvent,
 } from "react";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { useProfileHeroCoverGallery } from "@/hooks/useProfileHeroCoverGallery";

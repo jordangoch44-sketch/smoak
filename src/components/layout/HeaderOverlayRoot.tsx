@@ -1,7 +1,8 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
+import { useHydrated } from "@/hooks/useHydrated";
 import {
   getMobileMaxWidthSnapshot,
   subscribeMobileMaxWidth,
@@ -25,16 +26,12 @@ export function HeaderOverlayRoot({
   onCloseMenu,
   onCloseSaved,
 }: HeaderOverlayRootProps) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useHydrated();
   const isMobile = useSyncExternalStore(
     subscribeMobileMaxWidth,
     getMobileMaxWidthSnapshot,
     () => false
   );
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) return null;
   if (!menuOpen && !savedPanelOpen) return null;

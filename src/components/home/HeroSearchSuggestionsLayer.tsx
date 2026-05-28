@@ -129,6 +129,7 @@ export function HeroSearchSuggestionsLayer({
             <button
               type="button"
               role="option"
+              aria-selected={false}
               className="smoac-control smoac-tap hero-search__suggestion"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => onSelect(item)}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSyncedState } from "@/hooks/useSyncedState";
 import { createPortal } from "react-dom";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
@@ -46,7 +47,7 @@ export function AdminApplicationReviewPanel({
   onReject,
   onActivate,
 }: AdminApplicationReviewPanelProps) {
-  const [draft, setDraft] = useState<SpecialistApplication>(application);
+  const [draft, setDraft] = useSyncedState(application.id, application);
   const [feedback, setFeedback] = useState<ReviewFeedback>(null);
   const [busyAction, setBusyAction] = useState<
     "save" | "approve" | "reject" | "activate" | null
@@ -54,10 +55,6 @@ export function AdminApplicationReviewPanel({
 
   const statusLabel = applicationStatusLabel(draft.profileStatus);
   const canAct = permissions.canApproveApplications;
-
-  useEffect(() => {
-    setDraft(application);
-  }, [application]);
 
   useEffect(() => {
     document.body.classList.add("admin-review-open");

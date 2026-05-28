@@ -21,7 +21,7 @@ export function useHeaderPanels() {
   const closeSavedPanel = useCallback(() => setSavedPanelOpen(false), []);
 
   useEffect(() => {
-    closeAll();
+    queueMicrotask(() => closeAll());
   }, [pathname, closeAll]);
 
   useEffect(() => {

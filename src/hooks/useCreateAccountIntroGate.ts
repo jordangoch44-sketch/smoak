@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import {
   clearJoinIntroFromUrl,
   JOIN_FLOW_PATH,
@@ -25,8 +25,6 @@ function hasJoinIntroInSearch(search: string): boolean {
 export function useCreateAccountIntroGate(initialJoinIntro = false) {
   const router = useRouter();
   const pathname = usePathname();
-  const [introDismissed, setIntroDismissed] = useState(false);
-  const [queryIntro, setQueryIntro] = useState(initialJoinIntro);
   const mounted = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -39,17 +37,20 @@ export function useCreateAccountIntroGate(initialJoinIntro = false) {
   );
 
   const onJoinRoute = pathname === JOIN_FLOW_PATH;
+  const queryIntro =
+    onJoinRoute &&
+    (hasJoinIntroInSearch(locationSearch) || initialJoinIntro);
+  const dismissKey = `${pathname}${locationSearch}`;
 
-  useEffect(() => {
-    setQueryIntro(hasJoinIntroInSearch(window.location.search));
-  }, [locationSearch, pathname, initialJoinIntro]);
+  const [dismissKeySeen, setDismissKeySeen] = useState(dismissKey);
+  const [introDismissed, setIntroDismissed] = useState(false);
 
-  useEffect(() => {
+  if (dismissKey !== dismissKeySeen) {
+    setDismissKeySeen(dismissKey);
     setIntroDismissed(false);
-  }, [locationSearch, onJoinRoute]);
+  }
 
-  const introRequested = onJoinRoute && (queryIntro || initialJoinIntro);
-  const showIntro = mounted && introRequested && !introDismissed;
+  const showIntro = mounted && queryIntro && !introDismissed;
 
   const completeIntro = useCallback(() => {
     setIntroDismissed(true);

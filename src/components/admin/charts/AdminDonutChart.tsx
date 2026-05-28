@@ -16,7 +16,16 @@ export function AdminDonutChart({
   const total = segments.reduce((sum, s) => sum + s.value, 0) || 1;
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
-  let offset = 0;
+
+  const rings = segments.reduce<
+    Array<{ segment: AdminChartSegment; dash: number; offset: number }>
+  >((acc, segment) => {
+    const fraction = segment.value / total;
+    const dash = fraction * circumference;
+    const offset = acc.length > 0 ? acc[acc.length - 1].offset + acc[acc.length - 1].dash : 0;
+    acc.push({ segment, dash, offset });
+    return acc;
+  }, []);
 
   return (
     <div className="admin-chart admin-chart--donut">
@@ -36,27 +45,21 @@ export function AdminDonutChart({
             stroke="rgba(255,255,255,0.08)"
             strokeWidth="12"
           />
-          {segments.map((segment) => {
-            const fraction = segment.value / total;
-            const dash = fraction * circumference;
-            const circle = (
-              <circle
-                key={segment.id}
-                cx="50"
-                cy="50"
-                r={radius}
-                fill="none"
-                stroke={segment.color}
-                strokeWidth="12"
-                strokeDasharray={`${dash} ${circumference - dash}`}
-                strokeDashoffset={-offset}
-                transform="rotate(-90 50 50)"
-                strokeLinecap="round"
-              />
-            );
-            offset += dash;
-            return circle;
-          })}
+          {rings.map(({ segment, dash, offset }) => (
+            <circle
+              key={segment.id}
+              cx="50"
+              cy="50"
+              r={radius}
+              fill="none"
+              stroke={segment.color}
+              strokeWidth="12"
+              strokeDasharray={`${dash} ${circumference - dash}`}
+              strokeDashoffset={-offset}
+              transform="rotate(-90 50 50)"
+              strokeLinecap="round"
+            />
+          ))}
         </svg>
         {centerLabel ? (
           <div className="admin-chart__donut-center">
@@ -74,12 +77,10 @@ export function AdminDonutChart({
             <span
               className="admin-chart__legend-swatch"
               style={{ backgroundColor: segment.color }}
+              aria-hidden
             />
             <span className="admin-chart__legend-label">{segment.label}</span>
-            <span className="admin-chart__legend-value">
-              {valuePrefix}
-              {segment.value}
-            </span>
+            <span className="admin-chart__legend-value">{segment.value}</span>
           </li>
         ))}
       </ul>

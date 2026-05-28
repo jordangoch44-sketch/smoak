@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { useHydrated } from "@/hooks/useHydrated";
 import { scheduleAfterFirstPaint } from "@/lib/schedule-after-paint";
 import {
   hasSeenSiteIntro,
@@ -35,7 +36,7 @@ function getSiteIntroSeenSnapshot(): boolean {
  */
 export function SiteWelcomeIntroGate() {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
+  const hydrated = useHydrated();
   const [finished, setFinished] = useState(false);
   const [allowIntro, setAllowIntro] = useState(false);
   const [introVisible, setIntroVisible] = useState(false);
@@ -47,8 +48,16 @@ export function SiteWelcomeIntroGate() {
 
   const pendingFirstVisit =
     pathname === "/" && !introSeen && !finished;
-  const playing = mounted && allowIntro && pendingFirstVisit;
+  const playing = hydrated && allowIntro && pendingFirstVisit;
   const blockChrome = playing && introVisible;
+
+  if (!pendingFirstVisit && allowIntro) {
+    setAllowIntro(false);
+  }
+
+  if (!playing && introVisible) {
+    setIntroVisible(false);
+  }
 
   const handleComplete = useCallback(() => {
     markSiteIntroSeen();
@@ -61,22 +70,9 @@ export function SiteWelcomeIntroGate() {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!pendingFirstVisit) {
-      setAllowIntro(false);
-      return;
-    }
+    if (!pendingFirstVisit) return;
     return scheduleAfterFirstPaint(() => setAllowIntro(true));
   }, [pendingFirstVisit]);
-
-  useEffect(() => {
-    if (!playing) {
-      setIntroVisible(false);
-    }
-  }, [playing]);
 
   useEffect(() => {
     document.body.classList.toggle("site-intro-open", blockChrome);

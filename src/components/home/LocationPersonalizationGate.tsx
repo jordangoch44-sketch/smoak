@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { LocationPersonalizationModal } from "@/components/home/LocationPersonalizationModal";
+import { useHydrated } from "@/hooks/useHydrated";
 import { scheduleAfterFirstPaint } from "@/lib/schedule-after-paint";
 import { hasSeenSiteIntro } from "@/lib/site-intro-storage";
 import {
@@ -28,7 +29,7 @@ function getSiteIntroSeenForLocationSnapshot(): boolean {
  */
 export function LocationPersonalizationGate() {
   const pathname = usePathname();
-  const [mounted, setMounted] = useState(false);
+  const hydrated = useHydrated();
   const [open, setOpen] = useState(false);
 
   const introSeen = useSyncExternalStore(
@@ -43,28 +44,29 @@ export function LocationPersonalizationGate() {
     getShouldShowLocationPromptServerSnapshot
   );
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const eligible =
+    hydrated && pathname === "/" && introSeen && shouldPrompt;
+
+  if (!eligible && open) {
+    setOpen(false);
+  }
 
   useEffect(() => {
-    if (!mounted || pathname !== "/" || !introSeen || !shouldPrompt) {
-      setOpen(false);
-      return;
-    }
-
+    if (!eligible) return;
     return scheduleAfterFirstPaint(() => setOpen(true));
-  }, [mounted, pathname, introSeen, shouldPrompt]);
+  }, [eligible]);
+
+  const isOpen = eligible && open;
 
   const handleClose = () => {
     setOpen(false);
   };
 
-  if (!mounted || pathname !== "/") {
+  if (!hydrated || pathname !== "/") {
     return null;
   }
 
   return (
-    <LocationPersonalizationModal open={open} onClose={handleClose} />
+    <LocationPersonalizationModal open={isOpen} onClose={handleClose} />
   );
 }
