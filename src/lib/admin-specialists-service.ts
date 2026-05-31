@@ -8,7 +8,12 @@ import {
   hideTrainerId,
   unhideTrainerId,
 } from "@/lib/hidden-trainers-store";
-import { loadAllSpecialistOverrides } from "@/lib/specialist-profile-overrides";
+import {
+  applySpecialistProfileOverrides,
+  loadAllSpecialistOverrides,
+} from "@/lib/specialist-profile-overrides";
+import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
+import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { listSpecialistApplications } from "@/lib/specialist-application-storage";
 import type { AdminSpecialistVisibility } from "@/types/admin";
 import type { Trainer } from "@/types/trainer";
@@ -19,7 +24,11 @@ export interface AdminSpecialistRow {
   profession: string;
   specialty: string[];
   city: string;
+  state: string;
   neighborhood: string;
+  zipCode: string;
+  serviceType: string;
+  travelRadius: string;
   visibility: AdminSpecialistVisibility;
   featured: boolean;
   topRanked: boolean;
@@ -29,14 +38,7 @@ export interface AdminSpecialistRow {
 }
 
 function mergeTrainerBase(base: Trainer, id: string): Trainer {
-  const overrides = loadAllSpecialistOverrides()[id];
-  if (!overrides) return base;
-  return {
-    ...base,
-    ...overrides,
-    specialty: overrides.specialty ?? base.specialty,
-    serviceArea: overrides.serviceArea ?? base.serviceArea,
-  };
+  return applySpecialistProfileOverrides(base, loadAllSpecialistOverrides()[id]);
 }
 
 function applicationAsTrainerRow(
@@ -52,7 +54,11 @@ function applicationAsTrainerRow(
     profession: app.professionalType || "Specialist",
     specialty: app.specialties,
     city: app.city,
+    state: app.state ?? "",
     neighborhood: app.neighborhood,
+    zipCode: app.zipCode,
+    serviceType: app.serviceType,
+    travelRadius: app.travelRadius,
     visibility,
     featured: meta.featured ?? false,
     topRanked: meta.topRanked ?? false,
@@ -94,7 +100,11 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
         profession: meta.profession ?? merged.profession,
         specialty: meta.specialty ?? merged.specialty,
         city: meta.city ?? merged.city,
+        state: meta.state ?? merged.state ?? "",
         neighborhood: meta.neighborhood ?? merged.neighborhood,
+        zipCode: meta.zipCode ?? merged.zipCode ?? "",
+        serviceType: meta.serviceType ?? merged.serviceType ?? "",
+        travelRadius: meta.travelRadius ?? merged.travelRadius ?? "",
         visibility,
         featured: meta.featured ?? merged.featured,
         topRanked: meta.topRanked ?? false,
@@ -137,8 +147,31 @@ export function updateAdminSpecialistBasics(
     profession?: string;
     specialty?: string[];
     city?: string;
+    state?: string;
     neighborhood?: string;
+    zipCode?: string;
+    serviceType?: "in-person" | "virtual" | "both";
+    travelRadius?: string;
   }
 ): void {
   patchAdminSpecialistMeta(trainerId, basics);
+
+  const existing = loadAllSpecialistOverrides()[trainerId] ?? {};
+  const travelRadius = basics.travelRadius ?? existing.travelRadius;
+  saveTrainerProfileOverrides(trainerId, {
+    ...existing,
+    ...(basics.profession != null ? { profession: basics.profession } : {}),
+    ...(basics.specialty != null ? { specialty: basics.specialty } : {}),
+    ...(basics.city != null ? { city: basics.city } : {}),
+    ...(basics.state != null ? { state: basics.state } : {}),
+    ...(basics.neighborhood != null ? { neighborhood: basics.neighborhood } : {}),
+    ...(basics.zipCode != null ? { zipCode: basics.zipCode } : {}),
+    ...(basics.serviceType != null ? { serviceType: basics.serviceType } : {}),
+    ...(travelRadius != null
+      ? {
+          travelRadius,
+          serviceRadiusMiles: parseTravelRadiusMiles(travelRadius) || undefined,
+        }
+      : {}),
+  });
 }

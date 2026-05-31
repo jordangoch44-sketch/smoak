@@ -1,3 +1,5 @@
+import type { SpecialistServiceType } from "@/types/specialist-service-area";
+
 export type Gender = "male" | "female" | "non-binary";
 
 /** Tag-style specialties shown on cards and filterable in Explore */
@@ -61,10 +63,32 @@ export interface Trainer {
   location: string;
   /** Primary city — aligns with MARKETPLACE_CITIES / provider onboarding */
   city: string;
+  /** US state abbreviation — from primary ZIP lookup */
+  state?: string;
   /** Primary neighborhood or area within city */
   neighborhood: string;
   /** Additional neighborhoods/areas served (onboarding: multi-select) */
   serviceArea: string[];
+  /** Extra ZIP codes served — from join application */
+  serviceAreaZipCodes?: string[];
+  /** Optional free-text service area from join application */
+  serviceAreaDescription?: string;
+  /** Primary practice ZIP — used for proximity sorting */
+  zipCode: string;
+  latitude: number;
+  longitude: number;
+  /** When true, user ZIP within serviceRadiusMiles can match in Explore */
+  willingToTravel?: boolean;
+  /** How far the specialist typically travels for sessions */
+  serviceRadiusMiles?: number;
+  /** Stored travel radius option value (e.g. "15", "50+") */
+  travelRadius?: string;
+  /** In-person, virtual, or both — drives matching */
+  serviceType?: SpecialistServiceType;
+  /** Paid placement — stays above organic results when sorting by user ZIP */
+  sponsored?: boolean;
+  /** High-trust badge — organic tie-breaker near equal distance */
+  verified?: boolean;
   specialty: string[];
   gender: Gender;
   pricePerSession: number;

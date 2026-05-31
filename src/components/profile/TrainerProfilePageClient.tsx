@@ -1,9 +1,12 @@
 "use client";
 
+import { notFound } from "next/navigation";
 import type { Trainer } from "@/types";
+import { useHydrated } from "@/hooks/useHydrated";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
 import { ProfileHero } from "./ProfileHero";
 import { ProfileCuratedDetails } from "./ProfileCuratedDetails";
+import { ProfileServiceArea } from "./ProfileServiceArea";
 import { ProfileSessionExperience } from "./ProfileSessionExperience";
 import { Bio } from "./Bio";
 import { Certifications } from "./Certifications";
@@ -13,15 +16,28 @@ import { BookConsultation } from "./BookConsultation";
 
 interface TrainerProfilePageClientProps {
   trainerId: string;
-  initialTrainer: Trainer;
+  initialTrainer: Trainer | null;
 }
 
 export function TrainerProfilePageClient({
   trainerId,
   initialTrainer,
 }: TrainerProfilePageClientProps) {
+  const hydrated = useHydrated();
   const liveTrainer = useTrainerWithOverrides(trainerId);
   const trainer = liveTrainer ?? initialTrainer;
+
+  if (!trainer && hydrated) {
+    notFound();
+  }
+
+  if (!trainer) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-16 text-center text-white/60">
+        Loading specialist profile…
+      </div>
+    );
+  }
 
   return (
     <>
@@ -30,6 +46,7 @@ export function TrainerProfilePageClient({
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-4 sm:px-6 sm:pb-20 sm:pt-6 lg:py-16">
         <div className="lg:grid lg:grid-cols-3 lg:gap-16">
           <div className="profile-content min-w-0 lg:col-span-2">
+            <ProfileServiceArea trainer={trainer} />
             <ProfileCuratedDetails trainer={trainer} />
             <ProfileSessionExperience trainer={trainer} />
             <Bio trainer={trainer} />

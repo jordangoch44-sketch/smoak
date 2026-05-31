@@ -1,6 +1,8 @@
 import { ADMIN_SPECIALIST_BILLING_SEED } from "@/data/admin-specialist-billing-seed";
 import { ADMIN_NOTIFICATION_ISSUES_SEED } from "@/data/admin-notification-issues-seed";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
+import { clientApplicationStatusLabel } from "@/lib/client-applications-service";
+import type { ClientApplication } from "@/types/client-application";
 import type { AdminSpecialistRow } from "@/lib/admin-specialists-service";
 import type {
   AdminNotifiableSectionId,
@@ -11,6 +13,7 @@ import type { SpecialistApplication } from "@/types/specialist-application";
 
 export interface AdminNotificationCountInput {
   applications: readonly SpecialistApplication[];
+  clientApplications?: readonly ClientApplication[];
   specialists: readonly AdminSpecialistRow[];
   billingById?: ReadonlyMap<string, SpecialistBillingRecord>;
   dismissedIssueIds?: ReadonlySet<string>;
@@ -120,9 +123,13 @@ export function computeAdminSectionBadgeCounts(
   const dismissed = input.dismissedIssueIds ?? new Set<string>();
   const isOwner = input.isOwnerAdmin ?? false;
 
-  const pendingApplications = input.applications.filter(
+  const pendingSpecialists = input.applications.filter(
     (app) => applicationStatusLabel(app.profileStatus) === "pending"
   ).length;
+  const pendingClients = (input.clientApplications ?? []).filter(
+    (app) => clientApplicationStatusLabel(app.status) === "pending"
+  ).length;
+  const pendingApplications = pendingSpecialists + pendingClients;
 
   const specialists = isOwner
     ? countSpecialistsNeedingAttention(

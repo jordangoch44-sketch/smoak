@@ -1,4 +1,6 @@
 import { getTrainerById } from "@/data/trainers";
+import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
+import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import type { Trainer } from "@/types";
 
 /** Single entry in a city Top 50 leaderboard (mock / future API shape) */
@@ -127,8 +129,32 @@ export function getCityTop50Listing(
   return LISTINGS_BY_SLUG[citySlug] ?? SAN_DIEGO_TOP_50;
 }
 
-/** Resolve ranked specialists for carousel rendering; skips missing IDs */
-export function getRankedSpecialistsForCity(
+function sortRankedSpecialistsByProximity(
+  rows: RankedSpecialist[],
+  user: UserGeoPoint | null
+): RankedSpecialist[] {
+  if (!user || rows.length === 0) return rows;
+
+  const sortedTrainers = sortTrainersByProximity(
+    rows.map((row) => row.trainer),
+    user
+  );
+  const order = new Map(sortedTrainers.map((trainer, index) => [trainer.id, index]));
+
+  return [...rows]
+    .sort(
+      (a, b) =>
+        (order.get(a.trainer.id) ?? Number.MAX_SAFE_INTEGER) -
+        (order.get(b.trainer.id) ?? Number.MAX_SAFE_INTEGER)
+    )
+    .map((row, index) => ({
+      ...row,
+      rank: index + 1,
+    }));
+}
+
+/** Canonical listing order — safe for SSR / hydration */
+export function getRankedSpecialistsBaseline(
   citySlug: string = DEFAULT_RANKING_CITY_SLUG
 ): RankedSpecialist[] {
   const listing = getCityTop50Listing(citySlug);
@@ -148,6 +174,15 @@ export function getRankedSpecialistsForCity(
 
   return results;
 }
+
+/** @deprecated Use getRankedSpecialistsBaseline + client proximity sort */
+export function getRankedSpecialistsForCity(
+  citySlug: string = DEFAULT_RANKING_CITY_SLUG
+): RankedSpecialist[] {
+  return getRankedSpecialistsBaseline(citySlug);
+}
+
+export { sortRankedSpecialistsByProximity };
 
 /** City ranking snapshot for a single trainer profile (null if unranked) */
 export interface TrainerCityRanking {
@@ -182,6 +217,40 @@ export function getRankingsBoardRows(options?: {
   cityFilter?: string;
   professionFilter?: string;
 }): RankingsBoardRow[] {
+  return buildRankingsBoardBaseline(options);
+}
+
+export function sortRankingsBoardByProximity(
+  rows: RankingsBoardRow[],
+  user: UserGeoPoint | null
+): RankingsBoardRow[] {
+  if (!user || rows.length === 0) return rows;
+
+  const sorted = sortTrainersByProximity(
+    rows.map((row) => row.trainer),
+    user
+  );
+  const order = new Map(sorted.map((trainer, index) => [trainer.id, index]));
+
+  return [...rows]
+    .sort(
+      (a, b) =>
+        (order.get(a.trainer.id) ?? Number.MAX_SAFE_INTEGER) -
+        (order.get(b.trainer.id) ?? Number.MAX_SAFE_INTEGER)
+    )
+    .map((row, index) => ({
+      ...row,
+      displayRank: index + 1,
+    }));
+}
+
+function buildRankingsBoardBaseline(
+  options?: {
+    citySlug?: string;
+    cityFilter?: string;
+    professionFilter?: string;
+  }
+): RankingsBoardRow[] {
   const listing = getCityTop50Listing(options?.citySlug);
   const cityFilter = options?.cityFilter ?? "";
   const professionFilter = options?.professionFilter ?? "";
@@ -204,8 +273,5 @@ export function getRankingsBoardRows(options?: {
     });
   }
 
-  return rows.map((row, index) => ({
-    ...row,
-    displayRank: index + 1,
-  }));
+  return rows;
 }

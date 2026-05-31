@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DashboardSection } from "@/components/dashboard";
 import { AdminApplicationReviewPanel } from "@/components/admin/applications/AdminApplicationReviewPanel";
+import { AdminClientApplicationReviewPanel } from "@/components/admin/applications/AdminClientApplicationReviewPanel";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
+import { clientApplicationStatusLabel } from "@/lib/client-applications-service";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 import type { AdminPermissions } from "@/types/admin-permissions";
+import type { ClientApplication } from "@/types/client-application";
 import type { SpecialistApplication } from "@/types/specialist-application";
+
+type ApplicationQueue = "specialists" | "clients";
 
 function formatSubmittedDate(iso: string | null): string {
   if (!iso) return "—";
@@ -19,46 +24,136 @@ function formatSubmittedDate(iso: string | null): string {
 }
 
 interface AdminApplicationsPanelProps {
-  applications: readonly SpecialistApplication[];
+  specialistApplications: readonly SpecialistApplication[];
+  clientApplications: readonly ClientApplication[];
   permissions: AdminPermissions;
-  onSave: (app: SpecialistApplication) => SpecialistApplication | null;
-  onApprove: (app: SpecialistApplication) => SpecialistApplication | null;
-  onReject: (app: SpecialistApplication) => SpecialistApplication | null;
-  onActivate: (app: SpecialistApplication) => SpecialistApplication | null;
+  onSaveSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
+  onApproveSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
+  onRejectSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
+  onArchiveSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
+  onActivateSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
+  onSaveClient: (app: ClientApplication) => ClientApplication | null;
+  onApproveClient: (app: ClientApplication) => ClientApplication | null;
+  onRejectClient: (app: ClientApplication) => ClientApplication | null;
+  onArchiveClient: (app: ClientApplication) => ClientApplication | null;
 }
 
 export function AdminApplicationsPanel({
-  applications,
+  specialistApplications,
+  clientApplications,
   permissions,
-  onSave,
-  onApprove,
-  onReject,
-  onActivate,
+  onSaveSpecialist,
+  onApproveSpecialist,
+  onRejectSpecialist,
+  onArchiveSpecialist,
+  onActivateSpecialist,
+  onSaveClient,
+  onApproveClient,
+  onRejectClient,
+  onArchiveClient,
 }: AdminApplicationsPanelProps) {
+  const [queue, setQueue] = useState<ApplicationQueue>("specialists");
   const [filter, setFilter] = useState<AdminApplicationStatusLabel | "all">(
     "pending"
   );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(
+    null
+  );
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
-  const filtered =
+  const pendingSpecialists = useMemo(
+    () =>
+      specialistApplications.filter(
+        (a) => applicationStatusLabel(a.profileStatus) === "pending"
+      ).length,
+    [specialistApplications]
+  );
+
+  const pendingClients = useMemo(
+    () =>
+      clientApplications.filter(
+        (a) => clientApplicationStatusLabel(a.status) === "pending"
+      ).length,
+    [clientApplications]
+  );
+
+  const filteredSpecialists =
     filter === "all"
-      ? applications
-      : applications.filter(
+      ? specialistApplications
+      : specialistApplications.filter(
           (app) => applicationStatusLabel(app.profileStatus) === filter
         );
 
-  const selected =
-    selectedId != null
-      ? applications.find((app) => app.id === selectedId) ?? null
+  const filteredClients =
+    filter === "all"
+      ? clientApplications
+      : clientApplications.filter(
+          (app) => clientApplicationStatusLabel(app.status) === filter
+        );
+
+  const selectedSpecialist =
+    selectedSpecialistId != null
+      ? specialistApplications.find((app) => app.id === selectedSpecialistId) ??
+        null
       : null;
+
+  const selectedClient =
+    selectedClientId != null
+      ? clientApplications.find((app) => app.id === selectedClientId) ?? null
+      : null;
+
+  const filterOptions: (AdminApplicationStatusLabel | "all")[] = [
+    "all",
+    "pending",
+    "approved",
+    "rejected",
+    "archived",
+  ];
 
   return (
     <DashboardSection
       title="Applications"
-      description="Join SMOAC inbox — tap an application to review, edit, and approve."
+      description="Join SMOAC inbox — review specialist and client questionnaires before they go live."
     >
+      <div
+        className="admin-filter-pills admin-filter-pills--queue"
+        role="tablist"
+        aria-label="Application queue"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={queue === "specialists"}
+          className={`admin-filter-pill${queue === "specialists" ? " admin-filter-pill--active" : ""}`}
+          onClick={() => {
+            setQueue("specialists");
+            setSelectedClientId(null);
+          }}
+        >
+          Specialists
+          {pendingSpecialists > 0 ? (
+            <span className="admin-filter-pill__count">{pendingSpecialists}</span>
+          ) : null}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={queue === "clients"}
+          className={`admin-filter-pill${queue === "clients" ? " admin-filter-pill--active" : ""}`}
+          onClick={() => {
+            setQueue("clients");
+            setSelectedSpecialistId(null);
+          }}
+        >
+          Clients
+          {pendingClients > 0 ? (
+            <span className="admin-filter-pill__count">{pendingClients}</span>
+          ) : null}
+        </button>
+      </div>
+
       <div className="admin-filter-pills" role="tablist" aria-label="Application filters">
-        {(["all", "pending", "approved", "rejected"] as const).map((item) => (
+        {filterOptions.map((item) => (
           <button
             key={item}
             type="button"
@@ -68,51 +163,102 @@ export function AdminApplicationsPanel({
             onClick={() => setFilter(item)}
           >
             {item}
-            {item === "pending" ? (
-              <span className="admin-filter-pill__count">
-                {
-                  applications.filter(
-                    (a) => applicationStatusLabel(a.profileStatus) === "pending"
-                  ).length
-                }
-              </span>
-            ) : null}
           </button>
         ))}
       </div>
 
-      {filtered.length === 0 ? (
-        <p className="admin-empty">No applications in this filter.</p>
+      {queue === "specialists" ? (
+        filteredSpecialists.length === 0 ? (
+          <p className="admin-empty">No specialist applications in this filter.</p>
+        ) : (
+          <ul className="admin-card-list admin-applications-inbox">
+            {filteredSpecialists.map((app) => {
+              const label = applicationStatusLabel(app.profileStatus);
+              const isSelected = selectedSpecialistId === app.id;
+              return (
+                <li key={app.id}>
+                  <button
+                    type="button"
+                    className={`admin-inbox-card${isSelected ? " admin-inbox-card--selected" : ""}`}
+                    onClick={() => setSelectedSpecialistId(app.id)}
+                  >
+                    <div className="admin-inbox-card__head">
+                      <div>
+                        <h3 className="admin-inbox-card__title">
+                          {app.businessName || app.displayName || app.fullName}
+                        </h3>
+                        <p className="admin-inbox-card__category">
+                          {app.professionalType || "Specialist"}
+                        </p>
+                      </div>
+                      <AdminStatusBadge label={label} />
+                    </div>
+                    <dl className="admin-inbox-card__meta">
+                      <div>
+                        <dt>Email</dt>
+                        <dd>{app.email}</dd>
+                      </div>
+                      <div>
+                        <dt>City</dt>
+                        <dd>
+                          {app.neighborhood ? `${app.neighborhood}, ` : ""}
+                          {app.city || "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>ZIP</dt>
+                        <dd>{app.zipCode || "—"}</dd>
+                      </div>
+                      <div>
+                        <dt>Submitted</dt>
+                        <dd>{formatSubmittedDate(app.submittedAt)}</dd>
+                      </div>
+                    </dl>
+                    <span className="admin-inbox-card__cta">Review application →</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )
+      ) : filteredClients.length === 0 ? (
+        <p className="admin-empty">No client applications in this filter.</p>
       ) : (
         <ul className="admin-card-list admin-applications-inbox">
-          {filtered.map((app) => {
-            const label = applicationStatusLabel(app.profileStatus);
-            const isSelected = selectedId === app.id;
+          {filteredClients.map((app) => {
+            const label = clientApplicationStatusLabel(app.status);
+            const isSelected = selectedClientId === app.id;
             return (
               <li key={app.id}>
                 <button
                   type="button"
                   className={`admin-inbox-card${isSelected ? " admin-inbox-card--selected" : ""}`}
-                  onClick={() => setSelectedId(app.id)}
+                  onClick={() => setSelectedClientId(app.id)}
                 >
                   <div className="admin-inbox-card__head">
                     <div>
-                      <h3 className="admin-inbox-card__title">
-                        {app.displayName || app.fullName}
-                      </h3>
-                      <p className="admin-inbox-card__category">
-                        {app.professionalType || "Specialist"}
-                      </p>
+                      <h3 className="admin-inbox-card__title">{app.fullName}</h3>
+                      <p className="admin-inbox-card__category">Client</p>
                     </div>
                     <AdminStatusBadge label={label} />
                   </div>
                   <dl className="admin-inbox-card__meta">
                     <div>
-                      <dt>City</dt>
+                      <dt>Email</dt>
+                      <dd>{app.email}</dd>
+                    </div>
+                    <div>
+                      <dt>Location</dt>
                       <dd>
-                        {app.neighborhood ? `${app.neighborhood}, ` : ""}
-                        {app.city || "—"}
+                        {app.preferredNeighborhood
+                          ? `${app.preferredNeighborhood}, `
+                          : ""}
+                        {app.preferredCity || "—"}
                       </dd>
+                    </div>
+                    <div>
+                      <dt>ZIP</dt>
+                      <dd>{app.preferredZipCode || "—"}</dd>
                     </div>
                     <div>
                       <dt>Submitted</dt>
@@ -127,15 +273,28 @@ export function AdminApplicationsPanel({
         </ul>
       )}
 
-      {selected ? (
+      {selectedSpecialist ? (
         <AdminApplicationReviewPanel
-          application={selected}
+          application={selectedSpecialist}
           permissions={permissions}
-          onClose={() => setSelectedId(null)}
-          onSave={onSave}
-          onApprove={onApprove}
-          onReject={onReject}
-          onActivate={onActivate}
+          onClose={() => setSelectedSpecialistId(null)}
+          onSave={onSaveSpecialist}
+          onApprove={onApproveSpecialist}
+          onReject={onRejectSpecialist}
+          onActivate={onActivateSpecialist}
+          onArchive={onArchiveSpecialist}
+        />
+      ) : null}
+
+      {selectedClient ? (
+        <AdminClientApplicationReviewPanel
+          application={selectedClient}
+          permissions={permissions}
+          onClose={() => setSelectedClientId(null)}
+          onSave={onSaveClient}
+          onApprove={onApproveClient}
+          onReject={onRejectClient}
+          onArchive={onArchiveClient}
         />
       ) : null}
     </DashboardSection>

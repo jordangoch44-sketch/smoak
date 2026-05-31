@@ -1,7 +1,7 @@
-import type { AuthRole } from "@/types/auth";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 
 export interface CreateAccountWizardState {
-  accountType: AuthRole | null;
+  accountType: PublicAuthRole | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -9,6 +9,7 @@ export interface CreateAccountWizardState {
   clientGoals: string[];
   clientCity: string;
   clientNeighborhood: string;
+  clientZipCode: string;
   clientBudget: string;
   clientTrainingStyle: string;
   specialistType: string;
@@ -19,13 +20,14 @@ export interface CreateAccountWizardState {
 }
 
 export interface CreateAccountProfile {
-  accountType: AuthRole;
+  accountType: PublicAuthRole;
   firstName: string;
   lastName: string;
   email: string;
   clientGoals?: string[];
   clientCity?: string;
   clientNeighborhood?: string;
+  clientZipCode?: string;
   clientBudget?: string;
   clientTrainingStyle?: string;
   specialistType?: string;
@@ -45,6 +47,7 @@ export const INITIAL_CREATE_ACCOUNT_STATE: CreateAccountWizardState = {
   clientGoals: [],
   clientCity: "",
   clientNeighborhood: "",
+  clientZipCode: "",
   clientBudget: "",
   clientTrainingStyle: "",
   specialistType: "",

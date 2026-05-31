@@ -12,11 +12,20 @@ export interface ActiveFilterChip {
 export function getActiveFilterChips(filters: TrainerFilters): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
 
-  if (filters.city) {
-    chips.push({ key: "city", label: filters.city });
-  }
-  if (filters.neighborhood) {
-    chips.push({ key: "neighborhood", label: filters.neighborhood });
+  if (filters.zipCode) {
+    const zipLabel = filters.neighborhood
+      ? `${filters.neighborhood} · ${filters.zipCode}`
+      : filters.city
+        ? `${filters.city} · ${filters.zipCode}`
+        : filters.zipCode;
+    chips.push({ key: "zipCode", label: zipLabel });
+  } else {
+    if (filters.city) {
+      chips.push({ key: "city", label: filters.city });
+    }
+    if (filters.neighborhood) {
+      chips.push({ key: "neighborhood", label: filters.neighborhood });
+    }
   }
   if (filters.profession) {
     chips.push({
@@ -48,9 +57,13 @@ export function removeFilterFromState(
   filters: TrainerFilters,
   key: ActiveFilterKey
 ): TrainerFilters {
-  const next = { ...filters, [key]: "" };
-  if (key === "city") {
-    next.neighborhood = "";
+  if (key === "zipCode" || key === "city") {
+    return {
+      ...filters,
+      zipCode: "",
+      city: "",
+      neighborhood: "",
+    };
   }
-  return next;
+  return { ...filters, [key]: "" };
 }

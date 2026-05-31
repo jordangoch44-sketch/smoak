@@ -1,76 +1,67 @@
-# Lib
+# `src/lib` — service layout
 
-**Pure TypeScript** — no React, no JSX. Domain logic, localStorage stores, and URL helpers.
+Logical grouping for navigation (files stay at current paths until a dedicated migration).
 
-## Module map
+## Application submission (Join Now)
 
-| Module | Role |
-|--------|------|
-| `auth-session-store.ts` / `auth-session-storage.ts` | Dev auth session read/write |
-| `auth-session-helpers-core.ts` | `isLoggedIn`, `getUserRole`, `canSaveSpecialists` |
-| `saved-trainers-store.ts` / `saved-trainers-storage.ts` / `saved-trainers-user.ts` | Per-client saved specialist IDs |
-| `saved-ui.ts` | Saved copy, toast presets, badge/title formatters |
-| `specialist-saves.ts` | Save helpers + pending save + post-login apply |
-| `pending-save-storage.ts` | Queue save before login |
-| `post-login-flow.ts` | After login redirects + pending save toast |
-| `explore.ts` / `explore-url.ts` / `explore-active-filters.ts` | Filter state + URL sync |
-| `hero-search-suggestions.ts` | Homepage search suggestion list |
-| `home-marketplace-stats.ts` | Hero trust stat copy |
-| `navigation.ts` | Site routes + primary nav links |
-| `utility-drawer-menu.ts` | Mobile utility drawer rows |
-| `mobile-bottom-nav.ts` | Bottom tab items + active state |
-| `mobile-bottom-nav-transition.ts` | Search → cinematic loader; other tabs → stacked panel slides |
-| `mobile-chrome.ts` | Bottom nav body classes, scroll cache, route search helper |
-| `chrome-body-classes.ts` | Scroll-lock / overlay body class list |
-| `user-location-storage.ts` / `user-location-store.ts` | Geo + ZIP personalization |
-| `personalized-trainers.ts` / `marketplace-city-centers.ts` | Location-aware lists |
-| `viewport.ts` | Mobile breakpoint subscription for `useSyncExternalStore` |
-| `motion.ts` | Framer Motion transition presets |
-| `site-intro-storage.ts` | Welcome intro seen flag |
-| `join-flow.ts` / `auth-routes.ts` | Auth route paths |
-| `specialist-profile-store.ts` | Specialist profile overrides (dev) |
-| `hidden-trainers-store.ts` | Hidden trainers (dev/explore) |
-| `dev-auth.ts` / `dev-storage-keys.ts` | Dev-only credentials helpers |
+- `specialist-application-storage.ts` — localStorage applications (`smoac_specialist_applications`)
+- `specialist-application-submit.ts` — submit flow, hide pending from public, sync overrides
+- `specialist-application-fields.ts`, `specialist-onboarding-validation.ts`
+- `client-application-*` — client Join Now storage, submit, admin service
+- `application-to-trainer.ts` — application → Trainer + profile override mapping
 
-### Admin (`lib/admin/*` + `lib/admin-*.ts`)
+## Admin approval
 
-Platform admin is **separate** from marketplace `lib/` flows. Barrel: `@/lib/admin`.
+- `admin-applications-service.ts`, `admin-applications-seed.ts`
+- `approved-specialist-profiles-store.ts` — approved public profiles (`smoac_approved_specialist_profiles`)
+- `admin-specialists-service.ts`, `admin-specialist-meta-store.ts`
 
-| Module | Role |
-|--------|------|
-| `admin-permissions.ts` | Owner vs Staff capabilities (single source) |
-| `admin-applications-service.ts` | Approve/reject/save applications |
-| `admin-specialists-service.ts` | Specialist rows + visibility |
-| `admin-specialist-billing-service.ts` | Tier + add-on mock billing |
-| `admin-notification-counts.ts` | Nav badge counts |
-| `admin-specialist-meta-store.ts` | Per-specialist admin flags (localStorage) |
-| `specialist-application-storage.ts` | Join-flow applications (localStorage) |
+## Specialist dashboard
 
-Mock seeds: `@/data/admin`. See `components/admin/README.md`.
+- `managed-specialist-profile.ts` — session id resolve, save orchestration, demo vs real
+- `specialist-dashboard-mode.ts` — pending / free / premium dashboard modes
+- `specialist-dashboard-analytics.ts`, `specialist-dashboard-stats.ts`, `specialist-dashboard-subscription.ts`
+- `specialist-premium.ts`
 
-## Saved specialists (extend here)
+## Specialist profile edit
 
-```
-SaveTrainerButton → useSavedTrainers() + useSaveToast()
-                  → saved-trainers-store (IDs)
-                  → saved-ui.ts (copy + toasts)
-                  → pending-save-storage (logged-out queue)
-```
+- `specialist-profile-store.ts` — override persistence + listeners (`smoac_specialist_profile_overrides`)
+- `specialist-profile-overrides.ts` — form ↔ overrides, apply to Trainer
 
-Do not duplicate save copy in components — add strings to `saved-ui.ts`.
+## Public marketplace / catalog
 
-## Store pattern
+- `marketplace-public-catalog.ts` — approved-only public list; pending hidden via `smoac_hidden_specialists`
+- `explore.ts`, `explore-url.ts`, `explore-active-filters.ts`, `explore-location-filters.ts`
+- `search-query-parser.ts`, `trainers.ts` (filter helpers)
 
-Stores used by React follow:
+## Image upload / crop
 
-1. `get*Snapshot()` / `get*ServerSnapshot()` for `useSyncExternalStore`
-2. `subscribe*()` for listeners
-3. `set*` mutators that persist then `emitChange()`
+- `media/crop-image.ts` — crop + `readFileAsDataUrl` (persistable data URLs)
 
-**Do not** read `localStorage` directly from components — go through context or hooks that wrap these stores.
+## Storage helpers
 
-## Adding logic
+- `dev-storage-keys.ts` — dev key registry
+- `user-location-storage.ts`, `user-location-store.ts`
+- `geo/*`, `zip-to-marketplace-city.ts`
 
-- New filter or URL rule → `explore*.ts` or new `feature-name.ts` here.
-- New persisted user preference → store + storage pair (see `saved-trainers-*` or `user-location-*`).
-- Re-export from `lib/index.ts` only if widely used across features; otherwise import the specific file.
+## Clients
+
+- `admin-clients-service.ts`, `create-account-profile-storage.ts`
+- `saved-trainers-*`, `specialist-saves.ts`
+
+## Admin platform
+
+- `admin/*` barrel, `admin-stats.ts`, permissions, revenue, notifications
+- `internal-auth*.ts`, `internal-routes.ts`
+
+## Cross-cutting
+
+- `email/confirmation-email-service.ts`
+- `validation/email.ts`
+- `toast-store.ts`, `dev-auth.ts`
+
+## Demo / seed data (not runtime logic)
+
+- `@/constants/specialist-dashboard-mock.ts` — demo analytics, leads, ids
+- `@/data/demo/dev-dashboard-trainer.ts` — isolated dev-login dashboard seed
+- `@/data/dashboard-mock.ts`, `@/data/trainers.ts`

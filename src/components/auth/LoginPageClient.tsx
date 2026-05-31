@@ -10,21 +10,20 @@ import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
-import { isDevAdminLoginEnabled } from "@/lib/admin-routes";
 import {
-  DEV_INVALID_LOGIN_MESSAGE,
+  PUBLIC_INVALID_LOGIN_MESSAGE,
   validateDevLogin,
+  type PublicAuthRole,
 } from "@/lib/dev-auth";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
-import type { AuthRole } from "@/types/auth";
 import { cn } from "@/lib/utils";
 
 const LOGIN_FAILURE_DELAY_MS = 300;
 const ERROR_FADE_MS = 220;
 
-const ROLES: {
-  id: AuthRole;
+const PUBLIC_LOGIN_ROLES: {
+  id: PublicAuthRole;
   title: string;
   description: string;
 }[] = [
@@ -38,14 +37,7 @@ const ROLES: {
     title: "Continue as Specialist",
     description: "Manage your profile, leads, and marketplace visibility.",
   },
-  {
-    id: "admin",
-    title: "Continue as Admin",
-    description: "Manage applications, specialists, clients, and platform settings.",
-  },
 ];
-
-const PUBLIC_LOGIN_ROLES = ROLES.filter((r) => r.id !== "admin");
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -57,14 +49,11 @@ export function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnToSaved = isAuthReturnToSaved(searchParams);
-  const devAdminLogin = isDevAdminLoginEnabled(searchParams);
   const reducedMotion = useReducedMotion();
   const { isReady, session, signIn } = useAuthSession();
   const { showToast: showSaveToast } = useSaveToast();
   const { showToast } = useToast();
-  const [role, setRole] = useState<AuthRole>(
-    devAdminLogin ? "admin" : "client"
-  );
+  const [role, setRole] = useState<PublicAuthRole>("client");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +65,7 @@ export function LoginPageClient() {
   const errorFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!isReady || !session) return;
+    if (!isReady || !session || session.role === "admin") return;
     if (returnToSaved && session.role === "client") {
       router.replace("/saved");
       return;
@@ -116,7 +105,7 @@ export function LoginPageClient() {
   }
 
   async function showLoginFailure() {
-    setError(DEV_INVALID_LOGIN_MESSAGE);
+    setError(PUBLIC_INVALID_LOGIN_MESSAGE);
     setFieldsError(true);
     setErrorVisible(true);
     triggerFieldsShake();
@@ -150,7 +139,7 @@ export function LoginPageClient() {
     }
 
     const validatedRole = validateDevLogin(role, trimmedEmail, trimmedPassword);
-    if (!validatedRole) {
+    if (!validatedRole || validatedRole === "admin") {
       setSubmitPressed(false);
       setSubmitting(false);
       await showLoginFailure();
@@ -162,7 +151,7 @@ export function LoginPageClient() {
 
     showToast({
       type: "success",
-      message: `Logged in as ${trimmedEmail}`,
+      message: "Welcome back.",
     });
 
     const { path, toast } = resolvePostLoginNavigation(validatedRole, {
@@ -203,9 +192,7 @@ export function LoginPageClient() {
           <div className="login-card__header">
             <h1 className="login-card__title">Welcome back</h1>
             <p className="login-card__subtitle">
-              {devAdminLogin
-                ? "DEV admin sign-in — Owner: admin@smoac.com · Staff: staff@smoac.com"
-                : "Choose how you want to continue."}
+              Choose how you want to continue.
             </p>
           </div>
 
@@ -215,7 +202,7 @@ export function LoginPageClient() {
               role="radiogroup"
               aria-label="Account type"
             >
-              {(devAdminLogin ? ROLES : PUBLIC_LOGIN_ROLES).map((option) => {
+              {PUBLIC_LOGIN_ROLES.map((option) => {
                 const selected = role === option.id;
                 return (
                   <button
@@ -316,7 +303,7 @@ export function LoginPageClient() {
                 disabled={submitting}
                 aria-busy={submitting}
               >
-                {submitting ? "Signing in…" : "Continue"}
+                {submitting ? "Signing in…" : "Sign in"}
               </button>
             </div>
 
@@ -331,7 +318,7 @@ export function LoginPageClient() {
                   showToast({
                     type: "info",
                     message:
-                      "Password reset is not available in this preview build.",
+                      "Password reset will be available when accounts launch.",
                   })
                 }
               >

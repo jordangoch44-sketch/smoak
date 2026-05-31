@@ -16,7 +16,7 @@ export {
   updateApplicationStatus,
 } from "@/lib/admin-applications-service";
 
-export { applicationToProfileOverrides } from "@/lib/admin-application-profile";
+export { applicationToProfileOverrides } from "@/lib/application-to-trainer";
 export { ensureAdminApplicationSeeds } from "@/lib/admin-applications-seed";
 export { isAdminSession } from "@/lib/admin-auth";
 export { listAdminClients } from "@/lib/admin-clients-service";
@@ -43,7 +43,11 @@ export {
   getPermissionsForAdminRole,
   resolveAdminRoleFromSession,
 } from "@/lib/admin-permissions";
-export { buildDevAdminLoginHref } from "@/lib/admin-routes";
+export {
+  buildInternalLoginHref,
+  INTERNAL_DASHBOARD_PATH,
+  INTERNAL_LOGIN_PATH,
+} from "@/lib/internal-routes";
 export {
   formatBillingCents,
   formatTierPrice,
@@ -70,4 +74,5 @@ export {
   formatRevenueCents,
   getAdminRevenueDashboard,
 } from "@/lib/admin-revenue-service";
+export { getAdminExecutiveRevenueSnapshot } from "@/lib/admin-executive-revenue-service";
 export { ADMIN_SECTIONS } from "@/lib/admin-sections";

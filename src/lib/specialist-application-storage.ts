@@ -2,11 +2,28 @@ import {
   DEV_SPECIALIST_APPLICATIONS_KEY,
   DEV_SPECIALIST_ONBOARDING_DRAFT_KEY,
 } from "@/lib/dev-storage-keys";
+import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistApplication,
   type SpecialistOnboardingState,
 } from "@/types/specialist-application";
+
+function normalizeApplication(app: SpecialistApplication): SpecialistApplication {
+  const enriched = enrichSpecialistApplicationFields(app) as SpecialistApplication;
+  return {
+    ...enriched,
+    media: {
+      ...INITIAL_SPECIALIST_ONBOARDING_STATE.media,
+      ...enriched.media,
+      profilePhotoOriginalUrl:
+        enriched.media.profilePhotoOriginalUrl ||
+        enriched.media.profilePhotoUrl ||
+        "",
+      profilePhotoCrop: enriched.media.profilePhotoCrop ?? null,
+    },
+  };
+}
 
 const applicationListeners = new Set<() => void>();
 
@@ -30,7 +47,7 @@ function reloadApplicationsCache(): readonly SpecialistApplication[] {
   const loaded = safeParse<SpecialistApplication[]>(
     window.localStorage.getItem(DEV_SPECIALIST_APPLICATIONS_KEY),
     []
-  );
+  ).map(normalizeApplication);
   const next: readonly SpecialistApplication[] =
     loaded.length > 0 ? [...loaded] : EMPTY_APPLICATIONS;
 
@@ -145,4 +162,15 @@ export function getSpecialistApplicationById(
   id: string
 ): SpecialistApplication | null {
   return listSpecialistApplications().find((item) => item.id === id) ?? null;
+}
+
+export function findSpecialistApplicationByEmail(
+  email: string
+): SpecialistApplication | null {
+  const normalized = email.trim().toLowerCase();
+  return (
+    listSpecialistApplications().find(
+      (item) => item.email.trim().toLowerCase() === normalized
+    ) ?? null
+  );
 }

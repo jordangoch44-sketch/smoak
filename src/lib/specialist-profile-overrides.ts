@@ -1,11 +1,12 @@
+import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
+import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import type { Trainer } from "@/types";
 import type {
   SpecialistProfileEditForm,
   SpecialistProfileOverrides,
 } from "@/types/specialist-profile-edit";
-import { DEMO_SPECIALIST_ID } from "@/data/dashboard-mock";
 
 /** DEV ONLY — persisted specialist profile edits */
 export const DEV_SPECIALIST_PROFILE_OVERRIDES_KEY =
@@ -50,13 +51,55 @@ export function applySpecialistProfileOverrides(
     specialty: overrides.specialty ?? base.specialty,
     serviceArea: overrides.serviceArea ?? base.serviceArea,
     certifications: overrides.certifications ?? base.certifications,
+    serviceRadiusMiles:
+      overrides.serviceRadiusMiles ??
+      (overrides.travelRadius
+        ? parseTravelRadiusMiles(overrides.travelRadius)
+        : undefined) ??
+      base.serviceRadiusMiles,
   };
+
+  if (overrides.zipCode?.trim()) {
+    merged.zipCode = overrides.zipCode.trim();
+  }
+  if (overrides.latitude != null && overrides.longitude != null) {
+    merged.latitude = overrides.latitude;
+    merged.longitude = overrides.longitude;
+  } else if (merged.zipCode) {
+    const fromZip = zipCodeToCoordinates(merged.zipCode);
+    if (fromZip) {
+      merged.latitude = fromZip.latitude;
+      merged.longitude = fromZip.longitude;
+    }
+  }
 
   if (overrides.bookingAvailability?.trim()) {
     const slots = parseCommaList(overrides.bookingAvailability);
     if (slots.length > 0) {
       merged.sessionExperience = slots;
     }
+  }
+
+  if (overrides.profilePhotoUrl?.trim()) {
+    const photo = overrides.profilePhotoUrl.trim();
+    merged.image = photo;
+    if (!overrides.coverImageUrl?.trim()) {
+      merged.heroImage = photo;
+    }
+    merged.galleryImages = buildTrainerGalleryImages(
+      merged.gallery,
+      merged.heroImage,
+      merged.galleryImages
+    );
+  }
+
+  if (overrides.coverImageUrl?.trim()) {
+    merged.heroImage = overrides.coverImageUrl.trim();
+    merged.galleryImages = buildTrainerGalleryImages(
+      merged.gallery,
+      merged.heroImage,
+      merged.galleryImages
+    );
   }
 
   if (overrides.photoNotes?.trim()) {
@@ -116,8 +159,14 @@ export function overridesFromTrainer(
     bookingAvailability:
       stored?.bookingAvailability ??
       trainer.sessionExperience.slice(0, 3).join(", "),
-    profilePhotoUrl: stored?.profilePhotoUrl ?? "",
-    coverImageUrl: stored?.coverImageUrl ?? "",
+    profilePhotoUrl:
+      stored?.profilePhotoUrl?.trim() ||
+      trainer.image?.trim() ||
+      trainer.heroImage?.trim() ||
+      "",
+    coverImageUrl:
+      stored?.coverImageUrl?.trim() ||
+      (stored?.profilePhotoUrl?.trim() ? "" : trainer.heroImage?.trim() || ""),
     phone: stored?.phone ?? "",
     email: stored?.email ?? "",
     instagram: stored?.instagram ?? "",
@@ -221,9 +270,4 @@ export function saveSpecialistOverridesForId(
   const map = loadAllSpecialistOverrides();
   map[trainerId] = overrides;
   persistAllSpecialistOverrides(map);
-}
-
-export function getManagedSpecialistId(sessionEmail?: string): string {
-  void sessionEmail;
-  return DEMO_SPECIALIST_ID;
 }

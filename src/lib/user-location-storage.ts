@@ -1,14 +1,29 @@
+import type { GeoCoordinates } from "@/lib/geo/zip-centroids";
+import { getCachedGeocodedZip } from "@/lib/geo/geocoded-zip-cache";
+import {
+  lookupLocalZipCoordinates,
+  zipCodeToCoordinates,
+} from "@/lib/geo/zip-centroids";
+import { getCachedGeocodedZipPlace } from "@/lib/geo/geocoded-zip-cache";
 import { findNearestMarketplaceCity } from "@/lib/marketplace-city-centers";
+import {
+  lookupLocalZipPlace,
+  UNKNOWN_ZIP_AREA_LABEL,
+} from "@/lib/geo/zip-place-names";
 import {
   isValidZipCode,
   normalizeZipCode,
-  zipCodeToMarketplaceCity,
 } from "@/lib/zip-to-marketplace-city";
+import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 
 export const USER_LATITUDE_KEY = "userLatitude";
 export const USER_LONGITUDE_KEY = "userLongitude";
+export const USER_ZIP_LATITUDE_KEY = "userZipLatitude";
+export const USER_ZIP_LONGITUDE_KEY = "userZipLongitude";
 export const HAS_LOCATION_PERMISSION_KEY = "hasLocationPermission";
 export const USER_ZIP_CODE_KEY = "userZipCode";
+export const USER_ZIP_PLACE_NAME_KEY = "userZipPlaceName";
+export const USER_ZIP_STATE_KEY = "userZipState";
 export const HAS_SKIPPED_LOCATION_PROMPT_KEY = "hasSkippedLocationPrompt";
 
 export const USER_LOCATION_CHANGE_EVENT = "smoac-user-location-change";
@@ -52,6 +67,30 @@ export function loadSavedZipCode(): string | null {
   return isValidZipCode(zip) ? zip : null;
 }
 
+export function loadSavedZipPlaceName(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(USER_ZIP_PLACE_NAME_KEY);
+  return raw?.trim() || null;
+}
+
+/** Display label for header + copy — never mismatched with a different ZIP */
+export function getZipPlaceDisplayName(zip: string): string | null {
+  const local = lookupLocalZipPlace(zip);
+  if (local) return local.placeName;
+
+  if (loadSavedZipCode() === zip) {
+    const saved = loadSavedZipPlaceName();
+    if (saved) return saved;
+
+    const cached = getCachedGeocodedZipPlace(zip);
+    if (cached?.placeName) return cached.placeName;
+  }
+
+  return null;
+}
+
+export { UNKNOWN_ZIP_AREA_LABEL } from "@/lib/geo/zip-place-names";
+
 export function hasSkippedLocationPrompt(): boolean {
   if (typeof window === "undefined") return false;
   return window.localStorage.getItem(HAS_SKIPPED_LOCATION_PROMPT_KEY) === "true";
@@ -70,10 +109,28 @@ export function hasPersonalizationLocation(): boolean {
   return getPersonalizationCity() !== null;
 }
 
-/** Resolved marketplace city from saved geo or ZIP. */
+function coordinatesForSavedZip(zip: string): GeoCoordinates | null {
+  const zipLat = readNumber(USER_ZIP_LATITUDE_KEY);
+  const zipLng = readNumber(USER_ZIP_LONGITUDE_KEY);
+  if (zipLat !== null && zipLng !== null) {
+    return { latitude: zipLat, longitude: zipLng };
+  }
+  return (
+    lookupLocalZipCoordinates(zip) ??
+    getCachedGeocodedZip(zip) ??
+    zipCodeToCoordinates(zip)
+  );
+}
+
+/**
+ * Resolved place label for display (header, homepage copy).
+ * For ZIP users: neighborhood/city from ZIP lookup only.
+ */
 export function getPersonalizationCity(): string | null {
   const zip = loadSavedZipCode();
-  if (zip) return zipCodeToMarketplaceCity(zip);
+  if (zip) {
+    return getZipPlaceDisplayName(zip);
+  }
 
   const coords = loadSavedCoordinates();
   if (coords && hasSavedGeolocation()) {
@@ -81,6 +138,13 @@ export function getPersonalizationCity(): string | null {
   }
 
   return null;
+}
+
+/** Marketplace metro bucket for rankings slug / explore city filter — from coordinates only */
+export function getPersonalizationMarketplaceCity(): string | null {
+  const coords = getActiveUserCoordinates();
+  if (!coords) return null;
+  return findNearestMarketplaceCity(coords.latitude, coords.longitude);
 }
 
 export function saveGeolocationCoordinates(
@@ -92,20 +156,97 @@ export function saveGeolocationCoordinates(
   window.localStorage.setItem(USER_LONGITUDE_KEY, String(longitude));
   window.localStorage.setItem(HAS_LOCATION_PERMISSION_KEY, "true");
   window.localStorage.removeItem(USER_ZIP_CODE_KEY);
+  window.localStorage.removeItem(USER_ZIP_PLACE_NAME_KEY);
+  window.localStorage.removeItem(USER_ZIP_STATE_KEY);
+  window.localStorage.removeItem(USER_ZIP_LATITUDE_KEY);
+  window.localStorage.removeItem(USER_ZIP_LONGITUDE_KEY);
   window.localStorage.removeItem(HAS_SKIPPED_LOCATION_PROMPT_KEY);
   dispatchUserLocationChange();
 }
 
-export function saveUserZipCode(zip: string): void {
+export interface SaveUserZipOptions {
+  coordinates?: GeoCoordinates | null;
+  placeName?: string | null;
+  state?: string | null;
+}
+
+export function saveUserZipCode(
+  zip: string,
+  options?: SaveUserZipOptions | GeoCoordinates | null
+): void {
   if (typeof window === "undefined") return;
   const normalized = normalizeZipCode(zip);
   if (!isValidZipCode(normalized)) return;
+
+  const opts: SaveUserZipOptions =
+    options && "latitude" in options
+      ? { coordinates: options }
+      : (options ?? {});
+
   window.localStorage.setItem(USER_ZIP_CODE_KEY, normalized);
   window.localStorage.removeItem(USER_LATITUDE_KEY);
   window.localStorage.removeItem(USER_LONGITUDE_KEY);
   window.localStorage.removeItem(HAS_LOCATION_PERMISSION_KEY);
+
+  const placeName = opts.placeName?.trim() ?? "";
+  if (placeName) {
+    window.localStorage.setItem(USER_ZIP_PLACE_NAME_KEY, placeName);
+  } else {
+    window.localStorage.removeItem(USER_ZIP_PLACE_NAME_KEY);
+  }
+
+  const state = opts.state?.trim() ?? "";
+  if (state) {
+    window.localStorage.setItem(USER_ZIP_STATE_KEY, state);
+  } else {
+    window.localStorage.removeItem(USER_ZIP_STATE_KEY);
+  }
+
+  const centroid =
+    opts.coordinates ??
+    lookupLocalZipCoordinates(normalized) ??
+    getCachedGeocodedZip(normalized);
+
+  if (
+    centroid &&
+    Number.isFinite(centroid.latitude) &&
+    Number.isFinite(centroid.longitude)
+  ) {
+    window.localStorage.setItem(
+      USER_ZIP_LATITUDE_KEY,
+      String(centroid.latitude)
+    );
+    window.localStorage.setItem(
+      USER_ZIP_LONGITUDE_KEY,
+      String(centroid.longitude)
+    );
+  } else {
+    window.localStorage.removeItem(USER_ZIP_LATITUDE_KEY);
+    window.localStorage.removeItem(USER_ZIP_LONGITUDE_KEY);
+  }
   window.localStorage.removeItem(HAS_SKIPPED_LOCATION_PROMPT_KEY);
   dispatchUserLocationChange();
+}
+
+/** Active coordinates for proximity sorting — device geo or ZIP centroid */
+export function getActiveUserCoordinates(): UserGeoPoint | null {
+  const geo = loadSavedCoordinates();
+  if (geo && hasSavedGeolocation()) {
+    return { latitude: geo.latitude, longitude: geo.longitude };
+  }
+
+  const zipLat = readNumber(USER_ZIP_LATITUDE_KEY);
+  const zipLng = readNumber(USER_ZIP_LONGITUDE_KEY);
+  if (zipLat !== null && zipLng !== null) {
+    return { latitude: zipLat, longitude: zipLng };
+  }
+
+  const zip = loadSavedZipCode();
+  if (zip) {
+    return coordinatesForSavedZip(zip);
+  }
+
+  return null;
 }
 
 export function markLocationPromptSkipped(): void {

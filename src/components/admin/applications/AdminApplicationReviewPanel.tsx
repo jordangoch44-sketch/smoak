@@ -8,7 +8,7 @@ import { applicationStatusLabel } from "@/lib/admin-applications-service";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
-type ReviewFeedback = "saved" | "approved" | "rejected" | "activated" | null;
+type ReviewFeedback = "saved" | "approved" | "rejected" | "activated" | "archived" | null;
 
 function formatSubmittedDate(iso: string | null): string {
   if (!iso) return "—";
@@ -36,6 +36,7 @@ interface AdminApplicationReviewPanelProps {
   onApprove: (app: SpecialistApplication) => SpecialistApplication | null;
   onReject: (app: SpecialistApplication) => SpecialistApplication | null;
   onActivate: (app: SpecialistApplication) => SpecialistApplication | null;
+  onArchive: (app: SpecialistApplication) => SpecialistApplication | null;
 }
 
 export function AdminApplicationReviewPanel({
@@ -46,11 +47,12 @@ export function AdminApplicationReviewPanel({
   onApprove,
   onReject,
   onActivate,
+  onArchive,
 }: AdminApplicationReviewPanelProps) {
   const [draft, setDraft] = useSyncedState(application.id, application);
   const [feedback, setFeedback] = useState<ReviewFeedback>(null);
   const [busyAction, setBusyAction] = useState<
-    "save" | "approve" | "reject" | "activate" | null
+    "save" | "approve" | "reject" | "activate" | "archive" | null
   >(null);
 
   const statusLabel = applicationStatusLabel(draft.profileStatus);
@@ -152,6 +154,20 @@ export function AdminApplicationReviewPanel({
     }
   }
 
+  function handleArchive() {
+    setBusyAction("archive");
+    try {
+      const result = onArchive(draft);
+      if (result) {
+        setDraft(result);
+        setFeedback("archived");
+        window.setTimeout(() => onClose(), 400);
+      }
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   const feedbackMessage =
     feedback === "saved"
       ? "Edits saved."
@@ -161,7 +177,9 @@ export function AdminApplicationReviewPanel({
           ? "Application rejected."
           : feedback === "activated"
             ? "Specialist is now active in Specialists Management."
-            : null;
+            : feedback === "archived"
+              ? "Application archived."
+              : null;
 
   const sheet = (
     <div
@@ -240,8 +258,20 @@ export function AdminApplicationReviewPanel({
           </details>
 
           <details className="admin-review-section" open>
-            <summary>Location</summary>
+            <summary>Service area</summary>
             <div className="admin-review-fields">
+              <label className="admin-field-label">
+                ZIP code
+                <input
+                  className="admin-field"
+                  inputMode="numeric"
+                  maxLength={5}
+                  value={draft.zipCode}
+                  onChange={(e) =>
+                    patch("zipCode", e.target.value.replace(/\D/g, "").slice(0, 5))
+                  }
+                />
+              </label>
               <label className="admin-field-label">
                 City
                 <input
@@ -251,11 +281,89 @@ export function AdminApplicationReviewPanel({
                 />
               </label>
               <label className="admin-field-label">
+                State
+                <input
+                  className="admin-field"
+                  maxLength={2}
+                  value={draft.state}
+                  onChange={(e) =>
+                    patch("state", e.target.value.toUpperCase().slice(0, 2))
+                  }
+                />
+              </label>
+              <label className="admin-field-label">
                 Neighborhood
                 <input
                   className="admin-field"
                   value={draft.neighborhood}
                   onChange={(e) => patch("neighborhood", e.target.value)}
+                />
+              </label>
+              <label className="admin-field-label">
+                Service type
+                <select
+                  className="admin-field"
+                  value={draft.serviceType}
+                  onChange={(e) =>
+                    patch(
+                      "serviceType",
+                      e.target.value as SpecialistApplication["serviceType"]
+                    )
+                  }
+                >
+                  <option value="">—</option>
+                  <option value="in-person">In-Person</option>
+                  <option value="virtual">Virtual</option>
+                  <option value="both">Both</option>
+                </select>
+              </label>
+              <label className="admin-field-label">
+                Travel radius
+                <select
+                  className="admin-field"
+                  value={draft.travelRadius}
+                  onChange={(e) => patch("travelRadius", e.target.value)}
+                >
+                  <option value="">—</option>
+                  <option value="5">5 Miles</option>
+                  <option value="10">10 Miles</option>
+                  <option value="15">15 Miles</option>
+                  <option value="20">20 Miles</option>
+                  <option value="25">25 Miles</option>
+                  <option value="50+">50+ Miles</option>
+                </select>
+              </label>
+              <label className="admin-field-label">
+                Service area description
+                <textarea
+                  className="admin-field admin-field--textarea"
+                  rows={2}
+                  value={draft.serviceAreaDescription}
+                  onChange={(e) =>
+                    patch("serviceAreaDescription", e.target.value)
+                  }
+                />
+              </label>
+            </div>
+          </details>
+
+          <details className="admin-review-section">
+            <summary>Training locations</summary>
+            <div className="admin-review-fields">
+              <label className="admin-field-label">
+                Gym / facility
+                <input
+                  className="admin-field"
+                  value={draft.gymName}
+                  onChange={(e) => patch("gymName", e.target.value)}
+                />
+              </label>
+              <label className="admin-field-label">
+                Facility address (internal)
+                <input
+                  className="admin-field"
+                  value={draft.facilityAddress}
+                  onChange={(e) => patch("facilityAddress", e.target.value)}
                 />
               </label>
             </div>
@@ -458,6 +566,16 @@ export function AdminApplicationReviewPanel({
                   {busyAction === "activate"
                     ? "Activating…"
                     : "Convert to active specialist"}
+                </button>
+              ) : null}
+              {statusLabel === "rejected" || statusLabel === "approved" ? (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--block smoac-control"
+                  disabled={busyAction != null}
+                  onClick={handleArchive}
+                >
+                  {busyAction === "archive" ? "Archiving…" : "Archive"}
                 </button>
               ) : null}
             </div>

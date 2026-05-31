@@ -29,14 +29,18 @@ import {
 import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
+import { submitClientApplication } from "@/lib/client-application-submit";
 import { persistCreateAccountProfile } from "@/lib/create-account-profile-storage";
+import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import { validateDevSignup } from "@/lib/dev-auth";
-import type { AuthRole } from "@/types/auth";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 import {
   INITIAL_CREATE_ACCOUNT_STATE,
   type CreateAccountProfile,
   type CreateAccountWizardState,
 } from "@/types/create-account";
+import { WizardIncompleteSubmitModal } from "@/components/auth/WizardIncompleteSubmitModal";
+import { getClientAccountMissingFields } from "@/lib/client-account-validation";
 import { cn } from "@/lib/utils";
 import { SpecialistOnboardingWizard } from "@/components/auth/specialist/SpecialistOnboardingWizard";
 import { useCreateAccountIntroGate } from "@/hooks/useCreateAccountIntroGate";
@@ -45,43 +49,8 @@ type WizardStep = 1 | 2 | 3 | 4 | 5;
 
 const ACCOUNT_OPTIONS = [CLIENT_ACCOUNT_OPTION, SPECIALIST_ACCOUNT_OPTION];
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-}
-
 function stepProgressPercent(step: WizardStep): number {
   return Math.round(((step - 1) / CREATE_ACCOUNT_TOTAL_STEPS) * 100);
-}
-
-function isStepValid(step: WizardStep, state: CreateAccountWizardState): boolean {
-  switch (step) {
-    case 1:
-      return state.accountType != null;
-    case 2:
-      return (
-        state.firstName.trim().length > 0 &&
-        state.lastName.trim().length > 0 &&
-        isValidEmail(state.email) &&
-        state.password.trim().length >= 6
-      );
-    case 3:
-      return state.clientGoals.length > 0;
-    case 4:
-      return (
-        state.clientCity.trim().length > 0 &&
-        state.clientBudget.length > 0 &&
-        state.clientTrainingStyle.length > 0
-      );
-    case 5:
-      return (
-        isStepValid(1, state) &&
-        isStepValid(2, state) &&
-        isStepValid(3, state) &&
-        isStepValid(4, state)
-      );
-    default:
-      return false;
-  }
 }
 
 function toggleInList(list: string[], value: string): string[] {
@@ -90,7 +59,7 @@ function toggleInList(list: string[], value: string): string[] {
     : [...list, value];
 }
 
-function accountTypeLabel(role: AuthRole | null): string {
+function accountTypeLabel(role: PublicAuthRole | null): string {
   if (role === "client") return "Client";
   if (role === "specialist") return "Health & Wellness Professional";
   return "—";
@@ -167,7 +136,7 @@ function WizardStepHeading({
 }
 
 interface AccountTypeCardProps {
-  id: AuthRole;
+  id: PublicAuthRole;
   title: string;
   description: string;
   selected: boolean;
@@ -225,6 +194,7 @@ export function CreateAccountWizardClient({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(false);
   const { ready: introReady, showIntro, completeIntro } =
     useCreateAccountIntroGate(initialJoinIntro);
@@ -237,7 +207,14 @@ export function CreateAccountWizardClient({
   }, [showIntro, introVisible]);
 
   const progressPercent = stepProgressPercent(step);
-  const canContinue = isStepValid(step, state);
+  const missingFields = useMemo(
+    () => getClientAccountMissingFields(state),
+    [state]
+  );
+  const missingLabels = useMemo(
+    () => missingFields.map((field) => field.label),
+    [missingFields]
+  );
 
   function wantsReturnToSaved(): boolean {
     if (initialReturnToSaved) return true;
@@ -251,7 +228,7 @@ export function CreateAccountWizardClient({
       isAuthReturnToSaved(new URLSearchParams(window.location.search)));
 
   useEffect(() => {
-    if (!isReady || !session) return;
+    if (!isReady || !session || session.role === "admin") return;
     if (wantsSaved && session.role === "client") {
       router.replace("/saved");
       return;
@@ -271,7 +248,7 @@ export function CreateAccountWizardClient({
   }
 
   function handleContinue() {
-    if (!canContinue) return;
+    if (submitting) return;
     if (step === 1 && state.accountType === "specialist") {
       setShowSpecialistOnboarding(true);
       setError(null);
@@ -282,68 +259,113 @@ export function CreateAccountWizardClient({
       setError(null);
       return;
     }
-    handleCreateAccount();
+    handleCreateAccount(false);
   }
 
-  function handleCreateAccount() {
-    if (!state.accountType || submitting) return;
+  function handleCreateAccount(force: boolean) {
+    if (submitting) return;
 
+    if (!force && missingFields.length > 0) {
+      setShowIncompleteModal(true);
+      return;
+    }
+
+    setShowIncompleteModal(false);
+
+    const resolvedAccountType = state.accountType ?? "client";
     const trimmedEmail = state.email.trim();
     const validatedRole = validateDevSignup(
-      state.accountType,
+      resolvedAccountType,
       trimmedEmail,
       state.password
     );
 
-    if (!validatedRole) {
-      setError("Enter a valid email and a password with at least 6 characters.");
-      return;
-    }
-
     setSubmitting(true);
+    setError(null);
 
-    const profile: CreateAccountProfile = {
-      accountType: validatedRole,
-      firstName: state.firstName.trim(),
-      lastName: state.lastName.trim(),
-      email: trimmedEmail,
-      createdAt: new Date().toISOString(),
-      ...(validatedRole === "client"
-        ? {
-            clientGoals: state.clientGoals,
-            clientCity: state.clientCity.trim(),
-            clientNeighborhood: state.clientNeighborhood.trim(),
-            clientBudget: state.clientBudget,
-            clientTrainingStyle: state.clientTrainingStyle,
-          }
-        : {
-            specialistType: state.specialistType,
-            specialistCity: state.specialistCity.trim(),
-            specialistNeighborhood: state.specialistNeighborhood.trim(),
-            specialistFormat: state.specialistFormat,
-            specialistStartingPrice: state.specialistStartingPrice.trim(),
-          }),
-    };
+    try {
+      const profile: CreateAccountProfile = {
+        accountType: resolvedAccountType,
+        firstName: state.firstName.trim(),
+        lastName: state.lastName.trim(),
+        email: trimmedEmail,
+        createdAt: new Date().toISOString(),
+        ...(resolvedAccountType === "client"
+          ? {
+              clientGoals: state.clientGoals,
+              clientCity: state.clientCity.trim(),
+              clientNeighborhood: state.clientNeighborhood.trim(),
+              clientZipCode: state.clientZipCode.trim(),
+              clientBudget: state.clientBudget,
+              clientTrainingStyle: state.clientTrainingStyle,
+            }
+          : {
+              specialistType: state.specialistType,
+              specialistCity: state.specialistCity.trim(),
+              specialistNeighborhood: state.specialistNeighborhood.trim(),
+              specialistFormat: state.specialistFormat,
+              specialistStartingPrice: state.specialistStartingPrice.trim(),
+            }),
+      };
 
-    persistCreateAccountProfile(profile);
-    signIn(validatedRole, trimmedEmail);
+      persistCreateAccountProfile(profile);
 
-    showToast({
-      type: "success",
-      message: "Account created — welcome to SMOAC",
-    });
+      if (resolvedAccountType === "client") {
+        submitClientApplication({
+          firstName: state.firstName.trim(),
+          lastName: state.lastName.trim(),
+          email: trimmedEmail,
+          preferredCity: state.clientCity.trim(),
+          preferredNeighborhood: state.clientNeighborhood.trim(),
+          preferredZipCode: state.clientZipCode.trim(),
+          fitnessGoals: state.clientGoals,
+          preferredSpecialistCategories: state.clientTrainingStyle
+            ? [state.clientTrainingStyle]
+            : [],
+          budget: state.clientBudget,
+        });
+      }
 
-    const { path, toast } = resolvePostLoginNavigation(validatedRole, {
-      returnToSaved: wantsReturnToSaved(),
-    });
-    if (toast) {
-      showSaveToast(toast);
-    }
+      if (validatedRole) {
+        signIn(validatedRole, trimmedEmail);
+      }
 
-    window.setTimeout(() => {
-      router.push(path);
+      showToast({
+        type: "success",
+        message:
+          resolvedAccountType === "client"
+            ? "Application submitted — welcome to SMOAC"
+            : "Account created — welcome to SMOAC",
+      });
+
+      const { path, toast } = resolvePostLoginNavigation(
+        validatedRole ?? "client",
+        { returnToSaved: wantsReturnToSaved() }
+      );
+      if (toast) {
+        showSaveToast(toast);
+      }
+
+      window.setTimeout(() => {
+        router.push(path);
+        setSubmitting(false);
+      }, 80);
+    } catch (err) {
       setSubmitting(false);
-    }, 80);
+      setError(
+        err instanceof ApplicationSubmitError
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
+    }
+  }
+
+  function handleGoBackFromIncompleteModal() {
+    setShowIncompleteModal(false);
+    const firstStep = missingFields[0]?.step;
+    if (firstStep != null && firstStep >= 1 && firstStep <= 4) {
+      setStep(firstStep as WizardStep);
+    }
   }
 
   const reviewSummary = useMemo(() => {
@@ -508,6 +530,24 @@ export function CreateAccountWizardClient({
                       patchState({ clientNeighborhood: e.target.value })
                     }
                     placeholder="Optional"
+                    className="login-field__input"
+                  />
+                </label>
+                <label className="login-field">
+                  <span className="login-field__label">Preferred ZIP</span>
+                  <input
+                    type="text"
+                    name="clientZipCode"
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                    value={state.clientZipCode}
+                    onChange={(e) =>
+                      patchState({
+                        clientZipCode: e.target.value.replace(/\D/g, "").slice(0, 5),
+                      })
+                    }
+                    placeholder="92126"
+                    maxLength={5}
                     className="login-field__input"
                   />
                 </label>
@@ -688,7 +728,7 @@ export function CreateAccountWizardClient({
                 type="button"
                 className="login-submit wizard-nav__continue"
                 onClick={handleContinue}
-                disabled={!canContinue || submitting}
+                disabled={submitting}
               >
                 {submitting
                   ? "Creating account…"
@@ -705,6 +745,14 @@ export function CreateAccountWizardClient({
           </p>
         </div>
       </div>
+
+      <WizardIncompleteSubmitModal
+        open={showIncompleteModal}
+        missingLabels={missingLabels}
+        submitting={submitting}
+        onGoBack={handleGoBackFromIncompleteModal}
+        onSubmitAnyway={() => handleCreateAccount(true)}
+      />
     </div>
   );
 }

@@ -61,14 +61,3 @@ export function buildSecondaryStatTiles(
   ];
 }
 
-/** @deprecated Use coreMetrics from analytics — kept for any legacy callers */
-export function buildAnalyticsStatTiles(
-  analytics: SpecialistProfileAnalytics
-): AnalyticsStatTile[] {
-  const core = analytics.coreMetrics.map((metric) => ({
-    id: metric.id,
-    label: metric.label,
-    value: formatAnalyticsMetricValue(metric.value),
-  }));
-  return [...core, ...buildSecondaryStatTiles(analytics)];
-}

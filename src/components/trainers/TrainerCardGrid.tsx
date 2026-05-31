@@ -1,6 +1,8 @@
 import type { Trainer } from "@/types";
+import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { formatProviderLocation } from "@/lib/provider-location";
-import { formatPrice, formatTrainerRating } from "@/lib/utils";
+import { SessionPrice } from "@/components/ui/SessionPrice";
+import { formatTrainerRating } from "@/lib/utils";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 
 interface TrainerCardGridProps {
@@ -47,6 +49,7 @@ export function TrainerCardGrid({
         <p className="mt-1.5 text-xs text-silver-400">
           {formatProviderLocation(trainer)}
         </p>
+        <DevTrainerDistance trainer={trainer} className="mt-1 block" />
         <div className="mt-3 flex flex-wrap gap-1.5">
           {tags.map((s) => (
             <span
@@ -57,10 +60,11 @@ export function TrainerCardGrid({
             </span>
           ))}
         </div>
-        <p className="mt-auto pt-4 text-sm font-medium text-white">
-          {formatPrice(trainer.pricePerSession)}
-          <span className="font-normal text-silver-400"> / session</span>
-        </p>
+        <SessionPrice
+          amount={trainer.pricePerSession}
+          variant="grid"
+          className="mt-auto block pt-4"
+        />
       </div>
     </article>
   );

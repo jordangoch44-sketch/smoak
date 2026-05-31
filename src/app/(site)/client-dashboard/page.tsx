@@ -1,5 +1,13 @@
+import dynamic from "next/dynamic";
 import type { Metadata } from "next";
-import { ClientDashboardPageClient } from "@/components/dashboard";
+
+const ClientDashboardPageClient = dynamic(
+  () =>
+    import("@/components/dashboard/ClientDashboardPageClient").then(
+      (mod) => mod.ClientDashboardPageClient
+    ),
+  { ssr: true }
+);
 
 export const metadata: Metadata = {
   title: "Client Dashboard",

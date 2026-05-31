@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { RankingsBoardRow } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { SessionPrice } from "@/components/ui/SessionPrice";
 import { cn } from "@/lib/utils";
 
 interface RankingsRowProps {
@@ -60,9 +61,11 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
           </div>
           <div className="rankings-row__stat" role="listitem">
             <span className="rankings-row__stat-label">Price</span>
-            <span className="rankings-row__stat-value">
-              ${trainer.pricePerSession}
-            </span>
+            <SessionPrice
+              amount={trainer.pricePerSession}
+              variant="stat"
+              className="rankings-row__stat-value"
+            />
           </div>
           <div className="rankings-row__stat" role="listitem">
             <span className="rankings-row__stat-label">Experience</span>

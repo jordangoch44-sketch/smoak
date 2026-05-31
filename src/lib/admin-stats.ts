@@ -2,6 +2,7 @@ import { trainers } from "@/data/trainers";
 import { DEV_SPECIALIST_CREDENTIALS } from "@/lib/dev-auth";
 import { getHiddenTrainersSnapshot } from "@/lib/hidden-trainers-store";
 import { countPendingApplications } from "@/lib/admin-applications-service";
+import { countPendingClientApplications } from "@/lib/client-applications-service";
 import { getAdminSpecialistMetaSnapshot } from "@/lib/admin-specialist-meta-store";
 import { listSpecialistApplications } from "@/lib/specialist-application-storage";
 import type { AdminOverviewStats, AdminSpecialistVisibility } from "@/types/admin";
@@ -20,13 +21,13 @@ function resolveVisibility(
 }
 
 export function computeAdminOverviewStats(
-  clients: AdminClientRecord[]
+  clients: AdminClientRecord[],
+  specialistApplications = listSpecialistApplications(),
+  clientApplications: readonly { status: string }[] = []
 ): AdminOverviewStats {
   const hiddenIds = getHiddenTrainersSnapshot();
   const meta = getAdminSpecialistMetaSnapshot();
-  const applicationIds = new Set(
-    listSpecialistApplications().map((a) => a.id)
-  );
+  const applicationIds = new Set(specialistApplications.map((a) => a.id));
 
   const catalogIds = new Set(trainers.map((t) => t.id));
   applicationIds.forEach((id) => catalogIds.add(id));
@@ -48,7 +49,8 @@ export function computeAdminOverviewStats(
 
   return {
     totalSpecialists: catalogIds.size,
-    pendingApplications: countPendingApplications(),
+    pendingApplications:
+      countPendingApplications() + countPendingClientApplications(),
     activeSpecialists,
     premiumSpecialists,
     totalClients: clients.length,

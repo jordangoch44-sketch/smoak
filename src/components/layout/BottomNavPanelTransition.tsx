@@ -1,12 +1,13 @@
 "use client";
 
-import { memo, useMemo } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { memo, useCallback, useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { BottomNavPanelTransitionState } from "@/contexts/MobileBottomNavTransitionContext";
+import { useMobileMotionProfile } from "@/hooks/useMobileMotionProfile";
 import {
   bottomNavPanelReducedTransition,
   bottomNavPanelReducedVariants,
-  bottomNavPanelTransition,
+  buildBottomNavPanelTransition,
   buildBottomNavPanelVariants,
 } from "@/lib/motion";
 
@@ -23,7 +24,9 @@ function BottomNavPanelTransitionInner({
   onEnterComplete,
   children,
 }: BottomNavPanelTransitionProps) {
-  const reducedMotion = useReducedMotion();
+  const { reducedMotion, fastMotion } = useMobileMotionProfile();
+  const [animating, setAnimating] = useState(false);
+
   const variants = useMemo(
     () =>
       reducedMotion
@@ -31,27 +34,53 @@ function BottomNavPanelTransitionInner({
         : buildBottomNavPanelVariants(panel.direction),
     [panel.direction, reducedMotion]
   );
-  const transition = reducedMotion
-    ? bottomNavPanelReducedTransition
-    : bottomNavPanelTransition;
+
+  const transition = useMemo(
+    () =>
+      reducedMotion
+        ? bottomNavPanelReducedTransition
+        : buildBottomNavPanelTransition(fastMotion),
+    [fastMotion, reducedMotion]
+  );
+
+  const handleAnimationStart = useCallback(() => {
+    setAnimating(true);
+  }, []);
+
+  const handleAnimationComplete = useCallback(
+    (definition: string | string[]) => {
+      const name = Array.isArray(definition) ? definition[0] : definition;
+      if (name === "animate") {
+        setAnimating(false);
+        onEnterComplete();
+      }
+      if (name === "exit") {
+        setAnimating(false);
+      }
+    },
+    [onEnterComplete]
+  );
 
   return (
     <div className="page-transition page-transition--bottom-nav-panel">
-      <AnimatePresence
-        initial={false}
-        mode={panel.enterOnly ? "sync" : "popLayout"}
-      >
+      <AnimatePresence initial={false} mode="sync">
         <motion.div
           key={motionKey}
-          className="page-transition__layer page-transition__layer--panel"
+          layout={false}
+          className={[
+            "page-transition__layer",
+            "page-transition__layer--panel",
+            animating ? "page-transition__layer--animating" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           variants={variants}
           initial="initial"
           animate="animate"
           {...(panel.enterOnly ? {} : { exit: "exit" as const })}
           transition={transition}
-          onAnimationComplete={(definition) => {
-            if (definition === "animate") onEnterComplete();
-          }}
+          onAnimationStart={handleAnimationStart}
+          onAnimationComplete={handleAnimationComplete}
         >
           <div className="page-transition__content">{children}</div>
         </motion.div>

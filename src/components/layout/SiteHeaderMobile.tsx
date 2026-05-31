@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SiteLocationPill } from "@/components/location/SiteLocationPill";
 import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 
@@ -26,40 +27,44 @@ export function SiteHeaderMobile({
         <Link
           href="/"
           data-header-btn="logo"
-          className="smoac-control site-header__btn site-header__btn--logo"
+          className="smoac-control site-header__btn site-header__btn--logo site-header__logo-slot"
           aria-label="SMOAC home"
           onClick={onLogoClick}
         >
           <Logo href={null} size="md" priority className="navbar-brand" />
         </Link>
 
-        <button
-          type="button"
-          data-header-btn="menu"
-          className={cn(
-            "smoac-control site-header__btn site-header__btn--utility-menu",
-            menuOpen && "site-header__btn--active"
-          )}
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
-          aria-expanded={menuOpen}
-          aria-controls="mobile-utility-drawer"
-          onClick={onMenuClick}
-        >
-          <span className="site-header__menu-minimal" aria-hidden>
-            <span
-              className={cn(
-                "site-header__menu-minimal-line",
-                menuOpen && "site-header__menu-minimal-line--top-open"
-              )}
-            />
-            <span
-              className={cn(
-                "site-header__menu-minimal-line",
-                menuOpen && "site-header__menu-minimal-line--bottom-open"
-              )}
-            />
-          </span>
-        </button>
+        <div className="site-header__utility-end">
+          <SiteLocationPill className="site-header__location" compact primary />
+
+          <button
+            type="button"
+            data-header-btn="menu"
+            className={cn(
+              "smoac-control site-header__btn site-header__btn--utility-menu",
+              menuOpen && "site-header__btn--active"
+            )}
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-utility-drawer"
+            onClick={onMenuClick}
+          >
+            <span className="site-header__menu-minimal" aria-hidden>
+              <span
+                className={cn(
+                  "site-header__menu-minimal-line",
+                  menuOpen && "site-header__menu-minimal-line--top-open"
+                )}
+              />
+              <span
+                className={cn(
+                  "site-header__menu-minimal-line",
+                  menuOpen && "site-header__menu-minimal-line--bottom-open"
+                )}
+              />
+            </span>
+          </button>
+        </div>
       </div>
     </>
   );

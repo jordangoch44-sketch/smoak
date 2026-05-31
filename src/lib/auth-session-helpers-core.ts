@@ -1,6 +1,7 @@
-import type { AuthRole, AuthSession } from "@/types/auth";
+import type { AuthSession } from "@/types/auth";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 
-/** True when a DEV session exists in localStorage */
+/** True when a marketplace session exists */
 export function isLoggedIn(session: AuthSession | null | undefined): boolean {
   return Boolean(session);
 }
@@ -8,8 +9,9 @@ export function isLoggedIn(session: AuthSession | null | undefined): boolean {
 /** Returns client | specialist when signed in, otherwise null */
 export function getUserRole(
   session: AuthSession | null | undefined
-): AuthRole | null {
-  return session?.role ?? null;
+): PublicAuthRole | null {
+  if (!session || session.role === "admin") return null;
+  return session.role;
 }
 
 /** Client accounts may save specialists to the shortlist */

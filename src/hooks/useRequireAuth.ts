@@ -3,17 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { buildDevAdminLoginHref } from "@/lib/admin-routes";
 import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
-import type { AuthRole } from "@/types/auth";
-
-function loginPathForRole(requiredRole: AuthRole): string {
-  if (requiredRole === "admin") return buildDevAdminLoginHref();
-  return LOGIN_PATH;
-}
+import { getUserRole } from "@/lib/specialist-saves";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 
 /** Redirect unauthenticated or wrong-role users away from a role-specific dashboard */
-export function useRequireAuth(requiredRole: AuthRole): {
+export function useRequireAuth(requiredRole: PublicAuthRole): {
   isReady: boolean;
   session: ReturnType<typeof useAuthSession>["session"];
 } {
@@ -23,11 +18,12 @@ export function useRequireAuth(requiredRole: AuthRole): {
   useEffect(() => {
     if (!isReady) return;
     if (!session) {
-      router.replace(loginPathForRole(requiredRole));
+      router.replace(LOGIN_PATH);
       return;
     }
     if (session.role !== requiredRole) {
-      router.replace(getDashboardPathForRole(session.role));
+      const role = getUserRole(session);
+      router.replace(role ? getDashboardPathForRole(role) : LOGIN_PATH);
     }
   }, [isReady, session, requiredRole, router]);
 

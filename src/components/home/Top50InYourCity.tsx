@@ -1,23 +1,43 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import {
   DEFAULT_RANKING_CITY_SLUG,
   getCityTop50Listing,
-  getRankedSpecialistsForCity,
+  getRankedSpecialistsBaseline,
+  sortRankedSpecialistsByProximity,
 } from "@/data/city-rankings";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
+import {
+  useActiveUserCoordinates,
+  useActiveUserCoordinatesKey,
+} from "@/hooks/useActiveUserCoordinates";
+import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
+import { usePersonalizationMarketplaceCity } from "@/hooks/usePersonalizationMarketplaceCity";
 import { marketplaceCityToSlug } from "@/lib/marketplace-city-centers";
 import { Top50RankCard } from "./Top50RankCard";
 
 export function Top50InYourCity() {
+  const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
-  const citySlug = personalizationCity
-    ? marketplaceCityToSlug(personalizationCity)
+  const marketplaceCity = usePersonalizationMarketplaceCity();
+  const userCoords = useActiveUserCoordinates();
+  const coordsKey = useActiveUserCoordinatesKey();
+
+  const citySlug = marketplaceCity
+    ? marketplaceCityToSlug(marketplaceCity)
     : DEFAULT_RANKING_CITY_SLUG;
   const listing = getCityTop50Listing(citySlug);
-  const ranked = getRankedSpecialistsForCity(citySlug);
+
+  const ranked = useMemo(() => {
+    const baseline = getRankedSpecialistsBaseline(citySlug);
+    if (!hydrated || !userCoords) return baseline;
+    return sortRankedSpecialistsByProximity(baseline, userCoords);
+  }, [citySlug, hydrated, coordsKey, userCoords]);
+
+  const displayCity = hydrated ? personalizationCity : null;
 
   return (
     <section
@@ -34,8 +54,8 @@ export function Top50InYourCity() {
               Top 50 in Your City
             </h2>
             <p className="home-top50__subtitle">
-              {personalizationCity
-                ? `The highest-rated health & wellness specialists near you in ${personalizationCity}.`
+              {displayCity
+                ? `The highest-rated health & wellness specialists near you in ${displayCity}.`
                 : listing.subtitle}
             </p>
             <p className="home-top50__city-line">{listing.displayTitle}</p>

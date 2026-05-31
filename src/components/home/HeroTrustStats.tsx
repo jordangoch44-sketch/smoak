@@ -1,11 +1,15 @@
 "use client";
 
+import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { getHomeHeroTrustSegments } from "@/lib/home-marketplace-stats";
 
 export function HeroTrustStats() {
-  const city = usePersonalizationCity();
-  const segments = getHomeHeroTrustSegments(city);
+  const hydrated = useHydrated();
+  const personalizationCity = usePersonalizationCity();
+  const segments = getHomeHeroTrustSegments(
+    hydrated ? personalizationCity : null
+  );
 
   return (
     <div

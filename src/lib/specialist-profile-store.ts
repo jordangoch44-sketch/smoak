@@ -1,6 +1,6 @@
 import type { Trainer } from "@/types";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
-import { getTrainerById as getBaseTrainerById } from "@/data/trainers";
+import { getPublicMarketplaceTrainerBaseById } from "@/lib/marketplace-public-catalog";
 import {
   applySpecialistProfileOverrides,
   loadAllSpecialistOverrides,
@@ -48,7 +48,7 @@ export function getSpecialistProfilesSnapshot(): Record<
 }
 
 export function getTrainerWithOverrides(trainerId: string): Trainer | undefined {
-  const base = getBaseTrainerById(trainerId);
+  const base = getPublicMarketplaceTrainerBaseById(trainerId);
   if (!base) return undefined;
   const overrides = readCache()[trainerId];
   return applySpecialistProfileOverrides(base, overrides);

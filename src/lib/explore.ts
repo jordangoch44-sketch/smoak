@@ -3,6 +3,7 @@ import { filterTrainers } from "@/lib/trainers";
 
 /** Default filter state for Explore page */
 export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
+  zipCode: "",
   city: "",
   neighborhood: "",
   profession: "",

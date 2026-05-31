@@ -5,23 +5,45 @@ import Link from "next/link";
 import {
   getCityTop50Listing,
   getRankingsBoardRows,
+  sortRankingsBoardByProximity,
 } from "@/data/city-rankings";
+import {
+  useActiveUserCoordinates,
+  useActiveUserCoordinatesKey,
+} from "@/hooks/useActiveUserCoordinates";
+import { useHydrated } from "@/hooks/useHydrated";
+import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { RankingsFilters } from "./RankingsFilters";
 import { RankingsRow } from "./RankingsRow";
 
 export function RankingsPageClient() {
+  const hydrated = useHydrated();
+  const personalizationCity = usePersonalizationCity();
+  const userCoords = useActiveUserCoordinates();
+  const coordsKey = useActiveUserCoordinatesKey();
   const listing = getCityTop50Listing();
-  const [city, setCity] = useState("");
+  const [cityTouched, setCityTouched] = useState(false);
+  const [cityOverride, setCityOverride] = useState("");
   const [profession, setProfession] = useState("");
+  const city = cityTouched
+    ? cityOverride
+    : hydrated
+      ? (personalizationCity ?? "")
+      : "";
 
-  const rows = useMemo(
-    () =>
-      getRankingsBoardRows({
-        cityFilter: city,
-        professionFilter: profession,
-      }),
-    [city, profession]
-  );
+  const rows = useMemo(() => {
+    const baseline = getRankingsBoardRows({
+      cityFilter: city,
+      professionFilter: profession,
+    });
+    if (!hydrated || !userCoords) {
+      return baseline.map((row, index) => ({
+        ...row,
+        displayRank: index + 1,
+      }));
+    }
+    return sortRankingsBoardByProximity(baseline, userCoords);
+  }, [city, profession, hydrated, coordsKey, userCoords]);
 
   return (
     <div className="rankings-page">
@@ -54,7 +76,10 @@ export function RankingsPageClient() {
         <RankingsFilters
           city={city}
           profession={profession}
-          onCityChange={setCity}
+          onCityChange={(value) => {
+            setCityTouched(true);
+            setCityOverride(value);
+          }}
           onProfessionChange={setProfession}
         />
 
@@ -96,7 +121,8 @@ export function RankingsPageClient() {
                 type="button"
                 className="rankings-empty__reset"
                 onClick={() => {
-                  setCity("");
+                  setCityTouched(false);
+                  setCityOverride("");
                   setProfession("");
                 }}
               >

@@ -3,7 +3,7 @@ import {
   isDashboardPath,
   LOGIN_PATH,
 } from "@/lib/auth-routes";
-import type { AuthRole } from "@/types/auth";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 import { SITE_ROUTES } from "@/lib/navigation";
 
 export type UtilityDrawerPrimaryId =
@@ -87,7 +87,7 @@ export const utilityDrawerLegalLinks: readonly UtilityDrawerNavItem[] = [
 
 export function resolveUtilityDrawerDashboardHref(
   signedIn: boolean,
-  role: AuthRole | null
+  role: PublicAuthRole | null
 ): string {
   if (signedIn && role) return getDashboardPathForRole(role);
   return LOGIN_PATH;
@@ -121,7 +121,11 @@ export function isUtilityDrawerPrimaryActive(
         pathname.startsWith(`${SITE_ROUTES.discover}/`)
       );
     case "dashboard":
-      return isDashboardPath(pathname) || pathname === LOGIN_PATH;
+      return (
+        isDashboardPath(pathname) ||
+        pathname === LOGIN_PATH ||
+        pathname.startsWith("/create-account")
+      );
     default:
       return false;
   }

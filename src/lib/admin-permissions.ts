@@ -1,6 +1,6 @@
 import type { AdminSectionId } from "@/lib/admin-sections";
-import type { AuthSession } from "@/types/auth";
 import type { AdminPermissions, AdminRoleType } from "@/types/admin-permissions";
+import type { InternalAuthSession } from "@/types/internal-auth";
 import {
   DEV_OWNER_ADMIN_CREDENTIALS,
   DEV_STAFF_ADMIN_CREDENTIALS,
@@ -36,11 +36,11 @@ export function getPermissionsForAdminRole(
     : STAFF_ADMIN_PERMISSIONS;
 }
 
-/** Resolve admin tier from session (DEV email fallback for legacy sessions) */
+/** Resolve admin tier from company portal session */
 export function resolveAdminRoleFromSession(
-  session: AuthSession | null | undefined
+  session: InternalAuthSession | null | undefined
 ): AdminRoleType | null {
-  if (!session || session.role !== "admin") return null;
+  if (!session) return null;
   if (session.adminRole) return session.adminRole;
 
   const email = session.email.trim().toLowerCase();

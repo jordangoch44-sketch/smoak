@@ -1,4 +1,5 @@
 import type { Certification, Gender } from "@/types/trainer";
+import type { SpecialistServiceType } from "@/types/specialist-service-area";
 
 /** DEV ONLY — specialist-editable profile fields (merged onto seed trainer) */
 export interface SpecialistProfileOverrides {
@@ -9,8 +10,16 @@ export interface SpecialistProfileOverrides {
   specialty?: string[];
   certifications?: Certification[];
   city?: string;
+  state?: string;
   neighborhood?: string;
+  zipCode?: string;
+  serviceType?: SpecialistServiceType;
+  travelRadius?: string;
+  serviceRadiusMiles?: number;
   serviceArea?: string[];
+  serviceAreaDescription?: string;
+  latitude?: number;
+  longitude?: number;
   pricePerSession?: number;
   bio?: string;
   photoNotes?: string;

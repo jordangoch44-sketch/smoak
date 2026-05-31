@@ -24,9 +24,10 @@ export default async function TrainerProfilePage({ params }: PageProps) {
   const { id } = await params;
   const trainer = getTrainerById(id);
 
-  if (!trainer) {
-    notFound();
-  }
-
-  return <TrainerProfilePageClient trainerId={id} initialTrainer={trainer} />;
+  return (
+    <TrainerProfilePageClient
+      trainerId={id}
+      initialTrainer={trainer ?? null}
+    />
+  );
 }

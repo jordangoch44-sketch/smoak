@@ -1,8 +1,12 @@
-import type { AuthSession } from "@/types/auth";
+import type { InternalAuthSession } from "@/types/internal-auth";
 
-/** True when session is a DEV admin account (owner or staff) */
-export function isAdminSession(
-  session: AuthSession | null | undefined
+/** @deprecated Marketplace sessions are never admin — use isInternalAuthSession */
+export function isAdminSession(): boolean {
+  return false;
+}
+
+export function isInternalAuthSession(
+  session: InternalAuthSession | null | undefined
 ): boolean {
-  return session?.role === "admin";
+  return session != null;
 }

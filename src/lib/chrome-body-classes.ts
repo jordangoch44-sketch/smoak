@@ -1,6 +1,8 @@
+import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
+
 /**
  * Body classes that lock scroll or indicate full-screen chrome overlays.
- * Keep in sync with scroll-lock rules in globals.css.
+ * Keep in sync with scroll-lock rules in globals.css and modal-open.css.
  */
 
 export const CHROME_BODY_OVERLAY_CLASSES = [
@@ -14,6 +16,7 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "gallery-modal-open",
   "admin-review-open",
   "bottom-nav-directory-active",
+  MODAL_OPEN_BODY_CLASS,
 ] as const;
 
 export type ChromeBodyOverlayClass = (typeof CHROME_BODY_OVERLAY_CLASSES)[number];

@@ -93,7 +93,7 @@ export const GENDER_OPTIONS = [
 export const SPECIALIST_ONBOARDING_STEP_LABELS = [
   "Professional type",
   "Profile details",
-  "Location",
+  "Service area",
   "Specialties",
   "Credentials",
   "Coaching style",

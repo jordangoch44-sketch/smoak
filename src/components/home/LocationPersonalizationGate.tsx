@@ -1,8 +1,8 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
-import { LocationPersonalizationModal } from "@/components/home/LocationPersonalizationModal";
+import { useEffect, useSyncExternalStore } from "react";
+import { useUserLocationEditor } from "@/contexts/UserLocationContext";
 import { useHydrated } from "@/hooks/useHydrated";
 import { scheduleAfterFirstPaint } from "@/lib/schedule-after-paint";
 import { hasSeenSiteIntro } from "@/lib/site-intro-storage";
@@ -24,13 +24,12 @@ function getSiteIntroSeenForLocationSnapshot(): boolean {
 }
 
 /**
- * Homepage location prompt — shown once until geo, ZIP, or skip is saved.
- * Waits for the site welcome intro so overlays do not stack.
+ * Homepage first-visit location — opens the header dropdown (not a modal).
  */
 export function LocationPersonalizationGate() {
   const pathname = usePathname();
   const hydrated = useHydrated();
-  const [open, setOpen] = useState(false);
+  const { openLocationPanel, closeLocationPanel } = useUserLocationEditor();
 
   const introSeen = useSyncExternalStore(
     subscribeSiteIntro,
@@ -47,26 +46,16 @@ export function LocationPersonalizationGate() {
   const eligible =
     hydrated && pathname === "/" && introSeen && shouldPrompt;
 
-  if (!eligible && open) {
-    setOpen(false);
-  }
+  useEffect(() => {
+    if (pathname !== "/") {
+      closeLocationPanel();
+    }
+  }, [pathname, closeLocationPanel]);
 
   useEffect(() => {
     if (!eligible) return;
-    return scheduleAfterFirstPaint(() => setOpen(true));
-  }, [eligible]);
+    return scheduleAfterFirstPaint(() => openLocationPanel());
+  }, [eligible, openLocationPanel]);
 
-  const isOpen = eligible && open;
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  if (!hydrated || pathname !== "/") {
-    return null;
-  }
-
-  return (
-    <LocationPersonalizationModal open={isOpen} onClose={handleClose} />
-  );
+  return null;
 }

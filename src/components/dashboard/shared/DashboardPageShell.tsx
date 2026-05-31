@@ -6,6 +6,8 @@ interface DashboardPageShellProps {
   title: ReactNode;
   subtitle: string;
   roleLabel?: string;
+  statusLabel?: string | null;
+  statusTone?: "pending" | "active" | "rejected";
   actions?: ReactNode;
   utilityBar?: ReactNode;
   introActions?: ReactNode;
@@ -18,6 +20,8 @@ export function DashboardPageShell({
   title,
   subtitle,
   roleLabel,
+  statusLabel,
+  statusTone = "pending",
   actions,
   utilityBar,
   introActions,
@@ -66,6 +70,8 @@ export function DashboardPageShell({
           title={title}
           subtitle={subtitle}
           roleLabel={roleLabel}
+          statusLabel={statusLabel}
+          statusTone={statusTone}
           actions={actions}
           introActions={introActions}
         />

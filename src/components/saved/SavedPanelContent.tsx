@@ -1,6 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
+import {
+  useActiveUserCoordinates,
+  useActiveUserCoordinatesKey,
+} from "@/hooks/useActiveUserCoordinates";
+import { useHydrated } from "@/hooks/useHydrated";
+import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
+import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { TrainerList } from "@/components/trainers";
@@ -29,7 +37,19 @@ export function SavedPanelContent({
 }: SavedPanelContentProps) {
   const { isReady, isClientWithSaves, getSavedTrainers } = useSavedTrainers();
   const { session } = useAuthSession();
-  const saved = getSavedTrainers();
+  const hydrated = useHydrated();
+  const personalizationCity = usePersonalizationCity();
+  const userCoords = useActiveUserCoordinates();
+  const coordsKey = useActiveUserCoordinatesKey();
+  const saved = useMemo(
+    () =>
+      sortTrainersByPersonalizationCity(
+        getSavedTrainers(),
+        hydrated ? personalizationCity : null,
+        hydrated ? userCoords : null
+      ),
+    [getSavedTrainers, personalizationCity, hydrated, coordsKey, userCoords]
+  );
   const isOverlay = variant === "overlay";
   const isLoggedOut = isReady && !session;
   const isEmptyClient = isReady && isClientWithSaves && saved.length === 0;

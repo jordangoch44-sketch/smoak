@@ -16,6 +16,9 @@ import type { Certification } from "@/types/trainer";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import { cn } from "@/lib/utils";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
+import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
+import type { ProfilePhotoCropSavePayload } from "@/hooks/useProfilePhotoCropSession";
+import type { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
 
 function toggleInList(list: string[], value: string): string[] {
   return list.includes(value)
@@ -110,6 +113,7 @@ export interface SpecialistOnboardingStepsProps {
   state: SpecialistOnboardingState;
   onPatch: (partial: Partial<SpecialistOnboardingState>) => void;
   onEditStep: (step: number) => void;
+  profilePhotoCrop: ReturnType<typeof useProfilePhotoCropSession>;
 }
 
 export function SpecialistOnboardingSteps({
@@ -117,6 +121,7 @@ export function SpecialistOnboardingSteps({
   state,
   onPatch,
   onEditStep,
+  profilePhotoCrop,
 }: SpecialistOnboardingStepsProps) {
   const neighborhoods = useMemo(
     () =>
@@ -144,6 +149,34 @@ export function SpecialistOnboardingSteps({
 
   function patchMedia(partial: Partial<SpecialistOnboardingState["media"]>) {
     onPatch({ media: { ...state.media, ...partial } });
+  }
+
+  function applyProfilePhotoCrop(payload: ProfilePhotoCropSavePayload) {
+    patchMedia({
+      profilePhotoUrl: payload.croppedImageData,
+      profilePhotoOriginalUrl: payload.originalImageData,
+      profilePhotoCrop: payload.cropSettings,
+    });
+  }
+
+  function handleProfilePhotoFile(file: File) {
+    profilePhotoCrop.openCropFromFile(
+      file,
+      applyProfilePhotoCrop,
+      state.media.profilePhotoCrop
+    );
+  }
+
+  function handleEditProfilePhotoCrop() {
+    const original =
+      state.media.profilePhotoOriginalUrl.trim() ||
+      state.media.profilePhotoUrl.trim();
+    if (!original) return;
+    profilePhotoCrop.openCropFromOriginal(
+      original,
+      applyProfilePhotoCrop,
+      state.media.profilePhotoCrop
+    );
   }
 
   function patchCertification(index: number, partial: Partial<Certification>) {
@@ -339,14 +372,21 @@ export function SpecialistOnboardingSteps({
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    readFileAsDataUrl(file, (url) =>
-                      patchMedia({ profilePhotoUrl: url })
-                    );
+                    handleProfilePhotoFile(file);
                   }
+                  e.target.value = "";
                 }}
               />
               {state.media.profilePhotoUrl ? (
-                <p className="wizard-field-hint">Photo added — looks great.</p>
+                <div className="wizard-profile-photo-preview">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={state.media.profilePhotoUrl}
+                    alt="Profile preview"
+                    className="wizard-profile-photo-preview__img"
+                  />
+                  <p className="wizard-field-hint">Cropped preview — looks great.</p>
+                </div>
               ) : (
                 <p className="wizard-field-hint">
                   Upload a professional headshot or training photo.
@@ -361,12 +401,14 @@ export function SpecialistOnboardingSteps({
       return (
         <WizardStepPanel stepKey="sp-3">
           <WizardStepHeading
-            title="Where do you train?"
-            subtitle="Help clients find you in the marketplace."
+            title="Your service area"
+            subtitle="Help SMOAC match you with clients near you — we never show your full address publicly."
           />
-          <div className="login-fields">
+          <SpecialistServiceAreaFields state={state} onPatch={onPatch} />
+          <div className="login-fields specialist-service-area-fields__training">
+            <p className="wizard-step-subsection-title">Training locations</p>
             <label className="login-field">
-              <span className="login-field__label">City</span>
+              <span className="login-field__label">Marketplace city</span>
               <select
                 className="login-field__input login-field__select"
                 value={state.city}
@@ -409,36 +451,6 @@ export function SpecialistOnboardingSteps({
               </label>
             )}
             <label className="login-field">
-              <span className="login-field__label">ZIP code</span>
-              <input
-                className="login-field__input"
-                value={state.zipCode}
-                onChange={(e) => onPatch({ zipCode: e.target.value })}
-                inputMode="numeric"
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">Travel radius</span>
-              <input
-                className="login-field__input"
-                value={state.travelRadius}
-                onChange={(e) => onPatch({ travelRadius: e.target.value })}
-                placeholder="e.g. 15 miles"
-              />
-            </label>
-            <YesNoToggle
-              label="In-home sessions available?"
-              value={state.inHomeAvailable}
-              onChange={(inHomeAvailable) => onPatch({ inHomeAvailable })}
-            />
-            <YesNoToggle
-              label="Online coaching available?"
-              value={state.onlineCoachingAvailable}
-              onChange={(onlineCoachingAvailable) =>
-                onPatch({ onlineCoachingAvailable })
-              }
-            />
-            <label className="login-field">
               <span className="login-field__label">Gym / facility name</span>
               <input
                 className="login-field__input"
@@ -452,6 +464,7 @@ export function SpecialistOnboardingSteps({
                 className="login-field__input"
                 value={state.facilityAddress}
                 onChange={(e) => onPatch({ facilityAddress: e.target.value })}
+                placeholder="Optional — not shown on your public profile"
               />
             </label>
           </div>
@@ -1015,7 +1028,15 @@ export function SpecialistOnboardingSteps({
             title="Preview your profile"
             subtitle="This is how clients will discover you after approval."
           />
-          <SpecialistApplicationPreview state={state} />
+          <SpecialistApplicationPreview
+            state={state}
+            onEditCrop={
+              state.media.profilePhotoUrl.trim() ||
+              state.media.profilePhotoOriginalUrl.trim()
+                ? handleEditProfilePhotoCrop
+                : undefined
+            }
+          />
           <div className="wizard-preview-actions">
             <button
               type="button"

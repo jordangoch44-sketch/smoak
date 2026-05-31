@@ -5,6 +5,9 @@ export type BottomNavTransitionKind = "none" | "directory" | "panel";
 /** Layered panel slide — default bottom nav motion */
 export const BOTTOM_NAV_PANEL_MS = 420;
 
+/** Slightly snappier on coarse-pointer devices (typical phones) */
+export const BOTTOM_NAV_PANEL_TOUCH_MS = 360;
+
 export const BOTTOM_NAV_PANEL_REDUCED_MS = 140;
 
 /** Cinematic directory loader — Search → Explore only */

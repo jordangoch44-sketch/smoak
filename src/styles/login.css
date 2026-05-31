@@ -252,6 +252,15 @@ body:has(.login-page) footer a:hover {
   color: #fff;
 }
 
+.login-card--minimal {
+  padding-top: 0.25rem;
+}
+
+.login-card__subtitle--minimal {
+  max-width: 18rem;
+  color: rgba(255, 255, 255, 0.52);
+}
+
 .login-card__subtitle {
   margin: 0.5rem auto 0;
   max-width: 16.5rem;

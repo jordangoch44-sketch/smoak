@@ -189,6 +189,122 @@ export function LayoutGridIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+/** Travel radius — profile service area */
+export function TravelRangeIcon({ className = "h-[18px] w-[18px]" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M12 3.75v2.25M12 18v2.25M3.75 12h2.25M18 12h2.25" />
+      <circle cx="12" cy="12" r="2.25" />
+    </svg>
+  );
+}
+
+/** In-person sessions — profile service area */
+export function InPersonFormatIcon({ className = "h-[18px] w-[18px]" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M3.75 9.75h16.5M5.25 19.5h13.5M7.5 6.75V4.5a1.5 1.5 0 013 0v2.25M13.5 6.75V4.5a1.5 1.5 0 013 0v2.25M6 12.75h12v6.75H6V12.75z" />
+    </svg>
+  );
+}
+
+/** Virtual sessions — profile service area */
+export function VirtualFormatIcon({ className = "h-[18px] w-[18px]" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="3.75" y="5.25" width="16.5" height="11.25" rx="1.5" />
+      <path d="M8.25 19.5h7.5" />
+    </svg>
+  );
+}
+
+/** Hybrid delivery — profile service area */
+export function HybridFormatIcon({ className = "h-[18px] w-[18px]" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M8.25 6.75h7.5M8.25 12h7.5M8.25 17.25h7.5M5.25 4.5h13.5v15H5.25V4.5z" />
+    </svg>
+  );
+}
+
+/** Minimal luxury location mark for the header selector */
+export function LocationMarkIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <circle
+        cx="12"
+        cy="10.25"
+        r="2.35"
+        stroke="currentColor"
+        strokeWidth="1.35"
+      />
+      <path
+        d="M12 21.25s6.75-5.15 6.75-9.35a6.75 6.75 0 10-13.5 0c0 4.2 6.75 9.35 6.75 9.35z"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ChevronDownIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  );
+}
+
 export function CloseIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg

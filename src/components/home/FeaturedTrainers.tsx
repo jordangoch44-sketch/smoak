@@ -1,25 +1,41 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { TrainerList } from "@/components/trainers";
+import {
+  useActiveUserCoordinates,
+  useActiveUserCoordinatesKey,
+} from "@/hooks/useActiveUserCoordinates";
+import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
-import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
 import { buildExploreSearchParams } from "@/lib/explore-url";
+import { getSavedZipExploreFilters } from "@/lib/explore-location-filters";
 import { getPersonalizedFeaturedTrainers } from "@/lib/personalized-trainers";
 
 /** TODO: Rename to FeaturedProviders when internal trainer types are refactored */
 export function FeaturedTrainers() {
+  const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
-  const featured = getPersonalizedFeaturedTrainers(personalizationCity).slice(
-    0,
-    4
-  );
-  const exploreHref = personalizationCity
-    ? `/explore?${buildExploreSearchParams(
-        { ...EMPTY_TRAINER_FILTERS, city: personalizationCity },
-        ""
-      )}`
-    : "/explore";
+  const userCoords = useActiveUserCoordinates();
+  const coordsKey = useActiveUserCoordinatesKey();
+
+  const exploreHref = useMemo(() => {
+    if (!hydrated) return "/explore";
+    const saved = getSavedZipExploreFilters();
+    if (!saved.zipCode && !saved.city) return "/explore";
+    return `/explore?${buildExploreSearchParams(saved, "")}`;
+  }, [hydrated]);
+
+  const featured = useMemo(() => {
+    const coords = hydrated ? userCoords : null;
+    return getPersonalizedFeaturedTrainers(
+      hydrated ? personalizationCity : null,
+      coords
+    ).slice(0, 4);
+  }, [hydrated, personalizationCity, coordsKey, userCoords]);
+
+  const displayCity = hydrated ? personalizationCity : null;
 
   return (
     <section className="home-featured home-section-aurora px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
@@ -33,8 +49,8 @@ export function FeaturedTrainers() {
               Featured specialists
             </h2>
             <p className="mt-1 text-sm text-silver-400">
-              {personalizationCity
-                ? `Vetted specialists near you in ${personalizationCity}.`
+              {displayCity
+                ? `Vetted specialists near you in ${displayCity}.`
                 : "Vetted specialists with verified reviews and clear session pricing."}
             </p>
           </div>
@@ -55,7 +71,7 @@ export function FeaturedTrainers() {
 
         <Link
           href={exploreHref}
-          className="mt-6 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/10 text-sm text-silver-300 active:bg-white/5 active:text-white sm:hidden"
+          className="mt-8 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/10 text-sm text-silver-300 active:bg-white/5 active:text-white sm:hidden"
         >
           Explore specialists
         </Link>

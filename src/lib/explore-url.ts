@@ -1,6 +1,7 @@
 import type { TrainerFilters } from "@/types";
 
 const FILTER_KEYS = [
+  "zipCode",
   "city",
   "neighborhood",
   "profession",
@@ -14,6 +15,7 @@ export function filtersFromSearchParams(
 ): TrainerFilters {
   const legacyLocation = params.get("location") ?? "";
   return {
+    zipCode: params.get("zipCode") ?? params.get("zip") ?? "",
     city: params.get("city") ?? legacyLocation,
     neighborhood: params.get("neighborhood") ?? "",
     profession: params.get("profession") ?? "",
@@ -61,6 +63,8 @@ export function exploreParamsEqual(
 }
 
 const FILTER_PARAM_KEYS = [
+  "zipCode",
+  "zip",
   "city",
   "neighborhood",
   "profession",

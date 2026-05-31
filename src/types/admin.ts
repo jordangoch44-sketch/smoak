@@ -11,10 +11,18 @@ export interface AdminSpecialistMeta {
   profession?: string;
   specialty?: string[];
   city?: string;
+  state?: string;
   neighborhood?: string;
+  zipCode?: string;
+  serviceType?: "in-person" | "virtual" | "both";
+  travelRadius?: string;
 }
 
-export type AdminApplicationStatusLabel = "pending" | "approved" | "rejected";
+export type AdminApplicationStatusLabel =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "archived";
 
 export interface AdminClientRecord {
   id: string;

@@ -1,0 +1,301 @@
+/* Mobile horizontal trainer card — single source (Explore + Featured) */
+
+.trainer-card-list {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.trainer-card-list > .trainer-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.trainer-card > a {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.trainer-card-compact {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 8.25rem;
+  max-height: 9.375rem;
+  padding: 0.75rem;
+  overflow: hidden;
+  box-sizing: border-box;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgb(23, 23, 28);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.trainer-card-compact:active {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgb(28, 28, 34);
+}
+
+.trainer-card-compact__media {
+  flex-shrink: 0;
+  width: 5.5rem;
+  height: 6.5rem;
+  border-radius: 0.75rem;
+}
+
+.trainer-card-compact__body {
+  display: flex;
+  flex: 1 1 0%;
+  width: 0;
+  min-width: 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding-right: 2.75rem;
+  box-sizing: border-box;
+}
+
+.trainer-card-compact__meta {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.trainer-card-compact__name {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.trainer-card-compact__profession {
+  margin: 0.125rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.trainer-card-compact__location {
+  margin: 0.125rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.trainer-card-compact__distance {
+  display: block;
+  margin-top: 0.125rem;
+}
+
+.trainer-card-compact__chips {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.375rem;
+  overflow: hidden;
+}
+
+.trainer-card-compact__chip,
+.trainer-card-compact__chip-more {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.trainer-card-compact__chip-more {
+  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.02em;
+}
+
+.trainer-card-compact__footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.375rem;
+}
+
+.trainer-card-compact__rating {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.125rem;
+  font-size: 0.6875rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.trainer-card-compact__rating-star {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.trainer-card-compact__rating-count {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.trainer-card-compact__price {
+  margin: 0;
+  flex-shrink: 0;
+  min-width: 0;
+  text-align: right;
+}
+
+/* Featured specialists — compact mobile cards (iPhone-first, 390–430px) */
+.trainer-card-compact--featured {
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 9.5rem;
+  max-height: 10rem;
+  height: 9.75rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.trainer-card-compact--featured .trainer-card-compact__media {
+  width: 5.25rem;
+  height: 8.5rem;
+  align-self: center;
+}
+
+.trainer-card-compact--featured .trainer-card-compact__body {
+  gap: 0;
+  padding-right: 3.25rem;
+}
+
+.trainer-card-compact--featured .trainer-card-compact__meta {
+  flex: 0 0 auto;
+}
+
+/* Typography hierarchy — featured only */
+.trainer-card-compact--featured .trainer-card-compact__name {
+  line-height: 1.15;
+}
+
+.trainer-card-compact--featured .trainer-card-compact__profession {
+  margin-top: 0.25rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.trainer-card-compact--featured .trainer-card-compact__location {
+  margin-top: 0.375rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.trainer-card-compact--featured .trainer-card-compact__distance {
+  margin-top: 0.375rem;
+  line-height: 1.3;
+}
+
+.trainer-card-compact--featured .dev-trainer-distance {
+  color: rgba(167, 139, 250, 0.92);
+}
+
+/* Content group spacing (+8px chips, +8px before footer) */
+.trainer-card-compact--featured .trainer-card-compact__chips {
+  margin-top: 0.5rem;
+}
+
+.trainer-card-compact--featured .trainer-card-compact__footer {
+  align-items: baseline;
+  gap: 0.875rem;
+  margin-top: auto;
+  padding-top: 0.625rem;
+  padding-bottom: 0;
+}
+
+.trainer-card-compact--featured .trainer-card-compact__rating {
+  align-items: baseline;
+  line-height: 1.15;
+}
+
+.trainer-card-compact--featured .trainer-card-compact__rating-star {
+  transform: translateY(0.5px);
+}
+
+.trainer-card-compact--featured .trainer-card-compact__price {
+  align-self: baseline;
+}
+
+.home-featured .trainer-card-list {
+  gap: 0.75rem;
+}
+
+@media (min-width: 390px) and (max-width: 767px) {
+  .trainer-card-compact--featured {
+    min-height: 9.625rem;
+    height: 10rem;
+    max-height: 10rem;
+  }
+
+  .trainer-card-compact--featured .trainer-card-compact__media {
+    height: 8.75rem;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Featured save control — 16px inset, 44–48px tap target */
+  .home-featured .trainer-card-save {
+    top: 1rem !important;
+    right: 1rem !important;
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .home-featured .trainer-card-save .save-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .home-featured .trainer-card-save .save-button--unsaved {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+
+  .home-featured .trainer-card-save .save-button--saved {
+    box-shadow:
+      0 0 0 1px rgba(var(--save-heart-rgb), 0.28),
+      0 0 22px rgba(var(--save-heart-glow-rgb), 0.45),
+      0 0 40px rgba(var(--save-heart-rgb), 0.22);
+  }
+}
+
+@media (min-width: 768px) {
+  .trainer-card-compact {
+    display: none;
+  }
+}

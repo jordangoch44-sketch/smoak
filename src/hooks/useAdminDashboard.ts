@@ -1,17 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
-import { useAuthSession } from "@/hooks/useAuthSession";
-import { useRequireAdmin } from "@/hooks/useRequireAdmin";
+import { useRequireInternalAuth } from "@/hooks/useRequireInternalAuth";
 import { listAdminClients } from "@/lib/admin-clients-service";
 import { ensureAdminApplicationSeeds } from "@/lib/admin-applications-seed";
 import {
   activateSpecialistFromApplication,
   approveSpecialistApplicationWithEdits,
+  archiveSpecialistApplication,
   listApplicationsByStatus,
   rejectSpecialistApplicationWithEdits,
   saveSpecialistApplicationEdits,
 } from "@/lib/admin-applications-service";
+import {
+  approveClientApplication,
+  archiveClientApplication,
+  rejectClientApplication,
+  saveClientApplicationEdits,
+} from "@/lib/client-applications-service";
 import { computeAdminOverviewStats } from "@/lib/admin-stats";
 import {
   getAdminSpecialistMetaSnapshot,
@@ -26,6 +32,11 @@ import {
   type AdminSpecialistRow,
 } from "@/lib/admin-specialists-service";
 import {
+  getClientApplicationsServerSnapshot,
+  getClientApplicationsSnapshot,
+  subscribeClientApplications,
+} from "@/lib/client-application-storage";
+import {
   getHiddenTrainersSnapshot,
   getHiddenTrainersServerSnapshot,
   subscribeHiddenTrainers,
@@ -36,10 +47,10 @@ import {
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
+import type { ClientApplication } from "@/types/client-application";
 
 export function useAdminDashboard() {
-  const { isReady, session } = useRequireAdmin();
-  const { session: authSession } = useAuthSession();
+  const { isReady, session } = useRequireInternalAuth();
 
   useEffect(() => {
     if (!isReady) return;
@@ -61,19 +72,29 @@ export function useAdminDashboard() {
     getSpecialistApplicationsSnapshot,
     getSpecialistApplicationsServerSnapshot
   );
+  const clientApplications = useSyncExternalStore(
+    subscribeClientApplications,
+    getClientApplicationsSnapshot,
+    getClientApplicationsServerSnapshot
+  );
 
-  const clients = useMemo(() => listAdminClients(authSession), [authSession]);
+  const clients = useMemo(
+    () => listAdminClients(null, clientApplications),
+    [clientApplications]
+  );
 
-  const stats = useMemo(() => computeAdminOverviewStats(clients), [clients]);
+  const stats = useMemo(
+    () => computeAdminOverviewStats(clients, applications, clientApplications),
+    [clients, applications, clientApplications]
+  );
 
   const specialists = useMemo(
     () => listAdminSpecialists(),
-    // External stores above trigger re-renders; deps bust stale memoization.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- store-driven list
     [applications, hiddenIds, specialistMeta]
   );
 
-  const refreshKey = applications.length;
+  const refreshKey = applications.length + clientApplications.length;
 
   const getApplications = useCallback(
     (filter: AdminApplicationStatusLabel | "all") =>
@@ -89,11 +110,17 @@ export function useAdminDashboard() {
     specialists,
     clients,
     applications,
+    clientApplications,
     getApplications,
     approveApplication: approveSpecialistApplicationWithEdits,
     rejectApplication: rejectSpecialistApplicationWithEdits,
+    archiveApplication: archiveSpecialistApplication,
     activateFromApplication: activateSpecialistFromApplication,
     saveApplicationEdits: saveSpecialistApplicationEdits,
+    approveClientApplication,
+    rejectClientApplication,
+    archiveClientApplication,
+    saveClientApplicationEdits,
     setSpecialistVisibility: setAdminSpecialistVisibility,
     setSpecialistFlag: setAdminSpecialistFlag,
     updateSpecialistBasics: updateAdminSpecialistBasics,

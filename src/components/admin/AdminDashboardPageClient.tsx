@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { DashboardLoadingState, DashboardPageShell } from "@/components/dashboard";
@@ -8,6 +7,7 @@ import {
   AdminSectionNav,
   type AdminSectionId,
 } from "@/components/admin/AdminSectionNav";
+import { AdminExecutiveRevenueSnapshot } from "@/components/admin/AdminExecutiveRevenueSnapshot";
 import { AdminOwnerCeoTitle } from "@/components/admin/AdminOwnerCeoTitle";
 import { AdminApplicationsPanel } from "@/components/admin/panels/AdminApplicationsPanel";
 import { AdminClientsPanel } from "@/components/admin/panels/AdminClientsPanel";
@@ -20,15 +20,14 @@ import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import { useAdminSectionBadgeCounts } from "@/hooks/useAdminSectionBadgeCounts";
 import { getAdminOwnerRevenueDashboard } from "@/lib/admin-specialist-billing-service";
-import { useAuthSession } from "@/hooks/useAuthSession";
-import { buildDevAdminLoginHref } from "@/lib/admin-routes";
-import { afterLogoutNavigation } from "@/lib/logout-with-toast";
+import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
+import { buildInternalLoginHref } from "@/lib/internal-routes";
 import type { SpecialistApplication } from "@/types/specialist-application";
 import type { AdminSpecialistVisibility } from "@/types/admin";
 
 export function AdminDashboardPageClient() {
   const router = useRouter();
-  const { signOut } = useAuthSession();
+  const { signOut } = useInternalAuthSession();
   const {
     isReady,
     session,
@@ -36,10 +35,16 @@ export function AdminDashboardPageClient() {
     specialists,
     clients,
     applications,
+    clientApplications,
     approveApplication,
     rejectApplication,
+    archiveApplication,
     activateFromApplication,
     saveApplicationEdits,
+    approveClientApplication,
+    rejectClientApplication,
+    archiveClientApplication,
+    saveClientApplicationEdits,
     setSpecialistVisibility,
     setSpecialistFlag,
     updateSpecialistBasics,
@@ -66,6 +71,7 @@ export function AdminDashboardPageClient() {
 
   const sectionBadgeCounts = useAdminSectionBadgeCounts({
     applications,
+    clientApplications,
     specialists,
     billingById,
     isOwnerAdmin: access?.isOwnerAdmin ?? false,
@@ -88,7 +94,7 @@ export function AdminDashboardPageClient() {
 
   function handleSignOut() {
     signOut();
-    afterLogoutNavigation(() => router.push(buildDevAdminLoginHref()));
+    router.push(buildInternalLoginHref());
   }
 
   function handleSaveApplication(
@@ -102,7 +108,8 @@ export function AdminDashboardPageClient() {
     app: SpecialistApplication
   ): SpecialistApplication | null {
     if (!permissions.canApproveApplications) return null;
-    return approveApplication(app);
+    approveApplication(app);
+    return activateFromApplication(app.id);
   }
 
   function handleReject(
@@ -120,12 +127,19 @@ export function AdminDashboardPageClient() {
     return activateFromApplication(app.id);
   }
 
+  function handleArchiveSpecialist(
+    app: SpecialistApplication
+  ): SpecialistApplication | null {
+    if (!permissions.canApproveApplications) return null;
+    return archiveApplication(app);
+  }
+
   return (
     <DashboardPageShell
       variant="admin"
-      eyebrow="Admin"
-      title={isOwnerAdmin ? <AdminOwnerCeoTitle /> : pageTitle ?? "Admin"}
-      subtitle="SMOAC control center"
+      eyebrow="SMOAC Control"
+      title={isOwnerAdmin ? <AdminOwnerCeoTitle /> : pageTitle ?? "Operations"}
+      subtitle="Internal system"
       roleLabel={roleLabel}
       utilityBar={
         <button
@@ -138,6 +152,10 @@ export function AdminDashboardPageClient() {
       }
     >
       <div className="admin-app">
+        {permissions.canViewRevenue ? (
+          <AdminExecutiveRevenueSnapshot specialists={specialists} />
+        ) : null}
+
         <AdminSectionNav
           activeId={resolvedSection}
           allowedSectionIds={allowedSectionIds}
@@ -161,12 +179,34 @@ export function AdminDashboardPageClient() {
           ) : null}
           {resolvedSection === "applications" ? (
             <AdminApplicationsPanel
-              applications={allApplications}
+              specialistApplications={allApplications}
+              clientApplications={clientApplications}
               permissions={permissions}
-              onSave={handleSaveApplication}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              onActivate={handleActivate}
+              onSaveSpecialist={handleSaveApplication}
+              onApproveSpecialist={handleApprove}
+              onRejectSpecialist={handleReject}
+              onArchiveSpecialist={handleArchiveSpecialist}
+              onActivateSpecialist={handleActivate}
+              onSaveClient={(app) =>
+                permissions.canApproveApplications
+                  ? saveClientApplicationEdits(app)
+                  : null
+              }
+              onApproveClient={(app) =>
+                permissions.canApproveApplications
+                  ? approveClientApplication(app)
+                  : null
+              }
+              onRejectClient={(app) =>
+                permissions.canApproveApplications
+                  ? rejectClientApplication(app)
+                  : null
+              }
+              onArchiveClient={(app) =>
+                permissions.canApproveApplications
+                  ? archiveClientApplication(app)
+                  : null
+              }
             />
           ) : null}
           {resolvedSection === "specialists" ? (
@@ -207,16 +247,6 @@ export function AdminDashboardPageClient() {
           ) : null}
         </div>
 
-        {resolvedSection === "overview" ? (
-          <p className="admin-dev-note">
-            DEV admin ·{" "}
-            <Link href={buildDevAdminLoginHref()}>{buildDevAdminLoginHref()}</Link>
-            <br />
-            Owner: <code>admin@smoac.com</code> / <code>admin123</code>
-            <br />
-            Staff: <code>staff@smoac.com</code> / <code>staff123</code>
-          </p>
-        ) : null}
       </div>
     </DashboardPageShell>
   );

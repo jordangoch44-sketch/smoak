@@ -13,10 +13,12 @@ import {
 import type { AdminSpecialistRow } from "@/lib/admin-specialists-service";
 import type { AdminNotifiableSectionId } from "@/types/admin-notifications";
 import type { SpecialistBillingRecord } from "@/types/admin-specialist-billing";
+import type { ClientApplication } from "@/types/client-application";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 export function useAdminSectionBadgeCounts(input: {
   applications: readonly SpecialistApplication[];
+  clientApplications?: readonly ClientApplication[];
   specialists: readonly AdminSpecialistRow[];
   billingById?: ReadonlyMap<string, SpecialistBillingRecord>;
   isOwnerAdmin: boolean;
@@ -30,6 +32,7 @@ export function useAdminSectionBadgeCounts(input: {
   return useMemo(() => {
     const counts = computeAdminSectionBadgeCounts({
       applications: input.applications,
+      clientApplications: input.clientApplications,
       specialists: input.specialists,
       billingById: input.billingById,
       dismissedIssueIds: new Set(dismissedIds),
@@ -38,6 +41,7 @@ export function useAdminSectionBadgeCounts(input: {
     return toAdminNavBadgeCounts(counts);
   }, [
     input.applications,
+    input.clientApplications,
     input.specialists,
     input.billingById,
     input.isOwnerAdmin,

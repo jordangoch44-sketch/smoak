@@ -10,7 +10,7 @@ import {
   type SetStateAction,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { trainers } from "@/data/trainers";
+import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import {
   EMPTY_TRAINER_FILTERS,
   countActiveFilters,
@@ -27,6 +27,10 @@ import {
   filtersFromSearchParams,
   hasExplicitFilterParams,
 } from "@/lib/explore-url";
+import {
+  getSavedZipExploreFilters,
+  mergeExploreFiltersWithSavedLocation,
+} from "@/lib/explore-location-filters";
 import { recordRecentSearch } from "@/lib/recent-searches-store";
 import {
   getHiddenTrainersServerSnapshot,
@@ -34,12 +38,29 @@ import {
   subscribeHiddenTrainers,
 } from "@/lib/hidden-trainers-store";
 import {
+  getApprovedSpecialistProfilesServerSnapshot,
+  getApprovedSpecialistProfilesSnapshot,
+  subscribeApprovedSpecialistProfiles,
+} from "@/lib/approved-specialist-profiles-store";
+import {
+  getSpecialistApplicationsServerSnapshot,
+  getSpecialistApplicationsSnapshot,
+  subscribeSpecialistApplications,
+} from "@/lib/specialist-application-storage";
+import {
   getSpecialistProfilesServerSnapshot,
   getSpecialistProfilesSnapshot,
   getTrainerWithOverrides,
   subscribeSpecialistProfiles,
 } from "@/lib/specialist-profile-store";
 import { applySearchQueryToExploreState } from "@/lib/search-query-parser";
+import {
+  useActiveUserCoordinates,
+  useActiveUserCoordinatesKey,
+} from "@/hooks/useActiveUserCoordinates";
+import { useHydrated } from "@/hooks/useHydrated";
+import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
+import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { TrainerFilters } from "@/types";
 
 interface UseExploreTrainersOptions {
@@ -52,6 +73,7 @@ function mergeParsedWithUrlFilters(
   parsed: TrainerFilters
 ): TrainerFilters {
   return {
+    zipCode: fromUrl.zipCode || parsed.zipCode,
     city: fromUrl.city || parsed.city,
     neighborhood: fromUrl.neighborhood || parsed.neighborhood,
     profession: fromUrl.profession || parsed.profession,
@@ -67,6 +89,7 @@ function applyExplicitUrlFilters(
 ): TrainerFilters {
   return {
     ...EMPTY_TRAINER_FILTERS,
+    zipCode: fromUrl.zipCode,
     city: fromUrl.city,
     neighborhood: fromUrl.neighborhood,
     profession: fromUrl.profession,
@@ -78,6 +101,7 @@ function applyExplicitUrlFilters(
 
 function filtersEqual(a: TrainerFilters, b: TrainerFilters): boolean {
   return (
+    a.zipCode === b.zipCode &&
     a.city === b.city &&
     a.neighborhood === b.neighborhood &&
     a.profession === b.profession &&
@@ -92,11 +116,21 @@ function buildInitialFilters(
   initialSpecialty: string
 ): TrainerFilters {
   const fromUrl = filtersFromSearchParams(searchParams);
-  return {
+  const base: TrainerFilters = {
     ...EMPTY_TRAINER_FILTERS,
     ...fromUrl,
     specialty: initialSpecialty || fromUrl.specialty,
   };
+  if (hasExplicitFilterParams(searchParams)) return base;
+  return mergeExploreFiltersWithSavedLocation(base);
+}
+
+function filtersFromUrlOrSaved(
+  fromUrl: TrainerFilters,
+  hasExplicit: boolean
+): TrainerFilters {
+  const merged = { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
+  return hasExplicit ? merged : mergeExploreFiltersWithSavedLocation(merged);
 }
 
 /** Apply URL-driven state updates outside the effect body (satisfies react-hooks/set-state-in-effect) */
@@ -111,6 +145,9 @@ export function useExploreTrainers({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hydrated = useHydrated();
+  const userCoords = useActiveUserCoordinates();
+  const coordsKey = useActiveUserCoordinatesKey();
 
   const initialQ = initialQuery || searchParams.get("q") || "";
   const initialBaseFilters = buildInitialFilters(searchParams, initialSpecialty);
@@ -190,6 +227,7 @@ export function useExploreTrainers({
     const fromUrl = filtersFromSearchParams(searchParams);
     const qChanged = lastSyncedQ.current !== nextQ;
     lastSyncedQ.current = nextQ;
+    const explicit = hasExplicitFilterParams(searchParams);
 
     applyUrlSearchSync(() => {
       if (nextQ) {
@@ -208,7 +246,7 @@ export function useExploreTrainers({
 
         setSearchQuery(parsed.residualQuery);
 
-        if (hasExplicitFilterParams(searchParams)) {
+        if (explicit) {
           setFiltersState((prev) => {
             const next = applyExplicitUrlFilters(fromUrl, prev);
             return filtersEqual(prev, next) ? prev : next;
@@ -221,18 +259,50 @@ export function useExploreTrainers({
       setDisplayQuery("");
       setSearchQuery("");
       setFiltersState((prev) => {
-        const next = { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
-        const same =
-          prev.city === next.city &&
-          prev.neighborhood === next.neighborhood &&
-          prev.profession === next.profession &&
-          prev.specialty === next.specialty &&
-          prev.gender === next.gender &&
-          prev.priceMax === next.priceMax;
-        return same ? prev : next;
+        const next = filtersFromUrlOrSaved(fromUrl, explicit);
+        return filtersEqual(prev, next) ? prev : next;
       });
     });
   }, [searchParams]);
+
+  /* Re-apply saved preferred ZIP when header location changes */
+  useEffect(() => {
+    function onPreferredLocationChange() {
+      if (hasExplicitFilterParams(searchParams)) return;
+      applyUrlSearchSync(() => {
+        setFiltersState((prev) => {
+          const saved = getSavedZipExploreFilters();
+          const next = saved.zipCode
+            ? {
+                ...prev,
+                zipCode: saved.zipCode,
+                city: saved.city,
+                neighborhood: saved.neighborhood,
+              }
+            : {
+                ...prev,
+                zipCode: "",
+                city: "",
+                neighborhood: "",
+              };
+          if (filtersEqual(prev, next)) return prev;
+          scheduleUrlSync(next, displayQuery);
+          return next;
+        });
+      });
+    }
+
+    window.addEventListener(
+      USER_LOCATION_CHANGE_EVENT,
+      onPreferredLocationChange
+    );
+    return () => {
+      window.removeEventListener(
+        USER_LOCATION_CHANGE_EVENT,
+        onPreferredLocationChange
+      );
+    };
+  }, [searchParams, scheduleUrlSync, displayQuery]);
 
   const setFilters = useCallback(
     (action: SetStateAction<TrainerFilters>) => {
@@ -253,6 +323,16 @@ export function useExploreTrainers({
     getSpecialistProfilesSnapshot,
     getSpecialistProfilesServerSnapshot
   );
+  const approvedProfilesRevision = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesSnapshot,
+    getApprovedSpecialistProfilesServerSnapshot
+  );
+  const applicationsRevision = useSyncExternalStore(
+    subscribeSpecialistApplications,
+    getSpecialistApplicationsSnapshot,
+    getSpecialistApplicationsServerSnapshot
+  );
 
   const hiddenRevision = useSyncExternalStore(
     subscribeHiddenTrainers,
@@ -263,19 +343,26 @@ export function useExploreTrainers({
   const getVisibleExploreMatches = useCallback(
     (candidateFilters: TrainerFilters) => {
       void profileOverridesRevision;
+      void approvedProfilesRevision;
+      void applicationsRevision;
       void hiddenRevision;
       const hiddenSet = new Set(getHiddenTrainersSnapshot());
-      return filterExploreTrainers(trainers, candidateFilters, searchQuery)
+      return filterExploreTrainers(
+        listPublicMarketplaceTrainers(),
+        candidateFilters,
+        searchQuery
+      )
         .filter((trainer) => !hiddenSet.has(trainer.id))
         .map((trainer) => getTrainerWithOverrides(trainer.id) ?? trainer);
     },
     [searchQuery, profileOverridesRevision, hiddenRevision]
   );
 
-  const filtered = useMemo(
-    () => getVisibleExploreMatches(filters),
-    [filters, getVisibleExploreMatches]
-  );
+  const filtered = useMemo(() => {
+    const matches = getVisibleExploreMatches(filters);
+    const coords = hydrated ? userCoords : null;
+    return sortTrainersByProximity(matches, coords);
+  }, [filters, getVisibleExploreMatches, hydrated, coordsKey, userCoords]);
 
   const getExploreMatchCount = useCallback(
     (candidateFilters: TrainerFilters) =>
@@ -295,11 +382,11 @@ export function useExploreTrainers({
   const clearFilters = useCallback(() => {
     let nextFilters: TrainerFilters | null = null;
     setFiltersState((prev) => {
-      nextFilters = {
+      nextFilters = mergeExploreFiltersWithSavedLocation({
         ...EMPTY_TRAINER_FILTERS,
         gender: prev.gender,
         priceMax: prev.priceMax,
-      };
+      });
       return nextFilters;
     });
     if (nextFilters) {
@@ -311,16 +398,17 @@ export function useExploreTrainers({
     (rawQuery: string) => {
       const applied = applySearchQueryToExploreState(rawQuery, {
         ...filters,
+        zipCode: "",
         city: "",
         neighborhood: "",
         profession: "",
         specialty: "",
       });
-      const nextFilters = {
+      const nextFilters = mergeExploreFiltersWithSavedLocation({
         ...applied.filters,
         gender: filters.gender,
         priceMax: filters.priceMax,
-      };
+      });
       setDisplayQuery(applied.displayQuery);
       setSearchQuery(applied.residualQuery);
       setFiltersState(nextFilters);
@@ -337,13 +425,14 @@ export function useExploreTrainers({
     setDisplayQuery("");
     setSearchQuery("");
     setFiltersState((prev) => {
-      nextFilters = {
+      nextFilters = mergeExploreFiltersWithSavedLocation({
         ...prev,
+        zipCode: "",
         city: "",
         neighborhood: "",
         profession: "",
         specialty: "",
-      };
+      });
       return nextFilters;
     });
     if (nextFilters) {
@@ -352,10 +441,11 @@ export function useExploreTrainers({
   }, [scheduleUrlSync]);
 
   const clearAll = useCallback(() => {
+    const cleared = { ...EMPTY_TRAINER_FILTERS };
     setDisplayQuery("");
     setSearchQuery("");
-    setFiltersState(EMPTY_TRAINER_FILTERS);
-    scheduleUrlSync(EMPTY_TRAINER_FILTERS, "");
+    setFiltersState(cleared);
+    scheduleUrlSync(cleared, "");
   }, [scheduleUrlSync]);
 
   const removeFilter = useCallback(

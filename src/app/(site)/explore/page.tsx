@@ -1,5 +1,13 @@
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
-import { ExplorePageClient } from "@/components/explore";
+
+const ExplorePageClient = dynamic(
+  () =>
+    import("@/components/explore/ExplorePageClient").then(
+      (mod) => mod.ExplorePageClient
+    ),
+  { ssr: true }
+);
 
 export const metadata = {
   title: "Explore Specialists",

@@ -1,5 +1,9 @@
 import type { Transition, Variants } from "framer-motion";
-import type { BottomNavPanelDirection } from "@/lib/mobile-bottom-nav-transition";
+import {
+  BOTTOM_NAV_PANEL_MS,
+  BOTTOM_NAV_PANEL_TOUCH_MS,
+  type BottomNavPanelDirection,
+} from "@/lib/mobile-bottom-nav-transition";
 
 /** Primary ease — long luxury deceleration */
 export const PAGE_TRANSITION_EASE = [0.1, 0.92, 0.2, 1] as const;
@@ -36,10 +40,17 @@ export const mobilePageTransition: Transition = {
 export const BOTTOM_NAV_PANEL_EASE = [0.32, 0.72, 0, 1] as const;
 
 /** Bottom nav panels — opacity + y only (Safari-friendly) */
-export const bottomNavPanelTransition: Transition = {
-  opacity: { duration: 0.4, ease: BOTTOM_NAV_PANEL_EASE },
-  y: { duration: 0.42, ease: BOTTOM_NAV_PANEL_EASE },
-};
+export function buildBottomNavPanelTransition(fastMotion = false): Transition {
+  const durationSec = (fastMotion ? BOTTOM_NAV_PANEL_TOUCH_MS : BOTTOM_NAV_PANEL_MS) / 1000;
+  return {
+    opacity: { duration: durationSec * 0.95, ease: BOTTOM_NAV_PANEL_EASE },
+    y: { duration: durationSec, ease: BOTTOM_NAV_PANEL_EASE },
+  };
+}
+
+/** @deprecated Use buildBottomNavPanelTransition */
+export const bottomNavPanelTransition: Transition =
+  buildBottomNavPanelTransition(false);
 
 export const bottomNavPanelReducedTransition: Transition = {
   duration: 0.14,

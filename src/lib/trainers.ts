@@ -1,19 +1,13 @@
 import type { Trainer, TrainerFilters } from "@/types";
-import { providerMatchesNeighborhood } from "@/lib/provider-location";
+import { trainerMatchesExploreLocation } from "@/lib/explore-location-filters";
 
-/** Applies sidebar filter fields (city, neighborhood, specialty, gender, price). */
+/** Applies sidebar filter fields (ZIP/location, specialty, gender, price). */
 export function filterTrainers(
   trainers: Trainer[],
   filters: TrainerFilters
 ): Trainer[] {
   return trainers.filter((trainer) => {
-    if (filters.city && trainer.city !== filters.city) {
-      return false;
-    }
-    if (
-      filters.neighborhood &&
-      !providerMatchesNeighborhood(trainer, filters.neighborhood)
-    ) {
+    if (!trainerMatchesExploreLocation(trainer, filters)) {
       return false;
     }
     if (filters.profession && trainer.profession !== filters.profession) {

@@ -8,7 +8,7 @@ import {
   buildTrainerGalleryImages,
   getProfileGalleryMedia,
 } from "@/lib/trainer-gallery";
-import { formatPrice } from "@/lib/utils";
+import { SessionPrice } from "@/components/ui/SessionPrice";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { ProfileHeroBio } from "./ProfileHeroBio";
 import {
@@ -85,10 +85,11 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
             <div className="profile-hero__meta mt-4 text-sm sm:mt-5">
               <div className="profile-hero__meta-primary">
                 <ProfileReviewMeta trainer={trainer} />
-                <span className="profile-hero__meta-price shrink-0 whitespace-nowrap font-medium text-white">
-                  {formatPrice(trainer.pricePerSession)}
-                  <span className="font-normal text-silver-400"> / session</span>
-                </span>
+                <SessionPrice
+                  amount={trainer.pricePerSession}
+                  variant="hero"
+                  className="profile-hero__meta-price shrink-0"
+                />
               </div>
               {hasGallery ? (
                 <button

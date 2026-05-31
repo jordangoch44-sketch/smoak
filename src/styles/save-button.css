@@ -2,6 +2,10 @@
 
 .trainer-card {
   position: relative;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* Pinned top-right on trainer cards — outside the <a> so it never gets clipped or removed */

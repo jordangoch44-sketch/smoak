@@ -3,6 +3,38 @@ import {
   DEV_AUTH_STORAGE_KEY,
   LEGACY_AUTH_STORAGE_KEY,
 } from "@/lib/dev-storage-keys";
+import { persistInternalAuthSession } from "@/lib/internal-auth-session-storage";
+import type { InternalAuthSession } from "@/types/internal-auth";
+
+function internalSessionFromAuthSession(
+  session: AuthSession
+): InternalAuthSession | null {
+  if (session.role !== "admin") return null;
+  return {
+    email: session.email,
+    signedInAt: session.signedInAt,
+    adminRole: session.adminRole ?? "owner_admin",
+    displayName: session.displayName,
+  };
+}
+
+function sanitizePublicSession(parsed: AuthSession): AuthSession | null {
+  if (parsed.role === "admin") {
+    const internal = internalSessionFromAuthSession(parsed);
+    if (internal) {
+      persistInternalAuthSession(internal);
+      window.localStorage.removeItem(DEV_AUTH_STORAGE_KEY);
+    }
+    return null;
+  }
+  if (
+    (parsed.role === "client" || parsed.role === "specialist") &&
+    typeof parsed.email === "string"
+  ) {
+    return parsed;
+  }
+  return null;
+}
 
 function migrateLegacyAuth(): AuthSession | null {
   if (typeof window === "undefined") return null;
@@ -10,15 +42,10 @@ function migrateLegacyAuth(): AuthSession | null {
     const legacyRaw = window.localStorage.getItem(LEGACY_AUTH_STORAGE_KEY);
     if (!legacyRaw) return null;
     const parsed = JSON.parse(legacyRaw) as AuthSession;
-    if (
-      (parsed.role === "client" ||
-        parsed.role === "specialist" ||
-        parsed.role === "admin") &&
-      typeof parsed.email === "string"
-    ) {
+    if (typeof parsed.email === "string") {
       window.localStorage.setItem(DEV_AUTH_STORAGE_KEY, legacyRaw);
       window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
-      return parsed;
+      return sanitizePublicSession(parsed);
     }
     return null;
   } catch {
@@ -36,15 +63,7 @@ export function loadAuthSession(): AuthSession | null {
       return null;
     }
     const parsed = JSON.parse(raw) as AuthSession;
-    if (
-      (parsed.role === "client" ||
-        parsed.role === "specialist" ||
-        parsed.role === "admin") &&
-      typeof parsed.email === "string"
-    ) {
-      return parsed;
-    }
-    return null;
+    return sanitizePublicSession(parsed);
   } catch {
     return null;
   }
@@ -57,5 +76,6 @@ export function persistAuthSession(session: AuthSession | null): void {
     window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
     return;
   }
+  if (session.role === "admin") return;
   window.localStorage.setItem(DEV_AUTH_STORAGE_KEY, JSON.stringify(session));
 }

@@ -12,7 +12,7 @@ import {
 import { BottomNavPanelTransition } from "@/components/layout/BottomNavPanelTransition";
 import {
   useBottomNavPanelTransition,
-  useMobileBottomNavTransition,
+  useCompleteBottomNavPanelTransition,
 } from "@/contexts/MobileBottomNavTransitionContext";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
@@ -80,7 +80,7 @@ export function PageTransition({ children }: PageTransitionProps) {
   const searchParams = useSearchParams();
   const reducedMotion = useReducedMotion();
   const panel = useBottomNavPanelTransition();
-  const { completePanelTransition } = useMobileBottomNavTransition();
+  const completePanelTransition = useCompleteBottomNavPanelTransition();
   const isTabletViewport = useTabletViewport();
   const isMobileViewport = useMobileViewport();
   const profileReveal = isTrainerProfilePath(pathname);

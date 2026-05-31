@@ -8,6 +8,11 @@ export function formatPrice(amount: number): string {
   }).format(amount);
 }
 
+/** Plain-text session rate for labels, aria, and non-component contexts */
+export function formatSessionPricePlain(amount: number): string {
+  return `From ${formatPrice(amount)}/session`;
+}
+
 /** Trainer aggregate rating — always one decimal (e.g. 5 → 5.0) */
 export function formatTrainerRating(rating: number): string {
   return rating.toFixed(1);

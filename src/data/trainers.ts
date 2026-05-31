@@ -28,17 +28,50 @@ type TrainerRecord = Omit<
   | "reviewSources"
 >;
 
+interface LocGeo {
+  zipCode: string;
+  latitude: number;
+  longitude: number;
+  serviceRadiusMiles?: number;
+  willingToTravel?: boolean;
+  sponsored?: boolean;
+  verified?: boolean;
+  serviceArea?: string[];
+}
+
 /** Seed location fields — onboarding will set city, neighborhood, serviceArea */
 function loc(
   city: string,
   neighborhood: string,
-  serviceArea: string[] = []
-): Pick<TrainerRecord, "city" | "neighborhood" | "serviceArea" | "location"> {
+  geo: LocGeo
+): Pick<
+  TrainerRecord,
+  | "city"
+  | "neighborhood"
+  | "serviceArea"
+  | "location"
+  | "zipCode"
+  | "latitude"
+  | "longitude"
+  | "serviceRadiusMiles"
+  | "willingToTravel"
+  | "sponsored"
+  | "verified"
+> {
+  const serviceArea = geo.serviceArea ?? [];
+  const radius = geo.serviceRadiusMiles ?? 25;
   return {
     city,
     neighborhood,
     serviceArea,
     location: neighborhood ? `${neighborhood}, ${city}` : city,
+    zipCode: geo.zipCode,
+    latitude: geo.latitude,
+    longitude: geo.longitude,
+    serviceRadiusMiles: radius,
+    willingToTravel: geo.willingToTravel ?? radius > 0,
+    sponsored: geo.sponsored ?? false,
+    verified: geo.verified ?? false,
   };
 }
 
@@ -48,7 +81,14 @@ const trainerRecords: TrainerRecord[] = [
     name: "Marcus Chen",
     profession: "Personal Trainer",
     title: "Elite performance & HYROX prep",
-    ...loc("Los Angeles", "West Hollywood", ["West Hollywood", "Santa Monica"]),
+    ...loc("Los Angeles", "West Hollywood", {
+      zipCode: "90046",
+      latitude: 34.098,
+      longitude: -118.364,
+      serviceArea: ["West Hollywood", "Santa Monica"],
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Strength Coaching", "HYROX", "Sports Performance"],
     gender: "male",
     pricePerSession: 185,
@@ -73,7 +113,13 @@ const trainerRecords: TrainerRecord[] = [
     name: "Elena Vasquez",
     profession: "Wellness Coach",
     title: "Mind-body integration & recovery",
-    ...loc("New York", "", []),
+    ...loc("New York", "Manhattan", {
+      zipCode: "10001",
+      latitude: 40.7506,
+      longitude: -73.9971,
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Mobility", "Recovery", "Yoga"],
     gender: "female",
     pricePerSession: 165,
@@ -97,7 +143,13 @@ const trainerRecords: TrainerRecord[] = [
     name: "David Okonkwo",
     profession: "Personal Trainer",
     title: "Combat sports & conditioning",
-    ...loc("Miami", "", []),
+    ...loc("Miami", "South Beach", {
+      zipCode: "33139",
+      latitude: 25.7823,
+      longitude: -80.1347,
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Boxing", "Strength Coaching", "Sports Performance"],
     gender: "male",
     pricePerSession: 150,
@@ -121,7 +173,13 @@ const trainerRecords: TrainerRecord[] = [
     name: "Sophia Laurent",
     profession: "Nutritionist",
     title: "Holistic wellness & performance nutrition",
-    ...loc("San Francisco", "", []),
+    ...loc("San Francisco", "SoMa", {
+      zipCode: "94102",
+      latitude: 37.7793,
+      longitude: -122.4193,
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Nutrition Coaching", "Recovery", "Weight Loss", "Yoga"],
     gender: "female",
     pricePerSession: 195,
@@ -145,7 +203,12 @@ const trainerRecords: TrainerRecord[] = [
     name: "James Morrison",
     profession: "Personal Trainer",
     title: "Endurance & marathon programming",
-    ...loc("Chicago", "", []),
+    ...loc("Chicago", "Loop", {
+      zipCode: "60601",
+      latitude: 41.8853,
+      longitude: -87.6217,
+      verified: true,
+    }),
     specialty: ["Sports Performance", "Athletic Development"],
     gender: "male",
     pricePerSession: 120,
@@ -168,7 +231,12 @@ const trainerRecords: TrainerRecord[] = [
     name: "Amara Johnson",
     profession: "Personal Trainer",
     title: "Powerlifting & strength for all levels",
-    ...loc("Austin", "", []),
+    ...loc("Austin", "Downtown", {
+      zipCode: "78701",
+      latitude: 30.2711,
+      longitude: -97.7437,
+      verified: true,
+    }),
     specialty: ["Strength Coaching", "Women's Health", "Weight Loss"],
     gender: "female",
     pricePerSession: 140,
@@ -192,7 +260,11 @@ const trainerRecords: TrainerRecord[] = [
     name: "Kai Nakamura",
     profession: "Wellness Coach",
     title: "Movement quality & pain-free training",
-    ...loc("Seattle", "", []),
+    ...loc("Seattle", "Capitol Hill", {
+      zipCode: "98102",
+      latitude: 47.6231,
+      longitude: -122.32,
+    }),
     specialty: ["Mobility", "Recovery", "Corrective Exercise", "Yoga"],
     gender: "non-binary",
     pricePerSession: 130,
@@ -215,7 +287,13 @@ const trainerRecords: TrainerRecord[] = [
     name: "Isabella Romano",
     profession: "Personal Trainer",
     title: "Pilates & postural strength",
-    ...loc("Los Angeles", "Santa Monica", ["Santa Monica", "Venice"]),
+    ...loc("Los Angeles", "Santa Monica", {
+      zipCode: "90401",
+      latitude: 34.0195,
+      longitude: -118.4912,
+      serviceArea: ["Santa Monica", "Venice"],
+      verified: true,
+    }),
     specialty: ["Mobility", "Yoga", "Corrective Exercise"],
     gender: "female",
     pricePerSession: 175,
@@ -238,7 +316,14 @@ const trainerRecords: TrainerRecord[] = [
     name: "Dr. Elena Ramirez",
     profession: "Physical Therapist",
     title: "Sports rehab & return-to-training",
-    ...loc("San Diego", "Mission Valley", ["Mission Valley", "Sorrento Valley"]),
+    ...loc("San Diego", "Mission Valley", {
+      zipCode: "92108",
+      latitude: 32.7719,
+      longitude: -117.154,
+      serviceArea: ["Mission Valley", "Sorrento Valley"],
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Mobility", "Sports Performance", "Recovery", "Corrective Exercise"],
     gender: "female",
     pricePerSession: 150,
@@ -262,7 +347,14 @@ const trainerRecords: TrainerRecord[] = [
     name: "Dr. Marcus Lee",
     profession: "Chiropractor",
     title: "Back pain, posture & athletic recovery",
-    ...loc("San Diego", "La Jolla", ["La Jolla", "Del Mar", "Pacific Beach"]),
+    ...loc("San Diego", "La Jolla", {
+      zipCode: "92037",
+      latitude: 32.8473,
+      longitude: -117.274,
+      serviceArea: ["La Jolla", "Del Mar", "Pacific Beach"],
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Recovery", "Sports Performance", "Mobility", "Corrective Exercise"],
     gender: "male",
     pricePerSession: 120,
@@ -285,7 +377,14 @@ const trainerRecords: TrainerRecord[] = [
     name: "Sophia Bennett",
     profession: "Nutritionist",
     title: "Fat loss & performance nutrition",
-    ...loc("San Diego", "Encinitas", ["Encinitas", "Leucadia", "Cardiff"]),
+    ...loc("San Diego", "Encinitas", {
+      zipCode: "92024",
+      latitude: 33.037,
+      longitude: -117.292,
+      serviceArea: ["Encinitas", "Leucadia", "Cardiff"],
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Nutrition Coaching", "Weight Loss", "Sports Performance"],
     gender: "female",
     pricePerSession: 95,
@@ -308,7 +407,13 @@ const trainerRecords: TrainerRecord[] = [
     name: "Jordan Kim",
     profession: "Massage Therapist",
     title: "Stretch therapy, mobility & soft tissue",
-    ...loc("San Diego", "Carlsbad", ["Carlsbad", "La Costa"]),
+    ...loc("San Diego", "Carlsbad", {
+      zipCode: "92008",
+      latitude: 33.1581,
+      longitude: -117.3506,
+      serviceArea: ["Carlsbad", "La Costa"],
+      verified: true,
+    }),
     specialty: ["Recovery", "Mobility"],
     gender: "male",
     pricePerSession: 110,
@@ -332,7 +437,14 @@ const trainerRecords: TrainerRecord[] = [
     name: "Anthony Brooks",
     profession: "Personal Trainer",
     title: "Speed, strength & athletic development",
-    ...loc("San Diego", "North Park", ["North Park", "Hillcrest", "Mission Valley"]),
+    ...loc("San Diego", "North Park", {
+      zipCode: "92104",
+      latitude: 32.7484,
+      longitude: -117.1295,
+      serviceArea: ["North Park", "Hillcrest", "Mission Valley"],
+      sponsored: true,
+      verified: true,
+    }),
     specialty: ["Sports Performance", "Strength Coaching", "Athletic Development"],
     gender: "male",
     pricePerSession: 135,

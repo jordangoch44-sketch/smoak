@@ -6,7 +6,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { UserIcon } from "@/components/ui/icons";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { isAdminSession } from "@/lib/admin-auth";
 import {
   getDashboardPathForRole,
   isDashboardPath,
@@ -88,7 +87,6 @@ export function NavbarProfileLink({
 
   const dashboardHref =
     role != null ? getDashboardPathForRole(role) : LOGIN_PATH;
-  const showAdminLink = isAdminSession(session);
 
   return (
     <div ref={rootRef} className={cn("nav-profile", className)}>
@@ -151,9 +149,8 @@ export function NavbarProfileLink({
                 role="menuitem"
                 onClick={() => setOpen(false)}
               >
-                {showAdminLink ? "Admin dashboard" : "Dashboard"}
+                Dashboard
               </Link>
-              {showAdminLink ? null : (
               <Link
                 href={SAVED_PATH}
                 className="nav-profile__item smoac-tap"
@@ -162,7 +159,6 @@ export function NavbarProfileLink({
               >
                 Saved specialists
               </Link>
-              )}
               <div className="nav-profile__divider" role="separator" />
               <button
                 type="button"

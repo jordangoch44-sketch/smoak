@@ -30,7 +30,7 @@ export function DashboardSection({
       )}
     >
       <div className="dashboard-section__head">
-        <div>
+        <div className="dashboard-section__intro">
           <h2 className="dashboard-section__title">{title}</h2>
           {description ? (
             <p className="dashboard-section__desc">{description}</p>

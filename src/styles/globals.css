@@ -4,12 +4,16 @@
 @import "./atmosphere.css";
 @import "./aurora.css";
 @import "./save-button.css";
+@import "./trainer-card-compact.css";
+@import "./session-price.css";
 @import "./save-toast.css";
 @import "./toast.css";
 @import "./site-chrome.css";
 @import "./login-gate.css";
 @import "./location-personalization.css";
+@import "./location-selector.css";
 @import "./mobile-bottom-nav.css";
+@import "./modal-open.css";
 @import "./route-directory-loader.css";
 @import "./bottom-nav-panel-transition.css";
 @import "./smoac-cinematic-loader.css";
@@ -74,6 +78,7 @@ html {
   max-width: 100%;
   scroll-behavior: smooth;
   overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 html,

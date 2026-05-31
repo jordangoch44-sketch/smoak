@@ -2,6 +2,8 @@
 
 import type { TrainerFilters as Filters } from "@/types";
 import { MARKETPLACE_CITIES, getNeighborhoodsForCity } from "@/data/locations";
+import { exploreFiltersFromZipCode } from "@/lib/explore-location-filters";
+import { normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
   professions,
   specialties,
@@ -40,13 +42,24 @@ export function TrainerFilters({
   function clearLocation() {
     onChange({
       ...filters,
+      zipCode: "",
       city: "",
       neighborhood: "",
     });
   }
 
+  function applyZipInput(raw: string) {
+    const zip = normalizeZipCode(raw);
+    if (!zip) {
+      onChange({ ...filters, zipCode: raw.trim() });
+      return;
+    }
+    onChange(exploreFiltersFromZipCode(zip));
+  }
+
   function clearAll() {
     onChange({
+      zipCode: "",
       city: "",
       neighborhood: "",
       profession: "",
@@ -57,7 +70,9 @@ export function TrainerFilters({
   }
 
   const hasFilters = Object.values(filters).some(Boolean);
-  const hasLocation = Boolean(filters.city || filters.neighborhood);
+  const hasLocation = Boolean(
+    filters.zipCode || filters.city || filters.neighborhood
+  );
 
   return (
     <div className={compact ? "" : undefined}>
@@ -76,12 +91,30 @@ export function TrainerFilters({
         </div>
       )}
 
+      <div className="explore-filter-field">
+        <label className="explore-filter-field__label" htmlFor="filter-zip">
+          ZIP code
+        </label>
+        <input
+          id="filter-zip"
+          type="text"
+          inputMode="numeric"
+          autoComplete="postal-code"
+          maxLength={5}
+          value={filters.zipCode}
+          placeholder="Enter ZIP"
+          onChange={(e) => applyZipInput(e.target.value)}
+          className={`explore-filter-select${filters.zipCode ? " explore-filter-select--active" : ""}`}
+        />
+      </div>
+
       <FilterSelect
         label="City"
         value={filters.city}
         onChange={updateCity}
+        placeholder="Select location"
         options={[
-          { label: "All cities", value: "" },
+          { label: "Select location", value: "" },
           ...MARKETPLACE_CITIES.map((c) => ({ label: c, value: c })),
         ]}
       />

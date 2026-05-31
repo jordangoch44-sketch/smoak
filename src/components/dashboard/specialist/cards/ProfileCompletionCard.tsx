@@ -1,6 +1,5 @@
 import type { Trainer } from "@/types";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
-import { PROFILE_COMPLETION_CHECKLIST } from "@/constants/specialist-dashboard-mock";
 import { formatProviderLocation } from "@/lib/provider-location";
 import {
   DashboardButton,
@@ -12,11 +11,13 @@ import { cn } from "@/lib/utils";
 interface ProfileCompletionCardProps {
   profileCompletion: number;
   trainer: Trainer | undefined;
+  checklist: ProfileCompletionChecklistItem[];
 }
 
 export function ProfileCompletionCard({
   profileCompletion,
   trainer,
+  checklist,
 }: ProfileCompletionCardProps) {
   return (
     <DashboardSection
@@ -36,7 +37,7 @@ export function ProfileCompletionCard({
           progress={profileCompletion}
         />
         <aside className="dashboard-profile-completion__aside">
-          <ProfileChecklist items={PROFILE_COMPLETION_CHECKLIST} />
+          <ProfileChecklist items={checklist} />
           <DashboardButton inline href="/specialist-dashboard/edit-profile">
             Edit Profile
           </DashboardButton>

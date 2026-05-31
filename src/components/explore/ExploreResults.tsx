@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { memo } from "react";
 import type { Trainer } from "@/types";
 import { TrainerList } from "@/components/trainers";
 
@@ -11,7 +12,7 @@ interface ExploreResultsProps {
   onClearAll: () => void;
 }
 
-export function ExploreResults({
+export const ExploreResults = memo(function ExploreResults({
   trainers,
   activeFilterCount,
   hasSearch,
@@ -65,4 +66,4 @@ export function ExploreResults({
   return (
     <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
   );
-}
+});

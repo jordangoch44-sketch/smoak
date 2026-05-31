@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { ADMIN_SECTIONS, type AdminSectionId } from "@/lib/admin-sections";
-import { useAuthSession } from "@/hooks/useAuthSession";
+import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
 import {
   canAccessAdminSection,
   getAdminRoleLabel,
@@ -10,7 +10,7 @@ import {
   getPermissionsForAdminRole,
   resolveAdminRoleFromSession,
 } from "@/lib/admin-permissions";
-import type { AuthSession } from "@/types/auth";
+import type { InternalAuthSession } from "@/types/internal-auth";
 import type { AdminPermissions, AdminRoleType } from "@/types/admin-permissions";
 
 export interface AdminAccessContext {
@@ -25,7 +25,7 @@ export interface AdminAccessContext {
 }
 
 export function useAdminPermissions(
-  session: AuthSession | null | undefined
+  session: InternalAuthSession | null | undefined
 ): AdminAccessContext | null {
   return useMemo(() => {
     const adminRole = resolveAdminRoleFromSession(session);
@@ -50,8 +50,8 @@ export function useAdminPermissions(
   }, [session]);
 }
 
-/** Permissions for the active auth session */
+/** Permissions for the active company portal session */
 export function useAdminPermissionsFromAuth(): AdminAccessContext | null {
-  const { session } = useAuthSession();
+  const { session } = useInternalAuthSession();
   return useAdminPermissions(session);
 }

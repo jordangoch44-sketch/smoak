@@ -18,6 +18,10 @@ import type { AdminSpecialistRow } from "@/hooks/useAdminDashboard";
 import type { AdminSpecialistVisibility } from "@/types/admin";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { SpecialistBillingRecord } from "@/types/admin-specialist-billing";
+import {
+  SPECIALIST_SERVICE_TYPE_OPTIONS,
+  SPECIALIST_TRAVEL_RADIUS_OPTIONS,
+} from "@/types/specialist-service-area";
 
 interface AdminSpecialistsPanelProps {
   specialists: AdminSpecialistRow[];
@@ -29,7 +33,15 @@ interface AdminSpecialistsPanelProps {
   onTopRankedChange: (id: string, value: boolean) => void;
   onBasicsChange: (
     id: string,
-    basics: { profession?: string; city?: string; neighborhood?: string }
+    basics: {
+      profession?: string;
+      city?: string;
+      state?: string;
+      neighborhood?: string;
+      zipCode?: string;
+      serviceType?: "in-person" | "virtual" | "both";
+      travelRadius?: string;
+    }
   ) => void;
 }
 
@@ -155,18 +167,91 @@ function SpecialistCard({
             />
           </label>
           <label className="admin-field-label">
-            Location
+            ZIP code
             <input
               className="admin-field"
-              defaultValue={`${row.neighborhood}, ${row.city}`}
+              defaultValue={row.zipCode}
+              inputMode="numeric"
+              maxLength={5}
               onBlur={(e) => {
-                const parts = e.target.value.split(",").map((p) => p.trim());
-                onBasicsChange(row.id, {
-                  neighborhood: parts[0] ?? "",
-                  city: parts.slice(1).join(", ").trim() || row.city,
-                });
+                const value = e.target.value.replace(/\D/g, "").slice(0, 5);
+                if (value !== row.zipCode) {
+                  onBasicsChange(row.id, { zipCode: value });
+                }
               }}
             />
+          </label>
+          <label className="admin-field-label">
+            City
+            <input
+              className="admin-field"
+              defaultValue={row.city}
+              onBlur={(e) => {
+                const value = e.target.value.trim();
+                if (value !== row.city) onBasicsChange(row.id, { city: value });
+              }}
+            />
+          </label>
+          <label className="admin-field-label">
+            State
+            <input
+              className="admin-field"
+              defaultValue={row.state}
+              maxLength={2}
+              onBlur={(e) => {
+                const value = e.target.value.trim().toUpperCase();
+                if (value !== row.state) onBasicsChange(row.id, { state: value });
+              }}
+            />
+          </label>
+          <label className="admin-field-label">
+            Neighborhood
+            <input
+              className="admin-field"
+              defaultValue={row.neighborhood}
+              onBlur={(e) => {
+                const value = e.target.value.trim();
+                if (value !== row.neighborhood) {
+                  onBasicsChange(row.id, { neighborhood: value });
+                }
+              }}
+            />
+          </label>
+          <label className="admin-field-label">
+            Service type
+            <select
+              className="admin-field"
+              value={row.serviceType || ""}
+              onChange={(e) =>
+                onBasicsChange(row.id, {
+                  serviceType: e.target.value as "in-person" | "virtual" | "both",
+                })
+              }
+            >
+              <option value="">—</option>
+              {SPECIALIST_SERVICE_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="admin-field-label">
+            Travel radius
+            <select
+              className="admin-field"
+              value={row.travelRadius || ""}
+              onChange={(e) =>
+                onBasicsChange(row.id, { travelRadius: e.target.value })
+              }
+            >
+              <option value="">—</option>
+              {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
       ) : null}

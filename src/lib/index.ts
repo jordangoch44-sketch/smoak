@@ -1,4 +1,4 @@
-export { cn, formatPrice, getInitials } from "./utils";
+export { cn, formatPrice, formatSessionPricePlain, getInitials } from "./utils";
 export { filterTrainers } from "./trainers";
 export {
   EMPTY_TRAINER_FILTERS,

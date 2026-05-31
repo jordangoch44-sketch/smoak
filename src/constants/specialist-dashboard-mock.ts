@@ -1,12 +1,14 @@
-import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
 import type {
   SpecialistAnalyticsMetric,
   SpecialistGrowthInsight,
   SpecialistProfileAnalytics,
 } from "@/types/specialist-analytics";
 
-/** Demo specialist account until real auth profiles ship */
+/** Seed trainer id for demo analytics/leads UI only — not used for real specialist sessions */
 export const DEMO_SPECIALIST_ID = "anthony-brooks";
+
+/** Dev login dashboard id — isolated from public seed catalog */
+export const DEV_SPECIALIST_DASHBOARD_ID = "dev-specialist-dashboard";
 
 export const SPECIALIST_ANALYTICS_PERIOD_LABEL = "Last 30 days";
 
@@ -54,13 +56,6 @@ export const DEMO_SPECIALIST_SUBSCRIPTION_FREE = {
   renewsOn: "—",
   isPremium: false,
 } as const;
-
-export const PROFILE_COMPLETION_CHECKLIST: ProfileCompletionChecklistItem[] = [
-  { id: "photo", label: "Professional photo", done: true },
-  { id: "specialties", label: "Specialties & credentials", done: true },
-  { id: "transformations", label: "Add client transformations", done: false },
-  { id: "booking", label: "Enable instant booking", done: false },
-];
 
 export const DEMO_SPECIALIST_CORE_METRICS: SpecialistAnalyticsMetric[] = [
   {

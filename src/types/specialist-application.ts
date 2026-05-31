@@ -1,10 +1,14 @@
 import type { Certification, Gender, SocialLinks } from "@/types/trainer";
+import type { SpecialistServiceType } from "@/types/specialist-service-area";
 
 export type ProfileStatus =
   | "DRAFT"
   | "PENDING_APPROVAL"
   | "APPROVED"
-  | "REJECTED";
+  | "REJECTED"
+  | "ARCHIVED";
+
+export type SpecialistMembershipTier = "free" | "premium";
 
 export interface SpecialistApplicationPricing {
   oneOnOnePrice: string;
@@ -24,8 +28,18 @@ export interface SpecialistApplicationAvailability {
   acceptingNewClients: boolean;
 }
 
+export interface ProfilePhotoCropSettings {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export interface SpecialistApplicationMedia {
+  /** Cropped profile photo — submitted to admin / marketplace */
   profilePhotoUrl: string;
+  /** Original upload for re-crop during the questionnaire session */
+  profilePhotoOriginalUrl: string;
+  profilePhotoCrop: ProfilePhotoCropSettings | null;
   transformationPhotoUrls: string;
   certificationUploadUrls: string;
   trainingVideoUrls: string;
@@ -57,9 +71,18 @@ export interface SpecialistApplication {
   ageRangesWorkedWith: string[];
 
   city: string;
+  state: string;
   neighborhood: string;
   zipCode: string;
+  serviceType: SpecialistServiceType | "";
   travelRadius: string;
+  willingToTravel: boolean;
+  serviceAreaZipCodes: string[];
+  serviceAreaDescription: string;
+  businessName: string;
+  membershipTier: SpecialistMembershipTier;
+  latitude: number | null;
+  longitude: number | null;
   inHomeAvailable: boolean;
   onlineCoachingAvailable: boolean;
   gymName: string;
@@ -103,9 +126,18 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   yearsExperience: "",
   ageRangesWorkedWith: [],
   city: "",
+  state: "",
   neighborhood: "",
   zipCode: "",
+  serviceType: "",
   travelRadius: "",
+  willingToTravel: false,
+  serviceAreaZipCodes: [],
+  serviceAreaDescription: "",
+  businessName: "",
+  membershipTier: "free",
+  latitude: null,
+  longitude: null,
   inHomeAvailable: false,
   onlineCoachingAvailable: false,
   gymName: "",
@@ -145,6 +177,8 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   },
   media: {
     profilePhotoUrl: "",
+    profilePhotoOriginalUrl: "",
+    profilePhotoCrop: null,
     transformationPhotoUrls: "",
     certificationUploadUrls: "",
     trainingVideoUrls: "",

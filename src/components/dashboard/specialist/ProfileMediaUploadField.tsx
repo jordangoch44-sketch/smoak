@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useRef, type ChangeEvent } from "react";
+import { useId, useRef, useState, type ChangeEvent } from "react";
+import { readFileAsDataUrl } from "@/lib/media/crop-image";
 import { cn } from "@/lib/utils";
 
 interface ProfileMediaUploadFieldProps {
@@ -22,13 +23,24 @@ export function ProfileMediaUploadField({
 }: ProfileMediaUploadFieldProps) {
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-    if (!file) return;
-    const previewUrl = URL.createObjectURL(file);
-    onChange(previewUrl);
     event.target.value = "";
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      onChange(dataUrl);
+    } catch {
+      setUploadError("Could not read image. Try again or paste a URL.");
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -43,6 +55,7 @@ export function ProfileMediaUploadField({
         )}
         onClick={() => fileRef.current?.click()}
         aria-labelledby={inputId}
+        disabled={uploading}
       >
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -56,11 +69,13 @@ export function ProfileMediaUploadField({
             <span className="dashboard-upload-zone__icon" aria-hidden>
               +
             </span>
-            <span className="dashboard-upload-zone__hint">{hint}</span>
+            <span className="dashboard-upload-zone__hint">
+              {uploading ? "Processing image…" : hint}
+            </span>
           </>
         )}
         <span className="dashboard-upload-zone__overlay">
-          {value ? "Replace image" : "Tap to upload"}
+          {uploading ? "Processing…" : value ? "Replace image" : "Tap to upload"}
         </span>
       </button>
       <input
@@ -69,18 +84,23 @@ export function ProfileMediaUploadField({
         type="file"
         accept={accept}
         className="dashboard-upload-zone__input"
-        onChange={handleFileChange}
+        onChange={(event) => void handleFileChange(event)}
         tabIndex={-1}
       />
       <label className="login-field dashboard-upload-field__url">
         <span className="login-field__label">Image URL</span>
         <input
-          className="login-field__input"
+          className="login-field__input profile-edit-input"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="https://…"
+          placeholder="https://… or upload above"
         />
       </label>
+      {uploadError ? (
+        <p className="dashboard-edit-hint" role="alert">
+          {uploadError}
+        </p>
+      ) : null}
     </div>
   );
 }

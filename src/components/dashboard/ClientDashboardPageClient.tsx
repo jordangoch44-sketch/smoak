@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getFeaturedTrainers } from "@/data/trainers";
 import {
@@ -24,6 +25,8 @@ import {
   DashboardSection,
 } from "@/components/dashboard";
 
+const DASHBOARD_RECOMMENDED_TRAINERS = getFeaturedTrainers().slice(0, 3);
+
 function exploreHrefForQuery(query: string): string {
   const applied = applySearchQueryToExploreState(query, EMPTY_TRAINER_FILTERS);
   const params = buildExploreSearchParams(
@@ -39,8 +42,8 @@ export function ClientDashboardPageClient() {
   const { signOut } = useAuthSession();
   const { getSavedTrainers } = useSavedTrainers();
   const { entries: recentSearches } = useRecentSearches();
-  const saved = getSavedTrainers();
-  const recommended = getFeaturedTrainers().slice(0, 3);
+  const saved = useMemo(() => getSavedTrainers(), [getSavedTrainers]);
+  const recommended = DASHBOARD_RECOMMENDED_TRAINERS;
 
   if (!isReady || !session) {
     return (

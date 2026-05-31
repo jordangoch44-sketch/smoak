@@ -1,0 +1,58 @@
+import { sendClientApplicationConfirmationEmail } from "@/lib/email/confirmation-email-service";
+import { saveClientApplication } from "@/lib/client-application-storage";
+import { assertCanSubmitClientApplication } from "@/lib/specialist-application-validation";
+import type {
+  ClientApplication,
+  ClientApplicationSubmitInput,
+} from "@/types/client-application";
+
+function slugifyId(email: string): string {
+  const base = email
+    .split("@")[0]
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  return `client-${base || "user"}-${Date.now().toString(36)}`;
+}
+
+/** DEV ONLY — persist client Join Now questionnaire for admin review */
+export function submitClientApplication(
+  input: ClientApplicationSubmitInput
+): ClientApplication {
+  const trimmedEmail = input.email.trim();
+  assertCanSubmitClientApplication(trimmedEmail);
+
+  const now = new Date().toISOString();
+  const fullName = [input.firstName, input.lastName]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(" ");
+
+  const application: ClientApplication = {
+    id: slugifyId(trimmedEmail),
+    status: "PENDING",
+    email: trimmedEmail,
+    fullName: fullName || trimmedEmail.split("@")[0] || "Client",
+    phone: input.phone?.trim() ?? "",
+    preferredCity: input.preferredCity.trim(),
+    preferredNeighborhood: input.preferredNeighborhood.trim(),
+    preferredZipCode: input.preferredZipCode?.trim() ?? "",
+    fitnessGoals: [...input.fitnessGoals],
+    preferredSpecialistCategories: [...input.preferredSpecialistCategories],
+    budget: input.budget.trim(),
+    submittedAt: now,
+    updatedAt: now,
+  };
+
+  saveClientApplication(application);
+
+  void sendClientApplicationConfirmationEmail(application).then((result) => {
+    if (!result.success) {
+      console.warn(
+        "[SMOAC EMAIL] Client confirmation email did not send successfully"
+      );
+    }
+  });
+
+  return application;
+}

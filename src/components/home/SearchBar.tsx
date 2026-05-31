@@ -13,6 +13,7 @@ import { HeroSearchSuggestionsLayer } from "@/components/home/HeroSearchSuggesti
 import { TapLink } from "@/components/ui/TapLink";
 import { CloseIcon, SearchIcon } from "@/components/ui/icons";
 import { trainingGoals } from "@/data/goals";
+import { mergeExploreFiltersWithSavedLocation } from "@/lib/explore-location-filters";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
 import { buildExploreSearchParams } from "@/lib/explore-url";
 import {
@@ -70,7 +71,11 @@ export function SearchBar({
     (trimmed: string) => {
       setSubmitting(true);
       if (!trimmed) {
-        router.push("/explore");
+        const params = buildExploreSearchParams(
+          mergeExploreFiltersWithSavedLocation(EMPTY_TRAINER_FILTERS),
+          ""
+        );
+        router.push(params ? `/explore?${params}` : "/explore");
         return;
       }
       const applied = applySearchQueryToExploreState(
@@ -79,7 +84,7 @@ export function SearchBar({
       );
       recordRecentSearch(applied.displayQuery);
       const params = buildExploreSearchParams(
-        applied.filters,
+        mergeExploreFiltersWithSavedLocation(applied.filters),
         applied.displayQuery
       );
       router.push(`/explore?${params}`);

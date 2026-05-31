@@ -1,23 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
+import { WizardIncompleteSubmitModal } from "@/components/auth/WizardIncompleteSubmitModal";
 import {
   SPECIALIST_ONBOARDING_STEP_LABELS,
   SPECIALIST_ONBOARDING_TOTAL_STEPS,
 } from "@/constants/specialist-onboarding-options";
 import { LOGIN_PATH } from "@/lib/auth-routes";
 import { validateDevSignup } from "@/lib/dev-auth";
+import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import { submitSpecialistApplication } from "@/lib/specialist-application-submit";
 import {
   loadSpecialistOnboardingDraft,
   persistSpecialistOnboardingDraft,
 } from "@/lib/specialist-application-storage";
-import { isSpecialistOnboardingStepValid } from "@/lib/specialist-onboarding-validation";
+import { getSpecialistOnboardingMissingFields } from "@/lib/specialist-onboarding-validation";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistOnboardingState,
@@ -49,10 +52,20 @@ export function SpecialistOnboardingWizard({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const profilePhotoCrop = useProfilePhotoCropSession();
 
   const progressPercent = stepProgressPercent(step);
-  const canContinue = isSpecialistOnboardingStepValid(step, state);
   const isConfirmation = step === 12;
+
+  const missingFields = useMemo(
+    () => getSpecialistOnboardingMissingFields(state),
+    [state]
+  );
+  const missingLabels = useMemo(
+    () => missingFields.map((field) => field.label),
+    [missingFields]
+  );
 
   useEffect(() => {
     persistSpecialistOnboardingDraft(state);
@@ -85,11 +98,10 @@ export function SpecialistOnboardingWizard({
   }
 
   function handleContinue() {
-    if (isConfirmation) return;
-    if (!canContinue) return;
+    if (isConfirmation || submitting) return;
 
     if (step === 11) {
-      handleSubmitApplication();
+      handleSubmitApplication(false);
       return;
     }
 
@@ -99,42 +111,50 @@ export function SpecialistOnboardingWizard({
     }
   }
 
-  function handleSubmitApplication() {
+  function handleSubmitApplication(force: boolean) {
     if (submitting) return;
 
-    const trimmedEmail = state.email.trim();
-    const validatedRole = validateDevSignup(
-      "specialist",
-      trimmedEmail,
-      state.password
-    );
-
-    if (!validatedRole) {
-      setError("Enter a valid email and a password with at least 6 characters.");
-      setStep(2);
+    if (!force && missingFields.length > 0) {
+      setShowIncompleteModal(true);
       return;
     }
 
-    if (!isSpecialistOnboardingStepValid(11, state)) {
-      setError("Complete all required fields before submitting.");
-      return;
-    }
-
+    setShowIncompleteModal(false);
     setSubmitting(true);
     setError(null);
 
     try {
       submitSpecialistApplication(state);
-      signIn("specialist", trimmedEmail);
+      const trimmedEmail = state.email.trim();
+      const validatedRole = validateDevSignup(
+        "specialist",
+        trimmedEmail,
+        state.password
+      );
+      if (validatedRole) {
+        signIn("specialist", trimmedEmail);
+      }
       showToast({
         type: "success",
         message: "Application submitted — pending SMOAC review.",
       });
-      setStep(12);
-    } catch {
-      setError("Something went wrong. Please try again.");
+      router.push("/specialist-dashboard");
+    } catch (err) {
+      setError(
+        err instanceof ApplicationSubmitError
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function handleGoBackFromIncompleteModal() {
+    setShowIncompleteModal(false);
+    const firstStep = missingFields[0]?.step;
+    if (firstStep != null && firstStep >= 1 && firstStep <= 11) {
+      setStep(firstStep as OnboardingStep);
     }
   }
 
@@ -147,6 +167,7 @@ export function SpecialistOnboardingWizard({
   const stepLabel = SPECIALIST_ONBOARDING_STEP_LABELS[step - 1];
 
   return (
+    <>
     <div className="login-page login-page--wizard login-page--specialist-onboarding">
       <div className="login-page__canvas" aria-hidden>
         <div className="wizard-aurora-pool wizard-aurora-pool--primary" />
@@ -196,6 +217,7 @@ export function SpecialistOnboardingWizard({
               state={state}
               onPatch={patchState}
               onEditStep={(editStep) => setStep(editStep as OnboardingStep)}
+              profilePhotoCrop={profilePhotoCrop}
             />
           </div>
 
@@ -236,7 +258,7 @@ export function SpecialistOnboardingWizard({
                   type="button"
                   className="login-submit wizard-nav__continue"
                   onClick={handleContinue}
-                  disabled={!canContinue || submitting}
+                  disabled={submitting}
                 >
                   {continueLabel()}
                 </button>
@@ -252,6 +274,17 @@ export function SpecialistOnboardingWizard({
           ) : null}
         </div>
       </div>
+
+      <WizardIncompleteSubmitModal
+        open={showIncompleteModal}
+        missingLabels={missingLabels}
+        submitting={submitting}
+        onGoBack={handleGoBackFromIncompleteModal}
+        onSubmitAnyway={() => handleSubmitApplication(true)}
+      />
     </div>
+
+      {profilePhotoCrop.cropModal}
+    </>
   );
 }

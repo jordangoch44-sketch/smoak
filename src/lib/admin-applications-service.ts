@@ -1,12 +1,15 @@
-import { applicationToProfileOverrides } from "@/lib/admin-application-profile";
+import { patchAdminSpecialistMeta } from "@/lib/admin-specialist-meta-store";
+import { unhideTrainerId } from "@/lib/hidden-trainers-store";
+import {
+  syncApplicationProfileDraft,
+  syncApprovedProfileFromApplication,
+  syncProfileOverridesFromApplication,
+} from "@/lib/managed-specialist-profile";
 import {
   getSpecialistApplicationById,
   listSpecialistApplications,
   saveSpecialistApplication,
 } from "@/lib/specialist-application-storage";
-import { saveSpecialistOverridesForId } from "@/lib/specialist-profile-overrides";
-import { patchAdminSpecialistMeta } from "@/lib/admin-specialist-meta-store";
-import { unhideTrainerId } from "@/lib/hidden-trainers-store";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 import type {
   ProfileStatus,
@@ -18,11 +21,8 @@ export function applicationStatusLabel(
 ): AdminApplicationStatusLabel {
   if (status === "APPROVED") return "approved";
   if (status === "REJECTED") return "rejected";
+  if (status === "ARCHIVED") return "archived";
   return "pending";
-}
-
-function syncApplicationProfileDraft(app: SpecialistApplication): void {
-  saveSpecialistOverridesForId(app.id, applicationToProfileOverrides(app));
 }
 
 export function saveSpecialistApplicationEdits(
@@ -36,7 +36,10 @@ export function saveSpecialistApplicationEdits(
     ),
   };
   saveSpecialistApplication(updated);
-  syncApplicationProfileDraft(updated);
+  syncProfileOverridesFromApplication(updated);
+  if (updated.profileStatus === "APPROVED") {
+    syncApprovedProfileFromApplication(updated);
+  }
   return updated;
 }
 
@@ -64,15 +67,17 @@ export function approveSpecialistApplication(
   return updateApplicationStatus(id, "APPROVED");
 }
 
-/** Persist draft fields then mark approved (single write for mobile review actions) */
+/** Persist draft fields then mark approved */
 export function approveSpecialistApplicationWithEdits(
   application: SpecialistApplication
 ): SpecialistApplication {
-  return saveSpecialistApplicationEdits({
+  const approved = saveSpecialistApplicationEdits({
     ...application,
     profileStatus: "APPROVED",
     updatedAt: new Date().toISOString(),
   });
+  syncApplicationProfileDraft(approved);
+  return approved;
 }
 
 export function rejectSpecialistApplication(
@@ -91,7 +96,17 @@ export function rejectSpecialistApplicationWithEdits(
   });
 }
 
-/** Approve + mark specialist active in admin meta (profile override draft already exists from onboarding) */
+export function archiveSpecialistApplication(
+  application: SpecialistApplication
+): SpecialistApplication {
+  return saveSpecialistApplicationEdits({
+    ...application,
+    profileStatus: "ARCHIVED",
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+/** Approve + mark specialist active in admin meta */
 export function activateSpecialistFromApplication(
   id: string
 ): SpecialistApplication | null {

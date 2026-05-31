@@ -15,9 +15,13 @@ body.bottom-nav-panel-active {
 
 .page-transition--bottom-nav-panel .page-transition__layer--panel {
   z-index: 1;
-  will-change: transform, opacity;
   transform-origin: center top;
   backface-visibility: hidden;
+}
+
+.page-transition--bottom-nav-panel
+  .page-transition__layer--panel.page-transition__layer--animating {
+  will-change: transform, opacity;
 }
 
 .page-transition--bottom-nav-panel .page-transition__layer--panel:not(:last-child) {

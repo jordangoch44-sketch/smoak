@@ -1,5 +1,7 @@
 import { DEV_CLIENT_CREDENTIALS } from "@/lib/dev-auth";
 import { loadCreateAccountProfile } from "@/lib/create-account-profile-storage";
+import { listClientApplications } from "@/lib/client-application-storage";
+import type { ClientApplication } from "@/types/client-application";
 import { loadSavedTrainerIdsForUser } from "@/lib/saved-trainers-storage";
 import {
   getActiveClientUserId,
@@ -28,6 +30,19 @@ const MOCK_CLIENTS: AdminClientRecord[] = [
   },
 ];
 
+function clientApplicationRecords(
+  applications: readonly ClientApplication[]
+): AdminClientRecord[] {
+  return applications.map((app) => ({
+    id: app.id,
+    email: app.email,
+    displayName: app.fullName,
+    status: app.status === "ACTIVE" ? "active" : "inactive",
+    savedSpecialistsCount: 0,
+    source: "signup-draft" as const,
+  }));
+}
+
 function devClientRecord(session: AuthSession | null): AdminClientRecord | null {
   if (!session || session.role !== "client") return null;
   const userId = getActiveClientUserId(session);
@@ -45,7 +60,8 @@ function devClientRecord(session: AuthSession | null): AdminClientRecord | null 
 }
 
 export function listAdminClients(
-  activeSession: AuthSession | null
+  activeSession: AuthSession | null,
+  clientApplications: readonly ClientApplication[] = listClientApplications()
 ): AdminClientRecord[] {
   const records: AdminClientRecord[] = [...MOCK_CLIENTS];
 
@@ -71,6 +87,14 @@ export function listAdminClients(
       ).length,
       source: "dev-account",
     });
+  }
+
+  for (const appRecord of clientApplicationRecords(clientApplications)) {
+    const idx = records.findIndex(
+      (r) => r.email.toLowerCase() === appRecord.email.toLowerCase()
+    );
+    if (idx >= 0) records[idx] = appRecord;
+    else records.push(appRecord);
   }
 
   const signupDraft = loadCreateAccountProfile();

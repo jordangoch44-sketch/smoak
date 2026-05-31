@@ -10,7 +10,164 @@
 }
 
 .dashboard-page--admin .dashboard-page__content {
-  padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .dashboard-page--admin .dashboard-page__content {
+    padding-bottom: calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ——— Executive revenue snapshot (top of control dashboard) ——— */
+.admin-exec-snapshot {
+  margin-bottom: 1rem;
+  padding: 0.15rem 0 0.25rem;
+}
+
+.admin-exec-snapshot__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.admin-exec-snapshot__title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.admin-exec-snapshot__period {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.admin-exec-snapshot__demo {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.admin-exec-snapshot__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.625rem;
+}
+
+.admin-exec-snapshot__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.admin-exec-snapshot__card--hero {
+  border-color: rgba(var(--aurora-lavender-rgb), 0.32);
+  background: linear-gradient(
+    145deg,
+    rgba(var(--aurora-lavender-rgb), 0.16) 0%,
+    rgba(var(--aurora-violet-rgb), 0.08) 42%,
+    rgba(8, 8, 14, 0.55) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 32px rgba(var(--aurora-lavender-rgb), 0.1);
+}
+
+.admin-exec-snapshot__label {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.admin-exec-snapshot__value {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.admin-exec-snapshot__value--hero {
+  font-size: clamp(1.75rem, 7vw, 2.35rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.admin-exec-snapshot__value--growth {
+  font-size: 1.5rem;
+}
+
+.admin-exec-snapshot__value--up {
+  color: rgba(167, 243, 208, 0.95);
+}
+
+.admin-exec-snapshot__value--down {
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.admin-exec-snapshot__sublabel,
+.admin-exec-snapshot__detail {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.admin-exec-snapshot__card--hero .admin-exec-snapshot__sublabel {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@media (min-width: 640px) {
+  .admin-exec-snapshot__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .admin-exec-snapshot__card--hero {
+    grid-column: 1 / -1;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  .admin-exec-snapshot__card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .admin-exec-snapshot__card--hero {
+    background: rgba(12, 11, 18, 0.92);
+    border-color: rgba(var(--aurora-lavender-rgb), 0.28);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 20px rgba(var(--aurora-lavender-rgb), 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-exec-snapshot__card {
+    transition: none;
+  }
 }
 
 /* ——— App shell: one section at a time ——— */
@@ -18,11 +175,22 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 0;
 }
 
 .admin-app__panel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   min-height: 12rem;
+  padding-bottom: max(1.5rem, calc(88px + env(safe-area-inset-bottom, 0px)));
+}
+
+.admin-filter-pills--queue {
+  margin-bottom: 0.65rem;
 }
 
 .admin-app__panel .dashboard-section {
@@ -34,7 +202,11 @@
   position: sticky;
   top: calc(56px + env(safe-area-inset-top, 0px));
   z-index: 20;
-  margin: 0 -0.25rem 1rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin: 0 0 1rem;
   padding: 0.35rem 0.25rem;
   border-radius: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -558,10 +730,13 @@
 
 /* ——— Tables ——— */
 .admin-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  margin: 0 -0.25rem;
-  padding: 0 0.25rem;
+  margin: 0;
+  padding: 0;
 }
 
 .admin-table {
@@ -626,6 +801,12 @@
   color: #fca5a5;
   background: rgba(252, 165, 165, 0.1);
   border: 1px solid rgba(252, 165, 165, 0.22);
+}
+
+.admin-badge--archived {
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .admin-badge--hidden {
@@ -1282,7 +1463,7 @@
   flex-direction: column;
   gap: 0.5rem;
   padding: 0.75rem 1.1rem
-    max(1rem, calc(0.75rem + env(safe-area-inset-bottom, 0px)));
+    max(1.25rem, calc(1rem + env(safe-area-inset-bottom, 0px) + 72px));
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(8, 8, 12, 0.98);
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);

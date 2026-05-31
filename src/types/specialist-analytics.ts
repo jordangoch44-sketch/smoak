@@ -53,4 +53,6 @@ export interface SpecialistProfileAnalytics {
 export interface SpecialistAnalyticsContext {
   profileCompletionPercent: number;
   rankingPosition: number | null;
+  /** When false, return zeroed metrics for real submitted profiles */
+  useDemoMetrics?: boolean;
 }

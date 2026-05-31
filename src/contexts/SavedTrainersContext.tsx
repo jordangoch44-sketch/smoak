@@ -15,7 +15,8 @@ import {
 } from "react";
 import { LoginGateModal } from "@/components/auth/LoginGateModal";
 import { applyPendingSaveAfterLogin, setPendingSave } from "@/lib/specialist-saves";
-import { trainers } from "@/data/trainers";
+import { getTrainerWithOverrides } from "@/lib/specialist-profile-store";
+import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import type { Trainer } from "@/types";
 import { getActiveClientUserId } from "@/lib/saved-trainers-user";
 import {
@@ -131,7 +132,9 @@ export function SavedTrainersProvider({
 
   const getSavedTrainers = useCallback(() => {
     const idSet = new Set(savedIds);
-    return trainers.filter((t) => idSet.has(t.id));
+    return listPublicMarketplaceTrainers()
+      .filter((t) => idSet.has(t.id))
+      .map((t) => getTrainerWithOverrides(t.id) ?? t);
   }, [savedIds]);
 
   const value = useMemo(

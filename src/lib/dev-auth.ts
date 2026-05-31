@@ -5,8 +5,12 @@
 import type { AuthRole, AuthSession } from "@/types/auth";
 import type { AdminRoleType } from "@/types/admin-permissions";
 
-export const DEV_INVALID_LOGIN_MESSAGE =
-  "Invalid test login. Check role, email, and password.";
+/** Consumer-facing sign-in copy */
+export const PUBLIC_INVALID_LOGIN_MESSAGE =
+  "We couldn't sign you in. Check your email and password.";
+
+/** @deprecated Use PUBLIC_INVALID_LOGIN_MESSAGE */
+export const DEV_INVALID_LOGIN_MESSAGE = PUBLIC_INVALID_LOGIN_MESSAGE;
 
 export interface DevTestAccount {
   id?: string;
@@ -130,6 +134,32 @@ function logDevLoginAttempt(payload: {
   });
 }
 
+export type PublicAuthRole = Exclude<AuthRole, "admin">;
+
+/** Marketplace sign-in — role inferred from credentials (client / specialist only) */
+export function validateDevPublicLogin(
+  email: string,
+  password: string
+): PublicAuthRole | null {
+  const normalizedEmail = normalizeDevEmail(email);
+  const normalizedPassword = normalizeDevPassword(password);
+  const foundUser = findDevAccountByEmail(normalizedEmail) ?? null;
+
+  if (!foundUser || foundUser.role === "admin") return null;
+  if (normalizeDevPassword(foundUser.password) !== normalizedPassword) {
+    return null;
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.log("[SMOAC sign-in]", {
+      email: normalizedEmail,
+      role: foundUser.role,
+    });
+  }
+
+  return foundUser.role as PublicAuthRole;
+}
+
 /** DEV ONLY — returns matching role when credentials are valid, otherwise null */
 export function validateDevLogin(
   role: AuthRole,
@@ -170,7 +200,7 @@ export function getDevSessionFields(
     return {
       displayName: account.displayName,
       isPremium: account.isPremium,
-      adminRole: account.adminRole,
+      adminRole: role === "admin" ? account.adminRole : undefined,
     };
   }
 
@@ -194,10 +224,10 @@ export function resolveSessionIsPremium(session: AuthSession): boolean {
 
 /** DEV ONLY — lightweight signup validation for the create-account wizard */
 export function validateDevSignup(
-  role: AuthRole,
+  role: PublicAuthRole,
   email: string,
   password: string
-): AuthRole | null {
+): PublicAuthRole | null {
   const normalizedEmail = normalizeDevEmail(email);
   if (!normalizedEmail || !EMAIL_PATTERN.test(normalizedEmail)) return null;
   if (normalizeDevPassword(password).length < MIN_SIGNUP_PASSWORD_LENGTH) return null;

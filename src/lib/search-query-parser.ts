@@ -105,8 +105,10 @@ export function mergeParsedIntoFilters(
   base: TrainerFilters,
   parsed: ParsedSearchFilterUpdates
 ): TrainerFilters {
+  const hasLocationParse = Boolean(parsed.city || parsed.neighborhood);
   return {
     ...base,
+    zipCode: hasLocationParse ? "" : base.zipCode,
     city: parsed.city,
     neighborhood: parsed.city ? parsed.neighborhood : "",
     profession: parsed.profession,

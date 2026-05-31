@@ -1,0 +1,83 @@
+/* Session pricing — shared across trainer listing cards */
+
+.session-price {
+  display: inline-flex;
+  align-items: baseline;
+  flex-wrap: nowrap;
+  max-width: 100%;
+  white-space: nowrap;
+  line-height: 1.15;
+}
+
+.session-price__prefix,
+.session-price__suffix {
+  font-weight: 430;
+  color: rgba(255, 255, 255, 0.44);
+}
+
+.session-price__amount {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+/* Mobile compact card footer — smaller than name (15px) */
+.session-price--compact {
+  font-size: 0.6875rem;
+  line-height: 1.15;
+}
+
+.trainer-card-compact--featured .session-price--compact {
+  align-self: baseline;
+}
+
+.session-price--compact .session-price__prefix,
+.session-price--compact .session-price__suffix {
+  font-size: 0.5625rem;
+  letter-spacing: 0.01em;
+}
+
+.session-price--compact .session-price__amount {
+  font-size: 0.6875rem;
+}
+
+/* Desktop grid card */
+.session-price--grid {
+  font-size: 0.8125rem;
+}
+
+.session-price--grid .session-price__prefix,
+.session-price--grid .session-price__suffix {
+  font-size: 0.6875rem;
+}
+
+.session-price--grid .session-price__amount {
+  font-size: 0.8125rem;
+}
+
+/* Profile hero meta row */
+.session-price--hero {
+  font-size: 0.875rem;
+}
+
+.session-price--hero .session-price__prefix,
+.session-price--hero .session-price__suffix {
+  font-size: 0.75rem;
+}
+
+.session-price--hero .session-price__amount {
+  font-size: 0.875rem;
+}
+
+/* Rankings table stat */
+.session-price--stat {
+  font-size: 0.8125rem;
+}
+
+.session-price--stat .session-price__prefix,
+.session-price--stat .session-price__suffix {
+  font-size: 0.6875rem;
+}
+
+.session-price--stat .session-price__amount {
+  font-size: 0.8125rem;
+}

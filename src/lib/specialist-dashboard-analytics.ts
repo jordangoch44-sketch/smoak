@@ -1,6 +1,7 @@
 import {
   DEMO_SPECIALIST_ANALYTICS,
   DEMO_SPECIALIST_ID,
+  DEV_SPECIALIST_DASHBOARD_ID,
   EMPTY_SPECIALIST_ANALYTICS,
 } from "@/constants/specialist-dashboard-mock";
 import type {
@@ -13,6 +14,7 @@ const DEMO_ANALYTICS_BY_SPECIALIST: Record<
   Omit<SpecialistProfileAnalytics, "profileCompletionPercent" | "rankingPosition">
 > = {
   [DEMO_SPECIALIST_ID]: DEMO_SPECIALIST_ANALYTICS,
+  [DEV_SPECIALIST_DASHBOARD_ID]: DEMO_SPECIALIST_ANALYTICS,
 };
 
 /** Merge demo metrics with live profile completion + ranking — replace with API fetch */
@@ -20,7 +22,11 @@ export function getSpecialistProfileAnalytics(
   specialistId: string,
   context: SpecialistAnalyticsContext
 ): SpecialistProfileAnalytics {
-  const base = DEMO_ANALYTICS_BY_SPECIALIST[specialistId] ?? EMPTY_SPECIALIST_ANALYTICS;
+  const useDemoMetrics = context.useDemoMetrics ?? true;
+  const base =
+    useDemoMetrics && DEMO_ANALYTICS_BY_SPECIALIST[specialistId]
+      ? DEMO_ANALYTICS_BY_SPECIALIST[specialistId]
+      : EMPTY_SPECIALIST_ANALYTICS;
 
   return {
     ...base,

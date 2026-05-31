@@ -7,7 +7,8 @@ import {
   useMemo,
   useSyncExternalStore,
 } from "react";
-import type { AuthRole, AuthSession } from "@/types/auth";
+import type { AuthSession } from "@/types/auth";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 import {
   getAuthSessionServerSnapshot,
   getAuthSessionSnapshot,
@@ -21,7 +22,7 @@ export interface AuthSessionContextValue {
   isReady: boolean;
   session: AuthSession | null;
   isSignedIn: boolean;
-  signIn: (role: AuthRole, email: string) => void;
+  signIn: (role: PublicAuthRole, email: string) => void;
   signOut: () => void;
 }
 
@@ -58,7 +59,7 @@ export function AuthSessionProvider({
     getAuthSessionServerSnapshot
   );
 
-  const signIn = useCallback((role: AuthRole, email: string) => {
+  const signIn = useCallback((role: PublicAuthRole, email: string) => {
     const trimmedEmail = email.trim();
     const devFields = getDevSessionFields(role, trimmedEmail);
     /* DEV ONLY — session persisted in localStorage for dashboard QA */

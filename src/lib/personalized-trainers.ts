@@ -1,17 +1,17 @@
-import { getFeaturedTrainers } from "@/data/trainers";
+import { listPublicFeaturedTrainers } from "@/lib/marketplace-public-catalog";
+import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
+import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import type { Trainer } from "@/types";
 
 function normalizeCity(city: string): string {
   return city.trim().toLowerCase();
 }
 
-/** Prioritize trainers in the user's resolved marketplace city. */
-export function sortTrainersByPersonalizationCity(
+function sortByCityFallback(
   trainers: Trainer[],
   personalizationCity: string | null
 ): Trainer[] {
   if (!personalizationCity) return trainers;
-
   const target = normalizeCity(personalizationCity);
   return [...trainers].sort((a, b) => {
     const aLocal = normalizeCity(a.city) === target;
@@ -22,11 +22,25 @@ export function sortTrainersByPersonalizationCity(
   });
 }
 
+/** Prioritize trainers by distance when coords provided; else marketplace city */
+export function sortTrainersByPersonalizationCity(
+  trainers: Trainer[],
+  personalizationCity: string | null,
+  userCoords: UserGeoPoint | null = null
+): Trainer[] {
+  if (userCoords) {
+    return sortTrainersByProximity(trainers, userCoords);
+  }
+  return sortByCityFallback(trainers, personalizationCity);
+}
+
 export function getPersonalizedFeaturedTrainers(
-  personalizationCity: string | null
+  personalizationCity: string | null,
+  userCoords: UserGeoPoint | null = null
 ): Trainer[] {
   return sortTrainersByPersonalizationCity(
-    getFeaturedTrainers(),
-    personalizationCity
+    listPublicFeaturedTrainers(),
+    personalizationCity,
+    userCoords
   );
 }

@@ -1,4 +1,4 @@
-import type { AuthRole } from "@/types/auth";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 import {
   CLIENT_DASHBOARD_PATH,
   getDashboardPathForRole,
@@ -19,7 +19,7 @@ export interface PostLoginNavigationOptions {
 
 /** DEV ONLY — dashboard route + toast after login with optional pending save */
 export function resolvePostLoginNavigation(
-  role: AuthRole,
+  role: PublicAuthRole,
   options?: PostLoginNavigationOptions
 ): PostLoginNavigation {
   const pendingResult = applyPendingSaveAfterLogin(role);

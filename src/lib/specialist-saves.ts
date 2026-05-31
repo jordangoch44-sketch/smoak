@@ -1,7 +1,8 @@
 /**
  * DEV ONLY — reusable specialist save + auth helpers for client workflows.
  */
-import type { AuthRole, AuthSession } from "@/types/auth";
+import type { AuthSession } from "@/types/auth";
+import type { PublicAuthRole } from "@/lib/dev-auth";
 import { setAuthSession } from "@/lib/auth-session-store";
 import { consumePendingSave } from "@/lib/pending-save-storage";
 import {
@@ -48,7 +49,9 @@ export type PostLoginPendingResult =
  * DEV ONLY — after successful login, apply or discard pending save.
  * Call once immediately after signIn().
  */
-export function applyPendingSaveAfterLogin(role: AuthRole): PostLoginPendingResult {
+export function applyPendingSaveAfterLogin(
+  role: PublicAuthRole
+): PostLoginPendingResult {
   const pendingId = consumePendingSave();
 
   if (role === "specialist") {
