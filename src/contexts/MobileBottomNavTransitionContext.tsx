@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
@@ -10,11 +9,8 @@ import {
   useMemo,
   useRef,
   useState,
-  useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
-import type { SmoacDirectoryLoaderPhase } from "@/components/brand/SmoacDirectoryLoader";
 import { useMobileMotionProfile } from "@/hooks/useMobileMotionProfile";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { prefetchBottomNavRoutes } from "@/lib/bottom-nav-prefetch";
@@ -23,14 +19,9 @@ import {
   getClientRouteSearch,
   restoreBottomNavScroll,
   saveBottomNavScroll,
-  setBottomNavDirectoryBodyActive,
   setBottomNavPanelBodyActive,
 } from "@/lib/mobile-chrome";
 import {
-  BOTTOM_NAV_DIRECTORY_OUT_MS,
-  BOTTOM_NAV_DIRECTORY_REDUCED_OUT_MS,
-  BOTTOM_NAV_DIRECTORY_REDUCED_TOTAL_MS,
-  BOTTOM_NAV_DIRECTORY_TOTAL_MS,
   BOTTOM_NAV_PANEL_MS,
   BOTTOM_NAV_PANEL_REDUCED_MS,
   BOTTOM_NAV_PANEL_TOUCH_MS,
@@ -38,22 +29,13 @@ import {
   getBottomNavRouteKey,
   parseBottomNavHref,
   type BottomNavPanelDirection,
-  type BottomNavTransitionKind,
 } from "@/lib/mobile-bottom-nav-transition";
-
-const SmoacDirectoryLoader = dynamic(
-  () =>
-    import("@/components/brand/SmoacDirectoryLoader").then(
-      (mod) => mod.SmoacDirectoryLoader
-    ),
-  { ssr: false }
-);
 
 export interface BottomNavPanelTransitionState {
   active: boolean;
   direction: BottomNavPanelDirection;
   motionKey: string;
-  /** Skip exit animation — used after interrupting a in-flight transition */
+  /** Skip exit animation — used after interrupting an in-flight transition */
   enterOnly: boolean;
 }
 
@@ -65,7 +47,6 @@ interface BeginBottomNavTransitionOptions {
 interface BottomNavTransitionActions {
   beginBottomNavTransition: (
     href: string,
-    kind: Exclude<BottomNavTransitionKind, "none">,
     options: BeginBottomNavTransitionOptions
   ) => void;
   completePanelTransition: () => void;
@@ -84,18 +65,6 @@ const BottomNavPanelContext =
 const BottomNavTransitionActionsContext =
   createContext<BottomNavTransitionActions | null>(null);
 
-function subscribeClientMounted(): () => void {
-  return () => {};
-}
-
-function getClientMountedSnapshot(): boolean {
-  return true;
-}
-
-function getClientMountedServerSnapshot(): boolean {
-  return false;
-}
-
 export function MobileBottomNavTransitionProvider({
   children,
 }: {
@@ -105,14 +74,6 @@ export function MobileBottomNavTransitionProvider({
   const pathname = usePathname();
   const { reducedMotion, fastMotion } = useMobileMotionProfile();
   const isTabletViewport = useTabletViewport();
-  const mounted = useSyncExternalStore(
-    subscribeClientMounted,
-    getClientMountedSnapshot,
-    getClientMountedServerSnapshot
-  );
-  const [showDirectoryOverlay, setShowDirectoryOverlay] = useState(false);
-  const [directoryLoaderPhase, setDirectoryLoaderPhase] =
-    useState<SmoacDirectoryLoaderPhase>("exit");
   const [panel, setPanel] = useState<BottomNavPanelTransitionState>(INACTIVE_PANEL);
   const lockRef = useRef(false);
   const timersRef = useRef<number[]>([]);
@@ -151,9 +112,6 @@ export function MobileBottomNavTransitionProvider({
 
   const flushTransition = useCallback(() => {
     clearTimers();
-    setShowDirectoryOverlay(false);
-    setDirectoryLoaderPhase("exit");
-    setBottomNavDirectoryBodyActive(false);
     setPanel(INACTIVE_PANEL);
     pendingPanelRef.current = null;
     lockRef.current = false;
@@ -227,56 +185,13 @@ export function MobileBottomNavTransitionProvider({
       pendingPanelRef.current = { href, direction, enterOnly };
       router.push(href);
 
-      schedule(completePanelTransition, panelMs + 48);
+      schedule(completePanelTransition, panelMs + 32);
     },
     [completePanelTransition, panelMs, pathname, router, schedule]
   );
 
-  const runDirectoryTransition = useCallback(
-    (href: string) => {
-      const totalMs = reducedMotion
-        ? BOTTOM_NAV_DIRECTORY_REDUCED_TOTAL_MS
-        : BOTTOM_NAV_DIRECTORY_TOTAL_MS;
-      const outMs = reducedMotion
-        ? BOTTOM_NAV_DIRECTORY_REDUCED_OUT_MS
-        : BOTTOM_NAV_DIRECTORY_OUT_MS;
-
-      saveBottomNavScroll(
-        getBottomNavRouteKey(pathname, getClientRouteSearch())
-      );
-
-      setBottomNavDirectoryBodyActive(true);
-      setShowDirectoryOverlay(true);
-      setDirectoryLoaderPhase("active");
-      router.push(href);
-
-      schedule(() => setDirectoryLoaderPhase("exit"), totalMs - outMs);
-
-      schedule(() => {
-        setShowDirectoryOverlay(false);
-        setBottomNavDirectoryBodyActive(false);
-        activatePanel(href, 1, true);
-      }, totalMs);
-
-      schedule(completePanelTransition, totalMs + panelMs + 48);
-    },
-    [
-      activatePanel,
-      completePanelTransition,
-      panelMs,
-      pathname,
-      reducedMotion,
-      router,
-      schedule,
-    ]
-  );
-
   const beginBottomNavTransition = useCallback(
-    (
-      href: string,
-      kind: Exclude<BottomNavTransitionKind, "none">,
-      options: BeginBottomNavTransitionOptions
-    ) => {
+    (href: string, options: BeginBottomNavTransitionOptions) => {
       if (!isTabletViewport) {
         router.push(href);
         return;
@@ -289,12 +204,6 @@ export function MobileBottomNavTransitionProvider({
 
       lockRef.current = true;
       clearTimers();
-
-      if (kind === "directory") {
-        runDirectoryTransition(href);
-        return;
-      }
-
       runPanelTransition(href, options, interrupted);
     },
     [
@@ -302,7 +211,6 @@ export function MobileBottomNavTransitionProvider({
       flushTransition,
       isTabletViewport,
       router,
-      runDirectoryTransition,
       runPanelTransition,
     ]
   );
@@ -337,21 +245,6 @@ export function MobileBottomNavTransitionProvider({
     <BottomNavTransitionActionsContext.Provider value={actions}>
       <BottomNavPanelContext.Provider value={panel}>
         {children}
-        {mounted && showDirectoryOverlay
-          ? createPortal(
-              <div
-                className="bottom-nav-transition-overlay bottom-nav-transition-overlay--directory"
-                role="presentation"
-                aria-hidden={directoryLoaderPhase === "exit"}
-              >
-                <SmoacDirectoryLoader
-                  phase={directoryLoaderPhase}
-                  reducedMotion={reducedMotion}
-                />
-              </div>,
-              document.body
-            )
-          : null}
       </BottomNavPanelContext.Provider>
     </BottomNavTransitionActionsContext.Provider>
   );

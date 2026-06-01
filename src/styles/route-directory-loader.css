@@ -1,12 +1,25 @@
 /* Cinematic directory loader overlay — Search → Explore only */
 
 :root {
-  --z-route-directory-loader: 9050;
+  --z-route-directory-loader: 10050;
   --bottom-nav-directory-total-ms: 2500ms;
 }
 
+html.bottom-nav-directory-active,
 body.bottom-nav-directory-active {
   overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.bottom-nav-directory-active #root.app-shell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body.bottom-nav-directory-active #site-header {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 /* Hide routed content while loader plays — panel reveal follows */

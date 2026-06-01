@@ -6,7 +6,7 @@ export const BOTTOM_NAV_PREFETCH_ROUTES: readonly string[] = [
   SITE_ROUTES.explore,
   SITE_ROUTES.exploreSearchFocus,
   SITE_ROUTES.saved,
-  SITE_ROUTES.discover,
+  SITE_ROUTES.join,
   SITE_ROUTES.login,
   "/client-dashboard",
   "/specialist-dashboard",

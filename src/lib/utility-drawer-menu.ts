@@ -25,7 +25,6 @@ export interface UtilityDrawerNavItem {
 export interface UtilityDrawerPrimaryItem extends UtilityDrawerNavItem {
   id: UtilityDrawerPrimaryId;
   description: string;
-  href: string;
 }
 
 export function getUtilityDrawerPrimaryLinks(
@@ -59,8 +58,8 @@ export function getUtilityDrawerPrimaryLinks(
     {
       id: "events",
       label: "Events",
-      description: "Discover upcoming wellness events",
-      href: SITE_ROUTES.discover,
+      description: "Wellness events — coming soon",
+      href: null,
     },
     {
       id: "dashboard",
@@ -116,15 +115,11 @@ export function isUtilityDrawerPrimaryActive(
         pathname.startsWith(`${SITE_ROUTES.rankings}/`)
       );
     case "events":
-      return (
-        pathname === SITE_ROUTES.discover ||
-        pathname.startsWith(`${SITE_ROUTES.discover}/`)
-      );
+      return false;
     case "dashboard":
       return (
         isDashboardPath(pathname) ||
-        pathname === LOGIN_PATH ||
-        pathname.startsWith("/create-account")
+        pathname === LOGIN_PATH
       );
     default:
       return false;

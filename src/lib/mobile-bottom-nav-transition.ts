@@ -1,29 +1,20 @@
 import type { MobileBottomNavItemId } from "@/lib/mobile-bottom-nav";
 
-export type BottomNavTransitionKind = "none" | "directory" | "panel";
+export type BottomNavTransitionKind = "none" | "panel";
 
-/** Layered panel slide — default bottom nav motion */
-export const BOTTOM_NAV_PANEL_MS = 420;
+/** Lightweight panel slide — transform + opacity only */
+export const BOTTOM_NAV_PANEL_MS = 220;
 
 /** Slightly snappier on coarse-pointer devices (typical phones) */
-export const BOTTOM_NAV_PANEL_TOUCH_MS = 360;
+export const BOTTOM_NAV_PANEL_TOUCH_MS = 200;
 
-export const BOTTOM_NAV_PANEL_REDUCED_MS = 140;
-
-/** Cinematic directory loader — Search → Explore only */
-export const BOTTOM_NAV_DIRECTORY_TOTAL_MS = 2500;
-
-export const BOTTOM_NAV_DIRECTORY_OUT_MS = 450;
-
-export const BOTTOM_NAV_DIRECTORY_REDUCED_TOTAL_MS = 720;
-
-export const BOTTOM_NAV_DIRECTORY_REDUCED_OUT_MS = 180;
+export const BOTTOM_NAV_PANEL_REDUCED_MS = 120;
 
 const TAB_ORDER: MobileBottomNavItemId[] = [
   "search",
   "saved",
   "home",
-  "discover",
+  "join",
   "profile",
 ];
 
@@ -60,6 +51,10 @@ export function isSameBottomNavDestination(
     return searchParams.get("focus") === "search";
   }
 
+  if (target.pathname === "/create-account") {
+    return pathname === "/create-account";
+  }
+
   if (target.search) {
     const targetParams = new URLSearchParams(target.search.slice(1));
     for (const [key, value] of targetParams.entries()) {
@@ -71,14 +66,13 @@ export function isSameBottomNavDestination(
   return searchParams.toString().length === 0;
 }
 
-/** Search → Explore uses cinematic loader; other tabs use panel slides */
+/** All bottom-nav route changes use the same lightweight panel slide */
 export function getBottomNavTransitionKind(
-  itemId: MobileBottomNavItemId,
+  _itemId: MobileBottomNavItemId,
   pathname: string,
   searchParams: URLSearchParams,
   href: string
 ): BottomNavTransitionKind {
   if (isSameBottomNavDestination(pathname, searchParams, href)) return "none";
-  if (itemId === "search") return "directory";
   return "panel";
 }

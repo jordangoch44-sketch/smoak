@@ -1,6 +1,9 @@
 import {
+  CLIENT_DASHBOARD_PATH,
   getDashboardPathForRole,
   isDashboardPath,
+  LOGIN_PATH,
+  SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
 import { SITE_ROUTES } from "@/lib/navigation";
 import type { AuthSession } from "@/types/auth";
@@ -10,7 +13,7 @@ export type MobileBottomNavItemId =
   | "search"
   | "saved"
   | "home"
-  | "discover"
+  | "join"
   | "profile";
 
 export interface MobileBottomNavItem {
@@ -18,6 +21,23 @@ export interface MobileBottomNavItem {
   href: string;
   label: string;
   isPrimary?: boolean;
+}
+
+/** Routes that activate the Login / Profile bottom-nav tab */
+const PROFILE_NAV_PATHS = [
+  LOGIN_PATH,
+  "/signin",
+  "/profile",
+  CLIENT_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_PATH,
+] as const;
+
+function isProfileNavPath(pathname: string): boolean {
+  if (isDashboardPath(pathname)) return true;
+
+  return PROFILE_NAV_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
 }
 
 export function getMobileBottomNavItems(
@@ -36,7 +56,7 @@ export function getMobileBottomNavItems(
     },
     { id: "saved", href: SITE_ROUTES.saved, label: "Saved" },
     { id: "home", href: SITE_ROUTES.home, label: "Home", isPrimary: true },
-    { id: "discover", href: SITE_ROUTES.discover, label: "Discover" },
+    { id: "join", href: SITE_ROUTES.join, label: "Join" },
     { id: "profile", href: profileHref, label: "Profile" },
   ];
 }
@@ -53,6 +73,40 @@ export function getMobileBottomNavProfileAuthState(
   return isLoggedIn(session) ? "signed-in" : "signed-out";
 }
 
+/**
+ * Single source of truth for bottom-nav active state.
+ * Pass searchParams when resolving the Search tab (`/explore?focus=search`).
+ */
+export function isActiveNavItem(
+  itemId: MobileBottomNavItemId,
+  pathname: string,
+  searchParams?: URLSearchParams | null
+): boolean {
+  switch (itemId) {
+    case "home":
+      return pathname === SITE_ROUTES.home;
+    case "search":
+      if (searchParams?.get("focus") === "search") {
+        return (
+          pathname === SITE_ROUTES.explore ||
+          pathname.startsWith(`${SITE_ROUTES.explore}/`)
+        );
+      }
+      return false;
+    case "saved":
+      return (
+        pathname === SITE_ROUTES.saved ||
+        pathname.startsWith(`${SITE_ROUTES.saved}/`)
+      );
+    case "join":
+      return pathname.startsWith("/create-account");
+    case "profile":
+      return isProfileNavPath(pathname);
+    default:
+      return false;
+  }
+}
+
 /** Active bottom-nav tab for panel direction + scroll keys */
 export function getActiveMobileBottomNavItemId(
   pathname: string,
@@ -62,22 +116,12 @@ export function getActiveMobileBottomNavItemId(
     "search",
     "saved",
     "home",
-    "discover",
+    "join",
     "profile",
   ];
 
   for (const id of ids) {
-    if (id === "search" && searchParams?.get("focus") === "search") {
-      if (
-        pathname === SITE_ROUTES.explore ||
-        pathname.startsWith(`${SITE_ROUTES.explore}/`)
-      ) {
-        return "search";
-      }
-      continue;
-    }
-
-    if (isMobileBottomNavItemActive(id, pathname)) {
+    if (isActiveNavItem(id, pathname, searchParams)) {
       return id;
     }
   }
@@ -85,35 +129,10 @@ export function getActiveMobileBottomNavItemId(
   return null;
 }
 
+/** @deprecated Use isActiveNavItem */
 export function isMobileBottomNavItemActive(
   itemId: MobileBottomNavItemId,
   pathname: string
 ): boolean {
-  switch (itemId) {
-    case "home":
-      return pathname === SITE_ROUTES.home;
-    case "search":
-      return (
-        pathname === SITE_ROUTES.explore ||
-        pathname.startsWith(`${SITE_ROUTES.explore}/`)
-      );
-    case "saved":
-      return (
-        pathname === SITE_ROUTES.saved ||
-        pathname.startsWith(`${SITE_ROUTES.saved}/`)
-      );
-    case "discover":
-      return (
-        pathname === SITE_ROUTES.discover ||
-        pathname.startsWith(`${SITE_ROUTES.discover}/`)
-      );
-    case "profile":
-      return (
-        pathname === SITE_ROUTES.login ||
-        isDashboardPath(pathname) ||
-        pathname.startsWith("/create-account")
-      );
-    default:
-      return false;
-  }
+  return isActiveNavItem(itemId, pathname);
 }

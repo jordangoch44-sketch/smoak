@@ -36,6 +36,7 @@ export {
 } from "./utility-drawer-menu";
 export {
   getMobileBottomNavItems,
+  isActiveNavItem,
   isMobileBottomNavItemActive,
 } from "./mobile-bottom-nav";
 export type { MobileBottomNavItem, MobileBottomNavItemId } from "./mobile-bottom-nav";

@@ -4,11 +4,11 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { memo, useCallback, useMemo, type MouseEvent } from "react";
 import { TapLink } from "@/components/ui/TapLink";
 import {
-  CompassIcon,
   HeartIcon,
   HomeIcon,
   SearchIcon,
   UserIcon,
+  UserPlusIcon,
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -20,7 +20,7 @@ import {
   getActiveMobileBottomNavItemId,
   getMobileBottomNavItems,
   getMobileBottomNavProfileAuthState,
-  isMobileBottomNavItemActive,
+  isActiveNavItem,
   type MobileBottomNavItem,
   type MobileBottomNavItemId,
   type MobileBottomNavProfileAuthState,
@@ -30,7 +30,7 @@ import { formatSavedCountBadge } from "@/lib/saved-ui";
 import { canSaveSpecialists } from "@/lib/specialist-saves";
 import { cn } from "@/lib/utils";
 
-function NavIcon({
+const NavIcon = memo(function NavIcon({
   id,
   active,
   savedCount,
@@ -42,7 +42,8 @@ function NavIcon({
   const className = cn(
     "mobile-bottom-nav__icon",
     active && "mobile-bottom-nav__icon--active",
-    id === "saved" && savedCount > 0 && "mobile-bottom-nav__icon--has-saves"
+    id === "saved" && savedCount > 0 && "mobile-bottom-nav__icon--has-saves",
+    id === "profile" && "mobile-bottom-nav__icon--profile"
   );
 
   switch (id) {
@@ -54,53 +55,75 @@ function NavIcon({
       );
     case "home":
       return <HomeIcon className={className} />;
-    case "discover":
-      return <CompassIcon className={className} />;
+    case "join":
+      return <UserPlusIcon className={className} />;
+    case "profile":
+      return <UserIcon className={className} />;
     default:
       return null;
   }
-}
+});
 
-const ProfileNavItem = memo(function ProfileNavItem({
+const BottomNavItemLink = memo(function BottomNavItemLink({
   item,
   active,
-  authState,
+  profileAuthState,
+  showSaveBadge,
+  savedCount,
   onNavigate,
 }: {
   item: MobileBottomNavItem;
   active: boolean;
-  authState: MobileBottomNavProfileAuthState;
+  profileAuthState?: MobileBottomNavProfileAuthState;
+  showSaveBadge: boolean;
+  savedCount: number;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
-  const signedIn = authState === "signed-in";
+  const isProfile = item.id === "profile";
+  const signedIn = profileAuthState === "signed-in";
 
   return (
     <TapLink
       href={item.href}
       onClick={onNavigate}
       className={cn(
-        "mobile-bottom-nav__item smoac-hit-target mobile-bottom-nav__item--profile",
-        active && "mobile-bottom-nav__item--active",
-        signedIn
-          ? "mobile-bottom-nav__item--profile-signed-in"
-          : "mobile-bottom-nav__item--profile-signed-out"
+        "mobile-bottom-nav__item smoac-hit-target",
+        item.isPrimary && "mobile-bottom-nav__item--primary",
+        isProfile && "mobile-bottom-nav__item--profile",
+        isProfile &&
+          (signedIn
+            ? "mobile-bottom-nav__item--profile-signed-in"
+            : "mobile-bottom-nav__item--profile-signed-out"),
+        active && "mobile-bottom-nav__item--active"
       )}
-      aria-label={signedIn ? "Profile, logged in" : "Sign in"}
+      aria-label={
+        isProfile
+          ? signedIn
+            ? "Profile, logged in"
+            : "Sign in"
+          : item.id === "saved" && showSaveBadge
+            ? `${item.label}, ${savedCount} saved`
+            : item.label
+      }
       aria-current={active ? "page" : undefined}
-      data-profile-auth={authState}
+      {...(isProfile ? { "data-profile-auth": profileAuthState } : {})}
     >
       <span
         className={cn(
-          "mobile-bottom-nav__icon-shell mobile-bottom-nav__icon-shell--profile",
-          signedIn && "mobile-bottom-nav__icon-shell--profile-signed-in"
+          "mobile-bottom-nav__icon-shell",
+          item.isPrimary && "mobile-bottom-nav__icon-shell--primary",
+          isProfile && "mobile-bottom-nav__icon-shell--profile",
+          active && "mobile-bottom-nav__icon-shell--active"
         )}
       >
-        <UserIcon
-          className={cn(
-            "mobile-bottom-nav__icon mobile-bottom-nav__icon--profile",
-            active && "mobile-bottom-nav__icon--active"
-          )}
+        <NavIcon
+          id={item.id}
+          active={active}
+          savedCount={item.id === "saved" && showSaveBadge ? savedCount : 0}
         />
+        {item.id === "saved" && showSaveBadge ? (
+          <SavedNavBadge count={savedCount} />
+        ) : null}
       </span>
     </TapLink>
   );
@@ -120,14 +143,14 @@ const SavedNavBadge = memo(function SavedNavBadge({
 
 const MobileBottomNavItems = memo(function MobileBottomNavItems({
   items,
-  pathname,
+  activeById,
   profileAuthState,
   showSaveBadge,
   savedCount,
   onNavClick,
 }: {
   items: MobileBottomNavItem[];
-  pathname: string;
+  activeById: Record<MobileBottomNavItemId, boolean>;
   profileAuthState: MobileBottomNavProfileAuthState;
   showSaveBadge: boolean;
   savedCount: number;
@@ -138,60 +161,20 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
 }) {
   return (
     <ul className="mobile-bottom-nav__list">
-      {items.map((item) => {
-        const active = isMobileBottomNavItemActive(item.id, pathname);
-
-        if (item.id === "profile") {
-          return (
-            <li key={item.id} className="mobile-bottom-nav__item-wrap">
-              <ProfileNavItem
-                item={item}
-                active={active}
-                authState={profileAuthState}
-                onNavigate={(event) => onNavClick(item, event)}
-              />
-            </li>
-          );
-        }
-
-        return (
-          <li key={item.id} className="mobile-bottom-nav__item-wrap">
-            <TapLink
-              href={item.href}
-              onClick={(event) => onNavClick(item, event)}
-              className={cn(
-                "mobile-bottom-nav__item smoac-hit-target",
-                item.isPrimary && "mobile-bottom-nav__item--primary",
-                active && "mobile-bottom-nav__item--active"
-              )}
-              aria-label={
-                item.id === "saved" && showSaveBadge
-                  ? `${item.label}, ${savedCount} saved`
-                  : item.label
-              }
-              aria-current={active ? "page" : undefined}
-            >
-              <span
-                className={cn(
-                  "mobile-bottom-nav__icon-shell",
-                  item.isPrimary && "mobile-bottom-nav__icon-shell--primary"
-                )}
-              >
-                <NavIcon
-                  id={item.id}
-                  active={active}
-                  savedCount={
-                    item.id === "saved" && showSaveBadge ? savedCount : 0
-                  }
-                />
-                {item.id === "saved" && showSaveBadge ? (
-                  <SavedNavBadge count={savedCount} />
-                ) : null}
-              </span>
-            </TapLink>
-          </li>
-        );
-      })}
+      {items.map((item) => (
+        <li key={item.id} className="mobile-bottom-nav__item-wrap">
+          <BottomNavItemLink
+            item={item}
+            active={activeById[item.id]}
+            profileAuthState={
+              item.id === "profile" ? profileAuthState : undefined
+            }
+            showSaveBadge={showSaveBadge}
+            savedCount={savedCount}
+            onNavigate={(event) => onNavClick(item, event)}
+          />
+        </li>
+      ))}
     </ul>
   );
 });
@@ -218,21 +201,28 @@ function MobileBottomNavShell() {
     [session]
   );
 
+  const activeById = useMemo(() => {
+    const map = {} as Record<MobileBottomNavItemId, boolean>;
+    for (const item of items) {
+      map[item.id] = isActiveNavItem(item.id, pathname, searchParams);
+    }
+    return map;
+  }, [items, pathname, searchParams]);
+
   const handleNavClick = useCallback(
     (item: MobileBottomNavItem, event: MouseEvent<HTMLAnchorElement>) => {
-      const kind = getBottomNavTransitionKind(
-        item.id,
-        pathname,
-        searchParams,
-        item.href
-      );
-      if (kind === "none") return;
+      if (
+        getBottomNavTransitionKind(item.id, pathname, searchParams, item.href) ===
+        "none"
+      ) {
+        return;
+      }
 
       const fromId =
         getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
 
       event.preventDefault();
-      beginBottomNavTransition(item.href, kind, { fromId, toId: item.id });
+      beginBottomNavTransition(item.href, { fromId, toId: item.id });
     },
     [beginBottomNavTransition, pathname, searchParams]
   );
@@ -254,7 +244,7 @@ function MobileBottomNavShell() {
 
           <MobileBottomNavItems
             items={items}
-            pathname={pathname}
+            activeById={activeById}
             profileAuthState={profileAuthState}
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}

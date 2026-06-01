@@ -63,7 +63,7 @@ function BottomNavPanelTransitionInner({
 
   return (
     <div className="page-transition page-transition--bottom-nav-panel">
-      <AnimatePresence initial={false} mode="sync">
+      <AnimatePresence initial={false} mode="wait">
         <motion.div
           key={motionKey}
           layout={false}

@@ -32,8 +32,8 @@ export const desktopPageTransition: Transition = {
 
 /** Mobile — opacity/y only (no filter: Safari GPU + tap reliability) */
 export const mobilePageTransition: Transition = {
-  opacity: { duration: 0.68, ease: PAGE_TRANSITION_EASE },
-  y: { duration: 0.74, ease: PAGE_TRANSITION_EASE_SETTLE },
+  opacity: { duration: 0.22, ease: PAGE_TRANSITION_EASE },
+  y: { duration: 0.24, ease: PAGE_TRANSITION_EASE_SETTLE },
 };
 
 /** Bottom nav stacked panels — iOS sheet / Wallet depth */
@@ -60,13 +60,13 @@ export const bottomNavPanelReducedTransition: Transition = {
 export function buildBottomNavPanelVariants(
   direction: BottomNavPanelDirection
 ): Variants {
-  const enterY = direction === 1 ? 22 : -18;
-  const exitY = direction === 1 ? -12 : 14;
+  const enterY = direction === 1 ? 10 : -8;
+  const exitY = direction === 1 ? -5 : 6;
 
   return {
     initial: { opacity: 0, y: enterY },
     animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0.84, y: exitY },
+    exit: { opacity: 0, y: exitY },
   };
 }
 

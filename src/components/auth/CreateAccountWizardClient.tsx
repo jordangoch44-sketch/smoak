@@ -202,8 +202,15 @@ export function CreateAccountWizardClient({
   const [introVisible, setIntroVisible] = useState(false);
 
   useEffect(() => {
+    document.documentElement.classList.toggle(
+      "join-intro-open",
+      showIntro && introVisible
+    );
     document.body.classList.toggle("join-intro-open", showIntro && introVisible);
-    return () => document.body.classList.remove("join-intro-open");
+    return () => {
+      document.documentElement.classList.remove("join-intro-open");
+      document.body.classList.remove("join-intro-open");
+    };
   }, [showIntro, introVisible]);
 
   const progressPercent = stepProgressPercent(step);

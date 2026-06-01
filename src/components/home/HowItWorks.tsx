@@ -1,53 +1,125 @@
+"use client";
+
+import {
+  CalendarIcon,
+  SearchIcon,
+  ShieldCheckIcon,
+} from "@/components/ui/icons";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+
 const steps = [
   {
     number: "1",
     title: "Search your criteria",
     description:
-      "Filter by specialty, city, price range, and coaching style—like shopping for the right home, but for your health.",
+      "Find specialists by location, specialty, and price.",
+    Icon: SearchIcon,
   },
   {
     number: "2",
-    title: "Compare vetted pros",
+    title: "Compare vetted specialists",
     description:
-      "Read credentials, client reviews, and per-session rates before you reach out.",
+      "Review credentials, ratings, and experience.",
+    Icon: ShieldCheckIcon,
   },
   {
     number: "3",
     title: "Book with confidence",
-    description:
-      "Schedule a consultation with a specialist who fits your goals and your schedule.",
+    description: "Contact and schedule your first session.",
+    Icon: CalendarIcon,
   },
-];
+] as const;
 
 export function HowItWorks() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.92) {
+      setVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -4% 0px", threshold: 0.05 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <section
+      ref={sectionRef}
       id="how-it-works"
-      className="home-section-aurora px-4 py-12 sm:px-6 sm:py-16 lg:py-20"
+      className="home-section-aurora hiw px-4 py-14 sm:px-6 sm:py-16 lg:py-20"
+      aria-labelledby="how-it-works-heading"
     >
-      <div className="mx-auto max-w-7xl">
-        <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">
-          How SMOAC works
-        </h2>
-        <p className="mt-1 text-sm text-silver-400">
-          Three steps from search to your first session.
-        </p>
+      <div className="hiw__inner mx-auto max-w-md">
+        <header className="hiw__header">
+          <h2
+            id="how-it-works-heading"
+            className="text-xl font-medium tracking-tight text-white sm:text-2xl"
+          >
+            How SMOAC works
+          </h2>
+          <p className="hiw__lede mt-2 text-sm text-silver-400/90">
+            Search, compare, book — in three steps.
+          </p>
+        </header>
 
-        <div className="mt-8 grid gap-8 md:grid-cols-3 md:gap-10">
-          {steps.map((step) => (
-            <div key={step.number} className="border-t border-white/10 pt-6">
-              <span className="text-sm font-medium text-silver-400">
-                Step {step.number}
-              </span>
-              <h3 className="mt-2 text-lg font-medium text-white">
-                {step.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-silver-400">
-                {step.description}
-              </p>
-            </div>
+        <ol
+          className={`hiw__timeline${visible ? " hiw__timeline--visible" : ""}`}
+        >
+          {steps.map((step, index) => (
+            <li
+              key={step.number}
+              className="hiw__step"
+              style={{ "--hiw-step-index": index } as CSSProperties}
+            >
+              <div className="hiw__marker">
+                <div className="hiw__icon-glass">
+                  <step.Icon className="hiw__icon" />
+                </div>
+              </div>
+
+              <div className="hiw__copy">
+                <span className="hiw__index">Step {step.number}</span>
+                <h3 className="hiw__title">{step.title}</h3>
+                <p className="hiw__desc">{step.description}</p>
+              </div>
+
+              {index < steps.length - 1 ? (
+                <div className="hiw__bridge" aria-hidden>
+                  <span className="hiw__bridge-line" />
+                  <svg
+                    className="hiw__chevron"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                  >
+                    <path
+                      d="M6 9l6 6 6-6"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              ) : null}
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   );

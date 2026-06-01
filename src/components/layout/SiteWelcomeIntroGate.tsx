@@ -39,7 +39,6 @@ export function SiteWelcomeIntroGate() {
   const hydrated = useHydrated();
   const [finished, setFinished] = useState(false);
   const [allowIntro, setAllowIntro] = useState(false);
-  const [introVisible, setIntroVisible] = useState(false);
   const introSeen = useSyncExternalStore(
     subscribeSiteIntro,
     getSiteIntroSeenSnapshot,
@@ -49,24 +48,15 @@ export function SiteWelcomeIntroGate() {
   const pendingFirstVisit =
     pathname === "/" && !introSeen && !finished;
   const playing = hydrated && allowIntro && pendingFirstVisit;
-  const blockChrome = playing && introVisible;
+  const blockChrome = playing;
 
   if (!pendingFirstVisit && allowIntro) {
     setAllowIntro(false);
   }
 
-  if (!playing && introVisible) {
-    setIntroVisible(false);
-  }
-
   const handleComplete = useCallback(() => {
     markSiteIntroSeen();
     setFinished(true);
-    setIntroVisible(false);
-  }, []);
-
-  const handleIntroVisible = useCallback(() => {
-    setIntroVisible(true);
   }, []);
 
   useEffect(() => {
@@ -75,8 +65,12 @@ export function SiteWelcomeIntroGate() {
   }, [pendingFirstVisit]);
 
   useEffect(() => {
+    document.documentElement.classList.toggle("site-intro-open", blockChrome);
     document.body.classList.toggle("site-intro-open", blockChrome);
-    return () => document.body.classList.remove("site-intro-open");
+    return () => {
+      document.documentElement.classList.remove("site-intro-open");
+      document.body.classList.remove("site-intro-open");
+    };
   }, [blockChrome]);
 
   useEffect(() => {
@@ -93,11 +87,7 @@ export function SiteWelcomeIntroGate() {
   }
 
   return createPortal(
-    <SmoacWelcomeIntro
-      variant="site"
-      onComplete={handleComplete}
-      onVisible={handleIntroVisible}
-    />,
+    <SmoacWelcomeIntro variant="site" onComplete={handleComplete} />,
     document.body
   );
 }

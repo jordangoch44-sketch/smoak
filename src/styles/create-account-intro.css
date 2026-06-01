@@ -1,27 +1,44 @@
 /* Create account welcome intro — one-time luxury splash before questionnaire */
 
 :root {
-  --z-welcome-intro: 1000001;
+  /* Above site header (10000) and bottom nav (8200) */
+  --z-welcome-intro: 10050;
 }
 
-.login-page--intro {
+.login-page.login-page--intro {
   position: fixed;
   inset: 0;
   z-index: var(--z-welcome-intro);
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
   min-height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
   background: #020203;
   overflow: hidden;
+  box-sizing: border-box;
+  isolation: isolate;
   /* Decorative full-screen layer — skip button remains tappable */
   pointer-events: none;
 }
 
-.smoac-welcome-intro--site {
-  z-index: var(--z-welcome-intro);
-}
-
-/* Site splash must capture touches — do not rely on body.site-intro-open + .app-main { pointer-events: none } */
 .smoac-welcome-intro--site.login-page--intro {
   pointer-events: auto;
+}
+
+.login-page.login-page--intro .login-page__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .login-page--intro-boot {
@@ -61,14 +78,20 @@
   position: relative;
   z-index: 3;
   display: flex;
-  min-height: 100dvh;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
   align-items: center;
   justify-content: center;
-  padding: max(1.5rem, env(safe-area-inset-top, 0px))
-    max(1.25rem, env(safe-area-inset-right, 0px))
-    max(1.5rem, env(safe-area-inset-bottom, 0px))
-    max(1.25rem, env(safe-area-inset-left, 0px));
+  padding: env(safe-area-inset-top, 0px) max(1.25rem, env(safe-area-inset-right, 0px))
+    env(safe-area-inset-bottom, 0px) max(1.25rem, env(safe-area-inset-left, 0px));
+  box-sizing: border-box;
   pointer-events: none;
+}
+
+.smoac-welcome-intro--site .create-account-intro__stage {
+  flex: 1;
+  min-height: 0;
 }
 
 .create-account-intro__content {
@@ -198,19 +221,54 @@
   pointer-events: auto !important;
 }
 
-/* Join flow intro — block chrome under the overlay */
+/* Join flow intro — hide chrome under the overlay */
+html.join-intro-open,
+body.join-intro-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.join-intro-open #root {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.join-intro-open #root.app-shell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
 body.join-intro-open #site-header,
-body.join-intro-open footer {
+body.join-intro-open footer,
+body.join-intro-open .mobile-bottom-nav {
+  visibility: hidden !important;
   pointer-events: none !important;
+  opacity: 0 !important;
 }
 
-body.join-intro-open .app-main {
-  pointer-events: none !important;
-}
-
-/* Homepage welcome — overlay captures taps (see .smoac-welcome-intro--site above) */
+/* Homepage welcome — hide routed chrome; overlay is portaled to body */
+html.site-intro-open,
 body.site-intro-open {
   overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.site-intro-open #root {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.site-intro-open #root.app-shell {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+body.site-intro-open #site-header,
+body.site-intro-open footer,
+body.site-intro-open .mobile-bottom-nav {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

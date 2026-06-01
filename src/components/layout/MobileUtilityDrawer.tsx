@@ -59,6 +59,31 @@ function DrawerPrimaryRow({
   delayMs: number;
   onNavigate: () => void;
 }) {
+  if (item.href == null) {
+    return (
+      <li>
+        <div
+          className={cn(
+            "mobile-utility-drawer__row mobile-utility-drawer__row--disabled",
+            animate && "mobile-utility-drawer__row--animate"
+          )}
+          style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
+          aria-disabled="true"
+        >
+          <span className="mobile-utility-drawer__row-icon" aria-hidden>
+            {PRIMARY_ICONS[item.id]}
+          </span>
+          <span className="mobile-utility-drawer__row-copy">
+            <span className="mobile-utility-drawer__row-label">{item.label}</span>
+            <span className="mobile-utility-drawer__row-desc">
+              {item.description}
+            </span>
+          </span>
+        </div>
+      </li>
+    );
+  }
+
   return (
     <li>
       <TapLink
