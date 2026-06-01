@@ -48,10 +48,6 @@ export function buildBottomNavPanelTransition(fastMotion = false): Transition {
   };
 }
 
-/** @deprecated Use buildBottomNavPanelTransition */
-export const bottomNavPanelTransition: Transition =
-  buildBottomNavPanelTransition(false);
-
 export const bottomNavPanelReducedTransition: Transition = {
   duration: 0.14,
   ease: "easeOut",

@@ -128,11 +128,3 @@ export function getActiveMobileBottomNavItemId(
 
   return null;
 }
-
-/** @deprecated Use isActiveNavItem */
-export function isMobileBottomNavItemActive(
-  itemId: MobileBottomNavItemId,
-  pathname: string
-): boolean {
-  return isActiveNavItem(itemId, pathname);
-}

@@ -35,8 +35,8 @@ export {
   utilityDrawerLegalLinks,
 } from "./utility-drawer-menu";
 export {
+  getActiveMobileBottomNavItemId,
   getMobileBottomNavItems,
   isActiveNavItem,
-  isMobileBottomNavItemActive,
 } from "./mobile-bottom-nav";
 export type { MobileBottomNavItem, MobileBottomNavItemId } from "./mobile-bottom-nav";

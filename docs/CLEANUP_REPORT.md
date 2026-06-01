@@ -201,3 +201,55 @@ npm run build       # pass
 - Admin approve → specialist appears on Explore
 - Pending specialist stays hidden publicly
 - Dev login (`specialist@smoac.com`) dashboard uses isolated id (edits do not mutate public Anthony seed)
+
+---
+
+# Stability pass — Join tab, loading screen, nav performance (2026-05-20)
+
+**Commits:** `53f7701` (WIP checkpoint) + cleanup commit after this pass.
+
+## Files removed (dead after panel-only transitions)
+
+| File | Reason |
+|------|--------|
+| `src/components/brand/SmoacDirectoryLoader.tsx` | 2.5s Search→Explore cinematic loader removed from nav flow |
+| `src/styles/route-directory-loader.css` | Body chrome for directory transition — no callers |
+| `src/styles/smoac-cinematic-loader.css` | Styles only used by directory loader |
+
+## Symbols / CSS trimmed
+
+- `setBottomNavDirectoryBodyActive`, `BOTTOM_NAV_DIRECTORY_BODY_ATTR` — removed from `mobile-chrome.ts`
+- `bottom-nav-directory-active` — removed from `chrome-body-classes.ts`
+- `--z-route-directory-loader` — removed from `site-chrome.css`
+- `bottomNavPanelTransition` deprecated export — removed from `motion.ts`
+- `useMobileBottomNavTransition` — removed (unused; use `useBottomNavTransitionActions` + `useBottomNavPanelTransition`)
+- `isMobileBottomNavItemActive` — removed; use `isActiveNavItem`
+- `.login-page--intro-boot` — unused CSS after welcome intro fix
+
+## Consolidated behavior (unchanged UX)
+
+| Area | Single source |
+|------|----------------|
+| Bottom-nav active tab | `isActiveNavItem()` + `getActiveMobileBottomNavItemId()` in `mobile-bottom-nav.ts` |
+| Tab transitions | `MobileBottomNavTransitionContext` — ~220ms panel slide for all tabs |
+| Welcome / Join intro chrome | `site-intro-open` / `join-intro-open` on `html`+`body` |
+| Join tab | `SITE_ROUTES.join` → `/create-account?intro=1`; `/discover` redirects |
+
+## Preserved features
+
+- Join Now wizard, specialist applications, dashboards, admin approval, saved specialists, explore search focus, welcome intro, dev dashboard isolation, How It Works section.
+
+## Manual smoke tests (iPhone Safari)
+
+1. First visit: welcome intro full-screen, centered, no header/footer/nav
+2. Join tab → create-account intro; Join tab active; Profile not active on `/create-account`
+3. `/login` and dashboards: Profile tab active (smoked-glass ring)
+4. Tab switches: no 2.5s loader; quick panel fade/slide
+5. `/discover` → join flow redirect
+
+## Verification
+
+```bash
+npm run typecheck
+npm run build
+```

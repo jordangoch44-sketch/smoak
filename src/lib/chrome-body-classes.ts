@@ -15,7 +15,6 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "hero-search-suggestions-open",
   "gallery-modal-open",
   "admin-review-open",
-  "bottom-nav-directory-active",
   MODAL_OPEN_BODY_CLASS,
 ] as const;
 

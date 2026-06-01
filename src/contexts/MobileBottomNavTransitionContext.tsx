@@ -273,17 +273,3 @@ export function useCompleteBottomNavPanelTransition(): BottomNavTransitionAction
 export function useBottomNavPanelTransition(): BottomNavPanelTransitionState {
   return useContext(BottomNavPanelContext);
 }
-
-/** @deprecated Prefer useBottomNavTransitionActions + useBottomNavPanelTransition */
-export function useMobileBottomNavTransition(): BottomNavTransitionActions & {
-  panel: BottomNavPanelTransitionState;
-  isTransitioning: boolean;
-} {
-  const actions = useBottomNavTransitionActions();
-  const panel = useBottomNavPanelTransition();
-  return {
-    ...actions,
-    panel,
-    isTransitioning: panel.active,
-  };
-}

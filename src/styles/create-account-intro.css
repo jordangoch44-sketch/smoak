@@ -41,13 +41,6 @@
   height: 100%;
 }
 
-.login-page--intro-boot {
-  position: fixed;
-  inset: 0;
-  z-index: var(--z-welcome-intro);
-  pointer-events: none;
-}
-
 .login-page--intro .login-page__canvas {
   background:
     radial-gradient(

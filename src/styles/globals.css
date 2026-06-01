@@ -14,9 +14,7 @@
 @import "./location-selector.css";
 @import "./mobile-bottom-nav.css";
 @import "./modal-open.css";
-@import "./route-directory-loader.css";
 @import "./bottom-nav-panel-transition.css";
-@import "./smoac-cinematic-loader.css";
 @import "./mobile-safari.css";
 
 /* Design tokens — single source for Tailwind @theme and CSS variables */
