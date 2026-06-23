@@ -1,15 +1,21 @@
 import type { AdminRoleType } from "@/types/admin-permissions";
+import type { PublicAuthRole } from "@/types/auth-roles";
 
-export type AuthRole = "client" | "specialist" | "admin";
+export type AuthRole = PublicAuthRole | "admin";
 
 export interface AuthSession {
+  /** Supabase Auth user id */
+  userId: string;
   role: AuthRole;
   email: string;
   signedInAt: string;
-  /** DEV — dashboard greeting override */
+  /** From profiles.first_name — used for dashboard greeting */
+  firstName?: string;
+  /** From profiles.client_zip_code */
+  clientZipCode?: string;
+  /** From profiles.client_city — header city label fallback */
+  clientCity?: string;
   displayName?: string;
-  /** DEV — specialist SMOAC Pro tier (dashboard analytics gating) */
   isPremium?: boolean;
-  /** Platform admin tier when role is admin — Supabase `admin_role` later */
   adminRole?: AdminRoleType;
 }

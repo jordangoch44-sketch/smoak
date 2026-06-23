@@ -31,6 +31,9 @@ function missingForStep(
       break;
     case 4:
       if (!state.clientCity.trim()) missing.push("Preferred city");
+      if (!/^\d{5}$/.test(state.clientZipCode.trim())) {
+        missing.push("Valid ZIP code");
+      }
       if (!state.clientBudget) missing.push("Budget range");
       if (!state.clientTrainingStyle) missing.push("Preferred training style");
       break;
@@ -39,6 +42,14 @@ function missingForStep(
   }
 
   return missing;
+}
+
+/** Required fields missing on a single client wizard step */
+export function getClientAccountMissingFieldsForStep(
+  step: number,
+  state: CreateAccountWizardState
+): OnboardingMissingField[] {
+  return missingForStep(step, state).map((label) => ({ step, label }));
 }
 
 /** Recommended fields missing before final client account submit */

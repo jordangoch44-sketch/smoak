@@ -1,6 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSyncExternalStore } from "react";
+import { getEffectiveUserCoordinates } from "@/lib/client-profile-location";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import {
   getActiveUserCoordinatesKeyServerSnapshot,
@@ -11,10 +14,16 @@ import {
 } from "@/lib/user-location-store";
 
 export function useActiveUserCoordinates(): UserGeoPoint | null {
-  return useSyncExternalStore(
+  const { session } = useAuthSession();
+  const storageCoords = useSyncExternalStore(
     subscribeUserLocation,
     getActiveUserCoordinatesSnapshot,
     getActiveUserCoordinatesServerSnapshot
+  );
+
+  return useMemo(
+    () => getEffectiveUserCoordinates(session) ?? storageCoords,
+    [session, storageCoords]
   );
 }
 

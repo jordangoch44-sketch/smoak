@@ -3,6 +3,7 @@ import {
   DEV_AUTH_STORAGE_KEY,
   LEGACY_AUTH_STORAGE_KEY,
 } from "@/lib/dev-storage-keys";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { persistInternalAuthSession } from "@/lib/internal-auth-session-storage";
 import type { InternalAuthSession } from "@/types/internal-auth";
 
@@ -31,7 +32,11 @@ function sanitizePublicSession(parsed: AuthSession): AuthSession | null {
     (parsed.role === "client" || parsed.role === "specialist") &&
     typeof parsed.email === "string"
   ) {
-    return parsed;
+    const userId =
+      typeof parsed.userId === "string" && parsed.userId.trim()
+        ? parsed.userId
+        : `dev-${parsed.email.trim().toLowerCase()}`;
+    return { ...parsed, userId };
   }
   return null;
 }
@@ -71,6 +76,12 @@ export function loadAuthSession(): AuthSession | null {
 
 export function persistAuthSession(session: AuthSession | null): void {
   if (typeof window === "undefined") return;
+  if (isSupabaseConfigured()) {
+    if (!session) {
+      window.localStorage.removeItem(DEV_AUTH_STORAGE_KEY);
+    }
+    return;
+  }
   if (!session) {
     window.localStorage.removeItem(DEV_AUTH_STORAGE_KEY);
     window.localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);

@@ -80,7 +80,7 @@ export function loadSavedTrainerIdsForUser(userId: string): string[] {
   return migrateGlobalSavedIdsToUser(userId);
 }
 
-/** Persist saved specialist ids for a signed-in client */
+/** Persist saved specialist ids for a signed-in client (local dev mock only) */
 export function persistSavedTrainerIdsForUser(userId: string, ids: string[]): void {
   if (!userId || typeof window === "undefined") return;
 
@@ -93,6 +93,19 @@ export function persistSavedTrainerIdsForUser(userId: string, ids: string[]): vo
     } else {
       window.localStorage.setItem(userKey, JSON.stringify(unique));
     }
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Clear per-user local shortlist after Supabase import */
+export function clearLocalSavedTrainersForUser(userId: string): void {
+  if (!userId || typeof window === "undefined") return;
+  const userKey = getSavedTrainersStorageKey(userId);
+  try {
+    window.localStorage.removeItem(userKey);
+    window.localStorage.removeItem(DEV_SAVED_SPECIALISTS_KEY);
+    window.localStorage.removeItem(LEGACY_SAVED_SPECIALISTS_KEY);
   } catch {
     /* ignore */
   }

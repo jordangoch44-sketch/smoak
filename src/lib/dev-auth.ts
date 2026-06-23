@@ -1,16 +1,16 @@
 /**
- * DEV ONLY — temporary test login for local/staging dashboard QA.
- * Remove this module when real authentication ships.
+ * DEV ONLY — mock credentials when Supabase is not configured (local `npm run dev` only).
+ * Production LAN builds require Supabase; see docs/PHASE2_AUTH_ARCHITECTURE.md.
  */
 import type { AuthRole, AuthSession } from "@/types/auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
+
+export type { PublicAuthRole } from "@/types/auth-roles";
 import type { AdminRoleType } from "@/types/admin-permissions";
 
 /** Consumer-facing sign-in copy */
 export const PUBLIC_INVALID_LOGIN_MESSAGE =
   "We couldn't sign you in. Check your email and password.";
-
-/** @deprecated Use PUBLIC_INVALID_LOGIN_MESSAGE */
-export const DEV_INVALID_LOGIN_MESSAGE = PUBLIC_INVALID_LOGIN_MESSAGE;
 
 export interface DevTestAccount {
   id?: string;
@@ -58,9 +58,6 @@ export const DEV_STAFF_ADMIN_CREDENTIALS: DevTestAccount = {
   displayName: "Staff Admin",
   adminRole: "staff_admin",
 };
-
-/** @deprecated Use DEV_OWNER_ADMIN_CREDENTIALS */
-export const DEV_ADMIN_CREDENTIALS = DEV_OWNER_ADMIN_CREDENTIALS;
 
 /** DEV ONLY — free specialist (blurred analytics + upgrade CTA) */
 export const DEV_FREE_SPECIALIST_CREDENTIALS: DevTestAccount = {
@@ -110,56 +107,6 @@ function findDevAccount(
   return account;
 }
 
-function logDevLoginAttempt(payload: {
-  selectedRole: AuthRole;
-  normalizedEmail: string;
-  foundUser: DevTestAccount | null;
-  passwordMatches: boolean;
-  roleMatches: boolean;
-}): void {
-  if (process.env.NODE_ENV !== "development") return;
-
-  console.log("[SMOAC dev login]", {
-    selectedRole: payload.selectedRole,
-    normalizedEmail: payload.normalizedEmail,
-    foundUser: payload.foundUser
-      ? {
-          email: payload.foundUser.email,
-          role: payload.foundUser.role,
-          isPremium: payload.foundUser.isPremium,
-        }
-      : null,
-    passwordMatches: payload.passwordMatches,
-    roleMatches: payload.roleMatches,
-  });
-}
-
-export type PublicAuthRole = Exclude<AuthRole, "admin">;
-
-/** Marketplace sign-in — role inferred from credentials (client / specialist only) */
-export function validateDevPublicLogin(
-  email: string,
-  password: string
-): PublicAuthRole | null {
-  const normalizedEmail = normalizeDevEmail(email);
-  const normalizedPassword = normalizeDevPassword(password);
-  const foundUser = findDevAccountByEmail(normalizedEmail) ?? null;
-
-  if (!foundUser || foundUser.role === "admin") return null;
-  if (normalizeDevPassword(foundUser.password) !== normalizedPassword) {
-    return null;
-  }
-
-  if (process.env.NODE_ENV === "development") {
-    console.log("[SMOAC sign-in]", {
-      email: normalizedEmail,
-      role: foundUser.role,
-    });
-  }
-
-  return foundUser.role as PublicAuthRole;
-}
-
 /** DEV ONLY — returns matching role when credentials are valid, otherwise null */
 export function validateDevLogin(
   role: AuthRole,
@@ -168,24 +115,11 @@ export function validateDevLogin(
 ): AuthRole | null {
   const normalizedEmail = normalizeDevEmail(email);
   const normalizedPassword = normalizeDevPassword(password);
+  const foundUser = findDevAccountByEmail(normalizedEmail);
 
-  const foundUser = findDevAccountByEmail(normalizedEmail) ?? null;
-  const passwordMatches = foundUser
-    ? normalizeDevPassword(foundUser.password) === normalizedPassword
-    : false;
-  const roleMatches = foundUser ? foundUser.role === role : false;
-
-  logDevLoginAttempt({
-    selectedRole: role,
-    normalizedEmail,
-    foundUser,
-    passwordMatches,
-    roleMatches,
-  });
-
-  if (!foundUser || !passwordMatches || !roleMatches) {
-    return null;
-  }
+  if (!foundUser) return null;
+  if (normalizeDevPassword(foundUser.password) !== normalizedPassword) return null;
+  if (foundUser.role !== role) return null;
 
   return foundUser.role;
 }
@@ -233,5 +167,3 @@ export function validateDevSignup(
   if (normalizeDevPassword(password).length < MIN_SIGNUP_PASSWORD_LENGTH) return null;
   return role;
 }
-
-export const DEV_MIN_SIGNUP_PASSWORD_LENGTH = MIN_SIGNUP_PASSWORD_LENGTH;

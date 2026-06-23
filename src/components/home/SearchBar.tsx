@@ -13,6 +13,7 @@ import { HeroSearchSuggestionsLayer } from "@/components/home/HeroSearchSuggesti
 import { TapLink } from "@/components/ui/TapLink";
 import { CloseIcon, SearchIcon } from "@/components/ui/icons";
 import { trainingGoals } from "@/data/goals";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { mergeExploreFiltersWithSavedLocation } from "@/lib/explore-location-filters";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
 import { buildExploreSearchParams } from "@/lib/explore-url";
@@ -43,6 +44,7 @@ export function SearchBar({
 }: SearchBarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { session } = useAuthSession();
   const listboxId = useId();
   const heroSearchRootRef = useRef<HTMLDivElement>(null);
   const anchorRef = useRef<HTMLFormElement>(null);
@@ -72,7 +74,7 @@ export function SearchBar({
       setSubmitting(true);
       if (!trimmed) {
         const params = buildExploreSearchParams(
-          mergeExploreFiltersWithSavedLocation(EMPTY_TRAINER_FILTERS),
+          mergeExploreFiltersWithSavedLocation(EMPTY_TRAINER_FILTERS, session),
           ""
         );
         router.push(params ? `/explore?${params}` : "/explore");
@@ -84,12 +86,12 @@ export function SearchBar({
       );
       recordRecentSearch(applied.displayQuery);
       const params = buildExploreSearchParams(
-        mergeExploreFiltersWithSavedLocation(applied.filters),
+        mergeExploreFiltersWithSavedLocation(applied.filters, session),
         applied.displayQuery
       );
       router.push(`/explore?${params}`);
     },
-    [router]
+    [router, session]
   );
 
   const dismissSearchOverlay = useCallback(() => {

@@ -35,7 +35,8 @@ export function SavedPanelContent({
   titleId = "saved-panel-title",
   onAuthNavigate,
 }: SavedPanelContentProps) {
-  const { isReady, isClientWithSaves, getSavedTrainers } = useSavedTrainers();
+  const { isReady, isSavesReady, isSavesLoading, savesError, isClientWithSaves, getSavedTrainers } =
+    useSavedTrainers();
   const { session } = useAuthSession();
   const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
@@ -52,9 +53,10 @@ export function SavedPanelContent({
   );
   const isOverlay = variant === "overlay";
   const isLoggedOut = isReady && !session;
-  const isEmptyClient = isReady && isClientWithSaves && saved.length === 0;
+  const isEmptyClient =
+    isReady && isSavesReady && isClientWithSaves && saved.length === 0;
   const isSpecialistSignedIn =
-    isReady && session?.role === "specialist" && saved.length === 0;
+    isReady && isSavesReady && session?.role === "specialist" && saved.length === 0;
 
   const loginHref = buildLoginHrefForSaved();
   const joinHref = buildJoinFlowHrefForSaved();
@@ -64,7 +66,10 @@ export function SavedPanelContent({
   }
 
   function subtitleText(): string {
-    if (!isReady) return "Loading saved specialists…";
+    if (!isReady || isSavesLoading) return "Loading saved specialists…";
+    if (savesError) {
+      return "Could not sync your shortlist — showing cached saves. Try again shortly.";
+    }
     if (isLoggedOut) return "Sign in to access your shortlist.";
     if (saved.length > 0) {
       return `${saved.length} specialist${saved.length !== 1 ? "s" : ""} in your shortlist`;

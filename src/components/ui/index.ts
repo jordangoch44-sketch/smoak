@@ -7,3 +7,5 @@ export type { TrainerThumbnailSize } from "./TrainerThumbnail";
 export { ToastProvider, useToast } from "./toast";
 export type { ShowToastOptions, ToastType } from "./toast";
 export { SearchIcon, FilterIcon, CloseIcon, HeartIcon, UserIcon } from "./icons";
+export { PasswordInput } from "./PasswordInput";
+export type { PasswordInputProps } from "./PasswordInput";

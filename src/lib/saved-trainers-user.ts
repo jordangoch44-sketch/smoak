@@ -1,7 +1,10 @@
 import type { AuthSession } from "@/types/auth";
 
-/** Stable localStorage segment for a client account (mock auth — email-based) */
+/** Stable storage segment for a client account — prefers Supabase user id */
 export function getClientUserId(session: AuthSession): string {
+  if (session.userId?.trim()) {
+    return session.userId.trim();
+  }
   return session.email
     .trim()
     .toLowerCase()

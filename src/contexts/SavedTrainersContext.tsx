@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Saved trainers state — localStorage today, user account / API later.
- * Consumers use useSavedTrainers(); do not read localStorage directly.
+ * Saved trainers — Supabase when configured; localStorage fallback for dev mock.
+ * Consumers use useSavedTrainers(); do not read storage directly.
  */
 import {
   createContext,
@@ -24,20 +24,28 @@ import {
   subscribeAuthSession,
 } from "@/lib/auth-session-store";
 import {
+  getSavedTrainersErrorServerSnapshot,
+  getSavedTrainersErrorSnapshot,
+  getSavedTrainersLoadingServerSnapshot,
+  getSavedTrainersLoadingSnapshot,
   getSavedTrainersServerSnapshot,
   getSavedTrainersSnapshot,
-  setSavedTrainerIds,
   subscribeSavedTrainers,
+  toggleSavedTrainerId,
 } from "@/lib/saved-trainers-store";
 
 export interface SavedTrainersContextValue {
   isReady: boolean;
+  /** False while fetching shortlist from Supabase for the signed-in client */
+  isSavesReady: boolean;
+  isSavesLoading: boolean;
+  savesError: string | null;
   /** Signed-in client — saved list is scoped to this account */
   isClientWithSaves: boolean;
   savedIds: readonly string[];
   savedCount: number;
   isSaved: (trainerId: string) => boolean;
-  toggleSaved: (trainerId: string) => void;
+  toggleSaved: (trainerId: string) => Promise<{ ok: boolean; message?: string }>;
   getSavedTrainers: () => Trainer[];
   /** Queue pending save + open login gate (logged-out save hearts) */
   openLoginGate: (specialistId: string) => void;
@@ -87,6 +95,18 @@ export function SavedTrainersProvider({
     getServerSnapshot
   );
 
+  const isSavesLoading = useSyncExternalStore(
+    subscribe,
+    getSavedTrainersLoadingSnapshot,
+    getSavedTrainersLoadingServerSnapshot
+  );
+
+  const savesError = useSyncExternalStore(
+    subscribe,
+    getSavedTrainersErrorSnapshot,
+    getSavedTrainersErrorServerSnapshot
+  );
+
   const isReady = useSyncExternalStore(
     subscribeClientReady,
     getClientReadySnapshot,
@@ -99,10 +119,12 @@ export function SavedTrainersProvider({
     () => false
   );
 
+  const isSavesReady = !isClientWithSaves || !isSavesLoading;
+
   useEffect(() => {
-    if (!isClientWithSaves) return;
-    applyPendingSaveAfterLogin("client");
-  }, [isClientWithSaves]);
+    if (!isClientWithSaves || !isSavesReady) return;
+    void applyPendingSaveAfterLogin("client");
+  }, [isClientWithSaves, isSavesReady]);
 
   const openLoginGate = useCallback((specialistId: string) => {
     setPendingSave(specialistId);
@@ -116,18 +138,12 @@ export function SavedTrainersProvider({
   const savedIdSet = useMemo(() => new Set(savedIds), [savedIds]);
 
   const isSaved = useCallback(
-    (trainerId: string) => savedIdSet.has(trainerId),
-    [savedIdSet]
+    (trainerId: string) => isSavesReady && savedIdSet.has(trainerId),
+    [savedIdSet, isSavesReady]
   );
 
   const toggleSaved = useCallback((trainerId: string) => {
-    if (!getActiveClientUserId(getAuthSessionSnapshot())) return;
-
-    const current = getSavedTrainersSnapshot();
-    const next = current.includes(trainerId)
-      ? current.filter((id) => id !== trainerId)
-      : [...current, trainerId];
-    setSavedTrainerIds(next);
+    return toggleSavedTrainerId(trainerId);
   }, []);
 
   const getSavedTrainers = useCallback(() => {
@@ -140,9 +156,12 @@ export function SavedTrainersProvider({
   const value = useMemo(
     () => ({
       isReady,
+      isSavesReady,
+      isSavesLoading,
+      savesError,
       isClientWithSaves,
       savedIds,
-      savedCount: savedIds.length,
+      savedCount: isSavesReady ? savedIds.length : 0,
       isSaved,
       toggleSaved,
       getSavedTrainers,
@@ -150,6 +169,9 @@ export function SavedTrainersProvider({
     }),
     [
       isReady,
+      isSavesReady,
+      isSavesLoading,
+      savesError,
       isClientWithSaves,
       savedIds,
       isSaved,

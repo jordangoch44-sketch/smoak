@@ -58,6 +58,20 @@ src/
 
 ## Core product flows
 
+### Auth (Phase 2 — Supabase)
+
+```
+AuthSessionProvider (contexts/)
+  → marketplace-auth.ts     signIn / signUp / signOut / reset
+  → profile-service.ts      profiles + user_roles upsert
+  → auth-session-store.ts   in-memory session snapshot
+  → client-profile-location.ts   ZIP from profiles.client_zip_code
+```
+
+Dev fallback (no Supabase env): `dev-auth.ts` + `auth-session-storage.ts`.  
+Full detail: [`docs/PHASE2_AUTH_ARCHITECTURE.md`](../docs/PHASE2_AUTH_ARCHITECTURE.md).  
+Phase 3 localStorage migration: [`docs/PHASE3_SUPABASE_MIGRATION.md`](../docs/PHASE3_SUPABASE_MIGRATION.md).
+
 ### Save / heart
 
 ```

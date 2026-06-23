@@ -17,8 +17,8 @@ Changing order can break hooks (`SaveTrainerButton` needs both saved + toast con
 
 | Context | Hook | Responsibility |
 |---------|------|----------------|
-| `AuthSessionContext` | `useAuthSession()` | Dev session, signIn/signOut |
-| `SavedTrainersContext` | `useSavedTrainers()` | Saved IDs, toggle, **openLoginGate** |
+| `AuthSessionContext` | `useAuthSession()` | Supabase session, signIn/signUp/signOut |
+| `SavedTrainersContext` | `useSavedTrainers()` | Supabase shortlist (localStorage fallback in dev), login gate |
 | `SaveToastContext` | `useSaveToast()` | Centered save/remove confirmation toast |
 
 ## Rules

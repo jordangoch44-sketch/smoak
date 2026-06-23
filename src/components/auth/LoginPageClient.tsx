@@ -6,15 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { Logo } from "@/components/ui/Logo";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
-import {
-  PUBLIC_INVALID_LOGIN_MESSAGE,
-  validateDevLogin,
-  type PublicAuthRole,
-} from "@/lib/dev-auth";
+import { PUBLIC_INVALID_LOGIN_MESSAGE, type PublicAuthRole } from "@/lib/dev-auth";
+import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
 import { cn } from "@/lib/utils";
@@ -50,7 +48,7 @@ export function LoginPageClient() {
   const searchParams = useSearchParams();
   const returnToSaved = isAuthReturnToSaved(searchParams);
   const reducedMotion = useReducedMotion();
-  const { isReady, session, signIn } = useAuthSession();
+  const { isReady, session, signInWithPassword } = useAuthSession();
   const { showToast: showSaveToast } = useSaveToast();
   const { showToast } = useToast();
   const [role, setRole] = useState<PublicAuthRole>("client");
@@ -138,8 +136,13 @@ export function LoginPageClient() {
       return;
     }
 
-    const validatedRole = validateDevLogin(role, trimmedEmail, trimmedPassword);
-    if (!validatedRole || validatedRole === "admin") {
+    const result = await signInWithPassword(
+      role,
+      trimmedEmail,
+      trimmedPassword
+    );
+
+    if (result.ok !== true) {
       setSubmitPressed(false);
       setSubmitting(false);
       await showLoginFailure();
@@ -147,14 +150,21 @@ export function LoginPageClient() {
     }
 
     setSubmitPressed(false);
-    signIn(validatedRole, trimmedEmail);
 
     showToast({
       type: "success",
       message: "Welcome back.",
     });
 
-    const { path, toast } = resolvePostLoginNavigation(validatedRole, {
+    const signedInRole = getUserRole(result.session);
+    if (!signedInRole) {
+      setSubmitPressed(false);
+      setSubmitting(false);
+      await showLoginFailure();
+      return;
+    }
+
+    const { path, toast } = resolvePostLoginNavigation(signedInRole, {
       returnToSaved,
     });
     if (toast) {
@@ -262,8 +272,7 @@ export function LoginPageClient() {
 
               <label className="login-field">
                 <span className="login-field__label">Password</span>
-                <input
-                  type="password"
+                <PasswordInput
                   name="password"
                   autoComplete="current-password"
                   value={password}
@@ -272,7 +281,6 @@ export function LoginPageClient() {
                     clearLoginError();
                   }}
                   placeholder="Password"
-                  className="login-field__input"
                   aria-invalid={fieldsError}
                 />
               </label>
@@ -311,19 +319,9 @@ export function LoginPageClient() {
               <Link href={buildJoinFlowHref()} className="login-card__link">
                 Create account
               </Link>
-              <button
-                type="button"
-                className="login-card__link"
-                onClick={() =>
-                  showToast({
-                    type: "info",
-                    message:
-                      "Password reset will be available when accounts launch.",
-                  })
-                }
-              >
+              <Link href="/login/forgot-password" className="login-card__link">
                 Forgot password?
-              </button>
+              </Link>
             </div>
           </form>
         </div>

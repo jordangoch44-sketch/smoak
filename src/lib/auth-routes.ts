@@ -1,4 +1,4 @@
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 import { isInternalPath } from "@/lib/internal-routes";
 
 export const CLIENT_DASHBOARD_PATH = "/client-dashboard";

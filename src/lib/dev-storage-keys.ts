@@ -1,6 +1,6 @@
 /**
- * DEV ONLY — localStorage keys for auth, saves, and pending-save workflow.
- * Remove when real authentication and account-backed saves ship.
+ * localStorage keys for marketplace data still on Phase 3 local persistence.
+ * Auth session keys: see auth-session-storage.ts (dev fallback when Supabase off).
  */
 export const DEV_AUTH_STORAGE_KEY = "smoac_dev_auth";
 /** Company portal session — owner / staff / internal employees */

@@ -4,26 +4,59 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
 } from "react";
 import type { AuthSession } from "@/types/auth";
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 import {
   getAuthSessionServerSnapshot,
   getAuthSessionSnapshot,
   setAuthSession,
   subscribeAuthSession,
 } from "@/lib/auth-session-store";
-import { getDevSessionFields } from "@/lib/dev-auth";
-import { logoutWithToast } from "@/lib/logout-with-toast";
+import { useSupabaseConfig } from "@/contexts/SupabaseConfigContext";
+import type { CreateAccountProfile } from "@/types/create-account";
+import type { SpecialistOnboardingState } from "@/types/specialist-application";
+import {
+  getCurrentMarketplaceSession,
+  setClientSupabaseEnabled,
+  signInWithPassword,
+  signOutMarketplace,
+  signUpWithPassword,
+  type AuthResult,
+} from "@/lib/auth/marketplace-auth";
+import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
+import { clearSavedTrainersActiveSession } from "@/lib/saved-trainers-store";
+import { showToast } from "@/lib/toast-store";
+import { hydrateClientLocationFromSession } from "@/lib/client-profile-location";
+import { clearSavedUserZipLocation } from "@/lib/user-location-storage";
 
 export interface AuthSessionContextValue {
   isReady: boolean;
   session: AuthSession | null;
   isSignedIn: boolean;
-  signIn: (role: PublicAuthRole, email: string) => void;
-  signOut: () => void;
+  signInWithPassword: (
+    role: PublicAuthRole,
+    email: string,
+    password: string
+  ) => Promise<AuthResult>;
+  signUp: (
+    role: PublicAuthRole,
+    email: string,
+    password: string,
+    options?: {
+      firstName?: string;
+      lastName?: string;
+      clientProfile?: CreateAccountProfile;
+      specialistProfile?: CreateAccountProfile;
+      specialistOnboarding?: SpecialistOnboardingState;
+    }
+  ) => Promise<AuthResult & { userId?: string }>;
+  signOut: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
@@ -48,42 +81,123 @@ export function AuthSessionProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const isReady = useSyncExternalStore(
+  const { enabled: supabaseAuth } = useSupabaseConfig();
+  const [supabaseHydrated, setSupabaseHydrated] = useState(() => !supabaseAuth);
+
+  useEffect(() => {
+    setClientSupabaseEnabled(supabaseAuth);
+  }, [supabaseAuth]);
+  const clientReady = useSyncExternalStore(
     subscribeClientReady,
     getClientReadySnapshot,
     getServerReadySnapshot
   );
+  const isReady = clientReady && supabaseHydrated;
   const session = useSyncExternalStore(
     subscribeAuthSession,
     getAuthSessionSnapshot,
     getAuthSessionServerSnapshot
   );
 
-  const signIn = useCallback((role: PublicAuthRole, email: string) => {
-    const trimmedEmail = email.trim();
-    const devFields = getDevSessionFields(role, trimmedEmail);
-    /* DEV ONLY — session persisted in localStorage for dashboard QA */
-    setAuthSession({
-      role,
-      email: trimmedEmail,
-      signedInAt: new Date().toISOString(),
-      ...devFields,
-    });
-  }, []);
+  const refreshSession = useCallback(async () => {
+    if (!supabaseAuth) return;
+    const next = await getCurrentMarketplaceSession();
+    setAuthSession(next);
+  }, [supabaseAuth]);
 
-  const signOut = useCallback(() => {
-    logoutWithToast();
-  }, []);
+  useEffect(() => {
+    if (!supabaseAuth) {
+      return;
+    }
+
+    void refreshSession().finally(() => setSupabaseHydrated(true));
+
+    const supabase = getMarketplaceAuthClient();
+    if (!supabase) return;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      void refreshSession();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabaseAuth, refreshSession]);
+
+  useEffect(() => {
+    if (!supabaseAuth || !session || session.role !== "client") return;
+    void hydrateClientLocationFromSession(session);
+  }, [
+    supabaseAuth,
+    session?.userId,
+    session?.role,
+    session?.clientZipCode,
+    session?.clientCity,
+  ]);
+
+  const handleSignInWithPassword = useCallback(
+    async (role: PublicAuthRole, email: string, password: string) => {
+      const result = await signInWithPassword(role, email, password);
+      if (result.ok === true) {
+        setAuthSession(result.session);
+      }
+      return result;
+    },
+    []
+  );
+
+  const handleSignUp = useCallback(
+    async (
+      role: PublicAuthRole,
+      email: string,
+      password: string,
+      options?: {
+        firstName?: string;
+        lastName?: string;
+        clientProfile?: CreateAccountProfile;
+        specialistProfile?: CreateAccountProfile;
+        specialistOnboarding?: SpecialistOnboardingState;
+      }
+    ) => {
+      const result = await signUpWithPassword(role, email, password, options);
+      if (result.ok === true) {
+        setAuthSession(result.session);
+      }
+      return result;
+    },
+    []
+  );
+
+  const signOut = useCallback(async () => {
+    clearSavedTrainersActiveSession();
+    if (session?.role === "client") {
+      clearSavedUserZipLocation();
+    }
+    await signOutMarketplace();
+    setAuthSession(null);
+    showToast({ type: "info", message: "Logged out" });
+  }, [session?.role]);
 
   const value = useMemo(
     (): AuthSessionContextValue => ({
       isReady,
       session,
       isSignedIn: Boolean(session),
-      signIn,
+      signInWithPassword: handleSignInWithPassword,
+      signUp: handleSignUp,
       signOut,
+      refreshSession,
     }),
-    [isReady, session, signIn, signOut]
+    [
+      isReady,
+      session,
+      handleSignInWithPassword,
+      handleSignUp,
+      signOut,
+      refreshSession,
+    ]
   );
 
   return (

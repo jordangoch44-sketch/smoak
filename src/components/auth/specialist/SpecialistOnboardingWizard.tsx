@@ -13,7 +13,6 @@ import {
   SPECIALIST_ONBOARDING_TOTAL_STEPS,
 } from "@/constants/specialist-onboarding-options";
 import { LOGIN_PATH } from "@/lib/auth-routes";
-import { validateDevSignup } from "@/lib/dev-auth";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import { submitSpecialistApplication } from "@/lib/specialist-application-submit";
 import {
@@ -41,7 +40,7 @@ export function SpecialistOnboardingWizard({
   onBackToRole,
 }: SpecialistOnboardingWizardProps) {
   const router = useRouter();
-  const { signIn } = useAuthSession();
+  const { signUp } = useAuthSession();
   const { showToast } = useToast();
   const [step, setStep] = useState<OnboardingStep>(1);
   const [state, setState] = useState<SpecialistOnboardingState>(() => {
@@ -111,7 +110,7 @@ export function SpecialistOnboardingWizard({
     }
   }
 
-  function handleSubmitApplication(force: boolean) {
+  async function handleSubmitApplication(force: boolean) {
     if (submitting) return;
 
     if (!force && missingFields.length > 0) {
@@ -124,16 +123,28 @@ export function SpecialistOnboardingWizard({
     setError(null);
 
     try {
-      submitSpecialistApplication(state);
       const trimmedEmail = state.email.trim();
-      const validatedRole = validateDevSignup(
-        "specialist",
-        trimmedEmail,
-        state.password
-      );
-      if (validatedRole) {
-        signIn("specialist", trimmedEmail);
+      const signUpResult = await signUp("specialist", trimmedEmail, state.password, {
+        firstName: state.fullName.trim().split(/\s+/)[0] ?? "",
+        specialistOnboarding: state,
+      });
+
+      if (signUpResult.ok === false) {
+        setError(signUpResult.message);
+        return;
       }
+
+      if (signUpResult.ok === "confirm_email") {
+        showToast({
+          type: "info",
+          message: "Check your email to confirm your account, then sign in.",
+        });
+        router.push(LOGIN_PATH);
+        return;
+      }
+
+      submitSpecialistApplication(state);
+
       showToast({
         type: "success",
         message: "Application submitted — pending SMOAC review.",

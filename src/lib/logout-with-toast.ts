@@ -1,14 +1,19 @@
-import { logoutUser } from "@/lib/specialist-saves";
+import { clearSavedTrainersActiveSession } from "@/lib/saved-trainers-store";
+import { setAuthSession } from "@/lib/auth-session-store";
+import { signOutMarketplace } from "@/lib/auth/marketplace-auth";
 import { showToast } from "@/lib/toast-store";
 
-/** Clear session and show logout toast — pair with afterLogoutNavigation for route changes */
-export function logoutWithToast(): void {
+/** Clear Supabase + in-memory session and show logout toast */
+export async function logoutWithToast(): Promise<void> {
   if (typeof window === "undefined") {
-    logoutUser();
+    await signOutMarketplace();
+    setAuthSession(null);
     return;
   }
   showToast({ type: "info", message: "Logged out" });
-  logoutUser();
+  clearSavedTrainersActiveSession();
+  await signOutMarketplace();
+  setAuthSession(null);
 }
 
 const NAV_DELAY_MS = 80;

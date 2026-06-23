@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import {
   AGE_RANGE_OPTIONS,
   DAY_OPTIONS,
@@ -283,9 +284,7 @@ export function SpecialistOnboardingSteps({
             </label>
             <label className="login-field">
               <span className="login-field__label">Password</span>
-              <input
-                type="password"
-                className="login-field__input"
+              <PasswordInput
                 value={state.password}
                 onChange={(e) => onPatch({ password: e.target.value })}
                 autoComplete="new-password"

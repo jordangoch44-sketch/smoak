@@ -253,3 +253,87 @@ npm run build       # pass
 npm run typecheck
 npm run build
 ```
+
+---
+
+## Phase 2 auth cleanup (2026-06)
+
+**Scope:** Dead auth code removal + documentation after Supabase Phase 2 completion. No behavior changes.
+
+### Files removed
+
+| File | Reason |
+|------|--------|
+| `src/lib/auth/client-location-hydration.ts` | Thin wrapper; merged into `client-profile-location.ts` |
+| `src/lib/auth/auth-mode.ts` | Unused (`isSupabaseConfiguredOnServer` had zero imports) |
+| `src/types/auth-signup.ts` | Orphan type for removed `POST /api/auth/signup` |
+
+### Symbols removed
+
+| Symbol | Reason |
+|--------|--------|
+| `AuthSessionContext.signIn` | Deprecated dev-only email login; no callers |
+| `validateDevPublicLogin` | Never imported |
+| `DEV_INVALID_LOGIN_MESSAGE`, `DEV_ADMIN_CREDENTIALS`, `DEV_MIN_SIGNUP_PASSWORD_LENGTH` | Unused deprecated exports |
+| `logDevLoginAttempt` + dev-auth `console.log` | Temporary debug logging |
+| `logProfileSave` + managed profile `console.log` | Temporary debug logging |
+
+### Documentation added
+
+| File | Purpose |
+|------|---------|
+| `docs/PHASE2_AUTH_ARCHITECTURE.md` | Current auth + location architecture |
+| `docs/PHASE3_SUPABASE_MIGRATION.md` | localStorage → Supabase migration plan |
+| `CURRENT_STATUS.md` | Updated project status |
+
+### Intentionally kept
+
+| Item | Reason |
+|------|--------|
+| `lib/dev-auth.ts` | `npm run dev` without Supabase env |
+| `lib/auth-session-storage.ts` | Dev session persistence + legacy key migration |
+| `lib/auth/auth-logger.ts` | Structured auth events (dev/server only) |
+| `user-location-storage.ts` | Guest ZIP cache; synced from profile on login |
+| `marketplace-city-default-zip.ts` | City picker in location panel (not profile fallback) |
+
+---
+
+## Phase 2 auth cleanup (2026-06)
+
+**Scope:** Dead auth code removal + documentation after Supabase Phase 2 completion. No behavior changes.
+
+### Files removed
+
+| File | Reason |
+|------|--------|
+| `src/lib/auth/client-location-hydration.ts` | Thin wrapper; merged into `client-profile-location.ts` |
+| `src/lib/auth/auth-mode.ts` | Unused (`isSupabaseConfiguredOnServer` had zero imports) |
+| `src/types/auth-signup.ts` | Orphan type for removed `POST /api/auth/signup` |
+
+### Symbols removed
+
+| Symbol | Reason |
+|--------|--------|
+| `AuthSessionContext.signIn` | Deprecated dev-only email login; no callers |
+| `validateDevPublicLogin` | Never imported |
+| `DEV_INVALID_LOGIN_MESSAGE`, `DEV_ADMIN_CREDENTIALS`, `DEV_MIN_SIGNUP_PASSWORD_LENGTH` | Unused deprecated exports |
+| `logDevLoginAttempt` + dev-auth `console.log` | Temporary debug logging |
+| `logProfileSave` + managed profile `console.log` | Temporary debug logging |
+
+### Documentation added
+
+| File | Purpose |
+|------|---------|
+| `docs/PHASE2_AUTH_ARCHITECTURE.md` | Current auth + location architecture |
+| `docs/PHASE3_SUPABASE_MIGRATION.md` | localStorage → Supabase migration plan |
+| `CURRENT_STATUS.md` | Updated project status |
+
+### Intentionally kept
+
+| Item | Reason |
+|------|--------|
+| `lib/dev-auth.ts` | `npm run dev` without Supabase env |
+| `lib/auth-session-storage.ts` | Dev session persistence + legacy key migration |
+| `lib/auth/auth-logger.ts` | Structured auth events (dev/server only) |
+| `user-location-storage.ts` | Guest ZIP cache; synced from profile on login |
+| `marketplace-city-default-zip.ts` | City picker in location panel (not profile fallback) |

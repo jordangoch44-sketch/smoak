@@ -9,6 +9,7 @@ import {
 } from "@/hooks/useActiveUserCoordinates";
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { buildExploreSearchParams } from "@/lib/explore-url";
 import { getSavedZipExploreFilters } from "@/lib/explore-location-filters";
 import { getPersonalizedFeaturedTrainers } from "@/lib/personalized-trainers";
@@ -16,16 +17,17 @@ import { getPersonalizedFeaturedTrainers } from "@/lib/personalized-trainers";
 /** TODO: Rename to FeaturedProviders when internal trainer types are refactored */
 export function FeaturedTrainers() {
   const hydrated = useHydrated();
+  const { session } = useAuthSession();
   const personalizationCity = usePersonalizationCity();
   const userCoords = useActiveUserCoordinates();
   const coordsKey = useActiveUserCoordinatesKey();
 
   const exploreHref = useMemo(() => {
     if (!hydrated) return "/explore";
-    const saved = getSavedZipExploreFilters();
+    const saved = getSavedZipExploreFilters(session);
     if (!saved.zipCode && !saved.city) return "/explore";
     return `/explore?${buildExploreSearchParams(saved, "")}`;
-  }, [hydrated]);
+  }, [hydrated, session?.userId, session?.clientZipCode]);
 
   const featured = useMemo(() => {
     const coords = hydrated ? userCoords : null;

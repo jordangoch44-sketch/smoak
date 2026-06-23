@@ -1,5 +1,5 @@
 import type { AuthSession } from "@/types/auth";
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 
 /** True when a marketplace session exists */
 export function isLoggedIn(session: AuthSession | null | undefined): boolean {

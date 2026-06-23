@@ -1,10 +1,10 @@
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 import {
   CLIENT_DASHBOARD_PATH,
   getDashboardPathForRole,
   SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
-import { applyPendingSaveAfterLogin } from "@/lib/specialist-saves";
+import { peekPendingSave } from "@/lib/pending-save-storage";
 import type { SaveToastOptions } from "@/lib/saved-ui";
 
 export interface PostLoginNavigation {
@@ -22,10 +22,10 @@ export function resolvePostLoginNavigation(
   role: PublicAuthRole,
   options?: PostLoginNavigationOptions
 ): PostLoginNavigation {
-  const pendingResult = applyPendingSaveAfterLogin(role);
+  const pendingId = peekPendingSave();
   const returnToSaved = options?.returnToSaved && role === "client";
 
-  if (pendingResult.kind === "client-saved") {
+  if (pendingId && role === "client") {
     return {
       path: returnToSaved ? "/saved" : CLIENT_DASHBOARD_PATH,
       toast: {
@@ -40,7 +40,7 @@ export function resolvePostLoginNavigation(
     return { path: "/saved" };
   }
 
-  if (pendingResult.kind === "specialist-blocked") {
+  if (pendingId && role === "specialist") {
     return {
       path: SPECIALIST_DASHBOARD_PATH,
       toast: {

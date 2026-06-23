@@ -48,10 +48,6 @@ export function describeManagedProfileSource(
   return "profile-overrides";
 }
 
-function logProfileSave(message: string): void {
-  console.log("[SMOAC PROFILE SAVE]", message);
-}
-
 export type ManagedProfileStatusLabel =
   | "Pending review"
   | "Active"
@@ -190,8 +186,6 @@ export function saveManagedSpecialistProfileEdits(
     getSpecialistApplicationById(trainerId)
   );
 
-  logProfileSave("Saving profile...");
-
   if (typeof window === "undefined") {
     return { ok: false, error: "Unable to save changes" };
   }
@@ -221,7 +215,6 @@ export function saveManagedSpecialistProfileEdits(
 
     saveTrainerProfileOverrides(trainerId, overrides);
 
-    logProfileSave("Save successful");
     return { ok: true, source };
   } catch (error) {
     console.error("[SMOAC PROFILE SAVE]", error);

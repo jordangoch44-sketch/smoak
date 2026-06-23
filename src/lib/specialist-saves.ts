@@ -2,20 +2,22 @@
  * DEV ONLY — reusable specialist save + auth helpers for client workflows.
  */
 import type { AuthSession } from "@/types/auth";
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 import { setAuthSession } from "@/lib/auth-session-store";
 import { consumePendingSave } from "@/lib/pending-save-storage";
 import {
   clearSavedTrainersActiveSession,
   getSavedTrainersSnapshot,
-  setSavedTrainerIds,
+  addSavedTrainerId,
 } from "@/lib/saved-trainers-store";
 
 export { isLoggedIn, getUserRole, canSaveSpecialists } from "@/lib/auth-session-helpers-core";
 
-/** DEV ONLY — clears session and in-memory saved specialists (per-user data kept) */
-export function logoutUser(): void {
+/** Clears session and in-memory saved specialists (Supabase rows remain per user) */
+export async function logoutUser(): Promise<void> {
   clearSavedTrainersActiveSession();
+  const { signOutMarketplace } = await import("@/lib/auth/marketplace-auth");
+  await signOutMarketplace();
   setAuthSession(null);
 }
 
@@ -27,15 +29,14 @@ export function getSavedSpecialists(): string[] {
   return [...getSavedTrainersSnapshot()];
 }
 
-/** DEV ONLY — persist one specialist id without duplicates */
-export function saveSpecialist(specialistId: string): void {
+/** Persist one specialist id without duplicates */
+export async function saveSpecialist(specialistId: string): Promise<void> {
   const id = specialistId.trim();
   if (!id) return;
 
-  const current = getSavedSpecialists();
-  if (current.includes(id)) return;
+  if (getSavedSpecialists().includes(id)) return;
 
-  setSavedTrainerIds([...current, id]);
+  await addSavedTrainerId(id);
 }
 
 export { setPendingSave, consumePendingSave, clearPendingSave, peekPendingSave } from "@/lib/pending-save-storage";
@@ -47,11 +48,11 @@ export type PostLoginPendingResult =
 
 /**
  * DEV ONLY — after successful login, apply or discard pending save.
- * Call once immediately after signIn().
+ * Call once immediately after signInWithPassword().
  */
-export function applyPendingSaveAfterLogin(
+export async function applyPendingSaveAfterLogin(
   role: PublicAuthRole
-): PostLoginPendingResult {
+): Promise<PostLoginPendingResult> {
   const pendingId = consumePendingSave();
 
   if (role === "specialist") {
@@ -61,7 +62,7 @@ export function applyPendingSaveAfterLogin(
   }
 
   if (pendingId) {
-    saveSpecialist(pendingId);
+    await saveSpecialist(pendingId);
     return { kind: "client-saved", specialistId: pendingId };
   }
 

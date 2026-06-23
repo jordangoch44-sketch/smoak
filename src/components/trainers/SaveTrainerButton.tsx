@@ -25,15 +25,21 @@ export function SaveTrainerButton({
   overlay = true,
 }: SaveTrainerButtonProps) {
   const { session } = useAuthSession();
-  const { isSaved, toggleSaved, openLoginGate } = useSavedTrainers();
+  const { isSaved, isSavesReady, isSavesLoading, toggleSaved, openLoginGate } =
+    useSavedTrainers();
   const { showToast } = useSaveToast();
   const saved = isSaved(trainerId);
+  const heartDisabled = isSavesLoading && Boolean(session);
 
-  function handleToggle() {
+  async function handleToggle() {
     if (saved) {
       if (canSaveSpecialists(session)) {
-        toggleSaved(trainerId);
-        showToast(SAVE_TOAST_REMOVED);
+        const result = await toggleSaved(trainerId);
+        if (result.ok) {
+          showToast(SAVE_TOAST_REMOVED);
+        } else if (result.message) {
+          showToast({ title: result.message, variant: "neutral" });
+        }
       }
       return;
     }
@@ -57,16 +63,21 @@ export function SaveTrainerButton({
       return;
     }
 
-    toggleSaved(trainerId);
-    showToast(SAVE_TOAST_ADDED);
+    const result = await toggleSaved(trainerId);
+    if (result.ok) {
+      showToast(SAVE_TOAST_ADDED);
+    } else if (result.message) {
+      showToast({ title: result.message, variant: "neutral" });
+    }
   }
 
   return (
     <SaveButton
       saved={saved}
-      onToggle={handleToggle}
+      onToggle={() => void handleToggle()}
       overlay={overlay}
       className={className}
+      disabled={heartDisabled || !isSavesReady}
     />
   );
 }

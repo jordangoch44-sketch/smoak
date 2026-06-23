@@ -2,6 +2,7 @@ import {
   loadAuthSession,
   persistAuthSession,
 } from "@/lib/auth-session-storage";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { AuthSession } from "@/types/auth";
 
 const listeners = new Set<() => void>();
@@ -10,7 +11,7 @@ let cachedSession: AuthSession | null | undefined;
 function readCache(): AuthSession | null {
   if (typeof window === "undefined") return null;
   if (cachedSession === undefined) {
-    cachedSession = loadAuthSession();
+    cachedSession = isSupabaseConfigured() ? null : loadAuthSession();
   }
   return cachedSession;
 }
@@ -31,11 +32,22 @@ export function getAuthSessionServerSnapshot(): AuthSession | null {
   return null;
 }
 
+function sessionSignature(session: AuthSession | null): string {
+  if (!session) return "";
+  return JSON.stringify({
+    userId: session.userId,
+    role: session.role,
+    email: session.email,
+    firstName: session.firstName ?? "",
+    clientZipCode: session.clientZipCode ?? "",
+    clientCity: session.clientCity ?? "",
+    signedInAt: session.signedInAt,
+  });
+}
+
 export function setAuthSession(session: AuthSession | null): void {
   const prev = readCache();
-  const prevKey = prev ? `${prev.role}:${prev.email}` : "";
-  const nextKey = session ? `${session.role}:${session.email}` : "";
-  if (prevKey === nextKey) return;
+  if (sessionSignature(prev) === sessionSignature(session)) return;
 
   cachedSession = session;
   persistAuthSession(session);

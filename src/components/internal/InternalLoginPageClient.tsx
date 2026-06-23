@@ -4,13 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
-import {
-  INTERNAL_INVALID_LOGIN_MESSAGE,
-  validateDevInternalLogin,
-} from "@/lib/internal-auth";
+import { INTERNAL_INVALID_LOGIN_MESSAGE } from "@/lib/internal-auth";
 import { INTERNAL_DASHBOARD_PATH } from "@/lib/internal-routes";
 import type { AdminRoleType } from "@/types/admin-permissions";
 import { cn } from "@/lib/utils";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 const LOGIN_FAILURE_DELAY_MS = 280;
 
@@ -40,7 +38,7 @@ function delay(ms: number): Promise<void> {
 export function InternalLoginPageClient() {
   const router = useRouter();
   const reducedMotion = useReducedMotion();
-  const { isReady, session, signIn } = useInternalAuthSession();
+  const { isReady, session, signInWithPassword } = useInternalAuthSession();
   const [adminRole, setAdminRole] = useState<AdminRoleType>("owner_admin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -92,21 +90,20 @@ export function InternalLoginPageClient() {
       return;
     }
 
-    const nextSession = validateDevInternalLogin(
+    const result = await signInWithPassword(
       adminRole,
       trimmedEmail,
       trimmedPassword
     );
 
-    if (!nextSession) {
-      setError(INTERNAL_INVALID_LOGIN_MESSAGE);
+    if (!result.ok) {
+      setError(result.message ?? INTERNAL_INVALID_LOGIN_MESSAGE);
       setFieldsError(true);
       triggerFieldsShake();
       setSubmitting(false);
       return;
     }
 
-    signIn(nextSession);
     router.replace(INTERNAL_DASHBOARD_PATH);
     setSubmitting(false);
   }
@@ -185,8 +182,8 @@ export function InternalLoginPageClient() {
 
             <label className="internal-login__field">
               <span className="internal-login__label">Password</span>
-              <input
-                type="password"
+              <PasswordInput
+                variant="internal"
                 name="password"
                 autoComplete="current-password"
                 value={password}
@@ -194,7 +191,6 @@ export function InternalLoginPageClient() {
                   setPassword(e.target.value);
                   clearLoginError();
                 }}
-                className="internal-login__input"
                 aria-invalid={fieldsError}
               />
             </label>

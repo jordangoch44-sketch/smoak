@@ -1,0 +1,100 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SavedTrainerRow } from "@/types/database";
+
+export type SavedTrainersFetchResult =
+  | { ok: true; specialistIds: string[] }
+  | { ok: false; message: string };
+
+export type SavedTrainerMutationResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+function uniqueIds(ids: readonly string[]): string[] {
+  return [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
+}
+
+/** Load saved specialist ids for the signed-in user (RLS scopes to auth.uid()). */
+export async function fetchSavedTrainerIds(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<SavedTrainersFetchResult> {
+  const { data, error } = await supabase
+    .from("saved_trainers")
+    .select("specialist_id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  const rows = (data ?? []) as Pick<SavedTrainerRow, "specialist_id" | "created_at">[];
+  return { ok: true, specialistIds: uniqueIds(rows.map((row) => row.specialist_id)) };
+}
+
+export async function insertSavedTrainer(
+  supabase: SupabaseClient,
+  userId: string,
+  specialistId: string
+): Promise<SavedTrainerMutationResult> {
+  const id = specialistId.trim();
+  if (!id) return { ok: false, message: "Invalid specialist id" };
+
+  const { error } = await supabase.from("saved_trainers").insert({
+    user_id: userId,
+    specialist_id: id,
+  });
+
+  if (error) {
+    if (/duplicate key|unique constraint/i.test(error.message)) {
+      return { ok: true };
+    }
+    return { ok: false, message: error.message };
+  }
+
+  return { ok: true };
+}
+
+export async function deleteSavedTrainer(
+  supabase: SupabaseClient,
+  userId: string,
+  specialistId: string
+): Promise<SavedTrainerMutationResult> {
+  const id = specialistId.trim();
+  if (!id) return { ok: false, message: "Invalid specialist id" };
+
+  const { error } = await supabase
+    .from("saved_trainers")
+    .delete()
+    .eq("user_id", userId)
+    .eq("specialist_id", id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  return { ok: true };
+}
+
+/** One-time import from localStorage after Phase 3 cutover. */
+export async function importLocalSavedTrainers(
+  supabase: SupabaseClient,
+  userId: string,
+  localIds: readonly string[]
+): Promise<SavedTrainersFetchResult> {
+  const remote = await fetchSavedTrainerIds(supabase, userId);
+  if (!remote.ok) return remote;
+
+  const toInsert = uniqueIds(localIds).filter((id) => !remote.specialistIds.includes(id));
+  for (const specialistId of toInsert) {
+    const result = await insertSavedTrainer(supabase, userId, specialistId);
+    if (!result.ok) {
+      return { ok: false, message: result.message };
+    }
+  }
+
+  return {
+    ok: true,
+    specialistIds: uniqueIds([...remote.specialistIds, ...localIds]),
+  };
+}

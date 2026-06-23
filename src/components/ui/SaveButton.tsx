@@ -15,6 +15,7 @@ export interface SaveButtonProps {
   className?: string;
   overlay?: boolean;
   ariaLabel?: string;
+  disabled?: boolean;
 }
 
 export function SaveButton({
@@ -23,6 +24,7 @@ export function SaveButton({
   className,
   overlay = false,
   ariaLabel,
+  disabled = false,
 }: SaveButtonProps) {
   const [burst, setBurst] = useState(false);
   const prevSavedRef = useRef(saved);
@@ -58,6 +60,7 @@ export function SaveButton({
         ariaLabel ?? (saved ? "Remove from saved specialists" : "Save specialist")
       }
       aria-pressed={saved}
+      disabled={disabled}
       onClick={handleClick}
     >
       <span className="save-button__icons" aria-hidden>

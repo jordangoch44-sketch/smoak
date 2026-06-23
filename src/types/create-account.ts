@@ -1,4 +1,4 @@
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 
 export interface CreateAccountWizardState {
   accountType: PublicAuthRole | null;

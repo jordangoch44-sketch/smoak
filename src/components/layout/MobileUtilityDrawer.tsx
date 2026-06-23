@@ -17,7 +17,7 @@ import {
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useStableClientState } from "@/hooks/useStableClientState";
 import { isDashboardPath, LOGIN_PATH } from "@/lib/auth-routes";
-import { afterLogoutNavigation, logoutWithToast } from "@/lib/logout-with-toast";
+import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
 import {
   getUtilityDrawerPrimaryLinks,
@@ -164,7 +164,7 @@ function DrawerTextRow({
 export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isReady, session } = useAuthSession();
+  const { isReady, session, signOut } = useAuthSession();
   const { clientReady } = useStableClientState();
   const signedIn = clientReady && isReady && isLoggedIn(session);
   const role = getUserRole(session);
@@ -172,14 +172,15 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
   const primaryLinks = getUtilityDrawerPrimaryLinks(dashboardHref);
 
   function handleLogout() {
-    logoutWithToast();
-    onClose();
-    afterLogoutNavigation(() => {
-      if (isDashboardPath(pathname) || pathname === LOGIN_PATH) {
-        router.push(LOGIN_PATH);
-      } else {
-        router.refresh();
-      }
+    void signOut().then(() => {
+      onClose();
+      afterLogoutNavigation(() => {
+        if (isDashboardPath(pathname) || pathname === LOGIN_PATH) {
+          router.push(LOGIN_PATH);
+        } else {
+          router.refresh();
+        }
+      });
     });
   }
 

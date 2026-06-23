@@ -76,23 +76,23 @@ export function SiteLocationPill({
           <span className="site-location-text__placeholder">{PLACEHOLDER_LABEL}</span>
         ) : showFull ? (
           <>
-            <span className="site-location-text__city">{city}</span>
+            <span className="site-location-text__zip">{zip}</span>
             <span className="site-location-text__sep" aria-hidden>
               {" "}
               ·{" "}
             </span>
-            <span className="site-location-text__zip">{zip}</span>
+            <span className="site-location-text__city">{city}</span>
           </>
         ) : isUnknownArea && hasZip ? (
           <>
-            <span className="site-location-text__city site-location-text__city--muted">
-              {UNKNOWN_ZIP_AREA_LABEL}
-            </span>
+            <span className="site-location-text__zip">{zip}</span>
             <span className="site-location-text__sep" aria-hidden>
               {" "}
               ·{" "}
             </span>
-            <span className="site-location-text__zip">{zip}</span>
+            <span className="site-location-text__city site-location-text__city--muted">
+              {UNKNOWN_ZIP_AREA_LABEL}
+            </span>
           </>
         ) : hasCity ? (
           <span className="site-location-text__city">{city}</span>

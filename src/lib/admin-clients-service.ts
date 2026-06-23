@@ -80,6 +80,7 @@ export function listAdminClients(
       status: "active",
       savedSpecialistsCount: loadSavedTrainerIdsForUser(
         getClientUserId({
+          userId: "dev-client",
           role: "client",
           email: DEV_CLIENT_CREDENTIALS.email,
           signedInAt: "",

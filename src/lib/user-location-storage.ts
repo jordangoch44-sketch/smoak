@@ -254,3 +254,14 @@ export function markLocationPromptSkipped(): void {
   window.localStorage.setItem(HAS_SKIPPED_LOCATION_PROMPT_KEY, "true");
   dispatchUserLocationChange();
 }
+
+/** Clear saved ZIP location (e.g. on client logout — profile is source of truth on next login). */
+export function clearSavedUserZipLocation(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(USER_ZIP_CODE_KEY);
+  window.localStorage.removeItem(USER_ZIP_PLACE_NAME_KEY);
+  window.localStorage.removeItem(USER_ZIP_STATE_KEY);
+  window.localStorage.removeItem(USER_ZIP_LATITUDE_KEY);
+  window.localStorage.removeItem(USER_ZIP_LONGITUDE_KEY);
+  dispatchUserLocationChange();
+}

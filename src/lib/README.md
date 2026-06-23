@@ -38,16 +38,27 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 
 - `media/crop-image.ts` — crop + `readFileAsDataUrl` (persistable data URLs)
 
+## Auth (Phase 2)
+
+- `auth/marketplace-auth.ts` — Supabase sign-in/up/reset/admin
+- `profiles/profile-service.ts` — `profiles` + `user_roles` upserts
+- `client-profile-location.ts` — profile ZIP → header/explore
+- `auth-session-store.ts`, `auth-session-storage.ts` — session snapshot (dev fallback)
+- `dev-auth.ts` — mock credentials when Supabase env absent (`npm run dev` only)
+
+See `docs/PHASE2_AUTH_ARCHITECTURE.md`.
+
 ## Storage helpers
 
-- `dev-storage-keys.ts` — dev key registry
+- `dev-storage-keys.ts` — Phase 3 localStorage key registry
 - `user-location-storage.ts`, `user-location-store.ts`
 - `geo/*`, `zip-to-marketplace-city.ts`
 
 ## Clients
 
 - `admin-clients-service.ts`, `create-account-profile-storage.ts`
-- `saved-trainers-*`, `specialist-saves.ts`
+- `saved-trainers-service.ts`, `saved-trainers-store.ts`, `saved-trainers-storage.ts` (Phase 3a — Supabase + legacy import)
+- `specialist-saves.ts` — pending save after login
 
 ## Admin platform
 

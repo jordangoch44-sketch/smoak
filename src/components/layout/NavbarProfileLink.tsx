@@ -12,7 +12,7 @@ import {
   LOGIN_PATH,
 } from "@/lib/auth-routes";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
-import { afterLogoutNavigation, logoutWithToast } from "@/lib/logout-with-toast";
+import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import { useStableClientState } from "@/hooks/useStableClientState";
 import { cn } from "@/lib/utils";
 import { LoginSuggestionPopover } from "./LoginSuggestionPopover";
@@ -39,7 +39,7 @@ export function NavbarProfileLink({
   const pathname = usePathname();
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
-  const { isReady, session } = useAuthSession();
+  const { isReady, session, signOut } = useAuthSession();
   const { clientReady } = useStableClientState();
   const [open, setOpen] = useState(false);
 
@@ -74,14 +74,15 @@ export function NavbarProfileLink({
   }, [open]);
 
   function handleLogout() {
-    logoutWithToast();
-    setOpen(false);
-    afterLogoutNavigation(() => {
-      if (isDashboardPath(pathname) || pathname === LOGIN_PATH) {
-        router.push(LOGIN_PATH);
-      } else {
-        router.refresh();
-      }
+    void signOut().then(() => {
+      setOpen(false);
+      afterLogoutNavigation(() => {
+        if (isDashboardPath(pathname) || pathname === LOGIN_PATH) {
+          router.push(LOGIN_PATH);
+        } else {
+          router.refresh();
+        }
+      });
     });
   }
 

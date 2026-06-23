@@ -40,22 +40,29 @@ export function ClientDashboardPageClient() {
   const router = useRouter();
   const { isReady, session } = useRequireAuth("client");
   const { signOut } = useAuthSession();
-  const { getSavedTrainers } = useSavedTrainers();
+  const { isSavesReady, isSavesLoading, savesError, savedCount, getSavedTrainers } = useSavedTrainers();
   const { entries: recentSearches } = useRecentSearches();
   const saved = useMemo(() => getSavedTrainers(), [getSavedTrainers]);
   const recommended = DASHBOARD_RECOMMENDED_TRAINERS;
 
-  if (!isReady || !session) {
+  if (!isReady || !session || !isSavesReady) {
     return (
       <div className="dashboard-page dashboard-page--loading">
         <div className="dashboard-page__content">
-          <p className="dashboard-page__subtitle">Loading your dashboard…</p>
+          <p className="dashboard-page__subtitle">
+            {isSavesLoading
+              ? "Loading your saved specialists…"
+              : savesError
+                ? "Could not sync saved specialists — showing cached shortlist."
+                : "Loading your dashboard…"}
+          </p>
         </div>
       </div>
     );
   }
 
-  const firstName = session.email.split("@")[0] || "there";
+  // Greeting must reflect profiles.first_name (via session.firstName).
+  const firstName = session.firstName?.trim() || "there";
 
   function handleSignOut() {
     signOut();
@@ -86,7 +93,11 @@ export function ClientDashboardPageClient() {
       <div className="dashboard-grid">
         <DashboardSection
           title="Saved specialists"
-          description={`${saved.length} in your shortlist`}
+          description={
+            savesError
+              ? `${saved.length} in your shortlist (offline cache)`
+              : `${savedCount} in your shortlist`
+          }
           href="/saved"
           linkLabel="Open saved"
           className="dashboard-grid__span-2"

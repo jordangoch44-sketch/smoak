@@ -24,10 +24,10 @@ export function NavbarSavedLink({
 }: NavbarSavedLinkProps) {
   const pathname = usePathname();
   const { clientReady } = useStableClientState();
-  const { isReady, savedCount } = useSavedTrainers();
+  const { isReady, isSavesReady, savedCount } = useSavedTrainers();
   const { session } = useAuthSession();
   const showBadge =
-    clientReady && isReady && canSaveSpecialists(session) && savedCount > 0;
+    clientReady && isReady && isSavesReady && canSaveSpecialists(session) && savedCount > 0;
   const onSavedRoute = pathname === "/saved";
   const active = open || onSavedRoute;
   return (

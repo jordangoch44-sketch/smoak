@@ -187,7 +187,7 @@ function MobileBottomNavShell() {
   const isTabletViewport = useTabletViewport();
   const { clientReady } = useStableClientState();
   const { isReady, session } = useAuthSession();
-  const { isReady: savesReady, savedCount } = useSavedTrainers();
+  const { isReady: savesReady, isSavesReady, savedCount } = useSavedTrainers();
 
   const profileAuthState = getMobileBottomNavProfileAuthState(
     clientReady,
@@ -195,7 +195,7 @@ function MobileBottomNavShell() {
     session
   );
   const showSaveBadge =
-    clientReady && savesReady && canSaveSpecialists(session) && savedCount > 0;
+    clientReady && savesReady && isSavesReady && canSaveSpecialists(session) && savedCount > 0;
   const items = useMemo(
     () => getMobileBottomNavItems(session),
     [session]

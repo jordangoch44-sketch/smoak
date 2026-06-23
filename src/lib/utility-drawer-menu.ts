@@ -3,7 +3,7 @@ import {
   isDashboardPath,
   LOGIN_PATH,
 } from "@/lib/auth-routes";
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 import { SITE_ROUTES } from "@/lib/navigation";
 
 export type UtilityDrawerPrimaryId =

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
 import { getUserRole } from "@/lib/specialist-saves";
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 
 /** Redirect unauthenticated or wrong-role users away from a role-specific dashboard */
 export function useRequireAuth(requiredRole: PublicAuthRole): {

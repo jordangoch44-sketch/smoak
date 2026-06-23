@@ -15,6 +15,7 @@ const SmoacWelcomeIntro = dynamic(
 );
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -32,15 +33,15 @@ import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
 import { submitClientApplication } from "@/lib/client-application-submit";
 import { persistCreateAccountProfile } from "@/lib/create-account-profile-storage";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
-import { validateDevSignup } from "@/lib/dev-auth";
-import type { PublicAuthRole } from "@/lib/dev-auth";
+import type { PublicAuthRole } from "@/types/auth-roles";
 import {
   INITIAL_CREATE_ACCOUNT_STATE,
   type CreateAccountProfile,
   type CreateAccountWizardState,
 } from "@/types/create-account";
 import { WizardIncompleteSubmitModal } from "@/components/auth/WizardIncompleteSubmitModal";
-import { getClientAccountMissingFields } from "@/lib/client-account-validation";
+import { getClientAccountMissingFields, getClientAccountMissingFieldsForStep } from "@/lib/client-account-validation";
+import { hydrateClientLocationFromSession } from "@/lib/client-profile-location";
 import { cn } from "@/lib/utils";
 import { SpecialistOnboardingWizard } from "@/components/auth/specialist/SpecialistOnboardingWizard";
 import { useCreateAccountIntroGate } from "@/hooks/useCreateAccountIntroGate";
@@ -185,7 +186,7 @@ export function CreateAccountWizardClient({
   initialReturnToSaved = false,
 }: CreateAccountWizardClientProps) {
   const router = useRouter();
-  const { isReady, session, signIn } = useAuthSession();
+  const { isReady, session, signUp } = useAuthSession();
   const { showToast } = useToast();
   const { showToast: showSaveToast } = useSaveToast();
   const [step, setStep] = useState<WizardStep>(1);
@@ -261,6 +262,17 @@ export function CreateAccountWizardClient({
       setError(null);
       return;
     }
+    if (
+      step === 4 &&
+      (state.accountType ?? "client") === "client" &&
+      getClientAccountMissingFieldsForStep(4, state).length > 0
+    ) {
+      const labels = getClientAccountMissingFieldsForStep(4, state).map(
+        (field) => field.label
+      );
+      setError(`Complete required fields: ${labels.join(", ")}`);
+      return;
+    }
     if (step < CREATE_ACCOUNT_TOTAL_STEPS) {
       setStep((prev) => (prev + 1) as WizardStep);
       setError(null);
@@ -269,7 +281,7 @@ export function CreateAccountWizardClient({
     handleCreateAccount(false);
   }
 
-  function handleCreateAccount(force: boolean) {
+  async function handleCreateAccount(force: boolean) {
     if (submitting) return;
 
     if (!force && missingFields.length > 0) {
@@ -281,11 +293,16 @@ export function CreateAccountWizardClient({
 
     const resolvedAccountType = state.accountType ?? "client";
     const trimmedEmail = state.email.trim();
-    const validatedRole = validateDevSignup(
-      resolvedAccountType,
-      trimmedEmail,
-      state.password
-    );
+
+    if (
+      resolvedAccountType === "client" &&
+      !/^\d{5}$/.test(state.clientZipCode.trim())
+    ) {
+      setError("Enter a valid 5-digit ZIP code before creating your account.");
+      setShowIncompleteModal(false);
+      setStep(4);
+      return;
+    }
 
     setSubmitting(true);
     setError(null);
@@ -317,6 +334,40 @@ export function CreateAccountWizardClient({
 
       persistCreateAccountProfile(profile);
 
+      const signUpResult = await signUp(
+        resolvedAccountType,
+        trimmedEmail,
+        state.password,
+        {
+          firstName: state.firstName.trim(),
+          lastName: state.lastName.trim(),
+          clientProfile:
+            resolvedAccountType === "client" ? profile : undefined,
+          specialistProfile:
+            resolvedAccountType === "specialist" ? profile : undefined,
+        }
+      );
+
+      if (signUpResult.ok === false) {
+        setError(signUpResult.message);
+        setSubmitting(false);
+        return;
+      }
+
+      if (signUpResult.ok === "confirm_email") {
+        showToast({
+          type: "info",
+          message: "Check your email to confirm your account, then sign in.",
+        });
+        setSubmitting(false);
+        router.push(LOGIN_PATH);
+        return;
+      }
+
+      if (resolvedAccountType === "client" && signUpResult.ok === true) {
+        await hydrateClientLocationFromSession(signUpResult.session);
+      }
+
       if (resolvedAccountType === "client") {
         submitClientApplication({
           firstName: state.firstName.trim(),
@@ -333,10 +384,6 @@ export function CreateAccountWizardClient({
         });
       }
 
-      if (validatedRole) {
-        signIn(validatedRole, trimmedEmail);
-      }
-
       showToast({
         type: "success",
         message:
@@ -345,9 +392,11 @@ export function CreateAccountWizardClient({
             : "Account created — welcome to SMOAC",
       });
 
-      const { path, toast } = resolvePostLoginNavigation(
-        validatedRole ?? "client",
-        { returnToSaved: wantsReturnToSaved() }
+      const navRole: PublicAuthRole =
+        signUpResult.session.role === "specialist" ? "specialist" : "client";
+
+      const { path, toast } = resolvePostLoginNavigation(navRole, {
+        returnToSaved: wantsReturnToSaved() }
       );
       if (toast) {
         showSaveToast(toast);
@@ -376,9 +425,13 @@ export function CreateAccountWizardClient({
   }
 
   const reviewSummary = useMemo(() => {
-    const locationLine = [state.clientCity, state.clientNeighborhood]
+    const locationLine = [
+      state.clientZipCode.trim(),
+      state.clientCity.trim(),
+      state.clientNeighborhood.trim(),
+    ]
       .filter(Boolean)
-      .join(", ");
+      .join(" · ");
 
     return {
       locationLine,
@@ -461,14 +514,12 @@ export function CreateAccountWizardClient({
               </label>
               <label className="login-field">
                 <span className="login-field__label">Password</span>
-                <input
-                  type="password"
+                <PasswordInput
                   name="password"
                   autoComplete="new-password"
                   value={state.password}
                   onChange={(e) => patchState({ password: e.target.value })}
                   placeholder="At least 6 characters"
-                  className="login-field__input"
                 />
               </label>
             </div>
@@ -541,7 +592,7 @@ export function CreateAccountWizardClient({
                   />
                 </label>
                 <label className="login-field">
-                  <span className="login-field__label">Preferred ZIP</span>
+                  <span className="login-field__label">ZIP code</span>
                   <input
                     type="text"
                     name="clientZipCode"
@@ -555,6 +606,7 @@ export function CreateAccountWizardClient({
                     }
                     placeholder="92126"
                     maxLength={5}
+                    required
                     className="login-field__input"
                   />
                 </label>

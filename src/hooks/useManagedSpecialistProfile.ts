@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore, useEffect, useRef } from "react";
+import { useSyncExternalStore } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
   applySpecialistProfileOverrides,
@@ -8,7 +8,6 @@ import {
   overridesFromTrainer,
 } from "@/lib/specialist-profile-overrides";
 import {
-  describeManagedProfileSource,
   getManagedTrainerBaseById,
   resolveManagedSpecialistId,
   saveManagedSpecialistProfileEdits,
@@ -32,20 +31,9 @@ function getApplicationRevision(sessionEmail?: string): string {
   return application ? `${application.id}:${application.updatedAt}` : trainerId;
 }
 
-function getOverridesRevision(
-  sessionEmail: string | undefined,
-  overridesMap: Record<string, unknown>
-): string {
-  const trainerId = resolveManagedSpecialistId(sessionEmail);
-  if (!trainerId) return "";
-  const overrides = overridesMap[trainerId];
-  return overrides ? JSON.stringify(overrides) : trainerId;
-}
-
 export function useManagedSpecialistProfile() {
   const { session } = useAuthSession();
   const sessionEmail = session?.email;
-  const loggedSourceRef = useRef<string | null>(null);
 
   const applicationRevision = useSyncExternalStore(
     subscribeSpecialistApplications,
@@ -59,12 +47,11 @@ export function useManagedSpecialistProfile() {
     getSpecialistProfilesServerSnapshot
   );
 
-  const overridesRevision = getOverridesRevision(sessionEmail, overridesMap);
-
   const trainerId = resolveManagedSpecialistId(sessionEmail);
   const application = trainerId
     ? getSpecialistApplicationById(trainerId)
     : null;
+  void applicationRevision;
   const base = trainerId ? getManagedTrainerBaseById(trainerId) : undefined;
   const storedOverrides = trainerId ? overridesMap[trainerId] ?? null : null;
   const trainer = base
@@ -72,20 +59,6 @@ export function useManagedSpecialistProfile() {
     : undefined;
 
   const formDefaults = base ? overridesFromTrainer(base, storedOverrides) : null;
-
-  useEffect(() => {
-    if (!trainerId) return;
-    const source = describeManagedProfileSource(trainerId, application);
-    const signature = `${source}:${applicationRevision}:${overridesRevision}`;
-    if (loggedSourceRef.current === signature) return;
-    loggedSourceRef.current = signature;
-    console.log("[SMOAC PROFILE SAVE]", `Loaded profile source: ${source}`);
-  }, [
-    trainerId,
-    application,
-    applicationRevision,
-    overridesRevision,
-  ]);
 
   function saveForm(form: SpecialistProfileEditForm): ManagedProfileSaveResult {
     if (!trainerId) {

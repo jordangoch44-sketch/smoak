@@ -8,6 +8,7 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SiteWelcomeIntroGateLazy } from "@/components/layout/SiteWelcomeIntroGateLazy";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ToastProvider } from "@/components/ui/toast";
 import { DevServiceWorkerCleanup } from "@/components/dev/DevServiceWorkerCleanup";
 
@@ -33,7 +34,7 @@ export default function SiteLayout({
         <DevServiceWorkerCleanup />
       ) : null}
       <ToastProvider>
-        <AppProviders>
+        <AppProviders supabaseConfigured={isSupabaseConfigured()}>
           <SiteWelcomeIntroGateLazy />
           <SiteHeader />
           <AppMain>{children}</AppMain>

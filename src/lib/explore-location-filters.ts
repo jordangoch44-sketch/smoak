@@ -1,3 +1,4 @@
+import { getEffectiveClientZip } from "@/lib/client-profile-location";
 import {
   CITY_NEIGHBORHOODS,
   isMarketplaceCity,
@@ -9,6 +10,7 @@ import {
   loadSavedZipCode,
 } from "@/lib/user-location-storage";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
+import type { AuthSession } from "@/types/auth";
 import type { Trainer, TrainerFilters } from "@/types";
 import { providerMatchesNeighborhood } from "@/lib/provider-location";
 import { haversineMiles } from "@/lib/geo/haversine";
@@ -65,19 +67,22 @@ export function exploreFiltersFromZipCode(rawZip: string): TrainerFilters {
   };
 }
 
-export function getSavedZipExploreFilters(): TrainerFilters {
-  const zip = loadSavedZipCode();
+export function getSavedZipExploreFilters(
+  session?: AuthSession | null
+): TrainerFilters {
+  const zip = getEffectiveClientZip(session ?? null) ?? loadSavedZipCode();
   if (!zip) {
     return { ...EMPTY_TRAINER_FILTERS };
   }
   return exploreFiltersFromZipCode(zip);
 }
 
-/** Merge saved ZIP location into filters without overwriting explicit user choices */
+/** Merge profile or saved ZIP location into filters without overwriting explicit user choices */
 export function mergeExploreFiltersWithSavedLocation(
-  filters: TrainerFilters
+  filters: TrainerFilters,
+  session?: AuthSession | null
 ): TrainerFilters {
-  const saved = getSavedZipExploreFilters();
+  const saved = getSavedZipExploreFilters(session);
   if (!saved.zipCode) {
     return filters;
   }

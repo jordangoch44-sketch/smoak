@@ -9,7 +9,13 @@
     "start": "next start",
     "start:lan": "node scripts/start-lan.mjs",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:supabase": "node scripts/test-supabase-connection.mjs",
+    "test:supabase:tables": "node scripts/test-supabase-tables.mjs",
+    "test:supabase:signup": "node scripts/test-signup-grants.mjs",
+    "test:supabase:saved": "node scripts/test-saved-trainers.mjs",
+    "apply:migration": "node scripts/apply-sql-migration.mjs",
+    "apply:signup-fix": "node scripts/apply-signup-fix.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -27,6 +33,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "pg": "^8.21.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

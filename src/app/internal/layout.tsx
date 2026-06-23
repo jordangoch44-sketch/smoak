@@ -5,6 +5,8 @@ import "@/styles/dashboard.css";
 import "@/styles/admin-dashboard.css";
 import "@/styles/internal-portal.css";
 import { InternalAuthSessionProvider } from "@/contexts/InternalAuthSessionContext";
+import { SupabaseConfigProvider } from "@/contexts/SupabaseConfigContext";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -24,7 +26,9 @@ export default function InternalLayout({
 }>) {
   return (
     <div className={`${inter.variable} internal-shell antialiased`}>
-      <InternalAuthSessionProvider>{children}</InternalAuthSessionProvider>
+      <SupabaseConfigProvider enabled={isSupabaseConfigured()}>
+        <InternalAuthSessionProvider>{children}</InternalAuthSessionProvider>
+      </SupabaseConfigProvider>
     </div>
   );
 }

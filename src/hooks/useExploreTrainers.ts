@@ -31,7 +31,6 @@ import {
   getSavedZipExploreFilters,
   mergeExploreFiltersWithSavedLocation,
 } from "@/lib/explore-location-filters";
-import { recordRecentSearch } from "@/lib/recent-searches-store";
 import {
   getHiddenTrainersServerSnapshot,
   getHiddenTrainersSnapshot,
@@ -59,8 +58,12 @@ import {
   useActiveUserCoordinatesKey,
 } from "@/hooks/useActiveUserCoordinates";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
+import { recordRecentSearch } from "@/lib/recent-searches-store";
+import type { AuthSession } from "@/types/auth";
+
 import type { TrainerFilters } from "@/types";
 
 interface UseExploreTrainersOptions {
@@ -113,7 +116,8 @@ function filtersEqual(a: TrainerFilters, b: TrainerFilters): boolean {
 
 function buildInitialFilters(
   searchParams: URLSearchParams,
-  initialSpecialty: string
+  initialSpecialty: string,
+  session: AuthSession | null
 ): TrainerFilters {
   const fromUrl = filtersFromSearchParams(searchParams);
   const base: TrainerFilters = {
@@ -122,15 +126,16 @@ function buildInitialFilters(
     specialty: initialSpecialty || fromUrl.specialty,
   };
   if (hasExplicitFilterParams(searchParams)) return base;
-  return mergeExploreFiltersWithSavedLocation(base);
+  return mergeExploreFiltersWithSavedLocation(base, session);
 }
 
 function filtersFromUrlOrSaved(
   fromUrl: TrainerFilters,
-  hasExplicit: boolean
+  hasExplicit: boolean,
+  session: AuthSession | null
 ): TrainerFilters {
   const merged = { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
-  return hasExplicit ? merged : mergeExploreFiltersWithSavedLocation(merged);
+  return hasExplicit ? merged : mergeExploreFiltersWithSavedLocation(merged, session);
 }
 
 /** Apply URL-driven state updates outside the effect body (satisfies react-hooks/set-state-in-effect) */
@@ -146,11 +151,16 @@ export function useExploreTrainers({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
+  const { session } = useAuthSession();
   const userCoords = useActiveUserCoordinates();
   const coordsKey = useActiveUserCoordinatesKey();
 
   const initialQ = initialQuery || searchParams.get("q") || "";
-  const initialBaseFilters = buildInitialFilters(searchParams, initialSpecialty);
+  const initialBaseFilters = buildInitialFilters(
+    searchParams,
+    initialSpecialty,
+    null
+  );
   const initialParsed = applySearchQueryToExploreState(initialQ, {
     ...EMPTY_TRAINER_FILTERS,
     gender: initialBaseFilters.gender,
@@ -259,19 +269,19 @@ export function useExploreTrainers({
       setDisplayQuery("");
       setSearchQuery("");
       setFiltersState((prev) => {
-        const next = filtersFromUrlOrSaved(fromUrl, explicit);
+        const next = filtersFromUrlOrSaved(fromUrl, explicit, session);
         return filtersEqual(prev, next) ? prev : next;
       });
     });
-  }, [searchParams]);
+  }, [searchParams, session]);
 
-  /* Re-apply saved preferred ZIP when header location changes */
+  /* Re-apply profile/saved ZIP when auth session or header location changes */
   useEffect(() => {
-    function onPreferredLocationChange() {
+    function applyPreferredLocation() {
       if (hasExplicitFilterParams(searchParams)) return;
       applyUrlSearchSync(() => {
         setFiltersState((prev) => {
-          const saved = getSavedZipExploreFilters();
+          const saved = getSavedZipExploreFilters(session);
           const next = saved.zipCode
             ? {
                 ...prev,
@@ -294,15 +304,16 @@ export function useExploreTrainers({
 
     window.addEventListener(
       USER_LOCATION_CHANGE_EVENT,
-      onPreferredLocationChange
+      applyPreferredLocation
     );
+    applyPreferredLocation();
     return () => {
       window.removeEventListener(
         USER_LOCATION_CHANGE_EVENT,
-        onPreferredLocationChange
+        applyPreferredLocation
       );
     };
-  }, [searchParams, scheduleUrlSync, displayQuery]);
+  }, [searchParams, scheduleUrlSync, displayQuery, session?.userId, session?.clientZipCode]);
 
   const setFilters = useCallback(
     (action: SetStateAction<TrainerFilters>) => {
@@ -382,17 +393,20 @@ export function useExploreTrainers({
   const clearFilters = useCallback(() => {
     let nextFilters: TrainerFilters | null = null;
     setFiltersState((prev) => {
-      nextFilters = mergeExploreFiltersWithSavedLocation({
-        ...EMPTY_TRAINER_FILTERS,
-        gender: prev.gender,
-        priceMax: prev.priceMax,
-      });
+      nextFilters = mergeExploreFiltersWithSavedLocation(
+        {
+          ...EMPTY_TRAINER_FILTERS,
+          gender: prev.gender,
+          priceMax: prev.priceMax,
+        },
+        session
+      );
       return nextFilters;
     });
     if (nextFilters) {
       scheduleUrlSync(nextFilters, displayQuery);
     }
-  }, [scheduleUrlSync, displayQuery]);
+  }, [scheduleUrlSync, displayQuery, session]);
 
   const submitSearch = useCallback(
     (rawQuery: string) => {
@@ -404,11 +418,14 @@ export function useExploreTrainers({
         profession: "",
         specialty: "",
       });
-      const nextFilters = mergeExploreFiltersWithSavedLocation({
-        ...applied.filters,
-        gender: filters.gender,
-        priceMax: filters.priceMax,
-      });
+      const nextFilters = mergeExploreFiltersWithSavedLocation(
+        {
+          ...applied.filters,
+          gender: filters.gender,
+          priceMax: filters.priceMax,
+        },
+        session
+      );
       setDisplayQuery(applied.displayQuery);
       setSearchQuery(applied.residualQuery);
       setFiltersState(nextFilters);
@@ -417,7 +434,7 @@ export function useExploreTrainers({
       }
       scheduleUrlSync(nextFilters, applied.displayQuery);
     },
-    [filters, scheduleUrlSync]
+    [filters, scheduleUrlSync, session]
   );
 
   const clearSearch = useCallback(() => {
@@ -425,20 +442,23 @@ export function useExploreTrainers({
     setDisplayQuery("");
     setSearchQuery("");
     setFiltersState((prev) => {
-      nextFilters = mergeExploreFiltersWithSavedLocation({
-        ...prev,
-        zipCode: "",
-        city: "",
-        neighborhood: "",
-        profession: "",
-        specialty: "",
-      });
+      nextFilters = mergeExploreFiltersWithSavedLocation(
+        {
+          ...prev,
+          zipCode: "",
+          city: "",
+          neighborhood: "",
+          profession: "",
+          specialty: "",
+        },
+        session
+      );
       return nextFilters;
     });
     if (nextFilters) {
       scheduleUrlSync(nextFilters, "");
     }
-  }, [scheduleUrlSync]);
+  }, [scheduleUrlSync, session]);
 
   const clearAll = useCallback(() => {
     const cleared = { ...EMPTY_TRAINER_FILTERS };

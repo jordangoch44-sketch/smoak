@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { useMemo } from "react";
+import { getEffectiveClientZip } from "@/lib/client-profile-location";
 import { UNKNOWN_ZIP_AREA_LABEL } from "@/lib/geo/zip-place-names";
 import {
   getPersonalizationCitySnapshot,
@@ -12,38 +13,43 @@ import {
 } from "@/lib/user-location-store";
 import { getZipPlaceDisplayName } from "@/lib/user-location-storage";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
+import { useAuthSession } from "@/hooks/useAuthSession";
 
 function buildDisplayLabel(
   zip: string | null,
-  placeName: string | null,
-  geoCity: string | null
+  placeName: string | null
 ): { label: string; isPlaceholder: boolean; isUnknownArea: boolean } {
-  if (!zip && !placeName && !geoCity) {
-    return { label: "Enter ZIP", isPlaceholder: true, isUnknownArea: false };
+  if (!zip) {
+    return {
+      label: "Enter ZIP",
+      isPlaceholder: true,
+      isUnknownArea: false,
+    };
   }
   if (zip && placeName) {
     return {
-      label: `${placeName} · ${zip}`,
+      label: `${zip} · ${placeName}`,
       isPlaceholder: false,
       isUnknownArea: false,
     };
   }
   if (zip) {
     return {
-      label: `${UNKNOWN_ZIP_AREA_LABEL} · ${zip}`,
+      label: `${zip} · ${UNKNOWN_ZIP_AREA_LABEL}`,
       isPlaceholder: false,
       isUnknownArea: true,
     };
   }
   return {
-    label: geoCity ?? "Enter ZIP",
-    isPlaceholder: !geoCity,
+    label: "Enter ZIP",
+    isPlaceholder: true,
     isUnknownArea: false,
   };
 }
 
 export function useUserLocation() {
-  const zip = useSyncExternalStore(
+  const { session } = useAuthSession();
+  const localZip = useSyncExternalStore(
     subscribeUserLocation,
     getUserZipSnapshot,
     getUserZipServerSnapshot
@@ -55,14 +61,19 @@ export function useUserLocation() {
   );
   const editor = useUserLocationEditor();
 
+  const zip = useMemo(
+    () => getEffectiveClientZip(session) ?? localZip,
+    [session, localZip]
+  );
+
   const placeName = useMemo(() => {
     if (!zip) return geoCity;
     return getZipPlaceDisplayName(zip);
   }, [zip, geoCity]);
 
   const { label: pillLabel, isPlaceholder, isUnknownArea } = useMemo(
-    () => buildDisplayLabel(zip, zip ? placeName : null, zip ? null : geoCity),
-    [zip, placeName, geoCity]
+    () => buildDisplayLabel(zip, zip ? placeName : null),
+    [zip, placeName]
   );
 
   return {
