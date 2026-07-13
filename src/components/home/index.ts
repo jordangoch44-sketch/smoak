@@ -1,10 +1,11 @@
 export { Hero } from "./Hero";
-export { HeroTrustStats } from "./HeroTrustStats";
 export { LocationPersonalizationGate } from "./LocationPersonalizationGate";
 export { SearchBar } from "./SearchBar";
+export { SponsoredSpecialists } from "./SponsoredSpecialists";
 export { Top50InYourCity } from "./Top50InYourCity";
 export { FeaturedTrainers } from "./FeaturedTrainers";
 export { Categories } from "./Categories";
+export { NewSpecialists } from "./NewSpecialists";
 export { HowItWorks } from "./HowItWorks";
 export { Trust } from "./Trust";
 export { CTA } from "./CTA";

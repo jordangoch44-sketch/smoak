@@ -1,5 +1,6 @@
 import { sendClientApplicationConfirmationEmail } from "@/lib/email/confirmation-email-service";
-import { saveClientApplication } from "@/lib/client-application-storage";
+import { saveClientApplicationAsync } from "@/lib/client-application-storage";
+import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import { assertCanSubmitClientApplication } from "@/lib/specialist-application-validation";
 import type {
   ClientApplication,
@@ -15,10 +16,10 @@ function slugifyId(email: string): string {
   return `client-${base || "user"}-${Date.now().toString(36)}`;
 }
 
-/** DEV ONLY — persist client Join Now questionnaire for admin review */
-export function submitClientApplication(
+/** Persist client Join Now questionnaire for admin review (Supabase when configured). */
+export async function submitClientApplication(
   input: ClientApplicationSubmitInput
-): ClientApplication {
+): Promise<ClientApplication> {
   const trimmedEmail = input.email.trim();
   assertCanSubmitClientApplication(trimmedEmail);
 
@@ -27,6 +28,7 @@ export function submitClientApplication(
     .map((part) => part.trim())
     .filter(Boolean)
     .join(" ");
+  const session = getAuthSessionSnapshot();
 
   const application: ClientApplication = {
     id: slugifyId(trimmedEmail),
@@ -42,12 +44,16 @@ export function submitClientApplication(
     budget: input.budget.trim(),
     submittedAt: now,
     updatedAt: now,
+    userId: session?.userId ?? null,
   };
 
-  saveClientApplication(application);
+  const result = await saveClientApplicationAsync(application);
+  if (!result.ok) {
+    throw new Error(result.message);
+  }
 
-  void sendClientApplicationConfirmationEmail(application).then((result) => {
-    if (!result.success) {
+  void sendClientApplicationConfirmationEmail(application).then((emailResult) => {
+    if (!emailResult.success) {
       console.warn(
         "[SMOAC EMAIL] Client confirmation email did not send successfully"
       );

@@ -11,19 +11,18 @@ import {
   fetchProfileRow,
   fetchUserRoleRow,
   appRoleToAuthRole,
+  saveClientSignupProfile,
+  saveMinimalSignupProfile,
+  saveSpecialistQuestionnaireProfile,
+  saveSpecialistSignupProfile,
 } from "@/lib/profiles/profile-service";
+import { resolveAvatarUrlFromProfile } from "@/lib/profiles/profile-avatar";
 import type { AuthSession } from "@/types/auth";
 import type { PublicAuthRole } from "@/types/auth-roles";
 import type { AdminRoleType } from "@/types/admin-permissions";
 import { isAdminAppRole } from "@/types/auth-roles";
 import type { CreateAccountProfile } from "@/types/create-account";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
-import {
-  saveClientSignupProfile,
-  saveMinimalSignupProfile,
-  saveSpecialistQuestionnaireProfile,
-  saveSpecialistSignupProfile,
-} from "@/lib/profiles/profile-service";
 
 export type AuthResult =
   | { ok: true; session: AuthSession }
@@ -82,6 +81,7 @@ export async function buildAuthSessionFromSupabaseUser(
   const firstName = profile?.first_name?.trim() ?? "";
   const clientZipCode = profile?.client_zip_code?.trim() ?? "";
   const clientCity = profile?.client_city?.trim() ?? "";
+  const avatarUrl = resolveAvatarUrlFromProfile(profile);
 
   const session: AuthSession = {
     userId: user.id,
@@ -93,6 +93,7 @@ export async function buildAuthSessionFromSupabaseUser(
     firstName,
     clientZipCode,
     clientCity,
+    avatarUrl,
     isPremium: roleRow.is_premium,
     displayName: profile
       ? displayNameFromProfile(profile.first_name, profile.last_name, email)

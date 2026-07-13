@@ -1,0 +1,504 @@
+/* Homepage discovery redesign — search-free, section-led scroll */
+
+.home-page--discovery {
+  padding-bottom: 3rem;
+}
+
+/* Shared section chrome */
+.home-page--discovery .home-section__inner {
+  position: relative;
+  z-index: 1;
+}
+
+.home-page--discovery .home-section__header {
+  max-width: 36rem;
+  margin-bottom: 1.25rem;
+}
+
+.home-page--discovery .home-section__header--row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: none;
+}
+
+.home-page--discovery .home-section__title {
+  margin: 0;
+  font-size: clamp(1.375rem, 3.5vw, 1.75rem);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.home-page--discovery .home-section__subtitle {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.home-page--discovery .home-section__link {
+  min-height: 2.75rem;
+  align-items: center;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.42);
+  transition: color 0.2s ease;
+}
+
+.home-page--discovery .home-section__link:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.home-page--discovery .home-section__link-mobile {
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* Hero — calm, spacious, no search */
+.home-page--discovery .home-hero--discovery {
+  min-height: 0;
+  padding-top: clamp(2.5rem, 8vw, 4.5rem);
+  padding-bottom: clamp(2.25rem, 6vw, 3.5rem);
+}
+
+.home-page--discovery .home-hero__content--discovery {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 40rem;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.home-page--discovery .home-hero__content--discovery::before {
+  display: none;
+}
+
+.home-page--discovery .home-hero__headline {
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.home-page--discovery .home-hero__title {
+  font-size: clamp(2.25rem, 8vw, 3.75rem);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.home-page--discovery .home-hero__lede {
+  display: block !important;
+  max-width: 28rem;
+  margin-top: 1rem;
+  font-size: clamp(0.9375rem, 2.4vw, 1.125rem);
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.home-page--discovery .home-hero + .home-sponsored {
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 768px) {
+  .home-page--discovery .home-hero__content--discovery,
+  .home-page--discovery .home-hero__headline {
+    align-items: center;
+    text-align: center;
+    margin-inline: auto;
+  }
+
+  .home-page--discovery .home-hero__lede {
+    margin-inline: auto;
+  }
+}
+
+/* Section rhythm */
+.home-page--discovery .home-sponsored,
+.home-page--discovery .home-top50,
+.home-page--discovery .home-specialty,
+.home-page--discovery .home-new {
+  padding-block: clamp(2.25rem, 5vw, 3.5rem);
+}
+
+.home-page--discovery .home-sponsored .horizontal-carousel__track,
+.home-page--discovery .home-top50 .horizontal-carousel__track,
+.home-page--discovery .home-new .horizontal-carousel__track {
+  gap: 0.875rem;
+  padding-block: 0.25rem;
+  scroll-padding-inline: 1rem;
+}
+
+@media (min-width: 640px) {
+  .home-page--discovery .home-sponsored .horizontal-carousel__track,
+  .home-page--discovery .home-top50 .horizontal-carousel__track,
+  .home-page--discovery .home-new .horizontal-carousel__track {
+    gap: 1rem;
+  }
+}
+
+/* Sponsored cards — largest portrait inventory */
+.home-sponsored-card {
+  position: relative;
+  flex: 0 0 min(78vw, 17.5rem);
+}
+
+@media (min-width: 640px) {
+  .home-sponsored-card {
+    flex-basis: 18.5rem;
+  }
+}
+
+.home-sponsored-card__article {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(36, 36, 46, 0.82);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.home-sponsored-card__media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  background: rgba(12, 12, 16, 0.9);
+}
+
+.home-sponsored-card__thumb {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+
+.home-sponsored-card__thumb-img {
+  object-fit: cover;
+  object-position: 50% 18%;
+}
+
+.home-sponsored-card__media-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    transparent 42%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  pointer-events: none;
+}
+
+.home-sponsored-card__sponsored {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 2;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(8, 8, 12, 0.62);
+  padding: 0.25rem 0.625rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+}
+
+.home-sponsored-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1rem 1.125rem;
+}
+
+.home-sponsored-card__name {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.home-sponsored-card__profession {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.home-sponsored-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.home-sponsored-card__price {
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.home-sponsored-card__cta {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0a0a0c;
+  transition:
+    background-color 0.2s ease,
+    transform 0.18s ease;
+}
+
+.home-sponsored-card__cta:active {
+  transform: scale(0.98);
+}
+
+.home-sponsored-card .trainer-card-save {
+  top: 0.625rem !important;
+  right: 0.625rem !important;
+  z-index: 90 !important;
+}
+
+/* Top rated — photo-first, quieter chrome */
+.home-page--discovery .top50-card {
+  flex: 0 0 min(68vw, 15.5rem);
+}
+
+.home-page--discovery .top50-card__article {
+  min-height: 19rem;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(30, 30, 38, 0.8);
+}
+
+.home-page--discovery .top50-card__location,
+.home-page--discovery .top50-card__tags,
+.home-page--discovery .top50-card__badge {
+  display: none;
+}
+
+.home-page--discovery .top50-card__name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.home-page--discovery .top50-card__profession {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.home-page--discovery .top50-card__rating {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding-top: 0.5rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.home-page--discovery .top50-card__distance {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 0.75rem;
+}
+
+.home-page--discovery .top50-card__rating-count {
+  display: none;
+}
+
+/* Specialty browse cards */
+.home-specialty__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .home-specialty__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-specialty__grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.home-specialty-card {
+  display: flex;
+  min-height: 6.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    radial-gradient(
+      circle at 20% 15%,
+      rgba(var(--aurora-lavender-rgb), 0.16) 0%,
+      transparent 55%
+    ),
+    rgba(32, 32, 42, 0.78);
+  padding: 1rem 1rem 1.125rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 28px rgba(0, 0, 0, 0.28);
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.18s ease;
+}
+
+.home-specialty-card:active {
+  transform: scale(0.98);
+}
+
+.home-specialty-card__emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.home-specialty-card__name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+@media (hover: hover) {
+  .home-specialty-card:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+    background:
+      radial-gradient(
+        circle at 20% 15%,
+        rgba(var(--aurora-lavender-rgb), 0.22) 0%,
+        transparent 55%
+      ),
+      rgba(40, 40, 52, 0.88);
+  }
+}
+
+/* New specialists portrait rail */
+.home-portrait-card {
+  position: relative;
+  flex: 0 0 min(62vw, 14.5rem);
+}
+
+@media (min-width: 640px) {
+  .home-portrait-card {
+    flex-basis: 15.5rem;
+  }
+}
+
+.home-portrait-card__article {
+  overflow: hidden;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(30, 30, 38, 0.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.home-portrait-card__media {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+}
+
+.home-portrait-card__thumb {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0 !important;
+}
+
+.home-portrait-card__thumb-img {
+  object-fit: cover;
+  object-position: 50% 18%;
+}
+
+.home-portrait-card__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 45%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+  pointer-events: none;
+}
+
+.home-portrait-card__body {
+  padding: 0.875rem 0.875rem 1rem;
+}
+
+.home-portrait-card__name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.home-portrait-card__profession {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.home-portrait-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.home-portrait-card__price {
+  margin: 0.375rem 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.home-portrait-card .trainer-card-save {
+  top: 0.5rem !important;
+  right: 0.5rem !important;
+  z-index: 90 !important;
+}
+
+/* Soften old mobile search-first overrides on discovery homepage */
+@media (max-width: 767px) {
+  .home-page--discovery > .home-hero {
+    padding-top: clamp(2.25rem, 7vw, 3.25rem);
+    padding-bottom: 2rem;
+  }
+
+  .home-page--discovery > .home-hero__lede {
+    display: block !important;
+  }
+
+  .home-page--discovery .home-top50 {
+    padding-bottom: clamp(2.25rem, 5vw, 3.5rem);
+  }
+}

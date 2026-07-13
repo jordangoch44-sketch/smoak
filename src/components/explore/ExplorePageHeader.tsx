@@ -1,27 +1,29 @@
+"use client";
+
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { getExploreLocationSubtitle } from "@/lib/explore-location-subtitle";
+import type { TrainerFilters } from "@/types";
+
 interface ExplorePageHeaderProps {
-  resultCount: number;
+  filters: TrainerFilters;
   searchQuery: string;
 }
 
 export function ExplorePageHeader({
-  resultCount,
+  filters,
   searchQuery,
 }: ExplorePageHeaderProps) {
-  const trimmed = searchQuery.trim();
-  const specialistLabel = resultCount === 1 ? "specialist" : "specialists";
+  const { session } = useAuthSession();
+  const subtitle = getExploreLocationSubtitle({
+    filters,
+    session,
+    searchQuery,
+  });
 
   return (
     <header className="explore-page__header">
-      <p className="explore-page__eyebrow">Discover</p>
       <h1 className="explore-page__title">Explore Specialists</h1>
-      <p className="explore-page__subtitle">
-        {resultCount} vetted {specialistLabel} available
-      </p>
-      {trimmed ? (
-        <p className="explore-page__search-hint">
-          Showing results for &ldquo;{trimmed}&rdquo;
-        </p>
-      ) : null}
+      <p className="explore-page__subtitle">{subtitle}</p>
     </header>
   );
 }

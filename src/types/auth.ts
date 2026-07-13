@@ -15,6 +15,11 @@ export interface AuthSession {
   clientZipCode?: string;
   /** From profiles.client_city — header city label fallback */
   clientCity?: string;
+  /**
+   * From profiles.avatar_url (or specialist onboarding media fallback).
+   * Used by mobile bottom-nav Profile tab.
+   */
+  avatarUrl?: string;
   displayName?: string;
   isPremium?: boolean;
   adminRole?: AdminRoleType;

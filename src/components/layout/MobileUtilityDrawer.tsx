@@ -9,7 +9,6 @@ import {
   CloseIcon,
   HeartIcon,
   HomeIcon,
-  LayoutGridIcon,
   SearchIcon,
   TrophyIcon,
   UserIcon,
@@ -20,11 +19,13 @@ import { isDashboardPath, LOGIN_PATH } from "@/lib/auth-routes";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
 import {
+  getUtilityDrawerAccountCard,
   getUtilityDrawerPrimaryLinks,
+  isUtilityDrawerAccountActive,
   isUtilityDrawerPrimaryActive,
-  resolveUtilityDrawerDashboardHref,
   utilityDrawerLegalLinks,
   utilityDrawerSecondaryLinks,
+  type UtilityDrawerAccountCard,
   type UtilityDrawerNavItem,
   type UtilityDrawerPrimaryId,
   type UtilityDrawerPrimaryItem,
@@ -43,7 +44,6 @@ const PRIMARY_ICONS: Record<UtilityDrawerPrimaryId, ReactNode> = {
   saved: <HeartIcon className="mobile-utility-drawer__row-icon-svg" />,
   rankings: <TrophyIcon className="mobile-utility-drawer__row-icon-svg" />,
   events: <CalendarIcon className="mobile-utility-drawer__row-icon-svg" />,
-  dashboard: <LayoutGridIcon className="mobile-utility-drawer__row-icon-svg" />,
 };
 
 function DrawerPrimaryRow({
@@ -111,6 +111,45 @@ function DrawerPrimaryRow({
   );
 }
 
+function DrawerAccountCard({
+  card,
+  active,
+  animate,
+  delayMs,
+  onNavigate,
+}: {
+  card: UtilityDrawerAccountCard;
+  active: boolean;
+  animate: boolean;
+  delayMs: number;
+  onNavigate: () => void;
+}) {
+  return (
+    <TapLink
+      href={card.href}
+      className={cn(
+        "mobile-utility-drawer__account smoac-hit-target",
+        card.variant === "auth" && "mobile-utility-drawer__account--auth",
+        active && "mobile-utility-drawer__account--active",
+        animate && "mobile-utility-drawer__account--animate"
+      )}
+      style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
+      aria-current={active ? "page" : undefined}
+      onClick={onNavigate}
+    >
+      <span className="mobile-utility-drawer__account-icon" aria-hidden>
+        <UserIcon className="mobile-utility-drawer__account-icon-svg" />
+      </span>
+      <span className="mobile-utility-drawer__account-copy">
+        <span className="mobile-utility-drawer__account-title">{card.title}</span>
+        <span className="mobile-utility-drawer__account-subtitle">
+          {card.subtitle}
+        </span>
+      </span>
+    </TapLink>
+  );
+}
+
 function DrawerTextRow({
   item,
   animate,
@@ -168,8 +207,13 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
   const { clientReady } = useStableClientState();
   const signedIn = clientReady && isReady && isLoggedIn(session);
   const role = getUserRole(session);
-  const dashboardHref = resolveUtilityDrawerDashboardHref(signedIn, role);
-  const primaryLinks = getUtilityDrawerPrimaryLinks(dashboardHref);
+  const accountCard = getUtilityDrawerAccountCard({
+    signedIn,
+    role,
+    firstName: session?.firstName,
+    displayName: session?.displayName,
+  });
+  const primaryLinks = getUtilityDrawerPrimaryLinks();
 
   function handleLogout() {
     void signOut().then(() => {
@@ -239,6 +283,21 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
         </header>
 
         <div className="mobile-utility-drawer__scroll">
+          <section
+            className="mobile-utility-drawer__section mobile-utility-drawer__section--account"
+            aria-label={signedIn ? "Account" : "Sign in"}
+          >
+            <DrawerAccountCard
+              card={accountCard}
+              active={
+                signedIn ? isUtilityDrawerAccountActive(pathname) : false
+              }
+              animate={open}
+              delayMs={nextDelay()}
+              onNavigate={onClose}
+            />
+          </section>
+
           <section
             className="mobile-utility-drawer__section"
             aria-label="Primary navigation"

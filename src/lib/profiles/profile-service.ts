@@ -17,6 +17,7 @@ type ProfileUpsertPayload = {
   email: string;
   first_name: string;
   last_name: string;
+  avatar_url?: string;
   client_goals?: string[];
   client_city?: string;
   client_neighborhood?: string;
@@ -36,6 +37,7 @@ function emptyProfileFields(): Omit<
   "user_id" | "email" | "first_name" | "last_name"
 > {
   return {
+    avatar_url: "",
     client_goals: [],
     client_city: "",
     client_neighborhood: "",
@@ -199,12 +201,15 @@ export async function saveSpecialistSignupProfile(
   const lastName = nameParts.slice(1).join(" ");
   const zip = state.zipCode?.trim() ?? "";
 
+  const avatarUrl = state.media?.profilePhotoUrl?.trim() ?? "";
+
   return upsertProfileRow(supabase, {
     user_id: userId,
     email: trimmedEmail,
     first_name: firstName,
     last_name: lastName,
     ...emptyProfileFields(),
+    avatar_url: avatarUrl,
     client_zip_code: zip,
     specialist_type: state.professionalType?.trim() ?? "",
     specialist_city: state.city?.trim() ?? "",

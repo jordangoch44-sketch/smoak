@@ -102,3 +102,22 @@ export function listPublicMarketplaceTrainers(): Trainer[] {
 export function listPublicFeaturedTrainers(): Trainer[] {
   return listPublicMarketplaceTrainers().filter((trainer) => trainer.featured);
 }
+
+/** Sponsored / premium placements for homepage discovery rail */
+export function listPublicSponsoredTrainers(): Trainer[] {
+  const all = listPublicMarketplaceTrainers();
+  const sponsored = all.filter((trainer) => trainer.sponsored);
+  if (sponsored.length > 0) return sponsored;
+  return all.filter((trainer) => trainer.featured);
+}
+
+/**
+ * Newest-feeling specialists for homepage — fewer reviews as a proxy until
+ * durable join dates exist on public catalog rows.
+ */
+export function listPublicNewTrainers(): Trainer[] {
+  return [...listPublicMarketplaceTrainers()].sort((a, b) => {
+    if (a.reviewCount !== b.reviewCount) return a.reviewCount - b.reviewCount;
+    return b.rating - a.rating;
+  });
+}

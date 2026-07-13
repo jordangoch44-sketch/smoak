@@ -1,48 +1,68 @@
 "use client";
 
 import { TapLink } from "@/components/ui/TapLink";
-import { trainingGoals } from "@/data/goals";
-import { categories } from "@/data/categories";
+
+const SPECIALTIES = [
+  {
+    id: "personal-training",
+    emoji: "🏋️",
+    name: "Personal Training",
+    href: "/explore?profession=Personal+Trainer",
+  },
+  {
+    id: "physical-therapy",
+    emoji: "🩺",
+    name: "Physical Therapy",
+    href: "/explore?profession=Physical+Therapist",
+  },
+  {
+    id: "nutrition",
+    emoji: "🥗",
+    name: "Nutrition",
+    href: "/explore?specialty=Nutrition+Coaching",
+  },
+  {
+    id: "recovery",
+    emoji: "🏃",
+    name: "Recovery",
+    href: "/explore?specialty=Recovery",
+  },
+  {
+    id: "mobility",
+    emoji: "🧘",
+    name: "Mobility",
+    href: "/explore?specialty=Mobility",
+  },
+] as const;
 
 export function Categories() {
   return (
     <section
       id="categories"
-      className="home-section-aurora border-y border-white/5 bg-graphite-900 px-4 py-12 sm:px-6 sm:py-16 lg:py-20"
+      className="home-specialty home-section-aurora"
+      aria-labelledby="home-specialty-heading"
     >
-      <div className="mx-auto max-w-7xl">
-        <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">
-          Browse by goal
-        </h2>
-        <p className="mt-1 text-sm text-silver-400">
-          Jump straight to the wellness specialty you need.
-        </p>
+      <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
+        <header className="home-section__header">
+          <h2 id="home-specialty-heading" className="home-section__title">
+            Browse by Specialty
+          </h2>
+          <p className="home-section__subtitle">
+            Start with the care you need.
+          </p>
+        </header>
 
-        <div className="mt-5 flex flex-wrap gap-2 md:hidden">
-          {trainingGoals.map((goal) => (
+        <div className="home-specialty__grid">
+          {SPECIALTIES.map((specialty) => (
             <TapLink
-              key={goal.id}
-              href={goal.href}
-              className="inline-flex min-h-11 items-center rounded-full border border-white/10 bg-black/40 px-4 text-sm text-silver-200 active:bg-white/10 active:text-white"
+              key={specialty.id}
+              href={specialty.href}
+              className="home-specialty-card"
             >
-              {goal.label}
-            </TapLink>
-          ))}
-        </div>
-
-        <div className="mt-6 hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
-            <TapLink
-              key={category.id}
-              href={category.exploreHref}
-              className="group rounded-2xl border border-white/5 bg-black p-5 transition-all hover:border-white/10 hover:bg-graphite-800"
-            >
-              <h3 className="text-lg font-medium text-white group-hover:text-accent">
-                {category.name}
-              </h3>
-              <p className="mt-1 text-sm leading-relaxed text-silver-400">
-                {category.description}
-              </p>
+              <span className="home-specialty-card__emoji" aria-hidden>
+                {specialty.emoji}
+              </span>
+              <span className="home-specialty-card__name">{specialty.name}</span>
             </TapLink>
           ))}
         </div>

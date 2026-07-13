@@ -14,6 +14,7 @@
     "test:supabase:tables": "node scripts/test-supabase-tables.mjs",
     "test:supabase:signup": "node scripts/test-signup-grants.mjs",
     "test:supabase:saved": "node scripts/test-saved-trainers.mjs",
+    "test:supabase:applications": "node scripts/test-applications.mjs",
     "apply:migration": "node scripts/apply-sql-migration.mjs",
     "apply:signup-fix": "node scripts/apply-signup-fix.mjs"
   },

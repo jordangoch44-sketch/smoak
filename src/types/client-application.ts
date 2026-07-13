@@ -19,6 +19,8 @@ export interface ClientApplication {
   budget: string;
   submittedAt: string;
   updatedAt: string;
+  /** Supabase auth user id when available */
+  userId?: string | null;
 }
 
 export interface ClientApplicationSubmitInput {

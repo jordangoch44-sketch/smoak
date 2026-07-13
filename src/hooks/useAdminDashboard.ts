@@ -34,6 +34,7 @@ import {
 import {
   getClientApplicationsServerSnapshot,
   getClientApplicationsSnapshot,
+  refreshClientApplicationsFromRemote,
   subscribeClientApplications,
 } from "@/lib/client-application-storage";
 import {
@@ -44,6 +45,7 @@ import {
 import {
   getSpecialistApplicationsServerSnapshot,
   getSpecialistApplicationsSnapshot,
+  refreshSpecialistApplicationsFromRemote,
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
@@ -55,6 +57,8 @@ export function useAdminDashboard() {
   useEffect(() => {
     if (!isReady) return;
     ensureAdminApplicationSeeds();
+    refreshClientApplicationsFromRemote();
+    refreshSpecialistApplicationsFromRemote();
   }, [isReady]);
 
   const specialistMeta = useSyncExternalStore(

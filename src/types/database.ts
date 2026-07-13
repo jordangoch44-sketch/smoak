@@ -13,6 +13,8 @@ export interface ProfileRow {
   email: string;
   first_name: string;
   last_name: string;
+  /** Public profile photo URL (or data URL until Storage is wired). */
+  avatar_url?: string;
   client_goals: string[];
   client_city: string;
   client_neighborhood: string;
@@ -33,4 +35,31 @@ export interface SavedTrainerRow {
   user_id: string;
   specialist_id: string;
   created_at: string;
+}
+
+export interface ClientApplicationRow {
+  id: string;
+  user_id: string | null;
+  status: string;
+  email: string;
+  full_name: string;
+  phone: string;
+  preferred_city: string;
+  preferred_neighborhood: string;
+  preferred_zip_code: string;
+  fitness_goals: string[];
+  preferred_specialist_categories: string[];
+  budget: string;
+  submitted_at: string;
+  updated_at: string;
+}
+
+export interface SpecialistApplicationRow {
+  id: string;
+  user_id: string | null;
+  profile_status: string;
+  email: string;
+  application_data: Record<string, unknown>;
+  submitted_at: string | null;
+  updated_at: string;
 }

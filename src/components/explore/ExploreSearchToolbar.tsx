@@ -50,13 +50,7 @@ export function ExploreSearchToolbar({
 
   return (
     <div className="explore-toolbar">
-      <form
-        onSubmit={handleSubmit}
-        className={cn(
-          "explore-search-shell",
-          hasChips && "explore-search-shell--expanded"
-        )}
-      >
+      <form onSubmit={handleSubmit} className="explore-search-shell">
         <div className="explore-search-shell__row">
           <div className="explore-search-shell__field">
             <SearchIcon className="explore-search-shell__icon" />
@@ -66,7 +60,7 @@ export function ExploreSearchToolbar({
               enterKeyHint="search"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Specialist name, specialty, or city"
+              placeholder="Search by name, specialty, or city"
               aria-label="Search specialists"
               className="smoac-control explore-search-shell__input"
             />
@@ -81,35 +75,43 @@ export function ExploreSearchToolbar({
               </button>
             ) : null}
           </div>
-          <button
-            type="submit"
-            className="smoac-control explore-search-shell__submit"
-          >
-            Search
-          </button>
         </div>
-
-        <ExploreActiveFilterChips
-          chips={activeFilterChips}
-          onRemove={onRemoveFilter}
-          onClearAll={onClearFilters}
-        />
       </form>
 
-      <div className="explore-toolbar__actions">
+      <div className="explore-toolbar__controls">
         <button
           type="button"
           onClick={onOpenFilters}
-          className="smoac-control explore-filter-btn"
+          className={cn(
+            "smoac-control explore-filter-pill",
+            activeFilterCount > 0 && "explore-filter-pill--active"
+          )}
+          aria-label={
+            activeFilterCount > 0
+              ? `Filters, ${activeFilterCount} active`
+              : "Filters"
+          }
         >
-          <FilterIcon className="text-silver-400" />
-          Filters
+          <FilterIcon className="explore-filter-pill__icon" />
+          <span className="explore-filter-pill__label">Filters</span>
           {activeFilterCount > 0 ? (
-            <span className="explore-filter-btn__badge">
+            <span
+              key={activeFilterCount}
+              className="explore-filter-pill__badge"
+              aria-hidden
+            >
               {activeFilterCount}
             </span>
           ) : null}
         </button>
+
+        {hasChips ? (
+          <ExploreActiveFilterChips
+            chips={activeFilterChips}
+            onRemove={onRemoveFilter}
+            onClearAll={onClearFilters}
+          />
+        ) : null}
       </div>
     </div>
   );

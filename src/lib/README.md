@@ -4,10 +4,10 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 
 ## Application submission (Join Now)
 
-- `specialist-application-storage.ts` — localStorage applications (`smoac_specialist_applications`)
-- `specialist-application-submit.ts` — submit flow, hide pending from public, sync overrides
+- `applications/client-applications-db.ts`, `applications/specialist-applications-db.ts` — Supabase CRUD (Phase 3b)
+- `client-application-storage.ts` / `specialist-application-storage.ts` — hydrate + dual-write
+- `client-application-submit.ts`, `specialist-application-submit.ts`
 - `specialist-application-fields.ts`, `specialist-onboarding-validation.ts`
-- `client-application-*` — client Join Now storage, submit, admin service
 - `application-to-trainer.ts` — application → Trainer + profile override mapping
 
 ## Admin approval

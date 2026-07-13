@@ -143,7 +143,7 @@ export function SpecialistOnboardingWizard({
         return;
       }
 
-      submitSpecialistApplication(state);
+      await submitSpecialistApplication(state);
 
       showToast({
         type: "success",

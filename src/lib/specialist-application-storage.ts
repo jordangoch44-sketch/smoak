@@ -1,4 +1,14 @@
 import {
+  fetchSpecialistApplications,
+  importLocalSpecialistApplications,
+  upsertSpecialistApplication,
+} from "@/lib/applications/specialist-applications-db";
+import {
+  getMarketplaceAuthClient,
+  isMarketplaceSupabaseActive,
+} from "@/lib/auth/marketplace-auth";
+import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
+import {
   DEV_SPECIALIST_APPLICATIONS_KEY,
   DEV_SPECIALIST_ONBOARDING_DRAFT_KEY,
 } from "@/lib/dev-storage-keys";
@@ -26,60 +36,18 @@ function normalizeApplication(app: SpecialistApplication): SpecialistApplication
 }
 
 const applicationListeners = new Set<() => void>();
-
-/** Stable empty snapshot for useSyncExternalStore */
 const EMPTY_APPLICATIONS: readonly SpecialistApplication[] = [];
 
 let cachedApplications: readonly SpecialistApplication[] = EMPTY_APPLICATIONS;
+let hydrated = false;
+let hydrating = false;
+let loadGeneration = 0;
 
 function applicationsSignature(apps: readonly SpecialistApplication[]): string {
   if (apps.length === 0) return "";
   return apps
     .map((a) => `${a.id}:${a.profileStatus}:${a.updatedAt}`)
     .join("|");
-}
-
-function reloadApplicationsCache(): readonly SpecialistApplication[] {
-  if (typeof window === "undefined") {
-    return EMPTY_APPLICATIONS;
-  }
-
-  const loaded = safeParse<SpecialistApplication[]>(
-    window.localStorage.getItem(DEV_SPECIALIST_APPLICATIONS_KEY),
-    []
-  ).map(normalizeApplication);
-  const next: readonly SpecialistApplication[] =
-    loaded.length > 0 ? [...loaded] : EMPTY_APPLICATIONS;
-
-  if (applicationsSignature(next) === applicationsSignature(cachedApplications)) {
-    return cachedApplications;
-  }
-
-  cachedApplications = next;
-  return cachedApplications;
-}
-
-function notifyApplicationsChanged(): void {
-  reloadApplicationsCache();
-  applicationListeners.forEach((listener) => listener());
-}
-
-export function subscribeSpecialistApplications(
-  onStoreChange: () => void
-): () => void {
-  if (typeof window !== "undefined") {
-    reloadApplicationsCache();
-  }
-  applicationListeners.add(onStoreChange);
-  return () => applicationListeners.delete(onStoreChange);
-}
-
-export function getSpecialistApplicationsSnapshot(): readonly SpecialistApplication[] {
-  return reloadApplicationsCache();
-}
-
-export function getSpecialistApplicationsServerSnapshot(): readonly SpecialistApplication[] {
-  return EMPTY_APPLICATIONS;
 }
 
 function safeParse<T>(raw: string | null, fallback: T): T {
@@ -91,7 +59,131 @@ function safeParse<T>(raw: string | null, fallback: T): T {
   }
 }
 
-/** DEV ONLY — autosave draft between onboarding steps */
+function readLocalApplications(): SpecialistApplication[] {
+  if (typeof window === "undefined") return [];
+  return safeParse<SpecialistApplication[]>(
+    window.localStorage.getItem(DEV_SPECIALIST_APPLICATIONS_KEY),
+    []
+  ).map(normalizeApplication);
+}
+
+function writeLocalApplications(apps: readonly SpecialistApplication[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    const sanitized = apps.map((app) => ({ ...app, password: "" }));
+    if (sanitized.length === 0) {
+      window.localStorage.removeItem(DEV_SPECIALIST_APPLICATIONS_KEY);
+    } else {
+      window.localStorage.setItem(
+        DEV_SPECIALIST_APPLICATIONS_KEY,
+        JSON.stringify(sanitized)
+      );
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+function applyCache(apps: readonly SpecialistApplication[]): void {
+  const next: readonly SpecialistApplication[] =
+    apps.length > 0 ? apps.map(normalizeApplication) : EMPTY_APPLICATIONS;
+  if (applicationsSignature(next) === applicationsSignature(cachedApplications)) {
+    return;
+  }
+  cachedApplications = next;
+  applicationListeners.forEach((listener) => listener());
+}
+
+function withSessionUserId(
+  application: SpecialistApplication
+): SpecialistApplication {
+  if (application.userId) return application;
+  const session = getAuthSessionSnapshot();
+  if (!session?.userId) return application;
+  return { ...application, userId: session.userId };
+}
+
+async function hydrateFromSupabase(): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (!isMarketplaceSupabaseActive()) {
+    applyCache(readLocalApplications());
+    hydrated = true;
+    return;
+  }
+  if (hydrating) return;
+
+  const generation = ++loadGeneration;
+  hydrating = true;
+
+  const supabase = getMarketplaceAuthClient();
+  try {
+    if (!supabase) {
+      applyCache(readLocalApplications());
+      hydrated = true;
+      return;
+    }
+
+    const local = readLocalApplications();
+    const result =
+      local.length > 0
+        ? await importLocalSpecialistApplications(supabase, local)
+        : await fetchSpecialistApplications(supabase);
+
+    if (generation !== loadGeneration) return;
+
+    if (!result.ok) {
+      console.warn(
+        "[SMOAC applications] specialist hydrate failed:",
+        result.message
+      );
+      applyCache(local);
+      hydrated = true;
+      return;
+    }
+
+    applyCache(result.applications);
+    writeLocalApplications(result.applications);
+    hydrated = true;
+  } finally {
+    if (generation === loadGeneration) {
+      hydrating = false;
+    }
+  }
+}
+
+function ensureHydrated(): void {
+  if (hydrated || hydrating) return;
+  void hydrateFromSupabase();
+}
+
+export function subscribeSpecialistApplications(
+  onStoreChange: () => void
+): () => void {
+  if (typeof window !== "undefined") {
+    ensureHydrated();
+    if (!hydrated && !isMarketplaceSupabaseActive()) {
+      applyCache(readLocalApplications());
+      hydrated = true;
+    }
+  }
+  applicationListeners.add(onStoreChange);
+  return () => applicationListeners.delete(onStoreChange);
+}
+
+export function getSpecialistApplicationsSnapshot(): readonly SpecialistApplication[] {
+  if (typeof window === "undefined") return EMPTY_APPLICATIONS;
+  ensureHydrated();
+  if (!hydrated && cachedApplications === EMPTY_APPLICATIONS) {
+    return readLocalApplications();
+  }
+  return cachedApplications;
+}
+
+export function getSpecialistApplicationsServerSnapshot(): readonly SpecialistApplication[] {
+  return EMPTY_APPLICATIONS;
+}
+
+/** DEV ONLY — autosave draft between onboarding steps (stays local until submit) */
 export function persistSpecialistOnboardingDraft(
   state: SpecialistOnboardingState
 ): void {
@@ -140,22 +232,53 @@ export function listSpecialistApplications(): readonly SpecialistApplication[] {
   return getSpecialistApplicationsSnapshot();
 }
 
-export function saveSpecialistApplication(application: SpecialistApplication): void {
+export function saveSpecialistApplication(
+  application: SpecialistApplication
+): void {
   if (typeof window === "undefined") return;
+  const nextApp = withSessionUserId({ ...application, password: "" });
   const existing = listSpecialistApplications();
   const next = [
-    application,
-    ...existing.filter((item) => item.id !== application.id),
+    nextApp,
+    ...existing.filter((item) => item.id !== nextApp.id),
   ];
-  try {
-    window.localStorage.setItem(
-      DEV_SPECIALIST_APPLICATIONS_KEY,
-      JSON.stringify(next)
-    );
-    notifyApplicationsChanged();
-  } catch {
-    /* ignore */
+  applyCache(next);
+  writeLocalApplications(next);
+
+  if (!isMarketplaceSupabaseActive()) return;
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return;
+  void upsertSpecialistApplication(supabase, nextApp).then((result) => {
+    if (!result.ok) {
+      console.warn(
+        "[SMOAC applications] specialist upsert failed:",
+        result.message
+      );
+    }
+  });
+}
+
+export async function saveSpecialistApplicationAsync(
+  application: SpecialistApplication
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (typeof window === "undefined") {
+    return { ok: false, message: "Unavailable on server" };
   }
+  const nextApp = withSessionUserId({ ...application, password: "" });
+  const existing = listSpecialistApplications();
+  const next = [
+    nextApp,
+    ...existing.filter((item) => item.id !== nextApp.id),
+  ];
+  applyCache(next);
+  writeLocalApplications(next);
+
+  if (!isMarketplaceSupabaseActive()) return { ok: true };
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication client unavailable" };
+  }
+  return upsertSpecialistApplication(supabase, nextApp);
 }
 
 export function getSpecialistApplicationById(
@@ -173,4 +296,9 @@ export function findSpecialistApplicationByEmail(
       (item) => item.email.trim().toLowerCase() === normalized
     ) ?? null
   );
+}
+
+export function refreshSpecialistApplicationsFromRemote(): void {
+  hydrated = false;
+  void hydrateFromSupabase();
 }

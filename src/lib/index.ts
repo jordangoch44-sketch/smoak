@@ -37,6 +37,11 @@ export {
 export {
   getActiveMobileBottomNavItemId,
   getMobileBottomNavItems,
+  getMobileBottomNavProfilePresentation,
   isActiveNavItem,
 } from "./mobile-bottom-nav";
-export type { MobileBottomNavItem, MobileBottomNavItemId } from "./mobile-bottom-nav";
+export type {
+  MobileBottomNavItem,
+  MobileBottomNavItemId,
+  MobileBottomNavProfilePresentation,
+} from "./mobile-bottom-nav";

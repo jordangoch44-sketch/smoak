@@ -14,6 +14,14 @@ const sizeClasses = {
 
 export type TrainerThumbnailSize = keyof typeof sizeClasses;
 
+/** Portrait crop — faces sit higher in the frame than landscape stock. */
+const imageObjectClass: Record<TrainerThumbnailSize, string> = {
+  compact: "object-cover object-[50%_18%]",
+  square: "object-cover object-[50%_20%]",
+  card: "object-cover object-[50%_18%]",
+  hero: "object-cover",
+};
+
 interface TrainerThumbnailProps {
   src: string;
   name: string;
@@ -76,7 +84,7 @@ export function TrainerThumbnail({
                 ? "100vw"
                 : "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         }
-        className={cn("object-cover", imageClassName)}
+        className={cn(imageObjectClass[size], imageClassName)}
         onError={() => setFailed(true)}
       />
     </div>

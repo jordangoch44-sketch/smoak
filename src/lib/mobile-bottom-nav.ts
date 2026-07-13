@@ -8,6 +8,7 @@ import {
 import { SITE_ROUTES } from "@/lib/navigation";
 import type { AuthSession } from "@/types/auth";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
+import { getInitials } from "@/lib/utils";
 
 export type MobileBottomNavItemId =
   | "search"
@@ -71,6 +72,43 @@ export function getMobileBottomNavProfileAuthState(
 ): MobileBottomNavProfileAuthState {
   if (!clientReady || !authReady) return "signed-out";
   return isLoggedIn(session) ? "signed-in" : "signed-out";
+}
+
+export type MobileBottomNavProfilePresentation =
+  | { kind: "icon" }
+  | { kind: "avatar"; avatarUrl: string; initials: string }
+  | { kind: "initials"; initials: string };
+
+function profileNavInitials(session: AuthSession): string {
+  const fromDisplay = session.displayName?.trim() ?? "";
+  if (fromDisplay) {
+    const initials = getInitials(fromDisplay);
+    if (initials) return initials;
+  }
+  const fromFirst = session.firstName?.trim() ?? "";
+  if (fromFirst) {
+    const initials = getInitials(fromFirst);
+    if (initials) return initials;
+  }
+  const local = session.email.split("@")[0]?.trim() ?? "";
+  return getInitials(local || "U") || "U";
+}
+
+/** Avatar / initials / outline icon for the Profile tab. */
+export function getMobileBottomNavProfilePresentation(
+  authState: MobileBottomNavProfileAuthState,
+  session: AuthSession | null
+): MobileBottomNavProfilePresentation {
+  if (authState !== "signed-in" || !session || !isLoggedIn(session)) {
+    return { kind: "icon" };
+  }
+
+  const initials = profileNavInitials(session);
+  const avatarUrl = session.avatarUrl?.trim() ?? "";
+  if (avatarUrl) {
+    return { kind: "avatar", avatarUrl, initials };
+  }
+  return { kind: "initials", initials };
 }
 
 /**

@@ -1,5 +1,6 @@
 /* Site chrome pages — homepage + shared header panels (not auth/explore/profile) */
 @import "./home.css";
+@import "./home-discovery.css";
 @import "./page-transition.css";
 @import "./login-suggestion-popover.css";
 @import "./nav-profile.css";

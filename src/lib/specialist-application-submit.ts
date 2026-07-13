@@ -1,10 +1,12 @@
 import { sendSpecialistApplicationConfirmationEmail } from "@/lib/email/confirmation-email-service";
+import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import { hideTrainerId } from "@/lib/hidden-trainers-store";
 import { syncProfileOverridesFromApplication } from "@/lib/managed-specialist-profile";
+import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import {
   clearSpecialistOnboardingDraft,
-  saveSpecialistApplication,
+  saveSpecialistApplicationAsync,
 } from "@/lib/specialist-application-storage";
 import { assertCanSubmitSpecialistApplication } from "@/lib/specialist-application-validation";
 import type {
@@ -21,16 +23,17 @@ function slugifyId(email: string): string {
   return `${base || "specialist"}-${Date.now().toString(36)}`;
 }
 
-/** DEV ONLY — persist application for admin review and specialist dashboard draft */
-export function submitSpecialistApplication(
+/** Persist specialist application for admin review (Supabase when configured). */
+export async function submitSpecialistApplication(
   state: SpecialistOnboardingState
-): SpecialistApplication {
+): Promise<SpecialistApplication> {
   const trimmedEmail = state.email.trim();
   assertCanSubmitSpecialistApplication(trimmedEmail);
 
   const now = new Date().toISOString();
   const id = slugifyId(trimmedEmail);
   const enriched = enrichSpecialistApplicationFields(state);
+  const session = getAuthSessionSnapshot();
 
   const application: SpecialistApplication = {
     id,
@@ -39,6 +42,8 @@ export function submitSpecialistApplication(
     updatedAt: now,
     ...enriched,
     email: trimmedEmail,
+    password: "",
+    userId: session?.userId ?? null,
     certifications: state.certifications.filter(
       (cert) => cert.name.trim() && cert.issuer.trim()
     ),
@@ -50,18 +55,29 @@ export function submitSpecialistApplication(
     },
   };
 
-  saveSpecialistApplication(application);
+  const result = await saveSpecialistApplicationAsync(application);
+  if (!result.ok) {
+    throw new Error(result.message);
+  }
+
+  const photoUrl = application.media.profilePhotoUrl.trim();
+  if (photoUrl) {
+    void updateOwnProfileAvatarUrl(photoUrl);
+  }
+
   syncProfileOverridesFromApplication(application);
   hideTrainerId(id);
   clearSpecialistOnboardingDraft();
 
-  void sendSpecialistApplicationConfirmationEmail(application).then((result) => {
-    if (!result.success) {
-      console.warn(
-        "[SMOAC EMAIL] Specialist confirmation email did not send successfully"
-      );
+  void sendSpecialistApplicationConfirmationEmail(application).then(
+    (emailResult) => {
+      if (!emailResult.success) {
+        console.warn(
+          "[SMOAC EMAIL] Specialist confirmation email did not send successfully"
+        );
+      }
     }
-  });
+  );
 
   return application;
 }

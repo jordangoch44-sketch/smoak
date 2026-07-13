@@ -200,9 +200,9 @@ export function LoginPageClient() {
 
         <div className="login-card">
           <div className="login-card__header">
-            <h1 className="login-card__title">Welcome back</h1>
+            <h1 className="login-card__title">Log In</h1>
             <p className="login-card__subtitle">
-              Choose how you want to continue.
+              Sign in to your SMOAC account.
             </p>
           </div>
 

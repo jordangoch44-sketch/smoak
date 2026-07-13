@@ -137,21 +137,21 @@ Seed data becomes SQL seed migration or admin-import script, not bundled TS for 
 - [x] Migrate `smoac_saved_specialists_*` on first login
 - [x] QA: save heart, login gate, logout, cross-device
 
-### Client applications (Phase 3b)
+### Client applications (Phase 3b — done)
 
-- [ ] Table linked to `user_id`
-- [ ] `submitClientApplication` writes Supabase post-signup
-- [ ] Admin panel reads from DB
-- [ ] Remove `client-application-storage.ts`
+- [x] Table linked to `user_id`
+- [x] `submitClientApplication` writes Supabase post-signup
+- [x] Admin panel reads from DB (hydrate + dual-write)
+- [x] localStorage kept as import/fallback bridge
 
-### Specialist applications + onboarding
+### Specialist applications + onboarding (Phase 3b — done)
 
-- [ ] Table with `onboarding_data` jsonb (already on `profiles` for partial data)
-- [ ] Specialist wizard submit → Supabase
-- [ ] Dashboard pending state from DB status
-- [ ] Remove `specialist-application-storage.ts`
+- [x] Table with `application_data` jsonb
+- [x] Specialist wizard submit → Supabase
+- [x] Onboarding draft remains local until submit
+- [x] Dashboard/admin pending from hydrated store
 
-### Public specialist profiles
+### Public specialist profiles (Phase 3c)
 
 - [ ] Approval promotes application → `specialist_profiles`
 - [ ] Edit profile saves to DB (replace `specialist-profile-store.ts`)

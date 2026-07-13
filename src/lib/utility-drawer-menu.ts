@@ -11,8 +11,7 @@ export type UtilityDrawerPrimaryId =
   | "explore"
   | "saved"
   | "rankings"
-  | "events"
-  | "dashboard";
+  | "events";
 
 export interface UtilityDrawerNavItem {
   id: string;
@@ -27,16 +26,16 @@ export interface UtilityDrawerPrimaryItem extends UtilityDrawerNavItem {
   description: string;
 }
 
-export function getUtilityDrawerPrimaryLinks(
-  dashboardHref: string
-): UtilityDrawerPrimaryItem[] {
+export interface UtilityDrawerAccountCard {
+  href: string;
+  title: string;
+  subtitle: string;
+  variant: "profile" | "auth";
+}
+
+/** Primary nav order: Explore → Saved → Rankings → Events → Home (profile is featured separately). */
+export function getUtilityDrawerPrimaryLinks(): UtilityDrawerPrimaryItem[] {
   return [
-    {
-      id: "home",
-      label: "Home",
-      description: "Return to the main search page",
-      href: SITE_ROUTES.home,
-    },
     {
       id: "explore",
       label: "Explore Specialists",
@@ -62,10 +61,10 @@ export function getUtilityDrawerPrimaryLinks(
       href: null,
     },
     {
-      id: "dashboard",
-      label: "Dashboard",
-      description: "Manage your profile and account",
-      href: dashboardHref,
+      id: "home",
+      label: "Home",
+      description: "Return to the main search page",
+      href: SITE_ROUTES.home,
     },
   ];
 }
@@ -92,6 +91,58 @@ export function resolveUtilityDrawerDashboardHref(
   return LOGIN_PATH;
 }
 
+function displayFirstName(
+  firstName?: string | null,
+  displayName?: string | null
+): string {
+  const fromFirst = firstName?.trim() ?? "";
+  if (fromFirst) return fromFirst;
+  const fromDisplay = displayName?.trim().split(/\s+/)[0] ?? "";
+  return fromDisplay;
+}
+
+/** Featured account card at the top of the mobile menu. */
+export function getUtilityDrawerAccountCard(options: {
+  signedIn: boolean;
+  role: PublicAuthRole | null;
+  firstName?: string | null;
+  displayName?: string | null;
+}): UtilityDrawerAccountCard {
+  const { signedIn, role, firstName, displayName } = options;
+  const href = resolveUtilityDrawerDashboardHref(signedIn, role);
+
+  if (!signedIn) {
+    return {
+      href: LOGIN_PATH,
+      title: "Log In / Create Account",
+      subtitle: "Sign in to save specialists and manage your account.",
+      variant: "auth",
+    };
+  }
+
+  const name = displayFirstName(firstName, displayName);
+
+  if (role === "specialist") {
+    return {
+      href,
+      title: name || "My Profile",
+      subtitle: name
+        ? "View and manage your specialist profile"
+        : "Manage your profile, account, applications, and settings.",
+      variant: "profile",
+    };
+  }
+
+  return {
+    href,
+    title: "My Profile",
+    subtitle: name
+      ? `Welcome back, ${name}`
+      : "Manage your profile, account, applications, and settings.",
+    variant: "profile",
+  };
+}
+
 export function isUtilityDrawerPrimaryActive(
   id: UtilityDrawerPrimaryId,
   pathname: string
@@ -116,12 +167,11 @@ export function isUtilityDrawerPrimaryActive(
       );
     case "events":
       return false;
-    case "dashboard":
-      return (
-        isDashboardPath(pathname) ||
-        pathname === LOGIN_PATH
-      );
     default:
       return false;
   }
+}
+
+export function isUtilityDrawerAccountActive(pathname: string): boolean {
+  return isDashboardPath(pathname);
 }

@@ -60,6 +60,8 @@ export interface SpecialistApplication {
   password: string;
   submittedAt: string | null;
   updatedAt: string;
+  /** Supabase auth user id when available */
+  userId?: string | null;
 
   professionalType: string;
   fullName: string;

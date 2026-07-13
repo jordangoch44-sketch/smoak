@@ -19,6 +19,7 @@ import { usePersonalizationMarketplaceCity } from "@/hooks/usePersonalizationMar
 import { marketplaceCityToSlug } from "@/lib/marketplace-city-centers";
 import { Top50RankCard } from "./Top50RankCard";
 
+/** Homepage “Top Rated Near You” — city rankings rail */
 export function Top50InYourCity() {
   const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
@@ -44,40 +45,35 @@ export function Top50InYourCity() {
       className="home-top50 home-section-aurora"
       aria-labelledby="home-top50-heading"
     >
-      <div className="home-top50__glow" aria-hidden />
-
-      <div className="home-top50__inner mx-auto max-w-7xl px-4 sm:px-6">
-        <div className="home-top50__header">
-          <div className="home-top50__titles">
-            <p className="home-top50__eyebrow">City rankings</p>
-            <h2 id="home-top50-heading" className="home-top50__title">
-              Top 50 in Your City
+      <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
+        <header className="home-section__header home-section__header--row">
+          <div>
+            <h2 id="home-top50-heading" className="home-section__title">
+              Top Rated Near You
             </h2>
-            <p className="home-top50__subtitle">
+            <p className="home-section__subtitle">
               {displayCity
-                ? `The highest-rated health & wellness specialists near you in ${displayCity}.`
-                : listing.subtitle}
+                ? `Highest-rated specialists near you in ${displayCity}.`
+                : "Highest-rated specialists near you."}
             </p>
-            <p className="home-top50__city-line">{listing.displayTitle}</p>
           </div>
           <Link
             href="/rankings"
-            className="home-top50__view-all hidden shrink-0 text-sm text-silver-400 transition-colors hover:text-white sm:inline-flex sm:min-h-11 sm:items-center"
+            className="home-section__link hidden sm:inline-flex"
           >
-            See full rankings →
+            See full rankings
           </Link>
-        </div>
+        </header>
 
         <HorizontalCarousel
           className="home-top50__carousel"
           ariaLabel={`${listing.displayTitle} specialists`}
         >
-          {ranked.map(({ rank, trainer, showTopRatedBadge }, index) => (
+          {ranked.map(({ rank, trainer }, index) => (
             <Top50RankCard
               key={trainer.id}
               rank={rank}
               trainer={trainer}
-              showTopRatedBadge={showTopRatedBadge}
               priority={index < 3}
             />
           ))}
@@ -85,7 +81,7 @@ export function Top50InYourCity() {
 
         <Link
           href="/rankings"
-          className="home-top50__view-all-mobile mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-full border border-white/10 text-sm text-silver-300 transition-colors active:bg-white/5 active:text-white sm:hidden"
+          className="home-section__link-mobile mt-6 inline-flex sm:hidden"
         >
           See full rankings
         </Link>

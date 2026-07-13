@@ -369,7 +369,7 @@ export function CreateAccountWizardClient({
       }
 
       if (resolvedAccountType === "client") {
-        submitClientApplication({
+        await submitClientApplication({
           firstName: state.firstName.trim(),
           lastName: state.lastName.trim(),
           email: trimmedEmail,

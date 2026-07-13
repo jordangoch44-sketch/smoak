@@ -18,6 +18,7 @@ import {
   getSpecialistApplicationById,
   saveSpecialistApplication,
 } from "@/lib/specialist-application-storage";
+import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import {
   applySpecialistProfileOverrides,
   formToOverrides,
@@ -214,6 +215,11 @@ export function saveManagedSpecialistProfileEdits(
     }
 
     saveTrainerProfileOverrides(trainerId, overrides);
+
+    const photoUrl = form.profilePhotoUrl.trim();
+    if (photoUrl && !photoUrl.startsWith("blob:")) {
+      void updateOwnProfileAvatarUrl(photoUrl);
+    }
 
     return { ok: true, source };
   } catch (error) {

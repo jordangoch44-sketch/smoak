@@ -41,6 +41,7 @@ function sessionSignature(session: AuthSession | null): string {
     firstName: session.firstName ?? "",
     clientZipCode: session.clientZipCode ?? "",
     clientCity: session.clientCity ?? "",
+    avatarUrl: session.avatarUrl ?? "",
     signedInAt: session.signedInAt,
   });
 }

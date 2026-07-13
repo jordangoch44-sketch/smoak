@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
-import { TrainerFilters as FiltersPanel } from "./TrainerFilters";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
@@ -63,7 +62,7 @@ export function ExplorePageClient() {
 
       <div className="explore-page__content">
         <ExplorePageHeader
-          resultCount={filtered.length}
+          filters={filters}
           searchQuery={displayQuery}
         />
 
@@ -79,12 +78,6 @@ export function ExplorePageClient() {
         />
 
         <div className="explore-page__layout">
-          <aside className="explore-page__filters hidden lg:block">
-            <div className="explore-filter-panel">
-              <FiltersPanel filters={filters} onChange={setFilters} />
-            </div>
-          </aside>
-
           <main className="explore-page__results">
             <ExploreResults
               trainers={filtered}

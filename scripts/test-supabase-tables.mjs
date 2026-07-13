@@ -67,9 +67,17 @@ async function main() {
   const roles = await probeTable("user_roles");
   const profiles = await probeTable("profiles");
   const saved = await probeTable("saved_trainers");
+  const clientApps = await probeTable("client_applications");
+  const specialistApps = await probeTable("specialist_applications");
 
   console.log("");
-  if (!roles.readable || !profiles.readable || !saved.readable) {
+  if (
+    !roles.readable ||
+    !profiles.readable ||
+    !saved.readable ||
+    !clientApps.readable ||
+    !specialistApps.readable
+  ) {
     console.warn(
       "  ⚠ Tables exist but service_role cannot SELECT yet.\n" +
         "    Signup from the app uses the authenticated role and should still work.\n" +
@@ -77,11 +85,15 @@ async function main() {
         "    grant usage on schema public to service_role;\n" +
         "    grant select, insert, update, delete on table public.user_roles to service_role;\n" +
         "    grant select, insert, update, delete on table public.profiles to service_role;\n" +
-        "    grant select, insert, delete on table public.saved_trainers to service_role;\n"
+        "    grant select, insert, delete on table public.saved_trainers to service_role;\n" +
+        "    grant select, insert, update on table public.client_applications to service_role;\n" +
+        "    grant select, insert, update on table public.specialist_applications to service_role;\n"
     );
   }
 
-  console.log("Tables verified: profiles + user_roles + saved_trainers are in the database.");
+  console.log(
+    "Tables verified: profiles + user_roles + saved_trainers + applications are in the database."
+  );
 }
 
 main().catch((err) => {

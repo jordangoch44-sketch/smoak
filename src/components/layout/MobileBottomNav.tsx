@@ -1,7 +1,14 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { memo, useCallback, useMemo, type MouseEvent } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type MouseEvent,
+} from "react";
 import { TapLink } from "@/components/ui/TapLink";
 import {
   HeartIcon,
@@ -20,10 +27,12 @@ import {
   getActiveMobileBottomNavItemId,
   getMobileBottomNavItems,
   getMobileBottomNavProfileAuthState,
+  getMobileBottomNavProfilePresentation,
   isActiveNavItem,
   type MobileBottomNavItem,
   type MobileBottomNavItemId,
   type MobileBottomNavProfileAuthState,
+  type MobileBottomNavProfilePresentation,
 } from "@/lib/mobile-bottom-nav";
 import { getBottomNavTransitionKind } from "@/lib/mobile-bottom-nav-transition";
 import { formatSavedCountBadge } from "@/lib/saved-ui";
@@ -64,10 +73,72 @@ const NavIcon = memo(function NavIcon({
   }
 });
 
+const ProfileNavAvatar = memo(function ProfileNavAvatar({
+  presentation,
+  active,
+}: {
+  presentation: MobileBottomNavProfilePresentation;
+  active: boolean;
+}) {
+  const avatarUrl =
+    presentation.kind === "avatar" ? presentation.avatarUrl : "";
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [avatarUrl]);
+
+  const showPhoto =
+    presentation.kind === "avatar" && Boolean(avatarUrl) && !imageFailed;
+
+  /* Signed-in: photo or premium initials — never the generic outline icon */
+  if (presentation.kind === "avatar" || presentation.kind === "initials") {
+    if (showPhoto) {
+      return (
+        // eslint-disable-next-line @next/next/no-img-element -- data URLs + arbitrary hosts for account avatars
+        <img
+          key={avatarUrl}
+          src={avatarUrl}
+          alt=""
+          className={cn(
+            "mobile-bottom-nav__avatar",
+            active && "mobile-bottom-nav__avatar--active"
+          )}
+          draggable={false}
+          decoding="async"
+          onError={() => setImageFailed(true)}
+        />
+      );
+    }
+
+    return (
+      <span
+        className={cn(
+          "mobile-bottom-nav__avatar-fallback",
+          active && "mobile-bottom-nav__avatar-fallback--active"
+        )}
+        aria-hidden
+      >
+        {presentation.initials}
+      </span>
+    );
+  }
+
+  return (
+    <UserIcon
+      className={cn(
+        "mobile-bottom-nav__icon mobile-bottom-nav__icon--profile",
+        active && "mobile-bottom-nav__icon--active"
+      )}
+    />
+  );
+});
+
 const BottomNavItemLink = memo(function BottomNavItemLink({
   item,
   active,
   profileAuthState,
+  profilePresentation,
   showSaveBadge,
   savedCount,
   onNavigate,
@@ -75,12 +146,18 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   item: MobileBottomNavItem;
   active: boolean;
   profileAuthState?: MobileBottomNavProfileAuthState;
+  profilePresentation?: MobileBottomNavProfilePresentation;
   showSaveBadge: boolean;
   savedCount: number;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const isProfile = item.id === "profile";
   const signedIn = profileAuthState === "signed-in";
+  const hasAvatarChrome =
+    signedIn &&
+    profilePresentation &&
+    (profilePresentation.kind === "avatar" ||
+      profilePresentation.kind === "initials");
 
   return (
     <TapLink
@@ -94,13 +171,14 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
           (signedIn
             ? "mobile-bottom-nav__item--profile-signed-in"
             : "mobile-bottom-nav__item--profile-signed-out"),
+        hasAvatarChrome && "mobile-bottom-nav__item--profile-avatar",
         active && "mobile-bottom-nav__item--active"
       )}
       aria-label={
         isProfile
           ? signedIn
-            ? "Profile, logged in"
-            : "Sign in"
+            ? "Open My Profile"
+            : "Log In"
           : item.id === "saved" && showSaveBadge
             ? `${item.label}, ${savedCount} saved`
             : item.label
@@ -113,14 +191,22 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
           "mobile-bottom-nav__icon-shell",
           item.isPrimary && "mobile-bottom-nav__icon-shell--primary",
           isProfile && "mobile-bottom-nav__icon-shell--profile",
+          hasAvatarChrome && "mobile-bottom-nav__icon-shell--avatar",
           active && "mobile-bottom-nav__icon-shell--active"
         )}
       >
-        <NavIcon
-          id={item.id}
-          active={active}
-          savedCount={item.id === "saved" && showSaveBadge ? savedCount : 0}
-        />
+        {isProfile && profilePresentation ? (
+          <ProfileNavAvatar
+            presentation={profilePresentation}
+            active={active}
+          />
+        ) : (
+          <NavIcon
+            id={item.id}
+            active={active}
+            savedCount={item.id === "saved" && showSaveBadge ? savedCount : 0}
+          />
+        )}
         {item.id === "saved" && showSaveBadge ? (
           <SavedNavBadge count={savedCount} />
         ) : null}
@@ -145,6 +231,7 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
   items,
   activeById,
   profileAuthState,
+  profilePresentation,
   showSaveBadge,
   savedCount,
   onNavClick,
@@ -152,6 +239,7 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
   items: MobileBottomNavItem[];
   activeById: Record<MobileBottomNavItemId, boolean>;
   profileAuthState: MobileBottomNavProfileAuthState;
+  profilePresentation: MobileBottomNavProfilePresentation;
   showSaveBadge: boolean;
   savedCount: number;
   onNavClick: (
@@ -168,6 +256,9 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
             active={activeById[item.id]}
             profileAuthState={
               item.id === "profile" ? profileAuthState : undefined
+            }
+            profilePresentation={
+              item.id === "profile" ? profilePresentation : undefined
             }
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
@@ -194,8 +285,16 @@ function MobileBottomNavShell() {
     isReady,
     session
   );
+  const profilePresentation = useMemo(
+    () => getMobileBottomNavProfilePresentation(profileAuthState, session),
+    [profileAuthState, session]
+  );
   const showSaveBadge =
-    clientReady && savesReady && isSavesReady && canSaveSpecialists(session) && savedCount > 0;
+    clientReady &&
+    savesReady &&
+    isSavesReady &&
+    canSaveSpecialists(session) &&
+    savedCount > 0;
   const items = useMemo(
     () => getMobileBottomNavItems(session),
     [session]
@@ -246,6 +345,7 @@ function MobileBottomNavShell() {
             items={items}
             activeById={activeById}
             profileAuthState={profileAuthState}
+            profilePresentation={profilePresentation}
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
             onNavClick={handleNavClick}
