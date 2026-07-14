@@ -3,6 +3,8 @@ import {
   type PendingSaveRecord,
 } from "@/lib/dev-storage-keys";
 
+export type { PendingSaveRecord };
+
 function readPendingRecord(): PendingSaveRecord | null {
   if (typeof window === "undefined") return null;
   try {
@@ -12,6 +14,15 @@ function readPendingRecord(): PendingSaveRecord | null {
     if (typeof parsed.specialistId === "string" && parsed.specialistId.trim()) {
       return {
         specialistId: parsed.specialistId.trim(),
+        specialistName:
+          typeof parsed.specialistName === "string"
+            ? parsed.specialistName.trim()
+            : undefined,
+        profilePath:
+          typeof parsed.profilePath === "string" && parsed.profilePath.trim()
+            ? parsed.profilePath.trim()
+            : undefined,
+        actionType: "save_specialist",
         createdAt:
           typeof parsed.createdAt === "string"
             ? parsed.createdAt
@@ -33,29 +44,50 @@ function writePendingRecord(record: PendingSaveRecord | null): void {
   window.localStorage.setItem(DEV_PENDING_SAVE_KEY, JSON.stringify(record));
 }
 
-/** DEV ONLY — queue a specialist save until the user logs in as client */
-export function setPendingSave(specialistId: string): void {
+export function setPendingSave(
+  specialistId: string,
+  options?: {
+    specialistName?: string;
+    profilePath?: string;
+  }
+): void {
   const id = specialistId.trim();
   if (!id) return;
+  const path =
+    options?.profilePath?.trim() ||
+    (typeof window !== "undefined" ? window.location.pathname : "") ||
+    `/trainers/${id}`;
   writePendingRecord({
     specialistId: id,
+    specialistName: options?.specialistName?.trim() || undefined,
+    profilePath: path,
+    actionType: "save_specialist",
     createdAt: new Date().toISOString(),
   });
 }
 
-/** DEV ONLY — read pending specialist id without clearing */
 export function peekPendingSave(): string | null {
   return readPendingRecord()?.specialistId ?? null;
 }
 
-/** DEV ONLY — remove pending save without applying */
+export function peekPendingSaveRecord(): PendingSaveRecord | null {
+  return readPendingRecord();
+}
+
 export function clearPendingSave(): void {
   writePendingRecord(null);
 }
 
-/** DEV ONLY — read and clear pending specialist id */
+/** Read and clear pending specialist id */
 export function consumePendingSave(): string | null {
   const record = readPendingRecord();
   clearPendingSave();
   return record?.specialistId ?? null;
+}
+
+/** Read full record and clear — used after auth so we can show confirmation copy */
+export function consumePendingSaveRecord(): PendingSaveRecord | null {
+  const record = readPendingRecord();
+  clearPendingSave();
+  return record;
 }

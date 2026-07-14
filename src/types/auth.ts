@@ -20,6 +20,8 @@ export interface AuthSession {
    * Used by mobile bottom-nav Profile tab.
    */
   avatarUrl?: string;
+  /** From profiles.profile_completion_status */
+  profileCompletionStatus?: "incomplete" | "complete" | string;
   displayName?: string;
   isPremium?: boolean;
   adminRole?: AdminRoleType;

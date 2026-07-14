@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   DEMO_SPECIALIST_ID,
@@ -22,6 +23,8 @@ import {
 } from "@/lib/specialist-dashboard-mode";
 import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-subscription";
 import { isSpecialistPremium } from "@/lib/specialist-premium";
+import { loadSpecialistInquiryLeads } from "@/lib/inquiry/inquiry-inbox";
+import type { SpecialistLead } from "@/types/specialist-dashboard";
 
 function resolveAnalyticsTrainerId(trainerId: string | null): string {
   if (!trainerId) return DEMO_SPECIALIST_ID;
@@ -48,9 +51,24 @@ export function useSpecialistDashboard() {
     : {
         trainer: managedTrainer,
         ranking: null,
-        newLeads: [],
+        newLeads: [] as SpecialistLead[],
         subscription: getSpecialistSubscriptionForSession(session),
       };
+
+  const [inquiryLeads, setInquiryLeads] = useState<SpecialistLead[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!trainerId) return;
+
+    void loadSpecialistInquiryLeads(trainerId).then((leads) => {
+      if (!cancelled) setInquiryLeads(leads);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trainerId]);
 
   const trainer = managedTrainer ?? data.trainer;
   const analytics = getSpecialistProfileAnalytics(
@@ -83,15 +101,28 @@ export function useSpecialistDashboard() {
     subscription: data.subscription,
   });
 
+  const mergedLeads =
+    inquiryLeads.length > 0
+      ? [
+          ...inquiryLeads,
+          ...data.newLeads.filter(
+            (lead) => !inquiryLeads.some((item) => item.id === lead.id)
+          ),
+        ]
+      : data.newLeads;
+
   function handleSignOut() {
     signOut();
-    afterLogoutNavigation(() => router.push("/login"));
+    afterLogoutNavigation(() => router.push("/profile"));
   }
 
   return {
     isReady,
     session,
-    data,
+    data: {
+      ...data,
+      newLeads: mergedLeads,
+    },
     trainer,
     trainerId,
     application,

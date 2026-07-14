@@ -94,6 +94,8 @@ export async function buildAuthSessionFromSupabaseUser(
     clientZipCode,
     clientCity,
     avatarUrl,
+    profileCompletionStatus:
+      profile?.profile_completion_status?.trim() || undefined,
     isPremium: roleRow.is_premium,
     displayName: profile
       ? displayNameFromProfile(profile.first_name, profile.last_name, email)

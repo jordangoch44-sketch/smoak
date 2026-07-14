@@ -5,16 +5,16 @@ import {
   LOGIN_PATH,
   SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
+import { JOIN_FLOW_PATH } from "@/lib/join-flow";
 import { SITE_ROUTES } from "@/lib/navigation";
 import type { AuthSession } from "@/types/auth";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
 import { getInitials } from "@/lib/utils";
 
 export type MobileBottomNavItemId =
+  | "home"
   | "search"
   | "saved"
-  | "home"
-  | "join"
   | "profile";
 
 export interface MobileBottomNavItem {
@@ -24,11 +24,12 @@ export interface MobileBottomNavItem {
   isPrimary?: boolean;
 }
 
-/** Routes that activate the Login / Profile bottom-nav tab */
+/** Routes that activate the Profile bottom-nav tab */
 const PROFILE_NAV_PATHS = [
+  SITE_ROUTES.profile,
   LOGIN_PATH,
   "/signin",
-  "/profile",
+  JOIN_FLOW_PATH,
   CLIENT_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PATH,
 ] as const;
@@ -41,23 +42,29 @@ function isProfileNavPath(pathname: string): boolean {
   );
 }
 
+function isExplorePath(pathname: string): boolean {
+  return (
+    pathname === SITE_ROUTES.explore ||
+    pathname.startsWith(`${SITE_ROUTES.explore}/`)
+  );
+}
+
 export function getMobileBottomNavItems(
   session: AuthSession | null
 ): MobileBottomNavItem[] {
   const signedIn = isLoggedIn(session);
   const role = getUserRole(session);
   const profileHref =
-    signedIn && role ? getDashboardPathForRole(role) : SITE_ROUTES.login;
+    signedIn && role ? getDashboardPathForRole(role) : SITE_ROUTES.profile;
 
   return [
+    { id: "home", href: SITE_ROUTES.home, label: "Home", isPrimary: true },
     {
       id: "search",
       href: SITE_ROUTES.exploreSearchFocus,
       label: "Search",
     },
-    { id: "saved", href: SITE_ROUTES.saved, label: "Saved" },
-    { id: "home", href: SITE_ROUTES.home, label: "Home", isPrimary: true },
-    { id: "join", href: SITE_ROUTES.join, label: "Join" },
+    { id: "saved", href: SITE_ROUTES.saved, label: "Favorites" },
     { id: "profile", href: profileHref, label: "Profile" },
   ];
 }
@@ -113,31 +120,23 @@ export function getMobileBottomNavProfilePresentation(
 
 /**
  * Single source of truth for bottom-nav active state.
- * Pass searchParams when resolving the Search tab (`/explore?focus=search`).
+ * Search owns all `/explore` routes (Specialists tab removed).
  */
 export function isActiveNavItem(
   itemId: MobileBottomNavItemId,
   pathname: string,
-  searchParams?: URLSearchParams | null
+  _searchParams?: URLSearchParams | null
 ): boolean {
   switch (itemId) {
     case "home":
       return pathname === SITE_ROUTES.home;
     case "search":
-      if (searchParams?.get("focus") === "search") {
-        return (
-          pathname === SITE_ROUTES.explore ||
-          pathname.startsWith(`${SITE_ROUTES.explore}/`)
-        );
-      }
-      return false;
+      return isExplorePath(pathname);
     case "saved":
       return (
         pathname === SITE_ROUTES.saved ||
         pathname.startsWith(`${SITE_ROUTES.saved}/`)
       );
-    case "join":
-      return pathname.startsWith("/create-account");
     case "profile":
       return isProfileNavPath(pathname);
     default:
@@ -151,10 +150,9 @@ export function getActiveMobileBottomNavItemId(
   searchParams?: URLSearchParams
 ): MobileBottomNavItemId | null {
   const ids: MobileBottomNavItemId[] = [
+    "home",
     "search",
     "saved",
-    "home",
-    "join",
     "profile",
   ];
 

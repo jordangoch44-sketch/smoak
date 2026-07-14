@@ -3,7 +3,6 @@ import {
   CITY_NEIGHBORHOODS,
   isMarketplaceCity,
   MARKETPLACE_CITIES,
-  type MarketplaceCity,
 } from "@/data/locations";
 import {
   getZipPlaceDisplayName,

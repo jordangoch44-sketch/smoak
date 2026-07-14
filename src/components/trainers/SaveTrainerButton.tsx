@@ -10,12 +10,15 @@ import {
   isLoggedIn,
 } from "@/lib/specialist-saves";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
+import { getTrainerWithOverrides } from "@/lib/specialist-profile-store";
 
 interface SaveTrainerButtonProps {
   trainerId: string;
   className?: string;
   /** Pin to top-right of trainer card (default true) */
   overlay?: boolean;
+  /** Optional display name for pending-save / quick-signup copy */
+  trainerName?: string;
 }
 
 /** Trainer card / profile save control — auth-gated with pending-save workflow */
@@ -23,13 +26,33 @@ export function SaveTrainerButton({
   trainerId,
   className,
   overlay = true,
+  trainerName,
 }: SaveTrainerButtonProps) {
   const { session } = useAuthSession();
-  const { isSaved, isSavesReady, isSavesLoading, toggleSaved, openLoginGate } =
-    useSavedTrainers();
+  const {
+    isSaved,
+    isSavesReady,
+    isSavesLoading,
+    toggleSaved,
+    openSaveQuickSignup,
+  } = useSavedTrainers();
   const { showToast } = useSaveToast();
   const saved = isSaved(trainerId);
   const heartDisabled = isSavesLoading && Boolean(session);
+
+  function openSaveSignup() {
+    const name =
+      trainerName?.trim() ||
+      getTrainerWithOverrides(trainerId)?.name?.trim() ||
+      undefined;
+    openSaveQuickSignup(trainerId, {
+      specialistName: name,
+      profilePath:
+        typeof window !== "undefined"
+          ? window.location.pathname
+          : `/trainers/${trainerId}`,
+    });
+  }
 
   async function handleToggle() {
     if (saved) {
@@ -45,7 +68,7 @@ export function SaveTrainerButton({
     }
 
     if (!isLoggedIn(session)) {
-      openLoginGate(trainerId);
+      openSaveSignup();
       return;
     }
 
@@ -59,7 +82,7 @@ export function SaveTrainerButton({
     }
 
     if (!canSaveSpecialists(session)) {
-      openLoginGate(trainerId);
+      openSaveSignup();
       return;
     }
 

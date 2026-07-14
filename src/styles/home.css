@@ -3,10 +3,56 @@
 .home-page {
   position: relative;
   isolation: isolate;
-  background-color: #030304;
+  /* Transparent continuous canvas — body/backdrop + page stars read through */
+  background-color: transparent;
 }
 
-.home-page > * {
+.home-page__sky {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 0;
+  height: min(145vh, 72rem);
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 105% 52% at 50% 4%,
+      rgba(var(--aurora-lavender-rgb), 0.3) 0%,
+      rgba(var(--aurora-indigo-rgb), 0.16) 36%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 78% 44% at 82% 16%,
+      rgba(var(--aurora-magenta-rgb), 0.18) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 70% 40% at 12% 20%,
+      rgba(var(--aurora-blue-rgb), 0.16) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 92% 48% at 50% 36%,
+      rgba(var(--aurora-violet-rgb), 0.14) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 80% 36% at 50% 58%,
+      rgba(var(--aurora-indigo-rgb), 0.07) 0%,
+      transparent 72%
+    );
+}
+
+.home-page__stars {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.home-page > *:not(.home-page__stars):not(.home-page__sky) {
   position: relative;
   z-index: 1;
 }
@@ -42,8 +88,9 @@
   isolation: isolate;
   min-height: 0;
   border-bottom: none !important;
-  overflow: hidden;
-  background-color: #030304;
+  overflow: visible;
+  /* Soft washes only — no solid slab so stars + aurora continue downward */
+  background-color: transparent;
   background-image:
     radial-gradient(
       ellipse 105% 62% at 50% -10%,
@@ -69,11 +116,10 @@
     ),
     linear-gradient(
       180deg,
-      #100d18 0%,
-      #0c0a14 22%,
-      #0a0812 42%,
-      #07060e 62%,
-      #050508 78%,
+      rgba(16, 13, 24, 0.55) 0%,
+      rgba(12, 10, 20, 0.35) 28%,
+      rgba(10, 8, 18, 0.18) 52%,
+      rgba(7, 6, 14, 0.06) 72%,
       transparent 100%
     );
   /* Header offset is on body.app-shell — only add spacing below chrome */
@@ -118,31 +164,67 @@
   }
 }
 
-/* Canvas — mesh fades out softly before section edge (no hard aurora cutoff) */
+/* Canvas bleeds into the next section so aurora isn’t cut at the hero edge */
 .home-hero__canvas {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: -7.5rem;
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
   -webkit-mask-image: linear-gradient(
     180deg,
     #000 0%,
-    #000 38%,
-    rgba(0, 0, 0, 0.92) 52%,
-    rgba(0, 0, 0, 0.65) 66%,
-    rgba(0, 0, 0, 0.32) 80%,
-    transparent 96%
+    #000 42%,
+    rgba(0, 0, 0, 0.92) 58%,
+    rgba(0, 0, 0, 0.55) 74%,
+    rgba(0, 0, 0, 0.22) 88%,
+    transparent 100%
   );
   mask-image: linear-gradient(
     180deg,
     #000 0%,
-    #000 38%,
-    rgba(0, 0, 0, 0.92) 52%,
-    rgba(0, 0, 0, 0.65) 66%,
-    rgba(0, 0, 0, 0.32) 80%,
-    transparent 96%
+    #000 42%,
+    rgba(0, 0, 0, 0.92) 58%,
+    rgba(0, 0, 0, 0.55) 74%,
+    rgba(0, 0, 0, 0.22) 88%,
+    transparent 100%
   );
+}
+
+.home-hero__cosmic {
+  z-index: 1;
+}
+
+.home-hero__stars {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  bottom: -12rem;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 48%,
+    rgba(0, 0, 0, 0.65) 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 48%,
+    rgba(0, 0, 0, 0.65) 72%,
+    transparent 100%
+  );
+}
+
+.home-page--discovery .home-hero--discovery {
+  isolation: auto;
 }
 
 .home-hero__canvas .atmosphere-mesh {
@@ -365,13 +447,14 @@
   font-weight: 600;
   background: linear-gradient(
     120deg,
-    #fff 0%,
-    rgba(var(--aurora-lavender-rgb), 1) 42%,
-    rgba(var(--aurora-violet-rgb), 1) 100%
+    #c4b5fd 0%,
+    #a855f7 45%,
+    #7c3aed 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  filter: drop-shadow(0 0 28px rgba(168, 85, 247, 0.35));
 }
 
 .home-hero__title strong {
@@ -383,7 +466,7 @@
   max-width: 34rem;
   font-size: clamp(0.875rem, 2vw, 1.0625rem);
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.52);
+  color: rgba(226, 220, 245, 0.72);
   text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45);
 }
 
@@ -954,29 +1037,23 @@ body.hero-search-suggestions-open .hero-search__below {
   }
 }
 
-/* Single bottom dissolve — black only, aurora stays bright above */
+/* Soft canvas blend into next section — no solid black horizon line */
 .home-hero::after {
   content: "";
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: -1.5rem;
   z-index: 6;
-  height: 100%;
+  height: 42%;
   pointer-events: none;
   background: linear-gradient(
     180deg,
     transparent 0%,
-    transparent 50%,
-    rgba(3, 3, 4, 0.04) 60%,
-    rgba(3, 3, 4, 0.12) 68%,
-    rgba(3, 3, 4, 0.24) 75%,
-    rgba(3, 3, 4, 0.4) 81%,
-    rgba(3, 3, 4, 0.58) 86%,
-    rgba(3, 3, 4, 0.74) 91%,
-    rgba(3, 3, 4, 0.86) 95%,
-    rgba(3, 3, 4, 0.94) 98%,
-    #030304 100%
+    transparent 28%,
+    rgba(4, 3, 8, 0.08) 55%,
+    rgba(4, 3, 8, 0.16) 78%,
+    rgba(4, 3, 8, 0.1) 100%
   );
 }
 
@@ -1063,7 +1140,7 @@ button.smoked-glass:hover {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  background: #030304;
+  background: transparent;
   padding-top: 1.25rem;
   padding-bottom: 2rem;
 }
@@ -1563,36 +1640,41 @@ button.smoked-glass:hover {
   }
 
   .home-hero__canvas {
+    bottom: -11rem;
     -webkit-mask-image: linear-gradient(
       180deg,
       #000 0%,
-      #000 28%,
-      rgba(0, 0, 0, 0.88) 44%,
-      rgba(0, 0, 0, 0.5) 60%,
-      rgba(0, 0, 0, 0.18) 78%,
-      transparent 94%
+      #000 36%,
+      rgba(0, 0, 0, 0.9) 54%,
+      rgba(0, 0, 0, 0.55) 70%,
+      rgba(0, 0, 0, 0.22) 86%,
+      transparent 100%
     );
     mask-image: linear-gradient(
       180deg,
       #000 0%,
-      #000 28%,
-      rgba(0, 0, 0, 0.88) 44%,
-      rgba(0, 0, 0, 0.5) 60%,
-      rgba(0, 0, 0, 0.18) 78%,
-      transparent 94%
+      #000 36%,
+      rgba(0, 0, 0, 0.9) 54%,
+      rgba(0, 0, 0, 0.55) 70%,
+      rgba(0, 0, 0, 0.22) 86%,
+      transparent 100%
     );
+  }
+
+  .home-page--discovery .home-hero__canvas {
+    bottom: -14rem;
   }
 
   .home-page > .home-hero::after {
     top: auto;
-    height: 38%;
+    height: 55%;
+    bottom: -3rem;
     background: linear-gradient(
       180deg,
       transparent 0%,
-      rgba(3, 3, 4, 0.08) 38%,
-      rgba(3, 3, 4, 0.48) 68%,
-      rgba(3, 3, 4, 0.9) 92%,
-      #030304 100%
+      transparent 40%,
+      rgba(4, 3, 8, 0.06) 70%,
+      rgba(4, 3, 8, 0.08) 100%
     );
   }
 

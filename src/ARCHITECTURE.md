@@ -22,7 +22,7 @@ src/
 │   ├── ui/                     # Primitives: Button, SaveButton, Logo, icons
 │   ├── layout/                 # SiteHeader, Footer, overlays, page transition
 │   ├── providers/              # AppProviders wrapper
-│   ├── home/                   # Hero, SearchBar, Top50, sections
+│   ├── home/                   # Hero, Sponsored, Top50, Categories, New
 │   ├── explore/                # Explore page client + filters
 │   ├── trainers/               # Cards + SaveTrainerButton
 │   ├── profile/                # Trainer profile sections
@@ -76,9 +76,9 @@ Phase 3 localStorage migration: [`docs/PHASE3_SUPABASE_MIGRATION.md`](../docs/PH
 
 ```
 SaveTrainerButton (trainers/)
-  → useSavedTrainers()     isSaved, toggleSaved, openLoginGate
+  → useSavedTrainers()     isSaved, toggleSaved, openSaveQuickSignup
   → useSaveToast()         centered glass toast (lib/saved-ui copy)
-  → SavedTrainersProvider  LoginGateModal (single modal)
+  → SavedTrainersProvider  SaveQuickSignupModal + SaveSuccessModal
   → saved-trainers-store   per-client localStorage
 ```
 
@@ -89,7 +89,7 @@ Hearts sit in `TrainerCardSaveSlot` **outside** the card link. Nav badges use `f
 ```
 (site)/layout.tsx
   ├── SiteHeader
-  └── MobileBottomNavLazy   floating tabs ≤1023px (Search, Saved, Home, Discover, Profile)
+  └── MobileBottomNav   floating tabs ≤1023px (Home, Search, Favorites, Profile)
 ```
 
 `MobileUtilityDrawer` — hamburger menu (primary nav + legal). Saved count badge on bottom nav + desktop header heart.
@@ -104,14 +104,14 @@ SiteHeader
   └── SavedPanelDropdown    desktop saved panel (md+, when open)
 ```
 
-### Homepage search
+### Homepage + explore search
 
 ```
-SearchBar (home/)
-  └── HeroSearchSuggestionsLayer (portal to body when open)
+Homepage: discovery sections (no hero SearchBar)
+Explore: ExploreSearchToolbar + ExploreFiltersDrawer
 ```
 
-One overlay system for hero; Explore uses `ExploreSearchToolbar` + `ExploreFiltersDrawer` (no hero portal).
+Search entry on mobile is bottom-nav Search → `/explore?focus=search`.
 
 ### Welcome intro
 

@@ -5,7 +5,7 @@ CSS is split by **scope**, not one giant file.
 ## Load order
 
 1. **`globals.css`** (root layout) — Tailwind, tokens, scroll-lock, imports:
-   - `interaction.css`, `brand.css`, `atmosphere.css`, `aurora.css`
+   - `interaction.css`, `brand.css`, `atmosphere.css`, `aurora.css`, `aurora-atmosphere.css`
    - `save-button.css`, `save-toast.css`, `toast.css`
    - `site-chrome.css`, `login-gate.css`, `mobile-safari.css`
 2. **`site-shell.css`** (`(site)/layout`) — `home.css`, `page-transition.css`, header panels, intro

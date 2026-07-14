@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getFeaturedTrainers } from "@/data/trainers";
-import {
-  CLIENT_COMPARE_PLACEHOLDER,
-  CLIENT_MESSAGES_PLACEHOLDER,
-} from "@/data/dashboard-mock";
+import { CLIENT_COMPARE_PLACEHOLDER } from "@/data/dashboard-mock";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useRecentSearches } from "@/hooks/useRecentSearches";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -16,6 +13,11 @@ import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import { buildExploreSearchParams } from "@/lib/explore-url";
 import { applySearchQueryToExploreState } from "@/lib/search-query-parser";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
+import {
+  loadClientInquiryMessages,
+  type ClientInquiryListItem,
+} from "@/lib/inquiry/inquiry-inbox";
+import { trackInquiryEvent } from "@/lib/inquiry/inquiry-analytics";
 import { TrainerList } from "@/components/trainers";
 import {
   DashboardEmptyState,
@@ -44,6 +46,12 @@ export function ClientDashboardPageClient() {
   const { entries: recentSearches } = useRecentSearches();
   const saved = useMemo(() => getSavedTrainers(), [getSavedTrainers]);
   const recommended = DASHBOARD_RECOMMENDED_TRAINERS;
+  const [messages, setMessages] = useState<ClientInquiryListItem[]>([]);
+
+  useEffect(() => {
+    if (!session?.userId) return;
+    void loadClientInquiryMessages(session.userId).then(setMessages);
+  }, [session?.userId]);
 
   if (!isReady || !session || !isSavesReady) {
     return (
@@ -63,10 +71,13 @@ export function ClientDashboardPageClient() {
 
   // Greeting must reflect profiles.first_name (via session.firstName).
   const firstName = session.firstName?.trim() || "there";
+  const showProfilePrompt =
+    session.profileCompletionStatus === "incomplete" ||
+    !session.clientZipCode?.trim();
 
   function handleSignOut() {
     signOut();
-    afterLogoutNavigation(() => router.push("/login"));
+    afterLogoutNavigation(() => router.push("/profile"));
   }
 
   return (
@@ -91,6 +102,22 @@ export function ClientDashboardPageClient() {
       }
     >
       <div className="dashboard-grid">
+        {showProfilePrompt ? (
+          <DashboardSection
+            title="Complete your profile"
+            description="Add your location, goals, and preferences to receive better specialist recommendations."
+            className="dashboard-grid__span-2"
+          >
+            <Link
+              href="/create-account?role=client"
+              className="dashboard-inline-cta"
+              onClick={() => trackInquiryEvent("profile_completion_opened")}
+            >
+              Complete your profile →
+            </Link>
+          </DashboardSection>
+        ) : null}
+
         <DashboardSection
           title="Saved specialists"
           description={
@@ -156,22 +183,30 @@ export function ClientDashboardPageClient() {
           title="Messages / inquiries"
           description="Conversations with specialists"
         >
-          <ul className="dashboard-list">
-            {CLIENT_MESSAGES_PLACEHOLDER.map((message) => (
-              <li key={message.id}>
-                <DashboardListItem
-                  title={message.specialist}
-                  subtitle={message.preview}
-                  meta={message.time}
-                  badge={
-                    message.unread ? (
-                      <span className="dashboard-badge">New</span>
-                    ) : undefined
-                  }
-                />
-              </li>
-            ))}
-          </ul>
+          {messages.length > 0 ? (
+            <ul className="dashboard-list">
+              {messages.map((message) => (
+                <li key={message.id}>
+                  <DashboardListItem
+                    title={message.specialist}
+                    subtitle={message.preview}
+                    meta={message.time}
+                    badge={
+                      message.unread ? (
+                        <span className="dashboard-badge">New</span>
+                      ) : undefined
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <DashboardEmptyState
+              message="Messages you send from a specialist profile will appear here."
+              actionHref="/explore"
+              actionLabel="Find a specialist"
+            />
+          )}
         </DashboardSection>
 
         <DashboardSection

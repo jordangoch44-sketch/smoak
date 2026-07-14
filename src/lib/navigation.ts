@@ -13,6 +13,7 @@ export const SITE_ROUTES = {
   explore: "/explore",
   exploreSearchFocus: "/explore?focus=search",
   saved: "/saved",
+  profile: "/profile",
   discover: "/discover",
   rankings: "/rankings",
   login: LOGIN_PATH,

@@ -5,9 +5,6 @@
 
 export const JOIN_FLOW_PATH = "/create-account";
 
-/** @deprecated Use JOIN_FLOW_PATH — kept for existing imports */
-export const CREATE_ACCOUNT_PATH = JOIN_FLOW_PATH;
-
 /** Query flag — equivalent to React Router `state.showIntro` */
 export const JOIN_INTRO_PARAM = "intro";
 

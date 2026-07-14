@@ -7,7 +7,7 @@ Client-side React hooks. Re-exported from `hooks/index.ts` for `@/hooks` imports
 | Hook | Use |
 |------|-----|
 | `useAuthSession` | Current dev session |
-| `useSavedTrainers` | Saved specialist IDs + `openLoginGate` |
+| `useSavedTrainers` | Saved specialist IDs + `openSaveQuickSignup` |
 | `useExploreTrainers` | Explore filters + filtered list |
 | `useHeaderPanels` | Mobile/desktop header menu state |
 | `useHydrated` / `useStableClientState` | Avoid hydration mismatch for client-only UI |

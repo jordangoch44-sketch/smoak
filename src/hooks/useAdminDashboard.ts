@@ -49,7 +49,6 @@ import {
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
-import type { ClientApplication } from "@/types/client-application";
 
 export function useAdminDashboard() {
   const { isReady, session } = useRequireInternalAuth();

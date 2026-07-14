@@ -1,77 +1,88 @@
 /**
- * DEV ONLY — reusable specialist save + auth helpers for client workflows.
+ * Specialist save helpers + pending-save apply after client auth.
+ * Storage primitives live in pending-save-storage.ts.
  */
-import type { AuthSession } from "@/types/auth";
 import type { PublicAuthRole } from "@/types/auth-roles";
-import { setAuthSession } from "@/lib/auth-session-store";
-import { consumePendingSave } from "@/lib/pending-save-storage";
 import {
-  clearSavedTrainersActiveSession,
+  consumePendingSave,
+  consumePendingSaveRecord,
+  peekPendingSaveRecord,
+} from "@/lib/pending-save-storage";
+import {
   getSavedTrainersSnapshot,
   addSavedTrainerId,
 } from "@/lib/saved-trainers-store";
+import { clearSaveAutoApplyFlag } from "@/lib/inquiry/inquiry-session-flags";
+import type { PendingSaveRecord } from "@/lib/dev-storage-keys";
 
-export { isLoggedIn, getUserRole, canSaveSpecialists } from "@/lib/auth-session-helpers-core";
+export {
+  isLoggedIn,
+  getUserRole,
+  canSaveSpecialists,
+} from "@/lib/auth-session-helpers-core";
 
-/** Clears session and in-memory saved specialists (Supabase rows remain per user) */
-export async function logoutUser(): Promise<void> {
-  clearSavedTrainersActiveSession();
-  const { signOutMarketplace } = await import("@/lib/auth/marketplace-auth");
-  await signOutMarketplace();
-  setAuthSession(null);
-}
-
-/** DEV ONLY — saved specialist ids for the active signed-in client */
-export function getSavedSpecialists(): string[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
-  return [...getSavedTrainersSnapshot()];
-}
+export { setPendingSave } from "@/lib/pending-save-storage";
 
 /** Persist one specialist id without duplicates */
 export async function saveSpecialist(specialistId: string): Promise<void> {
   const id = specialistId.trim();
   if (!id) return;
 
-  if (getSavedSpecialists().includes(id)) return;
+  if (typeof window === "undefined") return;
+  if (getSavedTrainersSnapshot().includes(id)) return;
 
   await addSavedTrainerId(id);
 }
 
-export { setPendingSave, consumePendingSave, clearPendingSave, peekPendingSave } from "@/lib/pending-save-storage";
-
 export type PostLoginPendingResult =
-  | { kind: "client-saved"; specialistId: string }
+  | { kind: "client-saved"; specialistId: string; record: PendingSaveRecord | null }
   | { kind: "client-no-pending" }
   | { kind: "specialist-blocked" };
 
+let applyPendingInFlight: Promise<PostLoginPendingResult> | null = null;
+
+async function applyPendingSaveAfterLoginInner(
+  role: PublicAuthRole
+): Promise<PostLoginPendingResult> {
+  const peeked = peekPendingSaveRecord();
+
+  if (role === "specialist") {
+    if (peeked) {
+      consumePendingSave();
+      clearSaveAutoApplyFlag();
+      return { kind: "specialist-blocked" };
+    }
+    return { kind: "client-no-pending" };
+  }
+
+  if (!peeked?.specialistId) {
+    clearSaveAutoApplyFlag();
+    return { kind: "client-no-pending" };
+  }
+
+  await saveSpecialist(peeked.specialistId);
+  const record = consumePendingSaveRecord();
+  clearSaveAutoApplyFlag();
+  return {
+    kind: "client-saved",
+    specialistId: peeked.specialistId,
+    record,
+  };
+}
+
 /**
- * DEV ONLY — after successful login, apply or discard pending save.
- * Call once immediately after signInWithPassword().
+ * After successful client auth, apply pending save (if any).
+ * Clears pending only after a successful write. Single-flight to avoid
+ * duplicate confirmation when modal + resume bridge race.
  */
 export async function applyPendingSaveAfterLogin(
   role: PublicAuthRole
 ): Promise<PostLoginPendingResult> {
-  const pendingId = consumePendingSave();
-
-  if (role === "specialist") {
-    return pendingId
-      ? { kind: "specialist-blocked" }
-      : { kind: "client-no-pending" };
+  if (applyPendingInFlight) {
+    return applyPendingInFlight;
   }
-
-  if (pendingId) {
-    await saveSpecialist(pendingId);
-    return { kind: "client-saved", specialistId: pendingId };
-  }
-
-  return { kind: "client-no-pending" };
+  applyPendingInFlight = applyPendingSaveAfterLoginInner(role).finally(() => {
+    applyPendingInFlight = null;
+  });
+  return applyPendingInFlight;
 }
-
-/** True when specialist id is in the saved library (reactive store snapshot) */
-export function isSpecialistSaved(specialistId: string): boolean {
-  return getSavedTrainersSnapshot().includes(specialistId);
-}
-
-export type { AuthSession };

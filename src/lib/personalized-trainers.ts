@@ -1,4 +1,3 @@
-import { listPublicFeaturedTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import type { Trainer } from "@/types";
@@ -32,15 +31,4 @@ export function sortTrainersByPersonalizationCity(
     return sortTrainersByProximity(trainers, userCoords);
   }
   return sortByCityFallback(trainers, personalizationCity);
-}
-
-export function getPersonalizedFeaturedTrainers(
-  personalizationCity: string | null,
-  userCoords: UserGeoPoint | null = null
-): Trainer[] {
-  return sortTrainersByPersonalizationCity(
-    listPublicFeaturedTrainers(),
-    personalizationCity,
-    userCoords
-  );
 }

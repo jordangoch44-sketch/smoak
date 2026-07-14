@@ -3,6 +3,7 @@
 @import "./brand.css";
 @import "./atmosphere.css";
 @import "./aurora.css";
+@import "./aurora-atmosphere.css";
 @import "./save-button.css";
 @import "./trainer-card-compact.css";
 @import "./session-price.css";
@@ -31,23 +32,34 @@
   --silver-100: #e5e5ea;
   --accent: #f5f5f7;
   /* Muted violet accent — glows, focus, active states */
-  --accent-glow: #9b8ec4;
-  --accent-glow-rgb: 139, 124, 168;
-  --accent-glow-soft-rgb: 108, 98, 132;
-  --accent-glow-bright: #b4a8d4;
+  --accent-glow: #a855f7;
+  --accent-glow-rgb: 168, 85, 247;
+  --accent-glow-soft-rgb: 124, 58, 237;
+  --accent-glow-bright: #c4b5fd;
   --save-heart: #c4475a;
   --save-heart-deep: #9e3344;
   --save-heart-rgb: 196, 71, 90;
   --save-heart-glow-rgb: 220, 88, 108;
 
-  /* Aurora mesh palette */
-  --aurora-violet-rgb: 139, 124, 168;
-  --aurora-lavender-rgb: 164, 152, 196;
-  --aurora-indigo-rgb: 72, 68, 120;
+  /* Aurora mesh + brand purple system */
+  --aurora-purple: #8b5cf6;
+  --aurora-purple-bright: #a855f7;
+  --aurora-purple-electric: #7c3aed;
+  --aurora-purple-deep: #4c1d95;
+  --aurora-purple-soft: #c4b5fd;
+  --aurora-gradient: linear-gradient(
+    135deg,
+    #7c3aed 0%,
+    #a855f7 50%,
+    #6366f1 100%
+  );
+  --aurora-violet-rgb: 139, 92, 246;
+  --aurora-lavender-rgb: 168, 85, 247;
+  --aurora-indigo-rgb: 76, 29, 149;
   --aurora-blue-rgb: 52, 62, 108;
-  --aurora-magenta-rgb: 108, 72, 108;
+  --aurora-magenta-rgb: 124, 58, 237;
   --aurora-plum-rgb: 56, 42, 72;
-  --aurora-pink-rgb: 132, 88, 118;
+  --aurora-pink-rgb: 168, 85, 247;
   --brand-wordmark-tracking: 0.34em;
 }
 
@@ -125,6 +137,8 @@ body {
 /* Scroll lock — avoid touch-action:none (blocks taps on iOS Safari) */
 body.menu-open,
 body.drawer-open,
+body.profile-sheet-open,
+body.inquiry-sheet-open,
 body.saved-panel-open,
 body.login-gate-open,
 body.site-intro-open,
@@ -139,6 +153,8 @@ body.admin-review-open {
 @supports (-webkit-touch-callout: none) {
   body.menu-open,
   body.drawer-open,
+  body.profile-sheet-open,
+  body.inquiry-sheet-open,
   body.saved-panel-open,
   body.login-gate-open,
   body.site-intro-open,
@@ -151,6 +167,8 @@ body.admin-review-open {
 
   body.menu-open .app-main,
   body.drawer-open .app-main,
+  body.profile-sheet-open .app-main,
+  body.inquiry-sheet-open .app-main,
   body.saved-panel-open .app-main,
   body.login-gate-open .app-main,
   body.site-intro-open .app-main,

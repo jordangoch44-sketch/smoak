@@ -121,6 +121,7 @@ export function PageTransition({ children }: PageTransitionProps) {
     );
   }
 
+  /* Phone/tablet: skip competing page layers (profile sheet owns its motion) */
   if (isTabletViewport) {
     return (
       <div className="page-transition">

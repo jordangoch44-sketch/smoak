@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-/** OAuth / email-confirm redirect — exchanges code for session cookies */
+/** OAuth / email-confirm / magic-link redirect — exchanges code for session cookies.
+ * Inquiry flow uses `next` + optional `inquiry=1` (preserved in next URL).
+ */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const nextRaw = searchParams.get("next") ?? "/";
+  const next = nextRaw.startsWith("/") ? nextRaw : "/";
 
   if (code) {
     const supabase = await createSupabaseServerClient();

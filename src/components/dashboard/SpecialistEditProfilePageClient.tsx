@@ -108,7 +108,7 @@ export function SpecialistEditProfilePageClient() {
 
   const handleSignOut = useCallback(() => {
     signOut();
-    afterLogoutNavigation(() => router.push("/login"));
+    afterLogoutNavigation(() => router.push("/profile"));
   }, [router, signOut]);
 
   function startEdit(sectionId: SectionId) {

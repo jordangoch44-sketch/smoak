@@ -134,34 +134,6 @@ html.login-gate-open {
     opacity 0.2s ease;
 }
 
-.login-gate__btn--primary {
-  border: none;
-  background: #f5f5f7;
-  color: #0a0a0a;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.5) inset,
-    0 6px 20px rgba(0, 0, 0, 0.28);
-}
-
-@media (hover: hover) {
-  .login-gate__btn--primary:hover {
-    background: #fff;
-  }
-}
-
-.login-gate__btn--secondary {
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-@media (hover: hover) {
-  .login-gate__btn--secondary:hover {
-    border-color: rgba(255, 255, 255, 0.22);
-    background: rgba(255, 255, 255, 0.1);
-  }
-}
-
 .login-gate__btn--ghost {
   border: none;
   background: transparent;
@@ -184,6 +156,125 @@ html.login-gate-open {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* Quick-save signup / confirmation — Aurora purple primary CTA + form fields */
+.login-gate__dialog--save {
+  max-height: min(92dvh, 36rem);
+}
+
+.login-gate__content--save {
+  text-align: left;
+  padding-top: 2rem;
+}
+
+.login-gate__content--save .login-gate__title {
+  text-align: center;
+}
+
+.login-gate__content--save .login-gate__body {
+  text-align: center;
+}
+
+.login-gate__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 1.1rem;
+}
+
+.login-gate__label {
+  margin-top: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.login-gate__input {
+  width: 100%;
+  min-height: 2.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.28);
+  background: rgba(8, 6, 14, 0.55);
+  padding: 0.65rem 0.85rem;
+  font-size: 1rem;
+  color: #fff;
+  outline: none;
+  touch-action: manipulation;
+}
+
+.login-gate__input:focus {
+  border-color: rgba(var(--aurora-lavender-rgb), 0.72);
+  box-shadow: 0 0 0 3px rgba(var(--aurora-lavender-rgb), 0.18);
+}
+
+.login-gate__helper {
+  margin: 0.55rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}
+
+.login-gate__error {
+  margin: 0.85rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #ffb4c0;
+  text-align: center;
+}
+
+.login-gate__btn--aurora {
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.55);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(var(--aurora-lavender-rgb), 0.95) 0%,
+      rgba(138, 110, 220, 0.88) 48%,
+      rgba(var(--aurora-lavender-rgb), 0.72) 100%
+    );
+  color: #fff;
+  font-weight: 600;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 28px rgba(var(--aurora-lavender-rgb), 0.35),
+    0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+@media (hover: hover) {
+  .login-gate__btn--aurora:hover {
+    filter: brightness(1.05);
+  }
+}
+
+.login-gate__btn--aurora:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+}
+
+.login-gate__success-icon {
+  display: flex;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto 0.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.4);
+  background: rgba(var(--aurora-lavender-rgb), 0.16);
+  color: rgba(255, 220, 235, 0.95);
+  box-shadow: 0 0 24px rgba(var(--aurora-lavender-rgb), 0.28);
+}
+
+.login-gate__saved-detail {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(var(--aurora-lavender-rgb), 0.95);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -27,6 +27,10 @@ export interface ProfileRow {
   specialist_format: string;
   specialist_starting_price: string;
   onboarding_data: Record<string, unknown> | null;
+  /** incomplete | complete — quick inquiry signup starts incomplete */
+  profile_completion_status?: string;
+  /** e.g. specialist_inquiry, questionnaire */
+  account_source?: string;
   created_at: string;
   updated_at: string;
 }

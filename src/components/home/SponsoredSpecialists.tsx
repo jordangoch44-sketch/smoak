@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import {
   useActiveUserCoordinates,
@@ -31,10 +32,18 @@ export function SponsoredSpecialists() {
 
   return (
     <section
-      className="home-sponsored home-section-aurora"
+      className="home-sponsored home-section-aurora relative"
       aria-labelledby="home-sponsored-heading"
     >
-      <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
+      <AuroraAtmosphere
+        intensity="subtle"
+        starDensity="none"
+        glowPosition="section-top"
+        glowColor="violet"
+        enableMotion
+        className="home-sponsored__cosmic"
+      />
+      <div className="home-section__inner home-sponsored__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header">
           <h2 id="home-sponsored-heading" className="home-section__title">
             Sponsored Specialists

@@ -14,4 +14,3 @@ export { SmoacProUpgradeModal } from "./SmoacProUpgradeModal";
 export { DashboardLoadingState } from "./DashboardLoadingState";
 export { DashboardGrid } from "./DashboardGrid";
 export { DashboardSignOutButton } from "./DashboardSignOutButton";
-export { DashboardEditProfileLink } from "./DashboardEditProfileLink";

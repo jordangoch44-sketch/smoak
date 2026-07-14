@@ -10,6 +10,7 @@ import { LocationPersonalizationGate } from "@/components/home/LocationPersonali
 export default function HomePage() {
   return (
     <div className="home-page home-page--discovery">
+      <div className="home-page__sky" aria-hidden />
       <LocationPersonalizationGate />
       <Hero />
       <SponsoredSpecialists />

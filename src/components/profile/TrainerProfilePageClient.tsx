@@ -1,18 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { notFound } from "next/navigation";
 import type { Trainer } from "@/types";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
+import { ProfileInquiryAction } from "@/components/inquiry";
 import { ProfileHero } from "./ProfileHero";
-import { ProfileCuratedDetails } from "./ProfileCuratedDetails";
-import { ProfileServiceArea } from "./ProfileServiceArea";
-import { ProfileSessionExperience } from "./ProfileSessionExperience";
-import { Bio } from "./Bio";
-import { Certifications } from "./Certifications";
+import { ProfileContactCta } from "./ProfileContactCta";
+import { ProfilePrimaryHighlights } from "./ProfilePrimaryHighlights";
+import { ProfileTrainerSpecs } from "./ProfileTrainerSpecs";
+import { ProfileDiscoveryRails } from "./ProfileDiscoveryRails";
 import { Reviews } from "./Reviews";
-import { SocialLinks } from "./SocialLinks";
-import { BookConsultation } from "./BookConsultation";
+import { TrainerProfileSheet } from "./TrainerProfileSheet";
 
 interface TrainerProfilePageClientProps {
   trainerId: string;
@@ -26,6 +26,7 @@ export function TrainerProfilePageClient({
   const hydrated = useHydrated();
   const liveTrainer = useTrainerWithOverrides(trainerId);
   const trainer = liveTrainer ?? initialTrainer;
+  const [inquiryOpen, setInquiryOpen] = useState(false);
 
   if (!trainer && hydrated) {
     notFound();
@@ -40,30 +41,39 @@ export function TrainerProfilePageClient({
   }
 
   return (
-    <>
+    <TrainerProfileSheet label={`${trainer.name} profile`}>
       <ProfileHero trainer={trainer} />
 
-      <div className="mx-auto max-w-7xl px-4 pb-16 pt-4 sm:px-6 sm:pb-20 sm:pt-6 lg:py-16">
-        <div className="lg:grid lg:grid-cols-3 lg:gap-16">
-          <div className="profile-content min-w-0 lg:col-span-2">
-            <ProfileServiceArea trainer={trainer} />
-            <ProfileCuratedDetails trainer={trainer} />
-            <ProfileSessionExperience trainer={trainer} />
-            <Bio trainer={trainer} />
-            <Certifications certifications={trainer.certifications} />
-            <Reviews
-              reviews={trainer.reviews}
-              rating={trainer.rating}
-              reviewCount={trainer.reviewCount}
-            />
-            <SocialLinks social={trainer.social} />
-          </div>
+      <div className="mx-auto max-w-7xl px-4 pb-16 pt-3 sm:px-6 sm:pb-20 sm:pt-5 lg:py-12">
+        <div className="profile-content profile-content--streamlined min-w-0 max-w-3xl">
+          <ProfileContactCta
+            specialistName={trainer.name}
+            onContact={() => setInquiryOpen(true)}
+          />
 
-          <div className="mt-4 min-w-0 lg:col-span-1 lg:mt-0">
-            <BookConsultation trainerName={trainer.name} />
-          </div>
+          <ProfilePrimaryHighlights trainer={trainer} />
+
+          <Reviews
+            reviews={trainer.reviews}
+            rating={trainer.rating}
+            reviewCount={trainer.reviewCount}
+            className="profile-section--reviews"
+          />
+
+          <ProfileTrainerSpecs trainer={trainer} />
+
+          <ProfileDiscoveryRails trainer={trainer} />
         </div>
       </div>
-    </>
+
+      <ProfileInquiryAction
+        specialistId={trainer.id}
+        specialistName={trainer.name}
+        specialistProfession={trainer.profession}
+        open={inquiryOpen}
+        onOpenChange={setInquiryOpen}
+        showButton={false}
+      />
+    </TrainerProfileSheet>
   );
 }

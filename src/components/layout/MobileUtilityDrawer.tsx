@@ -219,8 +219,8 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
     void signOut().then(() => {
       onClose();
       afterLogoutNavigation(() => {
-        if (isDashboardPath(pathname) || pathname === LOGIN_PATH) {
-          router.push(LOGIN_PATH);
+        if (isDashboardPath(pathname) || pathname === LOGIN_PATH || pathname === "/profile") {
+          router.push("/profile");
         } else {
           router.refresh();
         }

@@ -77,8 +77,8 @@ export function NavbarProfileLink({
     void signOut().then(() => {
       setOpen(false);
       afterLogoutNavigation(() => {
-        if (isDashboardPath(pathname) || pathname === LOGIN_PATH) {
-          router.push(LOGIN_PATH);
+        if (isDashboardPath(pathname) || pathname === LOGIN_PATH || pathname === "/profile") {
+          router.push("/profile");
         } else {
           router.refresh();
         }

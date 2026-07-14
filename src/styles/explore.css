@@ -3,7 +3,7 @@
 .explore-page {
   position: relative;
   min-height: 100dvh;
-  background: #030304;
+  background: transparent;
   isolation: isolate;
 }
 
@@ -14,6 +14,14 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+}
+
+.explore-page__cosmic {
+  z-index: 1;
+}
+
+.explore-page__stars {
+  z-index: 3;
 }
 
 .explore-page__canvas .atmosphere-mesh {
@@ -84,9 +92,9 @@
   background:
     radial-gradient(
       ellipse 88% 72% at 50% 0%,
-      rgba(var(--aurora-lavender-rgb), 0.32) 0%,
-      rgba(var(--aurora-violet-rgb), 0.18) 32%,
-      rgba(var(--aurora-indigo-rgb), 0.08) 52%,
+      rgba(var(--aurora-lavender-rgb), 0.22) 0%,
+      rgba(var(--aurora-violet-rgb), 0.12) 32%,
+      rgba(var(--aurora-indigo-rgb), 0.06) 52%,
       transparent 72%
     ),
     radial-gradient(

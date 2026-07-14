@@ -9,12 +9,13 @@ Feature-first folders. **UI primitives** live in `ui/`; **global chrome** in `la
 | `ui/` | Reusable controls — `Button`, `SaveButton`, `TapLink`, `Logo`, icons, toast |
 | `layout/` | `SiteHeader`, `Footer`, `PageTransition`, mobile nav, saved panel, intro gate |
 | `providers/` | `AppProviders` — wrap site layout only |
-| `home/` | `/` — `Hero`, `SearchBar`, `HeroSearchSuggestionsLayer`, `Top50RankCard`, sections |
+| `home/` | `/` — `Hero`, Sponsored, Top50, Categories, NewSpecialists |
 | `explore/` | `/explore` — `ExplorePageClient`, toolbar, filters drawer, results |
 | `trainers/` | Cards + `SaveTrainerButton` / `TrainerCardSaveSlot` (used on home + explore) |
-| `profile/` | `/trainers/[id]` — `TrainerProfilePageClient`, hero, sections, toolbar save |
+| `profile/` | `/trainers/[id]` — streamlined hero, early contact CTA, Trainer Specs accordion, discovery rails, inquiry |
+| `inquiry/` | Specialist profile inquiry bottom sheet + quick signup + auto-send after magic link |
 | `saved/` | `/saved` + header saved panel content |
-| `auth/` | `/login`, `/create-account` — forms, `LoginGateModal` (also mounted from context) |
+| `auth/` | `/login`, `/create-account` — forms; `SaveQuickSignupModal` mounted from `SavedTrainersProvider` |
 | `dashboard/` | `/client-dashboard`, `/specialist-dashboard` |
 | `brand/` | `SmoacWelcomeIntro`, wordmark |
 | `rankings/` | `/rankings` |

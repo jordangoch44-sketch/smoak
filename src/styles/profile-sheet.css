@@ -1,0 +1,150 @@
+/* Specialist profile — mobile/tablet iOS-style bottom sheet */
+
+.profile-sheet-root {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-site-header) + 40);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: auto;
+}
+
+.profile-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.profile-sheet {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-height: min(96dvh, 100%);
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.5rem 1.5rem 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: none;
+  background: #0a0a0e;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 -20px 64px rgba(0, 0, 0, 0.55);
+  touch-action: pan-y;
+}
+
+/* Full-height sheet on phone — nearly edge-to-edge like Maps/Zillow */
+@media (max-width: 767px) {
+  .profile-sheet {
+    max-height: 100dvh;
+    border-radius: 1.25rem 1.25rem 0 0;
+  }
+}
+
+.profile-sheet__chrome {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  padding-top: max(0.35rem, env(safe-area-inset-top, 0px));
+  pointer-events: none;
+}
+
+.profile-sheet__handle-hit {
+  display: flex;
+  width: 100%;
+  min-height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.profile-sheet__handle-hit:active {
+  cursor: grabbing;
+}
+
+.profile-sheet__handle {
+  display: block;
+  width: 2.5rem;
+  height: 0.3125rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.profile-sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+/* While sheet is open — lock page chrome underneath */
+body.profile-sheet-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html.profile-sheet-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.profile-sheet-open .mobile-bottom-nav {
+  display: none !important;
+}
+
+body.profile-sheet-open #site-header {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.profile-sheet-open footer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Toolbar portals to body — keep it above the sheet */
+body.profile-sheet-open .profile-toolbar {
+  z-index: calc(var(--z-site-header) + 50);
+  /* Header hidden; sit just under the sheet handle */
+  --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 2.85rem);
+}
+
+@media (min-width: 640px) {
+  body.profile-sheet-open .profile-toolbar {
+    --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 3rem);
+  }
+}
+
+@media (max-width: 1023px) {
+  body.profile-sheet-open #root.app-shell,
+  body.profile-sheet-open .app-shell {
+    padding-bottom: 0 !important;
+  }
+}
+
+@supports (-webkit-touch-callout: none) {
+  body.profile-sheet-open {
+    overflow: visible;
+  }
+
+  body.profile-sheet-open .app-main {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}

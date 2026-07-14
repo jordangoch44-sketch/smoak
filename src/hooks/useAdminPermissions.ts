@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { ADMIN_SECTIONS, type AdminSectionId } from "@/lib/admin-sections";
-import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
 import {
   canAccessAdminSection,
   getAdminRoleLabel,
@@ -48,10 +47,4 @@ export function useAdminPermissions(
       isStaffAdmin: adminRole === "staff_admin",
     };
   }, [session]);
-}
-
-/** Permissions for the active company portal session */
-export function useAdminPermissionsFromAuth(): AdminAccessContext | null {
-  const { session } = useInternalAuthSession();
-  return useAdminPermissions(session);
 }

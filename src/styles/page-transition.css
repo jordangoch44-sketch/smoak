@@ -45,6 +45,17 @@
   opacity: 0.85;
 }
 
+.site-page-backdrop__stars {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 1;
+}
+
+.site-page-backdrop__vignette {
+  opacity: 0.55;
+}
+
 .page-transition {
   position: relative;
   z-index: 1;

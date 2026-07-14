@@ -19,6 +19,8 @@ export const DEV_ADMIN_SPECIALIST_META_KEY = "smoac_admin_specialist_meta";
 export const DEV_ADMIN_NOTIFICATION_DISMISSED_KEY =
   "smoac_admin_notification_dismissed";
 export const DEV_PENDING_SAVE_KEY = "smoac_pending_save";
+/** Local fallback inbox when Supabase inquiry tables are unavailable */
+export const LOCAL_INQUIRIES_STORAGE_KEY = "smoac_local_inquiries";
 
 /** @deprecated DEV migration source */
 export const LEGACY_AUTH_STORAGE_KEY = "smoac-auth-session";
@@ -27,5 +29,8 @@ export const LEGACY_SAVED_SPECIALISTS_KEY = "smoac:saved-trainer-ids";
 
 export interface PendingSaveRecord {
   specialistId: string;
+  specialistName?: string;
+  profilePath?: string;
+  actionType?: "save_specialist";
   createdAt: string;
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
+import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
@@ -55,6 +56,14 @@ export function ExplorePageClient() {
           <div className="atmosphere-blob atmosphere-blob--magenta" />
           <div className="atmosphere-blob atmosphere-blob--core" />
         </div>
+        <AuroraAtmosphere
+          intensity="subtle"
+          starDensity="none"
+          glowPosition="search"
+          glowColor="mixed"
+          enableMotion
+          className="explore-page__cosmic"
+        />
         <div className="explore-page__header-glow" />
         <div className="atmosphere-vignette atmosphere-vignette--soft" />
         <div className="atmosphere-grain" />

@@ -37,8 +37,8 @@ AuthSessionProvider
               └── children
 ```
 
-- **Save heart**: `SaveTrainerButton` → `useSavedTrainers()` + `useSaveToast()`. Copy/toasts: `lib/saved-ui.ts`. Gate is **only** `LoginGateModal` in `SavedTrainersProvider`.
-- **Mobile tabs**: `MobileBottomNavLazy` in `(site)/layout.tsx`; menu: `MobileUtilityDrawer`.
+- **Save heart**: `SaveTrainerButton` → `useSavedTrainers()` + `useSaveToast()`. Copy/toasts: `lib/saved-ui.ts`. Logged-out gate: `openSaveQuickSignup` → `SaveQuickSignupModal` / `SaveSuccessModal` on `SavedTrainersProvider` (same lightweight client account path as inquiry).
+- **Mobile tabs**: `MobileBottomNav` in `(site)/layout.tsx`; menu: `MobileUtilityDrawer`.
 - **Auth**: `useAuthSession()` — dev sessions in `localStorage` via `lib/auth-session-store.ts`.
 
 ## Interaction rules (do not regress)
@@ -79,6 +79,7 @@ Use `npm run dev:lan` and the Mac LAN IP — not `localhost` on device. See `REA
 
 ## Deprecated (do not reintroduce)
 
-- `SaveGateContext` / `SaveGateProvider` — use `useSavedTrainers().openLoginGate`
+- `SaveGateContext` / `SaveGateProvider` — use `useSavedTrainers().openSaveQuickSignup`
+- Logged-out save → do not reintroduce Log in / Create account / Continue browsing gates; use `SaveQuickSignupModal`
 - `Navbar` import — use `SiteHeader`
 - Per-card login modals — gate is global on `SavedTrainersProvider`

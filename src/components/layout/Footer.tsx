@@ -5,7 +5,7 @@ const footerLinks = {
   Platform: [
     { label: "Explore Specialists", href: "/explore" },
     { label: "Categories", href: "/#categories" },
-    { label: "How It Works", href: "/#how-it-works" },
+    { label: "Rankings", href: "/rankings" },
   ],
   Company: [
     { label: "About", href: "#" },

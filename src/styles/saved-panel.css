@@ -221,6 +221,15 @@
   z-index: 1;
 }
 
+.saved-page-route__cosmic {
+  z-index: 0;
+}
+
+.saved-page-route__content {
+  position: relative;
+  z-index: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .saved-dropdown__panel {
     transition: opacity 0.15s ease !important;

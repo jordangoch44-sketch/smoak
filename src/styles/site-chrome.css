@@ -19,6 +19,8 @@
 /* ═══ Decorative layers NEVER receive pointer events ═══ */
 .site-page-backdrop,
 .site-page-backdrop *,
+.aurora-atmosphere,
+.aurora-atmosphere *,
 .atmosphere-mesh,
 .atmosphere-blob,
 .atmosphere-vignette,

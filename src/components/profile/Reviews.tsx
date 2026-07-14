@@ -7,9 +7,15 @@ interface ReviewsProps {
   reviews: Review[];
   rating: number;
   reviewCount: number;
+  className?: string;
 }
 
-export function Reviews({ reviews, rating, reviewCount }: ReviewsProps) {
+export function Reviews({
+  reviews,
+  rating,
+  reviewCount,
+  className,
+}: ReviewsProps) {
   const ratingSummary = (
     <div className="flex shrink-0 items-center gap-1.5 text-sm">
       <span className="text-white">★</span>
@@ -19,7 +25,11 @@ export function Reviews({ reviews, rating, reviewCount }: ReviewsProps) {
   );
 
   return (
-    <ProfileSection variant="panel" aria-label="Reviews">
+    <ProfileSection
+      variant="panel"
+      className={className}
+      aria-label="Reviews"
+    >
       <ProfileSectionHeader title="Reviews" trailing={ratingSummary} />
       <ul className="profile-section-body profile-section-body--loose">
         {reviews.map((review) => (

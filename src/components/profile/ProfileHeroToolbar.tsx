@@ -19,6 +19,7 @@ import {
   shareTrainerProfile,
 } from "@/lib/profile-share";
 import { cn } from "@/lib/utils";
+import { useProfileSheetDismiss } from "./ProfileSheetDismissContext";
 
 const EXPLORE_FALLBACK_PATH = "/explore";
 
@@ -55,6 +56,7 @@ export function ProfileHeroToolbar({
   trainerName,
 }: ProfileHeroToolbarProps) {
   const router = useRouter();
+  const sheetDismiss = useProfileSheetDismiss();
   const { showToast } = useToast();
   const { isHidden, toggleHidden } = useHiddenTrainers();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -92,6 +94,10 @@ export function ProfileHeroToolbar({
 
   function handleClose() {
     closeMenu();
+    if (sheetDismiss) {
+      sheetDismiss();
+      return;
+    }
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;

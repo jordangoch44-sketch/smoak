@@ -30,6 +30,8 @@ type ProfileUpsertPayload = {
   specialist_format?: string;
   specialist_starting_price?: string;
   onboarding_data?: Record<string, unknown> | null;
+  profile_completion_status?: string;
+  account_source?: string;
 };
 
 function emptyProfileFields(): Omit<
@@ -157,6 +159,66 @@ export async function saveMinimalSignupProfile(
     last_name: params.lastName.trim(),
     ...emptyProfileFields(),
     client_zip_code: zip,
+  });
+}
+
+/**
+ * Lightweight client from specialist inquiry — incomplete profile, no questionnaire.
+ * Safe to call repeatedly after magic-link / OTP verification.
+ */
+export async function saveInquiryClientProfile(
+  supabase: SupabaseClient,
+  userId: string,
+  params: {
+    email: string;
+    firstName: string;
+    accountSource?: string;
+  }
+): Promise<ProfileUpsertResult> {
+  const existing = await fetchProfileRow(supabase, userId);
+  const roleResult = await upsertUserRole(supabase, userId, "client");
+  if (!roleResult.ok) return roleResult;
+
+  const firstName =
+    params.firstName.trim() || existing?.first_name?.trim() || "";
+  const email =
+    params.email.trim().toLowerCase() || existing?.email?.trim().toLowerCase() || "";
+
+  if (existing) {
+    const nextFirst = existing.first_name.trim() || firstName;
+    const existingSource =
+      typeof existing.account_source === "string"
+        ? existing.account_source.trim()
+        : "";
+    const existingStatus =
+      typeof existing.profile_completion_status === "string"
+        ? existing.profile_completion_status.trim()
+        : "";
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        first_name: nextFirst,
+        email: email || existing.email,
+        account_source:
+          existingSource || params.accountSource || "specialist_inquiry",
+        profile_completion_status: existingStatus || "incomplete",
+      })
+      .eq("user_id", userId);
+
+    if (error) {
+      return { ok: false, message: error.message };
+    }
+    return { ok: true };
+  }
+
+  return upsertProfileRow(supabase, {
+    user_id: userId,
+    email,
+    first_name: firstName,
+    last_name: "",
+    ...emptyProfileFields(),
+    profile_completion_status: "incomplete",
+    account_source: params.accountSource ?? "specialist_inquiry",
   });
 }
 

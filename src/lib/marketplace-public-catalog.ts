@@ -9,8 +9,6 @@ import {
   getSpecialistApplicationById,
   listSpecialistApplications,
 } from "@/lib/specialist-application-storage";
-import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
-import { loadAllSpecialistOverrides } from "@/lib/specialist-profile-overrides";
 import type { ProfileStatus } from "@/types/specialist-application";
 import type { Trainer } from "@/types/trainer";
 
@@ -97,10 +95,6 @@ export function listPublicMarketplaceTrainers(): Trainer[] {
   }
 
   return result;
-}
-
-export function listPublicFeaturedTrainers(): Trainer[] {
-  return listPublicMarketplaceTrainers().filter((trainer) => trainer.featured);
 }
 
 /** Sponsored / premium placements for homepage discovery rail */

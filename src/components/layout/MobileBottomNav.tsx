@@ -15,7 +15,6 @@ import {
   HomeIcon,
   SearchIcon,
   UserIcon,
-  UserPlusIcon,
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -56,16 +55,14 @@ const NavIcon = memo(function NavIcon({
   );
 
   switch (id) {
+    case "home":
+      return <HomeIcon className={className} />;
     case "search":
       return <SearchIcon className={className} />;
     case "saved":
       return (
         <HeartIcon className={className} filled={active || savedCount > 0} />
       );
-    case "home":
-      return <HomeIcon className={className} />;
-    case "join":
-      return <UserPlusIcon className={className} />;
     case "profile":
       return <UserIcon className={className} />;
     default:
@@ -159,6 +156,14 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
     (profilePresentation.kind === "avatar" ||
       profilePresentation.kind === "initials");
 
+  const ariaLabel = isProfile
+    ? signedIn
+      ? "Open My Profile"
+      : "Open Profile"
+    : item.id === "saved" && showSaveBadge
+      ? `${item.label}, ${savedCount} saved`
+      : item.label;
+
   return (
     <TapLink
       href={item.href}
@@ -174,15 +179,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
         hasAvatarChrome && "mobile-bottom-nav__item--profile-avatar",
         active && "mobile-bottom-nav__item--active"
       )}
-      aria-label={
-        isProfile
-          ? signedIn
-            ? "Open My Profile"
-            : "Log In"
-          : item.id === "saved" && showSaveBadge
-            ? `${item.label}, ${savedCount} saved`
-            : item.label
-      }
+      aria-label={ariaLabel}
       aria-current={active ? "page" : undefined}
       {...(isProfile ? { "data-profile-auth": profileAuthState } : {})}
     >
@@ -210,6 +207,14 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
         {item.id === "saved" && showSaveBadge ? (
           <SavedNavBadge count={savedCount} />
         ) : null}
+      </span>
+      <span
+        className={cn(
+          "mobile-bottom-nav__label",
+          active && "mobile-bottom-nav__label--active"
+        )}
+      >
+        {item.label}
       </span>
     </TapLink>
   );

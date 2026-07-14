@@ -23,7 +23,7 @@ function resolveVisibility(
 export function computeAdminOverviewStats(
   clients: AdminClientRecord[],
   specialistApplications = listSpecialistApplications(),
-  clientApplications: readonly { status: string }[] = []
+  _clientApplications: readonly { status: string }[] = []
 ): AdminOverviewStats {
   const hiddenIds = getHiddenTrainersSnapshot();
   const meta = getAdminSpecialistMetaSnapshot();

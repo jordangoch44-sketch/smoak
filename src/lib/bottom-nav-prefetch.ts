@@ -3,9 +3,9 @@ import { SITE_ROUTES } from "@/lib/navigation";
 /** Core bottom-nav destinations — prefetch after first paint on tablet/phone */
 export const BOTTOM_NAV_PREFETCH_ROUTES: readonly string[] = [
   SITE_ROUTES.home,
-  SITE_ROUTES.explore,
   SITE_ROUTES.exploreSearchFocus,
   SITE_ROUTES.saved,
+  SITE_ROUTES.profile,
   SITE_ROUTES.join,
   SITE_ROUTES.login,
   "/client-dashboard",

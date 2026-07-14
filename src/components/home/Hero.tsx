@@ -1,6 +1,8 @@
+import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
+
 export function Hero() {
   return (
-    <section className="home-hero home-hero--discovery relative overflow-hidden px-4 sm:px-6">
+    <section className="home-hero home-hero--discovery relative px-4 sm:px-6">
       <div className="home-hero__canvas" aria-hidden>
         <div className="atmosphere-mesh">
           <div className="atmosphere-blob atmosphere-blob--indigo" />
@@ -10,6 +12,14 @@ export function Hero() {
           <div className="atmosphere-blob atmosphere-blob--pink" />
           <div className="atmosphere-blob atmosphere-blob--core" />
         </div>
+        <AuroraAtmosphere
+          intensity="soft"
+          starDensity="none"
+          glowPosition="hero"
+          glowColor="purple"
+          enableMotion
+          className="home-hero__cosmic"
+        />
         <div className="atmosphere-vignette atmosphere-vignette--hero" />
         <div className="atmosphere-grain" />
       </div>

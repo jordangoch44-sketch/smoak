@@ -12,13 +12,18 @@ import type { Trainer } from "@/types";
 interface SponsoredSpecialistCardProps {
   trainer: Trainer;
   priority?: boolean;
+  /** When false, hides the Sponsored chip (organic fillers in profile rails) */
+  showSponsoredBadge?: boolean;
 }
 
 export function SponsoredSpecialistCard({
   trainer,
   priority = false,
+  showSponsoredBadge = true,
 }: SponsoredSpecialistCardProps) {
   const href = `/trainers/${trainer.id}`;
+  const sponsored =
+    showSponsoredBadge && (trainer.sponsored || trainer.featured);
 
   return (
     <div className="home-sponsored-card" role="listitem">
@@ -34,7 +39,9 @@ export function SponsoredSpecialistCard({
               imageClassName="home-sponsored-card__thumb-img"
             />
             <div className="home-sponsored-card__media-scrim" aria-hidden />
-            <span className="home-sponsored-card__sponsored">Sponsored</span>
+            {sponsored ? (
+              <span className="home-sponsored-card__sponsored">Sponsored</span>
+            ) : null}
           </div>
         </TapLink>
 

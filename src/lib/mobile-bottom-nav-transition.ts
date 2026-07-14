@@ -11,10 +11,9 @@ export const BOTTOM_NAV_PANEL_TOUCH_MS = 200;
 export const BOTTOM_NAV_PANEL_REDUCED_MS = 120;
 
 const TAB_ORDER: MobileBottomNavItemId[] = [
+  "home",
   "search",
   "saved",
-  "home",
-  "join",
   "profile",
 ];
 
@@ -47,12 +46,10 @@ export function isSameBottomNavDestination(
   const target = parseBottomNavHref(href);
   if (pathname !== target.pathname) return false;
 
-  if (target.pathname === "/explore" && target.search.includes("focus=search")) {
-    return searchParams.get("focus") === "search";
-  }
-
-  if (target.pathname === "/create-account") {
-    return pathname === "/create-account";
+  if (target.pathname === "/explore") {
+    const targetFocusSearch = target.search.includes("focus=search");
+    const currentFocusSearch = searchParams.get("focus") === "search";
+    return targetFocusSearch === currentFocusSearch;
   }
 
   if (target.search) {
