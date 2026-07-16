@@ -1,3 +1,4 @@
+import { dispatchTransactionalEmail } from "@/lib/email/email-transport";
 import type { ClientApplication } from "@/types/client-application";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
@@ -10,9 +11,8 @@ export interface ConfirmationEmailPayload {
   kind: "specialist" | "client";
 }
 
-export interface ConfirmationEmailResult {
-  success: boolean;
-}
+/** @deprecated Prefer EmailSendResult from email-transport — kept for existing callers */
+export type ConfirmationEmailResult = { success: boolean };
 
 function firstNameFromFullName(fullName: string, fallback = "there"): string {
   const trimmed = fullName.trim();
@@ -76,67 +76,36 @@ SMOAC`;
   };
 }
 
-/**
- * Placeholder transport — logs payload and returns success until a provider is wired.
- *
- * TODO(Resend): import { Resend } from "resend";
- *   const resend = new Resend(process.env.RESEND_API_KEY);
- *   await resend.emails.send({ from: "SMOAC <noreply@smoac.com>", to: payload.to, subject: payload.subject, text: payload.text });
- *
- * TODO(SendGrid): use @sendgrid/mail with SENDGRID_API_KEY and a verified sender.
- *
- * TODO(Supabase Edge Function): await fetch(`${SUPABASE_URL}/functions/v1/send-confirmation-email`, {
- *   method: "POST",
- *   headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}`, "Content-Type": "application/json" },
- *   body: JSON.stringify(payload),
- * });
- */
-async function dispatchConfirmationEmail(
-  payload: ConfirmationEmailPayload,
-  testLogLabel: string
-): Promise<ConfirmationEmailResult> {
-  console.info(testLogLabel);
-  console.info("[SMOAC EMAIL] Confirmation email payload:", {
-    kind: payload.kind,
-    applicationId: payload.applicationId,
-    to: payload.to,
-    subject: payload.subject,
-    bodyPreview: payload.text.split("\n").slice(0, 3).join(" "),
-    fullText: payload.text,
-  });
-
-  // When a real provider is connected, replace the block above with the provider call.
-  // Throw or return { success: false } on provider failure so callers can console.warn.
-
-  return { success: true };
-}
-
-/** Send specialist Join Now confirmation — non-blocking; logs in dev when no provider */
+/** Send specialist Join Now confirmation — Resend when configured. */
 export async function sendSpecialistApplicationConfirmationEmail(
   application: SpecialistApplication
 ): Promise<ConfirmationEmailResult> {
   try {
     const payload = buildSpecialistConfirmationEmail(application);
-    return await dispatchConfirmationEmail(
-      payload,
-      "[SMOAC EMAIL TEST] Specialist confirmation email queued"
-    );
+    return await dispatchTransactionalEmail({
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      kind: "confirmation_specialist",
+    });
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist confirmation email failed", error);
     return { success: false };
   }
 }
 
-/** Send client Join Now confirmation — non-blocking; logs in dev when no provider */
+/** Send client Join Now confirmation — Resend when configured. */
 export async function sendClientApplicationConfirmationEmail(
   application: ClientApplication
 ): Promise<ConfirmationEmailResult> {
   try {
     const payload = buildClientConfirmationEmail(application);
-    return await dispatchConfirmationEmail(
-      payload,
-      "[SMOAC EMAIL TEST] Client confirmation email queued"
-    );
+    return await dispatchTransactionalEmail({
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      kind: "confirmation_client",
+    });
   } catch (error) {
     console.warn("[SMOAC EMAIL] Client confirmation email failed", error);
     return { success: false };

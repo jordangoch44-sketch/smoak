@@ -69,6 +69,7 @@ async function main() {
   const saved = await probeTable("saved_trainers");
   const clientApps = await probeTable("client_applications");
   const specialistApps = await probeTable("specialist_applications");
+  const specialistProfiles = await probeTable("specialist_profiles");
 
   console.log("");
   if (
@@ -76,7 +77,8 @@ async function main() {
     !profiles.readable ||
     !saved.readable ||
     !clientApps.readable ||
-    !specialistApps.readable
+    !specialistApps.readable ||
+    !specialistProfiles.readable
   ) {
     console.warn(
       "  ⚠ Tables exist but service_role cannot SELECT yet.\n" +
@@ -87,12 +89,13 @@ async function main() {
         "    grant select, insert, update, delete on table public.profiles to service_role;\n" +
         "    grant select, insert, delete on table public.saved_trainers to service_role;\n" +
         "    grant select, insert, update on table public.client_applications to service_role;\n" +
-        "    grant select, insert, update on table public.specialist_applications to service_role;\n"
+        "    grant select, insert, update on table public.specialist_applications to service_role;\n" +
+        "    grant select, insert, update, delete on table public.specialist_profiles to service_role;\n"
     );
   }
 
   console.log(
-    "Tables verified: profiles + user_roles + saved_trainers + applications are in the database."
+    "Tables verified: profiles + user_roles + saved_trainers + applications + specialist_profiles are in the database."
   );
 }
 

@@ -1,0 +1,56 @@
+/* Shared specialty chips + location label for marketplace cards */
+
+.provider-location {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.specialty-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3125rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.specialty-chips__chip,
+.specialty-chips__more {
+  box-sizing: border-box;
+  max-width: 100%;
+  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.07);
+  padding: 0.1875rem 0.45rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.specialty-chips__chip {
+  /* Prefer full names; ellipsis only if a single chip still can't fit */
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.specialty-chips__more {
+  flex: 0 0 auto;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}

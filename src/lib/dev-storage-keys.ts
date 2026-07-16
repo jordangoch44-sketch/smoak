@@ -21,6 +21,9 @@ export const DEV_ADMIN_NOTIFICATION_DISMISSED_KEY =
 export const DEV_PENDING_SAVE_KEY = "smoac_pending_save";
 /** Local fallback inbox when Supabase inquiry tables are unavailable */
 export const LOCAL_INQUIRIES_STORAGE_KEY = "smoac_local_inquiries";
+/** Specialist portal inquiry alerts (local + same-browser notify) */
+export const SPECIALIST_INQUIRY_NOTIFICATIONS_KEY =
+  "smoac_specialist_inquiry_notifications";
 
 /** @deprecated DEV migration source */
 export const LEGACY_AUTH_STORAGE_KEY = "smoac-auth-session";

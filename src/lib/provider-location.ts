@@ -1,11 +1,16 @@
 import type { Trainer } from "@/types";
 
-/** Card / profile line: “Mira Mesa, San Diego” */
-export function formatProviderLocation(provider: Pick<Trainer, "city" | "neighborhood">): string {
-  if (provider.neighborhood) {
-    return `${provider.neighborhood}, ${provider.city}`;
-  }
-  return provider.city;
+/**
+ * Card / profile line: “Neighborhood, City”.
+ * Omits blanks and trailing commas when either part is missing.
+ */
+export function formatProviderLocation(
+  provider: Pick<Trainer, "city" | "neighborhood">
+): string {
+  const neighborhood = provider.neighborhood?.trim() ?? "";
+  const city = provider.city?.trim() ?? "";
+  if (neighborhood && city) return `${neighborhood}, ${city}`;
+  return neighborhood || city;
 }
 
 /**

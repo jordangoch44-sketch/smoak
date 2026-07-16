@@ -58,14 +58,13 @@ Onboarding drafts stay in `localStorage` until submit (`smoac_specialist_onboard
 
 ---
 
-## Still local (Phase 3c+)
+Approve/activate promotes to `specialist_profiles` (Phase 3c). See [`PHASE3C_SPECIALIST_PROFILES.md`](./PHASE3C_SPECIALIST_PROFILES.md).
 
-- `smoac_approved_specialist_profiles`
-- `smoac_specialist_profile_overrides`
+## Still local (Phase 3d+)
+
 - `smoac_hidden_specialists`
-- Seed `data/trainers.ts` public catalog merge
-
-Approve/activate still calls those local helpers so Explore behavior is unchanged.
+- `smoac_admin_specialist_meta`
+- Seed `data/trainers.ts` public catalog merge (DB preferred when approved row exists)
 
 ---
 

@@ -1,6 +1,7 @@
 import type { Trainer } from "@/types";
 import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
-import { formatProviderLocation } from "@/lib/provider-location";
+import { LocationLabel } from "@/components/trainers/LocationLabel";
+import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { formatTrainerRating } from "@/lib/utils";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
@@ -15,8 +16,6 @@ export function TrainerCardGrid({
   trainer,
   priority = false,
 }: TrainerCardGridProps) {
-  const tags = trainer.specialty.slice(0, 2);
-
   return (
     <article className="hidden flex-col overflow-hidden rounded-2xl border border-white/5 bg-graphite-900 transition-all duration-300 active:scale-[0.99] active:border-white/10 active:bg-graphite-800 md:flex md:group-hover:border-white/10 md:group-hover:bg-graphite-800">
       <div className="relative aspect-[4/5] overflow-hidden bg-graphite-800">
@@ -46,20 +45,15 @@ export function TrainerCardGrid({
         </h3>
         <p className="mt-1 text-sm text-silver-400">{trainer.profession}</p>
         <p className="mt-0.5 text-xs text-silver-500">{trainer.title}</p>
-        <p className="mt-1.5 text-xs text-silver-400">
-          {formatProviderLocation(trainer)}
-        </p>
+        <LocationLabel
+          provider={trainer}
+          className="mt-1.5 text-xs text-silver-400"
+        />
         <DevTrainerDistance trainer={trainer} className="mt-1 block" />
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {tags.map((s) => (
-            <span
-              key={s}
-              className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-silver-300"
-            >
-              {s}
-            </span>
-          ))}
-        </div>
+        <SpecialtyChips
+          specialties={trainer.specialty}
+          className="mt-3"
+        />
         <SessionPrice
           amount={trainer.pricePerSession}
           variant="grid"

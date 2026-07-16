@@ -67,3 +67,31 @@ export interface SpecialistApplicationRow {
   submitted_at: string | null;
   updated_at: string;
 }
+
+/** Phase 3c — public marketplace specialist listing */
+export interface SpecialistProfileRow {
+  id: string;
+  user_id: string | null;
+  application_id: string | null;
+  status: "approved" | "hidden" | "archived" | string;
+  display_name: string;
+  profession: string;
+  city: string;
+  state: string;
+  neighborhood: string;
+  zip_code: string;
+  latitude: number | null;
+  longitude: number | null;
+  specialty: string[] | unknown;
+  price_per_session: number;
+  service_type: string | null;
+  featured: boolean;
+  sponsored: boolean;
+  verified: boolean;
+  rating: number;
+  review_count: number;
+  profile_data: Record<string, unknown>;
+  overrides: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}

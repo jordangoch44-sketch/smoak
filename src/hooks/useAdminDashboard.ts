@@ -48,6 +48,7 @@ import {
   refreshSpecialistApplicationsFromRemote,
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
+import { refreshApprovedSpecialistProfilesFromRemote } from "@/lib/approved-specialist-profiles-store";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 
 export function useAdminDashboard() {
@@ -58,6 +59,7 @@ export function useAdminDashboard() {
     ensureAdminApplicationSeeds();
     refreshClientApplicationsFromRemote();
     refreshSpecialistApplicationsFromRemote();
+    refreshApprovedSpecialistProfilesFromRemote();
   }, [isReady]);
 
   const specialistMeta = useSyncExternalStore(

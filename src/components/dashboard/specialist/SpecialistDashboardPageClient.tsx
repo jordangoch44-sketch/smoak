@@ -15,11 +15,13 @@ import {
   SubscriptionCard,
   VisibilityRankingCard,
 } from "@/components/dashboard/specialist/cards";
+import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistDashboardUpgradeCta } from "@/components/dashboard/specialist/SpecialistDashboardUpgradeCta";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
+import { useSpecialistInquiryNotifications } from "@/hooks/useSpecialistInquiryNotifications";
 import {
   showsPremiumDashboard,
   showsProfileFirstDashboard,
@@ -35,12 +37,19 @@ function dashboardSubtitle(mode: ReturnType<typeof useSpecialistDashboard>["dash
   return "Manage your profile, leads, and marketplace visibility.";
 }
 
+function scrollToInquiries() {
+  document
+    .getElementById("specialist-inquiries")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export function SpecialistDashboardPageClient() {
   const {
     isReady,
     session,
     data,
     trainer,
+    trainerId,
     application,
     profileCompletion,
     completionChecklist,
@@ -50,7 +59,14 @@ export function SpecialistDashboardPageClient() {
     firstName,
     dashboardMode,
     handleSignOut,
+    handleOpenInquiryLead,
   } = useSpecialistDashboard();
+
+  const {
+    unreadCount: notificationUnread,
+    latestSummary,
+    dismissAll,
+  } = useSpecialistInquiryNotifications(trainerId);
 
   if (!isReady || !session) {
     return <DashboardLoadingState />;
@@ -66,6 +82,13 @@ export function SpecialistDashboardPageClient() {
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
   const premiumDashboard = showsPremiumDashboard(dashboardMode);
   const hasProfilePreview = Boolean(application && trainer);
+  const showsInquiries =
+    dashboardMode === "approved-free" ||
+    dashboardMode === "approved-premium" ||
+    dashboardMode === "demo-premium";
+
+  const leadUnread = data.newLeads.filter((lead) => lead.unread).length;
+  const bannerUnread = Math.max(notificationUnread, leadUnread);
 
   return (
     <DashboardPageShell
@@ -79,6 +102,18 @@ export function SpecialistDashboardPageClient() {
       utilityBar={<DashboardSignOutButton onClick={handleSignOut} />}
     >
       <div className="specialist-dash-layout">
+        {showsInquiries ? (
+          <InquiryNotificationBanner
+            unreadCount={bannerUnread}
+            latestSummary={latestSummary}
+            onReview={() => {
+              dismissAll();
+              scrollToInquiries();
+            }}
+            onDismiss={dismissAll}
+          />
+        ) : null}
+
         {profileFirst ? (
           <>
             {(dashboardMode === "pending" || dashboardMode === "rejected") && (
@@ -113,7 +148,13 @@ export function SpecialistDashboardPageClient() {
             ) : null}
 
             {dashboardMode === "approved-free" ? (
-              <SpecialistDashboardUpgradeCta />
+              <>
+                <LeadsCard
+                  leads={data.newLeads}
+                  onOpenLead={handleOpenInquiryLead}
+                />
+                <SpecialistDashboardUpgradeCta />
+              </>
             ) : null}
           </>
         ) : null}
@@ -126,7 +167,10 @@ export function SpecialistDashboardPageClient() {
               trainer={trainer}
               checklist={completionChecklist}
             />
-            <LeadsCard leads={data.newLeads} />
+            <LeadsCard
+              leads={data.newLeads}
+              onOpenLead={handleOpenInquiryLead}
+            />
             <VisibilityRankingCard
               ranking={data.ranking ?? null}
               trainer={trainer}

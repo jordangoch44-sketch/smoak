@@ -11,3 +11,5 @@ export { TrainerCardGrid } from "./TrainerCardGrid";
 export { TrainerList } from "./TrainerList";
 export { SaveTrainerButton } from "./SaveTrainerButton";
 export { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
+export { SpecialtyChips } from "./SpecialtyChips";
+export { LocationLabel } from "./LocationLabel";

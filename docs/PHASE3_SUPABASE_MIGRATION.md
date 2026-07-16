@@ -153,10 +153,10 @@ Seed data becomes SQL seed migration or admin-import script, not bundled TS for 
 
 ### Public specialist profiles (Phase 3c)
 
-- [ ] Approval promotes application → `specialist_profiles`
-- [ ] Edit profile saves to DB (replace `specialist-profile-store.ts`)
-- [ ] Explore/trainers routes read from catalog service
-- [ ] Remove `approved-specialist-profiles-store.ts`
+- [x] Approval promotes application → `specialist_profiles`
+- [x] Edit profile saves to DB (dual-write via approved store + overrides)
+- [x] Explore/trainers routes read from catalog service (hydrate + seed)
+- [ ] Remove `approved-specialist-profiles-store.ts` local cache (Phase 3e)
 
 ### Admin moderation
 

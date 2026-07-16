@@ -13,7 +13,8 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 ## Admin approval
 
 - `admin-applications-service.ts`, `admin-applications-seed.ts`
-- `approved-specialist-profiles-store.ts` — approved public profiles (`smoac_approved_specialist_profiles`)
+- `approved-specialist-profiles-store.ts` — approved public profiles (Phase 3c dual-write → `specialist_profiles`)
+- `profiles/specialist-profiles-db.ts` — Supabase CRUD for public specialist listings
 - `admin-specialists-service.ts`, `admin-specialist-meta-store.ts`
 
 ## Specialist dashboard

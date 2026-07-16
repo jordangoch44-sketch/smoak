@@ -1,4 +1,5 @@
 import { patchAdminSpecialistMeta } from "@/lib/admin-specialist-meta-store";
+import { removeApprovedSpecialistProfile } from "@/lib/approved-specialist-profiles-store";
 import { unhideTrainerId } from "@/lib/hidden-trainers-store";
 import {
   syncApplicationProfileDraft,
@@ -57,6 +58,8 @@ export function updateApplicationStatus(
   saveSpecialistApplication(updated);
   if (profileStatus === "APPROVED") {
     syncApplicationProfileDraft(updated);
+  } else if (profileStatus === "REJECTED" || profileStatus === "ARCHIVED") {
+    removeApprovedSpecialistProfile(id);
   }
   return updated;
 }
@@ -89,21 +92,25 @@ export function rejectSpecialistApplication(
 export function rejectSpecialistApplicationWithEdits(
   application: SpecialistApplication
 ): SpecialistApplication {
-  return saveSpecialistApplicationEdits({
+  const rejected = saveSpecialistApplicationEdits({
     ...application,
     profileStatus: "REJECTED",
     updatedAt: new Date().toISOString(),
   });
+  removeApprovedSpecialistProfile(rejected.id);
+  return rejected;
 }
 
 export function archiveSpecialistApplication(
   application: SpecialistApplication
 ): SpecialistApplication {
-  return saveSpecialistApplicationEdits({
+  const archived = saveSpecialistApplicationEdits({
     ...application,
     profileStatus: "ARCHIVED",
     updatedAt: new Date().toISOString(),
   });
+  removeApprovedSpecialistProfile(archived.id);
+  return archived;
 }
 
 /** Approve + mark specialist active in admin meta */

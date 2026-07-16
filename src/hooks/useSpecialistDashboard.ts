@@ -23,7 +23,10 @@ import {
 } from "@/lib/specialist-dashboard-mode";
 import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-subscription";
 import { isSpecialistPremium } from "@/lib/specialist-premium";
-import { loadSpecialistInquiryLeads } from "@/lib/inquiry/inquiry-inbox";
+import {
+  loadSpecialistInquiryLeads,
+  markSpecialistInquiryRead,
+} from "@/lib/inquiry/inquiry-inbox";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 
 function resolveAnalyticsTrainerId(trainerId: string | null): string {
@@ -61,14 +64,33 @@ export function useSpecialistDashboard() {
     let cancelled = false;
     if (!trainerId) return;
 
-    void loadSpecialistInquiryLeads(trainerId).then((leads) => {
-      if (!cancelled) setInquiryLeads(leads);
-    });
+    function loadLeads() {
+      void loadSpecialistInquiryLeads(trainerId).then((leads) => {
+        if (!cancelled) setInquiryLeads(leads);
+      });
+    }
+
+    loadLeads();
+    window.addEventListener("smoac:specialist-inquiry-notifications", loadLeads);
 
     return () => {
       cancelled = true;
+      window.removeEventListener(
+        "smoac:specialist-inquiry-notifications",
+        loadLeads
+      );
     };
   }, [trainerId]);
+
+  async function handleOpenInquiryLead(lead: SpecialistLead) {
+    if (!trainerId || !lead.unread) return;
+    await markSpecialistInquiryRead(trainerId, lead.id);
+    setInquiryLeads((prev) =>
+      prev.map((item) =>
+        item.id === lead.id ? { ...item, unread: false } : item
+      )
+    );
+  }
 
   const trainer = managedTrainer ?? data.trainer;
   const analytics = getSpecialistProfileAnalytics(
@@ -134,5 +156,6 @@ export function useSpecialistDashboard() {
     dashboardMode,
     firstName,
     handleSignOut,
+    handleOpenInquiryLead,
   };
 }

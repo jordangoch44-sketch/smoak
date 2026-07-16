@@ -48,11 +48,11 @@ export function getPublicMarketplaceTrainerBaseById(
 ): Trainer | undefined {
   if (!isPublicMarketplaceTrainerId(trainerId)) return undefined;
 
-  const seed = getSeedTrainerById(trainerId);
-  if (seed) return seed;
-
   const approved = getApprovedSpecialistProfileById(trainerId);
   if (approved) return approved;
+
+  const seed = getSeedTrainerById(trainerId);
+  if (seed) return seed;
 
   const app = getSpecialistApplicationById(trainerId);
   if (app && PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus)) {
@@ -67,16 +67,17 @@ export function listPublicMarketplaceTrainers(): Trainer[] {
   const hiddenSet = new Set(getHiddenTrainersSnapshot());
   const seen = new Set<string>();
   const result: Trainer[] = [];
+  const approvedProfiles = getApprovedSpecialistProfilesSnapshot();
 
   for (const seed of seedTrainers) {
     if (seen.has(seed.id)) continue;
     if (isTrainerHidden(seed.id, hiddenSet)) continue;
     if (applicationBlocksPublicSeed(seed.id)) continue;
     seen.add(seed.id);
-    result.push(seed);
+    /* Prefer durable approved/DB profile over seed when both exist */
+    result.push(approvedProfiles[seed.id] ?? seed);
   }
 
-  const approvedProfiles = getApprovedSpecialistProfilesSnapshot();
   for (const id of Object.keys(approvedProfiles)) {
     if (seen.has(id)) continue;
     if (isTrainerHidden(id, hiddenSet)) continue;
@@ -90,7 +91,7 @@ export function listPublicMarketplaceTrainers(): Trainer[] {
       if (!PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus)) continue;
       if (isTrainerHidden(app.id, hiddenSet)) continue;
       seen.add(app.id);
-      result.push(applicationToTrainer(app));
+      result.push(approvedProfiles[app.id] ?? applicationToTrainer(app));
     }
   }
 

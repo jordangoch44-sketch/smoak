@@ -8,9 +8,14 @@ import {
 import {
   listLocalInquiriesForClient,
   listLocalInquiriesForSpecialist,
+  markLocalInquiryRead,
 } from "@/lib/inquiry/inquiry-local-store";
-import { labelForInquiryAction, isInquiryActionId } from "@/lib/inquiry-options";
-import { labelsForInquiryTopics } from "@/lib/inquiry-options";
+import {
+  labelForInquiryAction,
+  isInquiryActionId,
+  labelsForInquiryTopics,
+} from "@/lib/inquiry-options";
+import { markSpecialistInquiryNotificationRead } from "@/lib/inquiry/specialist-inquiry-notifications";
 
 export interface ClientInquiryListItem {
   id: string;
@@ -33,19 +38,44 @@ function relativeTime(iso: string): string {
   return `${days}d ago`;
 }
 
+function previewFromBody(body: string): string {
+  const lines = body
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const messageIdx = lines.findIndex((line) => /^message:?$/i.test(line));
+  if (messageIdx >= 0) {
+    const after = lines.slice(messageIdx + 1).join(" ").trim();
+    if (after) return after.slice(0, 140);
+  }
+  return lines.slice(0, 2).join(" — ").slice(0, 140);
+}
+
 function conversationToLead(
-  conversation: InquiryConversationRow
+  conversation: InquiryConversationRow,
+  options: { unread: boolean; latestBody?: string }
 ): SpecialistLead {
   const action = isInquiryActionId(conversation.inquiry_action)
     ? labelForInquiryAction(conversation.inquiry_action)
     : conversation.inquiry_action;
   const topics = labelsForInquiryTopics(conversation.inquiry_topics);
   const topicBit = topics.length > 0 ? topics.slice(0, 2).join(", ") : action;
+  const body = options.latestBody?.trim() || "";
+  const messagePreview = body
+    ? previewFromBody(body)
+    : topicBit || "New inquiry";
+
   return {
     id: conversation.id,
     name: conversation.client_first_name || "Client",
     intent: topicBit || "New inquiry",
     receivedAt: relativeTime(conversation.last_message_at),
+    unread: options.unread,
+    clientEmail: conversation.client_email || "",
+    actionLabel: action,
+    topicLabels: topics,
+    messagePreview,
+    messageBody: body,
   };
 }
 
@@ -53,7 +83,11 @@ async function fetchSpecialistConversations(
   supabase: SupabaseClient,
   specialistId: string
 ): Promise<
-  { conversation: InquiryConversationRow; unread: boolean }[]
+  {
+    conversation: InquiryConversationRow;
+    unread: boolean;
+    latestBody: string;
+  }[]
 > {
   const { data, error } = await supabase
     .from("inquiry_conversations")
@@ -65,22 +99,28 @@ async function fetchSpecialistConversations(
   if (error || !data) return [];
 
   const rows = data as InquiryConversationRow[];
-  const results: { conversation: InquiryConversationRow; unread: boolean }[] =
-    [];
+  const results: {
+    conversation: InquiryConversationRow;
+    unread: boolean;
+    latestBody: string;
+  }[] = [];
 
   for (const conversation of rows) {
     const { data: messages } = await supabase
       .from("inquiry_messages")
-      .select("is_read, sender_role")
+      .select("is_read, sender_role, body, created_at")
       .eq("conversation_id", conversation.id)
       .eq("sender_role", "client")
       .order("created_at", { ascending: false })
       .limit(5);
 
-    const unread = (messages as InquiryMessageRow[] | null)?.some(
-      (m) => !m.is_read
-    );
-    results.push({ conversation, unread: Boolean(unread) });
+    const clientMessages = (messages as InquiryMessageRow[] | null) ?? [];
+    const unread = clientMessages.some((m) => !m.is_read);
+    results.push({
+      conversation,
+      unread,
+      latestBody: clientMessages[0]?.body ?? "",
+    });
   }
 
   return results;
@@ -120,15 +160,47 @@ export async function loadSpecialistInquiryLeads(
   if (!specialistId) return [];
 
   if (!isMarketplaceSupabaseActive()) {
-    return listLocalInquiriesForSpecialist(specialistId).map((record) =>
-      conversationToLead(record.conversation)
-    );
+    return listLocalInquiriesForSpecialist(specialistId).map((record) => {
+      const latest = [...record.messages]
+        .reverse()
+        .find((m) => m.sender_role === "client");
+      return conversationToLead(record.conversation, {
+        unread: record.messages.some(
+          (m) => m.sender_role === "client" && !m.is_read
+        ),
+        latestBody: latest?.body,
+      });
+    });
   }
 
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return [];
   const rows = await fetchSpecialistConversations(supabase, specialistId);
-  return rows.map(({ conversation }) => conversationToLead(conversation));
+  return rows.map(({ conversation, unread, latestBody }) =>
+    conversationToLead(conversation, { unread, latestBody })
+  );
+}
+
+export async function markSpecialistInquiryRead(
+  specialistId: string,
+  conversationId: string
+): Promise<void> {
+  markSpecialistInquiryNotificationRead(specialistId, conversationId);
+
+  if (!isMarketplaceSupabaseActive()) {
+    markLocalInquiryRead(conversationId);
+    return;
+  }
+
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return;
+
+  await supabase
+    .from("inquiry_messages")
+    .update({ is_read: true })
+    .eq("conversation_id", conversationId)
+    .eq("sender_role", "client")
+    .eq("is_read", false);
 }
 
 export async function loadClientInquiryMessages(

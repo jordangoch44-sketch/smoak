@@ -2,6 +2,8 @@
 
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { LocationLabel } from "@/components/trainers/LocationLabel";
+import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import {
   formatTrainerPriceLabel,
@@ -51,7 +53,16 @@ export function SponsoredSpecialistCard({
             <p className="home-sponsored-card__profession">
               {trainer.profession}
             </p>
+            <LocationLabel
+              provider={trainer}
+              className="home-sponsored-card__location"
+            />
           </TapLink>
+
+          <SpecialtyChips
+            specialties={trainer.specialty}
+            className="home-sponsored-card__chips"
+          />
 
           <div className="home-sponsored-card__meta">
             <span className="home-sponsored-card__rating">

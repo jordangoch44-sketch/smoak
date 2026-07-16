@@ -35,7 +35,7 @@ export function ProfileContactCta({
         Contact Specialist
       </button>
       <p className="profile-contact-cta__helper">
-        Usually responds through SMOAC messaging.
+        Your inquiry is sent to their portal and email.
       </p>
     </section>
   );

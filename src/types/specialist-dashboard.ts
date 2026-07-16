@@ -5,6 +5,15 @@ export interface SpecialistLead {
   name: string;
   intent: string;
   receivedAt: string;
+  /** Unread client message waiting for email follow-up */
+  unread: boolean;
+  clientEmail: string;
+  actionLabel: string;
+  topicLabels: string[];
+  /** Short line for list subtitle / notification */
+  messagePreview: string;
+  /** Full inquiry body for portal detail */
+  messageBody: string;
 }
 
 export interface SpecialistSubscription {

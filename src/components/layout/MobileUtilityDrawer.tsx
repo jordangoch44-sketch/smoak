@@ -1,34 +1,39 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { QuickClientAccountModal } from "@/components/auth/QuickClientAccountModal";
 import { Logo } from "@/components/ui/Logo";
 import { TapLink } from "@/components/ui/TapLink";
 import {
-  CalendarIcon,
+  ChartIcon,
   CloseIcon,
+  EyeIcon,
   HeartIcon,
-  HomeIcon,
-  SearchIcon,
+  HelpCircleIcon,
+  InfoIcon,
+  LogOutIcon,
+  MessageBubbleIcon,
   TrophyIcon,
-  UserIcon,
 } from "@/components/ui/icons";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useStableClientState } from "@/hooks/useStableClientState";
 import { isDashboardPath, LOGIN_PATH } from "@/lib/auth-routes";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
+import { isDemoSpecialistDashboard } from "@/lib/managed-specialist-profile";
+import { getSpecialistProfileAnalytics } from "@/lib/specialist-dashboard-analytics";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
+import { showToast } from "@/lib/toast-store";
 import {
+  getSpecialistAnalyticsHref,
   getUtilityDrawerAccountCard,
-  getUtilityDrawerPrimaryLinks,
   isUtilityDrawerAccountActive,
-  isUtilityDrawerPrimaryActive,
+  UTILITY_DRAWER_APP_VERSION,
+  utilityDrawerCompanyLinks,
   utilityDrawerLegalLinks,
-  utilityDrawerSecondaryLinks,
   type UtilityDrawerAccountCard,
   type UtilityDrawerNavItem,
-  type UtilityDrawerPrimaryId,
-  type UtilityDrawerPrimaryItem,
 } from "@/lib/utility-drawer-menu";
 import { cn } from "@/lib/utils";
 import "@/styles/mobile-utility-drawer.css";
@@ -38,77 +43,13 @@ interface MobileUtilityDrawerProps {
   onClose: () => void;
 }
 
-const PRIMARY_ICONS: Record<UtilityDrawerPrimaryId, ReactNode> = {
-  home: <HomeIcon className="mobile-utility-drawer__row-icon-svg" />,
-  explore: <SearchIcon className="mobile-utility-drawer__row-icon-svg" />,
-  saved: <HeartIcon className="mobile-utility-drawer__row-icon-svg" />,
-  rankings: <TrophyIcon className="mobile-utility-drawer__row-icon-svg" />,
-  events: <CalendarIcon className="mobile-utility-drawer__row-icon-svg" />,
+const COMPANY_ICONS: Record<string, ReactNode> = {
+  about: <InfoIcon className="mobile-utility-drawer__row-icon-svg" />,
+  support: <HelpCircleIcon className="mobile-utility-drawer__row-icon-svg" />,
 };
 
-function DrawerPrimaryRow({
-  item,
-  active,
-  animate,
-  delayMs,
-  onNavigate,
-}: {
-  item: UtilityDrawerPrimaryItem;
-  active: boolean;
-  animate: boolean;
-  delayMs: number;
-  onNavigate: () => void;
-}) {
-  if (item.href == null) {
-    return (
-      <li>
-        <div
-          className={cn(
-            "mobile-utility-drawer__row mobile-utility-drawer__row--disabled",
-            animate && "mobile-utility-drawer__row--animate"
-          )}
-          style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
-          aria-disabled="true"
-        >
-          <span className="mobile-utility-drawer__row-icon" aria-hidden>
-            {PRIMARY_ICONS[item.id]}
-          </span>
-          <span className="mobile-utility-drawer__row-copy">
-            <span className="mobile-utility-drawer__row-label">{item.label}</span>
-            <span className="mobile-utility-drawer__row-desc">
-              {item.description}
-            </span>
-          </span>
-        </div>
-      </li>
-    );
-  }
-
-  return (
-    <li>
-      <TapLink
-        href={item.href}
-        className={cn(
-          "mobile-utility-drawer__row smoac-hit-target",
-          active && "mobile-utility-drawer__row--active",
-          animate && "mobile-utility-drawer__row--animate"
-        )}
-        style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
-        aria-current={active ? "page" : undefined}
-        onClick={onNavigate}
-      >
-        <span className="mobile-utility-drawer__row-icon" aria-hidden>
-          {PRIMARY_ICONS[item.id]}
-        </span>
-        <span className="mobile-utility-drawer__row-copy">
-          <span className="mobile-utility-drawer__row-label">{item.label}</span>
-          <span className="mobile-utility-drawer__row-desc">
-            {item.description}
-          </span>
-        </span>
-      </TapLink>
-    </li>
-  );
+function formatMetric(value: number): string {
+  return value.toLocaleString("en-US");
 }
 
 function DrawerAccountCard({
@@ -116,87 +57,229 @@ function DrawerAccountCard({
   active,
   animate,
   delayMs,
+  onContinue,
   onNavigate,
 }: {
   card: UtilityDrawerAccountCard;
   active: boolean;
   animate: boolean;
   delayMs: number;
+  onContinue?: () => void;
   onNavigate: () => void;
 }) {
-  return (
-    <TapLink
-      href={card.href}
-      className={cn(
-        "mobile-utility-drawer__account smoac-hit-target",
-        card.variant === "auth" && "mobile-utility-drawer__account--auth",
-        active && "mobile-utility-drawer__account--active",
-        animate && "mobile-utility-drawer__account--animate"
-      )}
-      style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
-      aria-current={active ? "page" : undefined}
-      onClick={onNavigate}
-    >
-      <span className="mobile-utility-drawer__account-icon" aria-hidden>
-        <UserIcon className="mobile-utility-drawer__account-icon-svg" />
+  const body = (
+    <>
+      <span className="mobile-utility-drawer__account-avatar" aria-hidden>
+        {card.variant === "profile" && card.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- session avatars may be remote (Supabase) without next/image allowlist
+          <img
+            src={card.avatarUrl}
+            alt=""
+            className="mobile-utility-drawer__account-photo"
+          />
+        ) : (
+          <span className="mobile-utility-drawer__account-initials">
+            {card.initials}
+          </span>
+        )}
       </span>
       <span className="mobile-utility-drawer__account-copy">
         <span className="mobile-utility-drawer__account-title">{card.title}</span>
         <span className="mobile-utility-drawer__account-subtitle">
           {card.subtitle}
         </span>
+        <span className="mobile-utility-drawer__account-cta">
+          {card.actionLabel}
+        </span>
       </span>
+    </>
+  );
+
+  const className = cn(
+    "mobile-utility-drawer__account smoac-hit-target",
+    card.variant === "auth" && "mobile-utility-drawer__account--auth",
+    card.variant === "profile" && "mobile-utility-drawer__account--profile",
+    active && "mobile-utility-drawer__account--active",
+    animate && "mobile-utility-drawer__account--animate"
+  );
+  const style = animate ? { animationDelay: `${delayMs}ms` } : undefined;
+
+  if (card.variant === "auth") {
+    return (
+      <button
+        type="button"
+        className={cn(className, "smoac-control")}
+        style={style}
+        onClick={onContinue}
+      >
+        {body}
+      </button>
+    );
+  }
+
+  if (!card.href) return null;
+
+  return (
+    <TapLink
+      href={card.href}
+      className={className}
+      style={style}
+      aria-current={active ? "page" : undefined}
+      onClick={onNavigate}
+    >
+      {body}
     </TapLink>
   );
 }
 
-function DrawerTextRow({
+function DrawerCompanyRow({
   item,
   animate,
   delayMs,
-  onNavigate,
 }: {
   item: UtilityDrawerNavItem;
   animate: boolean;
   delayMs: number;
-  onNavigate?: () => void;
 }) {
-  if (item.href == null) {
-    return (
-      <li>
-        <div
-          className={cn(
-            "mobile-utility-drawer__row mobile-utility-drawer__row--disabled",
-            animate && "mobile-utility-drawer__row--animate"
-          )}
-          style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
-          aria-disabled="true"
-        >
-          <span className="mobile-utility-drawer__row-copy">
-            <span className="mobile-utility-drawer__row-label">{item.label}</span>
-            <span className="mobile-utility-drawer__row-desc">Coming soon</span>
-          </span>
-        </div>
-      </li>
-    );
+  function handleClick() {
+    showToast({
+      type: "info",
+      message: `${item.label} is coming soon.`,
+    });
   }
-
-  const href = item.href;
 
   return (
     <li>
-      <TapLink
-        href={href}
+      <button
+        type="button"
         className={cn(
-          "mobile-utility-drawer__row mobile-utility-drawer__row--compact smoac-hit-target",
+          "smoac-control mobile-utility-drawer__row smoac-hit-target",
           animate && "mobile-utility-drawer__row--animate"
         )}
         style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
-        onClick={onNavigate}
+        onClick={handleClick}
       >
-        <span className="mobile-utility-drawer__row-label">{item.label}</span>
-      </TapLink>
+        <span className="mobile-utility-drawer__row-icon" aria-hidden>
+          {COMPANY_ICONS[item.id] ?? (
+            <InfoIcon className="mobile-utility-drawer__row-icon-svg" />
+          )}
+        </span>
+        <span className="mobile-utility-drawer__row-copy">
+          <span className="mobile-utility-drawer__row-label">{item.label}</span>
+          {item.description ? (
+            <span className="mobile-utility-drawer__row-desc">
+              {item.description}
+            </span>
+          ) : null}
+        </span>
+      </button>
     </li>
+  );
+}
+
+function DrawerSpecialistAnalytics({
+  animate,
+  delayMs,
+  onNavigate,
+}: {
+  animate: boolean;
+  delayMs: number;
+  onNavigate: () => void;
+}) {
+  const { session } = useAuthSession();
+  const { trainerId, trainer, profileCompletion } = useManagedSpecialistProfile();
+  const useDemoMetrics = isDemoSpecialistDashboard(trainerId, session?.email);
+
+  const analytics = getSpecialistProfileAnalytics(trainerId ?? "demo", {
+    profileCompletionPercent: profileCompletion,
+    rankingPosition: null,
+    useDemoMetrics: useDemoMetrics || !trainerId,
+  });
+
+  const viewsMetric = analytics.coreMetrics.find((m) => m.id === "profile-views");
+  const growth =
+    viewsMetric?.trend.direction === "up"
+      ? `+${viewsMetric.trend.percentChange}%`
+      : viewsMetric?.trend.direction === "down"
+        ? `-${viewsMetric.trend.percentChange}%`
+        : null;
+
+  return (
+    <section
+      className={cn(
+        "mobile-utility-drawer__section mobile-utility-drawer__section--analytics",
+        animate && "mobile-utility-drawer__analytics--animate"
+      )}
+      style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
+      aria-label="Analytics"
+    >
+      <p className="mobile-utility-drawer__section-label">Analytics</p>
+      <div className="mobile-utility-drawer__analytics">
+        <p className="mobile-utility-drawer__analytics-period">
+          {analytics.periodLabel}
+          {trainer?.name ? ` · ${trainer.name.split(" ")[0]}` : ""}
+        </p>
+        <ul className="mobile-utility-drawer__analytics-grid">
+          <li>
+            <span className="mobile-utility-drawer__metric-icon" aria-hidden>
+              <EyeIcon className="mobile-utility-drawer__row-icon-svg" />
+            </span>
+            <span className="mobile-utility-drawer__metric-value">
+              {formatMetric(analytics.profileViews)}
+            </span>
+            <span className="mobile-utility-drawer__metric-label">
+              Profile Views
+            </span>
+          </li>
+          <li>
+            <span className="mobile-utility-drawer__metric-icon" aria-hidden>
+              <HeartIcon className="mobile-utility-drawer__row-icon-svg" />
+            </span>
+            <span className="mobile-utility-drawer__metric-value">
+              {formatMetric(analytics.savedByClients)}
+            </span>
+            <span className="mobile-utility-drawer__metric-label">Saves</span>
+          </li>
+          <li>
+            <span className="mobile-utility-drawer__metric-icon" aria-hidden>
+              <MessageBubbleIcon className="mobile-utility-drawer__row-icon-svg" />
+            </span>
+            <span className="mobile-utility-drawer__metric-value">
+              {formatMetric(analytics.contactClicks)}
+            </span>
+            <span className="mobile-utility-drawer__metric-label">
+              Inquiries
+            </span>
+          </li>
+          <li>
+            <span className="mobile-utility-drawer__metric-icon" aria-hidden>
+              <TrophyIcon className="mobile-utility-drawer__row-icon-svg" />
+            </span>
+            <span className="mobile-utility-drawer__metric-value">
+              {analytics.rankingPosition != null
+                ? `#${analytics.rankingPosition}`
+                : formatMetric(analytics.visibilityScore)}
+            </span>
+            <span className="mobile-utility-drawer__metric-label">
+              {analytics.rankingPosition != null ? "Ranking" : "Visibility"}
+            </span>
+          </li>
+        </ul>
+        {growth ? (
+          <p className="mobile-utility-drawer__analytics-growth">
+            <ChartIcon className="mobile-utility-drawer__growth-icon" />
+            {growth} Growth
+          </p>
+        ) : null}
+        <TapLink
+          href={getSpecialistAnalyticsHref()}
+          className="smoac-control mobile-utility-drawer__analytics-cta smoac-hit-target"
+          onClick={onNavigate}
+        >
+          View Full Analytics
+        </TapLink>
+      </div>
+    </section>
   );
 }
 
@@ -205,21 +288,32 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
   const pathname = usePathname();
   const { isReady, session, signOut } = useAuthSession();
   const { clientReady } = useStableClientState();
+  const { trainer: managedTrainer } = useManagedSpecialistProfile();
+  const [quickAccountOpen, setQuickAccountOpen] = useState(false);
   const signedIn = clientReady && isReady && isLoggedIn(session);
   const role = getUserRole(session);
+  const specialistDisplayName =
+    role === "specialist"
+      ? managedTrainer?.name?.trim() || session?.displayName
+      : session?.displayName;
   const accountCard = getUtilityDrawerAccountCard({
     signedIn,
     role,
     firstName: session?.firstName,
-    displayName: session?.displayName,
+    displayName: specialistDisplayName,
+    email: session?.email,
+    avatarUrl: session?.avatarUrl ?? managedTrainer?.image,
   });
-  const primaryLinks = getUtilityDrawerPrimaryLinks();
 
   function handleLogout() {
     void signOut().then(() => {
       onClose();
       afterLogoutNavigation(() => {
-        if (isDashboardPath(pathname) || pathname === LOGIN_PATH || pathname === "/profile") {
+        if (
+          isDashboardPath(pathname) ||
+          pathname === LOGIN_PATH ||
+          pathname === "/profile"
+        ) {
           router.push("/profile");
         } else {
           router.refresh();
@@ -228,167 +322,180 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
     });
   }
 
+  function openQuickAccount() {
+    setQuickAccountOpen(true);
+  }
+
   let staggerIndex = 0;
-  const nextDelay = () => 48 + staggerIndex++ * 36;
+  const nextDelay = () => 40 + staggerIndex++ * 32;
 
   return (
-    <div
-      data-header-overlay-panel="menu"
-      className={cn(
-        "mobile-utility-drawer",
-        open && "mobile-utility-drawer--open"
-      )}
-      aria-hidden={!open}
-    >
-      <button
-        type="button"
-        className="smoac-control mobile-utility-drawer__backdrop"
-        aria-label="Close menu"
-        tabIndex={open ? 0 : -1}
-        onClick={onClose}
-      />
-
-      <aside
-        id="mobile-utility-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mobile-utility-drawer-title"
-        className="mobile-utility-drawer__panel"
+    <>
+      <div
+        data-header-overlay-panel="menu"
+        className={cn(
+          "mobile-utility-drawer",
+          open && "mobile-utility-drawer--open"
+        )}
+        aria-hidden={!open}
       >
-        <div className="mobile-utility-drawer__aurora" aria-hidden />
-        <div className="mobile-utility-drawer__sheen" aria-hidden />
-        <div className="mobile-utility-drawer__edge-glow" aria-hidden />
+        <button
+          type="button"
+          className="smoac-control mobile-utility-drawer__backdrop"
+          aria-label="Close menu"
+          tabIndex={open ? 0 : -1}
+          onClick={onClose}
+        />
 
-        <header className="mobile-utility-drawer__masthead">
-          <div className="mobile-utility-drawer__brand">
-            <Logo href={null} size="sm" className="mobile-utility-drawer__logo" />
-            <p
-              id="mobile-utility-drawer-title"
-              className="mobile-utility-drawer__menu-label"
-            >
-              MENU
-            </p>
-            <p className="mobile-utility-drawer__tagline">
-              Navigate your specialist network.
-            </p>
-          </div>
-          <button
-            type="button"
-            className="smoac-control mobile-utility-drawer__close"
-            aria-label="Close menu"
-            onClick={onClose}
-          >
-            <CloseIcon className="h-4 w-4" />
-          </button>
-        </header>
+        <aside
+          id="mobile-utility-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-utility-drawer-title"
+          className="mobile-utility-drawer__panel"
+        >
+          <div className="mobile-utility-drawer__aurora" aria-hidden />
+          <div className="mobile-utility-drawer__aurora-drift" aria-hidden />
+          <div className="mobile-utility-drawer__sheen" aria-hidden />
+          <div className="mobile-utility-drawer__edge-glow" aria-hidden />
 
-        <div className="mobile-utility-drawer__scroll">
-          <section
-            className="mobile-utility-drawer__section mobile-utility-drawer__section--account"
-            aria-label={signedIn ? "Account" : "Sign in"}
-          >
-            <DrawerAccountCard
-              card={accountCard}
-              active={
-                signedIn ? isUtilityDrawerAccountActive(pathname) : false
-              }
-              animate={open}
-              delayMs={nextDelay()}
-              onNavigate={onClose}
-            />
-          </section>
-
-          <section
-            className="mobile-utility-drawer__section"
-            aria-label="Primary navigation"
-          >
-            <ul className="mobile-utility-drawer__list">
-              {primaryLinks.map((item) => (
-                <DrawerPrimaryRow
-                  key={item.id}
-                  item={item}
-                  active={isUtilityDrawerPrimaryActive(item.id, pathname)}
-                  animate={open}
-                  delayMs={nextDelay()}
-                  onNavigate={onClose}
-                />
-              ))}
-            </ul>
-          </section>
-
-          <section
-            className="mobile-utility-drawer__section"
-            aria-label="Company"
-          >
-            <p className="mobile-utility-drawer__section-label">Company</p>
-            <ul className="mobile-utility-drawer__list mobile-utility-drawer__list--compact">
-              {utilityDrawerSecondaryLinks.map((item) => (
-                <DrawerTextRow
-                  key={item.id}
-                  item={item}
-                  animate={open}
-                  delayMs={nextDelay()}
-                />
-              ))}
-            </ul>
-          </section>
-
-          <section
-            className="mobile-utility-drawer__section"
-            aria-label="Legal"
-          >
-            <p className="mobile-utility-drawer__section-label">Legal</p>
-            <ul className="mobile-utility-drawer__list mobile-utility-drawer__list--compact">
-              {utilityDrawerLegalLinks.map((item) => (
-                <DrawerTextRow
-                  key={item.id}
-                  item={item}
-                  animate={open}
-                  delayMs={nextDelay()}
-                />
-              ))}
-            </ul>
-          </section>
-
-          {signedIn ? (
-            <section className="mobile-utility-drawer__section">
-              <button
-                type="button"
-                className={cn(
-                  "smoac-control mobile-utility-drawer__row mobile-utility-drawer__row--sign-out smoac-hit-target",
-                  open && "mobile-utility-drawer__row--animate"
-                )}
-                style={
-                  open ? { animationDelay: `${nextDelay()}ms` } : undefined
-                }
-                onClick={handleLogout}
+          <header className="mobile-utility-drawer__masthead">
+            <div className="mobile-utility-drawer__brand">
+              <Logo
+                href={null}
+                size="sm"
+                className="mobile-utility-drawer__logo"
+              />
+              <p
+                id="mobile-utility-drawer-title"
+                className="mobile-utility-drawer__menu-label"
               >
-                <span className="mobile-utility-drawer__row-icon" aria-hidden>
-                  <UserIcon className="mobile-utility-drawer__row-icon-svg" />
-                </span>
-                <span className="mobile-utility-drawer__row-copy">
-                  <span className="mobile-utility-drawer__row-label">
-                    Sign out
-                  </span>
-                  <span className="mobile-utility-drawer__row-desc">
-                    End your session on this device
-                  </span>
-                </span>
-              </button>
-            </section>
-          ) : null}
-        </div>
+                Account
+              </p>
+            </div>
+            <button
+              type="button"
+              className="smoac-control mobile-utility-drawer__close"
+              aria-label="Close menu"
+              onClick={onClose}
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+          </header>
 
-        <footer className="mobile-utility-drawer__footer">
-          <p className="mobile-utility-drawer__footer-brand">SMOAC LLC</p>
-          <p className="mobile-utility-drawer__footer-line">
-            San Diego, California
-          </p>
-          <p className="mobile-utility-drawer__footer-copy">
-            © 2026 SMOAC LLC
-          </p>
-        </footer>
-      </aside>
-    </div>
+          <div className="mobile-utility-drawer__scroll">
+            <section
+              className="mobile-utility-drawer__section mobile-utility-drawer__section--account"
+              aria-label={signedIn ? "Account" : "Sign in"}
+            >
+              <DrawerAccountCard
+                card={accountCard}
+                active={
+                  signedIn ? isUtilityDrawerAccountActive(pathname) : false
+                }
+                animate={open}
+                delayMs={nextDelay()}
+                onContinue={openQuickAccount}
+                onNavigate={onClose}
+              />
+            </section>
+
+            {signedIn && role === "specialist" ? (
+              <DrawerSpecialistAnalytics
+                animate={open}
+                delayMs={nextDelay()}
+                onNavigate={onClose}
+              />
+            ) : null}
+
+            <section
+              className="mobile-utility-drawer__section"
+              aria-label="Company"
+            >
+              <p className="mobile-utility-drawer__section-label">Company</p>
+              <ul className="mobile-utility-drawer__list">
+                {utilityDrawerCompanyLinks.map((item) => (
+                  <DrawerCompanyRow
+                    key={item.id}
+                    item={item}
+                    animate={open}
+                    delayMs={nextDelay()}
+                  />
+                ))}
+              </ul>
+            </section>
+
+            {signedIn ? (
+              <section
+                className="mobile-utility-drawer__section"
+                aria-label="Session"
+              >
+                <button
+                  type="button"
+                  className={cn(
+                    "smoac-control mobile-utility-drawer__row mobile-utility-drawer__row--sign-out smoac-hit-target",
+                    open && "mobile-utility-drawer__row--animate"
+                  )}
+                  style={
+                    open ? { animationDelay: `${nextDelay()}ms` } : undefined
+                  }
+                  onClick={handleLogout}
+                >
+                  <span className="mobile-utility-drawer__row-icon" aria-hidden>
+                    <LogOutIcon className="mobile-utility-drawer__row-icon-svg" />
+                  </span>
+                  <span className="mobile-utility-drawer__row-copy">
+                    <span className="mobile-utility-drawer__row-label">
+                      Log Out
+                    </span>
+                    <span className="mobile-utility-drawer__row-desc">
+                      End your session on this device
+                    </span>
+                  </span>
+                </button>
+              </section>
+            ) : null}
+          </div>
+
+          <footer className="mobile-utility-drawer__footer">
+            <ul className="mobile-utility-drawer__footer-links">
+              {utilityDrawerLegalLinks.map((item) => (
+                <li key={item.id}>
+                  <button
+                    type="button"
+                    className="smoac-control mobile-utility-drawer__footer-link"
+                    onClick={() =>
+                      showToast({
+                        type: "info",
+                        message: `${item.label} is coming soon.`,
+                      })
+                    }
+                  >
+                    {item.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="mobile-utility-drawer__footer-version">
+              App Version {UTILITY_DRAWER_APP_VERSION}
+            </p>
+          </footer>
+        </aside>
+      </div>
+
+      <QuickClientAccountModal
+        open={quickAccountOpen}
+        onClose={() => setQuickAccountOpen(false)}
+        purpose="account"
+        returnPath={pathname || "/"}
+        signupTitle="Create your account"
+        signupSupport="Enter your first name and email to save specialists, send inquiries, and manage your account."
+        signupCta="Continue"
+        onAuthenticated={() => {
+          setQuickAccountOpen(false);
+          onClose();
+        }}
+      />
+    </>
   );
 }

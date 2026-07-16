@@ -18,12 +18,15 @@ import {
   readLastInquiryIdempotencyKey,
   writeLastInquiryIdempotencyKey,
 } from "@/lib/inquiry/inquiry-session-flags";
+import { pushSpecialistInquiryNotification } from "@/lib/inquiry/specialist-inquiry-notifications";
 import {
   sanitizeInquiryMessage,
   validateInquiryDraft,
   type PendingInquiryDraft,
 } from "@/lib/pending-inquiry-storage";
+import { getSpecialistApplicationById } from "@/lib/specialist-application-storage";
 import { CLIENT_DASHBOARD_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { labelsForInquiryTopics, labelForInquiryAction } from "@/lib/inquiry-options";
 
 async function resolveSpecialistUserId(
   supabase: SupabaseClient,
@@ -66,6 +69,39 @@ async function resolveSpecialistNotifyEmail(
   }
 
   return null;
+}
+
+function resolveLocalSpecialistNotifyEmail(specialistId: string): string | null {
+  const application = getSpecialistApplicationById(specialistId);
+  const email = application?.email?.trim().toLowerCase();
+  return email && email.includes("@") ? email : null;
+}
+
+function notifySpecialistPortal(input: {
+  specialistId: string;
+  conversationId: string;
+  clientFirstName: string;
+  inquiryAction: SubmitInquiryInput["inquiryAction"];
+  inquiryTopics: string[];
+}): void {
+  const action = labelForInquiryAction(input.inquiryAction);
+  const topics = labelsForInquiryTopics(input.inquiryTopics);
+  const summary =
+    topics.length > 0 ? `${action} · ${topics.slice(0, 2).join(", ")}` : action;
+
+  pushSpecialistInquiryNotification({
+    specialistId: input.specialistId,
+    conversationId: input.conversationId,
+    clientFirstName: input.clientFirstName,
+    summary,
+  });
+}
+
+function siteOrigin(): string {
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
+  return siteUrl.replace(/\/$/, "");
 }
 
 async function submitInquiryViaSupabase(
@@ -163,10 +199,16 @@ async function submitInquiryViaSupabase(
     };
   }
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-  const origin = siteUrl.replace(/\/$/, "");
+  const origin = siteOrigin();
+  const sanitizedMessage = sanitizeInquiryMessage(input.message);
+
+  notifySpecialistPortal({
+    specialistId: input.specialistId,
+    conversationId,
+    clientFirstName: input.clientFirstName,
+    inquiryAction: input.inquiryAction,
+    inquiryTopics: input.inquiryTopics,
+  });
 
   void sendInquiryClientConfirmationEmail({
     to: input.clientEmail,
@@ -174,7 +216,7 @@ async function submitInquiryViaSupabase(
     specialistName: input.specialistName,
     inquiryAction: input.inquiryAction,
     inquiryTopics: input.inquiryTopics,
-    message: sanitizeInquiryMessage(input.message),
+    message: sanitizedMessage,
     messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}`,
   });
 
@@ -187,11 +229,18 @@ async function submitInquiryViaSupabase(
     void sendInquirySpecialistNotificationEmail({
       to: specialistEmail,
       clientFirstName: input.clientFirstName,
+      clientEmail: input.clientEmail,
       specialistName: input.specialistName,
       inquiryAction: input.inquiryAction,
       inquiryTopics: input.inquiryTopics,
+      message: sanitizedMessage,
       dashboardPath: `${origin}${SPECIALIST_DASHBOARD_PATH}`,
     });
+  } else {
+    console.warn(
+      "[SMOAC EMAIL] No specialist email found for inquiry notify",
+      input.specialistId
+    );
   }
 
   return {
@@ -266,6 +315,16 @@ export async function submitSpecialistInquiry(
     if (input.idempotencyKey) {
       writeLastInquiryIdempotencyKey(input.idempotencyKey);
     }
+
+    notifySpecialistPortal({
+      specialistId: normalized.specialistId,
+      conversationId: local.conversationId,
+      clientFirstName: normalized.clientFirstName,
+      inquiryAction: normalized.inquiryAction,
+      inquiryTopics: normalized.inquiryTopics,
+    });
+
+    const origin = siteOrigin();
     void sendInquiryClientConfirmationEmail({
       to: normalized.clientEmail,
       clientFirstName: normalized.clientFirstName,
@@ -273,8 +332,30 @@ export async function submitSpecialistInquiry(
       inquiryAction: normalized.inquiryAction,
       inquiryTopics: normalized.inquiryTopics,
       message: normalized.message,
-      messagesPath: CLIENT_DASHBOARD_PATH,
+      messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}`,
     });
+
+    const specialistEmail = resolveLocalSpecialistNotifyEmail(
+      normalized.specialistId
+    );
+    if (specialistEmail) {
+      void sendInquirySpecialistNotificationEmail({
+        to: specialistEmail,
+        clientFirstName: normalized.clientFirstName,
+        clientEmail: normalized.clientEmail,
+        specialistName: normalized.specialistName,
+        inquiryAction: normalized.inquiryAction,
+        inquiryTopics: normalized.inquiryTopics,
+        message: normalized.message,
+        dashboardPath: `${origin}${SPECIALIST_DASHBOARD_PATH}`,
+      });
+    } else {
+      console.warn(
+        "[SMOAC EMAIL] No specialist email found for local inquiry notify",
+        normalized.specialistId
+      );
+    }
+
     trackInquiryEvent("inquiry_sent", {
       specialistId: normalized.specialistId,
       local: true,

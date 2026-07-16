@@ -534,8 +534,8 @@ export function SpecialistInquirySheet({
                     onChange={(e) => setEmail(e.target.value)}
                   />
                   <p className="inquiry-sheet__privacy">
-                    We use your email only to deliver this message and replies from
-                    the specialist. You can complete your profile later.
+                    We share your email with the specialist so they can reply
+                    directly. You can complete your profile later.
                   </p>
                 </>
               ) : null}
@@ -583,14 +583,14 @@ export function SpecialistInquirySheet({
               {view === "success" ? (
                 <div className="inquiry-sheet__state">
                   <p className="inquiry-sheet__success">
-                    Message sent to {specialistName}.
+                    Inquiry sent to {specialistName}. They’ll follow up by email.
                   </p>
                   <Link
                     href={CLIENT_DASHBOARD_PATH}
                     className="smoac-control inquiry-sheet__secondary-link"
                     onClick={onClose}
                   >
-                    View Messages
+                    Open dashboard
                   </Link>
                 </div>
               ) : null}

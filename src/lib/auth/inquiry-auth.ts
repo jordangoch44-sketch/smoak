@@ -36,9 +36,13 @@ function siteOrigin(): string {
 }
 
 function existingAccountMessage(source: QuickAccountSource): string {
-  return source === "saved_specialist"
-    ? "This email already has an account. Log in to save this specialist."
-    : "This email already has an account. Sign in to send your message.";
+  if (source === "saved_specialist") {
+    return "This email already has an account. Log in to save this specialist.";
+  }
+  if (source === "account_menu") {
+    return "This email already has an account. Log in to continue.";
+  }
+  return "This email already has an account. Sign in to send your message.";
 }
 
 /**
@@ -51,7 +55,7 @@ export async function startQuickClientAccount(params: {
   returnPath: string;
   accountSource: QuickAccountSource;
   /** Query flag restored after magic-link callback */
-  resumeQuery: "inquiry" | "save";
+  resumeQuery: "inquiry" | "save" | "account";
 }): Promise<QuickClientAuthResult> {
   const firstName = params.firstName.trim();
   const email = params.email.trim().toLowerCase();
@@ -73,8 +77,11 @@ export async function startQuickClientAccount(params: {
   if (params.resumeQuery === "inquiry") {
     setInquiryAutoSendFlag(true);
     setSaveAutoApplyFlag(false);
-  } else {
+  } else if (params.resumeQuery === "save") {
     setSaveAutoApplyFlag(true);
+    setInquiryAutoSendFlag(false);
+  } else {
+    setSaveAutoApplyFlag(false);
     setInquiryAutoSendFlag(false);
   }
 
@@ -196,6 +203,18 @@ export async function startSaveQuickAccount(params: {
     ...params,
     accountSource: "saved_specialist",
     resumeQuery: "save",
+  });
+}
+
+export async function startMenuQuickAccount(params: {
+  firstName: string;
+  email: string;
+  returnPath: string;
+}): Promise<QuickClientAuthResult> {
+  return startQuickClientAccount({
+    ...params,
+    accountSource: "account_menu",
+    resumeQuery: "account",
   });
 }
 
@@ -345,6 +364,15 @@ export async function signInClientForSave(
   password: string
 ): Promise<AuthResult> {
   setSaveAutoApplyFlag(true);
+  setInquiryAutoSendFlag(false);
+  return signInWithPassword("client", email, password);
+}
+
+export async function signInClientForAccount(
+  email: string,
+  password: string
+): Promise<AuthResult> {
+  setSaveAutoApplyFlag(false);
   setInquiryAutoSendFlag(false);
   return signInWithPassword("client", email, password);
 }

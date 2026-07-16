@@ -7,18 +7,49 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  /* Transparent so the previous (still-mounted) page stays visible during drag */
+  background: transparent;
   pointer-events: auto;
+}
+
+/*
+ * Exit in progress — let taps reach the page underneath immediately.
+ * Descendants must also be none: site-chrome forces `.smoac-control` /
+ * buttons to `pointer-events: auto !important`, which would otherwise
+ * keep the sheet capturing taps while it slides away.
+ */
+.profile-sheet-root--pass-through,
+.profile-sheet-root--pass-through * {
+  pointer-events: none !important;
+}
+
+body.profile-sheet-dismissing .profile-toolbar,
+body.profile-sheet-dismissing .profile-toolbar * {
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transition: opacity 0.12s ease;
+}
+
+/* SSR shell before portal — keep previous route visible; don't paint a black page */
+.profile-sheet-ssr {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-site-header) + 40);
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .profile-sheet__backdrop {
   position: absolute;
   inset: 0;
   border: none;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(10px) saturate(1.05);
-  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  /* Solid dim only — opacity driven by motion; no opaque black fallback layer */
+  background: rgba(0, 0, 0, 1);
   cursor: pointer;
   touch-action: manipulation;
+  /* Avoid heavy blur that reads as a black wash while dragging */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .profile-sheet {
@@ -37,6 +68,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 -20px 64px rgba(0, 0, 0, 0.55);
   touch-action: pan-y;
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 /* Full-height sheet on phone — nearly edge-to-edge like Maps/Zillow */
@@ -60,7 +95,7 @@
 .profile-sheet__handle-hit {
   display: flex;
   width: 100%;
-  min-height: 1.75rem;
+  min-height: 2.75rem;
   align-items: center;
   justify-content: center;
   border: none;
@@ -68,6 +103,8 @@
   cursor: grab;
   touch-action: none;
   pointer-events: auto;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .profile-sheet__handle-hit:active {

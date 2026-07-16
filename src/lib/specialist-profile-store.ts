@@ -1,5 +1,9 @@
 import type { Trainer } from "@/types";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
+import {
+  getApprovedSpecialistProfileById,
+  saveApprovedSpecialistProfile,
+} from "@/lib/approved-specialist-profiles-store";
 import { getPublicMarketplaceTrainerBaseById } from "@/lib/marketplace-public-catalog";
 import {
   applySpecialistProfileOverrides,
@@ -61,4 +65,14 @@ export function saveTrainerProfileOverrides(
   saveSpecialistOverridesForId(trainerId, overrides);
   cachedOverrides = loadAllSpecialistOverrides();
   listeners.forEach((listener) => listener());
+
+  /*
+   * Keep durable public catalog in sync when this specialist is already approved.
+   * Merge onto the prior approved row so Explore reflects edits across devices.
+   */
+  const priorApproved = getApprovedSpecialistProfileById(trainerId);
+  if (!priorApproved) return;
+
+  const merged = applySpecialistProfileOverrides(priorApproved, overrides);
+  saveApprovedSpecialistProfile(merged);
 }

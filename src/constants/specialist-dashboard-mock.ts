@@ -3,6 +3,7 @@ import type {
   SpecialistGrowthInsight,
   SpecialistProfileAnalytics,
 } from "@/types/specialist-analytics";
+import type { SpecialistLead } from "@/types/specialist-dashboard";
 
 /** Seed trainer id for demo analytics/leads UI only — not used for real specialist sessions */
 export const DEMO_SPECIALIST_ID = "anthony-brooks";
@@ -21,26 +22,47 @@ export const BOOST_VISIBILITY_MODAL = {
     "Premium placement and boosted discovery are on the way. You'll soon be able to elevate your profile in search, rankings, and featured spots across SMOAC.",
 } as const;
 
-export const DEMO_SPECIALIST_LEADS = [
+export const DEMO_SPECIALIST_LEADS: SpecialistLead[] = [
   {
     id: "lead-1",
     name: "Jordan M.",
-    intent: "Sports performance · North Park",
+    intent: "Sports performance",
     receivedAt: "2 hours ago",
+    unread: true,
+    clientEmail: "jordan.m@example.com",
+    actionLabel: "Ask a question",
+    topicLabels: ["Sports performance"],
+    messagePreview: "Looking for North Park sessions twice a week.",
+    messageBody:
+      "New inquiry from Jordan M.\n\nInterested in: Ask a question\n\nTopics:\n- Sports performance\n\nMessage:\nLooking for North Park sessions twice a week.",
   },
   {
     id: "lead-2",
     name: "Priya S.",
-    intent: "Strength coaching · Mission Valley",
+    intent: "Strength coaching",
     receivedAt: "Yesterday",
+    unread: false,
+    clientEmail: "priya.s@example.com",
+    actionLabel: "Book a consult",
+    topicLabels: ["Strength coaching"],
+    messagePreview: "Interested in Mission Valley availability.",
+    messageBody:
+      "New inquiry from Priya S.\n\nInterested in: Book a consult\n\nTopics:\n- Strength coaching\n\nMessage:\nInterested in Mission Valley availability.",
   },
   {
     id: "lead-3",
     name: "Chris L.",
-    intent: "HYROX prep · Hillcrest",
+    intent: "HYROX prep",
     receivedAt: "2 days ago",
+    unread: false,
+    clientEmail: "chris.l@example.com",
+    actionLabel: "Ask a question",
+    topicLabels: ["HYROX prep"],
+    messagePreview: "Hillcrest — race prep over 8 weeks.",
+    messageBody:
+      "New inquiry from Chris L.\n\nInterested in: Ask a question\n\nTopics:\n- HYROX prep\n\nMessage:\nHillcrest — race prep over 8 weeks.",
   },
-] as const;
+];
 
 export const DEMO_SPECIALIST_SUBSCRIPTION = {
   plan: "SMOAC Pro",

@@ -22,8 +22,11 @@ const inter = Inter({
 
 export default function SiteLayout({
   children,
+  modal = null,
 }: Readonly<{
   children: React.ReactNode;
+  /** Soft-nav specialist profile intercept (`@modal/(.)trainers/[id]`) */
+  modal?: React.ReactNode;
 }>) {
   return (
     <div
@@ -38,6 +41,8 @@ export default function SiteLayout({
           <SiteWelcomeIntroGateLazy />
           <SiteHeader />
           <AppMain>{children}</AppMain>
+          {/* Soft-nav profile intercept — previous page stays mounted in AppMain */}
+          {modal}
           <Footer />
           <Suspense fallback={null}>
             <MobileBottomNav />

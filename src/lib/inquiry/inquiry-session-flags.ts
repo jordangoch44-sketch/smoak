@@ -9,7 +9,10 @@ export const INQUIRY_AUTO_SEND_FLAG_KEY = "smoac_inquiry_auto_send";
 export const SAVE_AUTO_APPLY_FLAG_KEY = "smoac_save_auto_apply";
 export const INQUIRY_IDEMPOTENCY_KEY = "smoac_inquiry_idempotency";
 
-export type QuickAccountSource = "specialist_inquiry" | "saved_specialist";
+export type QuickAccountSource =
+  | "specialist_inquiry"
+  | "saved_specialist"
+  | "account_menu";
 
 export interface PendingQuickSignup {
   firstName: string;
@@ -41,7 +44,8 @@ export function readPendingInquirySignup(): PendingQuickSignup | null {
           : new Date().toISOString(),
       accountSource:
         parsed.accountSource === "saved_specialist" ||
-        parsed.accountSource === "specialist_inquiry"
+        parsed.accountSource === "specialist_inquiry" ||
+        parsed.accountSource === "account_menu"
           ? parsed.accountSource
           : undefined,
     };

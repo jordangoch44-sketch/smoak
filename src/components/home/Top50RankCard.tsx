@@ -3,11 +3,14 @@
 import { TapLink } from "@/components/ui/TapLink";
 import type { Trainer } from "@/types";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { LocationLabel } from "@/components/trainers/LocationLabel";
+import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
   formatTrainerDistanceLabel,
+  formatTrainerPriceLabel,
   formatTrainerRatingLabel,
 } from "@/lib/home-discovery";
 import { cn } from "@/lib/utils";
@@ -64,16 +67,29 @@ export function Top50RankCard({
           <div className="top50-card__body">
             <h3 className="top50-card__name">{trainer.name}</h3>
             <p className="top50-card__profession">{trainer.profession}</p>
-            <div className="top50-card__rating">
-              <span className="top50-card__star" aria-hidden>
-                ★
+            <LocationLabel
+              provider={trainer}
+              className="top50-card__location"
+            />
+            <SpecialtyChips
+              specialties={trainer.specialty}
+              className="top50-card__chips"
+            />
+            <div className="top50-card__footer">
+              <div className="top50-card__rating">
+                <span className="top50-card__star" aria-hidden>
+                  ★
+                </span>
+                <span className="top50-card__rating-value">
+                  {formatTrainerRatingLabel(trainer)}
+                </span>
+                {distance ? (
+                  <span className="top50-card__distance">{distance}</span>
+                ) : null}
+              </div>
+              <span className="top50-card__price">
+                {formatTrainerPriceLabel(trainer.pricePerSession)}
               </span>
-              <span className="top50-card__rating-value">
-                {formatTrainerRatingLabel(trainer)}
-              </span>
-              {distance ? (
-                <span className="top50-card__distance">{distance}</span>
-              ) : null}
             </div>
           </div>
         </article>

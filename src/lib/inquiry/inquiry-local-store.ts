@@ -156,3 +156,18 @@ export function listLocalInquiriesForClient(
     (row) => row.conversation.client_user_id === clientUserId
   );
 }
+
+export function markLocalInquiryRead(conversationId: string): void {
+  const all = readLocalAll();
+  let changed = false;
+  for (const record of all) {
+    if (record.conversation.id !== conversationId) continue;
+    for (const message of record.messages) {
+      if (message.sender_role === "client" && !message.is_read) {
+        message.is_read = true;
+        changed = true;
+      }
+    }
+  }
+  if (changed) writeLocalAll(all);
+}
