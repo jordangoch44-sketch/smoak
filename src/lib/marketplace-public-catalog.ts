@@ -62,8 +62,25 @@ export function getPublicMarketplaceTrainerBaseById(
   return undefined;
 }
 
+export type PublicCatalogOptions = {
+  /**
+   * When false, return seed trainers only (no localStorage approved profiles,
+   * hidden ids, or specialist applications). Use for SSR / pre-hydration so
+   * server HTML matches the client's first paint.
+   */
+  includeBrowserState?: boolean;
+};
+
 /** Approved specialists for Explore, featured, saved resolution */
-export function listPublicMarketplaceTrainers(): Trainer[] {
+export function listPublicMarketplaceTrainers(
+  options: PublicCatalogOptions = {}
+): Trainer[] {
+  const includeBrowserState = options.includeBrowserState !== false;
+
+  if (!includeBrowserState) {
+    return seedTrainers.slice();
+  }
+
   const hiddenSet = new Set(getHiddenTrainersSnapshot());
   const seen = new Set<string>();
   const result: Trainer[] = [];
@@ -99,8 +116,10 @@ export function listPublicMarketplaceTrainers(): Trainer[] {
 }
 
 /** Sponsored / premium placements for homepage discovery rail */
-export function listPublicSponsoredTrainers(): Trainer[] {
-  const all = listPublicMarketplaceTrainers();
+export function listPublicSponsoredTrainers(
+  options: PublicCatalogOptions = {}
+): Trainer[] {
+  const all = listPublicMarketplaceTrainers(options);
   const sponsored = all.filter((trainer) => trainer.sponsored);
   if (sponsored.length > 0) return sponsored;
   return all.filter((trainer) => trainer.featured);
@@ -110,8 +129,10 @@ export function listPublicSponsoredTrainers(): Trainer[] {
  * Newest-feeling specialists for homepage — fewer reviews as a proxy until
  * durable join dates exist on public catalog rows.
  */
-export function listPublicNewTrainers(): Trainer[] {
-  return [...listPublicMarketplaceTrainers()].sort((a, b) => {
+export function listPublicNewTrainers(
+  options: PublicCatalogOptions = {}
+): Trainer[] {
+  return [...listPublicMarketplaceTrainers(options)].sort((a, b) => {
     if (a.reviewCount !== b.reviewCount) return a.reviewCount - b.reviewCount;
     return b.rating - a.rating;
   });

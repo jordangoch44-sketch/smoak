@@ -15,6 +15,7 @@ import {
 } from "@/lib/dev-auth";
 import {
   findSpecialistApplicationByEmail,
+  findSpecialistApplicationByUserId,
   getSpecialistApplicationById,
   saveSpecialistApplication,
 } from "@/lib/specialist-application-storage";
@@ -50,21 +51,34 @@ export function describeManagedProfileSource(
 }
 
 export type ManagedProfileStatusLabel =
+  | "Draft"
+  | "Incomplete"
   | "Pending review"
-  | "Active"
-  | "Needs changes";
+  | "Published"
+  | "Needs changes"
+  | "Suspended";
 
 export function profileStatusToLabel(
   status: ProfileStatus | null | undefined
 ): ManagedProfileStatusLabel | null {
-  if (!status || status === "DRAFT" || status === "ARCHIVED") return null;
-  if (status === "APPROVED") return "Active";
+  if (!status) return null;
+  if (status === "DRAFT") return "Draft";
+  if (status === "ARCHIVED") return "Suspended";
+  if (status === "APPROVED") return "Published";
   if (status === "REJECTED") return "Needs changes";
   return "Pending review";
 }
 
 /** Resolve the specialist profile id for the signed-in session. */
-export function resolveManagedSpecialistId(sessionEmail?: string): string | null {
+export function resolveManagedSpecialistId(
+  sessionEmail?: string,
+  sessionUserId?: string
+): string | null {
+  if (sessionUserId?.trim()) {
+    const byUser = findSpecialistApplicationByUserId(sessionUserId.trim());
+    if (byUser) return byUser.id;
+  }
+
   const trimmed = sessionEmail?.trim();
   if (!trimmed) return null;
 
@@ -131,8 +145,6 @@ export function mergeProfileEditsIntoApplication(
   app: SpecialistApplication,
   form: SpecialistProfileEditForm
 ): SpecialistApplication {
-  const overrides = formToOverrides(form);
-
   return {
     ...app,
     displayName: form.name.trim(),
@@ -144,7 +156,9 @@ export function mergeProfileEditsIntoApplication(
     certifications: form.certifications.filter((cert) => cert.name.trim()),
     city: form.city.trim(),
     neighborhood: form.neighborhood.trim(),
-    zipCode: overrides.zipCode?.trim() || app.zipCode,
+    zipCode: form.zipCode.trim() || app.zipCode,
+    serviceType: form.serviceType || app.serviceType || "",
+    travelRadius: form.travelRadius.trim() || app.travelRadius,
     phone: form.phone.trim(),
     email: form.email.trim() || app.email,
     bio: form.bio.trim(),
@@ -202,7 +216,6 @@ export function saveManagedSpecialistProfileEdits(
   }
 
   try {
-    const overrides = formToOverrides(form);
     const application = getSpecialistApplicationById(trainerId);
 
     if (application) {
@@ -214,6 +227,7 @@ export function saveManagedSpecialistProfileEdits(
       }
     }
 
+    const overrides = formToOverrides(form);
     saveTrainerProfileOverrides(trainerId, overrides);
 
     const photoUrl = form.profilePhotoUrl.trim();

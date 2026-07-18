@@ -65,7 +65,9 @@ export {
 } from "@/lib/admin-specialist-meta-store";
 export {
   listAdminSpecialists,
+  setAdminSpecialistAccountKind,
   setAdminSpecialistFlag,
+  setAdminSpecialistProtected,
   setAdminSpecialistVisibility,
   updateAdminSpecialistBasics,
 } from "@/lib/admin-specialists-service";

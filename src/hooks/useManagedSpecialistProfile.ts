@@ -24,8 +24,11 @@ import {
   subscribeSpecialistProfiles,
 } from "@/lib/specialist-profile-store";
 
-function getApplicationRevision(sessionEmail?: string): string {
-  const trainerId = resolveManagedSpecialistId(sessionEmail);
+function getApplicationRevision(
+  sessionEmail?: string,
+  sessionUserId?: string
+): string {
+  const trainerId = resolveManagedSpecialistId(sessionEmail, sessionUserId);
   if (!trainerId) return "";
   const application = getSpecialistApplicationById(trainerId);
   return application ? `${application.id}:${application.updatedAt}` : trainerId;
@@ -34,10 +37,11 @@ function getApplicationRevision(sessionEmail?: string): string {
 export function useManagedSpecialistProfile() {
   const { session } = useAuthSession();
   const sessionEmail = session?.email;
+  const sessionUserId = session?.userId;
 
   const applicationRevision = useSyncExternalStore(
     subscribeSpecialistApplications,
-    () => getApplicationRevision(sessionEmail),
+    () => getApplicationRevision(sessionEmail, sessionUserId),
     () => ""
   );
 
@@ -47,7 +51,7 @@ export function useManagedSpecialistProfile() {
     getSpecialistProfilesServerSnapshot
   );
 
-  const trainerId = resolveManagedSpecialistId(sessionEmail);
+  const trainerId = resolveManagedSpecialistId(sessionEmail, sessionUserId);
   const application = trainerId
     ? getSpecialistApplicationById(trainerId)
     : null;

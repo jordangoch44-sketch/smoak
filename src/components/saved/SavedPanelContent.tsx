@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   useActiveUserCoordinates,
   useActiveUserCoordinatesKey,
@@ -21,6 +21,8 @@ import {
   buildLoginHrefForSaved,
 } from "@/lib/auth-return";
 import { formatSavedSpecialistsTitle } from "@/lib/saved-ui";
+import { markSavedTrainersLoadTimedOut } from "@/lib/saved-trainers-store";
+
 interface SavedPanelContentProps {
   /** Overlay dropdown vs full /saved route */
   variant?: "overlay" | "page";
@@ -35,13 +37,20 @@ export function SavedPanelContent({
   titleId = "saved-panel-title",
   onAuthNavigate,
 }: SavedPanelContentProps) {
-  const { isReady, isSavesReady, isSavesLoading, savesError, isClientWithSaves, getSavedTrainers } =
-    useSavedTrainers();
+  const {
+    isReady,
+    isSavesReady,
+    isSavesLoading,
+    savesError,
+    isClientWithSaves,
+    getSavedTrainers,
+  } = useSavedTrainers();
   const { session } = useAuthSession();
   const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
   const userCoords = useActiveUserCoordinates();
   const coordsKey = useActiveUserCoordinatesKey();
+  const [loadTimedOut, setLoadTimedOut] = useState(false);
   const saved = useMemo(
     () =>
       sortTrainersByPersonalizationCity(
@@ -53,10 +62,28 @@ export function SavedPanelContent({
   );
   const isOverlay = variant === "overlay";
   const isLoggedOut = isReady && !session;
+  const treatsSavesReady = isSavesReady || loadTimedOut;
   const isEmptyClient =
-    isReady && isSavesReady && isClientWithSaves && saved.length === 0;
+    isReady && treatsSavesReady && isClientWithSaves && saved.length === 0;
   const isSpecialistSignedIn =
-    isReady && isSavesReady && session?.role === "specialist" && saved.length === 0;
+    isReady &&
+    treatsSavesReady &&
+    session?.role === "specialist" &&
+    saved.length === 0;
+  const isClientLoadingSaves =
+    isReady && isClientWithSaves && !treatsSavesReady && !isLoggedOut;
+
+  useEffect(() => {
+    if (!isSavesLoading) {
+      setLoadTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      markSavedTrainersLoadTimedOut();
+      setLoadTimedOut(true);
+    }, 12_000);
+    return () => window.clearTimeout(timer);
+  }, [isSavesLoading]);
 
   const loginHref = buildLoginHrefForSaved();
   const joinHref = buildJoinFlowHrefForSaved();
@@ -66,8 +93,9 @@ export function SavedPanelContent({
   }
 
   function subtitleText(): string {
-    if (!isReady || isSavesLoading) return "Loading saved specialists…";
-    if (savesError) {
+    if (!isReady) return "Loading saved specialists…";
+    if (isClientLoadingSaves) return "Loading saved specialists…";
+    if (savesError || loadTimedOut) {
       return "Could not sync your shortlist — showing cached saves. Try again shortly.";
     }
     if (isLoggedOut) return "Sign in to access your shortlist.";
@@ -92,27 +120,27 @@ export function SavedPanelContent({
       }
     >
       {showPageAuthStage ? null : (
-      <div className={isOverlay ? undefined : "max-w-2xl"}>
-        <h2
-          className={
-            isOverlay
-              ? "saved-dropdown__title"
-              : "text-2xl font-medium tracking-tight text-white sm:text-3xl md:text-4xl"
-          }
-          id={titleId}
-        >
-          {formatSavedSpecialistsTitle(saved.length)}
-        </h2>
-        <p
-          className={
-            isOverlay
-              ? "saved-dropdown__subtitle"
-              : "mt-2 text-sm text-silver-400 sm:text-base"
-          }
-        >
-          {subtitleText()}
-        </p>
-      </div>
+        <div className={isOverlay ? undefined : "max-w-2xl"}>
+          <h2
+            className={
+              isOverlay
+                ? "saved-dropdown__title"
+                : "text-2xl font-medium tracking-tight text-white sm:text-3xl md:text-4xl"
+            }
+            id={titleId}
+          >
+            {formatSavedSpecialistsTitle(saved.length)}
+          </h2>
+          <p
+            className={
+              isOverlay
+                ? "saved-dropdown__subtitle"
+                : "mt-2 text-sm text-silver-400 sm:text-base"
+            }
+          >
+            {subtitleText()}
+          </p>
+        </div>
       )}
 
       {isReady && isLoggedOut ? (
@@ -157,33 +185,53 @@ export function SavedPanelContent({
             onNavigate={handleAuthNavigate}
           />
         </div>
+      ) : isClientLoadingSaves ? (
+        <div
+          className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}
+        >
+          <p className="explore-empty__title">Loading your shortlist…</p>
+          <p className="explore-empty__text">Syncing saved specialists.</p>
+        </div>
       ) : isEmptyClient ? (
-        <div className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}>
+        <div
+          className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}
+        >
           <p className="explore-empty__title">No specialists saved yet.</p>
           <p className="explore-empty__text">
             Tap the heart on a specialist profile to save them here.
           </p>
           <div className="explore-empty__actions">
-            <Button
-              href="/explore"
-              className="explore-empty__btn explore-empty__btn--primary w-full"
-            >
+            <Button href="/explore" variant="secondary">
               Explore specialists
             </Button>
           </div>
         </div>
-      ) : null}
-
-      {isReady && saved.length > 0 ? (
-        <p className={isOverlay ? "saved-dropdown__footer" : "mt-10 text-center"}>
-          <Link
-            href="/explore"
-            className="text-sm text-silver-400 transition-colors hover:text-white"
-          >
-            Find more specialists on Explore →
-          </Link>
-        </p>
-      ) : null}
+      ) : (
+        <div
+          className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}
+        >
+          <p className="explore-empty__title">Sign in to save specialists</p>
+          <p className="explore-empty__text">
+            Create a client account to build your shortlist.
+          </p>
+          <div className="explore-empty__actions">
+            <Link
+              href={loginHref}
+              className="explore-empty__btn"
+              onClick={handleAuthNavigate}
+            >
+              Log in
+            </Link>
+            <Link
+              href={joinHref}
+              className="explore-empty__btn explore-empty__btn--ghost"
+              onClick={handleAuthNavigate}
+            >
+              Create account
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

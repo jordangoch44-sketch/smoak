@@ -26,7 +26,12 @@ export function computeAdminOverviewCharts(
   const specialists = listAdminSpecialists();
   const applications = listSpecialistApplications();
 
-  const visibilityCounts = { active: 0, hidden: 0, pending: 0 };
+  const visibilityCounts = {
+    active: 0,
+    hidden: 0,
+    pending: 0,
+    suspended: 0,
+  };
   for (const row of specialists) {
     visibilityCounts[row.visibility] += 1;
   }
@@ -45,6 +50,12 @@ export function computeAdminOverviewCharts(
       { id: "active", label: "Active", value: visibilityCounts.active, color: "#86efac" },
       { id: "hidden", label: "Hidden", value: visibilityCounts.hidden, color: "rgba(255,255,255,0.35)" },
       { id: "pending", label: "Pending", value: visibilityCounts.pending, color: "#fcd34d" },
+      {
+        id: "suspended",
+        label: "Suspended",
+        value: visibilityCounts.suspended,
+        color: "#fca5a5",
+      },
     ],
     revenueBreakdown: [
       {

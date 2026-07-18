@@ -22,6 +22,8 @@ export interface AuthSession {
   avatarUrl?: string;
   /** From profiles.profile_completion_status */
   profileCompletionStatus?: "incomplete" | "complete" | string;
+  /** From profiles.password_setup_status */
+  passwordSetupStatus?: "pending" | "complete" | "skipped" | string;
   displayName?: string;
   isPremium?: boolean;
   adminRole?: AdminRoleType;

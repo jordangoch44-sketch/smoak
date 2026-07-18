@@ -8,7 +8,6 @@ import {
   getMarketplaceAuthClient,
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
-import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import { DEV_APPROVED_SPECIALIST_PROFILES_KEY } from "@/lib/dev-storage-keys";
 import { getSpecialistApplicationById } from "@/lib/specialist-application-storage";
 import {
@@ -79,6 +78,14 @@ function applyCache(profiles: Record<string, Trainer>): void {
   listeners.forEach((listener) => listener());
 }
 
+function markHydratedAndNotify(): void {
+  const wasHydrated = hydrated;
+  hydrated = true;
+  if (!wasHydrated) {
+    listeners.forEach((listener) => listener());
+  }
+}
+
 function mergeOverridesIntoLocalStore(
   overridesById: Record<string, SpecialistProfileOverrides>
 ): void {
@@ -93,7 +100,7 @@ async function hydrateFromSupabase(): Promise<void> {
   if (typeof window === "undefined") return;
   if (!isMarketplaceSupabaseActive()) {
     applyCache(readLocalProfiles());
-    hydrated = true;
+    markHydratedAndNotify();
     return;
   }
   if (hydrating) return;
@@ -105,7 +112,7 @@ async function hydrateFromSupabase(): Promise<void> {
   try {
     if (!supabase) {
       applyCache(readLocalProfiles());
-      hydrated = true;
+      markHydratedAndNotify();
       return;
     }
 
@@ -124,7 +131,7 @@ async function hydrateFromSupabase(): Promise<void> {
         result.message
       );
       applyCache(local);
-      hydrated = true;
+      markHydratedAndNotify();
       return;
     }
 
@@ -135,7 +142,7 @@ async function hydrateFromSupabase(): Promise<void> {
     applyCache(next);
     writeLocalProfiles(next);
     mergeOverridesIntoLocalStore(result.overridesById);
-    hydrated = true;
+    markHydratedAndNotify();
   } finally {
     if (generation === loadGeneration) {
       hydrating = false;
@@ -150,9 +157,9 @@ function ensureHydrated(): void {
 
 function resolveUserIdForProfile(trainerId: string): string | null {
   const app = getSpecialistApplicationById(trainerId);
-  if (app?.userId) return app.userId;
-  const session = getAuthSessionSnapshot();
-  return session?.userId ?? null;
+  if (app?.userId?.trim()) return app.userId.trim();
+  /* Never fall back to the acting admin session — that misattributes ownership */
+  return null;
 }
 
 function persistRemoteApproved(
@@ -270,3 +277,15 @@ export function refreshApprovedSpecialistProfilesFromRemote(): void {
   hydrated = false;
   void hydrateFromSupabase();
 }
+
+/** True after first local or Supabase catalog hydrate finishes (client). */
+export function getApprovedSpecialistProfilesHydratedSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
+  ensureHydrated();
+  return hydrated;
+}
+
+export function getApprovedSpecialistProfilesHydratedServerSnapshot(): boolean {
+  return false;
+}
+

@@ -16,10 +16,11 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { usePersonalizationMarketplaceCity } from "@/hooks/usePersonalizationMarketplaceCity";
+import { listLiveTopRatedSpecialistsForCity } from "@/lib/live-city-rankings";
 import { marketplaceCityToSlug } from "@/lib/marketplace-city-centers";
 import { Top50RankCard } from "./Top50RankCard";
 
-/** Homepage “Top Rated Near You” — city rankings rail */
+/** Homepage “Top Rated Near You” — live catalog + proximity when available */
 export function Top50InYourCity() {
   const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
@@ -31,12 +32,17 @@ export function Top50InYourCity() {
     ? marketplaceCityToSlug(marketplaceCity)
     : DEFAULT_RANKING_CITY_SLUG;
   const listing = getCityTop50Listing(citySlug);
+  const cityName = marketplaceCity?.trim() || listing.city;
 
   const ranked = useMemo(() => {
-    const baseline = getRankedSpecialistsBaseline(citySlug);
+    const live = hydrated
+      ? listLiveTopRatedSpecialistsForCity(cityName, 20)
+      : [];
+    const baseline =
+      live.length > 0 ? live : getRankedSpecialistsBaseline(citySlug);
     if (!hydrated || !userCoords) return baseline;
     return sortRankedSpecialistsByProximity(baseline, userCoords);
-  }, [citySlug, hydrated, coordsKey, userCoords]);
+  }, [cityName, citySlug, hydrated, coordsKey, userCoords]);
 
   const displayCity = hydrated ? personalizationCity : null;
 
@@ -78,13 +84,6 @@ export function Top50InYourCity() {
             />
           ))}
         </HorizontalCarousel>
-
-        <Link
-          href="/rankings"
-          className="home-section__link-mobile mt-6 inline-flex sm:hidden"
-        >
-          See full rankings
-        </Link>
       </div>
     </section>
   );

@@ -1490,12 +1490,16 @@ button.smoked-glass:hover {
 }
 
 .top50-card__location.provider-location {
-  font-size: 0.6875rem;
-  color: var(--silver-400);
+  margin-top: 0.2rem;
+}
+
+.top50-card__distance {
+  display: block;
+  margin-top: 0.125rem;
 }
 
 .top50-card__chips.specialty-chips {
-  margin-top: 0.3rem;
+  margin-top: 0.35rem;
 }
 
 .top50-card__footer {
@@ -1800,7 +1804,7 @@ button.smoked-glass:hover {
   }
 
   .top50-card__article {
-    min-height: 17.25rem;
+    min-height: 19.25rem;
     border-color: rgba(255, 255, 255, 0.11);
     background: rgba(10, 10, 14, 0.78);
     box-shadow:
@@ -1813,7 +1817,7 @@ button.smoked-glass:hover {
   }
 
   .top50-card--first .top50-card__article {
-    min-height: 18rem;
+    min-height: 20rem;
   }
 
   .top50-card__media-scrim {
@@ -1875,12 +1879,8 @@ button.smoked-glass:hover {
     font-size: 0.6875rem;
   }
 
-  .top50-card__location.provider-location {
-    font-size: 0.625rem;
-  }
-
   .top50-card__chips.specialty-chips {
-    margin-top: 0.25rem;
+    margin-top: 0.3rem;
   }
 
   .top50-card__rating {

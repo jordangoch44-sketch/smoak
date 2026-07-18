@@ -43,6 +43,8 @@ interface AdminSpecialistsPanelProps {
       travelRadius?: string;
     }
   ) => void;
+  onProtectedChange: (id: string, value: boolean) => void;
+  onAccountKindChange: (id: string, value: "real" | "test") => void;
 }
 
 function SpecialistCard({
@@ -54,6 +56,8 @@ function SpecialistCard({
   onFeaturedChange,
   onTopRankedChange,
   onBasicsChange,
+  onProtectedChange,
+  onAccountKindChange,
 }: {
   row: AdminSpecialistRow;
   billing?: SpecialistBillingRecord;
@@ -63,6 +67,8 @@ function SpecialistCard({
   onFeaturedChange: AdminSpecialistsPanelProps["onFeaturedChange"];
   onTopRankedChange: AdminSpecialistsPanelProps["onTopRankedChange"];
   onBasicsChange: AdminSpecialistsPanelProps["onBasicsChange"];
+  onProtectedChange: AdminSpecialistsPanelProps["onProtectedChange"];
+  onAccountKindChange: AdminSpecialistsPanelProps["onAccountKindChange"];
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -98,6 +104,9 @@ function SpecialistCard({
         <div className="admin-entity-card__chips">
           {row.featured ? <span className="admin-chip">Featured</span> : null}
           {row.topRanked ? <span className="admin-chip">Top ranked</span> : null}
+          {row.isProtected || row.accountKind === "real" ? (
+            <span className="admin-chip">Real / protected</span>
+          ) : null}
         </div>
       ) : null}
 
@@ -131,6 +140,31 @@ function SpecialistCard({
               <option value="active">active</option>
               <option value="hidden">hidden</option>
               <option value="pending">pending</option>
+              <option value="suspended">suspended</option>
+            </select>
+          </label>
+          <label className="admin-check admin-check--block">
+            <input
+              type="checkbox"
+              checked={Boolean(row.isProtected)}
+              onChange={(e) => onProtectedChange(row.id, e.target.checked)}
+            />
+            Protected real account
+          </label>
+          <label className="admin-field-label">
+            Account kind
+            <select
+              className="admin-field"
+              value={row.accountKind ?? "test"}
+              onChange={(e) =>
+                onAccountKindChange(
+                  row.id,
+                  e.target.value as "real" | "test"
+                )
+              }
+            >
+              <option value="real">real</option>
+              <option value="test">test</option>
             </select>
           </label>
           {permissions.canFeatureSpecialists ? (
@@ -268,6 +302,8 @@ export function AdminSpecialistsPanel({
   onFeaturedChange,
   onTopRankedChange,
   onBasicsChange,
+  onProtectedChange,
+  onAccountKindChange,
 }: AdminSpecialistsPanelProps) {
   const showTierBilling = isOwnerAdmin && billingById != null;
   const [activeCategory, setActiveCategory] = useState<SpecialistTierCategory>("free");
@@ -336,6 +372,8 @@ export function AdminSpecialistsPanel({
               onFeaturedChange={onFeaturedChange}
               onTopRankedChange={onTopRankedChange}
               onBasicsChange={onBasicsChange}
+              onProtectedChange={onProtectedChange}
+              onAccountKindChange={onAccountKindChange}
             />
           ))}
         </ul>
@@ -429,6 +467,7 @@ export function AdminSpecialistsPanel({
                           <option value="active">active</option>
                           <option value="hidden">hidden</option>
                           <option value="pending">pending</option>
+                          <option value="suspended">suspended</option>
                         </select>
                       ) : (
                         <AdminStatusBadge label={row.visibility} />

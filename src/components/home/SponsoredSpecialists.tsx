@@ -22,7 +22,7 @@ export function SponsoredSpecialists() {
   const sponsored = useMemo(() => {
     const coords = hydrated ? userCoords : null;
     return sortTrainersByPersonalizationCity(
-      listPublicSponsoredTrainers(),
+      listPublicSponsoredTrainers({ includeBrowserState: hydrated }),
       hydrated ? personalizationCity : null,
       coords
     ).slice(0, 6);

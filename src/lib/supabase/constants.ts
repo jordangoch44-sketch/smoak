@@ -1,3 +1,10 @@
+/** Public bucket for client (and shared) account avatars */
+export const AVATARS_BUCKET = "avatars" as const;
+
+export const CLIENT_AVATAR_STORAGE_LIMITS = {
+  maxBytes: 5 * 1024 * 1024,
+} as const;
+
 /** Public bucket for specialist profile & gallery assets */
 export const SPECIALIST_MEDIA_BUCKET = "specialist-media" as const;
 

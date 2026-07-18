@@ -55,42 +55,52 @@ export function SaveTrainerButton({
   }
 
   async function handleToggle() {
-    if (saved) {
-      if (canSaveSpecialists(session)) {
-        const result = await toggleSaved(trainerId);
-        if (result.ok) {
-          showToast(SAVE_TOAST_REMOVED);
-        } else if (result.message) {
-          showToast({ title: result.message, variant: "neutral" });
+    try {
+      if (saved) {
+        if (canSaveSpecialists(session)) {
+          const result = await toggleSaved(trainerId);
+          if (result.ok) {
+            showToast(SAVE_TOAST_REMOVED);
+          } else if (result.message) {
+            console.error("[save] remove failed", result.message);
+            showToast({ title: result.message, variant: "neutral" });
+          }
         }
+        return;
       }
-      return;
-    }
 
-    if (!isLoggedIn(session)) {
-      openSaveSignup();
-      return;
-    }
+      if (!isLoggedIn(session)) {
+        openSaveSignup();
+        return;
+      }
 
-    const role = getUserRole(session);
-    if (role === "specialist") {
+      const role = getUserRole(session);
+      if (role === "specialist") {
+        showToast({
+          title: "Switch to a client account to save specialists.",
+          variant: "neutral",
+        });
+        return;
+      }
+
+      if (!canSaveSpecialists(session)) {
+        openSaveSignup();
+        return;
+      }
+
+      const result = await toggleSaved(trainerId);
+      if (result.ok) {
+        showToast(SAVE_TOAST_ADDED);
+      } else if (result.message) {
+        console.error("[save] add failed", result.message);
+        showToast({ title: result.message, variant: "neutral" });
+      }
+    } catch (error) {
+      console.error("[save] toggle threw", error);
       showToast({
-        title: "Switch to a client account to save specialists.",
+        title: "Couldn't update saved specialists. Please try again.",
         variant: "neutral",
       });
-      return;
-    }
-
-    if (!canSaveSpecialists(session)) {
-      openSaveSignup();
-      return;
-    }
-
-    const result = await toggleSaved(trainerId);
-    if (result.ok) {
-      showToast(SAVE_TOAST_ADDED);
-    } else if (result.message) {
-      showToast({ title: result.message, variant: "neutral" });
     }
   }
 

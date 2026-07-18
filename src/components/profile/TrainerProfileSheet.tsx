@@ -4,8 +4,6 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -13,22 +11,15 @@ import { useRouter } from "next/navigation";
 import {
   animate,
   motion,
-  useDragControls,
   useMotionValue,
-  useMotionValueEvent,
   useReducedMotion,
   useTransform,
-  type PanInfo,
 } from "framer-motion";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
-
-/** Commit dismiss if released past this share of the viewport */
-const DISMISS_DISTANCE_RATIO = 0.22;
-/** Or if flung downward faster than this (px/s) */
-const DISMISS_VELOCITY = 750;
+import { ProfileSheetToolbarHostProvider } from "./ProfileSheetToolbarHostContext";
 
 const OPEN_SPRING = {
   type: "spring" as const,
@@ -36,14 +27,9 @@ const OPEN_SPRING = {
   stiffness: 360,
   mass: 0.92,
 };
-const SNAP_SPRING = {
-  type: "spring" as const,
-  damping: 38,
-  stiffness: 420,
-  mass: 0.85,
-};
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
-const DISMISS_DURATION = 0.28;
+/** Unified exit — entire sheet + floating chrome slide down together. */
+const DISMISS_DURATION = 0.26;
 
 interface TrainerProfileSheetProps {
   children: ReactNode;
@@ -75,8 +61,9 @@ function clearSheetDismissing() {
 }
 
 /**
- * Mobile/tablet: iOS-style bottom sheet over the still-mounted previous page
- * (via `@modal` intercepting route). Swipe down / backdrop / X dismisses.
+ * Mobile/tablet: bottom sheet over the still-mounted previous page
+ * (`@modal` intercept). Close via X / backdrop / Escape / browser back.
+ * No swipe-drag dismissal — one unified slide-down exit.
  * Desktop: pass-through.
  */
 export function TrainerProfileSheet({
@@ -87,22 +74,22 @@ export function TrainerProfileSheet({
   const hydrated = useHydrated();
   const isSheetViewport = useTabletViewport();
   const reduceMotion = useReducedMotion();
-  const dragControls = useDragControls();
   const y = useMotionValue(0);
   const vhRef = useRef(viewportHeight());
-  const [dragBottom, setDragBottom] = useState(() => viewportHeight());
   const rootRef = useRef<HTMLDivElement>(null);
+  const toolbarHostRef = useRef<HTMLDivElement>(null);
   const dismissingRef = useRef(false);
-  const dragEnabledRef = useRef(false);
   const openAnimRef = useRef<{ stop: () => void } | null>(null);
+  const programmaticNavRef = useRef(false);
 
   const backdropOpacity = useTransform(y, (latest) => {
-    const fadeRange = vhRef.current * 0.4;
+    const fadeRange = vhRef.current * 0.45;
     const progress = Math.min(1, Math.max(0, latest / fadeRange));
-    return 0.5 * (1 - progress);
+    return 0.85 * (1 - progress);
   });
 
   const navigateAway = useCallback(() => {
+    programmaticNavRef.current = true;
     if (typeof window !== "undefined" && window.history.length > 1) {
       router.back();
       return;
@@ -113,47 +100,52 @@ export function TrainerProfileSheet({
   const dismiss = useCallback(() => {
     if (dismissingRef.current) return;
     dismissingRef.current = true;
-    dragEnabledRef.current = false;
+    const t0 = performance.now();
+    console.info("[close-timing] profile dismiss start", t0);
+
     openAnimRef.current?.stop();
     openAnimRef.current = null;
 
-    /*
-     * Restore interactivity before the route catches up:
-     * 1) unlock scroll / chrome
-     * 2) make the still-mounted overlay fully tap-through
-     * 3) navigate immediately (do not wait on the slide-out)
-     */
-    unlockSheetChrome();
     markSheetDismissing();
     const root = rootRef.current;
     root?.classList.add("profile-sheet-root--pass-through");
     root?.setAttribute("inert", "");
 
-    if (!reduceMotion) {
-      const target = Math.max(vhRef.current, y.get() + 48);
-      void animate(y, target, {
-        duration: DISMISS_DURATION,
-        ease: DISMISS_EASE,
-      });
+    const finish = () => {
+      console.info(
+        "[close-timing] profile exit animation done",
+        performance.now(),
+        "Δms",
+        Math.round(performance.now() - t0)
+      );
+      unlockSheetChrome();
+      /* Route sync after visual close — do not block the slide. */
+      navigateAway();
+    };
+
+    if (reduceMotion) {
+      y.set(vhRef.current);
+      finish();
+      return;
     }
 
-    /* Keep `profile-sheet-dismissing` until unmount so portaled toolbar stays inert */
-    navigateAway();
+    const target = Math.max(vhRef.current, y.get() + 48);
+    void animate(y, target, {
+      duration: DISMISS_DURATION,
+      ease: DISMISS_EASE,
+    }).then(finish);
   }, [navigateAway, reduceMotion, y]);
 
   useEffect(() => {
     if (!isSheetViewport) return;
 
     const syncVh = () => {
-      const next = viewportHeight();
-      vhRef.current = next;
-      setDragBottom(next);
+      vhRef.current = viewportHeight();
     };
     syncVh();
     window.addEventListener("resize", syncVh);
     window.visualViewport?.addEventListener("resize", syncVh);
 
-    /* Mid-dismiss remounts must not re-lock the page */
     if (dismissingRef.current) {
       return () => {
         window.removeEventListener("resize", syncVh);
@@ -165,20 +157,15 @@ export function TrainerProfileSheet({
 
     lockSheetChrome();
     dismissingRef.current = false;
-    dragEnabledRef.current = false;
-
+    programmaticNavRef.current = false;
     y.set(vhRef.current);
 
     if (reduceMotion) {
       y.set(0);
-      dragEnabledRef.current = true;
     } else {
       const controls = animate(y, 0, OPEN_SPRING);
       openAnimRef.current = controls;
       void controls.then(() => {
-        if (!dismissingRef.current) {
-          dragEnabledRef.current = true;
-        }
         openAnimRef.current = null;
       });
     }
@@ -197,52 +184,62 @@ export function TrainerProfileSheet({
     if (!isSheetViewport) return;
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        dismiss();
+      if (event.key !== "Escape") return;
+      /* Nested lightboxes own Escape while open */
+      if (
+        document.body.classList.contains("gallery-modal-open") ||
+        document.body.classList.contains("profile-image-preview-open")
+      ) {
+        return;
       }
+      event.preventDefault();
+      dismiss();
     }
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [dismiss, isSheetViewport]);
 
-  /* Never allow the sheet to drag above the resting position */
-  useMotionValueEvent(y, "change", (latest) => {
-    if (latest < 0) y.set(0);
-  });
+  /*
+   * Browser back: soft-nav keeps this tree mounted briefly. Run the same
+   * slide-down; skip a second router.back() (history already moved).
+   */
+  useEffect(() => {
+    if (!isSheetViewport) return;
 
-  const handleDragEnd = useCallback(
-    (_: unknown, info: PanInfo) => {
+    function onPopState() {
+      if (programmaticNavRef.current) return;
       if (dismissingRef.current) return;
+      dismissingRef.current = true;
+      console.info("[close-timing] profile popstate dismiss", performance.now());
 
-      const distance = Math.max(info.offset.y, y.get());
-      const threshold = vhRef.current * DISMISS_DISTANCE_RATIO;
-      const flingDown = info.velocity.y > DISMISS_VELOCITY;
+      openAnimRef.current?.stop();
+      openAnimRef.current = null;
+      markSheetDismissing();
+      const root = rootRef.current;
+      root?.classList.add("profile-sheet-root--pass-through");
+      root?.setAttribute("inert", "");
 
-      if (distance > threshold || flingDown) {
-        dismiss();
+      const done = () => {
+        unlockSheetChrome();
+      };
+
+      if (reduceMotion) {
+        y.set(vhRef.current);
+        done();
         return;
       }
 
-      void animate(
-        y,
-        0,
-        reduceMotion ? { duration: 0.16, ease: "easeOut" } : SNAP_SPRING
-      );
-    },
-    [dismiss, reduceMotion, y]
-  );
+      const target = Math.max(vhRef.current, y.get() + 48);
+      void animate(y, target, {
+        duration: DISMISS_DURATION,
+        ease: DISMISS_EASE,
+      }).then(done);
+    }
 
-  const startHandleDrag = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (dismissingRef.current || !dragEnabledRef.current) return;
-      openAnimRef.current?.stop();
-      openAnimRef.current = null;
-      dragControls.start(event);
-    },
-    [dragControls]
-  );
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [isSheetViewport, reduceMotion, y]);
 
   if (!isSheetViewport) {
     return <>{children}</>;
@@ -258,43 +255,39 @@ export function TrainerProfileSheet({
 
   return createPortal(
     <ProfileSheetDismissProvider dismiss={dismiss}>
-      <div ref={rootRef} className="profile-sheet-root" role="presentation">
-        <motion.button
-          type="button"
-          className="smoac-control profile-sheet__backdrop"
-          aria-label="Close profile"
-          style={{ opacity: backdropOpacity }}
-          onClick={dismiss}
-        />
+      <ProfileSheetToolbarHostProvider hostRef={toolbarHostRef}>
+        <div ref={rootRef} className="profile-sheet-root" role="presentation">
+          <motion.button
+            type="button"
+            className="smoac-control profile-sheet__backdrop"
+            aria-label="Close profile"
+            style={{ opacity: backdropOpacity }}
+            onClick={dismiss}
+          />
 
-        <motion.div
-          className="profile-sheet"
-          role="dialog"
-          aria-modal="true"
-          aria-label={label}
-          style={{ y }}
-          drag="y"
-          dragControls={dragControls}
-          dragListener={false}
-          dragMomentum={false}
-          dragElastic={0.04}
-          dragConstraints={{ top: 0, bottom: dragBottom }}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="profile-sheet__chrome">
-            <button
-              type="button"
-              className="profile-sheet__handle-hit"
-              aria-label="Drag to close profile"
-              onPointerDown={startHandleDrag}
-            >
-              <span className="profile-sheet__handle" aria-hidden />
-            </button>
-          </div>
+          <motion.div
+            className="profile-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label={label}
+            style={{ y }}
+          >
+            <div className="profile-sheet__chrome" aria-hidden>
+              <div className="profile-sheet__handle-hit profile-sheet__handle-hit--static">
+                <span className="profile-sheet__handle" />
+              </div>
+            </div>
 
-          <div className="profile-sheet__body">{children}</div>
-        </motion.div>
-      </div>
+            {/* Floating X / actions — same transform layer as the sheet */}
+            <div
+              ref={toolbarHostRef}
+              className="profile-sheet__toolbar-host"
+            />
+
+            <div className="profile-sheet__body">{children}</div>
+          </motion.div>
+        </div>
+      </ProfileSheetToolbarHostProvider>
     </ProfileSheetDismissProvider>,
     document.body
   );

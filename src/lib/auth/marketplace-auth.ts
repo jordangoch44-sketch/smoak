@@ -21,8 +21,22 @@ import type { AuthSession } from "@/types/auth";
 import type { PublicAuthRole } from "@/types/auth-roles";
 import type { AdminRoleType } from "@/types/admin-permissions";
 import { isAdminAppRole } from "@/types/auth-roles";
+import {
+  clearPendingMarketplaceSignup,
+  peekPendingMarketplaceSignupForEmail,
+  writePendingMarketplaceSignup,
+} from "@/lib/auth/pending-marketplace-signup";
 import type { CreateAccountProfile } from "@/types/create-account";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
+import { getAuthCallbackUrl, getAuthSiteOrigin } from "@/lib/auth/site-origin";
+import { updatePasswordSetupStatus } from "@/lib/auth/password-setup-status";
+import { getDashboardPathForRole } from "@/lib/auth-routes";
+
+function marketplaceSignupRedirectTo(role: PublicAuthRole): string {
+  const next =
+    role === "specialist" ? "/specialist-dashboard" : "/client-dashboard";
+  return getAuthCallbackUrl(next);
+}
 
 export type AuthResult =
   | { ok: true; session: AuthSession }
@@ -53,8 +67,11 @@ export function getMarketplaceAuthClient(): SupabaseClient | null {
 function displayNameFromProfile(
   firstName: string,
   lastName: string,
-  email: string
+  email: string,
+  displayName?: string
 ): string {
+  const explicit = displayName?.trim() ?? "";
+  if (explicit) return explicit;
   const full = [firstName, lastName].map((s) => s.trim()).filter(Boolean).join(" ");
   return full || email.split("@")[0] || email;
 }
@@ -77,7 +94,9 @@ export async function buildAuthSessionFromSupabaseUser(
 
   const profile = await fetchProfileRow(supabase, user.id);
   const email = (user.email ?? profile?.email ?? "").trim().toLowerCase();
-  const signedInAt = user.last_sign_in_at ?? new Date().toISOString();
+  /* Prefer stable timestamps — never Date.now() (churns session signature). */
+  const signedInAt =
+    user.last_sign_in_at ?? user.created_at ?? "1970-01-01T00:00:00.000Z";
   const firstName = profile?.first_name?.trim() ?? "";
   const clientZipCode = profile?.client_zip_code?.trim() ?? "";
   const clientCity = profile?.client_city?.trim() ?? "";
@@ -96,9 +115,16 @@ export async function buildAuthSessionFromSupabaseUser(
     avatarUrl,
     profileCompletionStatus:
       profile?.profile_completion_status?.trim() || undefined,
+    passwordSetupStatus:
+      profile?.password_setup_status?.trim() || undefined,
     isPremium: roleRow.is_premium,
     displayName: profile
-      ? displayNameFromProfile(profile.first_name, profile.last_name, email)
+      ? displayNameFromProfile(
+          profile.first_name,
+          profile.last_name,
+          email,
+          profile.display_name
+        )
       : displayNameFromProfile("", "", email),
   };
 
@@ -109,22 +135,82 @@ export async function buildAuthSessionFromSupabaseUser(
   return session;
 }
 
-export async function getCurrentMarketplaceSession(): Promise<AuthSession | null> {
+const SESSION_LOOKUP_TIMEOUT_MS = 10_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`${label} timed out`));
+    }, ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+export type MarketplaceSessionLookup =
+  | { status: "signed_out" }
+  | { status: "ok"; session: AuthSession }
+  | { status: "transient_error"; message: string };
+
+/**
+ * Resolve the current Supabase user into an AuthSession.
+ * Distinguishes signed-out from transient role/profile failures so callers
+ * do not wipe a valid session on temporary network/DB errors.
+ */
+export async function lookupMarketplaceSession(): Promise<MarketplaceSessionLookup> {
   if (!isMarketplaceSupabaseActive()) {
-    return null;
+    return { status: "signed_out" };
   }
 
   const supabase = getMarketplaceAuthClient();
-  if (!supabase) return null;
+  if (!supabase) return { status: "signed_out" };
 
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  try {
+    const {
+      data: { user },
+      error,
+    } = await withTimeout(
+      supabase.auth.getUser(),
+      SESSION_LOOKUP_TIMEOUT_MS,
+      "getUser"
+    );
 
-  if (error || !user) return null;
+    if (error || !user) return { status: "signed_out" };
 
-  return buildAuthSessionFromSupabaseUser(supabase, user);
+    const session = await withTimeout(
+      buildAuthSessionFromSupabaseUser(supabase, user),
+      SESSION_LOOKUP_TIMEOUT_MS,
+      "buildAuthSession"
+    );
+
+    if (!session) {
+      return {
+        status: "transient_error",
+        message: "Account profile is still syncing. Try again shortly.",
+      };
+    }
+
+    return { status: "ok", session };
+  } catch (error) {
+    return {
+      status: "transient_error",
+      message:
+        error instanceof Error ? error.message : "Session lookup failed",
+    };
+  }
+}
+
+export async function getCurrentMarketplaceSession(): Promise<AuthSession | null> {
+  const result = await lookupMarketplaceSession();
+  if (result.status === "ok") return result.session;
+  return null;
 }
 
 async function persistSignupProfile(
@@ -174,6 +260,71 @@ async function persistSignupProfile(
     role,
   });
   return result.ok ? { ok: true } : result;
+}
+
+/**
+ * Completes profiles/roles after email confirmation when the first session
+ * arrives without a prior successful persistSignupProfile call.
+ */
+export async function ensureMarketplaceSignupProfile(
+  supabase: SupabaseClient,
+  user: User,
+  expectedRole?: PublicAuthRole
+): Promise<AuthSession | null> {
+  const email = (user.email ?? "").trim().toLowerCase();
+  if (!email) return null;
+
+  const pending = peekPendingMarketplaceSignupForEmail(email);
+  const metaRole = String(user.user_metadata?.role ?? "").trim();
+  const roleCandidate = expectedRole ?? pending?.role ?? metaRole;
+  if (roleCandidate !== "client" && roleCandidate !== "specialist") {
+    return null;
+  }
+  const role = roleCandidate;
+
+  const existingRole = await fetchUserRoleRow(supabase, user.id);
+  if (!existingRole) {
+    let specialistOnboarding: SpecialistOnboardingState | undefined;
+    if (role === "specialist" && typeof window !== "undefined") {
+      try {
+        const { loadSpecialistOnboardingDraft } = await import(
+          "@/lib/specialist-application-storage"
+        );
+        specialistOnboarding = loadSpecialistOnboardingDraft() ?? undefined;
+      } catch {
+        specialistOnboarding = undefined;
+      }
+    }
+
+    const profileResult = await persistSignupProfile(
+      supabase,
+      user.id,
+      role,
+      email,
+      {
+        firstName:
+          pending?.firstName ??
+          String(user.user_metadata?.first_name ?? "").trim() ??
+          "",
+        lastName:
+          pending?.lastName ??
+          String(user.user_metadata?.last_name ?? "").trim() ??
+          "",
+        clientProfile: pending?.clientProfile,
+        specialistProfile: pending?.specialistProfile,
+        specialistOnboarding,
+      }
+    );
+    if (!profileResult.ok) {
+      logAuth("signup.ensure_profile_failed", {
+        userId: user.id,
+        message: profileResult.message,
+      });
+      return null;
+    }
+  }
+
+  return buildAuthSessionFromSupabaseUser(supabase, user);
 }
 
 export async function signInWithPassword(
@@ -237,6 +388,12 @@ export async function signInWithPassword(
 
   const session = await buildAuthSessionFromSupabaseUser(supabase, user);
   if (!session) {
+    const recovered = await ensureMarketplaceSignupProfile(supabase, user, role);
+    if (recovered && recovered.role === role) {
+      logAuth("signin.recovered_incomplete_signup", { userId: user.id, role });
+      clearPendingMarketplaceSignup();
+      return { ok: true, session: recovered };
+    }
     await supabase.auth.signOut();
     return {
       ok: false,
@@ -249,8 +406,109 @@ export async function signInWithPassword(
     return { ok: false, message: PUBLIC_INVALID_LOGIN_MESSAGE };
   }
 
+  /* Finish role/profile if pending payload exists (email-confirm path).
+   * Keep pending when a specialist application still needs submitting. */
+  const pending = peekPendingMarketplaceSignupForEmail(trimmedEmail);
+  if (pending) {
+    await ensureMarketplaceSignupProfile(supabase, user, role);
+    if (!pending.submitSpecialistApplication) {
+      clearPendingMarketplaceSignup();
+    }
+  }
+
   logAuth("signin.success", { userId: user.id, role });
   return { ok: true, session };
+}
+
+export type MagicLinkLoginResult =
+  | { ok: true; email: string; message: string }
+  | { ok: false; message: string };
+
+/** Post-auth landing path for magic-link login from /login. */
+export function resolveMagicLinkLoginNextPath(
+  role: PublicAuthRole,
+  returnToSaved: boolean
+): string {
+  if (returnToSaved && role === "client") return "/saved";
+  return getDashboardPathForRole(role);
+}
+
+/** Passwordless sign-in for existing accounts — does not create new users. */
+export async function sendMagicLinkForLogin(params: {
+  email: string;
+  role: PublicAuthRole;
+  returnToSaved?: boolean;
+}): Promise<MagicLinkLoginResult> {
+  const trimmedEmail = params.email.trim().toLowerCase();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
+
+  if (!isMarketplaceSupabaseActive()) {
+    if (process.env.NODE_ENV === "production") {
+      return {
+        ok: false,
+        message:
+          "Magic-link sign-in requires Supabase. Configure .env.local and rebuild.",
+      };
+    }
+    return {
+      ok: false,
+      message: "Magic-link sign-in is not available without Supabase.",
+    };
+  }
+
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication is not available." };
+  }
+
+  const nextPath = resolveMagicLinkLoginNextPath(
+    params.role,
+    params.returnToSaved ?? false
+  );
+  const emailRedirectTo = getAuthCallbackUrl(nextPath);
+
+  logAuth("magic_link_login.start", {
+    email: trimmedEmail,
+    role: params.role,
+    nextPath,
+    emailRedirectTo,
+  });
+
+  const { error } = await supabase.auth.signInWithOtp({
+    email: trimmedEmail,
+    options: {
+      emailRedirectTo,
+      shouldCreateUser: false,
+      data: { role: params.role },
+    },
+  });
+
+  if (error) {
+    logAuth("magic_link_login.failed", { message: error.message });
+
+    if (
+      /signups?.*not allowed|user not found|invalid login|not found/i.test(
+        error.message
+      )
+    ) {
+      return {
+        ok: false,
+        message:
+          "No account found for that email. Create an account or sign in with a password.",
+      };
+    }
+
+    return { ok: false, message: error.message };
+  }
+
+  return {
+    ok: true,
+    email: trimmedEmail,
+    message: "If an account exists for that email, a sign-in link has been sent.",
+  };
 }
 
 export async function signUpWithPassword(
@@ -313,6 +571,7 @@ export async function signUpWithPassword(
     email: trimmedEmail,
     password,
     options: {
+      emailRedirectTo: marketplaceSignupRedirectTo(role),
       data: {
         role,
         first_name: options?.firstName?.trim() ?? "",
@@ -337,9 +596,20 @@ export async function signUpWithPassword(
 
   logAuth("signup.auth_user_created", { userId: user.id, email: trimmedEmail });
 
+  /* Persist pending payload so confirm-email → first login can finish setup */
+  writePendingMarketplaceSignup({
+    role,
+    email: trimmedEmail,
+    firstName: options?.firstName,
+    lastName: options?.lastName,
+    clientProfile: options?.clientProfile,
+    specialistProfile: options?.specialistProfile,
+    submitSpecialistApplication: role === "specialist" && Boolean(options?.specialistOnboarding),
+  });
+
   if (!data.session) {
     logAuth("signup.confirm_email", { userId: user.id, email: trimmedEmail });
-    return { ok: "confirm_email", email: trimmedEmail };
+    return { ok: "confirm_email", email: trimmedEmail, userId: user.id };
   }
 
   const profileResult = await persistSignupProfile(
@@ -359,6 +629,8 @@ export async function signUpWithPassword(
     return { ok: false, message: profileResult.message };
   }
 
+  clearPendingMarketplaceSignup();
+
   const session = await buildAuthSessionFromSupabaseUser(supabase, user);
   if (!session || session.role !== role) {
     await supabase.auth.signOut();
@@ -375,9 +647,24 @@ export async function signUpWithPassword(
 export async function signOutMarketplace(): Promise<void> {
   if (!isMarketplaceSupabaseActive()) return;
   const supabase = getMarketplaceAuthClient();
-  if (supabase) {
-    await supabase.auth.signOut();
+  if (!supabase) return;
+
+  try {
+    await withTimeout(
+      supabase.auth.signOut({ scope: "local" }),
+      8_000,
+      "signOut"
+    );
     logAuth("signout");
+  } catch (error) {
+    logAuth("signout.failed", {
+      message: error instanceof Error ? error.message : "signOut failed",
+    });
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      /* best-effort */
+    }
   }
 }
 
@@ -402,9 +689,8 @@ export async function resetPasswordForEmail(email: string): Promise<{
     return { ok: false, message: "Authentication is not available." };
   }
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000";
-  const redirectTo = `${siteUrl.replace(/\/$/, "")}/login/reset-password`;
+  const siteUrl = getAuthSiteOrigin();
+  const redirectTo = `${siteUrl}/login/reset-password`;
 
   const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
     redirectTo,
@@ -437,13 +723,61 @@ export async function updatePassword(newPassword: string): Promise<{
     return { ok: false, message: "Authentication is not available." };
   }
 
-  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+    data: { password_setup_status: "complete" },
+  });
 
   if (error) {
     return { ok: false, message: error.message };
   }
 
-  return { ok: true, message: "Password updated. You can sign in now." };
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    await updatePasswordSetupStatus(supabase, user.id, "complete");
+  }
+
+  return { ok: true, message: "Password saved." };
+}
+
+export async function updateAuthEmail(newEmail: string): Promise<{
+  ok: boolean;
+  message: string;
+}> {
+  const trimmed = newEmail.trim().toLowerCase();
+  if (!trimmed || !trimmed.includes("@")) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
+
+  if (!isMarketplaceSupabaseActive()) {
+    return { ok: false, message: "Email updates require Supabase." };
+  }
+
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication is not available." };
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const current = (user?.email ?? "").trim().toLowerCase();
+  if (current && current === trimmed) {
+    return { ok: false, message: "That is already your email address." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ email: trimmed });
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  return {
+    ok: true,
+    message:
+      "Check your new inbox to confirm the email change. Your current email stays active until then.",
+  };
 }
 
 export async function signInAdminWithPassword(
@@ -498,7 +832,8 @@ export async function signInAdminWithPassword(
         ? displayNameFromProfile(
             profile.first_name,
             profile.last_name,
-            trimmedEmail
+            trimmedEmail,
+            profile.display_name
           )
         : session.displayName,
     },

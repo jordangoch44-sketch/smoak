@@ -1,8 +1,19 @@
 "use client";
 
 import { useId, useRef, useState, type ChangeEvent } from "react";
+import {
+  getMarketplaceAuthClient,
+  isMarketplaceSupabaseActive,
+} from "@/lib/auth/marketplace-auth";
 import { readFileAsDataUrl } from "@/lib/media/crop-image";
+import {
+  SPECIALIST_STORAGE_ACCEPT,
+  SPECIALIST_STORAGE_LIMITS,
+} from "@/lib/supabase/constants";
+import { SpecialistStorageValidationError } from "@/lib/supabase/errors";
+import { uploadSpecialistMedia } from "@/lib/supabase/storage";
 import { cn } from "@/lib/utils";
+import type { SpecialistStorageMediaKind } from "@/types/supabase-storage";
 
 interface ProfileMediaUploadFieldProps {
   label: string;
@@ -11,6 +22,21 @@ interface ProfileMediaUploadFieldProps {
   onChange: (value: string) => void;
   aspect?: "cover" | "square";
   accept?: string;
+  /** When set with Supabase configured, uploads to specialist-media bucket */
+  specialistId?: string | null;
+  mediaKind?: Extract<
+    SpecialistStorageMediaKind,
+    "profile" | "cover" | "gallery-image"
+  >;
+  onClear?: () => void;
+}
+
+function maxBytesForUiKind(
+  kind: ProfileMediaUploadFieldProps["mediaKind"]
+): number {
+  if (kind === "cover") return SPECIALIST_STORAGE_LIMITS.cover;
+  if (kind === "gallery-image") return SPECIALIST_STORAGE_LIMITS.galleryImage;
+  return SPECIALIST_STORAGE_LIMITS.profile;
 }
 
 export function ProfileMediaUploadField({
@@ -19,12 +45,23 @@ export function ProfileMediaUploadField({
   value,
   onChange,
   aspect = "cover",
-  accept = "image/*",
+  accept,
+  specialistId,
+  mediaKind = "profile",
+  onClear,
 }: ProfileMediaUploadFieldProps) {
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const resolvedAccept =
+    accept ??
+    (mediaKind === "gallery-image"
+      ? SPECIALIST_STORAGE_ACCEPT.galleryImage
+      : mediaKind === "cover"
+        ? SPECIALIST_STORAGE_ACCEPT.cover
+        : SPECIALIST_STORAGE_ACCEPT.profile);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -34,10 +71,53 @@ export function ProfileMediaUploadField({
     setUploading(true);
     setUploadError(null);
     try {
+      const maxBytes = maxBytesForUiKind(mediaKind);
+      if (file.size > maxBytes) {
+        throw new SpecialistStorageValidationError(
+          `Image must be under ${Math.round(maxBytes / (1024 * 1024))}MB.`
+        );
+      }
+
+      const useStorage =
+        Boolean(specialistId?.trim()) &&
+        isMarketplaceSupabaseActive() &&
+        (mediaKind === "profile" ||
+          mediaKind === "cover" ||
+          mediaKind === "gallery-image");
+
+      if (useStorage) {
+        const client = getMarketplaceAuthClient();
+        if (!client) {
+          throw new Error("Upload is unavailable. Try again after signing in.");
+        }
+        const assetId =
+          mediaKind === "gallery-image"
+            ? `g-${Date.now().toString(36)}`
+            : undefined;
+        const result = await uploadSpecialistMedia(client, {
+          specialistId: specialistId!.trim(),
+          kind: mediaKind,
+          file,
+          fileName: file.name,
+          assetId,
+          contentType: file.type || undefined,
+          upsert: true,
+        });
+        onChange(result.publicUrl);
+        return;
+      }
+
+      /* Dev / no-Supabase fallback — inline preview only */
       const dataUrl = await readFileAsDataUrl(file);
       onChange(dataUrl);
-    } catch {
-      setUploadError("Could not read image. Try again or paste a URL.");
+    } catch (error) {
+      const message =
+        error instanceof SpecialistStorageValidationError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Could not upload image. Try again or paste a URL.";
+      setUploadError(message);
     } finally {
       setUploading(false);
     }
@@ -63,6 +143,9 @@ export function ProfileMediaUploadField({
             src={value}
             alt=""
             className="dashboard-upload-zone__preview"
+            onError={(event) => {
+              event.currentTarget.style.opacity = "0.35";
+            }}
           />
         ) : (
           <>
@@ -70,19 +153,19 @@ export function ProfileMediaUploadField({
               +
             </span>
             <span className="dashboard-upload-zone__hint">
-              {uploading ? "Processing image…" : hint}
+              {uploading ? "Uploading…" : hint}
             </span>
           </>
         )}
         <span className="dashboard-upload-zone__overlay">
-          {uploading ? "Processing…" : value ? "Replace image" : "Tap to upload"}
+          {uploading ? "Uploading…" : value ? "Replace image" : "Tap to upload"}
         </span>
       </button>
       <input
         ref={fileRef}
         id={inputId}
         type="file"
-        accept={accept}
+        accept={resolvedAccept}
         className="dashboard-upload-zone__input"
         onChange={(event) => void handleFileChange(event)}
         tabIndex={-1}
@@ -96,6 +179,15 @@ export function ProfileMediaUploadField({
           placeholder="https://… or upload above"
         />
       </label>
+      {value && onClear ? (
+        <button
+          type="button"
+          className="dashboard-edit-hint"
+          onClick={onClear}
+        >
+          Remove image
+        </button>
+      ) : null}
       {uploadError ? (
         <p className="dashboard-edit-hint" role="alert">
           {uploadError}

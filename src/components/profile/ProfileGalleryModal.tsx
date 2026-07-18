@@ -151,21 +151,33 @@ export function ProfileGalleryModal({
   useEffect(() => {
     if (!mounted) return;
 
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const sheetOpen = document.body.classList.contains("profile-sheet-open");
+    let previousOverflow = "";
+    /* Sheet already locks scroll via body class — only set inline overflow
+     * when the gallery is the sole layer so we don't unlock early on close. */
+    if (!sheetOpen) {
+      previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    }
     document.body.classList.add("gallery-modal-open");
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") requestClose();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        requestClose();
+      }
       if (event.key === "ArrowLeft") goToSlide(index - 1);
       if (event.key === "ArrowRight") goToSlide(index + 1);
     }
 
-    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
     return () => {
-      document.body.style.overflow = previousOverflow;
+      if (!sheetOpen) {
+        document.body.style.overflow = previousOverflow;
+      }
       document.body.classList.remove("gallery-modal-open");
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keydown", onKeyDown, true);
     };
   }, [mounted, requestClose, goToSlide, index]);
 
@@ -179,7 +191,6 @@ export function ProfileGalleryModal({
     return () => {
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
       document.body.classList.remove("gallery-modal-open");
-      document.body.style.overflow = "";
     };
   }, []);
 

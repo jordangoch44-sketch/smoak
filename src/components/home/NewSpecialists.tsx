@@ -4,6 +4,9 @@ import { useMemo } from "react";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
+import { LocationLabel } from "@/components/trainers/LocationLabel";
+import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import {
   useActiveUserCoordinates,
@@ -14,7 +17,6 @@ import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
 import {
-  formatTrainerDistanceLabel,
   formatTrainerPriceLabel,
   formatTrainerRatingLabel,
 } from "@/lib/home-discovery";
@@ -28,7 +30,7 @@ export function NewSpecialists() {
   const newcomers = useMemo(() => {
     const coords = hydrated ? userCoords : null;
     return sortTrainersByPersonalizationCity(
-      listPublicNewTrainers(),
+      listPublicNewTrainers({ includeBrowserState: hydrated }),
       hydrated ? personalizationCity : null,
       coords
     ).slice(0, 8);
@@ -57,10 +59,6 @@ export function NewSpecialists() {
         >
           {newcomers.map((trainer, index) => {
             const href = `/trainers/${trainer.id}`;
-            const distance =
-              hydrated && userCoords
-                ? formatTrainerDistanceLabel(trainer, userCoords)
-                : null;
 
             return (
               <div key={trainer.id} className="home-portrait-card" role="listitem">
@@ -82,16 +80,27 @@ export function NewSpecialists() {
                       <p className="home-portrait-card__profession">
                         {trainer.profession}
                       </p>
+                      <LocationLabel
+                        provider={trainer}
+                        className="home-portrait-card__location"
+                      />
+                      <DevTrainerDistance
+                        trainer={trainer}
+                        className="home-portrait-card__distance"
+                      />
+                      <SpecialtyChips
+                        specialties={trainer.specialty}
+                        className="home-portrait-card__chips specialty-chips--row"
+                      />
                       <div className="home-portrait-card__meta">
                         <span>
                           <span aria-hidden>★ </span>
                           {formatTrainerRatingLabel(trainer)}
                         </span>
-                        {distance ? <span>{distance}</span> : null}
+                        <span>
+                          {formatTrainerPriceLabel(trainer.pricePerSession)}
+                        </span>
                       </div>
-                      <p className="home-portrait-card__price">
-                        {formatTrainerPriceLabel(trainer.pricePerSession)}
-                      </p>
                     </div>
                   </article>
                 </TapLink>

@@ -12,11 +12,23 @@ export interface ProfilePhotoCropperProps {
   initialCrop?: Point;
   initialZoom?: number;
   aspect?: number;
+  /** Circular mask for avatar preview (output file remains square). */
+  cropShape?: "rect" | "round";
+  title?: string;
+  lead?: string;
+  confirmLabel?: string;
+  confirmingLabel?: string;
   onCancel: () => void;
+  /**
+   * Called after the crop is rendered.
+   * May return a Promise — the modal stays open in a loading state until it settles.
+   * Throw / reject to keep the crop open and show an error.
+   */
   onSave: (
     croppedImageData: string,
-    cropSettings: ProfilePhotoCropSettings
-  ) => void;
+    cropSettings: ProfilePhotoCropSettings,
+    croppedAreaPixels: Area
+  ) => void | Promise<void>;
 }
 
 export function ProfilePhotoCropper({
@@ -24,6 +36,11 @@ export function ProfilePhotoCropper({
   initialCrop = { x: 0, y: 0 },
   initialZoom = 1,
   aspect = 1,
+  cropShape = "rect",
+  title = "Crop Profile Photo",
+  lead = "Drag to reposition. Pinch or use slider to zoom.",
+  confirmLabel = "Confirm Crop",
+  confirmingLabel = "Saving…",
   onCancel,
   onSave,
 }: ProfilePhotoCropperProps) {
@@ -36,6 +53,7 @@ export function ProfilePhotoCropper({
   useEffect(() => {
     setCrop(initialCrop);
     setZoom(initialZoom);
+    setError(null);
   }, [imageSrc, initialCrop.x, initialCrop.y, initialZoom]);
 
   useBlockingModalOpen(true);
@@ -45,7 +63,7 @@ export function ProfilePhotoCropper({
   }, []);
 
   async function handleConfirm() {
-    if (!croppedAreaPixels) return;
+    if (!croppedAreaPixels || saving) return;
     setSaving(true);
     setError(null);
     try {
@@ -53,9 +71,17 @@ export function ProfilePhotoCropper({
         imageSrc,
         croppedAreaPixels
       );
-      onSave(croppedImageData, { x: crop.x, y: crop.y, zoom });
-    } catch {
-      setError("Could not save crop. Please try again.");
+      await onSave(
+        croppedImageData,
+        { x: crop.x, y: crop.y, zoom },
+        croppedAreaPixels
+      );
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save crop. Please try again."
+      );
     } finally {
       setSaving(false);
     }
@@ -70,11 +96,9 @@ export function ProfilePhotoCropper({
     >
       <header className="profile-photo-cropper__header">
         <h2 id="profile-photo-crop-title" className="profile-photo-cropper__title">
-          Crop Profile Photo
+          {title}
         </h2>
-        <p className="profile-photo-cropper__lead">
-          Drag to reposition. Pinch or use slider to zoom.
-        </p>
+        <p className="profile-photo-cropper__lead">{lead}</p>
       </header>
 
       <div className="profile-photo-cropper__stage">
@@ -83,7 +107,7 @@ export function ProfilePhotoCropper({
           crop={crop}
           zoom={zoom}
           aspect={aspect}
-          cropShape="rect"
+          cropShape={cropShape}
           showGrid={false}
           restrictPosition
           onCropChange={setCrop}
@@ -101,6 +125,7 @@ export function ProfilePhotoCropper({
             max={3}
             step={0.05}
             value={zoom}
+            disabled={saving}
             onChange={(e) => setZoom(Number.parseFloat(e.target.value))}
             className="profile-photo-cropper__zoom-input"
             aria-valuemin={1}
@@ -130,7 +155,7 @@ export function ProfilePhotoCropper({
             disabled={saving || !croppedAreaPixels}
             onClick={() => void handleConfirm()}
           >
-            {saving ? "Saving…" : "Confirm Crop"}
+            {saving ? confirmingLabel : confirmLabel}
           </button>
         </footer>
       </div>

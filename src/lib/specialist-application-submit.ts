@@ -6,6 +6,8 @@ import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar"
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import {
   clearSpecialistOnboardingDraft,
+  findSpecialistApplicationByEmail,
+  findSpecialistApplicationByUserId,
   saveSpecialistApplicationAsync,
 } from "@/lib/specialist-application-storage";
 import { assertCanSubmitSpecialistApplication } from "@/lib/specialist-application-validation";
@@ -28,22 +30,29 @@ export async function submitSpecialistApplication(
   state: SpecialistOnboardingState
 ): Promise<SpecialistApplication> {
   const trimmedEmail = state.email.trim();
-  assertCanSubmitSpecialistApplication(trimmedEmail);
+  const session = getAuthSessionSnapshot();
+  assertCanSubmitSpecialistApplication(trimmedEmail, session?.userId);
 
   const now = new Date().toISOString();
-  const id = slugifyId(trimmedEmail);
+  const existingByUser = session?.userId
+    ? findSpecialistApplicationByUserId(session.userId)
+    : null;
+  const existingByEmail = findSpecialistApplicationByEmail(trimmedEmail);
+  const existing = existingByUser ?? existingByEmail;
+
+  /* Reuse id for draft/rejected resubmits — never create a second profile row */
+  const id = existing?.id ?? slugifyId(trimmedEmail);
   const enriched = enrichSpecialistApplicationFields(state);
-  const session = getAuthSessionSnapshot();
 
   const application: SpecialistApplication = {
     id,
     profileStatus: "PENDING_APPROVAL",
-    submittedAt: now,
+    submittedAt: existing?.submittedAt ?? now,
     updatedAt: now,
     ...enriched,
     email: trimmedEmail,
     password: "",
-    userId: session?.userId ?? null,
+    userId: session?.userId ?? existing?.userId ?? null,
     certifications: state.certifications.filter(
       (cert) => cert.name.trim() && cert.issuer.trim()
     ),

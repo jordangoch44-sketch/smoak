@@ -11,6 +11,7 @@
 @import "./save-toast.css";
 @import "./toast.css";
 @import "./site-chrome.css";
+@import "./legal.css";
 @import "./login-gate.css";
 @import "./location-personalization.css";
 @import "./location-selector.css";
@@ -142,6 +143,8 @@ body.profile-sheet-open,
 body.inquiry-sheet-open,
 body.saved-panel-open,
 body.login-gate-open,
+body.complete-account-lock,
+body.client-profile-sheet-open,
 body.site-intro-open,
 body.location-personalization-open,
 body.hero-search-suggestions-open,
@@ -158,6 +161,8 @@ body.admin-review-open {
   body.inquiry-sheet-open,
   body.saved-panel-open,
   body.login-gate-open,
+  body.complete-account-lock,
+  body.client-profile-sheet-open,
   body.site-intro-open,
   body.location-personalization-open,
   body.hero-search-suggestions-open,
@@ -172,6 +177,8 @@ body.admin-review-open {
   body.inquiry-sheet-open .app-main,
   body.saved-panel-open .app-main,
   body.login-gate-open .app-main,
+  body.complete-account-lock .app-main,
+  body.client-profile-sheet-open .app-main,
   body.site-intro-open .app-main,
   body.location-personalization-open .app-main,
   body.admin-review-open .app-main {
@@ -187,6 +194,8 @@ body.admin-review-open {
   }
 
   html.login-gate-open,
+  html.complete-account-lock,
+  html.client-profile-sheet-open,
   html.site-intro-open,
   html.location-personalization-open,
   html.hero-search-suggestions-open {

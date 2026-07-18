@@ -2,7 +2,11 @@
 
 import { useMemo } from "react";
 import { useSyncExternalStore } from "react";
-import { getEffectiveUserCoordinates } from "@/lib/client-profile-location";
+import { getProfileZipFromSession } from "@/lib/client-profile-location";
+import {
+  lookupLocalZipCoordinates,
+  zipCodeToCoordinates,
+} from "@/lib/geo/zip-centroids";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import {
@@ -21,10 +25,20 @@ export function useActiveUserCoordinates(): UserGeoPoint | null {
     getActiveUserCoordinatesServerSnapshot
   );
 
-  return useMemo(
-    () => getEffectiveUserCoordinates(session) ?? storageCoords,
-    [session, storageCoords]
-  );
+  /* Profile ZIP coords from session snapshot + storage coords from the
+   * location store only. Do not call getActiveUserCoordinates() here — that
+   * reads localStorage during render and hydrates distance labels the SSR
+   * tree did not include (dev-trainer-distance). */
+  return useMemo(() => {
+    const profileZip = getProfileZipFromSession(session);
+    if (profileZip) {
+      const coords =
+        lookupLocalZipCoordinates(profileZip) ??
+        zipCodeToCoordinates(profileZip);
+      if (coords) return coords;
+    }
+    return storageCoords;
+  }, [session, storageCoords]);
 }
 
 /** Stable string dependency for proximity useMemo (avoids object identity churn) */

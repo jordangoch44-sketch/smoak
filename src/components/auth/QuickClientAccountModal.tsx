@@ -85,7 +85,11 @@ export function QuickClientAccountModal({
     document.documentElement.classList.add("login-gate-open");
 
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+        console.info("[close-timing] save-modal click received", "escape", performance.now());
+      document.body.classList.remove("login-gate-open");
+      document.documentElement.classList.remove("login-gate-open");
+      onClose();
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -93,8 +97,36 @@ export function QuickClientAccountModal({
       document.body.classList.remove("login-gate-open");
       document.documentElement.classList.remove("login-gate-open");
       window.removeEventListener("keydown", onKeyDown);
+        console.info("[close-timing] save-modal effect cleanup (chrome unlock)", performance.now());
     };
   }, [open, onClose]);
+
+  function hideGateDom(target: EventTarget | null) {
+    const el =
+      target instanceof Element ? target.closest(".login-gate") : null;
+    if (el instanceof HTMLElement) {
+      el.hidden = true;
+      el.style.pointerEvents = "none";
+      el.style.opacity = "0";
+      /* Drop expensive blur immediately — do not wait for React unmount. */
+      el.style.backdropFilter = "none";
+      el.style.setProperty("-webkit-backdrop-filter", "none");
+    }
+  }
+
+  function requestClose(
+    source: "x" | "backdrop" | "link",
+    event: React.MouseEvent
+  ) {
+    const t0 = performance.now();
+      console.info("[close-timing] save-modal click received", source, t0);
+    hideGateDom(event.currentTarget);
+      console.info("[close-timing] save-modal dom hidden", performance.now(), "Δms", Math.round(performance.now() - t0));
+    document.body.classList.remove("login-gate-open");
+    document.documentElement.classList.remove("login-gate-open");
+    onClose();
+      console.info("[close-timing] save-modal onClose returned", performance.now(), "Δms", Math.round(performance.now() - t0));
+  }
 
   async function handleQuickSignup() {
     if (submittingRef.current) return;
@@ -218,7 +250,11 @@ export function QuickClientAccountModal({
         : resolvedSignupSupport;
 
   return createPortal(
-    <div className="login-gate" role="presentation" onClick={onClose}>
+    <div
+      className="login-gate"
+      role="presentation"
+      onClick={(event) => requestClose("backdrop", event)}
+    >
       <div
         className={cn("login-gate__dialog", "login-gate__dialog--save")}
         role="dialog"
@@ -232,7 +268,7 @@ export function QuickClientAccountModal({
         <button
           type="button"
           className="smoac-control login-gate__close"
-          onClick={onClose}
+          onClick={(event) => requestClose("x", event)}
           aria-label="Close"
         >
           <CloseIcon className="h-4 w-4" />
@@ -366,7 +402,7 @@ export function QuickClientAccountModal({
                   <Link
                     href={LOGIN_PATH}
                     className="login-gate__btn login-gate__btn--ghost"
-                    onClick={onClose}
+                    onClick={(event) => requestClose("link", event)}
                   >
                     Open full sign in
                   </Link>

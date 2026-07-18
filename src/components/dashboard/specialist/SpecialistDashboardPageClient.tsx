@@ -73,7 +73,7 @@ export function SpecialistDashboardPageClient() {
   }
 
   const statusTone =
-    profileStatusLabel === "Active"
+    profileStatusLabel === "Published"
       ? "active"
       : profileStatusLabel === "Needs changes"
         ? "rejected"

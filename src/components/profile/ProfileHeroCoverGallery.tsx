@@ -58,17 +58,19 @@ export function ProfileHeroCoverGallery({
     });
   }, []);
 
-  const openGallery = useCallback(async () => {
+  const openGallery = useCallback(() => {
     const startIndex = resolveGalleryIndexForCover(media, slides, index);
+    setGalleryStartIndex(startIndex);
+    setGalleryOpen(true);
+
+    /* Prefetch in the background — do not delay opening (felt broken when
+     * the gallery was also stacked under the profile sheet). */
     const item = media[startIndex];
     if (item) {
       const preloadUrl =
         item.type === "image" ? item.url : item.thumbnail ?? item.url;
-      await preloadGalleryImage(preloadUrl);
+      void preloadGalleryImage(preloadUrl);
     }
-
-    setGalleryStartIndex(startIndex);
-    setGalleryOpen(true);
   }, [index, media, preloadGalleryImage, slides]);
 
   useEffect(() => {

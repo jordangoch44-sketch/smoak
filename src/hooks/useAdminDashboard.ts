@@ -26,7 +26,9 @@ import {
 } from "@/lib/admin-specialist-meta-store";
 import {
   listAdminSpecialists,
+  setAdminSpecialistAccountKind,
   setAdminSpecialistFlag,
+  setAdminSpecialistProtected,
   setAdminSpecialistVisibility,
   updateAdminSpecialistBasics,
   type AdminSpecialistRow,
@@ -128,6 +130,8 @@ export function useAdminDashboard() {
     saveClientApplicationEdits,
     setSpecialistVisibility: setAdminSpecialistVisibility,
     setSpecialistFlag: setAdminSpecialistFlag,
+    setSpecialistProtected: setAdminSpecialistProtected,
+    setSpecialistAccountKind: setAdminSpecialistAccountKind,
     updateSpecialistBasics: updateAdminSpecialistBasics,
   };
 }

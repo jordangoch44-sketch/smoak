@@ -52,7 +52,7 @@ export function TrainerCardGrid({
         <DevTrainerDistance trainer={trainer} className="mt-1 block" />
         <SpecialtyChips
           specialties={trainer.specialty}
-          className="mt-3"
+          className="mt-3 specialty-chips--row"
         />
         <SessionPrice
           amount={trainer.pricePerSession}

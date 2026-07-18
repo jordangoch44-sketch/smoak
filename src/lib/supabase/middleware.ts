@@ -9,6 +9,7 @@ import {
   LOGIN_PATH,
   SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
+import { COMPLETE_ACCOUNT_PATH } from "@/lib/auth/account-setup";
 import {
   INTERNAL_DASHBOARD_PATH,
   INTERNAL_LOGIN_PATH,
@@ -16,6 +17,29 @@ import {
 } from "@/lib/internal-routes";
 import type { AppRole } from "@/types/auth-roles";
 import { isAdminAppRole, isPublicAuthRole } from "@/types/auth-roles";
+import { getAuthAppUrl } from "@/lib/auth/site-origin";
+
+/** Prefer SITE_URL when the request host is a bind/loopback address. */
+function redirectToAppPath(request: NextRequest, pathname: string) {
+  const host = request.nextUrl.hostname;
+  if (
+    host === "0.0.0.0" ||
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::" ||
+    host === "::1"
+  ) {
+    try {
+      return NextResponse.redirect(getAuthAppUrl(pathname));
+    } catch {
+      /* SITE_URL missing — fall through to relative redirect */
+    }
+  }
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  url.search = "";
+  return NextResponse.redirect(url);
+}
 
 const PROTECTED_PREFIXES = [
   CLIENT_DASHBOARD_PATH,
@@ -78,55 +102,76 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  if (pathname === LOGIN_PATH && user) {
+    const pendingPassword =
+      user.user_metadata?.password_setup_status === "pending";
+    if (pendingPassword) {
+      return redirectToAppPath(request, COMPLETE_ACCOUNT_PATH);
+    }
+    return redirectToAppPath(request, "/");
+  }
+
+  if (pathname === COMPLETE_ACCOUNT_PATH) {
+    if (!user) {
+      return redirectToAppPath(request, LOGIN_PATH);
+    }
+    return supabaseResponse;
+  }
+
+  /* Force password creation before browsing for quick-signup users. */
+  if (
+    user &&
+    user.user_metadata?.password_setup_status === "pending" &&
+    !pathname.startsWith("/auth/")
+  ) {
+    return redirectToAppPath(request, COMPLETE_ACCOUNT_PATH);
+  }
+
   if (!isProtectedPath(pathname)) {
     return supabaseResponse;
   }
 
   if (!user) {
     if (isInternalPath(pathname)) {
-      const url = request.nextUrl.clone();
-      url.pathname = INTERNAL_LOGIN_PATH;
-      return NextResponse.redirect(url);
+      return redirectToAppPath(request, INTERNAL_LOGIN_PATH);
     }
-    const url = request.nextUrl.clone();
-    url.pathname = LOGIN_PATH;
-    return NextResponse.redirect(url);
+    return redirectToAppPath(request, LOGIN_PATH);
   }
 
   const role = await fetchUserRole(supabase, user.id);
 
   if (pathname.startsWith(CLIENT_DASHBOARD_PATH)) {
     if (role !== "client") {
-      const url = request.nextUrl.clone();
-      url.pathname =
+      return redirectToAppPath(
+        request,
         role === "specialist"
           ? SPECIALIST_DASHBOARD_PATH
           : isAdminAppRole(role ?? "")
             ? INTERNAL_DASHBOARD_PATH
-            : LOGIN_PATH;
-      return NextResponse.redirect(url);
+            : LOGIN_PATH
+      );
     }
   }
 
   if (pathname.startsWith(SPECIALIST_DASHBOARD_PATH)) {
     if (role !== "specialist") {
-      const url = request.nextUrl.clone();
-      url.pathname =
+      return redirectToAppPath(
+        request,
         role === "client"
           ? CLIENT_DASHBOARD_PATH
           : isAdminAppRole(role ?? "")
             ? INTERNAL_DASHBOARD_PATH
-            : LOGIN_PATH;
-      return NextResponse.redirect(url);
+            : LOGIN_PATH
+      );
     }
   }
 
   if (isInternalPath(pathname) && pathname !== INTERNAL_LOGIN_PATH) {
     if (!role || !isAdminAppRole(role)) {
-      const url = request.nextUrl.clone();
-      url.pathname =
-        role && isPublicAuthRole(role) ? getDashboardForRole(role) : LOGIN_PATH;
-      return NextResponse.redirect(url);
+      return redirectToAppPath(
+        request,
+        role && isPublicAuthRole(role) ? getDashboardForRole(role) : LOGIN_PATH
+      );
     }
   }
 

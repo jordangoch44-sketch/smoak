@@ -26,23 +26,29 @@ export function getProfileGalleryMedia(
   heroImage: string
 ): ProfileGalleryMedia[] {
   if (gallery.length > 0) {
-    return gallery.map((item) => ({
-      id: item.id,
-      type: item.type,
-      url: item.src,
-      thumbnail: item.type === "video" ? item.poster ?? item.src : item.src,
-      alt: item.alt,
-    }));
+    return gallery
+      .filter((item) => typeof item.src === "string" && item.src.trim().length > 0)
+      .map((item) => ({
+        id: item.id,
+        type: item.type,
+        url: item.src.trim(),
+        thumbnail:
+          item.type === "video"
+            ? (item.poster ?? item.src).trim()
+            : item.src.trim(),
+        alt: item.alt,
+      }));
   }
 
-  const images =
-    galleryImages.length > 0 ? galleryImages : heroImage ? [heroImage] : [];
+  const images = (
+    galleryImages.length > 0 ? galleryImages : heroImage ? [heroImage] : []
+  ).filter((url) => typeof url === "string" && url.trim().length > 0);
 
   return images.map((url, index) => ({
     id: `gallery-image-${index}`,
     type: "image" as const,
-    url,
-    thumbnail: url,
+    url: url.trim(),
+    thumbnail: url.trim(),
     alt: "Gallery photo",
   }));
 }

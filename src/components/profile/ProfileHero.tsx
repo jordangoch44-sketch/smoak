@@ -10,12 +10,12 @@ import {
   getProfileGalleryMedia,
 } from "@/lib/trainer-gallery";
 import { SessionPrice } from "@/components/ui/SessionPrice";
-import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { ShieldCheckIcon } from "@/components/ui/icons";
 import {
   ProfileHeroCoverGallery,
   type ProfileHeroGalleryControl,
 } from "./ProfileHeroCoverGallery";
+import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { TrainerMarketValueCard } from "./TrainerMarketValueCard";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
@@ -65,15 +65,17 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
           <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-10 px-4 pb-5 sm:px-6 sm:pb-7">
             <div className="mx-auto max-w-7xl profile-hero__identity-inner">
               <div className="profile-hero__identity-row flex items-end gap-3.5 sm:gap-5">
-                <TrainerThumbnail
+                <ProfileHeroAvatar
                   src={trainer.image}
                   name={trainer.name}
-                  size="square"
-                  priority
-                  className="profile-hero__avatar shrink-0 border-2 border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
+                  rankBadge={
+                    ranking ? (
+                      <ProfileRankBadge ranking={ranking} placement="avatar" />
+                    ) : null
+                  }
                 />
-                <div className="min-w-0 flex-1 pb-0.5">
-                  <div className="profile-hero__name-row flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                <div className="profile-hero__identity-copy min-w-0 flex-1 pb-0.5">
+                  <div className="profile-hero__name-row flex flex-wrap items-center gap-x-2 gap-y-1">
                     <h1 className="profile-hero__name text-[1.65rem] font-light leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
                       {trainer.name}
                     </h1>
@@ -86,13 +88,16 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
                         Verified
                       </span>
                     ) : null}
-                    {ranking ? <ProfileRankBadge ranking={ranking} /> : null}
                   </div>
-                  <p className="mt-1.5 text-[15px] font-medium text-[rgba(var(--aurora-lavender-rgb),0.92)] sm:text-base">
+                  <p className="profile-hero__profession mt-1 text-[15px] font-medium leading-snug text-[rgba(var(--aurora-lavender-rgb),0.92)] sm:mt-1.5 sm:text-base">
                     {trainer.profession}
                   </p>
-                  <p className="mt-0.5 text-sm text-silver-300">{trainer.title}</p>
-                  <p className="mt-1 text-sm text-silver-400">
+                  {trainer.title ? (
+                    <p className="profile-hero__specialty mt-0.5 text-sm leading-snug text-silver-300">
+                      {trainer.title}
+                    </p>
+                  ) : null}
+                  <p className="profile-hero__location mt-1 text-sm text-silver-400">
                     {formatProviderLocation(trainer)}
                   </p>
                 </div>
@@ -115,6 +120,7 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
                   <button
                     type="button"
                     className="profile-hero__view-gallery"
+                    aria-label="View specialist gallery"
                     onClick={() => galleryControlRef.current?.openGallery()}
                   >
                     View Gallery

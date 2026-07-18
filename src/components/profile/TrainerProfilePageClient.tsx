@@ -1,11 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { notFound } from "next/navigation";
+import Link from "next/link";
+import { useState, useSyncExternalStore } from "react";
 import type { Trainer } from "@/types";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
 import { ProfileInquiryAction } from "@/components/inquiry";
+import {
+  getApprovedSpecialistProfilesHydratedServerSnapshot,
+  getApprovedSpecialistProfilesHydratedSnapshot,
+  subscribeApprovedSpecialistProfiles,
+} from "@/lib/approved-specialist-profiles-store";
 import { ProfileHero } from "./ProfileHero";
 import { ProfileContactCta } from "./ProfileContactCta";
 import { ProfilePrimaryHighlights } from "./ProfilePrimaryHighlights";
@@ -24,12 +29,32 @@ export function TrainerProfilePageClient({
   initialTrainer,
 }: TrainerProfilePageClientProps) {
   const hydrated = useHydrated();
+  const catalogReady = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesHydratedSnapshot,
+    getApprovedSpecialistProfilesHydratedServerSnapshot
+  );
   const liveTrainer = useTrainerWithOverrides(trainerId);
   const trainer = liveTrainer ?? initialTrainer;
   const [inquiryOpen, setInquiryOpen] = useState(false);
 
-  if (!trainer && hydrated) {
-    notFound();
+  if (!trainer && hydrated && catalogReady) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-16 text-center">
+        <h1 className="text-2xl font-semibold text-white">Specialist not found</h1>
+        <p className="mt-2 text-white/60">
+          The specialist you&apos;re looking for doesn&apos;t exist or has been removed.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <Link href="/explore" className="login-submit">
+            Explore Specialists
+          </Link>
+          <Link href="/" className="wizard-nav__back">
+            Go Home
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (!trainer) {

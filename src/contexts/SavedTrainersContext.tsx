@@ -4,22 +4,22 @@
  * Saved trainers — Supabase when configured; localStorage fallback for dev mock.
  * Consumers use useSavedTrainers(); do not read storage directly.
  * Logged-out heart → SaveQuickSignupModal (pending save + lightweight client account).
+ *
+ * Modal open/close lives in `save-signup-modal-store` + SavedTrainersOverlayHost so
+ * closing the gate does not re-render the entire site tree under this provider.
  */
 import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useRef,
-  useState,
   useSyncExternalStore,
 } from "react";
-import { SaveQuickSignupModal } from "@/components/auth/SaveQuickSignupModal";
-import { SaveSuccessModal } from "@/components/auth/SaveSuccessModal";
-import { applyPendingSaveAfterLogin, setPendingSave } from "@/lib/specialist-saves";
+import { SavedTrainersOverlayHost } from "@/components/auth/SavedTrainersOverlayHost";
+import { setPendingSave } from "@/lib/specialist-saves";
 import { getTrainerWithOverrides } from "@/lib/specialist-profile-store";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
+import { openSaveSignupModal } from "@/lib/save-signup-modal-store";
 import type { Trainer } from "@/types";
 import { getActiveClientUserId } from "@/lib/saved-trainers-user";
 import {
@@ -36,8 +36,6 @@ import {
   subscribeSavedTrainers,
   toggleSavedTrainerId,
 } from "@/lib/saved-trainers-store";
-import type { PendingSaveRecord } from "@/lib/dev-storage-keys";
-import { subscribeSaveApplied } from "@/lib/save-applied-events";
 
 export interface OpenSaveQuickSignupOptions {
   specialistName?: string;
@@ -100,14 +98,6 @@ export function SavedTrainersProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [signupOpen, setSignupOpen] = useState(false);
-  const [successOpen, setSuccessOpen] = useState(false);
-  const [gateSpecialistId, setGateSpecialistId] = useState("");
-  const [gateSpecialistName, setGateSpecialistName] = useState<string | undefined>();
-  const [gateProfilePath, setGateProfilePath] = useState("");
-  const [successName, setSuccessName] = useState<string | undefined>();
-  const lastConfirmRef = useRef<{ id: string; at: number } | null>(null);
-
   const savedIds = useSyncExternalStore(
     subscribe,
     getSnapshot,
@@ -138,42 +128,8 @@ export function SavedTrainersProvider({
     () => false
   );
 
-  const isSavesReady = !isClientWithSaves || !isSavesLoading;
-
-  const showSavedConfirmation = useCallback((record: PendingSaveRecord) => {
-    const now = Date.now();
-    const prev = lastConfirmRef.current;
-    if (prev && prev.id === record.specialistId && now - prev.at < 5000) {
-      return;
-    }
-    lastConfirmRef.current = { id: record.specialistId, at: now };
-    setSignupOpen(false);
-    setSuccessName(record.specialistName);
-    setSuccessOpen(true);
-  }, []);
-
-  useEffect(() => {
-    return subscribeSaveApplied(showSavedConfirmation);
-  }, [showSavedConfirmation]);
-
-  /**
-   * Flush pending save after client login when the quick-signup modal did not
-   * already complete it (e.g. full /login, magic-link return after profile ensure).
-   */
-  useEffect(() => {
-    if (!isClientWithSaves || !isSavesReady) return;
-    void (async () => {
-      const result = await applyPendingSaveAfterLogin("client");
-      if (result.kind !== "client-saved") return;
-      showSavedConfirmation(
-        result.record ?? {
-          specialistId: result.specialistId,
-          actionType: "save_specialist",
-          createdAt: new Date().toISOString(),
-        }
-      );
-    })();
-  }, [isClientWithSaves, isSavesReady, showSavedConfirmation]);
+  const isSavesReady =
+    !isClientWithSaves || !isSavesLoading || savesError !== null;
 
   const openSaveQuickSignup = useCallback(
     (specialistId: string, options?: OpenSaveQuickSignupOptions) => {
@@ -188,21 +144,14 @@ export function SavedTrainersProvider({
         `/trainers/${id}`;
 
       setPendingSave(id, { specialistName: name, profilePath: path });
-      setGateSpecialistId(id);
-      setGateSpecialistName(name);
-      setGateProfilePath(path);
-      setSignupOpen(true);
+      openSaveSignupModal({
+        specialistId: id,
+        specialistName: name,
+        profilePath: path,
+      });
     },
     []
   );
-
-  const closeSignup = useCallback(() => {
-    setSignupOpen(false);
-  }, []);
-
-  const closeSuccess = useCallback(() => {
-    setSuccessOpen(false);
-  }, []);
 
   const savedIdSet = useMemo(() => new Set(savedIds), [savedIds]);
 
@@ -253,19 +202,7 @@ export function SavedTrainersProvider({
   return (
     <SavedTrainersContext.Provider value={value}>
       {children}
-      <SaveQuickSignupModal
-        open={signupOpen}
-        onClose={closeSignup}
-        specialistId={gateSpecialistId}
-        specialistName={gateSpecialistName}
-        profilePath={gateProfilePath || `/trainers/${gateSpecialistId}`}
-        onSaved={showSavedConfirmation}
-      />
-      <SaveSuccessModal
-        open={successOpen}
-        onClose={closeSuccess}
-        specialistName={successName}
-      />
+      <SavedTrainersOverlayHost />
     </SavedTrainersContext.Provider>
   );
 }

@@ -2,6 +2,7 @@
 
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
@@ -57,11 +58,15 @@ export function SponsoredSpecialistCard({
               provider={trainer}
               className="home-sponsored-card__location"
             />
+            <DevTrainerDistance
+              trainer={trainer}
+              className="home-sponsored-card__distance"
+            />
           </TapLink>
 
           <SpecialtyChips
             specialties={trainer.specialty}
-            className="home-sponsored-card__chips"
+            className="home-sponsored-card__chips specialty-chips--row"
           />
 
           <div className="home-sponsored-card__meta">

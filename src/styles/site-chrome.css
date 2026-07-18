@@ -9,6 +9,11 @@
   --z-hero-search-suggestions: 8500;
   --z-hero-search-active: 9010;
   --z-site-header: 10000;
+  /* Profile sheet sits above header chrome */
+  --z-profile-sheet: calc(var(--z-site-header) + 40);
+  /* Gallery / photo lightboxes must clear the sheet stacking context */
+  --z-profile-gallery: calc(var(--z-site-header) + 80);
+  --z-profile-image-preview: calc(var(--z-site-header) + 90);
   --z-toast: 999950;
   --z-modal: 1000000;
   --site-header-total-height: calc(

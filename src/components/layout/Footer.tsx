@@ -1,21 +1,20 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
+import { SITE_ROUTES } from "@/lib/navigation";
 
 const footerLinks = {
   Platform: [
-    { label: "Explore Specialists", href: "/explore" },
+    { label: "Explore Specialists", href: SITE_ROUTES.explore },
     { label: "Categories", href: "/#categories" },
-    { label: "Rankings", href: "/rankings" },
+    { label: "Rankings", href: SITE_ROUTES.rankings },
   ],
   Company: [
-    { label: "About", href: "#" },
-    { label: "Careers", href: "#" },
-    { label: "Press", href: "#" },
+    { label: "About", href: SITE_ROUTES.about },
+    { label: "Help & Support", href: SITE_ROUTES.support },
   ],
-  Support: [
-    { label: "Help Center", href: "#" },
-    { label: "Contact", href: "#" },
-    { label: "Privacy", href: "#" },
+  Legal: [
+    { label: "Privacy", href: SITE_ROUTES.privacy },
+    { label: "Terms", href: SITE_ROUTES.terms },
   ],
 };
 
@@ -59,22 +58,22 @@ export function Footer() {
           </p>
           <div className="flex gap-6">
             <Link
-              href="#"
+              href={SITE_ROUTES.terms}
               className="text-xs text-silver-400 transition-colors hover:text-white"
             >
               Terms
             </Link>
             <Link
-              href="#"
+              href={SITE_ROUTES.privacy}
               className="text-xs text-silver-400 transition-colors hover:text-white"
             >
               Privacy
             </Link>
             <Link
-              href="#"
+              href={SITE_ROUTES.support}
               className="text-xs text-silver-400 transition-colors hover:text-white"
             >
-              Cookies
+              Support
             </Link>
           </div>
         </div>

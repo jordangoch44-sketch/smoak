@@ -13,14 +13,28 @@ export interface ProfileRow {
   email: string;
   first_name: string;
   last_name: string;
-  /** Public profile photo URL (or data URL until Storage is wired). */
+  /** Optional display name for chrome / initials. */
+  display_name?: string;
+  phone?: string;
+  /** Public profile photo URL (derived from Storage for avatars bucket). */
   avatar_url?: string;
+  /** Stable Storage path in the avatars bucket (not a signed URL). */
+  avatar_path?: string;
   client_goals: string[];
   client_city: string;
   client_neighborhood: string;
   client_zip_code: string;
+  client_state?: string;
   client_budget: string;
   client_training_style: string;
+  /** Preferred search radius in miles. NULL = Automatic. */
+  preferred_radius_miles?: number | null;
+  preferred_price_min?: number | null;
+  preferred_price_max?: number | null;
+  preferred_professions?: string[];
+  preferred_specialties?: string[];
+  preferred_gender?: string;
+  preferred_session_format?: string;
   specialist_type: string;
   specialist_city: string;
   specialist_neighborhood: string;
@@ -31,6 +45,8 @@ export interface ProfileRow {
   profile_completion_status?: string;
   /** e.g. specialist_inquiry, questionnaire */
   account_source?: string;
+  /** pending | complete | skipped — quick OTP signup starts pending */
+  password_setup_status?: string;
   created_at: string;
   updated_at: string;
 }

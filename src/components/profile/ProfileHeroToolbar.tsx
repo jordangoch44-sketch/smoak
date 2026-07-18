@@ -20,6 +20,7 @@ import {
 } from "@/lib/profile-share";
 import { cn } from "@/lib/utils";
 import { useProfileSheetDismiss } from "./ProfileSheetDismissContext";
+import { useProfileSheetToolbarHost } from "./ProfileSheetToolbarHostContext";
 
 const EXPLORE_FALLBACK_PATH = "/explore";
 
@@ -57,9 +58,11 @@ export function ProfileHeroToolbar({
 }: ProfileHeroToolbarProps) {
   const router = useRouter();
   const sheetDismiss = useProfileSheetDismiss();
+  const toolbarHostRef = useProfileSheetToolbarHost();
   const { showToast } = useToast();
   const { isHidden, toggleHidden } = useHiddenTrainers();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [sheetHostEl, setSheetHostEl] = useState<HTMLElement | null>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const hidden = isHidden(trainerId);
@@ -68,6 +71,19 @@ export function ProfileHeroToolbar({
     () => true,
     () => false
   );
+
+  /* Resolve sheet host after mount — ref is set by TrainerProfileSheet. */
+  useEffect(() => {
+    if (!toolbarHostRef) {
+      setSheetHostEl(null);
+      return;
+    }
+    setSheetHostEl(toolbarHostRef.current);
+    const id = window.requestAnimationFrame(() => {
+      setSheetHostEl(toolbarHostRef.current);
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [toolbarHostRef]);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -93,9 +109,17 @@ export function ProfileHeroToolbar({
   }, [menuOpen, closeMenu]);
 
   function handleClose() {
+    const t0 = performance.now();
+    console.info("[close-timing] profile toolbar X click", t0);
     closeMenu();
     if (sheetDismiss) {
       sheetDismiss();
+      console.info(
+        "[close-timing] profile toolbar sheetDismiss returned",
+        performance.now(),
+        "Δms",
+        Math.round(performance.now() - t0)
+      );
       return;
     }
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -173,8 +197,14 @@ export function ProfileHeroToolbar({
 
   if (!canPortal) return null;
 
-  return createPortal(
-    <div className="profile-toolbar" aria-hidden={false}>
+  const toolbar = (
+    <div
+      className={cn(
+        "profile-toolbar",
+        Boolean(sheetHostEl) && "profile-toolbar--in-sheet"
+      )}
+      aria-hidden={false}
+    >
       <button
         type="button"
         className="profile-toolbar__close"
@@ -286,7 +316,15 @@ export function ProfileHeroToolbar({
           </div>
         ) : null}
       </div>
-    </div>,
-    document.body,
+    </div>
   );
+
+  /* Sheet mode: portal into the animated sheet so X/actions exit with it. */
+  if (toolbarHostRef) {
+    if (!sheetHostEl) return null;
+    return createPortal(toolbar, sheetHostEl);
+  }
+
+  /* Desktop full-page profile: keep fixed viewport chrome. */
+  return createPortal(toolbar, document.body);
 }

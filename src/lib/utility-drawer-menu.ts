@@ -4,6 +4,7 @@ import {
   isDashboardPath,
   SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
+import { SITE_ROUTES } from "@/lib/navigation";
 import type { PublicAuthRole } from "@/types/auth-roles";
 
 export const UTILITY_DRAWER_APP_VERSION = "0.1.0";
@@ -33,19 +34,19 @@ export const utilityDrawerCompanyLinks: readonly UtilityDrawerNavItem[] = [
     id: "about",
     label: "About SMOAC",
     description: "Our mission and marketplace",
-    href: null,
+    href: SITE_ROUTES.about,
   },
   {
     id: "support",
     label: "Help & Support",
     description: "Questions and assistance",
-    href: null,
+    href: SITE_ROUTES.support,
   },
 ];
 
 export const utilityDrawerLegalLinks: readonly UtilityDrawerNavItem[] = [
-  { id: "privacy", label: "Privacy Policy", href: null },
-  { id: "terms", label: "Terms of Service", href: null },
+  { id: "privacy", label: "Privacy Policy", href: SITE_ROUTES.privacy },
+  { id: "terms", label: "Terms of Service", href: SITE_ROUTES.terms },
 ];
 
 function displayFirstName(

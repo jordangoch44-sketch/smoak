@@ -3,13 +3,11 @@
 import { TapLink } from "@/components/ui/TapLink";
 import type { Trainer } from "@/types";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
-import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
-import { useHydrated } from "@/hooks/useHydrated";
 import {
-  formatTrainerDistanceLabel,
   formatTrainerPriceLabel,
   formatTrainerRatingLabel,
 } from "@/lib/home-discovery";
@@ -28,12 +26,6 @@ export function Top50RankCard({
   priority = false,
 }: Top50RankCardProps) {
   const href = `/trainers/${trainer.id}`;
-  const hydrated = useHydrated();
-  const userCoords = useActiveUserCoordinates();
-  const distance =
-    hydrated && userCoords
-      ? formatTrainerDistanceLabel(trainer, userCoords)
-      : null;
   const isPodium = rank <= 3;
 
   return (
@@ -71,9 +63,13 @@ export function Top50RankCard({
               provider={trainer}
               className="top50-card__location"
             />
+            <DevTrainerDistance
+              trainer={trainer}
+              className="top50-card__distance"
+            />
             <SpecialtyChips
               specialties={trainer.specialty}
-              className="top50-card__chips"
+              className="top50-card__chips specialty-chips--row"
             />
             <div className="top50-card__footer">
               <div className="top50-card__rating">
@@ -83,9 +79,6 @@ export function Top50RankCard({
                 <span className="top50-card__rating-value">
                   {formatTrainerRatingLabel(trainer)}
                 </span>
-                {distance ? (
-                  <span className="top50-card__distance">{distance}</span>
-                ) : null}
               </div>
               <span className="top50-card__price">
                 {formatTrainerPriceLabel(trainer.pricePerSession)}

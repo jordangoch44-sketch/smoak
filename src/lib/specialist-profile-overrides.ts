@@ -151,6 +151,15 @@ export function overridesFromTrainer(
     ),
     city: stored?.city ?? trainer.city,
     neighborhood: stored?.neighborhood ?? trainer.neighborhood,
+    zipCode: stored?.zipCode ?? trainer.zipCode ?? "",
+    serviceType: stored?.serviceType ?? trainer.serviceType ?? "both",
+    travelRadius:
+      stored?.travelRadius ??
+      (stored?.serviceRadiusMiles != null
+        ? String(stored.serviceRadiusMiles)
+        : trainer.serviceRadiusMiles != null
+          ? String(trainer.serviceRadiusMiles)
+          : ""),
     serviceArea: [...(stored?.serviceArea ?? trainer.serviceArea)],
     pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
     bio: stored?.bio ?? trainer.bio,
@@ -179,6 +188,8 @@ export function overridesFromTrainer(
 }
 
 export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProfileOverrides {
+  const travel = form.travelRadius.trim();
+  const radiusMiles = parseTravelRadiusMiles(travel);
   return {
     name: form.name.trim(),
     title: form.title.trim(),
@@ -188,6 +199,10 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     certifications: form.certifications.filter((c) => c.name.trim()),
     city: form.city.trim(),
     neighborhood: form.neighborhood.trim(),
+    zipCode: form.zipCode.trim(),
+    serviceType: form.serviceType,
+    travelRadius: travel || undefined,
+    serviceRadiusMiles: radiusMiles,
     serviceArea: form.serviceArea.map((s) => s.trim()).filter(Boolean),
     pricePerSession: form.pricePerSession,
     bio: form.bio.trim(),
@@ -218,6 +233,8 @@ export function computeProfileCompletion(
     form.certifications.some((c) => c.name.trim()),
     Boolean(form.city.trim()),
     Boolean(form.neighborhood.trim()),
+    Boolean(form.zipCode.trim()),
+    Boolean(form.serviceType),
     form.serviceArea.length > 0,
     form.pricePerSession > 0,
     Boolean(form.bio.trim()),

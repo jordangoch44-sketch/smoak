@@ -63,7 +63,8 @@ function BottomNavPanelTransitionInner({
 
   return (
     <div className="page-transition page-transition--bottom-nav-panel">
-      <AnimatePresence initial={false} mode="wait">
+      {/* sync (not wait): overlapping fade avoids a blank frame between tab panels */}
+      <AnimatePresence initial={false}>
         <motion.div
           key={motionKey}
           layout={false}

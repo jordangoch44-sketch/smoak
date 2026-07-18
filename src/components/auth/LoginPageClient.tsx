@@ -10,8 +10,8 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { getDashboardPathForRole } from "@/lib/auth-routes";
 import { PUBLIC_INVALID_LOGIN_MESSAGE, type PublicAuthRole } from "@/lib/dev-auth";
+import { sendMagicLinkForLogin } from "@/lib/auth/marketplace-auth";
 import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
@@ -19,6 +19,8 @@ import { cn } from "@/lib/utils";
 
 const LOGIN_FAILURE_DELAY_MS = 300;
 const ERROR_FADE_MS = 220;
+
+type SignInMethod = "password" | "magic_link";
 
 const PUBLIC_LOGIN_ROLES: {
   id: PublicAuthRole;
@@ -52,6 +54,10 @@ export function LoginPageClient() {
   const { showToast: showSaveToast } = useSaveToast();
   const { showToast } = useToast();
   const [role, setRole] = useState<PublicAuthRole>("client");
+  const [signInMethod, setSignInMethod] = useState<SignInMethod>(() =>
+    searchParams.get("method") === "magic_link" ? "magic_link" : "password"
+  );
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -64,12 +70,19 @@ export function LoginPageClient() {
 
   useEffect(() => {
     if (!isReady || !session || session.role === "admin") return;
-    if (returnToSaved && session.role === "client") {
-      router.replace("/saved");
-      return;
-    }
-    router.replace(getDashboardPathForRole(session.role));
-  }, [isReady, session, router, returnToSaved]);
+    router.replace("/");
+  }, [isReady, session, router]);
+
+  useEffect(() => {
+    if (searchParams.get("error") !== "auth_callback") return;
+    setMagicLinkSent(false);
+    setSignInMethod("password");
+    setError(
+      "That sign-in link is invalid or has expired. Request a new link or sign in with your password."
+    );
+    setErrorVisible(true);
+    setFieldsError(true);
+  }, [searchParams]);
 
   useEffect(() => {
     return () => {
@@ -102,14 +115,20 @@ export function LoginPageClient() {
     requestAnimationFrame(() => setShakeFields(true));
   }
 
-  async function showLoginFailure() {
-    setError(PUBLIC_INVALID_LOGIN_MESSAGE);
+  async function showLoginFailure(message?: string) {
+    setError(message ?? PUBLIC_INVALID_LOGIN_MESSAGE);
     setFieldsError(true);
     setErrorVisible(true);
     triggerFieldsShake();
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function switchSignInMethod(next: SignInMethod) {
+    setSignInMethod(next);
+    setMagicLinkSent(false);
+    clearLoginError();
+  }
+
+  async function handlePasswordSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (errorFadeTimerRef.current) {
@@ -177,6 +196,50 @@ export function LoginPageClient() {
     }, 80);
   }
 
+  async function handleMagicLinkSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (errorFadeTimerRef.current) {
+      clearTimeout(errorFadeTimerRef.current);
+      errorFadeTimerRef.current = null;
+    }
+
+    setErrorVisible(false);
+    setFieldsError(false);
+    setShakeFields(false);
+    setSubmitting(true);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setSubmitting(false);
+      await showLoginFailure("Enter your email address.");
+      return;
+    }
+
+    const result = await sendMagicLinkForLogin({
+      email: trimmedEmail,
+      role,
+      returnToSaved,
+    });
+
+    setSubmitting(false);
+
+    if (!result.ok) {
+      await showLoginFailure(result.message);
+      return;
+    }
+
+    setMagicLinkSent(true);
+    setEmail(result.email);
+  }
+
+  const title = magicLinkSent ? "Check your email" : "Log In";
+  const subtitle = magicLinkSent
+    ? `We sent a secure sign-in link to ${email}. Open it on this device to continue.`
+    : signInMethod === "magic_link"
+      ? "Enter your email and we’ll send you a sign-in link."
+      : "Sign in to your SMOAC account.";
+
   return (
     <div className="login-page">
       <div className="login-page__canvas" aria-hidden>
@@ -200,130 +263,212 @@ export function LoginPageClient() {
 
         <div className="login-card">
           <div className="login-card__header">
-            <h1 className="login-card__title">Log In</h1>
-            <p className="login-card__subtitle">
-              Sign in to your SMOAC account.
-            </p>
+            <h1 className="login-card__title">{title}</h1>
+            <p className="login-card__subtitle">{subtitle}</p>
           </div>
 
-          <form className="login-card__form" onSubmit={handleSubmit} noValidate>
-            <div
-              className="login-form__section login-role-list"
-              role="radiogroup"
-              aria-label="Account type"
+          {magicLinkSent ? (
+            <div className="login-card__form">
+              <p className="login-card__message login-card__message--success">
+                Open the link on this device to sign in. Your account and saved
+                specialists will be waiting.
+              </p>
+              <div className="login-form__section login-form__section--cta">
+                <button
+                  type="button"
+                  className="login-submit"
+                  onClick={() => {
+                    setMagicLinkSent(false);
+                    clearLoginError();
+                  }}
+                >
+                  Send another link
+                </button>
+              </div>
+              <div className="login-card__links login-card__links--compact">
+                <button
+                  type="button"
+                  className="login-card__link login-card__link--button"
+                  onClick={() => switchSignInMethod("password")}
+                >
+                  Sign in with password instead
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form
+              className="login-card__form"
+              onSubmit={
+                signInMethod === "password"
+                  ? handlePasswordSubmit
+                  : handleMagicLinkSubmit
+              }
+              noValidate
             >
-              {PUBLIC_LOGIN_ROLES.map((option) => {
-                const selected = role === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => {
-                      setRole(option.id);
+              <div
+                className="login-form__section login-role-list"
+                role="radiogroup"
+                aria-label="Account type"
+              >
+                {PUBLIC_LOGIN_ROLES.map((option) => {
+                  const selected = role === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      onClick={() => {
+                        setRole(option.id);
+                        clearLoginError();
+                      }}
+                      className={cn(
+                        "login-role-card",
+                        selected && "login-role-card--active"
+                      )}
+                    >
+                      <span className="login-role-card__indicator" aria-hidden>
+                        <span className="login-role-card__indicator-dot" />
+                      </span>
+                      <span className="login-role-card__copy">
+                        <span className="login-role-card__title">
+                          {option.title}
+                        </span>
+                        <span className="login-role-card__desc">
+                          {option.description}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                className="login-form__section login-method-switch"
+                role="tablist"
+                aria-label="Sign-in method"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={signInMethod === "password"}
+                  className={cn(
+                    "login-method-switch__btn",
+                    signInMethod === "password" &&
+                      "login-method-switch__btn--active"
+                  )}
+                  onClick={() => switchSignInMethod("password")}
+                >
+                  Password
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={signInMethod === "magic_link"}
+                  className={cn(
+                    "login-method-switch__btn",
+                    signInMethod === "magic_link" &&
+                      "login-method-switch__btn--active"
+                  )}
+                  onClick={() => switchSignInMethod("magic_link")}
+                >
+                  Email link
+                </button>
+              </div>
+
+              <div
+                className={cn(
+                  "login-form__section login-fields",
+                  fieldsError && "login-fields--error",
+                  shakeFields && "login-fields--shake"
+                )}
+                onAnimationEnd={() => setShakeFields(false)}
+              >
+                <label className="login-field">
+                  <span className="login-field__label">Email</span>
+                  <input
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
                       clearLoginError();
                     }}
+                    placeholder="you@example.com"
+                    className="login-field__input"
+                    aria-invalid={fieldsError}
+                  />
+                </label>
+
+                {signInMethod === "password" ? (
+                  <label className="login-field">
+                    <span className="login-field__label">Password</span>
+                    <PasswordInput
+                      name="password"
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        clearLoginError();
+                      }}
+                      placeholder="Password"
+                      aria-invalid={fieldsError}
+                    />
+                  </label>
+                ) : null}
+
+                {error ? (
+                  <p
                     className={cn(
-                      "login-role-card",
-                      selected && "login-role-card--active"
+                      "login-card__message login-card__message--error",
+                      errorVisible && "login-card__message--error-visible",
+                      !errorVisible && "login-card__message--error-hidden"
                     )}
+                    role="alert"
+                    aria-live="polite"
                   >
-                    <span className="login-role-card__indicator" aria-hidden>
-                      <span className="login-role-card__indicator-dot" />
-                    </span>
-                    <span className="login-role-card__copy">
-                      <span className="login-role-card__title">
-                        {option.title}
-                      </span>
-                      <span className="login-role-card__desc">
-                        {option.description}
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    {error}
+                  </p>
+                ) : null}
+              </div>
 
-            <div
-              className={cn(
-                "login-form__section login-fields",
-                fieldsError && "login-fields--error",
-                shakeFields && "login-fields--shake"
-              )}
-              onAnimationEnd={() => setShakeFields(false)}
-            >
-              <label className="login-field">
-                <span className="login-field__label">Email</span>
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    clearLoginError();
-                  }}
-                  placeholder="you@example.com"
-                  className="login-field__input"
-                  aria-invalid={fieldsError}
-                />
-              </label>
-
-              <label className="login-field">
-                <span className="login-field__label">Password</span>
-                <PasswordInput
-                  name="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    clearLoginError();
-                  }}
-                  placeholder="Password"
-                  aria-invalid={fieldsError}
-                />
-              </label>
-
-              {error ? (
-                <p
+              <div className="login-form__section login-form__section--cta">
+                <button
+                  type="submit"
                   className={cn(
-                    "login-card__message login-card__message--error",
-                    errorVisible && "login-card__message--error-visible",
-                    !errorVisible && "login-card__message--error-hidden"
+                    "login-submit",
+                    submitting && "login-submit--loading",
+                    submitPressed && "login-submit--pressed"
                   )}
-                  role="alert"
-                  aria-live="polite"
+                  disabled={submitting}
+                  aria-busy={submitting}
                 >
-                  {error}
-                </p>
-              ) : null}
-            </div>
+                  {submitting
+                    ? signInMethod === "magic_link"
+                      ? "Sending link…"
+                      : "Signing in…"
+                    : signInMethod === "magic_link"
+                      ? "Email me a sign-in link"
+                      : "Sign in"}
+                </button>
+              </div>
 
-            <div className="login-form__section login-form__section--cta">
-              <button
-                type="submit"
-                className={cn(
-                  "login-submit",
-                  submitting && "login-submit--loading",
-                  submitPressed && "login-submit--pressed"
-                )}
-                disabled={submitting}
-                aria-busy={submitting}
-              >
-                {submitting ? "Signing in…" : "Sign in"}
-              </button>
-            </div>
-
-            <div className="login-card__links">
-              <Link href={buildJoinFlowHref()} className="login-card__link">
-                Create account
-              </Link>
-              <Link href="/login/forgot-password" className="login-card__link">
-                Forgot password?
-              </Link>
-            </div>
-          </form>
+              <div className="login-card__links login-card__links--compact">
+                <Link href={buildJoinFlowHref()} className="login-card__link">
+                  Create account
+                </Link>
+                {signInMethod === "password" ? (
+                  <Link
+                    href="/login/forgot-password"
+                    className="login-card__link"
+                  >
+                    Forgot password?
+                  </Link>
+                ) : null}
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

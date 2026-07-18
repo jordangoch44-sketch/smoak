@@ -298,6 +298,18 @@ export function findSpecialistApplicationByEmail(
   );
 }
 
+export function findSpecialistApplicationByUserId(
+  userId: string
+): SpecialistApplication | null {
+  const normalized = userId.trim();
+  if (!normalized) return null;
+  return (
+    listSpecialistApplications().find(
+      (item) => item.userId?.trim() === normalized
+    ) ?? null
+  );
+}
+
 export function refreshSpecialistApplicationsFromRemote(): void {
   hydrated = false;
   void hydrateFromSupabase();

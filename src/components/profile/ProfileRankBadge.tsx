@@ -1,21 +1,38 @@
 import type { TrainerCityRanking } from "@/data/city-rankings";
+import { cn } from "@/lib/utils";
 
 interface ProfileRankBadgeProps {
   ranking: TrainerCityRanking;
+  /** Overlay on the profile photo vs inline with the name */
+  placement?: "inline" | "avatar";
+  className?: string;
 }
 
-function getBadgeLabel(rank: number): string {
-  if (rank === 1) return "#1 Ranked";
-  if (rank <= 3) return `#${rank} Ranked`;
-  return "Top 50";
+/** Tier label for city rankings — extensible for Top 10 / 25 / 50. */
+export function getRankBadgeLabel(rank: number): string | null {
+  if (rank < 1) return null;
+  if (rank === 1) return "#1";
+  if (rank <= 10) return "TOP 10";
+  if (rank <= 25) return "TOP 25";
+  if (rank <= 50) return "TOP 50";
+  return null;
 }
 
-export function ProfileRankBadge({ ranking }: ProfileRankBadgeProps) {
-  const label = getBadgeLabel(ranking.rank);
+export function ProfileRankBadge({
+  ranking,
+  placement = "inline",
+  className,
+}: ProfileRankBadgeProps) {
+  const label = getRankBadgeLabel(ranking.rank);
+  if (!label) return null;
 
   return (
     <span
-      className="profile-rank-badge"
+      className={cn(
+        "profile-rank-badge",
+        placement === "avatar" && "profile-rank-badge--avatar",
+        className
+      )}
       title={`${ranking.listingTitle} · #${ranking.rank}`}
     >
       <span className="profile-rank-badge__icon" aria-hidden>

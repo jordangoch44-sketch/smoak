@@ -18,6 +18,10 @@ export const SITE_ROUTES = {
   rankings: "/rankings",
   login: LOGIN_PATH,
   join: buildJoinFlowHref(),
+  about: "/about",
+  support: "/support",
+  privacy: "/privacy",
+  terms: "/terms",
 } as const;
 
 /** Desktop header text links (saved uses heart control) */

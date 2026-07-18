@@ -148,6 +148,50 @@
   align-items: center;
 }
 
+.profile-hero__identity-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.profile-hero__profession {
+  margin: 0;
+}
+
+.profile-hero__specialty {
+  margin: 0;
+}
+
+.profile-hero__location {
+  margin: 0;
+}
+
+.profile-hero__avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.profile-hero__avatar-btn {
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: zoom-in;
+  -webkit-tap-highlight-color: transparent;
+  border-radius: 1rem;
+  transform-origin: center center;
+}
+
+.profile-hero__avatar-btn:focus-visible {
+  outline: 2px solid rgba(var(--aurora-lavender-rgb), 0.7);
+  outline-offset: 3px;
+}
+
+.profile-hero__avatar-static {
+  display: block;
+}
+
 .profile-hero__content {
   margin-top: -0.25rem;
   background: #000000;
@@ -175,6 +219,31 @@
     inset 0 0 14px rgba(var(--aurora-lavender-rgb), 0.12);
   backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.profile-rank-badge--avatar {
+  position: absolute;
+  top: -0.4rem;
+  left: -0.35rem;
+  z-index: 3;
+  gap: 0.28rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.35rem;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.12),
+    0 0 16px rgba(var(--aurora-violet-rgb), 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.profile-rank-badge--avatar .profile-rank-badge__label {
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+}
+
+.profile-rank-badge--avatar .profile-rank-badge__icon {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .profile-rank-badge__icon {
@@ -210,6 +279,10 @@
 @media (min-width: 640px) {
   .profile-rank-badge__label {
     font-size: 0.6875rem;
+  }
+
+  .profile-rank-badge--avatar .profile-rank-badge__label {
+    font-size: 0.625rem;
   }
 }
 
@@ -924,6 +997,13 @@ a.profile-tag-pill--grid {
   pointer-events: none;
 }
 
+/* Inside the animated sheet — absolute so X/actions slide away with the sheet */
+.profile-toolbar--in-sheet {
+  position: absolute;
+  z-index: 1;
+  --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 2.85rem);
+}
+
 .profile-toolbar__close,
 .profile-toolbar__actions {
   pointer-events: auto;
@@ -965,6 +1045,19 @@ a.profile-tag-pill--grid {
     opacity 0.18s ease;
 }
 
+.profile-toolbar--in-sheet .profile-toolbar__close,
+.profile-toolbar--in-sheet .profile-toolbar__actions {
+  position: absolute;
+}
+
+.profile-toolbar--in-sheet .profile-toolbar__close {
+  left: max(1rem, 4vw);
+}
+
+.profile-toolbar--in-sheet .profile-toolbar__actions {
+  right: max(1rem, 4vw);
+}
+
 .profile-toolbar__close:active {
   transform: scale(0.92);
   opacity: 0.85;
@@ -995,6 +1088,10 @@ a.profile-tag-pill--grid {
     --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 4rem + 26px);
   }
 
+  .profile-toolbar--in-sheet {
+    --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 3rem);
+  }
+
   .profile-toolbar__close {
     left: 1.5rem;
   }
@@ -1002,6 +1099,14 @@ a.profile-tag-pill--grid {
   .profile-toolbar__actions {
     right: 1.5rem;
     max-width: calc(100% - var(--profile-toolbar-size) - 3.5rem);
+  }
+
+  .profile-toolbar--in-sheet .profile-toolbar__close {
+    left: 1.5rem;
+  }
+
+  .profile-toolbar--in-sheet .profile-toolbar__actions {
+    right: 1.5rem;
   }
 }
 
@@ -1288,7 +1393,8 @@ a.profile-tag-pill--grid {
 
 /* Fullscreen gallery modal */
 /* Hide profile toolbar while fullscreen gallery is open */
-body.gallery-modal-open .profile-toolbar {
+body.gallery-modal-open .profile-toolbar,
+body.profile-image-preview-open .profile-toolbar {
   visibility: hidden;
   pointer-events: none;
 }
@@ -1298,7 +1404,8 @@ body.gallery-modal-open .profile-toolbar {
   --gallery-duration: 0.3s;
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  /* Above profile sheet (--z-profile-sheet ≈ header+40) */
+  z-index: var(--z-profile-gallery);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -2055,4 +2162,78 @@ body.gallery-modal-open .profile-toolbar {
   .profile-trainer-specs__chevron {
     transition: none;
   }
+}
+
+/* Profile photo lightbox — above gallery + profile sheet */
+.profile-image-preview {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-profile-image-preview);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top, 0px))
+    max(1rem, env(safe-area-inset-right, 0px))
+    max(1rem, env(safe-area-inset-bottom, 0px))
+    max(1rem, env(safe-area-inset-left, 0px));
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.profile-image-preview__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 5, 10, 0.82);
+  backdrop-filter: blur(10px) saturate(1.1);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1);
+}
+
+.profile-image-preview__close {
+  position: absolute;
+  top: max(0.75rem, env(safe-area-inset-top, 0px));
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.35);
+  border-radius: 9999px;
+  background: rgba(8, 10, 16, 0.72);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow:
+    0 0 18px rgba(var(--aurora-violet-rgb), 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.profile-image-preview__close:focus-visible {
+  outline: 2px solid rgba(var(--aurora-lavender-rgb), 0.7);
+  outline-offset: 2px;
+}
+
+.profile-image-preview__frame {
+  position: relative;
+  z-index: 1;
+  width: min(90vw, 34rem);
+  height: min(80dvh, 80vh);
+  max-width: 90vw;
+  max-height: 80dvh;
+  border-radius: 1.15rem;
+  overflow: hidden;
+  cursor: default;
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.42);
+  background: rgba(6, 8, 14, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(var(--aurora-violet-rgb), 0.12),
+    0 0 40px rgba(var(--aurora-violet-rgb), 0.28),
+    0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.profile-image-preview__img {
+  object-fit: contain;
+  object-position: center;
 }

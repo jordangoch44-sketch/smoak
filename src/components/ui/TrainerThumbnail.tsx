@@ -1,6 +1,6 @@
 "use client";
 
-/** Trainer image with gradient + initials fallback on load error */
+/** Trainer image with gradient + initials fallback on load error / missing src */
 import Image from "next/image";
 import { useState } from "react";
 import { cn, getInitials } from "@/lib/utils";
@@ -23,13 +23,45 @@ const imageObjectClass: Record<TrainerThumbnailSize, string> = {
 };
 
 interface TrainerThumbnailProps {
-  src: string;
+  src?: string | null;
   name: string;
   alt?: string;
   size?: TrainerThumbnailSize;
   priority?: boolean;
   className?: string;
   imageClassName?: string;
+}
+
+function normalizeImageSrc(src: string | null | undefined): string | null {
+  if (typeof src !== "string") return null;
+  const trimmed = src.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function InitialsFallback({
+  initials,
+  size,
+  className,
+}: {
+  initials: string;
+  size: TrainerThumbnailSize;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "relative shrink-0 overflow-hidden bg-gradient-to-br from-graphite-600 via-graphite-800 to-black",
+        sizeClasses[size],
+        className
+      )}
+      aria-hidden
+    >
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_55%)]" />
+      <span className="absolute inset-0 flex items-center justify-center text-lg font-medium tracking-wide text-white/85 sm:text-xl">
+        {initials}
+      </span>
+    </div>
+  );
 }
 
 export function TrainerThumbnail({
@@ -41,24 +73,13 @@ export function TrainerThumbnail({
   className,
   imageClassName,
 }: TrainerThumbnailProps) {
+  const normalizedSrc = normalizeImageSrc(src);
   const [failed, setFailed] = useState(false);
   const initials = getInitials(name);
 
-  if (failed) {
+  if (!normalizedSrc || failed) {
     return (
-      <div
-        className={cn(
-          "relative shrink-0 overflow-hidden bg-gradient-to-br from-graphite-600 via-graphite-800 to-black",
-          sizeClasses[size],
-          className
-        )}
-        aria-hidden
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.12),transparent_55%)]" />
-        <span className="absolute inset-0 flex items-center justify-center text-lg font-medium tracking-wide text-white/85 sm:text-xl">
-          {initials}
-        </span>
-      </div>
+      <InitialsFallback initials={initials} size={size} className={className} />
     );
   }
 
@@ -71,7 +92,7 @@ export function TrainerThumbnail({
       )}
     >
       <Image
-        src={src}
+        src={normalizedSrc}
         alt={alt ?? name}
         fill
         priority={priority}

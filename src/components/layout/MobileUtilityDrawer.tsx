@@ -136,42 +136,65 @@ function DrawerCompanyRow({
   item,
   animate,
   delayMs,
+  onNavigate,
 }: {
   item: UtilityDrawerNavItem;
   animate: boolean;
   delayMs: number;
+  onNavigate: () => void;
 }) {
-  function handleClick() {
-    showToast({
-      type: "info",
-      message: `${item.label} is coming soon.`,
-    });
+  const className = cn(
+    "smoac-control mobile-utility-drawer__row smoac-hit-target",
+    animate && "mobile-utility-drawer__row--animate"
+  );
+  const style = animate ? { animationDelay: `${delayMs}ms` } : undefined;
+  const content = (
+    <>
+      <span className="mobile-utility-drawer__row-icon" aria-hidden>
+        {COMPANY_ICONS[item.id] ?? (
+          <InfoIcon className="mobile-utility-drawer__row-icon-svg" />
+        )}
+      </span>
+      <span className="mobile-utility-drawer__row-copy">
+        <span className="mobile-utility-drawer__row-label">{item.label}</span>
+        {item.description ? (
+          <span className="mobile-utility-drawer__row-desc">
+            {item.description}
+          </span>
+        ) : null}
+      </span>
+    </>
+  );
+
+  if (item.href) {
+    return (
+      <li>
+        <TapLink
+          href={item.href}
+          className={className}
+          style={style}
+          onClick={onNavigate}
+        >
+          {content}
+        </TapLink>
+      </li>
+    );
   }
 
   return (
     <li>
       <button
         type="button"
-        className={cn(
-          "smoac-control mobile-utility-drawer__row smoac-hit-target",
-          animate && "mobile-utility-drawer__row--animate"
-        )}
-        style={animate ? { animationDelay: `${delayMs}ms` } : undefined}
-        onClick={handleClick}
+        className={className}
+        style={style}
+        onClick={() =>
+          showToast({
+            type: "info",
+            message: `${item.label} is coming soon.`,
+          })
+        }
       >
-        <span className="mobile-utility-drawer__row-icon" aria-hidden>
-          {COMPANY_ICONS[item.id] ?? (
-            <InfoIcon className="mobile-utility-drawer__row-icon-svg" />
-          )}
-        </span>
-        <span className="mobile-utility-drawer__row-copy">
-          <span className="mobile-utility-drawer__row-label">{item.label}</span>
-          {item.description ? (
-            <span className="mobile-utility-drawer__row-desc">
-              {item.description}
-            </span>
-          ) : null}
-        </span>
+        {content}
       </button>
     </li>
   );
@@ -420,6 +443,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
                     item={item}
                     animate={open}
                     delayMs={nextDelay()}
+                    onNavigate={onClose}
                   />
                 ))}
               </ul>
@@ -461,18 +485,28 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
             <ul className="mobile-utility-drawer__footer-links">
               {utilityDrawerLegalLinks.map((item) => (
                 <li key={item.id}>
-                  <button
-                    type="button"
-                    className="smoac-control mobile-utility-drawer__footer-link"
-                    onClick={() =>
-                      showToast({
-                        type: "info",
-                        message: `${item.label} is coming soon.`,
-                      })
-                    }
-                  >
-                    {item.label}
-                  </button>
+                  {item.href ? (
+                    <TapLink
+                      href={item.href}
+                      className="smoac-control mobile-utility-drawer__footer-link"
+                      onClick={onClose}
+                    >
+                      {item.label}
+                    </TapLink>
+                  ) : (
+                    <button
+                      type="button"
+                      className="smoac-control mobile-utility-drawer__footer-link"
+                      onClick={() =>
+                        showToast({
+                          type: "info",
+                          message: `${item.label} is coming soon.`,
+                        })
+                      }
+                    >
+                      {item.label}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>

@@ -49,10 +49,10 @@ export function TrainerCardCompact({
           />
         </div>
 
-        <SpecialtyChips
-          specialties={trainer.specialty}
-          className="trainer-card-compact__chips"
-        />
+          <SpecialtyChips
+            specialties={trainer.specialty}
+            className="trainer-card-compact__chips specialty-chips--row"
+          />
 
         <div className="trainer-card-compact__footer">
           <div className="trainer-card-compact__rating">

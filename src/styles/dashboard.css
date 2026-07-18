@@ -3466,3 +3466,40 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
   }
 }
+
+.dashboard-security {
+  display: grid;
+  gap: 0.875rem;
+  max-width: 24rem;
+}
+
+.dashboard-security .login-field {
+  margin: 0;
+}
+
+.dashboard-security__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(255, 210, 215, 0.88);
+}
+
+.dashboard-security__success {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dashboard-security__submit {
+  display: inline-flex;
+  width: fit-content;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.dashboard-security__submit--loading {
+  opacity: 0.72;
+  pointer-events: none;
+}

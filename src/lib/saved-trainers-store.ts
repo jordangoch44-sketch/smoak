@@ -24,10 +24,14 @@ const EMPTY_SNAPSHOT: string[] = [];
 
 /** In-memory cache + pub/sub for useSyncExternalStore */
 let cachedIds: readonly string[] = EMPTY_SNAPSHOT;
+/** User id the cache currently belongs to (set as soon as a load starts). */
 let cachedForUserId: string | null = null;
+/** True after a load attempt finished for cachedForUserId (success or error). */
+let hasLoadedForCachedUser = false;
 let isLoading = false;
 let loadError: string | null = null;
 let loadGeneration = 0;
+let emitDepth = 0;
 const listeners = new Set<() => void>();
 
 function idsKey(ids: readonly string[]): string {
@@ -40,7 +44,27 @@ function resolveClientUserId(): string | null {
 }
 
 function emitChange(): void {
-  listeners.forEach((listener) => listener());
+  /* Guard nested getSnapshot → scheduleReload → emitChange re-entry.
+   * Nested notifies are coalesced into a single trailing emit. */
+  if (emitDepth > 0) {
+    emitDepth = -1;
+    return;
+  }
+  emitDepth = 1;
+  try {
+    do {
+      emitDepth = 1;
+      listeners.forEach((listener) => {
+        try {
+          listener();
+        } catch (error) {
+          console.error("[saved-trainers] listener error", error);
+        }
+      });
+    } while (emitDepth < 0);
+  } finally {
+    emitDepth = 0;
+  }
 }
 
 function applyCache(userId: string, ids: readonly string[]): void {
@@ -48,12 +72,48 @@ function applyCache(userId: string, ids: readonly string[]): void {
   const nextCache: readonly string[] =
     unique.length > 0 ? unique : EMPTY_SNAPSHOT;
 
-  if (userId === cachedForUserId && idsKey(nextCache) === idsKey(cachedIds)) {
+  if (
+    userId === cachedForUserId &&
+    hasLoadedForCachedUser &&
+    idsKey(nextCache) === idsKey(cachedIds)
+  ) {
     return;
   }
 
   cachedForUserId = userId;
   cachedIds = nextCache;
+  hasLoadedForCachedUser = true;
+  emitChange();
+}
+
+/** Max wait for Supabase saved-trainers fetch before showing cached/error state */
+const SAVED_TRAINERS_FETCH_TIMEOUT_MS = 12_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => {
+      reject(new Error("Loading saved specialists timed out. Try again."));
+    }, ms);
+    promise
+      .then((value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+/** Force-clear a stuck loading spinner (UI timeout safety). */
+export function markSavedTrainersLoadTimedOut(): void {
+  if (!isLoading) return;
+  isLoading = false;
+  hasLoadedForCachedUser = true;
+  if (!loadError) {
+    loadError = "Loading saved specialists timed out. Showing what we have.";
+  }
   emitChange();
 }
 
@@ -61,9 +121,13 @@ function applyCache(userId: string, ids: readonly string[]): void {
 export function clearSavedTrainersActiveSession(): void {
   loadGeneration += 1;
   cachedForUserId = null;
+  hasLoadedForCachedUser = false;
   isLoading = false;
   loadError = null;
-  if (cachedIds === EMPTY_SNAPSHOT) return;
+  if (cachedIds === EMPTY_SNAPSHOT) {
+    emitChange();
+    return;
+  }
   cachedIds = EMPTY_SNAPSHOT;
   emitChange();
 }
@@ -83,7 +147,18 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
     return;
   }
 
-  if (userId === cachedForUserId && !isLoading && loadError === null) {
+  /* Already loaded (including empty shortlist) — do not refetch in a loop. */
+  if (
+    userId === cachedForUserId &&
+    hasLoadedForCachedUser &&
+    !isLoading &&
+    loadError === null
+  ) {
+    return;
+  }
+
+  /* In-flight load for this user — wait; do not stack nested emitChange. */
+  if (userId === cachedForUserId && isLoading) {
     return;
   }
 
@@ -91,10 +166,14 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
     reloadSavedTrainersFromLocalStorage(userId);
     isLoading = false;
     loadError = null;
+    emitChange();
     return;
   }
 
   const generation = ++loadGeneration;
+  /* Claim ownership before emitting so getSnapshot does not re-schedule. */
+  cachedForUserId = userId;
+  hasLoadedForCachedUser = false;
   isLoading = true;
   loadError = null;
   emitChange();
@@ -110,10 +189,9 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
     let specialistIds: string[];
 
     if (localIds.length > 0) {
-      const imported = await importLocalSavedTrainers(
-        supabase,
-        userId,
-        localIds
+      const imported = await withTimeout(
+        importLocalSavedTrainers(supabase, userId, localIds),
+        SAVED_TRAINERS_FETCH_TIMEOUT_MS
       );
       if (!imported.ok) {
         throw new Error(imported.message);
@@ -121,7 +199,10 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
       specialistIds = imported.specialistIds;
       clearLocalSavedTrainersForUser(userId);
     } else {
-      const remote = await fetchSavedTrainerIds(supabase, userId);
+      const remote = await withTimeout(
+        fetchSavedTrainerIds(supabase, userId),
+        SAVED_TRAINERS_FETCH_TIMEOUT_MS
+      );
       if (!remote.ok) {
         throw new Error(remote.message);
       }
@@ -135,9 +216,11 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
   } catch (error) {
     if (generation !== loadGeneration) return;
 
+    console.error("[saved-trainers] load failed", error);
     loadError =
       error instanceof Error ? error.message : "Failed to load saved specialists";
     reloadSavedTrainersFromLocalStorage(userId);
+    hasLoadedForCachedUser = true;
   } finally {
     if (generation === loadGeneration) {
       isLoading = false;
@@ -165,8 +248,13 @@ function readCache(): readonly string[] {
   }
 
   if (userId !== cachedForUserId) {
+    /* Schedule async load; do not emit synchronously from getSnapshot. */
     scheduleReloadForActiveUser();
     return EMPTY_SNAPSHOT;
+  }
+
+  if (!hasLoadedForCachedUser && !isLoading) {
+    scheduleReloadForActiveUser();
   }
 
   return cachedIds;
@@ -174,7 +262,10 @@ function readCache(): readonly string[] {
 
 export function subscribeSavedTrainers(onStoreChange: () => void): () => void {
   if (typeof window !== "undefined") {
-    readCache();
+    /* Kick off initial load without nesting emitChange in getSnapshot. */
+    queueMicrotask(() => {
+      scheduleReloadForActiveUser();
+    });
   }
 
   listeners.add(onStoreChange);
@@ -184,13 +275,17 @@ export function subscribeSavedTrainers(onStoreChange: () => void): () => void {
     if (!userId) {
       clearSavedTrainersActiveSession();
     } else if (userId !== cachedForUserId) {
+      /* User switched — reset and load once for the new account. */
       cachedForUserId = null;
+      hasLoadedForCachedUser = false;
       cachedIds = EMPTY_SNAPSHOT;
-      isLoading = true;
+      isLoading = false;
       loadError = null;
       emitChange();
+      scheduleReloadForActiveUser();
     }
-    scheduleReloadForActiveUser();
+    /* Do NOT reload when cache is intentionally empty for this user —
+     * that previously caused an infinite load loop after every auth tick. */
     onStoreChange();
   });
 
@@ -237,7 +332,12 @@ export async function toggleSavedTrainerId(
     return { ok: false, message: "Sign in as a client to save specialists." };
   }
 
-  const previous = [...getSavedTrainersSnapshot()];
+  /* Ensure we mutate against the loaded list for this user. */
+  if (userId !== cachedForUserId || !hasLoadedForCachedUser) {
+    await reloadSavedTrainersForActiveUserAsync();
+  }
+
+  const previous = [...(cachedForUserId === userId ? cachedIds : [])];
   const removing = previous.includes(id);
   const next = removing
     ? previous.filter((entry) => entry !== id)
@@ -256,16 +356,36 @@ export async function toggleSavedTrainerId(
     return { ok: false, message: "Unable to save — try again shortly." };
   }
 
-  const mutation = removing
-    ? await deleteSavedTrainer(supabase, userId, id)
-    : await insertSavedTrainer(supabase, userId, id);
+  try {
+    const mutation = removing
+      ? await deleteSavedTrainer(supabase, userId, id)
+      : await insertSavedTrainer(supabase, userId, id);
 
-  if (!mutation.ok) {
+    if (!mutation.ok) {
+      console.error("[saved-trainers] mutation failed", {
+        removing,
+        userId,
+        specialistId: id,
+        message: mutation.message,
+      });
+      applyCache(userId, previous);
+      return { ok: false, message: mutation.message };
+    }
+
+    /* Keep a local mirror for offline / reload resilience. */
+    persistSavedTrainerIdsForUser(userId, next);
+    return { ok: true };
+  } catch (error) {
+    console.error("[saved-trainers] mutation threw", error);
     applyCache(userId, previous);
-    return { ok: false, message: mutation.message };
+    return {
+      ok: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Could not update saved specialists.",
+    };
   }
-
-  return { ok: true };
 }
 
 export async function addSavedTrainerId(
@@ -273,6 +393,16 @@ export async function addSavedTrainerId(
 ): Promise<ToggleSavedTrainerResult> {
   const id = specialistId.trim();
   if (!id) return { ok: false, message: "Invalid specialist id" };
-  if (getSavedTrainersSnapshot().includes(id)) return { ok: true };
+
+  const userId = resolveClientUserId();
+  if (
+    userId &&
+    cachedForUserId === userId &&
+    hasLoadedForCachedUser &&
+    cachedIds.includes(id)
+  ) {
+    return { ok: true };
+  }
+
   return toggleSavedTrainerId(id);
 }

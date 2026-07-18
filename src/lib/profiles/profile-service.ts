@@ -32,6 +32,7 @@ type ProfileUpsertPayload = {
   onboarding_data?: Record<string, unknown> | null;
   profile_completion_status?: string;
   account_source?: string;
+  password_setup_status?: string;
 };
 
 function emptyProfileFields(): Omit<
@@ -70,6 +71,23 @@ async function upsertProfileRow(
   const { error } = await supabase
     .from("profiles")
     .upsert(payload, { onConflict: "user_id" });
+
+  if (
+    error &&
+    /password_setup_status|42703|column.*does not exist|PGRST204/i.test(
+      error.message
+    ) &&
+    "password_setup_status" in payload
+  ) {
+    const { password_setup_status: _removed, ...rest } = payload;
+    const retry = await supabase
+      .from("profiles")
+      .upsert(rest, { onConflict: "user_id" });
+    if (retry.error) {
+      return { ok: false, message: retry.error.message };
+    }
+    return { ok: true };
+  }
 
   if (error) {
     return { ok: false, message: error.message };
@@ -159,6 +177,7 @@ export async function saveMinimalSignupProfile(
     last_name: params.lastName.trim(),
     ...emptyProfileFields(),
     client_zip_code: zip,
+    password_setup_status: "complete",
   });
 }
 
@@ -218,6 +237,7 @@ export async function saveInquiryClientProfile(
     last_name: "",
     ...emptyProfileFields(),
     profile_completion_status: "incomplete",
+    password_setup_status: "pending",
     account_source: params.accountSource ?? "specialist_inquiry",
   });
 }

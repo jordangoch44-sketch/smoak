@@ -3,11 +3,11 @@
 .profile-sheet-root {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-site-header) + 40);
+  z-index: var(--z-profile-sheet);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  /* Transparent so the previous (still-mounted) page stays visible during drag */
+  /* Transparent so the previous (still-mounted) page stays visible during exit */
   background: transparent;
   pointer-events: auto;
 }
@@ -23,18 +23,11 @@
   pointer-events: none !important;
 }
 
-body.profile-sheet-dismissing .profile-toolbar,
-body.profile-sheet-dismissing .profile-toolbar * {
-  pointer-events: none !important;
-  opacity: 0 !important;
-  transition: opacity 0.12s ease;
-}
-
 /* SSR shell before portal — keep previous route visible; don't paint a black page */
 .profile-sheet-ssr {
   position: fixed;
   inset: 0;
-  z-index: calc(var(--z-site-header) + 40);
+  z-index: var(--z-profile-sheet);
   pointer-events: none;
   visibility: hidden;
 }
@@ -43,11 +36,10 @@ body.profile-sheet-dismissing .profile-toolbar * {
   position: absolute;
   inset: 0;
   border: none;
-  /* Solid dim only — opacity driven by motion; no opaque black fallback layer */
-  background: rgba(0, 0, 0, 1);
+  /* Soft dim — avoid solid black that flashes when the portal unmounts */
+  background: rgba(6, 6, 10, 0.55);
   cursor: pointer;
   touch-action: manipulation;
-  /* Avoid heavy blur that reads as a black wash while dragging */
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -63,10 +55,10 @@ body.profile-sheet-dismissing .profile-toolbar * {
   border-radius: 1.5rem 1.5rem 0 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-bottom: none;
-  background: #0a0a0e;
+  background: #0e0e14;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 -20px 64px rgba(0, 0, 0, 0.55);
+    0 -20px 64px rgba(0, 0, 0, 0.45);
   touch-action: pan-y;
   will-change: transform;
   transform: translateZ(0);
@@ -100,15 +92,14 @@ body.profile-sheet-dismissing .profile-toolbar * {
   justify-content: center;
   border: none;
   background: transparent;
-  cursor: grab;
-  touch-action: none;
-  pointer-events: auto;
+  pointer-events: none;
   -webkit-user-select: none;
   user-select: none;
 }
 
-.profile-sheet__handle-hit:active {
-  cursor: grabbing;
+.profile-sheet__handle-hit--static {
+  cursor: default;
+  touch-action: pan-y;
 }
 
 .profile-sheet__handle {
@@ -118,6 +109,14 @@ body.profile-sheet-dismissing .profile-toolbar * {
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.42);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+/* Host for X / action bar — same transform as .profile-sheet */
+.profile-sheet__toolbar-host {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
 }
 
 .profile-sheet__body {
@@ -153,19 +152,6 @@ body.profile-sheet-open #site-header {
 body.profile-sheet-open footer {
   visibility: hidden;
   pointer-events: none;
-}
-
-/* Toolbar portals to body — keep it above the sheet */
-body.profile-sheet-open .profile-toolbar {
-  z-index: calc(var(--z-site-header) + 50);
-  /* Header hidden; sit just under the sheet handle */
-  --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 2.85rem);
-}
-
-@media (min-width: 640px) {
-  body.profile-sheet-open .profile-toolbar {
-    --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 3rem);
-  }
 }
 
 @media (max-width: 1023px) {

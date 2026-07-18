@@ -133,8 +133,8 @@ export function useSpecialistDashboard() {
         ]
       : data.newLeads;
 
-  function handleSignOut() {
-    signOut();
+  async function handleSignOut() {
+    await signOut();
     afterLogoutNavigation(() => router.push("/profile"));
   }
 

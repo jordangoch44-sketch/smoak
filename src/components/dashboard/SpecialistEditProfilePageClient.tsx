@@ -31,6 +31,11 @@ import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import type { Certification, Gender } from "@/types/trainer";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
+import {
+  SPECIALIST_SERVICE_TYPE_OPTIONS,
+  SPECIALIST_TRAVEL_RADIUS_OPTIONS,
+} from "@/types/specialist-service-area";
+import type { SpecialistServiceType } from "@/types/specialist-service-area";
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: "male", label: "Male" },
@@ -107,8 +112,9 @@ export function SpecialistEditProfilePageClient() {
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
 
   const handleSignOut = useCallback(() => {
-    signOut();
-    afterLogoutNavigation(() => router.push("/profile"));
+    void signOut().then(() => {
+      afterLogoutNavigation(() => router.push("/profile"));
+    });
   }, [router, signOut]);
 
   function startEdit(sectionId: SectionId) {
@@ -502,6 +508,28 @@ export function SpecialistEditProfilePageClient() {
                   value={savedForm.neighborhood}
                 />
                 <ProfileEditViewField
+                  label="ZIP code"
+                  value={savedForm.zipCode}
+                  emptyLabel="Add ZIP code"
+                />
+                <ProfileEditViewField
+                  label="Session format"
+                  value={
+                    SPECIALIST_SERVICE_TYPE_OPTIONS.find(
+                      (option) => option.value === savedForm.serviceType
+                    )?.label ?? savedForm.serviceType
+                  }
+                />
+                <ProfileEditViewField
+                  label="Service radius"
+                  value={
+                    savedForm.travelRadius
+                      ? `${savedForm.travelRadius} miles`
+                      : ""
+                  }
+                  emptyLabel="Add travel radius"
+                />
+                <ProfileEditViewField
                   label="Additional areas served"
                   value={savedForm.serviceArea.join(", ")}
                   emptyLabel="Add neighborhoods"
@@ -539,6 +567,51 @@ export function SpecialistEditProfilePageClient() {
                       updateField("neighborhood", event.target.value)
                     }
                   />
+                </ProfileEditInputField>
+                <ProfileEditInputField label="ZIP code">
+                  <input
+                    className="login-field__input profile-edit-input"
+                    value={form.zipCode}
+                    onChange={(event) =>
+                      updateField("zipCode", event.target.value)
+                    }
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                  />
+                </ProfileEditInputField>
+                <ProfileEditInputField label="Session format">
+                  <select
+                    className="login-field__input profile-edit-input"
+                    value={form.serviceType}
+                    onChange={(event) =>
+                      updateField(
+                        "serviceType",
+                        event.target.value as SpecialistServiceType
+                      )
+                    }
+                  >
+                    {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </ProfileEditInputField>
+                <ProfileEditInputField label="Service radius">
+                  <select
+                    className="login-field__input profile-edit-input"
+                    value={form.travelRadius}
+                    onChange={(event) =>
+                      updateField("travelRadius", event.target.value)
+                    }
+                  >
+                    <option value="">Select radius</option>
+                    {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                 </ProfileEditInputField>
                 <ProfileEditInputField
                   label="Additional areas served"
@@ -680,6 +753,9 @@ export function SpecialistEditProfilePageClient() {
                     value={form.coverImageUrl}
                     onChange={(value) => updateField("coverImageUrl", value)}
                     aspect="cover"
+                    specialistId={trainerId}
+                    mediaKind="cover"
+                    onClear={() => updateField("coverImageUrl", "")}
                   />
                   <ProfileMediaUploadField
                     label="Profile photo"
@@ -687,6 +763,9 @@ export function SpecialistEditProfilePageClient() {
                     value={form.profilePhotoUrl}
                     onChange={(value) => updateField("profilePhotoUrl", value)}
                     aspect="square"
+                    specialistId={trainerId}
+                    mediaKind="profile"
+                    onClear={() => updateField("profilePhotoUrl", "")}
                   />
                 </div>
                 <div className="dashboard-edit-fields">

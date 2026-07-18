@@ -8,6 +8,7 @@ import { SaveToastProvider } from "@/contexts/SaveToastContext";
 import { SupabaseConfigProvider } from "@/contexts/SupabaseConfigContext";
 import { UserLocationProvider } from "@/contexts/UserLocationContext";
 import { InquiryAutoSendBridge } from "@/components/inquiry";
+import { PendingSaveResumeBridge } from "@/components/auth/PendingSaveResumeBridge";
 
 export function AppProviders({
   children,
@@ -25,6 +26,7 @@ export function AppProviders({
               <MobileBottomNavTransitionProvider>
                 <Suspense fallback={null}>
                   <InquiryAutoSendBridge />
+                  <PendingSaveResumeBridge />
                 </Suspense>
                 {children}
               </MobileBottomNavTransitionProvider>

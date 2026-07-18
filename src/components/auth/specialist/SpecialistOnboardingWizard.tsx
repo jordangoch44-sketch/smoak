@@ -40,7 +40,7 @@ export function SpecialistOnboardingWizard({
   onBackToRole,
 }: SpecialistOnboardingWizardProps) {
   const router = useRouter();
-  const { signUp } = useAuthSession();
+  const { signUp, signInWithPassword } = useAuthSession();
   const { showToast } = useToast();
   const [step, setStep] = useState<OnboardingStep>(1);
   const [state, setState] = useState<SpecialistOnboardingState>(() => {
@@ -124,10 +124,33 @@ export function SpecialistOnboardingWizard({
 
     try {
       const trimmedEmail = state.email.trim();
-      const signUpResult = await signUp("specialist", trimmedEmail, state.password, {
+      let signUpResult = await signUp("specialist", trimmedEmail, state.password, {
         firstName: state.fullName.trim().split(/\s+/)[0] ?? "",
         specialistOnboarding: state,
       });
+
+      /* Existing Auth user — sign in and reuse their application instead of duplicating */
+      if (
+        signUpResult.ok === false &&
+        /already exists|already registered/i.test(signUpResult.message)
+      ) {
+        const signInResult = await signInWithPassword(
+          "specialist",
+          trimmedEmail,
+          state.password
+        );
+        if (signInResult.ok === false) {
+          setError(
+            "An account with this email already exists. Sign in with your password, or reset it from the login page."
+          );
+          return;
+        }
+        if (signInResult.ok === "confirm_email") {
+          setError("Confirm your email, then sign in to finish your application.");
+          return;
+        }
+        signUpResult = { ok: true, session: signInResult.session };
+      }
 
       if (signUpResult.ok === false) {
         setError(signUpResult.message);
@@ -137,7 +160,8 @@ export function SpecialistOnboardingWizard({
       if (signUpResult.ok === "confirm_email") {
         showToast({
           type: "info",
-          message: "Check your email to confirm your account, then sign in.",
+          message:
+            "Check your email to confirm your account. After you sign in, your application will submit automatically.",
         });
         router.push(LOGIN_PATH);
         return;

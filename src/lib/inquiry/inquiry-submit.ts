@@ -26,20 +26,34 @@ import {
 } from "@/lib/pending-inquiry-storage";
 import { getSpecialistApplicationById } from "@/lib/specialist-application-storage";
 import { CLIENT_DASHBOARD_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { getAuthSiteOrigin } from "@/lib/auth/site-origin";
 import { labelsForInquiryTopics, labelForInquiryAction } from "@/lib/inquiry-options";
 
 async function resolveSpecialistUserId(
   supabase: SupabaseClient,
   specialistId: string
 ): Promise<string | null> {
-  const { data } = await supabase
+  const { data: application } = await supabase
     .from("specialist_applications")
     .select("user_id")
     .eq("id", specialistId)
     .maybeSingle();
 
-  const userId = data?.user_id;
-  return typeof userId === "string" && userId.trim() ? userId : null;
+  const fromApp = application?.user_id;
+  if (typeof fromApp === "string" && fromApp.trim()) {
+    return fromApp.trim();
+  }
+
+  const { data: profile } = await supabase
+    .from("specialist_profiles")
+    .select("user_id")
+    .eq("id", specialistId)
+    .maybeSingle();
+
+  const fromProfile = profile?.user_id;
+  return typeof fromProfile === "string" && fromProfile.trim()
+    ? fromProfile.trim()
+    : null;
 }
 
 async function resolveSpecialistNotifyEmail(
@@ -68,7 +82,22 @@ async function resolveSpecialistNotifyEmail(
     return application.email.trim().toLowerCase();
   }
 
-  return null;
+  const { data: listing } = await supabase
+    .from("specialist_profiles")
+    .select("profile_data")
+    .eq("id", specialistId)
+    .maybeSingle();
+
+  const listingEmail =
+    listing &&
+    typeof listing === "object" &&
+    listing.profile_data &&
+    typeof listing.profile_data === "object" &&
+    "email" in (listing.profile_data as object)
+      ? String((listing.profile_data as { email?: string }).email ?? "").trim()
+      : "";
+
+  return listingEmail.includes("@") ? listingEmail.toLowerCase() : null;
 }
 
 function resolveLocalSpecialistNotifyEmail(specialistId: string): string | null {
@@ -98,10 +127,7 @@ function notifySpecialistPortal(input: {
 }
 
 function siteOrigin(): string {
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    (typeof window !== "undefined" ? window.location.origin : "http://localhost:3000");
-  return siteUrl.replace(/\/$/, "");
+  return getAuthSiteOrigin();
 }
 
 async function submitInquiryViaSupabase(

@@ -33,6 +33,8 @@ export interface AdminSpecialistRow {
   featured: boolean;
   topRanked: boolean;
   isPremium: boolean;
+  isProtected: boolean;
+  accountKind: "real" | "test";
   inSeedCatalog: boolean;
   profileHref: string;
 }
@@ -63,6 +65,8 @@ function applicationAsTrainerRow(
     featured: meta.featured ?? false,
     topRanked: meta.topRanked ?? false,
     isPremium: meta.isPremium ?? false,
+    isProtected: meta.isProtected ?? false,
+    accountKind: meta.accountKind ?? "test",
     inSeedCatalog: false,
     profileHref: `/trainers/${id}`,
   };
@@ -109,6 +113,8 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
         featured: meta.featured ?? merged.featured,
         topRanked: meta.topRanked ?? false,
         isPremium: meta.isPremium ?? merged.featured,
+        isProtected: meta.isProtected ?? false,
+        accountKind: meta.accountKind ?? "test",
         inSeedCatalog: true,
         profileHref: `/trainers/${id}`,
       });
@@ -126,11 +132,31 @@ export function setAdminSpecialistVisibility(
   visibility: AdminSpecialistVisibility
 ): void {
   patchAdminSpecialistMeta(trainerId, { visibility });
-  if (visibility === "hidden") {
+  if (visibility === "hidden" || visibility === "suspended") {
     hideTrainerId(trainerId);
   } else if (visibility === "active") {
     unhideTrainerId(trainerId);
   }
+}
+
+export function setAdminSpecialistProtected(
+  trainerId: string,
+  isProtected: boolean
+): void {
+  patchAdminSpecialistMeta(trainerId, {
+    isProtected,
+    ...(isProtected ? { accountKind: "real" as const } : {}),
+  });
+}
+
+export function setAdminSpecialistAccountKind(
+  trainerId: string,
+  accountKind: "real" | "test"
+): void {
+  patchAdminSpecialistMeta(trainerId, {
+    accountKind,
+    ...(accountKind === "real" ? { isProtected: true } : {}),
+  });
 }
 
 export function setAdminSpecialistFlag(

@@ -19,21 +19,13 @@ import {
   type QuickAccountSource,
 } from "@/lib/inquiry/inquiry-session-flags";
 import type { AuthSession } from "@/types/auth";
+import { getAuthCallbackUrl } from "@/lib/auth/site-origin";
+import { buildCompleteAccountNextPath } from "@/lib/auth/account-setup";
 
 export type QuickClientAuthResult =
   | { ok: true; session: AuthSession; mode: "session" }
   | { ok: "email_sent"; email: string }
   | { ok: false; message: string; code?: "existing_account" };
-
-function siteOrigin(): string {
-  if (typeof window !== "undefined") {
-    return window.location.origin;
-  }
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") ||
-    "http://localhost:3000"
-  );
-}
 
 function existingAccountMessage(source: QuickAccountSource): string {
   if (source === "saved_specialist") {
@@ -114,17 +106,13 @@ export async function startQuickClientAccount(params: {
     return { ok: false, message: "Authentication is not available." };
   }
 
-  const nextPath = params.returnPath.startsWith("/")
-    ? params.returnPath
-    : `/${params.returnPath}`;
-  const flag = params.resumeQuery === "save" ? "save=1" : "inquiry=1";
-  const redirectTo = `${siteOrigin()}/auth/callback?next=${encodeURIComponent(
-    `${nextPath}${nextPath.includes("?") ? "&" : "?"}${flag}`
-  )}`;
+  const nextPath = buildCompleteAccountNextPath(params.resumeQuery);
+  const redirectTo = getAuthCallbackUrl(nextPath);
 
   logAuth("quick_otp.start", {
     email,
     source: params.accountSource,
+    redirectTo,
   });
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -135,6 +123,7 @@ export async function startQuickClientAccount(params: {
         role: "client",
         first_name: firstName,
         account_source: params.accountSource,
+        password_setup_status: "pending",
       },
       shouldCreateUser: true,
     },
@@ -265,6 +254,16 @@ export async function ensureInquiryClientProfileAfterAuth(session: AuthSession):
 
   clearPendingInquirySignup();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    const rebuilt = await buildAuthSessionFromSupabaseUser(supabase, user);
+    if (rebuilt && rebuilt.role === "client") {
+      return { ok: true, session: rebuilt };
+    }
+  }
+
   return {
     ok: true,
     session: {
@@ -272,6 +271,7 @@ export async function ensureInquiryClientProfileAfterAuth(session: AuthSession):
       firstName: firstName || session.firstName,
       email,
       profileCompletionStatus: "incomplete",
+      passwordSetupStatus: "pending",
     },
   };
 }

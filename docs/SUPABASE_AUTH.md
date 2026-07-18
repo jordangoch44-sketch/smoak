@@ -12,10 +12,19 @@
 
 **Authentication → URL configuration:**
 
-- Site URL: `http://localhost:3000` (or LAN IP for device testing)
-- Redirect URLs:
-  - `http://localhost:3000/auth/callback`
-  - `http://localhost:3000/login/reset-password`
+- Site URL: your public origin (`NEXT_PUBLIC_SITE_URL`)
+  - Local Mac: `http://localhost:3000`
+  - LAN iPhone: `http://192.168.x.x:3000` (same value as `NEXT_PUBLIC_SITE_URL`)
+  - Production: `https://your-domain.com`
+- Redirect URLs (add all you use):
+  - `{NEXT_PUBLIC_SITE_URL}/auth/callback`
+  - `{NEXT_PUBLIC_SITE_URL}/login/reset-password`
+  - `{NEXT_PUBLIC_SITE_URL}/**` (optional wildcard)
+
+Magic-link / confirm-email redirects use **only** `NEXT_PUBLIC_SITE_URL`
+(never `window.location`, `0.0.0.0`, or localhost). Rebuild after changing it.
+Supabase Site URL must match — if it is `http://0.0.0.0:3000`, emails will
+break on iPhone even when the app sends the correct redirect.
 
 ## Email confirmation
 

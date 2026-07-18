@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { useMemo } from "react";
-import { getEffectiveClientZip } from "@/lib/client-profile-location";
+import { getProfileZipFromSession } from "@/lib/client-profile-location";
 import { UNKNOWN_ZIP_AREA_LABEL } from "@/lib/geo/zip-place-names";
 import {
   getPersonalizationCitySnapshot,
@@ -61,8 +61,11 @@ export function useUserLocation() {
   );
   const editor = useUserLocationEditor();
 
+  /* Profile ZIP from session snapshot + local ZIP from location store only.
+   * Do not call loadSavedZipCode() here — that bypasses getServerSnapshot and
+   * hydrates a different className/label than SSR (Enter ZIP vs saved ZIP). */
   const zip = useMemo(
-    () => getEffectiveClientZip(session) ?? localZip,
+    () => getProfileZipFromSession(session) ?? localZip,
     [session, localZip]
   );
 
