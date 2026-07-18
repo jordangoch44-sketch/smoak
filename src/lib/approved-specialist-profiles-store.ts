@@ -221,8 +221,12 @@ export function subscribeApprovedSpecialistProfiles(
 export function getApprovedSpecialistProfilesSnapshot(): Record<string, Trainer> {
   if (typeof window === "undefined") return EMPTY_SNAPSHOT;
   ensureHydrated();
+  /* useSyncExternalStore requires stable identity — never return a fresh
+   * parse from localStorage on every getSnapshot call. */
   if (!hydrated && cachedProfiles === EMPTY_SNAPSHOT) {
-    return readLocalProfiles();
+    const local = readLocalProfiles();
+    cachedProfiles =
+      Object.keys(local).length > 0 ? local : EMPTY_SNAPSHOT;
   }
   return cachedProfiles;
 }

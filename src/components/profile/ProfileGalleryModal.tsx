@@ -222,7 +222,9 @@ export function ProfileGalleryModal({
     setMediaReady(true);
   }, []);
 
-  if (!mounted || typeof document === "undefined" || count === 0) return null;
+  if (!mounted || typeof document === "undefined") return null;
+
+  const empty = count === 0;
 
   return createPortal(
     <div
@@ -231,7 +233,7 @@ export function ProfileGalleryModal({
         "profile-gallery-modal",
         visible && !isClosing && "profile-gallery-modal--visible",
         isClosing && "profile-gallery-modal--exit",
-        mediaReady && "profile-gallery-modal--media-ready"
+        (mediaReady || empty) && "profile-gallery-modal--media-ready"
       )}
       role="dialog"
       aria-modal="true"
@@ -255,136 +257,161 @@ export function ProfileGalleryModal({
       </button>
 
       <div className="profile-gallery-modal__content">
-        <div
-          className="profile-gallery-modal__main"
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-        >
-          <div className="profile-gallery-modal__stage" data-gallery-protected>
-            {media.map((item, slideIndex) => (
-              <div
-                key={item.id}
-                className={cn(
-                  "profile-gallery-modal__frame",
-                  slideIndex === index && "profile-gallery-modal__frame--active"
-                )}
-                aria-hidden={slideIndex !== index}
-              >
-                {item.type === "image" ? (
-                  <Image
-                    src={item.url}
-                    alt={item.alt ?? `${trainerName} gallery`}
-                    fill
-                    sizes="100vw"
-                    className="profile-gallery-modal__media object-contain"
-                    priority={slideIndex === index}
-                    loading={slideIndex === index ? "eager" : "lazy"}
-                    draggable={false}
-                    onLoad={
-                      slideIndex === index ? handleMediaReady : undefined
-                    }
-                    onError={
-                      slideIndex === index ? handleMediaReady : undefined
-                    }
-                  />
-                ) : slideIndex === index ? (
-                  <>
-                    <video
-                      ref={videoRef}
-                      className="profile-gallery-modal__video"
-                      src={item.url}
-                      poster={item.thumbnail}
-                      playsInline
-                      muted
-                      controls={videoPlaying}
-                      preload="metadata"
-                      onLoadedData={handleMediaReady}
-                      onEnded={() => setVideoPlaying(false)}
-                      onPause={() => setVideoPlaying(false)}
-                    />
-                    {!videoPlaying ? (
-                      <button
-                        type="button"
-                        className="profile-gallery-modal__play"
-                        data-gallery-protected
-                        onClick={handlePlayVideo}
-                        aria-label={`Play ${item.alt ?? "video"}`}
-                      >
-                        <span className="profile-gallery-modal__play-icon" aria-hidden>
-                          ▶
-                        </span>
-                      </button>
-                    ) : null}
-                  </>
-                ) : null}
-              </div>
-            ))}
-          </div>
-
-          {count > 1 ? (
-            <>
-              <button
-                type="button"
-                className="profile-gallery-modal__nav profile-gallery-modal__nav--prev"
-                data-gallery-protected
-                aria-label="Previous"
-                onClick={() => goToSlide(index - 1)}
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                className="profile-gallery-modal__nav profile-gallery-modal__nav--next"
-                data-gallery-protected
-                aria-label="Next"
-                onClick={() => goToSlide(index + 1)}
-              >
-                ›
-              </button>
-            </>
-          ) : null}
-        </div>
-
-        <footer className="profile-gallery-modal__footer">
+        {empty ? (
           <div
-            ref={thumbsRef}
-            className="profile-gallery-modal__thumbs"
+            className="profile-gallery-modal__empty"
             data-gallery-protected
-            role="tablist"
-            aria-label="Gallery thumbnails"
+            role="status"
           >
-            {media.map((item, thumbIndex) => (
-              <button
-                key={item.id}
-                type="button"
-                role="tab"
-                data-thumb-index={thumbIndex}
-                aria-selected={thumbIndex === index}
-                aria-label={item.alt ?? `Media ${thumbIndex + 1}`}
-                className={cn(
-                  "profile-gallery-modal__thumb",
-                  thumbIndex === index && "profile-gallery-modal__thumb--active"
-                )}
-                onClick={() => goToSlide(thumbIndex)}
-              >
-                <Image
-                  src={item.thumbnail ?? item.url}
-                  alt=""
-                  fill
-                  sizes="80px"
-                  className="object-cover"
-                  loading="lazy"
-                  draggable={false}
-                />
-                {item.type === "video" ? (
-                  <span className="profile-gallery-modal__thumb-badge" aria-hidden>
-                    ▶
-                  </span>
-                ) : null}
-              </button>
-            ))}
+            <p className="profile-gallery-modal__empty-title">
+              No gallery photos available
+            </p>
+            <p className="profile-gallery-modal__empty-copy">
+              This specialist has not added gallery media yet.
+            </p>
           </div>
-        </footer>
+        ) : (
+          <>
+            <div
+              className="profile-gallery-modal__main"
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+            >
+              <div className="profile-gallery-modal__stage" data-gallery-protected>
+                {media.map((item, slideIndex) => (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "profile-gallery-modal__frame",
+                      slideIndex === index &&
+                        "profile-gallery-modal__frame--active"
+                    )}
+                    aria-hidden={slideIndex !== index}
+                  >
+                    {item.type === "image" ? (
+                      <Image
+                        src={item.url}
+                        alt={item.alt ?? `${trainerName} gallery`}
+                        fill
+                        sizes="100vw"
+                        className="profile-gallery-modal__media object-contain"
+                        priority={slideIndex === index}
+                        loading={slideIndex === index ? "eager" : "lazy"}
+                        draggable={false}
+                        onLoad={
+                          slideIndex === index ? handleMediaReady : undefined
+                        }
+                        onError={
+                          slideIndex === index ? handleMediaReady : undefined
+                        }
+                      />
+                    ) : slideIndex === index ? (
+                      <>
+                        <video
+                          ref={videoRef}
+                          className="profile-gallery-modal__video"
+                          src={item.url}
+                          poster={item.thumbnail}
+                          playsInline
+                          muted
+                          controls={videoPlaying}
+                          preload="metadata"
+                          onLoadedData={handleMediaReady}
+                          onEnded={() => setVideoPlaying(false)}
+                          onPause={() => setVideoPlaying(false)}
+                        />
+                        {!videoPlaying ? (
+                          <button
+                            type="button"
+                            className="profile-gallery-modal__play"
+                            data-gallery-protected
+                            onClick={handlePlayVideo}
+                            aria-label={`Play ${item.alt ?? "video"}`}
+                          >
+                            <span
+                              className="profile-gallery-modal__play-icon"
+                              aria-hidden
+                            >
+                              ▶
+                            </span>
+                          </button>
+                        ) : null}
+                      </>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+
+              {count > 1 ? (
+                <>
+                  <button
+                    type="button"
+                    className="profile-gallery-modal__nav profile-gallery-modal__nav--prev"
+                    data-gallery-protected
+                    aria-label="Previous"
+                    onClick={() => goToSlide(index - 1)}
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    className="profile-gallery-modal__nav profile-gallery-modal__nav--next"
+                    data-gallery-protected
+                    aria-label="Next"
+                    onClick={() => goToSlide(index + 1)}
+                  >
+                    ›
+                  </button>
+                </>
+              ) : null}
+            </div>
+
+            <footer className="profile-gallery-modal__footer">
+              <div
+                ref={thumbsRef}
+                className="profile-gallery-modal__thumbs"
+                data-gallery-protected
+                role="tablist"
+                aria-label="Gallery thumbnails"
+              >
+                {media.map((item, thumbIndex) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    role="tab"
+                    data-thumb-index={thumbIndex}
+                    aria-selected={thumbIndex === index}
+                    aria-label={item.alt ?? `Media ${thumbIndex + 1}`}
+                    className={cn(
+                      "profile-gallery-modal__thumb",
+                      thumbIndex === index &&
+                        "profile-gallery-modal__thumb--active"
+                    )}
+                    onClick={() => goToSlide(thumbIndex)}
+                  >
+                    <Image
+                      src={item.thumbnail ?? item.url}
+                      alt=""
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                      loading="lazy"
+                      draggable={false}
+                    />
+                    {item.type === "video" ? (
+                      <span
+                        className="profile-gallery-modal__thumb-badge"
+                        aria-hidden
+                      >
+                        ▶
+                      </span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </footer>
+          </>
+        )}
       </div>
     </div>,
     document.body

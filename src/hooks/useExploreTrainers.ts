@@ -366,7 +366,7 @@ export function useExploreTrainers({
         .filter((trainer) => !hiddenSet.has(trainer.id))
         .map((trainer) => getTrainerWithOverrides(trainer.id) ?? trainer);
     },
-    [searchQuery, profileOverridesRevision, hiddenRevision]
+    [searchQuery, profileOverridesRevision, approvedProfilesRevision, applicationsRevision, hiddenRevision]
   );
 
   const filtered = useMemo(() => {

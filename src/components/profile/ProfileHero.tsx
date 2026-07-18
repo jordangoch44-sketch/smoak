@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useCallback, useState, type MouseEvent } from "react";
 import type { Trainer } from "@/types";
 import { getTrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
@@ -11,11 +11,9 @@ import {
 } from "@/lib/trainer-gallery";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { ShieldCheckIcon } from "@/components/ui/icons";
-import {
-  ProfileHeroCoverGallery,
-  type ProfileHeroGalleryControl,
-} from "./ProfileHeroCoverGallery";
+import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
+import { ProfileGalleryModal } from "./ProfileGalleryModal";
 import { TrainerMarketValueCard } from "./TrainerMarketValueCard";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
@@ -37,20 +35,27 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
     trainer.galleryImages,
     trainer.heroImage
   );
-  const galleryControlRef = useRef<ProfileHeroGalleryControl | null>(null);
-  const hasGallery = galleryMedia.length > 0;
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const heroLine = firstSentence(trainer.bio);
+
+  const openGallery = useCallback((event: MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setGalleryOpen(true);
+  }, []);
+
+  const closeGallery = useCallback(() => {
+    setGalleryOpen(false);
+  }, []);
 
   return (
     <>
-      <section className="profile-hero relative w-full overflow-hidden">
-        <div className="profile-hero__stage relative h-[52vh] min-h-[340px] w-full sm:h-[50vh] sm:min-h-[400px] lg:h-[56vh]">
+      <section className="profile-hero relative w-full">
+        <div className="profile-hero__stage relative w-full">
           <ProfileHeroCoverGallery
             images={coverImages}
-            media={galleryMedia}
             trainerName={trainer.name}
             fallbackHeroImage={trainer.heroImage}
-            galleryControlRef={galleryControlRef}
           />
           <div
             className="profile-hero__scrim profile-hero__scrim--top absolute inset-x-0 top-0 z-[1] h-[42%]"
@@ -58,13 +63,13 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
           />
           <div className="profile-hero__scrim absolute inset-0 z-[1]" aria-hidden />
           <div
-            className="profile-hero__scrim-fade absolute inset-x-0 bottom-0 z-[1] h-[70%]"
+            className="profile-hero__scrim-fade absolute inset-x-0 bottom-0 z-[1] h-[72%]"
             aria-hidden
           />
 
-          <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-10 px-4 pb-5 sm:px-6 sm:pb-7">
-            <div className="mx-auto max-w-7xl profile-hero__identity-inner">
-              <div className="profile-hero__identity-row flex items-end gap-3.5 sm:gap-5">
+          <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-10">
+            <div className="mx-auto max-w-7xl profile-hero__identity-inner px-4 pb-5 sm:px-6 sm:pb-6">
+              <div className="profile-hero__identity-row">
                 <ProfileHeroAvatar
                   src={trainer.image}
                   name={trainer.name}
@@ -74,11 +79,9 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
                     ) : null
                   }
                 />
-                <div className="profile-hero__identity-copy min-w-0 flex-1 pb-0.5">
-                  <div className="profile-hero__name-row flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h1 className="profile-hero__name text-[1.65rem] font-light leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
-                      {trainer.name}
-                    </h1>
+                <div className="profile-hero__identity-copy min-w-0 flex-1">
+                  <div className="profile-hero__name-row">
+                    <h1 className="profile-hero__name">{trainer.name}</h1>
                     {trainer.verified ? (
                       <span
                         className="profile-verified-badge"
@@ -89,43 +92,14 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
                       </span>
                     ) : null}
                   </div>
-                  <p className="profile-hero__profession mt-1 text-[15px] font-medium leading-snug text-[rgba(var(--aurora-lavender-rgb),0.92)] sm:mt-1.5 sm:text-base">
-                    {trainer.profession}
-                  </p>
+                  <p className="profile-hero__profession">{trainer.profession}</p>
                   {trainer.title ? (
-                    <p className="profile-hero__specialty mt-0.5 text-sm leading-snug text-silver-300">
-                      {trainer.title}
-                    </p>
+                    <p className="profile-hero__specialty">{trainer.title}</p>
                   ) : null}
-                  <p className="profile-hero__location mt-1 text-sm text-silver-400">
+                  <p className="profile-hero__location">
                     {formatProviderLocation(trainer)}
                   </p>
                 </div>
-              </div>
-
-              {heroLine ? (
-                <p className="profile-hero__tagline">{heroLine}</p>
-              ) : null}
-
-              <div className="profile-hero__meta mt-3.5 text-sm sm:mt-4">
-                <div className="profile-hero__meta-primary">
-                  <ProfileReviewMeta trainer={trainer} />
-                  <SessionPrice
-                    amount={trainer.pricePerSession}
-                    variant="hero"
-                    className="profile-hero__meta-price shrink-0"
-                  />
-                </div>
-                {hasGallery ? (
-                  <button
-                    type="button"
-                    className="profile-hero__view-gallery"
-                    aria-label="View specialist gallery"
-                    onClick={() => galleryControlRef.current?.openGallery()}
-                  >
-                    View Gallery
-                  </button>
-                ) : null}
               </div>
             </div>
           </div>
@@ -133,10 +107,42 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
+            {heroLine ? (
+              <p className="profile-hero__tagline">{heroLine}</p>
+            ) : null}
+
+            <div className="profile-hero__meta">
+              <div className="profile-hero__meta-primary">
+                <ProfileReviewMeta trainer={trainer} />
+                <SessionPrice
+                  amount={trainer.pricePerSession}
+                  variant="hero"
+                  className="profile-hero__meta-price shrink-0"
+                />
+              </div>
+              <button
+                type="button"
+                className="profile-hero__view-gallery"
+                aria-label="View specialist gallery"
+                onClick={openGallery}
+              >
+                View Gallery
+              </button>
+            </div>
+
             <TrainerMarketValueCard trainer={trainer} />
           </div>
         </div>
       </section>
+
+      <ProfileGalleryModal
+        open={galleryOpen}
+        media={galleryMedia}
+        initialIndex={0}
+        trainerName={trainer.name}
+        onClose={closeGallery}
+      />
+
       <ProfileHeroToolbar
         trainerId={trainer.id}
         trainerName={trainer.name}

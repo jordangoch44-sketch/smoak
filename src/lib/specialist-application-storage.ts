@@ -173,8 +173,10 @@ export function subscribeSpecialistApplications(
 export function getSpecialistApplicationsSnapshot(): readonly SpecialistApplication[] {
   if (typeof window === "undefined") return EMPTY_APPLICATIONS;
   ensureHydrated();
+  /* Stable identity for useSyncExternalStore — cache local read once. */
   if (!hydrated && cachedApplications === EMPTY_APPLICATIONS) {
-    return readLocalApplications();
+    const local = readLocalApplications();
+    cachedApplications = local.length > 0 ? local : EMPTY_APPLICATIONS;
   }
   return cachedApplications;
 }
