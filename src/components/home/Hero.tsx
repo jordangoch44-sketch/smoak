@@ -1,4 +1,5 @@
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
+import { RotatingSpecialistHeadline } from "./RotatingSpecialistHeadline";
 
 export function Hero() {
   return (
@@ -26,12 +27,7 @@ export function Hero() {
 
       <div className="home-hero__content home-hero__content--discovery">
         <div className="home-hero__headline">
-          <h1 className="home-hero__title">
-            <span className="home-hero__title-line">Find your perfect</span>
-            <span className="home-hero__title-line home-hero__title-line--accent">
-              specialist
-            </span>
-          </h1>
+          <RotatingSpecialistHeadline />
           <p className="home-hero__lede">
             Discover San Diego&apos;s highest-rated health &amp; wellness
             professionals.
