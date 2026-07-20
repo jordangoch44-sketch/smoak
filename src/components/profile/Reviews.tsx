@@ -8,6 +8,8 @@ interface ReviewsProps {
   rating: number;
   reviewCount: number;
   className?: string;
+  /** When set, labels this block as Google Reviews (separate from SMOAC). */
+  sourceLabel?: "google" | "general";
 }
 
 export function Reviews({
@@ -15,7 +17,14 @@ export function Reviews({
   rating,
   reviewCount,
   className,
+  sourceLabel = "general",
 }: ReviewsProps) {
+  const safeReviews = Array.isArray(reviews) ? reviews : [];
+  const title =
+    sourceLabel === "google" ? "Google Reviews" : "Reviews";
+  const ariaLabel =
+    sourceLabel === "google" ? "Google Reviews" : "Reviews";
+
   const ratingSummary = (
     <div className="flex shrink-0 items-center gap-1.5 text-sm">
       <span className="text-white">★</span>
@@ -24,15 +33,19 @@ export function Reviews({
     </div>
   );
 
+  if (safeReviews.length === 0 && sourceLabel === "google") {
+    return null;
+  }
+
   return (
     <ProfileSection
       variant="panel"
       className={className}
-      aria-label="Reviews"
+      aria-label={ariaLabel}
     >
-      <ProfileSectionHeader title="Reviews" trailing={ratingSummary} />
+      <ProfileSectionHeader title={title} trailing={ratingSummary} />
       <ul className="profile-section-body profile-section-body--loose">
-        {reviews.map((review) => (
+        {safeReviews.map((review) => (
           <li key={review.id} className="profile-review-item">
             <div className="flex items-center justify-between gap-3">
               <span className="font-medium text-white">{review.author}</span>

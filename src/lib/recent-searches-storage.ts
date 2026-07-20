@@ -4,7 +4,8 @@ export interface RecentSearchEntry {
   searchedAt: string;
 }
 
-const STORAGE_KEY = "smoac-recent-searches";
+export const RECENT_SEARCHES_STORAGE_KEY = "smoac-recent-searches";
+const STORAGE_KEY = RECENT_SEARCHES_STORAGE_KEY;
 const MAX_ENTRIES = 6;
 
 export function loadRecentSearches(): RecentSearchEntry[] {

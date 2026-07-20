@@ -337,3 +337,64 @@ npm run build
 | `lib/auth/auth-logger.ts` | Structured auth events (dev/server only) |
 | `user-location-storage.ts` | Guest ZIP cache; synced from profile on login |
 | `marketplace-city-default-zip.ts` | City picker in location panel (not profile fallback) |
+
+---
+
+## Organization pass — Phases 1–3 (2026-07)
+
+**Scope:** Dead-code removal + recent-search documentation + doc sync. No UI or behavior changes.
+
+### Phase 1 — dead files removed
+
+| File | Reason |
+|------|--------|
+| `src/hooks/useRecentSearches.ts` | Never imported |
+| `src/components/profile/ProfileCuratedDetails.tsx` | Superseded by `ProfilePrimaryHighlights` + `ProfileTrainerSpecs` |
+| `src/components/profile/ProfileHeroBio.tsx` | Never imported |
+| `src/data/categories.ts`, `testimonials.ts`, `goals.ts` | Never imported (homepage uses inline data) |
+
+### Phase 2 — recent searches
+
+- **Decision:** write-only until Explore chips UI ships.
+- Explore still calls `recordRecentSearch` via `useExploreTrainers`.
+- Documented in `recent-searches-store.ts`, `hooks/README.md`, `lib/README.md`.
+
+### Phase 3 — documentation sync
+
+- `middleware.ts` → `src/proxy.ts` (Next.js 16) in `AGENTS.md`, `ARCHITECTURE.md`, `PHASE2_AUTH_ARCHITECTURE.md`, `CODE_AUDIT_JUNE_23_2026.md`.
+- SMOAC vs Google review split documented in `AGENTS.md` + `ARCHITECTURE.md`.
+- Footer / legal routes documented (`Footer.tsx`, `footer-nav.ts`, `SITE_ROUTES`, `LegalDocumentPage`).
+- Direct-import convention noted in `ARCHITECTURE.md` + `components/README.md`.
+- `lib/README.md` + `hooks/README.md` updated for reviews and footer modules.
+
+### Phase 4 — script DRY (2026-07)
+
+- `scripts/lan-utils.mjs` — shared `getLanIpv4`, `buildLanOrigin`, `isUnusableSiteUrl`, `isBadAuthHost`.
+- `dev-lan.mjs` + `start-lan.mjs` import from `lan-utils.mjs`.
+- `npm run verify:auth` runs session + magic-link verify scripts via `verify-auth.mjs`.
+- Removed hardcoded LAN IP from `verify-magic-link-redirect.mjs` (uses `NEXT_PUBLIC_SITE_URL`).
+
+### Phase 5 — CSS hygiene (2026-07)
+
+- Removed duplicate `create-account-intro.css` import from `create-account/layout.tsx` (already in `site-shell.css`).
+- Atmosphere layer roles documented in `globals.css` (`atmosphere`, `aurora`, `aurora-atmosphere`; `page-transition` via `site-shell`).
+- `styles/README.md` — note single load path for welcome intro CSS.
+
+### Phase 6 — barrel file policy (2026-07)
+
+- **Convention:** direct file paths are default; barrels optional and trimmed to real import sites.
+- Trimmed `index.ts` exports in `profile`, `layout`, `auth`, `trainers`, `saved`, `rankings`, `dashboard`, `hooks` (removed unused type re-exports).
+- Removed orphan `Testimonial` / `Category` from `types/index.ts`.
+- Documented policy in `ARCHITECTURE.md`, `components/README.md`, `hooks/README.md`, `contexts/README.md`.
+- Homepage consolidated to single `@/components/home` import.
+
+### Phase 7 — auth UI consolidation (2026-07)
+
+- `QuickClientAccountAuthUI.tsx` — shared signup/signin fields, error, and actions (`login-gate` vs `inquiry-sheet` variants).
+- `QuickClientAccountModal` + `SpecialistInquirySheet` use shared UI; orchestration stays separate (`inquiry-auth.ts`, pending save/inquiry).
+- `SaveQuickSignupModal` unchanged (wraps `QuickClientAccountModal`).
+
+### Phase 8 — review domain comments (2026-07)
+
+- Module headers in `trainer-reviews.ts`, `specialist-reviews-client.ts`, `specialist-reputation.ts`, `specialist-review-types.ts`.
+- Documents three separate reputation domains; no logic changes.

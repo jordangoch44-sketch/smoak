@@ -82,6 +82,7 @@ function mergeParsedWithUrlFilters(
     profession: fromUrl.profession || parsed.profession,
     specialty: fromUrl.specialty || parsed.specialty,
     gender: fromUrl.gender || parsed.gender,
+    priceMin: fromUrl.priceMin || parsed.priceMin,
     priceMax: fromUrl.priceMax || parsed.priceMax,
   };
 }
@@ -98,6 +99,7 @@ function applyExplicitUrlFilters(
     profession: fromUrl.profession,
     specialty: fromUrl.specialty,
     gender: fromUrl.gender || prev.gender,
+    priceMin: fromUrl.priceMin || prev.priceMin,
     priceMax: fromUrl.priceMax || prev.priceMax,
   };
 }
@@ -110,6 +112,7 @@ function filtersEqual(a: TrainerFilters, b: TrainerFilters): boolean {
     a.profession === b.profession &&
     a.specialty === b.specialty &&
     a.gender === b.gender &&
+    a.priceMin === b.priceMin &&
     a.priceMax === b.priceMax
   );
 }
@@ -164,6 +167,7 @@ export function useExploreTrainers({
   const initialParsed = applySearchQueryToExploreState(initialQ, {
     ...EMPTY_TRAINER_FILTERS,
     gender: initialBaseFilters.gender,
+    priceMin: initialBaseFilters.priceMin,
     priceMax: initialBaseFilters.priceMax,
   });
   const initialApplied = {
@@ -245,6 +249,7 @@ export function useExploreTrainers({
         const parsed = applySearchQueryToExploreState(nextQ, {
           ...EMPTY_TRAINER_FILTERS,
           gender: fromUrl.gender,
+          priceMin: fromUrl.priceMin,
           priceMax: fromUrl.priceMax,
         });
 
@@ -397,6 +402,7 @@ export function useExploreTrainers({
         {
           ...EMPTY_TRAINER_FILTERS,
           gender: prev.gender,
+          priceMin: prev.priceMin,
           priceMax: prev.priceMax,
         },
         session
@@ -422,6 +428,7 @@ export function useExploreTrainers({
         {
           ...applied.filters,
           gender: filters.gender,
+          priceMin: filters.priceMin,
           priceMax: filters.priceMax,
         },
         session
@@ -430,6 +437,7 @@ export function useExploreTrainers({
       setSearchQuery(applied.residualQuery);
       setFiltersState(nextFilters);
       if (applied.displayQuery.trim()) {
+        /* Persist for future Explore recent-search UI — see recent-searches-store.ts */
         recordRecentSearch(applied.displayQuery);
       }
       scheduleUrlSync(nextFilters, applied.displayQuery);

@@ -18,12 +18,23 @@ import { TrainerMarketValueCard } from "./TrainerMarketValueCard";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileReviewMeta } from "./ProfileReviewMeta";
+import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 
 interface ProfileHeroProps {
   trainer: Trainer;
+  smoacAggregate?: SpecialistReviewAggregate | null;
+  canLeaveReview?: boolean;
+  hasOwnReview?: boolean;
+  onLeaveReview?: () => void;
 }
 
-export function ProfileHero({ trainer }: ProfileHeroProps) {
+export function ProfileHero({
+  trainer,
+  smoacAggregate,
+  canLeaveReview,
+  hasOwnReview,
+  onLeaveReview,
+}: ProfileHeroProps) {
   const ranking = getTrainerCityRanking(trainer.id);
   const coverImages = buildTrainerGalleryImages(
     trainer.gallery,
@@ -113,7 +124,13 @@ export function ProfileHero({ trainer }: ProfileHeroProps) {
 
             <div className="profile-hero__meta">
               <div className="profile-hero__meta-primary">
-                <ProfileReviewMeta trainer={trainer} />
+                <ProfileReviewMeta
+                  trainer={trainer}
+                  smoacAggregate={smoacAggregate}
+                  canLeaveReview={canLeaveReview}
+                  hasOwnReview={hasOwnReview}
+                  onLeaveReview={onLeaveReview}
+                />
                 <SessionPrice
                   amount={trainer.pricePerSession}
                   variant="hero"

@@ -19,41 +19,159 @@
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
+  isolation: isolate;
+  background-color: #050308;
 }
 
+/* Deep space base + continuous nebula washes (no heavy blur blobs) */
 .site-page-backdrop__base {
   position: absolute;
   inset: 0;
-  background: #000000;
+  z-index: 0;
+  background-color: #050308;
+  background-image:
+    /* Primary violet — upper / hero zone */
+    radial-gradient(
+      ellipse 95% 58% at 22% 6%,
+      rgba(125, 55, 255, 0.2) 0%,
+      rgba(82, 30, 150, 0.1) 38%,
+      transparent 68%
+    ),
+    /* Magenta warmth — mid-right */
+    radial-gradient(
+      ellipse 72% 48% at 86% 28%,
+      rgba(238, 70, 190, 0.1) 0%,
+      rgba(255, 90, 170, 0.045) 42%,
+      transparent 68%
+    ),
+    /* Deep purple core behind mid-page content */
+    radial-gradient(
+      ellipse 90% 55% at 48% 46%,
+      rgba(82, 30, 150, 0.14) 0%,
+      transparent 70%
+    ),
+    /* Restrained teal / aurora — mid-lower edge */
+    radial-gradient(
+      ellipse 62% 42% at 92% 64%,
+      rgba(45, 210, 180, 0.065) 0%,
+      transparent 62%
+    ),
+    /* Soft aurora green — lower-left open space */
+    radial-gradient(
+      ellipse 58% 40% at 8% 78%,
+      rgba(100, 230, 170, 0.05) 0%,
+      transparent 60%
+    ),
+    /* Blue-violet blend — lower page */
+    radial-gradient(
+      ellipse 78% 48% at 40% 92%,
+      rgba(70, 90, 255, 0.075) 0%,
+      transparent 66%
+    ),
+    /* Secondary pink haze — mid-scroll */
+    radial-gradient(
+      ellipse 55% 34% at 68% 58%,
+      rgba(255, 90, 170, 0.055) 0%,
+      transparent 58%
+    );
+  background-repeat: no-repeat;
 }
 
+/* Extra depth wash — CSS only, no animated blur orbs */
 .site-page-backdrop__mesh {
   position: absolute;
-  inset: -30% -15% -35%;
-  opacity: 0.38;
-}
-
-.site-page-backdrop__blob {
-  animation: none !important;
-  opacity: 0.55;
-  filter: blur(96px);
-}
-
-.site-page-backdrop__vignette {
-  position: absolute;
   inset: 0;
-  opacity: 0.85;
+  z-index: 1;
+  opacity: 1;
+  background-image:
+    radial-gradient(
+      ellipse 110% 62% at 50% -8%,
+      rgba(125, 55, 255, 0.12) 0%,
+      transparent 56%
+    ),
+    radial-gradient(
+      ellipse 85% 52% at 100% 38%,
+      rgba(82, 30, 150, 0.1) 0%,
+      transparent 54%
+    ),
+    radial-gradient(
+      ellipse 75% 48% at -5% 52%,
+      rgba(238, 70, 190, 0.055) 0%,
+      transparent 52%
+    );
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* Disable expensive full-screen blob blur layers */
+.site-page-backdrop__blob {
+  display: none !important;
 }
 
 .site-page-backdrop__stars {
   position: absolute;
   inset: 0;
   z-index: 2;
-  opacity: 1;
+  opacity: 0.92;
+  pointer-events: none;
 }
 
 .site-page-backdrop__vignette {
-  opacity: 0.55;
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .site-page-backdrop__base {
+    background-image:
+      radial-gradient(
+        ellipse 88% 56% at 18% 4%,
+        rgba(125, 55, 255, 0.22) 0%,
+        rgba(82, 30, 150, 0.11) 40%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 70% 50% at 88% 22%,
+        rgba(238, 70, 190, 0.11) 0%,
+        rgba(255, 90, 170, 0.05) 44%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 92% 58% at 50% 48%,
+        rgba(82, 30, 150, 0.15) 0%,
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 58% 44% at 94% 66%,
+        rgba(45, 210, 180, 0.07) 0%,
+        transparent 64%
+      ),
+      radial-gradient(
+        ellipse 56% 42% at 6% 80%,
+        rgba(100, 230, 170, 0.055) 0%,
+        transparent 62%
+      ),
+      radial-gradient(
+        ellipse 80% 50% at 38% 94%,
+        rgba(70, 90, 255, 0.08) 0%,
+        transparent 68%
+      ),
+      radial-gradient(
+        ellipse 52% 36% at 72% 56%,
+        rgba(255, 90, 170, 0.06) 0%,
+        transparent 60%
+      );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-page-backdrop__base,
+  .site-page-backdrop__mesh {
+    animation: none !important;
+  }
 }
 
 .page-transition {

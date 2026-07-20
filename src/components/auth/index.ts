@@ -1,5 +1,5 @@
+/**
+ * Route barrel — `app/(site)/login` imports `LoginPageClient` from here.
+ * Other auth screens: prefer `@/components/auth/LoginPageClient`, etc.
+ */
 export { LoginPageClient } from "./LoginPageClient";
-export { CompleteAccountPageClient } from "./CompleteAccountPageClient";
-export { QuickClientAccountModal } from "./QuickClientAccountModal";
-export { SaveQuickSignupModal } from "./SaveQuickSignupModal";
-export { SaveSuccessModal } from "./SaveSuccessModal";

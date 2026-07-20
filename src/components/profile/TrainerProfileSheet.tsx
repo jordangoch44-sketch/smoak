@@ -41,7 +41,11 @@ function viewportHeight(): number {
   return window.visualViewport?.height ?? window.innerHeight ?? 800;
 }
 
+/** Blocks remount re-lock while soft-nav still holds the sheet tree. */
+let chromeUnlockGuardUntil = 0;
+
 function lockSheetChrome() {
+  if (Date.now() < chromeUnlockGuardUntil) return;
   document.body.classList.add("profile-sheet-open");
   document.documentElement.classList.add("profile-sheet-open");
   document.body.classList.remove("profile-sheet-dismissing");
@@ -50,6 +54,7 @@ function lockSheetChrome() {
 function unlockSheetChrome() {
   document.body.classList.remove("profile-sheet-open");
   document.documentElement.classList.remove("profile-sheet-open");
+  chromeUnlockGuardUntil = Date.now() + 3000;
 }
 
 function markSheetDismissing() {
@@ -106,6 +111,12 @@ export function TrainerProfileSheet({
     openAnimRef.current?.stop();
     openAnimRef.current = null;
 
+    /*
+     * Restore site chrome immediately. Soft-nav can keep this tree mounted
+     * for seconds after the slide; waiting for animation/unmount left the
+     * bottom nav and header missing for 10s+.
+     */
+    unlockSheetChrome();
     markSheetDismissing();
     const root = rootRef.current;
     root?.classList.add("profile-sheet-root--pass-through");
@@ -118,7 +129,7 @@ export function TrainerProfileSheet({
         "Δms",
         Math.round(performance.now() - t0)
       );
-      unlockSheetChrome();
+      clearSheetDismissing();
       /* Route sync after visual close — do not block the slide. */
       navigateAway();
     };
@@ -158,6 +169,10 @@ export function TrainerProfileSheet({
     lockSheetChrome();
     dismissingRef.current = false;
     programmaticNavRef.current = false;
+    /* Fresh open — never keep a prior exit's pass-through / inert. */
+    const root = rootRef.current;
+    root?.classList.remove("profile-sheet-root--pass-through");
+    root?.removeAttribute("inert");
     y.set(vhRef.current);
 
     if (reduceMotion) {
@@ -215,13 +230,14 @@ export function TrainerProfileSheet({
 
       openAnimRef.current?.stop();
       openAnimRef.current = null;
+      unlockSheetChrome();
       markSheetDismissing();
       const root = rootRef.current;
       root?.classList.add("profile-sheet-root--pass-through");
       root?.setAttribute("inert", "");
 
       const done = () => {
-        unlockSheetChrome();
+        clearSheetDismissing();
       };
 
       if (reduceMotion) {

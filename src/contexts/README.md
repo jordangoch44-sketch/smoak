@@ -30,4 +30,4 @@ Changing order can break hooks (`SaveTrainerButton` needs both saved + toast con
 
 ## Barrel
 
-`contexts/index.ts` re-exports providers and types for `@/contexts` imports.
+`contexts/index.ts` is optional and incomplete — **prefer** `@/contexts/AuthSessionContext`, `@/contexts/SavedTrainersContext`, etc.

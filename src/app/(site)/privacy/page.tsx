@@ -19,7 +19,7 @@ export default function PrivacyPage() {
       sections={PRIVACY_SECTIONS}
       related={[
         { label: "Terms of Service", href: SITE_ROUTES.terms },
-        { label: "Help & Support", href: SITE_ROUTES.support },
+        { label: "Help Center", href: SITE_ROUTES.support },
       ]}
     />
   );

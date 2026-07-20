@@ -1,3 +1,7 @@
+/**
+ * Optional barrel — most code imports direct paths (`@/components/ui/Button`).
+ * Kept as a design-system catalog; not required for new code.
+ */
 export { Button } from "./Button";
 export { HorizontalCarousel } from "./HorizontalCarousel";
 export { SaveButton } from "./SaveButton";
@@ -6,14 +10,3 @@ export { TrainerThumbnail } from "./TrainerThumbnail";
 export type { TrainerThumbnailSize } from "./TrainerThumbnail";
 export { ToastProvider, useToast } from "./toast";
 export type { ShowToastOptions, ToastType } from "./toast";
-export { SearchIcon, FilterIcon, CloseIcon, HeartIcon, UserIcon } from "./icons";
-export { PasswordInput } from "./PasswordInput";
-export type { PasswordInputProps } from "./PasswordInput";
-export { AuroraAtmosphere } from "./AuroraAtmosphere";
-export type {
-  AuroraAtmosphereProps,
-  AuroraAtmosphereIntensity,
-  AuroraAtmosphereStarDensity,
-  AuroraAtmosphereGlowPosition,
-  AuroraAtmosphereGlowColor,
-} from "./AuroraAtmosphere";

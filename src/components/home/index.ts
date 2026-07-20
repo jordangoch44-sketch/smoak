@@ -1,3 +1,6 @@
+/**
+ * Route barrel — `app/(site)/page.tsx` composes homepage sections from here.
+ */
 export { Hero } from "./Hero";
 export { LocationPersonalizationGate } from "./LocationPersonalizationGate";
 export { SponsoredSpecialists } from "./SponsoredSpecialists";

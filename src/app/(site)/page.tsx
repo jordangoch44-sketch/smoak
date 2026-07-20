@@ -1,11 +1,11 @@
 import {
   Hero,
+  LocationPersonalizationGate,
   SponsoredSpecialists,
   Top50InYourCity,
   Categories,
   NewSpecialists,
 } from "@/components/home";
-import { LocationPersonalizationGate } from "@/components/home/LocationPersonalizationGate";
 
 export default function HomePage() {
   return (

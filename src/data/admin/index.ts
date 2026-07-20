@@ -1,4 +1,5 @@
 /**
+ * Optional barrel — prefer direct imports: `@/data/admin-applications-seed`, etc.
  * Admin mock data — replace with Supabase tables / Stripe product catalog later.
  */
 

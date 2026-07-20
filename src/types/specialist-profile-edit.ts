@@ -8,6 +8,8 @@ export interface SpecialistProfileOverrides {
   gender?: Gender;
   profession?: string;
   specialty?: string[];
+  /** Up to two specialties shown on homepage cards */
+  homepageSpecialties?: string[];
   certifications?: Certification[];
   city?: string;
   state?: string;
@@ -45,6 +47,7 @@ export type SpecialistProfileEditForm = Required<
     | "gender"
     | "profession"
     | "specialty"
+    | "homepageSpecialties"
     | "certifications"
     | "city"
     | "neighborhood"

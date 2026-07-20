@@ -22,7 +22,7 @@ Luxury wellness marketplace (Next.js 16 App Router, React 19, Tailwind v4). **Pr
 
 | Route group | URL examples | Layout / notes |
 |-------------|--------------|----------------|
-| `(site)` | `/`, `/explore`, `/trainers/[id]`, `/saved`, `/login` | `SiteHeader`, `AppProviders`, `site-shell.css` |
+| `(site)` | `/`, `/explore`, `/trainers/[id]`, `/saved`, `/login`, footer/legal pages | `SiteHeader`, `Footer`, `AppProviders`, `site-shell.css` |
 | `(diagnostics)` | `/tap-test` | **No** site chrome — hydration/tap probe only |
 | Root `layout.tsx` | All routes | Fonts, `globals.css`, metadata |
 
@@ -40,6 +40,7 @@ AuthSessionProvider
 - **Save heart**: `SaveTrainerButton` → `useSavedTrainers()` + `useSaveToast()`. Copy/toasts: `lib/saved-ui.ts`. Logged-out gate: `openSaveQuickSignup` → `SaveQuickSignupModal` / `SaveSuccessModal` on `SavedTrainersProvider` (same lightweight client account path as inquiry).
 - **Mobile tabs**: `MobileBottomNav` in `(site)/layout.tsx`; menu: `MobileUtilityDrawer`.
 - **Auth**: `useAuthSession()` — dev sessions in `localStorage` via `lib/auth-session-store.ts`.
+- **Session proxy (Next 16)**: `src/proxy.ts` calls `lib/supabase/middleware.ts` `updateSession()` on protected routes — not root `middleware.ts`.
 
 ## Interaction rules (do not regress)
 
@@ -57,7 +58,25 @@ AuthSessionProvider
 | `globals.css` | Tokens, Tailwind, scroll-lock, imports `site-chrome`, `login-gate`, `mobile-safari` |
 | `site-shell.css` | Homepage + header panels (`home`, `saved-panel`, `create-account-intro`) |
 | `site-chrome.css` | Header, z-index tokens, tap allowlist for controls |
-| Feature CSS | `explore.css`, `profile.css`, `dashboard.css`, etc. |
+| Feature CSS | `explore.css`, `profile.css`, `specialist-reviews.css`, `footer.css`, `dashboard.css`, etc. |
+
+## Reviews (do not merge sources)
+
+Specialist profiles show **two separate** reputation systems:
+
+| Source | Module / UI | Notes |
+|--------|-------------|--------|
+| **SMOAC client reviews** | `lib/reviews/`, `SmoacReviewsSection`, `useSpecialistReviews` | Live Supabase; submit via `submit_specialist_review` RPC |
+| **Catalog / Google demo** | `lib/trainer-reviews.ts`, `Reviews.tsx` | Seed `reviewSources` + legacy review list; hero ★ uses `resolveTrainerReviewDisplay` |
+| **Dashboard reputation** | `lib/specialist-reputation.ts` | Specialist dashboard mock feed only |
+
+Never average SMOAC and Google counts. Hero shows classic ★ + total plus a separate SMOAK line.
+
+## Footer & legal routes
+
+Global footer: `components/layout/Footer.tsx` + `lib/footer-nav.ts` (`FOOTER_NAV_GROUPS`).  
+Legal pages use `LegalDocumentPage` + content from `lib/legal-content.ts`.  
+Canonical paths: `SITE_ROUTES` in `lib/navigation.ts` (`/pricing`, `/contact`, `/faq`, `/safety`, `/privacy`, `/terms`, `/cookies`, `/accessibility`, etc.).
 
 ## Adding a feature (checklist)
 
@@ -82,4 +101,5 @@ Use `npm run dev:lan` and the Mac LAN IP — not `localhost` on device. See `REA
 - `SaveGateContext` / `SaveGateProvider` — use `useSavedTrainers().openSaveQuickSignup`
 - Logged-out save → do not reintroduce Log in / Create account / Continue browsing gates; use `SaveQuickSignupModal`
 - `Navbar` import — use `SiteHeader`
+- Root `middleware.ts` — use `src/proxy.ts` (Next.js 16 proxy convention)
 - Per-card login modals — gate is global on `SavedTrainersProvider`

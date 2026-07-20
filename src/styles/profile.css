@@ -1478,7 +1478,7 @@ body.profile-image-preview-open .profile-toolbar {
   --gallery-duration: 0.3s;
   position: fixed;
   inset: 0;
-  /* Above profile sheet (--z-profile-sheet ≈ header+40) */
+  /* Above profile sheet + floating toolbar stacking contexts */
   z-index: var(--z-profile-gallery);
   display: flex;
   flex-direction: column;

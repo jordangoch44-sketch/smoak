@@ -1,4 +1,5 @@
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
+import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
@@ -49,6 +50,8 @@ export function applySpecialistProfileOverrides(
     ...base,
     ...overrides,
     specialty: overrides.specialty ?? base.specialty,
+    homepageSpecialties:
+      overrides.homepageSpecialties ?? base.homepageSpecialties,
     serviceArea: overrides.serviceArea ?? base.serviceArea,
     certifications: overrides.certifications ?? base.certifications,
     serviceRadiusMiles:
@@ -58,6 +61,14 @@ export function applySpecialistProfileOverrides(
         : undefined) ??
       base.serviceRadiusMiles,
   };
+
+  merged.homepageSpecialties = sanitizeHomepageSpecialties(
+    merged.specialty,
+    merged.homepageSpecialties
+  );
+  if (merged.homepageSpecialties.length === 0) {
+    delete merged.homepageSpecialties;
+  }
 
   if (overrides.zipCode?.trim()) {
     merged.zipCode = overrides.zipCode.trim();
@@ -146,6 +157,10 @@ export function overridesFromTrainer(
     gender: stored?.gender ?? trainer.gender,
     profession: stored?.profession ?? trainer.profession,
     specialty: [...(stored?.specialty ?? trainer.specialty)],
+    homepageSpecialties: sanitizeHomepageSpecialties(
+      stored?.specialty ?? trainer.specialty,
+      stored?.homepageSpecialties ?? trainer.homepageSpecialties
+    ),
     certifications: (stored?.certifications ?? trainer.certifications).map(
       (cert) => ({ ...cert })
     ),
@@ -190,12 +205,18 @@ export function overridesFromTrainer(
 export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProfileOverrides {
   const travel = form.travelRadius.trim();
   const radiusMiles = parseTravelRadiusMiles(travel);
+  const specialty = form.specialty.map((s) => s.trim()).filter(Boolean);
+  const homepageSpecialties = sanitizeHomepageSpecialties(
+    specialty,
+    form.homepageSpecialties
+  );
   return {
     name: form.name.trim(),
     title: form.title.trim(),
     gender: form.gender,
     profession: form.profession.trim(),
-    specialty: form.specialty.map((s) => s.trim()).filter(Boolean),
+    specialty,
+    homepageSpecialties,
     certifications: form.certifications.filter((c) => c.name.trim()),
     city: form.city.trim(),
     neighborhood: form.neighborhood.trim(),

@@ -55,7 +55,7 @@ The audit found **few truly orphan files** (2 components, 1 lib module) but **ma
 |---------|------------------|
 | Browser auth client | `lib/supabase/client.ts` → `getMarketplaceAuthClient()` in `marketplace-auth.ts` |
 | Server auth / callback | `lib/supabase/server.ts` |
-| Session refresh | `lib/supabase/middleware.ts` + root `middleware.ts` |
+| Session refresh | `lib/supabase/middleware.ts` + `src/proxy.ts` (Next 16 proxy convention) |
 | Profiles + roles | `lib/profiles/profile-service.ts` |
 | Saved trainers CRUD | `lib/saved-trainers-service.ts` |
 | Object storage (specialist photos) | `lib/supabase/storage.ts` (separate from DB — not duplicate) |
@@ -330,7 +330,7 @@ Single implementation: `hydrateClientLocationFromSession` alias in `client-profi
 | `createSupabaseBrowserClient()` | `supabase/client.ts` | **Yes** — singleton via `@supabase/ssr` |
 | `getMarketplaceAuthClient()` | `marketplace-auth.ts` | **Yes** — all app auth + saves |
 | `createSupabaseServerClient()` | `supabase/server.ts` | **Yes** — `auth/callback/route.ts` |
-| `updateSession` / inline `createServerClient` | `supabase/middleware.ts` | **Yes** — required cookie adapter for middleware |
+| `updateSession` / inline `createServerClient` | `supabase/middleware.ts` | **Yes** — cookie adapter; invoked from `src/proxy.ts` |
 | `createSupabaseAdminClient()` | `supabase/admin.ts` | **No** |
 | `createClient` (raw) | `scripts/test-*.mjs` | **Yes** — ops scripts only (appropriate) |
 

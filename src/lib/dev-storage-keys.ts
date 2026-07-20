@@ -27,6 +27,8 @@ export const LOCAL_INQUIRIES_STORAGE_KEY = "smoac_local_inquiries";
 /** Specialist portal inquiry alerts (local + same-browser notify) */
 export const SPECIALIST_INQUIRY_NOTIFICATIONS_KEY =
   "smoac_specialist_inquiry_notifications";
+/** Explore search history (write-only until recent-search chips ship) */
+export { RECENT_SEARCHES_STORAGE_KEY } from "@/lib/recent-searches-storage";
 
 /** @deprecated DEV migration source */
 export const LEGACY_AUTH_STORAGE_KEY = "smoac-auth-session";

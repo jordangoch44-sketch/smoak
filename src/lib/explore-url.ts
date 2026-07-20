@@ -7,6 +7,7 @@ const FILTER_KEYS = [
   "profession",
   "specialty",
   "gender",
+  "priceMin",
   "priceMax",
 ] as const;
 
@@ -21,6 +22,7 @@ export function filtersFromSearchParams(
     profession: params.get("profession") ?? "",
     specialty: params.get("specialty") ?? "",
     gender: params.get("gender") ?? "",
+    priceMin: params.get("priceMin") ?? "",
     priceMax: params.get("priceMax") ?? "",
   };
 }
@@ -70,6 +72,7 @@ const FILTER_PARAM_KEYS = [
   "profession",
   "specialty",
   "gender",
+  "priceMin",
   "priceMax",
 ] as const;
 

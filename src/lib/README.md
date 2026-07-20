@@ -33,7 +33,19 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 
 - `marketplace-public-catalog.ts` — approved-only public list; pending hidden via `smoac_hidden_specialists`
 - `explore.ts`, `explore-url.ts`, `explore-active-filters.ts`, `explore-location-filters.ts`
+- `recent-searches-store.ts`, `recent-searches-storage.ts` — Explore query history (writes on search; read UI TBD)
 - `search-query-parser.ts`, `trainers.ts` (filter helpers)
+- `trainer-reviews.ts` — seed/demo hero ★ + card counts (catalog; not live SMOAC)
+- `footer-nav.ts` — `FOOTER_NAV_GROUPS` for `Footer.tsx`
+- `legal-content.ts` — copy for `LegalDocumentPage` routes
+- `navigation.ts` — `SITE_ROUTES` canonical paths
+
+## SMOAC client reviews (live Supabase)
+
+- `reviews/specialist-reviews-client.ts` — fetch + `submit_specialist_review` RPC
+- `reviews/specialist-review-types.ts` — shared types
+
+Do **not** merge with `trainer-reviews.ts` (demo/Google) or `specialist-reputation.ts` (dashboard mock).
 
 ## Image upload / crop
 

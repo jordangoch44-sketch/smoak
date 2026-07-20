@@ -19,9 +19,15 @@ export function filterTrainers(
     if (filters.gender && trainer.gender !== filters.gender) {
       return false;
     }
+    if (filters.priceMin) {
+      const min = parseInt(filters.priceMin, 10);
+      if (Number.isFinite(min) && trainer.pricePerSession < min) {
+        return false;
+      }
+    }
     if (filters.priceMax) {
       const max = parseInt(filters.priceMax, 10);
-      if (trainer.pricePerSession > max) {
+      if (Number.isFinite(max) && trainer.pricePerSession > max) {
         return false;
       }
     }

@@ -1,5 +1,5 @@
 /**
- * Central type exports — import from `@/types` in app code.
+ * Shared type barrel — `@/types` is the canonical import for cross-feature types.
  */
 export type {
   Gender,
@@ -14,4 +14,3 @@ export type {
 } from "./trainer";
 
 export type { TrainerFilters } from "./filters";
-export type { Testimonial, Category } from "./marketing";

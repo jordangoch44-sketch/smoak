@@ -1,6 +1,5 @@
 /**
- * Admin platform services (Owner + Staff).
- * Mock seeds: `@/data/admin`. UI: `@/components/admin`. Hooks: `@/hooks/useAdmin*`.
+ * Optional service catalog — prefer direct imports: `@/lib/admin-applications-service`.
  */
 
 export {

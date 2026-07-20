@@ -2,9 +2,13 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { CloseIcon } from "@/components/ui/icons";
-import { LOGIN_PATH } from "@/lib/auth-routes";
+import {
+  QuickClientAccountAuthActions,
+  QuickClientAccountAuthError,
+  QuickClientAccountSigninFields,
+  QuickClientAccountSignupFields,
+} from "@/components/auth/QuickClientAccountAuthUI";
 import {
   ensureInquiryClientProfileAfterAuth,
   signInClientForAccount,
@@ -283,132 +287,50 @@ export function QuickClientAccountModal({
           </p>
 
           {view === "signup" ? (
-            <div className="login-gate__form">
-              <label
-                className="login-gate__label"
-                htmlFor={`${formId}-first-name`}
-              >
-                First name
-              </label>
-              <input
-                id={`${formId}-first-name`}
-                className="login-gate__input"
-                autoComplete="given-name"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-              <label className="login-gate__label" htmlFor={`${formId}-email`}>
-                Email
-              </label>
-              <input
-                id={`${formId}-email`}
-                type="email"
-                className="login-gate__input"
-                autoComplete="email"
-                inputMode="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <p className="login-gate__helper">
-                You can complete your profile anytime.
-              </p>
-            </div>
+            <QuickClientAccountSignupFields
+              variant="login-gate"
+              idPrefix={formId}
+              firstName={firstName}
+              email={email}
+              onFirstNameChange={setFirstName}
+              onEmailChange={setEmail}
+            />
           ) : null}
 
           {view === "signin" ? (
-            <div className="login-gate__form">
-              <label
-                className="login-gate__label"
-                htmlFor={`${formId}-signin-email`}
-              >
-                Email
-              </label>
-              <input
-                id={`${formId}-signin-email`}
-                type="email"
-                className="login-gate__input"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <label
-                className="login-gate__label"
-                htmlFor={`${formId}-signin-password`}
-              >
-                Password
-              </label>
-              <input
-                id={`${formId}-signin-password`}
-                type="password"
-                className="login-gate__input"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
+            <QuickClientAccountSigninFields
+              variant="login-gate"
+              idPrefix={formId}
+              email={email}
+              password={password}
+              onEmailChange={setEmail}
+              onPasswordChange={setPassword}
+            />
           ) : null}
 
-          {error ? (
-            <p className="login-gate__error" role="alert">
-              {error}
-            </p>
-          ) : null}
+          <QuickClientAccountAuthError variant="login-gate" message={error} />
 
           {view !== "awaiting_email" ? (
-            <div className="login-gate__actions">
-              {view === "signup" ? (
-                <>
-                  <button
-                    type="button"
-                    className="smoac-control login-gate__btn login-gate__btn--aurora"
-                    disabled={sending}
-                    onClick={() => void handleQuickSignup()}
-                  >
-                    {sending ? "Continuing…" : resolvedSignupCta}
-                  </button>
-                  <button
-                    type="button"
-                    className="smoac-control login-gate__btn login-gate__btn--ghost"
-                    onClick={() => {
-                      setView("signin");
-                      setError(null);
-                    }}
-                  >
-                    Already have an account? Log in
-                  </button>
-                </>
-              ) : null}
-
-              {view === "signin" ? (
-                <>
-                  <button
-                    type="button"
-                    className="smoac-control login-gate__btn login-gate__btn--aurora"
-                    disabled={sending}
-                    onClick={() => void handleSignIn()}
-                  >
-                    {sending ? "Signing in…" : resolvedSignInCta}
-                  </button>
-                  <button
-                    type="button"
-                    className="smoac-control login-gate__btn login-gate__btn--ghost"
-                    onClick={() => {
-                      setView("signup");
-                      setError(null);
-                    }}
-                  >
-                    Create a quick account instead
-                  </button>
-                  <Link
-                    href={LOGIN_PATH}
-                    className="login-gate__btn login-gate__btn--ghost"
-                    onClick={(event) => requestClose("link", event)}
-                  >
-                    Open full sign in
-                  </Link>
-                </>
-              ) : null}
-            </div>
+            <QuickClientAccountAuthActions
+              variant="login-gate"
+              view={view === "signin" ? "signin" : "signup"}
+              sending={sending}
+              signupCta={resolvedSignupCta}
+              signInCta={resolvedSignInCta}
+              onSignup={() => void handleQuickSignup()}
+              onSignIn={() => void handleSignIn()}
+              onSwitchToSignin={() => {
+                setView("signin");
+                setError(null);
+              }}
+              onSwitchToSignup={() => {
+                setView("signup");
+                setError(null);
+              }}
+              onOpenFullLogin={(event) => {
+                if (event) requestClose("link", event);
+              }}
+            />
           ) : null}
         </div>
       </div>

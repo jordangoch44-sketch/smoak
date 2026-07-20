@@ -9,11 +9,15 @@ export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
   profession: "",
   specialty: "",
   gender: "",
+  priceMin: "",
   priceMax: "",
 };
 
 export function countActiveFilters(filters: TrainerFilters): number {
-  return Object.values(filters).filter(Boolean).length;
+  const { priceMin, priceMax, ...rest } = filters;
+  let count = Object.values(rest).filter(Boolean).length;
+  if (priceMin || priceMax) count += 1;
+  return count;
 }
 
 export function matchesSearchQuery(trainer: Trainer, query: string): boolean {

@@ -1,7 +1,5 @@
 "use client";
 
-import { useAuthSession } from "@/hooks/useAuthSession";
-import { getExploreLocationSubtitle } from "@/lib/explore-location-subtitle";
 import type { TrainerFilters } from "@/types";
 
 interface ExplorePageHeaderProps {
@@ -9,21 +7,16 @@ interface ExplorePageHeaderProps {
   searchQuery: string;
 }
 
-export function ExplorePageHeader({
-  filters,
-  searchQuery,
-}: ExplorePageHeaderProps) {
-  const { session } = useAuthSession();
-  const subtitle = getExploreLocationSubtitle({
-    filters,
-    session,
-    searchQuery,
-  });
+/** Props kept for ExplorePageClient compatibility; copy is static. */
+export function ExplorePageHeader(props: ExplorePageHeaderProps) {
+  void props;
 
   return (
     <header className="explore-page__header">
-      <h1 className="explore-page__title">Explore Specialists</h1>
-      <p className="explore-page__subtitle">{subtitle}</p>
+      <h1 className="explore-page__title">Search</h1>
+      <p className="explore-page__subtitle">
+        Search by name, profession, specialty, or location.
+      </p>
     </header>
   );
 }

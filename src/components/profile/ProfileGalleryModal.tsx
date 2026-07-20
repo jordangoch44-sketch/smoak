@@ -14,6 +14,7 @@ import type { ProfileGalleryMedia } from "@/types/profile-gallery";
 import { cn } from "@/lib/utils";
 
 const CLOSE_MS = 300;
+const OPEN_DISMISS_GRACE_MS = 450;
 const PROTECTED_SELECTOR = "[data-gallery-protected]";
 const CLOSE_SELECTOR = "[data-gallery-close]";
 
@@ -43,6 +44,7 @@ export function ProfileGalleryModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeFinishedRef = useRef(false);
+  const openedAtRef = useRef(0);
 
   const pauseVideo = useCallback(() => {
     setVideoPlaying(false);
@@ -96,6 +98,8 @@ export function ProfileGalleryModal({
   const handleDismissPointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       if (isClosing || !visible) return;
+      /* Ignore the same gesture that opened the gallery (esp. iOS). */
+      if (Date.now() - openedAtRef.current < OPEN_DISMISS_GRACE_MS) return;
       const target = event.target as HTMLElement;
       if (target.closest(CLOSE_SELECTOR)) return;
       if (target.closest(PROTECTED_SELECTOR)) return;
@@ -124,9 +128,23 @@ export function ProfileGalleryModal({
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      queueMicrotask(() => {
+        if (closeTimerRef.current) {
+          clearTimeout(closeTimerRef.current);
+          closeTimerRef.current = null;
+        }
+        setIsClosing(false);
+        setVisible(false);
+        setMediaReady(false);
+        setMounted(false);
+        document.body.classList.remove("gallery-modal-open");
+      });
+      return;
+    }
     queueMicrotask(() => {
       closeFinishedRef.current = false;
+      openedAtRef.current = Date.now();
       setMounted(true);
       setIsClosing(false);
       setMediaReady(false);
@@ -141,8 +159,12 @@ export function ProfileGalleryModal({
   useEffect(() => {
     if (!mounted || isClosing) return;
 
+    openedAtRef.current = Date.now();
     const frame = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setVisible(true));
+      requestAnimationFrame(() => {
+        openedAtRef.current = Date.now();
+        setVisible(true);
+      });
     });
 
     return () => cancelAnimationFrame(frame);

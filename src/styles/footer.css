@@ -1,0 +1,262 @@
+/* Global site footer — blends into star / atmosphere backdrop */
+
+.site-footer {
+  --site-footer-max: 72rem;
+  position: relative;
+  z-index: var(--z-page-content, 1);
+  isolation: isolate;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(124, 58, 237, 0.07) 0%,
+      rgba(8, 6, 14, 0.42) 28%,
+      rgba(4, 4, 8, 0.55) 100%
+    );
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  color: rgba(226, 220, 245, 0.72);
+  overflow: hidden;
+}
+
+.site-footer__glow {
+  pointer-events: none;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4.5rem;
+  background: radial-gradient(
+    55% 120% at 50% -10%,
+    rgba(168, 85, 247, 0.22) 0%,
+    rgba(124, 58, 237, 0.08) 42%,
+    transparent 72%
+  );
+}
+
+.site-footer__inner {
+  position: relative;
+  width: 100%;
+  max-width: var(--site-footer-max);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 1.75rem;
+  box-sizing: border-box;
+}
+
+.site-footer__main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.site-footer__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+  max-width: 22rem;
+}
+
+.site-footer__tagline {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.site-footer__support {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(214, 208, 232, 0.58);
+}
+
+.site-footer__nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.35rem 1.25rem;
+}
+
+.site-footer__group {
+  min-width: 0;
+}
+
+.site-footer__group-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(233, 225, 255, 0.62);
+}
+
+.site-footer__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.site-footer__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.2rem 0;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: rgba(214, 208, 232, 0.72);
+  text-decoration: none;
+  border-radius: 0.25rem;
+  transition:
+    color 0.18s ease,
+    text-shadow 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.site-footer__link:hover {
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: 0 0 18px rgba(168, 85, 247, 0.28);
+}
+
+.site-footer__link:active {
+  opacity: 0.82;
+}
+
+.site-footer__link:focus-visible {
+  outline: 2px solid rgba(196, 181, 253, 0.85);
+  outline-offset: 3px;
+}
+
+.site-footer__bottom {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.site-footer__copyright {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: rgba(214, 208, 232, 0.55);
+}
+
+.site-footer__disclaimer {
+  margin: 0;
+  max-width: 46rem;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: rgba(214, 208, 232, 0.45);
+}
+
+@media (max-width: 1023px) {
+  /*
+   * Clear the floating bottom nav + iPhone safe area.
+   * Shell padding alone still left the disclaimer under the pill when
+   * scrolled to the end on narrow viewports.
+   */
+  .site-footer__inner {
+    padding-bottom: calc(
+      1.25rem + var(--mobile-bottom-nav-offset, 6.5rem)
+    );
+  }
+}
+
+@media (min-width: 640px) {
+  .site-footer__inner {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .site-footer__inner {
+    padding-top: 2.75rem;
+    padding-bottom: 2.25rem;
+  }
+
+  .site-footer__main {
+    display: grid;
+    grid-template-columns: minmax(14rem, 18.5rem) minmax(0, 1fr);
+    gap: 2.5rem 2.75rem;
+    align-items: start;
+  }
+
+  .site-footer__nav {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem 1.25rem;
+  }
+
+  .site-footer__link {
+    min-height: 2rem;
+  }
+
+  .site-footer__bottom {
+    margin-top: 2.25rem;
+    padding-top: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .site-footer__inner {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-top: 3rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .site-footer__support {
+    font-size: 0.875rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-footer__link {
+    transition: none;
+  }
+}
+
+/* Login softens / collapses the marketing footer */
+body:has(.login-page) .site-footer {
+  border-top-color: rgba(255, 255, 255, 0.04);
+  background: rgba(6, 6, 8, 0.92);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body:has(.login-page) .site-footer__glow {
+  display: none;
+}
+
+body:has(.login-page) .site-footer__main {
+  display: none;
+}
+
+body:has(.login-page) .site-footer__inner {
+  padding-top: 1rem;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+}
+
+body:has(.login-page) .site-footer__bottom {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+body:has(.login-page) .site-footer__disclaimer {
+  display: none;
+}
+
+body:has(.login-page) .site-footer__copyright {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.3);
+}

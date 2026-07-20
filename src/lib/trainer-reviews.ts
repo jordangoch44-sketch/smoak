@@ -1,3 +1,16 @@
+/**
+ * Catalog / demo review display — seed `Trainer.reviewSources`, hero ★, explore cards.
+ *
+ * Powers: `ProfileReviewMeta`, `TrainerProfilePageClient` source tags, legacy `Reviews`
+ * list counts, `computeTrainerReviewCount` in catalog data.
+ *
+ * Data: static `TRAINER_DEMO_REVIEW_SOURCES` + optional `trainer.reviewSources` on seed
+ * trainers. Not live Supabase.
+ *
+ * Do **not** merge counts with `lib/reviews/specialist-reviews-client.ts` (live SMOAC) or
+ * `lib/specialist-reputation.ts` (dashboard mock hub). Hero shows catalog total separately
+ * from the SMOAC line in `ProfileReviewMeta`.
+ */
 import { TRAINER_DEMO_REVIEW_SOURCES } from "@/constants/trainer-reputation-demo";
 import type { Trainer, TrainerReviewSources } from "@/types/trainer";
 

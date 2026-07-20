@@ -1,3 +1,6 @@
+/**
+ * Optional barrel — prefer direct imports: `@/lib/supabase/client`, `@/lib/supabase/config`.
+ */
 export {
   SPECIALIST_MEDIA_BUCKET,
   SPECIALIST_STORAGE_ACCEPT,

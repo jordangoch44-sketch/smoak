@@ -29,8 +29,14 @@ function buildSessionExperience(
   if (state.inHomeAvailable) items.push("In-home sessions");
   if (state.onlineCoachingAvailable) items.push("Online coaching");
   if (state.gymName.trim()) items.push(`Training at ${state.gymName.trim()}`);
-  items.push(...state.availability.daysAvailable);
-  items.push(...state.availability.timeBlocks);
+  const days = Array.isArray(state.availability?.daysAvailable)
+    ? state.availability.daysAvailable
+    : [];
+  const blocks = Array.isArray(state.availability?.timeBlocks)
+    ? state.availability.timeBlocks
+    : [];
+  items.push(...days);
+  items.push(...blocks);
   if (state.pricing.groupTrainingAvailable) items.push("Small group training");
   if (state.pricing.freeConsultationAvailable) items.push("Free consultation");
   return [...new Set(items)];

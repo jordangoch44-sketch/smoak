@@ -90,6 +90,11 @@ export interface Trainer {
   /** High-trust badge — organic tie-breaker near equal distance */
   verified?: boolean;
   specialty: string[];
+  /**
+   * Up to two specialties featured on homepage cards.
+   * When empty/absent, cards use the first specialties from `specialty`.
+   */
+  homepageSpecialties?: string[];
   gender: Gender;
   pricePerSession: number;
   rating: number;
@@ -104,7 +109,8 @@ export interface Trainer {
   bestFor: string[];
   coachingStyle: string[];
   whyClientsChoose: string[];
-  resultsSnapshot: string[];
+  /** Optional — marketplace / application rows may omit curated result chips */
+  resultsSnapshot?: string[] | null;
   sessionExperience: string[];
   gallery: TrainerMediaItem[];
   clientTransformations: ClientTransformationPhoto[];

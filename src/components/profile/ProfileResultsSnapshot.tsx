@@ -11,10 +11,24 @@ export function ProfileResultsSnapshot({
   trainer,
   embedded = false,
 }: ProfileResultsSnapshotProps) {
-  const stats = [
-    ...trainer.resultsSnapshot,
-    `${trainer.reviewCount} Reviews`,
-  ];
+  const resultItems = Array.isArray(trainer.resultsSnapshot)
+    ? trainer.resultsSnapshot.filter(
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0
+      )
+    : [];
+
+  const stats: string[] = [...resultItems];
+
+  if (
+    typeof trainer.reviewCount === "number" &&
+    Number.isFinite(trainer.reviewCount) &&
+    trainer.reviewCount > 0
+  ) {
+    stats.push(`${trainer.reviewCount} Reviews`);
+  }
+
+  if (stats.length === 0) return null;
 
   const grid = (
     <ul className="profile-stat-grid">

@@ -154,6 +154,26 @@ body.profile-sheet-open footer {
   pointer-events: none;
 }
 
+/*
+ * Exit window: chrome is already restored (no profile-sheet-open), but keep
+ * a brief scroll lock so the page doesn’t jump under the sliding sheet.
+ */
+body.profile-sheet-dismissing {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+  body.profile-sheet-dismissing {
+    overflow: visible;
+  }
+
+  body.profile-sheet-dismissing .app-main {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+}
+
 @media (max-width: 1023px) {
   body.profile-sheet-open #root.app-shell,
   body.profile-sheet-open .app-shell {

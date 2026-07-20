@@ -2,45 +2,11 @@
 
 /* Login — spacing scale: 8 · 12 · 16 · 20 · 24 · 32 */
 
-/* Softer global footer on /login only */
+/* Softer global footer on /login only — see footer.css `.site-footer` rules */
 body:has(.login-page) main {
   display: flex;
   flex: 1;
   flex-direction: column;
-}
-
-body:has(.login-page) footer {
-  border-top-color: rgba(255, 255, 255, 0.04);
-  background: rgba(6, 6, 8, 0.92);
-}
-
-body:has(.login-page) footer .mx-auto {
-  padding-top: 1.25rem;
-  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
-}
-
-body:has(.login-page) footer .grid {
-  display: none;
-}
-
-body:has(.login-page) footer .mt-16 {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-
-body:has(.login-page) footer .text-xs {
-  font-size: 10px;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.3);
-}
-
-body:has(.login-page) footer a {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-body:has(.login-page) footer a:hover {
-  color: rgba(255, 255, 255, 0.5);
 }
 
 /* Nav profile chip (shared) */

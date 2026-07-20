@@ -92,7 +92,8 @@ Separate stack — does not share marketplace session:
 
 | Area | Path |
 |------|------|
-| Browser auth client | `lib/supabase/client.ts`, `middleware.ts` |
+| Browser auth client | `lib/supabase/client.ts` |
+| Session proxy (Next 16) | `src/proxy.ts` → `lib/supabase/middleware.ts` (`updateSession`) |
 | Sign-in/up/reset | `lib/auth/marketplace-auth.ts` |
 | Profile DB writes | `lib/profiles/profile-service.ts` |
 | Session store | `lib/auth-session-store.ts`, `contexts/AuthSessionContext.tsx` |

@@ -20,8 +20,16 @@ export const SITE_ROUTES = {
   join: buildJoinFlowHref(),
   about: "/about",
   support: "/support",
+  contact: "/contact",
+  faq: "/faq",
+  pricing: "/pricing",
+  safety: "/safety",
+  communityGuidelines: "/community-guidelines",
+  report: "/report",
   privacy: "/privacy",
   terms: "/terms",
+  cookies: "/cookies",
+  accessibility: "/accessibility",
 } as const;
 
 /** Desktop header text links (saved uses heart control) */

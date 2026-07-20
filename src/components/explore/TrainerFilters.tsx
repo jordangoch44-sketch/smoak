@@ -1,16 +1,18 @@
 "use client";
 
+import { useCallback } from "react";
 import type { TrainerFilters as Filters } from "@/types";
 import { MARKETPLACE_CITIES, getNeighborhoodsForCity } from "@/data/locations";
 import { exploreFiltersFromZipCode } from "@/lib/explore-location-filters";
 import { normalizeZipCode } from "@/lib/zip-to-marketplace-city";
+import { professions, specialties, genders } from "@/data/trainers";
 import {
-  professions,
-  specialties,
-  genders,
-  priceRanges,
-} from "@/data/trainers";
+  EXPLORE_PRICE_RANGE,
+  isFullExplorePriceRange,
+  parseExplorePriceBound,
+} from "@/lib/explore-price-range";
 import { cn } from "@/lib/utils";
+import { PriceRangeSlider } from "./PriceRangeSlider";
 
 interface TrainerFiltersProps {
   filters: Filters;
@@ -26,13 +28,6 @@ const GENDER_CHIPS: { label: string; value: string }[] = [
   { label: "Non-binary", value: "non-binary" },
 ];
 
-const PRICE_CHIPS: { label: string; value: string; hint: string }[] = [
-  { label: "Any", value: "", hint: "Any price" },
-  { label: "$", value: "130", hint: "Under $130" },
-  { label: "$$", value: "150", hint: "Under $150" },
-  { label: "$$$", value: "200", hint: "Under $200" },
-];
-
 export function TrainerFilters({
   filters,
   onChange,
@@ -41,6 +36,17 @@ export function TrainerFilters({
 }: TrainerFiltersProps) {
   const neighborhoods = getNeighborhoodsForCity(filters.city);
   const citySelected = Boolean(filters.city);
+
+  const priceMinRaw = parseExplorePriceBound(
+    filters.priceMin,
+    EXPLORE_PRICE_RANGE.min
+  );
+  const priceMaxRaw = parseExplorePriceBound(
+    filters.priceMax,
+    EXPLORE_PRICE_RANGE.max
+  );
+  const priceMinValue = Math.min(priceMinRaw, priceMaxRaw);
+  const priceMaxValue = Math.max(priceMinRaw, priceMaxRaw);
 
   function update(key: keyof Filters, value: string) {
     onChange({ ...filters, [key]: value });
@@ -80,19 +86,30 @@ export function TrainerFilters({
       profession: "",
       specialty: "",
       gender: "",
+      priceMin: "",
       priceMax: "",
     });
   }
+
+  const handlePriceRangeChange = useCallback(
+    (minValue: number, maxValue: number) => {
+      if (isFullExplorePriceRange(minValue, maxValue)) {
+        onChange({ ...filters, priceMin: "", priceMax: "" });
+        return;
+      }
+      onChange({
+        ...filters,
+        priceMin: String(minValue),
+        priceMax: String(maxValue),
+      });
+    },
+    [filters, onChange]
+  );
 
   const hasFilters = Object.values(filters).some(Boolean);
   const hasLocation = Boolean(
     filters.zipCode || filters.city || filters.neighborhood
   );
-
-  /* Preserve non-chip price values (e.g. 175) as a selected select-like chip state */
-  const priceChipValues = new Set(PRICE_CHIPS.map((c) => c.value));
-  const priceIsCustom =
-    Boolean(filters.priceMax) && !priceChipValues.has(filters.priceMax);
 
   return (
     <div
@@ -116,9 +133,15 @@ export function TrainerFilters({
         </div>
       )}
 
-      <section className="explore-filter-section" aria-labelledby="filter-location-heading">
+      <section
+        className="explore-filter-section"
+        aria-labelledby="filter-location-heading"
+      >
         <div className="explore-filter-section__header">
-          <h3 id="filter-location-heading" className="explore-filter-section__title">
+          <h3
+            id="filter-location-heading"
+            className="explore-filter-section__title"
+          >
             Location
           </h3>
           {hasLocation ? (
@@ -184,9 +207,15 @@ export function TrainerFilters({
         />
       </section>
 
-      <section className="explore-filter-section" aria-labelledby="filter-specialty-heading">
+      <section
+        className="explore-filter-section"
+        aria-labelledby="filter-specialty-heading"
+      >
         <div className="explore-filter-section__header">
-          <h3 id="filter-specialty-heading" className="explore-filter-section__title">
+          <h3
+            id="filter-specialty-heading"
+            className="explore-filter-section__title"
+          >
             Specialty
           </h3>
         </div>
@@ -212,9 +241,15 @@ export function TrainerFilters({
         />
       </section>
 
-      <section className="explore-filter-section" aria-labelledby="filter-preferences-heading">
+      <section
+        className="explore-filter-section"
+        aria-labelledby="filter-preferences-heading"
+      >
         <div className="explore-filter-section__header">
-          <h3 id="filter-preferences-heading" className="explore-filter-section__title">
+          <h3
+            id="filter-preferences-heading"
+            className="explore-filter-section__title"
+          >
             Preferences
           </h3>
         </div>
@@ -230,24 +265,10 @@ export function TrainerFilters({
           )}
         />
 
-        <FilterChipGroup
-          legend="Price / session"
-          value={priceIsCustom ? filters.priceMax : filters.priceMax}
-          onChange={(v) => update("priceMax", v)}
-          options={
-            priceIsCustom
-              ? [
-                  ...PRICE_CHIPS,
-                  {
-                    label:
-                      priceRanges.find((p) => p.value === filters.priceMax)
-                        ?.label ?? `Under $${filters.priceMax}`,
-                    value: filters.priceMax,
-                    hint: "Current",
-                  },
-                ]
-              : PRICE_CHIPS
-          }
+        <PriceRangeSlider
+          minValue={priceMinValue}
+          maxValue={priceMaxValue}
+          onChange={handlePriceRangeChange}
         />
       </section>
     </div>

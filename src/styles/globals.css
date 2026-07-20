@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "./interaction.css";
 @import "./brand.css";
+
+/*
+ * Atmosphere layers (keep separate — each targets different DOM; do not merge):
+ * - atmosphere.css         — .atmosphere-mesh blobs + glass tokens (dashboard, login, reset)
+ * - aurora.css               — site header/navbar frost + --site-navbar-height tokens
+ * - aurora-atmosphere.css    — AuroraAtmosphere component (nebula, starfield, home sections)
+ * page-transition.css        — imported via site-shell.css (desktop route exit layers)
+ */
 @import "./atmosphere.css";
 @import "./aurora.css";
 @import "./aurora-atmosphere.css";
@@ -12,6 +20,7 @@
 @import "./toast.css";
 @import "./site-chrome.css";
 @import "./legal.css";
+@import "./footer.css";
 @import "./login-gate.css";
 @import "./location-personalization.css";
 @import "./location-selector.css";
@@ -141,6 +150,7 @@ body.menu-open,
 body.drawer-open,
 body.profile-sheet-open,
 body.inquiry-sheet-open,
+body.review-modal-open,
 body.saved-panel-open,
 body.login-gate-open,
 body.complete-account-lock,
@@ -159,6 +169,7 @@ body.admin-review-open {
   body.drawer-open,
   body.profile-sheet-open,
   body.inquiry-sheet-open,
+  body.review-modal-open,
   body.saved-panel-open,
   body.login-gate-open,
   body.complete-account-lock,
@@ -175,6 +186,7 @@ body.admin-review-open {
   body.drawer-open .app-main,
   body.profile-sheet-open .app-main,
   body.inquiry-sheet-open .app-main,
+  body.review-modal-open .app-main,
   body.saved-panel-open .app-main,
   body.login-gate-open .app-main,
   body.complete-account-lock .app-main,

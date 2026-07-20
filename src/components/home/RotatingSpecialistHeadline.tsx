@@ -13,14 +13,15 @@ const SPECIALIST_TITLES = [
 ] as const;
 
 const TYPE_MS = 58;
+const ERASE_MS = 36;
 const HOLD_MS = 1500;
 const STATIC_TITLE = "Trainer";
 
-type Phase = "typing" | "holding";
+type Phase = "typing" | "holding" | "erasing";
 
 /**
  * Fixed “Find your perfect” + typewriter specialist titles.
- * Types each word, holds, then jumps to the next (no delete / slide).
+ * Types each word, holds, erases, then rotates to the next.
  */
 export function RotatingSpecialistHeadline() {
   const reduceMotion = usePrefersReducedMotion();
@@ -44,13 +45,20 @@ export function RotatingSpecialistHeadline() {
         delay = 0;
         tick = () => setPhase("holding");
       }
-    } else {
+    } else if (phase === "holding") {
       delay = HOLD_MS;
-      tick = () => {
-        setIndex((current) => (current + 1) % SPECIALIST_TITLES.length);
-        setTypedLen(0);
-        setPhase("typing");
-      };
+      tick = () => setPhase("erasing");
+    } else {
+      delay = ERASE_MS;
+      if (typedLen > 0) {
+        tick = () => setTypedLen((len) => Math.max(0, len - 1));
+      } else {
+        delay = 0;
+        tick = () => {
+          setIndex((current) => (current + 1) % SPECIALIST_TITLES.length);
+          setPhase("typing");
+        };
+      }
     }
 
     if (!tick) return;
@@ -69,10 +77,7 @@ export function RotatingSpecialistHeadline() {
       </span>
 
       {reduceMotion ? (
-        <span
-          className="rotating-headline__static"
-          aria-hidden
-        >
+        <span className="rotating-headline__static" aria-hidden>
           {STATIC_TITLE}
         </span>
       ) : (

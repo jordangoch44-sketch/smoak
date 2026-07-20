@@ -44,6 +44,8 @@ Specialist profile/cover/gallery uploads are prepared under `src/lib/supabase/`.
 | `npm run dev:lan` | Dev on `0.0.0.0` for device testing |
 | `npm run build` | Production build |
 | `npm run start` | Production server |
+| `npm run start:lan` | Production on `0.0.0.0` for device testing |
+| `npm run verify:auth` | Auth/session + magic-link redirect checks (LAN `SITE_URL`) |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 
@@ -58,6 +60,7 @@ Specialist profile/cover/gallery uploads are prepared under `src/lib/supabase/`.
 | `/login`, `/create-account` | `components/auth/` |
 | `/rankings` | `components/rankings/` |
 | `/client-dashboard`, `/specialist-dashboard` | `components/dashboard/` |
+| `/pricing`, `/contact`, `/faq`, `/safety`, `/privacy`, `/terms`, `/cookies`, `/accessibility`, `/community-guidelines`, `/report` | `components/legal/` + `lib/legal-content.ts` |
 | `/tap-test` | Diagnostics only (no site chrome) |
 
 ## Project structure

@@ -1,4 +1,8 @@
-import { priceRanges } from "@/data/trainers";
+import {
+  EXPLORE_PRICE_RANGE,
+  formatExplorePriceRangeLabel,
+  parseExplorePriceBound,
+} from "@/lib/explore-price-range";
 import type { TrainerFilters } from "@/types";
 
 export type ActiveFilterKey = keyof TrainerFilters;
@@ -41,11 +45,18 @@ export function getActiveFilterChips(filters: TrainerFilters): ActiveFilterChip[
       filters.gender.charAt(0).toUpperCase() + filters.gender.slice(1);
     chips.push({ key: "gender", label });
   }
-  if (filters.priceMax) {
-    const range = priceRanges.find((r) => r.value === filters.priceMax);
+  if (filters.priceMin || filters.priceMax) {
+    const min = parseExplorePriceBound(
+      filters.priceMin,
+      EXPLORE_PRICE_RANGE.min
+    );
+    const max = parseExplorePriceBound(
+      filters.priceMax,
+      EXPLORE_PRICE_RANGE.max
+    );
     chips.push({
       key: "priceMax",
-      label: range?.label ?? `Under $${filters.priceMax}`,
+      label: formatExplorePriceRangeLabel(min, max),
     });
   }
 
@@ -64,6 +75,9 @@ export function removeFilterFromState(
       city: "",
       neighborhood: "",
     };
+  }
+  if (key === "priceMin" || key === "priceMax") {
+    return { ...filters, priceMin: "", priceMax: "" };
   }
   return { ...filters, [key]: "" };
 }

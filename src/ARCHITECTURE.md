@@ -8,12 +8,14 @@ High-level map for humans and Cursor. **Behavior > file count** — extend exist
 src/
 ├── app/
 │   ├── layout.tsx              # Root: globals.css, fonts
+│   ├── proxy.ts                # Next 16 session proxy → lib/supabase/middleware.ts
 │   ├── (site)/                 # Main product (header, footer, providers)
 │   │   ├── layout.tsx
 │   │   ├── page.tsx            # Homepage
 │   │   ├── explore/
 │   │   ├── trainers/[id]/
 │   │   ├── saved/, login/, rankings/, create-account/
+│   │   ├── pricing/, contact/, faq/, safety/, … (footer legal pages)
 │   │   ├── client-dashboard/, specialist-dashboard/
 │   │   └── admin/              # Owner + Staff (not public marketplace)
 │   └── (diagnostics)/
@@ -69,6 +71,7 @@ AuthSessionProvider (contexts/)
 ```
 
 Dev fallback (no Supabase env): `dev-auth.ts` + `auth-session-storage.ts`.  
+Protected-route session refresh: `src/proxy.ts` → `lib/supabase/middleware.ts` (`updateSession`).  
 Full detail: [`docs/PHASE2_AUTH_ARCHITECTURE.md`](../docs/PHASE2_AUTH_ARCHITECTURE.md).  
 Phase 3 localStorage migration: [`docs/PHASE3_SUPABASE_MIGRATION.md`](../docs/PHASE3_SUPABASE_MIGRATION.md).
 
@@ -93,6 +96,26 @@ Hearts sit in `TrainerCardSaveSlot` **outside** the card link. Nav badges use `f
 ```
 
 `MobileUtilityDrawer` — hamburger menu (primary nav + legal). Saved count badge on bottom nav + desktop header heart.
+
+### Site footer
+
+```
+(site)/layout.tsx
+  └── Footer (layout/Footer.tsx)
+        └── lib/footer-nav.ts   FOOTER_NAV_GROUPS → SITE_ROUTES
+        └── LegalDocumentPage   pricing, contact, faq, safety, privacy, terms, …
+```
+
+### Specialist profile reviews (separate sources)
+
+```
+ProfileReviewMeta          ★ rating + total + source tags (catalog/demo)
+SmoacReviewsSection        live SMOAC reviews (Supabase via useSpecialistReviews)
+Reviews                    Google / seed review list (never merged with SMOAC)
+```
+
+Submit path: `lib/reviews/specialist-reviews-client.ts` → RPC `submit_specialist_review`.  
+Catalog aggregates: `lib/trainer-reviews.ts`. Dashboard feed: `lib/specialist-reputation.ts`.
 
 ### Site header (mobile + desktop)
 
@@ -139,18 +162,30 @@ Use these instead of magic numbers:
 - `--z-hero-search-suggestions` (8500)
 - `--z-header-overlay` (9000)
 - `--z-site-header` (10000)
-- `--z-modal` (1000000) — login gate
+- `--z-profile-sheet` (header + 40)
+- `--z-profile-gallery` (header + 200) — above sheet + toolbar
+- `--z-modal` (1000000) — login gate, inquiry, review modal
 - `--z-welcome-intro` (1000001) — welcome splash
 
 ## Imports
 
-Prefer path aliases and barrels:
+**Default:** direct file paths — `@/hooks/useAuthSession`, `@/components/profile/TrainerProfilePageClient`, `@/contexts/SavedTrainersContext`.
 
-- `@/types`, `@/hooks`, `@/contexts`, `@/data`
-- `@/components/ui`, `@/components/trainers`, `@/components/layout`
-- `@/components/explore`, `@/components/home`, `@/components/profile`, `@/components/auth`
+| Import style | When |
+|--------------|------|
+| Direct path | Hooks, contexts, lib, feature internals, most components |
+| `@/types` | Shared interfaces (`Trainer`, `TrainerFilters`, …) |
+| Feature barrel `@/components/{feature}` | Optional — only for symbols listed in that folder's `index.ts` (often route `*PageClient` or cross-feature exports like `TrainerList`) |
+| `@/components/dashboard/shared` | Dashboard sub-feature only — not the parent `dashboard` barrel |
 
-Import from the **feature barrel** or the concrete file — avoid deep cross-feature imports when a hook/context already exists.
+Barrel files are trimmed to match real import sites; do not re-export entire folders.
+
+Common paths:
+
+- `@/lib/navigation` (`SITE_ROUTES`), `@/lib/footer-nav`
+- `@/data/trainers`, `@/data/locations` (not `@/data` unless intentional)
+
+Avoid deep cross-feature imports when a hook or context already exists.
 
 ## Scaling checklist (new feature)
 

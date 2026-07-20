@@ -1,5 +1,6 @@
 /**
- * Static mock data — replace with API/CMS later without moving types.
+ * Optional barrel — prefer direct imports: `@/data/trainers`, `@/data/locations`.
+ * Static mock data until API/CMS exists.
  */
 export {
   trainers,
@@ -16,7 +17,3 @@ export {
   CITY_NEIGHBORHOODS,
   getNeighborhoodsForCity,
 } from "./locations";
-
-export { categories } from "./categories";
-export { testimonials } from "./testimonials";
-export { trainingGoals } from "./goals";

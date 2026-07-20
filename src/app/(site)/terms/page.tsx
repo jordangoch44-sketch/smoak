@@ -16,7 +16,7 @@ export default function TermsPage() {
       sections={TERMS_SECTIONS}
       related={[
         { label: "Privacy Policy", href: SITE_ROUTES.privacy },
-        { label: "Help & Support", href: SITE_ROUTES.support },
+        { label: "Help Center", href: SITE_ROUTES.support },
       ]}
     />
   );

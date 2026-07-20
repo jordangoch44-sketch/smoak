@@ -19,7 +19,8 @@
     "test:product-workflow": "node scripts/test-product-workflow.mjs",
     "test:email": "node scripts/test-email.mjs",
     "apply:migration": "node scripts/apply-sql-migration.mjs",
-    "apply:signup-fix": "node scripts/apply-signup-fix.mjs"
+    "apply:signup-fix": "node scripts/apply-signup-fix.mjs",
+    "verify:auth": "node scripts/verify-auth.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

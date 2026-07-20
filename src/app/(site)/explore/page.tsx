@@ -10,7 +10,7 @@ const ExplorePageClient = dynamic(
 );
 
 export const metadata = {
-  title: "Explore Specialists",
+  title: "Search",
 };
 
 /** Soft aurora placeholder — avoids hard black cut while the client chunk loads */

@@ -7,42 +7,16 @@
  * NEXT_PUBLIC_SITE_URL / auth redirects. Auth origin must be the LAN IP.
  */
 import { spawn } from "node:child_process";
-import os from "node:os";
+import {
+  buildLanOrigin,
+  getDefaultPort,
+  getLanIpv4,
+  isUnusableSiteUrl,
+} from "./lan-utils.mjs";
 
-const PORT = process.env.PORT ?? "3000";
-
-function getLanIpv4() {
-  const nets = os.networkInterfaces();
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name] ?? []) {
-      if (net.family === "IPv4" && !net.internal) {
-        return net.address;
-      }
-    }
-  }
-  return null;
-}
-
-function isUnusableSiteUrl(value) {
-  if (!value) return true;
-  try {
-    const { hostname } = new URL(value.includes("://") ? value : `http://${value}`);
-    return (
-      hostname === "0.0.0.0" ||
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "[::]" ||
-      hostname === "::" ||
-      hostname === "[::1]" ||
-      hostname === "::1"
-    );
-  } catch {
-    return true;
-  }
-}
-
+const PORT = getDefaultPort();
 const lanIp = getLanIpv4();
-const lanOrigin = lanIp ? `http://${lanIp}:${PORT}` : null;
+const lanOrigin = buildLanOrigin(lanIp, PORT);
 
 const existingSiteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").trim().replace(/\/$/, "");
 const env = { ...process.env };

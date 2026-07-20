@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["framer-motion"],
   },
   images: {
+    qualities: [75, 90, 100],
     remotePatterns: [
       {
         protocol: "https",

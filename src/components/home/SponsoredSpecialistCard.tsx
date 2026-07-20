@@ -10,6 +10,7 @@ import {
   formatTrainerPriceLabel,
   formatTrainerRatingLabel,
 } from "@/lib/home-discovery";
+import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
 import type { Trainer } from "@/types";
 
 interface SponsoredSpecialistCardProps {
@@ -65,7 +66,8 @@ export function SponsoredSpecialistCard({
           </TapLink>
 
           <SpecialtyChips
-            specialties={trainer.specialty}
+            specialties={getHomepageFeaturedSpecialties(trainer)}
+            maxVisible={2}
             className="home-sponsored-card__chips specialty-chips--row"
           />
 

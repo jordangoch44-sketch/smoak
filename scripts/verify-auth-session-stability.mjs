@@ -1,8 +1,10 @@
 /**
  * Smoke checks for auth/session stabilization helpers.
- * Usage: node --env-file=.env.local scripts/verify-auth-session-stability.mjs
+ * Usage: npm run verify:auth
+ *        node --env-file=.env.local scripts/verify-auth-session-stability.mjs
  */
 import { createClient } from "@supabase/supabase-js";
+import { isBadAuthHost } from "./lan-utils.mjs";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
@@ -13,7 +15,7 @@ if (!url || !anon || !siteUrl) {
   process.exit(1);
 }
 
-if (/localhost|127\.0\.0\.1|0\.0\.0\.0/i.test(siteUrl)) {
+if (isBadAuthHost(siteUrl)) {
   console.error("FAIL: SITE_URL must not be localhost/0.0.0.0:", siteUrl);
   process.exit(1);
 }

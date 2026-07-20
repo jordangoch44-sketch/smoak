@@ -1,3 +1,12 @@
+/**
+ * Recent Explore search queries (localStorage).
+ *
+ * Write path: `useExploreTrainers` → `recordRecentSearch()` on successful search.
+ * Read UI: not built yet — data is persisted for a future Explore “recent searches” row.
+ *
+ * To add read UI later, use `useSyncExternalStore` with:
+ * `subscribeRecentSearches`, `getRecentSearchesSnapshot`, `getRecentSearchesServerSnapshot`.
+ */
 import {
   loadRecentSearches,
   mergeRecentSearch,

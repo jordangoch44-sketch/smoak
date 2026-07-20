@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { SITE_ROUTES } from "@/lib/navigation";
+import { ScrollToTopOnNavigate } from "./ScrollToTopOnNavigate";
 
 export interface LegalSection {
   title: string;
@@ -17,6 +18,10 @@ interface LegalDocumentPageProps {
   children?: ReactNode;
 }
 
+/**
+ * Reusable informational / legal page shell for footer destinations.
+ * TODO: Have legal counsel review page copy before public launch.
+ */
 export function LegalDocumentPage({
   title,
   description,
@@ -26,7 +31,8 @@ export function LegalDocumentPage({
   children,
 }: LegalDocumentPageProps) {
   return (
-    <main className="legal-page">
+    <div className="legal-page">
+      <ScrollToTopOnNavigate />
       <article className="legal-page__article">
         <header className="legal-page__header">
           <p className="legal-page__eyebrow">SMOAC</p>
@@ -60,7 +66,7 @@ export function LegalDocumentPage({
           {(related ?? [
             { label: "Privacy Policy", href: SITE_ROUTES.privacy },
             { label: "Terms of Service", href: SITE_ROUTES.terms },
-            { label: "Help & Support", href: SITE_ROUTES.support },
+            { label: "Help Center", href: SITE_ROUTES.support },
           ]).map((link) => (
             <Link key={link.href} href={link.href} className="legal-page__link">
               {link.label}
@@ -68,6 +74,6 @@ export function LegalDocumentPage({
           ))}
         </footer>
       </article>
-    </main>
+    </div>
   );
 }

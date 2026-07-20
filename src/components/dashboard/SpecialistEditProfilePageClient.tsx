@@ -67,6 +67,7 @@ function cloneForm(form: SpecialistProfileEditForm): SpecialistProfileEditForm {
   return {
     ...form,
     specialty: [...form.specialty],
+    homepageSpecialties: [...form.homepageSpecialties],
     serviceArea: [...form.serviceArea],
     certifications: form.certifications.map((cert) => ({ ...cert })),
   };
@@ -146,11 +147,36 @@ export function SpecialistEditProfilePageClient() {
     setSectionDraft((prev) => {
       if (!prev) return prev;
       const has = prev.specialty.includes(specialty);
+      const specialtyNext = has
+        ? prev.specialty.filter((item) => item !== specialty)
+        : [...prev.specialty, specialty];
       return {
         ...prev,
-        specialty: has
-          ? prev.specialty.filter((item) => item !== specialty)
-          : [...prev.specialty, specialty],
+        specialty: specialtyNext,
+        homepageSpecialties: prev.homepageSpecialties.filter((item) =>
+          specialtyNext.includes(item)
+        ),
+      };
+    });
+  }
+
+  function toggleHomepageSpecialty(specialty: string) {
+    setSectionDraft((prev) => {
+      if (!prev) return prev;
+      if (!prev.specialty.includes(specialty)) return prev;
+      const has = prev.homepageSpecialties.includes(specialty);
+      if (has) {
+        return {
+          ...prev,
+          homepageSpecialties: prev.homepageSpecialties.filter(
+            (item) => item !== specialty
+          ),
+        };
+      }
+      if (prev.homepageSpecialties.length >= 2) return prev;
+      return {
+        ...prev,
+        homepageSpecialties: [...prev.homepageSpecialties, specialty],
       };
     });
   }
@@ -453,46 +479,121 @@ export function SpecialistEditProfilePageClient() {
             title="Specialties"
             description="Tags on cards and filters"
             viewContent={
-              savedForm.specialty.length > 0 ? (
-                <div className="dashboard-edit-chip-grid profile-edit-chip-grid--view">
-                  {savedForm.specialty.map((specialty) => (
-                    <span
-                      key={specialty}
-                      className="dashboard-edit-chip dashboard-edit-chip--active"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
+              <>
+                {savedForm.specialty.length > 0 ? (
+                  <div className="dashboard-edit-chip-grid profile-edit-chip-grid--view">
+                    {savedForm.specialty.map((specialty) => (
+                      <span
+                        key={specialty}
+                        className="dashboard-edit-chip dashboard-edit-chip--active"
+                      >
+                        {specialty}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <ProfileEditViewField
+                    label="Specialties"
+                    value=""
+                    emptyLabel="Add specialties"
+                  />
+                )}
+                <div className="profile-edit-homepage-specialties">
+                  <p className="profile-edit-field__label">
+                    Homepage Featured Specialties
+                  </p>
+                  <p className="profile-edit-homepage-specialties__help">
+                    These two specialties will appear on your homepage card.
+                    Your full list of specialties will still be displayed on
+                    your detailed profile.
+                  </p>
+                  {savedForm.homepageSpecialties.length > 0 ? (
+                    <div className="dashboard-edit-chip-grid profile-edit-chip-grid--view">
+                      {savedForm.homepageSpecialties.map((specialty) => (
+                        <span
+                          key={specialty}
+                          className="dashboard-edit-chip dashboard-edit-chip--active"
+                        >
+                          {specialty}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="profile-edit-field__value profile-edit-field__value--empty">
+                      Using first two specialties by default
+                    </p>
+                  )}
                 </div>
-              ) : (
-                <ProfileEditViewField
-                  label="Specialties"
-                  value=""
-                  emptyLabel="Add specialties"
-                />
-              )
+              </>
             }
             editContent={
-              <div className="dashboard-edit-chip-grid">
-                {marketplaceSpecialtyOptions.map((specialty) => {
-                  const active = form.specialty.includes(specialty);
-                  return (
-                    <button
-                      key={specialty}
-                      type="button"
-                      className={
-                        active
-                          ? "dashboard-edit-chip dashboard-edit-chip--active"
-                          : "dashboard-edit-chip"
-                      }
-                      onClick={() => toggleSpecialty(specialty)}
-                      aria-pressed={active}
-                    >
-                      {specialty}
-                    </button>
-                  );
-                })}
-              </div>
+              <>
+                <div className="dashboard-edit-chip-grid">
+                  {marketplaceSpecialtyOptions.map((specialty) => {
+                    const active = form.specialty.includes(specialty);
+                    return (
+                      <button
+                        key={specialty}
+                        type="button"
+                        className={
+                          active
+                            ? "dashboard-edit-chip dashboard-edit-chip--active"
+                            : "dashboard-edit-chip"
+                        }
+                        onClick={() => toggleSpecialty(specialty)}
+                        aria-pressed={active}
+                      >
+                        {specialty}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="profile-edit-homepage-specialties">
+                  <p className="profile-edit-field__label">
+                    Homepage Featured Specialties
+                  </p>
+                  <p className="profile-edit-homepage-specialties__help">
+                    These two specialties will appear on your homepage card.
+                    Your full list of specialties will still be displayed on
+                    your detailed profile.
+                  </p>
+                  {form.specialty.length > 0 ? (
+                    <div className="dashboard-edit-chip-grid">
+                      {form.specialty.map((specialty) => {
+                        const featured =
+                          form.homepageSpecialties.includes(specialty);
+                        const atLimit =
+                          form.homepageSpecialties.length >= 2 && !featured;
+                        return (
+                          <button
+                            key={`home-${specialty}`}
+                            type="button"
+                            className={
+                              featured
+                                ? "dashboard-edit-chip dashboard-edit-chip--active"
+                                : "dashboard-edit-chip"
+                            }
+                            onClick={() => toggleHomepageSpecialty(specialty)}
+                            aria-pressed={featured}
+                            disabled={atLimit}
+                            title={
+                              atLimit
+                                ? "Remove one featured specialty to choose another"
+                                : undefined
+                            }
+                          >
+                            {specialty}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="profile-edit-field__value profile-edit-field__value--empty">
+                      Select specialties above first
+                    </p>
+                  )}
+                </div>
+              </>
             }
           />
 

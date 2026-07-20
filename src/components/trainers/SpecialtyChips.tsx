@@ -13,8 +13,8 @@ interface SpecialtyChipsProps {
 }
 
 /**
- * Up to `maxVisible` full specialty names, plus a compact “+X” overflow chip.
- * Hides entirely when there are no specialties.
+ * Up to `maxVisible` specialty names (no overflow “+N” chip).
+ * Full specialty lists belong on the detailed profile.
  */
 export function SpecialtyChips({
   specialties,
@@ -22,7 +22,7 @@ export function SpecialtyChips({
   className,
   "aria-label": ariaLabel = "Specialties",
 }: SpecialtyChipsProps) {
-  const { visible, extraCount } = getVisibleSpecialties(specialties, maxVisible);
+  const { visible } = getVisibleSpecialties(specialties, maxVisible);
   if (visible.length === 0) return null;
 
   return (
@@ -32,11 +32,6 @@ export function SpecialtyChips({
           {tag}
         </li>
       ))}
-      {extraCount > 0 ? (
-        <li className="specialty-chips__more" aria-label={`${extraCount} more specialties`}>
-          +{extraCount}
-        </li>
-      ) : null}
     </ul>
   );
 }

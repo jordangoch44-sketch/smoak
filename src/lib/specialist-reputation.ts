@@ -1,3 +1,15 @@
+/**
+ * Specialist dashboard reputation hub — mock multi-source feed (not public profile).
+ *
+ * Powers: `ReviewsCard`, `ReputationSourceRow`, `ReputationReviewFeedItem` on the
+ * specialist dashboard only.
+ *
+ * Data: `constants/specialist-reputation-mock.ts` (connected Google/Yelp-style sources +
+ * sample external reviews). May fold seed `trainer.reviews` into the hub preview.
+ *
+ * Do **not** use for marketplace hero ★ (`trainer-reviews.ts`) or live SMOAC submit/read
+ * (`reviews/specialist-reviews-client.ts`).
+ */
 import {
   REPUTATION_SOURCE_REGISTRY,
   SPECIALIST_REPUTATION_BY_PROFILE,

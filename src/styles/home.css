@@ -443,7 +443,7 @@
   display: block;
 }
 
-/* Typewriter specialist headline — type, hold, next word */
+/* Typewriter specialist headline — type, hold, erase, next word */
 .rotating-headline__typed {
   display: flex;
   align-items: center;

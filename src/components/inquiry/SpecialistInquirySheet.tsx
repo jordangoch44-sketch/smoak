@@ -17,8 +17,14 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import { CloseIcon } from "@/components/ui/icons";
+import {
+  QuickClientAccountAuthActions,
+  QuickClientAccountAuthError,
+  QuickClientAccountSigninFields,
+  QuickClientAccountSignupFields,
+} from "@/components/auth/QuickClientAccountAuthUI";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { LOGIN_PATH, CLIENT_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { CLIENT_DASHBOARD_PATH } from "@/lib/auth-routes";
 import {
   startInquiryQuickAccount,
   signInClientForInquiry,
@@ -507,67 +513,27 @@ export function SpecialistInquirySheet({
               ) : null}
 
               {view === "signup" ? (
-                <>
-                  <p className="inquiry-sheet__support">
-                    Enter your first name and email so the specialist can respond.
-                  </p>
-                  <label className="inquiry-sheet__label" htmlFor="inquiry-first-name">
-                    First name
-                  </label>
-                  <input
-                    id="inquiry-first-name"
-                    className="inquiry-sheet__input"
-                    autoComplete="given-name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                  />
-                  <label className="inquiry-sheet__label" htmlFor="inquiry-email">
-                    Email
-                  </label>
-                  <input
-                    id="inquiry-email"
-                    type="email"
-                    className="inquiry-sheet__input"
-                    autoComplete="email"
-                    inputMode="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <p className="inquiry-sheet__privacy">
-                    We share your email with the specialist so they can reply
-                    directly. You can complete your profile later.
-                  </p>
-                </>
+                <QuickClientAccountSignupFields
+                  variant="inquiry-sheet"
+                  idPrefix="inquiry"
+                  firstName={firstName}
+                  email={email}
+                  onFirstNameChange={setFirstName}
+                  onEmailChange={setEmail}
+                  supportText="Enter your first name and email so the specialist can respond."
+                />
               ) : null}
 
               {view === "signin" ? (
-                <>
-                  <p className="inquiry-sheet__support">
-                    Sign in to send your message to {specialistName}.
-                  </p>
-                  <label className="inquiry-sheet__label" htmlFor="inquiry-signin-email">
-                    Email
-                  </label>
-                  <input
-                    id="inquiry-signin-email"
-                    type="email"
-                    className="inquiry-sheet__input"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <label className="inquiry-sheet__label" htmlFor="inquiry-signin-password">
-                    Password
-                  </label>
-                  <input
-                    id="inquiry-signin-password"
-                    type="password"
-                    className="inquiry-sheet__input"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </>
+                <QuickClientAccountSigninFields
+                  variant="inquiry-sheet"
+                  idPrefix="inquiry"
+                  email={email}
+                  password={password}
+                  onEmailChange={setEmail}
+                  onPasswordChange={setPassword}
+                  supportText={`Sign in to send your message to ${specialistName}.`}
+                />
               ) : null}
 
               {view === "awaiting_email" ? (
@@ -595,11 +561,7 @@ export function SpecialistInquirySheet({
                 </div>
               ) : null}
 
-              {error ? (
-                <p className="inquiry-sheet__error" role="alert">
-                  {error}
-                </p>
-              ) : null}
+              <QuickClientAccountAuthError variant="inquiry-sheet" message={error} />
             </div>
 
             {view !== "success" && view !== "awaiting_email" ? (
@@ -622,58 +584,26 @@ export function SpecialistInquirySheet({
                   </>
                 ) : null}
 
-                {view === "signup" ? (
-                  <>
-                    <button
-                      type="button"
-                      className="smoac-control inquiry-sheet__submit"
-                      disabled={sending}
-                      onClick={() => void handleQuickSignup()}
-                    >
-                      {sending ? "Continuing…" : "Continue & Send"}
-                    </button>
-                    <button
-                      type="button"
-                      className="smoac-control inquiry-sheet__text-btn"
-                      onClick={() => {
-                        trackInquiryEvent("existing_user_signin_selected");
-                        setView("signin");
-                        setError(null);
-                      }}
-                    >
-                      Already have an account? Sign in
-                    </button>
-                  </>
-                ) : null}
-
-                {view === "signin" ? (
-                  <>
-                    <button
-                      type="button"
-                      className="smoac-control inquiry-sheet__submit"
-                      disabled={sending}
-                      onClick={() => void handleSignIn()}
-                    >
-                      {sending ? "Signing in…" : "Sign in & Send"}
-                    </button>
-                    <button
-                      type="button"
-                      className="smoac-control inquiry-sheet__text-btn"
-                      onClick={() => {
-                        setView("signup");
-                        setError(null);
-                      }}
-                    >
-                      Create a quick account instead
-                    </button>
-                    <Link
-                      href={LOGIN_PATH}
-                      className="inquiry-sheet__text-btn"
-                      onClick={onClose}
-                    >
-                      Open full sign in
-                    </Link>
-                  </>
+                {view === "signup" || view === "signin" ? (
+                  <QuickClientAccountAuthActions
+                    variant="inquiry-sheet"
+                    view={view}
+                    sending={sending}
+                    signupCta="Continue & Send"
+                    signInCta="Sign in & Send"
+                    onSignup={() => void handleQuickSignup()}
+                    onSignIn={() => void handleSignIn()}
+                    onSwitchToSignin={() => {
+                      trackInquiryEvent("existing_user_signin_selected");
+                      setView("signin");
+                      setError(null);
+                    }}
+                    onSwitchToSignup={() => {
+                      setView("signup");
+                      setError(null);
+                    }}
+                    onOpenFullLogin={onClose}
+                  />
                 ) : null}
               </div>
             ) : null}

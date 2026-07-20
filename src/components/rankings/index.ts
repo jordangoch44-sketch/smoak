@@ -1,3 +1,4 @@
+/**
+ * Route barrel — `app/(site)/rankings` imports from here.
+ */
 export { RankingsPageClient } from "./RankingsPageClient";
-export { RankingsRow } from "./RankingsRow";
-export { RankingsFilters } from "./RankingsFilters";

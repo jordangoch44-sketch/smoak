@@ -1,2 +1,4 @@
-/** Explore route UI — composed by ExplorePageClient */
+/**
+ * Route barrel — explore page uses dynamic import of `ExplorePageClient` directly.
+ */
 export { ExplorePageClient } from "./ExplorePageClient";

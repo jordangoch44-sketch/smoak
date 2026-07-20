@@ -1,3 +1,7 @@
+/**
+ * Optional barrel — prefer direct imports: `@/contexts/AuthSessionContext`.
+ * Incomplete (not all providers listed). @see contexts/README.md
+ */
 export {
   SavedTrainersProvider,
   useSavedTrainersContext,

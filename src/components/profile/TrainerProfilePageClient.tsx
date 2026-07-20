@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 import type { Trainer } from "@/types";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
 import { ProfileInquiryAction } from "@/components/inquiry";
 import {
@@ -11,12 +12,15 @@ import {
   getApprovedSpecialistProfilesHydratedSnapshot,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
+import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
+import { trainerFirstName } from "@/lib/reviews/specialist-review-types";
 import { ProfileHero } from "./ProfileHero";
 import { ProfileContactCta } from "./ProfileContactCta";
 import { ProfilePrimaryHighlights } from "./ProfilePrimaryHighlights";
 import { ProfileTrainerSpecs } from "./ProfileTrainerSpecs";
 import { ProfileDiscoveryRails } from "./ProfileDiscoveryRails";
 import { Reviews } from "./Reviews";
+import { SmoacReviewsSection } from "./SmoacReviewsSection";
 import { TrainerProfileSheet } from "./TrainerProfileSheet";
 
 interface TrainerProfilePageClientProps {
@@ -37,6 +41,17 @@ export function TrainerProfilePageClient({
   const liveTrainer = useTrainerWithOverrides(trainerId);
   const trainer = liveTrainer ?? initialTrainer;
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const {
+    aggregate,
+    reviews: smoacReviews,
+    hasMore,
+    loadingMore,
+    loadMore,
+    ownReview,
+    canLeaveReview,
+    applySubmittedReview,
+  } = useSpecialistReviews(trainerId);
 
   if (!trainer && hydrated && catalogReady) {
     return (
@@ -65,9 +80,18 @@ export function TrainerProfilePageClient({
     );
   }
 
+  const sources = resolveTrainerReviewSources(trainer);
+  const googleCount = sources?.google ?? 0;
+
   return (
     <TrainerProfileSheet label={`${trainer.name} profile`}>
-      <ProfileHero trainer={trainer} />
+      <ProfileHero
+        trainer={trainer}
+        smoacAggregate={aggregate}
+        canLeaveReview={canLeaveReview}
+        hasOwnReview={Boolean(ownReview)}
+        onLeaveReview={() => setReviewModalOpen(true)}
+      />
 
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-3 sm:px-6 sm:pb-20 sm:pt-5 lg:py-12">
         <div className="profile-content profile-content--streamlined min-w-0 max-w-3xl">
@@ -78,12 +102,31 @@ export function TrainerProfilePageClient({
 
           <ProfilePrimaryHighlights trainer={trainer} />
 
-          <Reviews
-            reviews={trainer.reviews}
-            rating={trainer.rating}
-            reviewCount={trainer.reviewCount}
-            className="profile-section--reviews"
+          <SmoacReviewsSection
+            specialistId={trainer.id}
+            specialistName={trainer.name}
+            firstName={trainerFirstName(trainer.name)}
+            aggregate={aggregate}
+            reviews={smoacReviews}
+            hasMore={hasMore}
+            loadingMore={loadingMore}
+            onLoadMore={() => void loadMore()}
+            canLeaveReview={canLeaveReview}
+            ownReview={ownReview}
+            reviewModalOpen={reviewModalOpen}
+            onReviewModalOpenChange={setReviewModalOpen}
+            onSubmitted={applySubmittedReview}
           />
+
+          {(trainer.reviews?.length ?? 0) > 0 ? (
+            <Reviews
+              reviews={trainer.reviews}
+              rating={trainer.rating}
+              reviewCount={trainer.reviewCount}
+              className="profile-section--reviews"
+              sourceLabel={googleCount > 0 ? "google" : "general"}
+            />
+          ) : null}
 
           <ProfileTrainerSpecs trainer={trainer} />
 

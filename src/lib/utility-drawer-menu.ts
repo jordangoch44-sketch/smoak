@@ -38,7 +38,7 @@ export const utilityDrawerCompanyLinks: readonly UtilityDrawerNavItem[] = [
   },
   {
     id: "support",
-    label: "Help & Support",
+    label: "Help Center",
     description: "Questions and assistance",
     href: SITE_ROUTES.support,
   },
@@ -47,6 +47,7 @@ export const utilityDrawerCompanyLinks: readonly UtilityDrawerNavItem[] = [
 export const utilityDrawerLegalLinks: readonly UtilityDrawerNavItem[] = [
   { id: "privacy", label: "Privacy Policy", href: SITE_ROUTES.privacy },
   { id: "terms", label: "Terms of Service", href: SITE_ROUTES.terms },
+  { id: "cookies", label: "Cookie Policy", href: SITE_ROUTES.cookies },
 ];
 
 function displayFirstName(

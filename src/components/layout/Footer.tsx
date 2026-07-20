@@ -1,81 +1,54 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
-import { SITE_ROUTES } from "@/lib/navigation";
+import { FOOTER_NAV_GROUPS } from "@/lib/footer-nav";
 
-const footerLinks = {
-  Platform: [
-    { label: "Explore Specialists", href: SITE_ROUTES.explore },
-    { label: "Categories", href: "/#categories" },
-    { label: "Rankings", href: SITE_ROUTES.rankings },
-  ],
-  Company: [
-    { label: "About", href: SITE_ROUTES.about },
-    { label: "Help & Support", href: SITE_ROUTES.support },
-  ],
-  Legal: [
-    { label: "Privacy", href: SITE_ROUTES.privacy },
-    { label: "Terms", href: SITE_ROUTES.terms },
-  ],
-};
+const MARKETPLACE_DISCLAIMER =
+  "SMOAC is a marketplace that helps clients discover independent fitness and wellness professionals. Specialists listed on SMOAC are independent providers and are not employees, agents, or representatives of SMOAC.";
 
+/**
+ * Global site footer — mounted in `(site)/layout` after AppMain.
+ * Stays outside profile intercept modals and the mobile bottom nav.
+ */
 export function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-graphite-900">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:py-20">
-        <div className="grid grid-cols-2 gap-8 sm:gap-12 md:grid-cols-2 lg:grid-cols-5">
-          <div className="col-span-2 lg:col-span-2">
-            <Logo href="/" size="lg" />
-            <p className="mt-4 max-w-sm text-sm leading-relaxed text-silver-400">
-              The premier marketplace for health, fitness, and wellness
-              specialists. Curated talent. Exceptional results.
+    <footer className="site-footer" aria-label="Site footer">
+      <div className="site-footer__glow" aria-hidden />
+      <div className="site-footer__inner">
+        <div className="site-footer__main">
+          <div className="site-footer__brand">
+            <Logo href="/" size="lg" className="site-footer__logo" />
+            <p className="site-footer__tagline">
+              Connecting people with trusted fitness specialists.
+            </p>
+            <p className="site-footer__support">
+              Discover trainers, coaches, nutritionists, therapists, and
+              wellness professionals near you.
             </p>
           </div>
 
-          {Object.entries(footerLinks).map(([title, links]) => (
-            <div key={title}>
-              <h3 className="text-xs font-medium uppercase tracking-widest text-silver-300">
-                {title}
-              </h3>
-              <ul className="mt-4 space-y-3">
-                {links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-silver-400 transition-colors hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <nav className="site-footer__nav" aria-label="Footer">
+            {FOOTER_NAV_GROUPS.map((group) => (
+              <div key={group.title} className="site-footer__group">
+                <h2 className="site-footer__group-title">{group.title}</h2>
+                <ul className="site-footer__list">
+                  {group.links.map((link) => (
+                    <li key={link.href}>
+                      <Link href={link.href} className="site-footer__link">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </nav>
         </div>
 
-        <div className="mt-16 flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 sm:flex-row">
-          <p className="text-xs text-silver-400">
-            © {new Date().getFullYear()} SMOAC. All rights reserved.
+        <div className="site-footer__bottom">
+          <p className="site-footer__copyright">
+            © 2026 SMOAC. All rights reserved.
           </p>
-          <div className="flex gap-6">
-            <Link
-              href={SITE_ROUTES.terms}
-              className="text-xs text-silver-400 transition-colors hover:text-white"
-            >
-              Terms
-            </Link>
-            <Link
-              href={SITE_ROUTES.privacy}
-              className="text-xs text-silver-400 transition-colors hover:text-white"
-            >
-              Privacy
-            </Link>
-            <Link
-              href={SITE_ROUTES.support}
-              className="text-xs text-silver-400 transition-colors hover:text-white"
-            >
-              Support
-            </Link>
-          </div>
+          <p className="site-footer__disclaimer">{MARKETPLACE_DISCLAIMER}</p>
         </div>
       </div>
     </footer>

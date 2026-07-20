@@ -1150,6 +1150,27 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   margin-top: 0.125rem;
 }
 
+.profile-edit-homepage-specialties {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.profile-edit-homepage-specialties__help {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.dashboard-edit-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .profile-edit-credential-list {
   margin: 0;
   padding: 0;

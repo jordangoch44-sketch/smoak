@@ -155,6 +155,7 @@ export function ExploreFiltersDrawer({
       profession: "",
       specialty: "",
       gender: "",
+      priceMin: "",
       priceMax: "",
     });
   }, [onClearFilters]);
