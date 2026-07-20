@@ -48,6 +48,9 @@ const PROTECTED_PREFIXES = [
 ] as const;
 
 function isProtectedPath(pathname: string): boolean {
+  /* Login must stay public — otherwise unauthenticated /internal/login loops forever */
+  if (pathname === INTERNAL_LOGIN_PATH) return false;
+
   return PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
   );
@@ -101,6 +104,11 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  /* Internal login is always reachable (no auth gate / no password-setup divert). */
+  if (pathname === INTERNAL_LOGIN_PATH) {
+    return supabaseResponse;
+  }
 
   if (pathname === LOGIN_PATH && user) {
     const pendingPassword =

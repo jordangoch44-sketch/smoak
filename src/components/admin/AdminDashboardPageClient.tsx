@@ -40,6 +40,7 @@ export function AdminDashboardPageClient() {
     rejectApplication,
     archiveApplication,
     activateFromApplication,
+    activateApplicationWithEdits,
     saveApplicationEdits,
     approveClientApplication,
     rejectClientApplication,
@@ -99,41 +100,46 @@ export function AdminDashboardPageClient() {
     router.push(buildInternalLoginHref());
   }
 
-  function handleSaveApplication(
+  async function handleSaveApplication(
     app: SpecialistApplication
-  ): SpecialistApplication | null {
+  ): Promise<SpecialistApplication | null> {
     if (!permissions.canApproveApplications) return null;
-    return saveApplicationEdits(app);
+    const result = await saveApplicationEdits(app);
+    return result.ok ? result.application : null;
   }
 
-  function handleApprove(
+  async function handleApprove(
     app: SpecialistApplication
-  ): SpecialistApplication | null {
+  ): Promise<SpecialistApplication | null> {
     if (!permissions.canApproveApplications) return null;
-    approveApplication(app);
-    return activateFromApplication(app.id);
+    const approved = await approveApplication(app);
+    if (!approved.ok) return null;
+    const activated = await activateFromApplication(approved.application.id);
+    return activated.ok ? activated.application : approved.application;
   }
 
-  function handleReject(
+  async function handleReject(
     app: SpecialistApplication
-  ): SpecialistApplication | null {
+  ): Promise<SpecialistApplication | null> {
     if (!permissions.canApproveApplications) return null;
-    return rejectApplication(app);
+    const result = await rejectApplication(app);
+    return result.ok ? result.application : null;
   }
 
-  function handleActivate(
+  async function handleActivate(
     app: SpecialistApplication
-  ): SpecialistApplication | null {
+  ): Promise<SpecialistApplication | null> {
     if (!permissions.canApproveApplications) return null;
-    saveApplicationEdits(app);
-    return activateFromApplication(app.id);
+    const result = await activateApplicationWithEdits(app);
+    return result.ok ? result.application : null;
   }
 
-  function handleArchiveSpecialist(
+  async function handleArchiveSpecialist(
     app: SpecialistApplication
-  ): SpecialistApplication | null {
+  ): Promise<SpecialistApplication | null> {
     if (!permissions.canApproveApplications) return null;
-    return archiveApplication(app);
+    const result = await archiveApplication(app);
+    return result.ok ? result.application : null;
   }
 
   return (
@@ -217,9 +223,9 @@ export function AdminDashboardPageClient() {
               permissions={permissions}
               isOwnerAdmin={isOwnerAdmin}
               billingById={billingById}
-              onVisibilityChange={(id, visibility: AdminSpecialistVisibility) => {
+              onVisibilityChange={async (id, visibility: AdminSpecialistVisibility) => {
                 if (!permissions.canEditSpecialists) return;
-                setSpecialistVisibility(id, visibility);
+                await setSpecialistVisibility(id, visibility);
               }}
               onFeaturedChange={(id, value) => {
                 if (!permissions.canFeatureSpecialists) return;

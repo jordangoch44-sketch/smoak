@@ -896,6 +896,18 @@ body.complete-account-lock .login-page--complete-account {
   font-weight: 400;
 }
 
+.login-field__hint--muted {
+  color: rgba(255, 255, 255, 0.48);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.login-field__input--error {
+  border-color: rgba(248, 113, 113, 0.55) !important;
+}
+
 /* Complete-account card + form — natural flow, no fixed heights */
 .complete-account-lock .login-card--complete {
   display: flex;

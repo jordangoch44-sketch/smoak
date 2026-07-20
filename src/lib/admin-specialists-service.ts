@@ -4,6 +4,10 @@ import {
   patchAdminSpecialistMeta,
 } from "@/lib/admin-specialist-meta-store";
 import {
+  hideApprovedSpecialistProfileAsync,
+  restoreApprovedSpecialistProfileAsync,
+} from "@/lib/approved-specialist-profiles-store";
+import {
   getHiddenTrainersSnapshot,
   hideTrainerId,
   unhideTrainerId,
@@ -127,16 +131,41 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
   return rows.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** @deprecated Prefer setAdminSpecialistVisibilityAsync — local-only hide. */
 export function setAdminSpecialistVisibility(
   trainerId: string,
   visibility: AdminSpecialistVisibility
 ): void {
+  void setAdminSpecialistVisibilityAsync(trainerId, visibility);
+}
+
+/**
+ * Public visibility is specialist_profiles.status (approved vs hidden).
+ * Local hidden set + admin meta mirror for the admin UI on this device.
+ */
+export async function setAdminSpecialistVisibilityAsync(
+  trainerId: string,
+  visibility: AdminSpecialistVisibility
+): Promise<{ ok: true } | { ok: false; message: string }> {
   patchAdminSpecialistMeta(trainerId, { visibility });
+
   if (visibility === "hidden" || visibility === "suspended") {
+    const result = await hideApprovedSpecialistProfileAsync(trainerId);
+    if (!result.ok) return result;
     hideTrainerId(trainerId);
-  } else if (visibility === "active") {
-    unhideTrainerId(trainerId);
+    return { ok: true };
   }
+
+  if (visibility === "active") {
+    const result = await restoreApprovedSpecialistProfileAsync(trainerId);
+    if (!result.ok) return result;
+    unhideTrainerId(trainerId);
+    return { ok: true };
+  }
+
+  /* pending — keep off Explore via local hide until activated */
+  hideTrainerId(trainerId);
+  return { ok: true };
 }
 
 export function setAdminSpecialistProtected(

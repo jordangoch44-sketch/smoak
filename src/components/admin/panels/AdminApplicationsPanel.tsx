@@ -27,11 +27,21 @@ interface AdminApplicationsPanelProps {
   specialistApplications: readonly SpecialistApplication[];
   clientApplications: readonly ClientApplication[];
   permissions: AdminPermissions;
-  onSaveSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
-  onApproveSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
-  onRejectSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
-  onArchiveSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
-  onActivateSpecialist: (app: SpecialistApplication) => SpecialistApplication | null;
+  onSaveSpecialist: (
+    app: SpecialistApplication
+  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
+  onApproveSpecialist: (
+    app: SpecialistApplication
+  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
+  onRejectSpecialist: (
+    app: SpecialistApplication
+  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
+  onArchiveSpecialist: (
+    app: SpecialistApplication
+  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
+  onActivateSpecialist: (
+    app: SpecialistApplication
+  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
   onSaveClient: (app: ClientApplication) => ClientApplication | null;
   onApproveClient: (app: ClientApplication) => ClientApplication | null;
   onRejectClient: (app: ClientApplication) => ClientApplication | null;

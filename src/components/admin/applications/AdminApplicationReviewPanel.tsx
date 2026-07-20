@@ -8,7 +8,14 @@ import { applicationStatusLabel } from "@/lib/admin-applications-service";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
-type ReviewFeedback = "saved" | "approved" | "rejected" | "activated" | "archived" | null;
+type ReviewFeedback =
+  | "saved"
+  | "approved"
+  | "rejected"
+  | "activated"
+  | "archived"
+  | "error"
+  | null;
 
 function formatSubmittedDate(iso: string | null): string {
   if (!iso) return "—";
@@ -28,15 +35,22 @@ function servicesSummary(app: SpecialistApplication): string {
   return parts.join(" · ") || "—";
 }
 
+type SpecialistAppAction = (
+  app: SpecialistApplication
+) =>
+  | SpecialistApplication
+  | null
+  | Promise<SpecialistApplication | null>;
+
 interface AdminApplicationReviewPanelProps {
   application: SpecialistApplication;
   permissions: AdminPermissions;
   onClose: () => void;
-  onSave: (app: SpecialistApplication) => SpecialistApplication | null;
-  onApprove: (app: SpecialistApplication) => SpecialistApplication | null;
-  onReject: (app: SpecialistApplication) => SpecialistApplication | null;
-  onActivate: (app: SpecialistApplication) => SpecialistApplication | null;
-  onArchive: (app: SpecialistApplication) => SpecialistApplication | null;
+  onSave: SpecialistAppAction;
+  onApprove: SpecialistAppAction;
+  onReject: SpecialistAppAction;
+  onActivate: SpecialistAppAction;
+  onArchive: SpecialistAppAction;
 }
 
 export function AdminApplicationReviewPanel({
@@ -51,6 +65,7 @@ export function AdminApplicationReviewPanel({
 }: AdminApplicationReviewPanelProps) {
   const [draft, setDraft] = useSyncedState(application.id, application);
   const [feedback, setFeedback] = useState<ReviewFeedback>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<
     "save" | "approve" | "reject" | "activate" | "archive" | null
   >(null);
@@ -106,62 +121,89 @@ export function AdminApplicationReviewPanel({
     if (!result) return;
     setDraft(result);
     setFeedback(nextFeedback);
+    setErrorMessage(null);
   }
 
-  function handleSave() {
+  async function handleSave() {
     setBusyAction("save");
+    setErrorMessage(null);
     try {
-      applyResult(onSave(draft), "saved");
+      const result = await onSave(draft);
+      if (result) {
+        applyResult(result, "saved");
+      } else {
+        setFeedback("error");
+        setErrorMessage("Unable to save application.");
+      }
     } finally {
       setBusyAction(null);
     }
   }
 
-  function handleApprove() {
+  async function handleApprove() {
     setBusyAction("approve");
+    setErrorMessage(null);
     try {
-      applyResult(onApprove(draft), "approved");
+      const result = await onApprove(draft);
+      if (result) {
+        applyResult(result, "approved");
+      } else {
+        setFeedback("error");
+        setErrorMessage("Unable to approve application.");
+      }
     } finally {
       setBusyAction(null);
     }
   }
 
-  function handleReject() {
+  async function handleReject() {
     setBusyAction("reject");
+    setErrorMessage(null);
     try {
-      const result = onReject(draft);
+      const result = await onReject(draft);
       if (result) {
         setDraft(result);
         setFeedback("rejected");
         window.setTimeout(() => onClose(), 400);
+      } else {
+        setFeedback("error");
+        setErrorMessage("Unable to reject application.");
       }
     } finally {
       setBusyAction(null);
     }
   }
 
-  function handleActivate() {
+  async function handleActivate() {
     setBusyAction("activate");
+    setErrorMessage(null);
     try {
-      const result = onActivate(draft);
+      const result = await onActivate(draft);
       if (result) {
         setDraft(result);
         setFeedback("activated");
         window.setTimeout(() => onClose(), 500);
+      } else {
+        setFeedback("error");
+        setErrorMessage("Unable to activate specialist.");
       }
     } finally {
       setBusyAction(null);
     }
   }
 
-  function handleArchive() {
+  async function handleArchive() {
     setBusyAction("archive");
+    setErrorMessage(null);
     try {
-      const result = onArchive(draft);
+      const result = await onArchive(draft);
       if (result) {
         setDraft(result);
         setFeedback("archived");
         window.setTimeout(() => onClose(), 400);
+      } else {
+        setFeedback("error");
+        setErrorMessage("Unable to archive application.");
       }
     } finally {
       setBusyAction(null);
@@ -172,14 +214,16 @@ export function AdminApplicationReviewPanel({
     feedback === "saved"
       ? "Edits saved."
       : feedback === "approved"
-        ? "Approved — convert to an active specialist below."
+        ? "Approved and listed on Explore (when activate completed)."
         : feedback === "rejected"
-          ? "Application rejected."
+          ? "Application rejected — removed from public catalog."
           : feedback === "activated"
-            ? "Specialist is now active in Specialists Management."
+            ? "Specialist is active on the public catalog."
             : feedback === "archived"
-              ? "Application archived."
-              : null;
+              ? "Application archived — removed from public catalog."
+              : feedback === "error"
+                ? errorMessage ?? "Something went wrong. Try again."
+                : null;
 
   const sheet = (
     <div

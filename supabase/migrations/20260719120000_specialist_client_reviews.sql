@@ -170,19 +170,29 @@ begin
   -- Serialize per-client to prevent double-submit races
   perform pg_advisory_xact_lock(hashtext('smoac_review:' || v_uid::text));
 
-  -- Specialist must exist as an approved marketplace listing
+  -- Prefer approved specialist_profiles; also allow public catalog IDs
+  -- (seed trainers) that are not yet synced into specialist_profiles.
   select sp.user_id into v_specialist_user
   from public.specialist_profiles sp
   where sp.id = v_specialist_id
     and sp.status = 'approved'
   limit 1;
 
-  if not found then
-    return jsonb_build_object('ok', false, 'error', 'specialist_not_found');
-  end if;
-
-  if v_specialist_user is not null and v_specialist_user = v_uid then
-    return jsonb_build_object('ok', false, 'error', 'self_review');
+  if found then
+    if v_specialist_user is not null and v_specialist_user = v_uid then
+      return jsonb_build_object('ok', false, 'error', 'self_review');
+    end if;
+  else
+    -- No approved profile row: reject empty / nonsense ids only.
+    -- Hidden or archived listings must not accept new reviews.
+    if exists (
+      select 1
+      from public.specialist_profiles sp
+      where sp.id = v_specialist_id
+        and sp.status in ('hidden', 'archived')
+    ) then
+      return jsonb_build_object('ok', false, 'error', 'specialist_not_found');
+    end if;
   end if;
 
   -- Also block via application ownership (same user controls specialist application)

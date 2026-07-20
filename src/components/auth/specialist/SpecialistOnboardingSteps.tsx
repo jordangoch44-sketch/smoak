@@ -16,6 +16,7 @@ import { MARKETPLACE_CITIES, getNeighborhoodsForCity, isMarketplaceCity } from "
 import type { Certification } from "@/types/trainer";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import { cn } from "@/lib/utils";
+import { validateGoogleReviewsUrl } from "@/lib/google-reviews-url";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
 import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
 import type { ProfilePhotoCropSavePayload } from "@/hooks/useProfilePhotoCropSession";
@@ -130,6 +131,11 @@ export function SpecialistOnboardingSteps({
         ? getNeighborhoodsForCity(state.city)
         : [],
     [state.city]
+  );
+
+  const googleReviewsCheck = useMemo(
+    () => validateGoogleReviewsUrl(state.social.googleReviewsUrl ?? ""),
+    [state.social.googleReviewsUrl]
   );
 
   function patchPricing(
@@ -622,7 +628,7 @@ export function SpecialistOnboardingSteps({
                   onPatch({ coachingPhilosophy: e.target.value })
                 }
                 rows={4}
-                placeholder="Describe how you coach and what clients can expect."
+                placeholder="Example: I build simple, sustainable programs around your real schedule — clear form cues, weekly check-ins, and progress you can feel in 30 days."
               />
             </label>
             <label className="login-field">
@@ -634,6 +640,7 @@ export function SpecialistOnboardingSteps({
                 value={state.bestClientTypes}
                 onChange={(e) => onPatch({ bestClientTypes: e.target.value })}
                 rows={3}
+                placeholder="Example: Busy professionals returning to fitness, new parents rebuilding strength, or athletes recovering from a plateau."
               />
             </label>
             <label className="login-field">
@@ -647,6 +654,7 @@ export function SpecialistOnboardingSteps({
                   onPatch({ coachingDifferentiator: e.target.value })
                 }
                 rows={3}
+                placeholder="Example: I film form reviews between sessions and adjust programming weekly so you’re never stuck repeating a plan that stopped working."
               />
             </label>
             <label className="login-field">
@@ -659,7 +667,7 @@ export function SpecialistOnboardingSteps({
                 onChange={(e) =>
                   onPatch({ communicationStyle: e.target.value })
                 }
-                placeholder="Direct, supportive, data-driven…"
+                placeholder="Example: Direct and encouraging — short texts, honest feedback, no fluff"
               />
             </label>
             <fieldset className="login-field">
@@ -693,29 +701,33 @@ export function SpecialistOnboardingSteps({
         <WizardStepPanel stepKey="sp-7">
           <WizardStepHeading
             title="Pricing & services"
-            subtitle="Set transparent rates clients can compare."
+            subtitle="Share approximate starting rates — deals, packages, and specials can vary."
           />
           <div className="login-fields">
             <label className="login-field">
-              <span className="login-field__label">1-on-1 training price</span>
+              <span className="login-field__label">
+                Approx. 1-on-1 training price
+              </span>
               <input
                 className="login-field__input"
                 value={state.pricing.oneOnOnePrice}
                 onChange={(e) =>
                   patchPricing({ oneOnOnePrice: e.target.value })
                 }
-                placeholder="e.g. $120 / session"
+                placeholder="Example: ~$90–$120 / session (before packages)"
               />
             </label>
             <label className="login-field">
-              <span className="login-field__label">Online coaching price</span>
+              <span className="login-field__label">
+                Approx. online coaching price
+              </span>
               <input
                 className="login-field__input"
                 value={state.pricing.onlineCoachingPrice}
                 onChange={(e) =>
                   patchPricing({ onlineCoachingPrice: e.target.value })
                 }
-                placeholder="e.g. $199 / month"
+                placeholder="Example: ~$149–$199 / month"
               />
             </label>
             <YesNoToggle
@@ -733,7 +745,9 @@ export function SpecialistOnboardingSteps({
               }
             />
             <label className="login-field">
-              <span className="login-field__label">Package options</span>
+              <span className="login-field__label">
+                Packages, deals & specials
+              </span>
               <textarea
                 className="login-field__input wizard-textarea"
                 value={state.pricing.packageOptions}
@@ -741,7 +755,7 @@ export function SpecialistOnboardingSteps({
                   patchPricing({ packageOptions: e.target.value })
                 }
                 rows={2}
-                placeholder="8-session bundle, 12-week program…"
+                placeholder="Example: 8-session bundle · 12-week transform · seasonal promos"
               />
             </label>
             <fieldset className="login-field">
@@ -776,6 +790,7 @@ export function SpecialistOnboardingSteps({
                 onChange={(e) =>
                   patchPricing({ subscriptionOptions: e.target.value })
                 }
+                placeholder="Example: Monthly coaching · cancel anytime"
               />
             </label>
             <label className="login-field">
@@ -784,7 +799,7 @@ export function SpecialistOnboardingSteps({
                 className="login-field__input"
                 value={state.pricing.introOffer}
                 onChange={(e) => patchPricing({ introOffer: e.target.value })}
-                placeholder="First session complimentary"
+                placeholder="Example: First session complimentary for new clients"
               />
             </label>
           </div>
@@ -916,12 +931,47 @@ export function SpecialistOnboardingSteps({
             <label className="login-field">
               <span className="login-field__label">Google Reviews link</span>
               <input
-                className="login-field__input"
+                className={cn(
+                  "login-field__input",
+                  !googleReviewsCheck.ok && "login-field__input--error"
+                )}
                 value={state.social.googleReviewsUrl ?? ""}
                 onChange={(e) =>
                   patchSocial({ googleReviewsUrl: e.target.value })
                 }
+                onBlur={() => {
+                  if (
+                    googleReviewsCheck.ok &&
+                    googleReviewsCheck.normalized &&
+                    googleReviewsCheck.normalized !==
+                      (state.social.googleReviewsUrl ?? "").trim()
+                  ) {
+                    patchSocial({
+                      googleReviewsUrl: googleReviewsCheck.normalized,
+                    });
+                  }
+                }}
+                inputMode="url"
+                autoCapitalize="off"
+                autoCorrect="off"
+                spellCheck={false}
+                aria-invalid={!googleReviewsCheck.ok}
+                aria-describedby="google-reviews-hint"
+                placeholder="https://maps.google.com/… or g.page/…"
               />
+              <span
+                id="google-reviews-hint"
+                className={cn(
+                  "login-field__hint",
+                  googleReviewsCheck.ok
+                    ? "login-field__hint--muted"
+                    : "login-field__hint--warn"
+                )}
+              >
+                {googleReviewsCheck.ok
+                  ? "Paste your Google Maps or Google reviews link — not your website."
+                  : googleReviewsCheck.message}
+              </span>
             </label>
             <label className="login-field">
               <span className="login-field__label">Transformation photos</span>

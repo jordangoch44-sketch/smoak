@@ -8,6 +8,7 @@ import { DEV_SPECIALIST_DASHBOARD_ID } from "@/constants/specialist-dashboard-mo
 import {
   getApprovedSpecialistProfileById,
   saveApprovedSpecialistProfile,
+  saveApprovedSpecialistProfileAsync,
 } from "@/lib/approved-specialist-profiles-store";
 import {
   DEV_FREE_SPECIALIST_CREDENTIALS,
@@ -136,9 +137,28 @@ export function syncApprovedProfileFromApplication(
   );
 }
 
+/** Await specialist_profiles upsert + refresh approved catalog from remote. */
+export async function syncApprovedProfileFromApplicationAsync(
+  app: SpecialistApplication
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (app.profileStatus !== "APPROVED") return { ok: true };
+  const base = applicationToTrainer(app);
+  const overrides = loadSpecialistOverridesForId(app.id);
+  return saveApprovedSpecialistProfileAsync(
+    overrides ? applySpecialistProfileOverrides(base, overrides) : base
+  );
+}
+
 export function syncApplicationProfileDraft(app: SpecialistApplication): void {
   syncProfileOverridesFromApplication(app);
   syncApprovedProfileFromApplication(app);
+}
+
+export async function syncApplicationProfileDraftAsync(
+  app: SpecialistApplication
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  syncProfileOverridesFromApplication(app);
+  return syncApprovedProfileFromApplicationAsync(app);
 }
 
 export function mergeProfileEditsIntoApplication(
@@ -192,10 +212,10 @@ export function mergeProfileEditsIntoApplication(
   };
 }
 
-export function saveManagedSpecialistProfileEdits(
+export async function saveManagedSpecialistProfileEdits(
   trainerId: string,
   form: SpecialistProfileEditForm
-): ManagedProfileSaveResult {
+): Promise<ManagedProfileSaveResult> {
   const source = describeManagedProfileSource(
     trainerId,
     getSpecialistApplicationById(trainerId)
@@ -223,7 +243,10 @@ export function saveManagedSpecialistProfileEdits(
       saveSpecialistApplication(updated);
 
       if (updated.profileStatus === "APPROVED") {
-        syncApprovedProfileFromApplication(updated);
+        const remote = await syncApprovedProfileFromApplicationAsync(updated);
+        if (!remote.ok) {
+          return { ok: false, error: remote.message || "Unable to save changes" };
+        }
       }
     }
 

@@ -1,5 +1,5 @@
-import { getTrainerById } from "@/data/trainers";
 import { TrainerProfilePageClient } from "@/components/profile/TrainerProfilePageClient";
+import { loadPublicTrainerByIdForServer } from "@/lib/profiles/fetch-approved-catalog-server";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -13,12 +13,12 @@ export default async function InterceptedTrainerProfilePage({
   params,
 }: PageProps) {
   const { id } = await params;
-  const trainer = getTrainerById(id);
+  const trainer = await loadPublicTrainerByIdForServer(id);
 
   return (
     <TrainerProfilePageClient
       trainerId={id}
-      initialTrainer={trainer ?? null}
+      initialTrainer={trainer}
     />
   );
 }

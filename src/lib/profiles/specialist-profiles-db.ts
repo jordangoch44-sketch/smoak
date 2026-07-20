@@ -188,7 +188,10 @@ export async function setSpecialistProfileStatus(
   return { ok: true };
 }
 
-/** One-time import of local approved Trainers when remote is empty. */
+/** One-time import of local approved Trainers when remote is empty.
+ *  Not used by the public catalog hydrate path (local must not write into prod).
+ *  Kept for explicit/manual migration tooling only.
+ */
 export async function importLocalSpecialistProfiles(
   supabase: SupabaseClient,
   local: Record<string, Trainer>,

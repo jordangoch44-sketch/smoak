@@ -12,7 +12,10 @@ export interface ConfirmationEmailPayload {
 }
 
 /** @deprecated Prefer EmailSendResult from email-transport — kept for existing callers */
-export type ConfirmationEmailResult = { success: boolean };
+export type ConfirmationEmailResult = {
+  success: boolean;
+  mode?: "resend" | "console";
+};
 
 function firstNameFromFullName(fullName: string, fallback = "there"): string {
   const trimmed = fullName.trim();
@@ -40,14 +43,14 @@ function buildSpecialistConfirmationEmail(
 
 We received your SMOAC specialist application.
 
-Your profile is now pending internal review. Once approved, your profile may become visible in the SMOAC marketplace.
+Every application is reviewed individually. We typically verify accounts within 24 hours. You'll receive another email when your account is verified and your profile can go live on SMOAC.
 
 Thank you,
 SMOAC`;
 
   return {
     to: application.email.trim(),
-    subject: "SMOAC application received",
+    subject: "SMOAC application received — under review",
     text,
     applicationId: application.id,
     kind: "specialist",

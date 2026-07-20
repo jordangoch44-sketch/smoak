@@ -4,12 +4,19 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
+import type { Trainer } from "@/types/trainer";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreResults } from "./ExploreResults";
 
-export function ExplorePageClient() {
+export function ExplorePageClient({
+  initialCatalog,
+  catalogMode = "live",
+}: {
+  initialCatalog?: Trainer[];
+  catalogMode?: "live" | "seed";
+}) {
   const searchParams = useSearchParams();
   const didFocusSearchRef = useRef(false);
   const {
@@ -31,6 +38,8 @@ export function ExplorePageClient() {
   } = useExploreTrainers({
     initialSpecialty: searchParams.get("specialty") ?? "",
     initialQuery: searchParams.get("q") ?? "",
+    initialCatalog,
+    catalogMode,
   });
 
   useEffect(() => {

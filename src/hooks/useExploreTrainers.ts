@@ -39,6 +39,7 @@ import {
 import {
   getApprovedSpecialistProfilesServerSnapshot,
   getApprovedSpecialistProfilesSnapshot,
+  primePublicCatalogFromSSR,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import {
@@ -65,10 +66,15 @@ import { recordRecentSearch } from "@/lib/recent-searches-store";
 import type { AuthSession } from "@/types/auth";
 
 import type { TrainerFilters } from "@/types";
+import type { Trainer } from "@/types/trainer";
+import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 
 interface UseExploreTrainersOptions {
   initialSpecialty?: string;
   initialQuery?: string;
+  /** SSR catalog rows (approved when live; seed when offline demo) */
+  initialCatalog?: Trainer[];
+  catalogMode?: PublicCatalogMode;
 }
 
 function mergeParsedWithUrlFilters(
@@ -149,6 +155,8 @@ function applyUrlSearchSync(update: () => void): void {
 export function useExploreTrainers({
   initialSpecialty = "",
   initialQuery = "",
+  initialCatalog,
+  catalogMode = "live",
 }: UseExploreTrainersOptions = {}) {
   const router = useRouter();
   const pathname = usePathname();
@@ -157,6 +165,10 @@ export function useExploreTrainers({
   const { session } = useAuthSession();
   const userCoords = useActiveUserCoordinates();
   const coordsKey = useActiveUserCoordinatesKey();
+
+  useEffect(() => {
+    primePublicCatalogFromSSR(initialCatalog, catalogMode);
+  }, [initialCatalog, catalogMode]);
 
   const initialQ = initialQuery || searchParams.get("q") || "";
   const initialBaseFilters = buildInitialFilters(
@@ -364,14 +376,25 @@ export function useExploreTrainers({
       void hiddenRevision;
       const hiddenSet = new Set(getHiddenTrainersSnapshot());
       return filterExploreTrainers(
-        listPublicMarketplaceTrainers(),
+        listPublicMarketplaceTrainers({
+          remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
+          catalogMode,
+        }),
         candidateFilters,
         searchQuery
       )
         .filter((trainer) => !hiddenSet.has(trainer.id))
         .map((trainer) => getTrainerWithOverrides(trainer.id) ?? trainer);
     },
-    [searchQuery, profileOverridesRevision, approvedProfilesRevision, applicationsRevision, hiddenRevision]
+    [
+      searchQuery,
+      profileOverridesRevision,
+      approvedProfilesRevision,
+      applicationsRevision,
+      hiddenRevision,
+      initialCatalog,
+      catalogMode,
+    ]
   );
 
   const filtered = useMemo(() => {

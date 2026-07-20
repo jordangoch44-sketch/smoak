@@ -1,5 +1,6 @@
 import type { Certification } from "@/types/trainer";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
+import { isValidGoogleReviewsUrl } from "@/lib/google-reviews-url";
 import { isValidEmail } from "@/lib/validation/email";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import { isSpecialistTravelRadius } from "@/types/specialist-service-area";
@@ -103,6 +104,12 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
         !state.media.profilePhotoUrl.trim()
       ) {
         missing.push("Profile photo, Instagram, or website");
+      }
+      if (
+        state.social.googleReviewsUrl?.trim() &&
+        !isValidGoogleReviewsUrl(state.social.googleReviewsUrl)
+      ) {
+        missing.push("Valid Google Reviews / Maps link");
       }
       break;
     case 10:

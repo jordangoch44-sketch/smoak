@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
@@ -14,27 +14,51 @@ import {
 } from "@/hooks/useActiveUserCoordinates";
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
+import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
 import {
   formatTrainerPriceLabel,
   formatTrainerRatingLabel,
 } from "@/lib/home-discovery";
+import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
+import type { Trainer } from "@/types/trainer";
 
-export function NewSpecialists() {
+export function NewSpecialists({
+  initialCatalog,
+  catalogMode = "live",
+}: {
+  initialCatalog?: Trainer[];
+  catalogMode?: PublicCatalogMode;
+}) {
   const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
   const userCoords = useActiveUserCoordinates();
   const coordsKey = useActiveUserCoordinatesKey();
 
+  useEffect(() => {
+    primePublicCatalogFromSSR(initialCatalog, catalogMode);
+  }, [initialCatalog, catalogMode]);
+
   const newcomers = useMemo(() => {
     const coords = hydrated ? userCoords : null;
     return sortTrainersByPersonalizationCity(
-      listPublicNewTrainers({ includeBrowserState: hydrated }),
+      listPublicNewTrainers({
+        includeBrowserState: hydrated,
+        remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
+        catalogMode,
+      }),
       hydrated ? personalizationCity : null,
       coords
     ).slice(0, 8);
-  }, [hydrated, personalizationCity, coordsKey, userCoords]);
+  }, [
+    hydrated,
+    personalizationCity,
+    coordsKey,
+    userCoords,
+    initialCatalog,
+    catalogMode,
+  ]);
 
   if (newcomers.length === 0) return null;
 

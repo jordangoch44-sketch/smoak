@@ -1,4 +1,7 @@
-import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
+import {
+  listPublicMarketplaceTrainers,
+  type PublicCatalogOptions,
+} from "@/lib/marketplace-public-catalog";
 import type { RankedSpecialist } from "@/data/city-rankings";
 import type { Trainer } from "@/types";
 
@@ -18,12 +21,13 @@ function scoreTrainer(trainer: Trainer): number {
  */
 export function listLiveTopRatedSpecialistsForCity(
   cityDisplayName: string,
-  limit = 20
+  limit = 20,
+  catalogOptions: PublicCatalogOptions = {}
 ): RankedSpecialist[] {
   const city = cityDisplayName.trim();
   if (!city) return [];
 
-  const trainers = listPublicMarketplaceTrainers()
+  const trainers = listPublicMarketplaceTrainers(catalogOptions)
     .filter((trainer) => normalize(trainer.city) === normalize(city))
     .sort((a, b) => {
       const scoreDiff = scoreTrainer(b) - scoreTrainer(a);

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SpecialistDashboardPageClient } from "@/components/dashboard";
+import { DashboardLoadingState } from "@/components/dashboard/shared";
 
 export const metadata: Metadata = {
   title: "Specialist Dashboard",
@@ -7,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function SpecialistDashboardPage() {
-  return <SpecialistDashboardPageClient />;
+  return (
+    <Suspense fallback={<DashboardLoadingState />}>
+      <SpecialistDashboardPageClient />
+    </Suspense>
+  );
 }

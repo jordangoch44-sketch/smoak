@@ -148,6 +148,17 @@ export async function submitSpecialistReview(input: {
   });
 
   if (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("[submit_specialist_review]", error.code, error.message);
+    }
+    // Table / RPC missing from schema cache (migration not applied)
+    if (
+      error.code === "PGRST202" ||
+      error.code === "PGRST205" ||
+      /schema cache|could not find/i.test(error.message)
+    ) {
+      return { ok: false, error: "unavailable" };
+    }
     return { ok: false, error: "network" };
   }
 

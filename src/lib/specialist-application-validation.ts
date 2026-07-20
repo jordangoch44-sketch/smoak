@@ -5,10 +5,7 @@ import {
 } from "@/lib/specialist-application-storage";
 import type { ProfileStatus } from "@/types/specialist-application";
 
-const BLOCKING_SPECIALIST_STATUSES: ProfileStatus[] = [
-  "PENDING_APPROVAL",
-  "APPROVED",
-];
+const BLOCKING_SPECIALIST_STATUSES: ProfileStatus[] = ["APPROVED"];
 
 export class ApplicationSubmitError extends Error {
   constructor(message: string) {
@@ -29,10 +26,8 @@ export function assertCanSubmitSpecialistApplication(
   if (!existing) return;
 
   if (BLOCKING_SPECIALIST_STATUSES.includes(existing.profileStatus)) {
-    const label =
-      existing.profileStatus === "APPROVED" ? "approved" : "pending review";
     throw new ApplicationSubmitError(
-      `An application for this account is already ${label}. Sign in to your specialist dashboard to continue.`
+      "This account is already approved. Sign in to your specialist dashboard to continue."
     );
   }
 }

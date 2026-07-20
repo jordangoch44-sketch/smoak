@@ -236,7 +236,7 @@ async function submitInquiryViaSupabase(
     inquiryTopics: input.inquiryTopics,
   });
 
-  void sendInquiryClientConfirmationEmail({
+  const clientEmailResult = await sendInquiryClientConfirmationEmail({
     to: input.clientEmail,
     clientFirstName: input.clientFirstName,
     specialistName: input.specialistName,
@@ -251,8 +251,10 @@ async function submitInquiryViaSupabase(
     input.specialistId,
     specialistUserId
   );
+  let specialistEmailSent = false;
+  let emailMode = clientEmailResult.mode ?? "console";
   if (specialistEmail) {
-    void sendInquirySpecialistNotificationEmail({
+    const specialistResult = await sendInquirySpecialistNotificationEmail({
       to: specialistEmail,
       clientFirstName: input.clientFirstName,
       clientEmail: input.clientEmail,
@@ -262,6 +264,8 @@ async function submitInquiryViaSupabase(
       message: sanitizedMessage,
       dashboardPath: `${origin}${SPECIALIST_DASHBOARD_PATH}`,
     });
+    specialistEmailSent = specialistResult.success;
+    emailMode = specialistResult.mode ?? emailMode;
   } else {
     console.warn(
       "[SMOAC EMAIL] No specialist email found for inquiry notify",
@@ -273,6 +277,8 @@ async function submitInquiryViaSupabase(
     ok: true,
     conversationId,
     messageId: message.id as string,
+    emailMode,
+    specialistEmailSent,
   };
 }
 
@@ -351,7 +357,7 @@ export async function submitSpecialistInquiry(
     });
 
     const origin = siteOrigin();
-    void sendInquiryClientConfirmationEmail({
+    const clientEmailResult = await sendInquiryClientConfirmationEmail({
       to: normalized.clientEmail,
       clientFirstName: normalized.clientFirstName,
       specialistName: normalized.specialistName,
@@ -364,8 +370,10 @@ export async function submitSpecialistInquiry(
     const specialistEmail = resolveLocalSpecialistNotifyEmail(
       normalized.specialistId
     );
+    let specialistEmailSent = false;
+    let emailMode = clientEmailResult.mode ?? "console";
     if (specialistEmail) {
-      void sendInquirySpecialistNotificationEmail({
+      const specialistResult = await sendInquirySpecialistNotificationEmail({
         to: specialistEmail,
         clientFirstName: normalized.clientFirstName,
         clientEmail: normalized.clientEmail,
@@ -375,6 +383,8 @@ export async function submitSpecialistInquiry(
         message: normalized.message,
         dashboardPath: `${origin}${SPECIALIST_DASHBOARD_PATH}`,
       });
+      specialistEmailSent = specialistResult.success;
+      emailMode = specialistResult.mode ?? emailMode;
     } else {
       console.warn(
         "[SMOAC EMAIL] No specialist email found for local inquiry notify",
@@ -390,6 +400,8 @@ export async function submitSpecialistInquiry(
       ok: true,
       conversationId: local.conversationId,
       messageId: local.messageId,
+      emailMode,
+      specialistEmailSent,
     };
   } catch (error) {
     const message =

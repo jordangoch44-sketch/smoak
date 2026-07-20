@@ -11,6 +11,58 @@ export type ProfileUpsertResult =
   | { ok: true }
   | { ok: false; message: string };
 
+/** Lean columns for auth/session — skip bulky onboarding_data (embedded photos). */
+const PROFILE_SESSION_COLUMNS = [
+  "user_id",
+  "email",
+  "first_name",
+  "last_name",
+  "display_name",
+  /* Skip avatar_url — legacy rows may store multi‑MB data URLs that time out on mobile */
+  "avatar_path",
+  "client_city",
+  "client_zip_code",
+  "profile_completion_status",
+  "password_setup_status",
+].join(", ");
+
+function isInlineDataUrl(value: string): boolean {
+  return value.trim().toLowerCase().startsWith("data:");
+}
+
+/** Prefer http(s) avatars only — data URLs blow up profile rows and time out on mobile. */
+function publicAvatarUrl(value: string | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || isInlineDataUrl(trimmed)) return "";
+  return trimmed;
+}
+
+/**
+ * Persist onboarding metadata without embedding multi‑MB data-URL photos.
+ * Photos belong in Storage / https avatar_url, not jsonb.
+ */
+function specialistOnboardingForStorage(
+  state: SpecialistOnboardingState
+): Record<string, unknown> {
+  const media = { ...state.media };
+  if (isInlineDataUrl(media.profilePhotoUrl ?? "")) {
+    media.profilePhotoUrl = "";
+  }
+  if (isInlineDataUrl(media.profilePhotoOriginalUrl ?? "")) {
+    media.profilePhotoOriginalUrl = "";
+  }
+  return {
+    ...state,
+    password: "",
+    media,
+  };
+}
+
+function logProfileFetchIssue(label: string, message: string): void {
+  /* warn — Next.js error overlay treats console.error as a blocking "Issue" on mobile */
+  console.warn(`[profiles] ${label}`, message);
+}
+
 /** Columns that exist on public.profiles — role lives in user_roles only. */
 type ProfileUpsertPayload = {
   user_id: string;
@@ -58,7 +110,11 @@ function emptyProfileFields(): Omit<
 
 function logProfilePayload(payload: ProfileUpsertPayload): void {
   if (process.env.NODE_ENV !== "production") {
-    logAuth("profiles.upsert_payload", { ...payload });
+    const { onboarding_data: _onboarding, ...rest } = payload;
+    logAuth("profiles.upsert_payload", {
+      ...rest,
+      onboarding_data: _onboarding ? "[omitted]" : null,
+    });
   }
 }
 
@@ -79,7 +135,8 @@ async function upsertProfileRow(
     ) &&
     "password_setup_status" in payload
   ) {
-    const { password_setup_status: _removed, ...rest } = payload;
+    const rest = { ...payload };
+    delete rest.password_setup_status;
     const retry = await supabase
       .from("profiles")
       .upsert(rest, { onConflict: "user_id" });
@@ -107,29 +164,35 @@ export async function fetchUserRoleRow(
     .maybeSingle();
 
   if (error) {
-    console.error("[profiles] fetchUserRoleRow", error.message);
+    logProfileFetchIssue("fetchUserRoleRow", error.message);
     return null;
   }
 
   return data as UserRoleRow | null;
 }
 
+/**
+ * Lean profile fetch for auth/session (no onboarding_data blob).
+ * Avoids statement timeouts when specialist photos were stored as data URLs.
+ */
 export async function fetchProfileRow(
   supabase: SupabaseClient,
   userId: string
 ): Promise<ProfileRow | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("*")
+    .select(PROFILE_SESSION_COLUMNS)
     .eq("user_id", userId)
     .maybeSingle();
 
   if (error) {
-    console.error("[profiles] fetchProfileRow", error.message);
+    logProfileFetchIssue("fetchProfileRow", error.message);
     return null;
   }
 
-  return data as ProfileRow | null;
+  if (!data) return null;
+
+  return data as unknown as ProfileRow;
 }
 
 export async function upsertUserRole(
@@ -283,7 +346,7 @@ export async function saveSpecialistSignupProfile(
   const lastName = nameParts.slice(1).join(" ");
   const zip = state.zipCode?.trim() ?? "";
 
-  const avatarUrl = state.media?.profilePhotoUrl?.trim() ?? "";
+  const avatarUrl = publicAvatarUrl(state.media?.profilePhotoUrl);
 
   return upsertProfileRow(supabase, {
     user_id: userId,
@@ -301,7 +364,7 @@ export async function saveSpecialistSignupProfile(
       state.pricing?.oneOnOnePrice?.trim() ||
       state.pricing?.onlineCoachingPrice?.trim() ||
       "",
-    onboarding_data: state as unknown as Record<string, unknown>,
+    onboarding_data: specialistOnboardingForStorage(state),
   });
 }
 

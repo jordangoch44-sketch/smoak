@@ -30,6 +30,7 @@ export type SubmitSpecialistReviewErrorCode =
   | "cooldown"
   | "invalid_rating"
   | "invalid_text"
+  | "unavailable"
   | "network"
   | "unknown";
 
@@ -89,6 +90,8 @@ export function submitReviewErrorMessage(
       return "Please select a rating from 1 to 5 stars.";
     case "invalid_text":
       return `Reviews must be between ${REVIEW_TEXT_MIN} and ${REVIEW_TEXT_MAX} characters.`;
+    case "unavailable":
+      return "SMOAC reviews aren’t available yet for this specialist. Please try again later.";
     case "network":
       return "We couldn’t submit your review. Check your connection and try again.";
     default:

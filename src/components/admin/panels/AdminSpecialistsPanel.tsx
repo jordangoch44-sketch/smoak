@@ -28,7 +28,10 @@ interface AdminSpecialistsPanelProps {
   permissions: AdminPermissions;
   isOwnerAdmin?: boolean;
   billingById?: ReadonlyMap<string, SpecialistBillingRecord>;
-  onVisibilityChange: (id: string, visibility: AdminSpecialistVisibility) => void;
+  onVisibilityChange: (
+    id: string,
+    visibility: AdminSpecialistVisibility
+  ) => void | Promise<void>;
   onFeaturedChange: (id: string, value: boolean) => void;
   onTopRankedChange: (id: string, value: boolean) => void;
   onBasicsChange: (

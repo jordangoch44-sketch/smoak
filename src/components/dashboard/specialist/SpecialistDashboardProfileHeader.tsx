@@ -8,9 +8,9 @@ export function SpecialistDashboardProfileHeader({
   if (variant === "pending") {
     return (
       <header className="specialist-dash-profile-header">
-        <p className="specialist-dash-profile-header__eyebrow">Submitted profile</p>
+        <p className="specialist-dash-profile-header__eyebrow">Your submitted profile</p>
         <p className="specialist-dash-profile-header__hint">
-          Preview how your profile will appear once approved.
+          This preview is locked until SMOAC verifies your account.
         </p>
       </header>
     );

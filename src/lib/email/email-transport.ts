@@ -7,6 +7,7 @@ export interface OutboundEmail {
 
 export interface EmailSendResult {
   success: boolean;
+  mode: EmailTransportMode;
 }
 
 export type EmailTransportMode = "resend" | "console";
@@ -22,13 +23,14 @@ export function getEmailTransportMode(): EmailTransportMode {
 export async function sendOutboundEmail(
   payload: OutboundEmail
 ): Promise<EmailSendResult> {
+  const mode = getEmailTransportMode();
   const to = payload.to.trim().toLowerCase();
   if (!to || !to.includes("@")) {
     console.warn("[SMOAC EMAIL] Invalid recipient — skipped", {
       kind: payload.kind,
       to: payload.to,
     });
-    return { success: false };
+    return { success: false, mode };
   }
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
@@ -58,7 +60,7 @@ export async function sendOutboundEmail(
           status: response.status,
           detail: detail.slice(0, 300),
         });
-        return { success: false };
+        return { success: false, mode };
       }
 
       console.info("[SMOAC EMAIL] Sent via Resend", {
@@ -66,10 +68,10 @@ export async function sendOutboundEmail(
         to,
         subject: payload.subject,
       });
-      return { success: true };
+      return { success: true, mode };
     } catch (error) {
       console.warn("[SMOAC EMAIL] Resend request error", error);
-      return { success: false };
+      return { success: false, mode };
     }
   }
 
@@ -80,7 +82,7 @@ export async function sendOutboundEmail(
     bodyPreview: payload.text.split("\n").slice(0, 6).join(" "),
     fullText: payload.text,
   });
-  return { success: true };
+  return { success: true, mode: "console" };
 }
 
 /**
@@ -99,13 +101,17 @@ export async function dispatchTransactionalEmail(
       });
       const data = (await response.json().catch(() => null)) as {
         success?: boolean;
+        mode?: EmailTransportMode;
       } | null;
-      return { success: Boolean(response.ok && data?.success) };
+      return {
+        success: Boolean(response.ok && data?.success),
+        mode: data?.mode === "resend" ? "resend" : "console",
+      };
     }
 
     return sendOutboundEmail(payload);
   } catch (error) {
     console.warn("[SMOAC EMAIL] Dispatch failed", error);
-    return { success: false };
+    return { success: false, mode: getEmailTransportMode() };
   }
 }

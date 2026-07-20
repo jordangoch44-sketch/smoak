@@ -6,14 +6,23 @@ export {
   applicationStatusLabel,
   approveSpecialistApplication,
   approveSpecialistApplicationWithEdits,
+  approveSpecialistApplicationWithEditsAsync,
   activateSpecialistFromApplication,
+  activateSpecialistFromApplicationAsync,
+  activateSpecialistApplicationWithEditsAsync,
+  archiveSpecialistApplication,
+  archiveSpecialistApplicationAsync,
   countPendingApplications,
   listApplicationsByStatus,
   rejectSpecialistApplication,
   rejectSpecialistApplicationWithEdits,
+  rejectSpecialistApplicationWithEditsAsync,
   saveSpecialistApplicationEdits,
+  saveSpecialistApplicationEditsAsync,
   updateApplicationStatus,
+  updateApplicationStatusAsync,
 } from "@/lib/admin-applications-service";
+export type { AdminApplicationMutationResult } from "@/lib/admin-applications-service";
 
 export { applicationToProfileOverrides } from "@/lib/application-to-trainer";
 export { ensureAdminApplicationSeeds } from "@/lib/admin-applications-seed";
@@ -68,6 +77,7 @@ export {
   setAdminSpecialistFlag,
   setAdminSpecialistProtected,
   setAdminSpecialistVisibility,
+  setAdminSpecialistVisibilityAsync,
   updateAdminSpecialistBasics,
 } from "@/lib/admin-specialists-service";
 export { computeAdminOverviewStats } from "@/lib/admin-stats";

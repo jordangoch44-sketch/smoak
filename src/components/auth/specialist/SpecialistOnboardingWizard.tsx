@@ -163,23 +163,37 @@ export function SpecialistOnboardingWizard({
           message:
             "Check your email to confirm your account. After you sign in, your application will submit automatically.",
         });
-        router.push(LOGIN_PATH);
+        router.replace(LOGIN_PATH);
         return;
       }
 
-      await submitSpecialistApplication(state);
+      const userId = signUpResult.session.userId;
+
+      const submitResult = await submitSpecialistApplication(state, { userId });
 
       showToast({
         type: "success",
-        message: "Application submitted — pending SMOAC review.",
+        message: submitResult.emailSent
+          ? "Application submitted. Check your email for confirmation."
+          : "Application submitted — pending SMOAC review.",
       });
-      router.push("/specialist-dashboard");
+      router.replace("/specialist-dashboard?submitted=1");
     } catch (err) {
-      setError(
+      const message =
         err instanceof ApplicationSubmitError
           ? err.message
-          : "Something went wrong. Please try again."
-      );
+          : err instanceof Error && err.message.trim()
+            ? err.message
+            : "Something went wrong. Please try again.";
+
+      /* Already approved — send them to the dashboard instead of trapping on submit */
+      if (/already approved/i.test(message)) {
+        showToast({ type: "info", message });
+        router.replace("/specialist-dashboard");
+        return;
+      }
+
+      setError(message);
     } finally {
       setSubmitting(false);
     }

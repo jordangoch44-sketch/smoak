@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import {
   DashboardButton,
   DashboardGrid,
@@ -44,6 +45,9 @@ function scrollToInquiries() {
 }
 
 export function SpecialistDashboardPageClient() {
+  const searchParams = useSearchParams();
+  const justSubmitted = searchParams.get("submitted") === "1";
+
   const {
     isReady,
     session,
@@ -86,6 +90,8 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "approved-free" ||
     dashboardMode === "approved-premium" ||
     dashboardMode === "demo-premium";
+  const isPendingGate =
+    dashboardMode === "pending" || dashboardMode === "rejected";
 
   const leadUnread = data.newLeads.filter((lead) => lead.unread).length;
   const bannerUnread = Math.max(notificationUnread, leadUnread);
@@ -116,29 +122,60 @@ export function SpecialistDashboardPageClient() {
 
         {profileFirst ? (
           <>
-            {(dashboardMode === "pending" || dashboardMode === "rejected") && (
+            {isPendingGate ? (
               <SpecialistPendingApprovalNotice
                 variant={dashboardMode === "rejected" ? "rejected" : "pending"}
+                justSubmitted={justSubmitted && dashboardMode === "pending"}
               />
-            )}
+            ) : null}
 
             {dashboardMode === "approved-free" && (
               <SpecialistDashboardProfileHeader variant="live-free" />
             )}
 
-            {dashboardMode !== "approved-free" && hasProfilePreview ? (
+            {dashboardMode === "pending" && hasProfilePreview ? (
               <SpecialistDashboardProfileHeader variant="pending" />
             ) : null}
 
             {hasProfilePreview ? (
-              <SpecialistDashboardProfilePreview
-                application={application!}
-                trainer={trainer!}
-                editable={dashboardMode === "approved-free"}
-              />
+              <div
+                className={
+                  isPendingGate
+                    ? "specialist-dash-pending-preview"
+                    : undefined
+                }
+              >
+                {dashboardMode === "pending" ? (
+                  <div
+                    className="specialist-dash-pending-preview__badge"
+                    aria-hidden
+                  >
+                    <span className="specialist-dash-pending-preview__badge-icon" />
+                    <span>Pending verification</span>
+                  </div>
+                ) : null}
+                <div
+                  className={
+                    isPendingGate
+                      ? "specialist-dash-pending-preview__content"
+                      : undefined
+                  }
+                >
+                  <SpecialistDashboardProfilePreview
+                    application={application!}
+                    trainer={trainer!}
+                    editable={dashboardMode === "approved-free"}
+                  />
+                </div>
+              </div>
+            ) : isPendingGate ? (
+              <p className="specialist-dash-notice__text">
+                Your submitted details will appear here once your application finishes
+                saving. Pull to refresh, or edit your profile below.
+              </p>
             ) : null}
 
-            {dashboardMode === "pending" || dashboardMode === "rejected" ? (
+            {isPendingGate ? (
               <DashboardButton
                 href="/specialist-dashboard/edit-profile"
                 className="specialist-dash-layout__edit-btn"

@@ -212,10 +212,10 @@ export function SpecialistEditProfilePageClient() {
     });
   }
 
-  function saveSection() {
+  async function saveSection() {
     if (!sectionDraft || !trainerId) return;
     setSaving(true);
-    const result = saveForm(sectionDraft);
+    const result = await saveForm(sectionDraft);
     setSaving(false);
 
     if (result.ok) {
@@ -226,7 +226,7 @@ export function SpecialistEditProfilePageClient() {
 
     showToast({
       type: "info",
-      message: "Unable to save changes",
+      message: result.ok === false ? result.error : "Unable to save changes",
     });
   }
 

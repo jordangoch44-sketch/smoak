@@ -46,5 +46,8 @@ export type SubmitInquiryResult =
       ok: true;
       conversationId: string;
       messageId: string;
+      /** Email transport used for confirmation / specialist notify */
+      emailMode?: "resend" | "console";
+      specialistEmailSent?: boolean;
     }
   | { ok: false; message: string };

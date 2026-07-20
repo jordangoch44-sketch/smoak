@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
   const result = await sendOutboundEmail({ to, subject, text, kind });
   return NextResponse.json(
-    { success: result.success },
+    { success: result.success, mode: result.mode },
     { status: result.success ? 200 : 502 }
   );
 }

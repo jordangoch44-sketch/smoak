@@ -64,7 +64,9 @@ export function useManagedSpecialistProfile() {
 
   const formDefaults = base ? overridesFromTrainer(base, storedOverrides) : null;
 
-  function saveForm(form: SpecialistProfileEditForm): ManagedProfileSaveResult {
+  async function saveForm(
+    form: SpecialistProfileEditForm
+  ): Promise<ManagedProfileSaveResult> {
     if (!trainerId) {
       return { ok: false, error: "Unable to save changes" };
     }

@@ -25,6 +25,11 @@ export async function updateOwnProfileAvatarUrl(
 ): Promise<void> {
   const trimmed = avatarUrl.trim();
   if (!trimmed) return;
+  /* Never write data URLs into profiles — they cause statement timeouts on fetch */
+  if (trimmed.toLowerCase().startsWith("data:")) {
+    patchAuthSessionAvatarUrl(trimmed);
+    return;
+  }
 
   patchAuthSessionAvatarUrl(trimmed);
 
@@ -38,7 +43,7 @@ export async function updateOwnProfileAvatarUrl(
     .eq("user_id", session.userId);
 
   if (error) {
-    console.error("[profiles] updateOwnProfileAvatarUrl", error.message);
+    console.warn("[profiles] updateOwnProfileAvatarUrl", error.message);
   }
 }
 
@@ -50,6 +55,7 @@ export async function writeProfileAvatarUrl(
 ): Promise<void> {
   const trimmed = avatarUrl.trim();
   if (!trimmed || !userId) return;
+  if (trimmed.toLowerCase().startsWith("data:")) return;
 
   const { error } = await supabase
     .from("profiles")
@@ -57,6 +63,6 @@ export async function writeProfileAvatarUrl(
     .eq("user_id", userId);
 
   if (error) {
-    console.error("[profiles] writeProfileAvatarUrl", error.message);
+    console.warn("[profiles] writeProfileAvatarUrl", error.message);
   }
 }

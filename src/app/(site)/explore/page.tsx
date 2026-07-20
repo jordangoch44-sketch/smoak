@@ -1,7 +1,11 @@
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { Suspense } from "react";
+import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
 
-const ExplorePageClient = dynamic(
+/** Live catalog must not be frozen at build time. */
+export const dynamic = "force-dynamic";
+
+const ExplorePageClient = nextDynamic(
   () =>
     import("@/components/explore/ExplorePageClient").then(
       (mod) => mod.ExplorePageClient
@@ -32,10 +36,15 @@ function ExploreFallback() {
   );
 }
 
-export default function ExplorePage() {
+export default async function ExplorePage() {
+  const { trainers, mode } = await loadPublicCatalogForServer();
+
   return (
     <Suspense fallback={<ExploreFallback />}>
-      <ExplorePageClient />
+      <ExplorePageClient
+        initialCatalog={trainers}
+        catalogMode={mode}
+      />
     </Suspense>
   );
 }

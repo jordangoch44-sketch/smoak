@@ -116,6 +116,7 @@ export function SpecialistInquirySheet({
   );
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [emailMode, setEmailMode] = useState<"resend" | "console" | null>(null);
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -238,6 +239,7 @@ export function SpecialistInquirySheet({
     }
 
     clearPendingInquiryDraft();
+    setEmailMode(result.emailMode ?? null);
     setView("success");
   }, [draft, session, specialistId, firstName]);
 
@@ -303,6 +305,7 @@ export function SpecialistInquirySheet({
 
     clearPendingInquiryDraft();
     await refreshSession();
+    setEmailMode(sendResult.emailMode ?? null);
     setView("success");
   };
 
@@ -344,6 +347,7 @@ export function SpecialistInquirySheet({
 
     clearPendingInquiryDraft();
     await refreshSession();
+    setEmailMode(sendResult.emailMode ?? null);
     setView("success");
   };
 
@@ -550,6 +554,11 @@ export function SpecialistInquirySheet({
                 <div className="inquiry-sheet__state">
                   <p className="inquiry-sheet__success">
                     Inquiry sent to {specialistName}. They’ll follow up by email.
+                  </p>
+                  <p className="inquiry-sheet__helper">
+                    {emailMode === "resend"
+                      ? "A confirmation was emailed to you."
+                      : "Your message is saved in SMOAC. Confirmation email sends when Resend is configured (RESEND_API_KEY)."}
                   </p>
                   <Link
                     href={CLIENT_DASHBOARD_PATH}

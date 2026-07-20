@@ -1,14 +1,21 @@
 import { trainers as seedTrainers, getTrainerById as getSeedTrainerById } from "@/data/trainers";
 import {
   getApprovedSpecialistProfileById,
+  getApprovedSpecialistProfilesHydratedSnapshot,
   getApprovedSpecialistProfilesSnapshot,
 } from "@/lib/approved-specialist-profiles-store";
 import { getHiddenTrainersSnapshot } from "@/lib/hidden-trainers-store";
 import { applicationToTrainer } from "@/lib/application-to-trainer";
 import {
+  getPublicCatalogMode,
+  isLivePublicCatalogMode,
+  type PublicCatalogMode,
+} from "@/lib/public-catalog-mode";
+import {
   getSpecialistApplicationById,
   listSpecialistApplications,
 } from "@/lib/specialist-application-storage";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { ProfileStatus } from "@/types/specialist-application";
 import type { Trainer } from "@/types/trainer";
 
@@ -24,18 +31,88 @@ function isTrainerHidden(trainerId: string, hiddenSet: Set<string>): boolean {
   return hiddenSet.has(trainerId);
 }
 
+function resolveCatalogMode(options: PublicCatalogOptions): PublicCatalogMode {
+  if (options.catalogMode) return options.catalogMode;
+  return getPublicCatalogMode();
+}
+
+/**
+ * Resolve approved specialists for the public catalog.
+ *
+ * Priority:
+ * 1. Hydrated remote store (post-Supabase fetch) — source of truth on client
+ * 2. Explicit `remoteApproved` from SSR — first paint before hydrate
+ * 3. Otherwise empty (live) or unhydrated local only when not in live mode
+ */
+function resolveApprovedMap(options: PublicCatalogOptions): Record<string, Trainer> {
+  const map: Record<string, Trainer> = {};
+  const mode = resolveCatalogMode(options);
+  const includeBrowser = options.includeBrowserState !== false;
+
+  if (includeBrowser && typeof window !== "undefined") {
+    const hydrated = getApprovedSpecialistProfilesHydratedSnapshot();
+    if (hydrated) {
+      for (const [id, trainer] of Object.entries(
+        getApprovedSpecialistProfilesSnapshot()
+      )) {
+        map[id] = trainer;
+      }
+      return map;
+    }
+  }
+
+  for (const trainer of options.remoteApproved ?? []) {
+    map[trainer.id] = trainer;
+  }
+
+  if (Object.keys(map).length > 0) {
+    return map;
+  }
+
+  /* Do not let stale localStorage invent a live catalog before hydrate */
+  if (isLivePublicCatalogMode(mode)) {
+    return map;
+  }
+
+  if (includeBrowser) {
+    for (const [id, trainer] of Object.entries(
+      getApprovedSpecialistProfilesSnapshot()
+    )) {
+      map[id] = trainer;
+    }
+  }
+
+  return map;
+}
+
+function usesLiveCatalog(options: PublicCatalogOptions): boolean {
+  const mode = resolveCatalogMode(options);
+  if (isLivePublicCatalogMode(mode)) return true;
+  if (mode === "seed") return false;
+  /* unknown: Supabase env present → never fall back to seed */
+  return isSupabaseConfigured();
+}
+
 /** Whether a specialist id should appear on Explore, search, saves, rankings */
-export function isPublicMarketplaceTrainerId(trainerId: string): boolean {
-  const hiddenSet = new Set(getHiddenTrainersSnapshot());
+export function isPublicMarketplaceTrainerId(
+  trainerId: string,
+  options: PublicCatalogOptions = {}
+): boolean {
+  const hiddenSet =
+    options.includeBrowserState === false
+      ? new Set<string>()
+      : new Set(getHiddenTrainersSnapshot());
   if (isTrainerHidden(trainerId, hiddenSet)) return false;
+
+  const approvedMap = resolveApprovedMap(options);
+  if (usesLiveCatalog(options)) {
+    return Boolean(approvedMap[trainerId]);
+  }
 
   const app = getSpecialistApplicationById(trainerId);
   if (app) {
     return PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus);
   }
-
-  const approvedOnly = getApprovedSpecialistProfileById(trainerId);
-  if (approvedOnly) return true;
 
   const seed = getSeedTrainerById(trainerId);
   if (!seed) return false;
@@ -44,12 +121,20 @@ export function isPublicMarketplaceTrainerId(trainerId: string): boolean {
 }
 
 export function getPublicMarketplaceTrainerBaseById(
-  trainerId: string
+  trainerId: string,
+  options: PublicCatalogOptions = {}
 ): Trainer | undefined {
-  if (!isPublicMarketplaceTrainerId(trainerId)) return undefined;
+  if (!isPublicMarketplaceTrainerId(trainerId, options)) return undefined;
+
+  const approvedMap = resolveApprovedMap(options);
+  if (approvedMap[trainerId]) return approvedMap[trainerId];
 
   const approved = getApprovedSpecialistProfileById(trainerId);
   if (approved) return approved;
+
+  if (usesLiveCatalog(options)) {
+    return undefined;
+  }
 
   const seed = getSeedTrainerById(trainerId);
   if (seed) return seed;
@@ -64,11 +149,14 @@ export function getPublicMarketplaceTrainerBaseById(
 
 export type PublicCatalogOptions = {
   /**
-   * When false, return seed trainers only (no localStorage approved profiles,
-   * hidden ids, or specialist applications). Use for SSR / pre-hydration so
-   * server HTML matches the client's first paint.
+   * When false, ignore localStorage approved/hidden/applications.
+   * Pass `remoteApproved` for SSR live catalog.
    */
   includeBrowserState?: boolean;
+  /** SSR / primed approved trainers from `specialist_profiles`. */
+  remoteApproved?: Trainer[];
+  /** Force live vs seed; defaults to primed `getPublicCatalogMode()`. */
+  catalogMode?: PublicCatalogMode;
 };
 
 /** Approved specialists for Explore, featured, saved resolution */
@@ -76,30 +164,41 @@ export function listPublicMarketplaceTrainers(
   options: PublicCatalogOptions = {}
 ): Trainer[] {
   const includeBrowserState = options.includeBrowserState !== false;
+  const hiddenSet = includeBrowserState
+    ? new Set(getHiddenTrainersSnapshot())
+    : new Set<string>();
+  const approvedMap = resolveApprovedMap(options);
+  const live = usesLiveCatalog(options);
 
+  /* Live catalog: approved specialist_profiles only — never seed, never local-only apps */
+  if (live) {
+    const seen = new Set<string>();
+    const result: Trainer[] = [];
+
+    for (const trainer of Object.values(approvedMap)) {
+      if (seen.has(trainer.id)) continue;
+      if (isTrainerHidden(trainer.id, hiddenSet)) continue;
+      seen.add(trainer.id);
+      result.push(trainer);
+    }
+
+    return result;
+  }
+
+  /* Seed mode (Supabase not configured) — local demo only */
   if (!includeBrowserState) {
     return seedTrainers.slice();
   }
 
-  const hiddenSet = new Set(getHiddenTrainersSnapshot());
   const seen = new Set<string>();
   const result: Trainer[] = [];
-  const approvedProfiles = getApprovedSpecialistProfilesSnapshot();
 
   for (const seed of seedTrainers) {
     if (seen.has(seed.id)) continue;
     if (isTrainerHidden(seed.id, hiddenSet)) continue;
     if (applicationBlocksPublicSeed(seed.id)) continue;
     seen.add(seed.id);
-    /* Prefer durable approved/DB profile over seed when both exist */
-    result.push(approvedProfiles[seed.id] ?? seed);
-  }
-
-  for (const id of Object.keys(approvedProfiles)) {
-    if (seen.has(id)) continue;
-    if (isTrainerHidden(id, hiddenSet)) continue;
-    seen.add(id);
-    result.push(approvedProfiles[id]);
+    result.push(seed);
   }
 
   if (typeof window !== "undefined") {
@@ -108,7 +207,7 @@ export function listPublicMarketplaceTrainers(
       if (!PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus)) continue;
       if (isTrainerHidden(app.id, hiddenSet)) continue;
       seen.add(app.id);
-      result.push(approvedProfiles[app.id] ?? applicationToTrainer(app));
+      result.push(applicationToTrainer(app));
     }
   }
 
