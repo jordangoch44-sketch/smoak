@@ -28,7 +28,7 @@ import {
 import {
   listAdminSpecialists,
   setAdminSpecialistAccountKind,
-  setAdminSpecialistFlag,
+  setAdminSpecialistFlagAsync,
   setAdminSpecialistProtected,
   setAdminSpecialistVisibilityAsync,
   updateAdminSpecialistBasics,
@@ -51,7 +51,12 @@ import {
   refreshSpecialistApplicationsFromRemote,
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
-import { refreshApprovedSpecialistProfilesFromRemote } from "@/lib/approved-specialist-profiles-store";
+import {
+  getApprovedSpecialistProfilesServerSnapshot,
+  getApprovedSpecialistProfilesSnapshot,
+  refreshApprovedSpecialistProfilesFromRemote,
+  subscribeApprovedSpecialistProfiles,
+} from "@/lib/approved-specialist-profiles-store";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 
 export function useAdminDashboard() {
@@ -85,6 +90,12 @@ export function useAdminDashboard() {
     getClientApplicationsSnapshot,
     getClientApplicationsServerSnapshot
   );
+  /* Durable featured/sponsored flags come from the remote catalog store */
+  const approvedProfiles = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesSnapshot,
+    getApprovedSpecialistProfilesServerSnapshot
+  );
 
   const clients = useMemo(
     () => listAdminClients(null, clientApplications),
@@ -99,7 +110,7 @@ export function useAdminDashboard() {
   const specialists = useMemo(
     () => listAdminSpecialists(),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- store-driven list
-    [applications, hiddenIds, specialistMeta]
+    [applications, hiddenIds, specialistMeta, approvedProfiles]
   );
 
   const refreshKey = applications.length + clientApplications.length;
@@ -131,7 +142,7 @@ export function useAdminDashboard() {
     archiveClientApplication,
     saveClientApplicationEdits,
     setSpecialistVisibility: setAdminSpecialistVisibilityAsync,
-    setSpecialistFlag: setAdminSpecialistFlag,
+    setSpecialistFlag: setAdminSpecialistFlagAsync,
     setSpecialistProtected: setAdminSpecialistProtected,
     setSpecialistAccountKind: setAdminSpecialistAccountKind,
     updateSpecialistBasics: updateAdminSpecialistBasics,

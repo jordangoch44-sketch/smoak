@@ -9,6 +9,7 @@ export type AdminSpecialistVisibility =
 export interface AdminSpecialistMeta {
   visibility?: AdminSpecialistVisibility;
   featured?: boolean;
+  sponsored?: boolean;
   topRanked?: boolean;
   isPremium?: boolean;
   /** Protect from test cleanup / bulk delete tools */

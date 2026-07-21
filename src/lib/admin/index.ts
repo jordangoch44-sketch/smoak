@@ -75,6 +75,7 @@ export {
   listAdminSpecialists,
   setAdminSpecialistAccountKind,
   setAdminSpecialistFlag,
+  setAdminSpecialistFlagAsync,
   setAdminSpecialistProtected,
   setAdminSpecialistVisibility,
   setAdminSpecialistVisibilityAsync,

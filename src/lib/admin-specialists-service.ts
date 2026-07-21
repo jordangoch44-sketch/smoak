@@ -4,9 +4,16 @@ import {
   patchAdminSpecialistMeta,
 } from "@/lib/admin-specialist-meta-store";
 import {
+  getApprovedSpecialistProfileById,
   hideApprovedSpecialistProfileAsync,
+  refreshApprovedSpecialistProfilesFromRemoteAsync,
   restoreApprovedSpecialistProfileAsync,
 } from "@/lib/approved-specialist-profiles-store";
+import {
+  getMarketplaceAuthClient,
+  isMarketplaceSupabaseActive,
+} from "@/lib/auth/marketplace-auth";
+import { setSpecialistProfileFlags } from "@/lib/profiles/specialist-profiles-db";
 import {
   getHiddenTrainersSnapshot,
   hideTrainerId,
@@ -35,6 +42,7 @@ export interface AdminSpecialistRow {
   travelRadius: string;
   visibility: AdminSpecialistVisibility;
   featured: boolean;
+  sponsored: boolean;
   topRanked: boolean;
   isPremium: boolean;
   isProtected: boolean;
@@ -54,6 +62,8 @@ function applicationAsTrainerRow(
   const app = listSpecialistApplications().find((a) => a.id === id);
   if (!app) return null;
   const meta = getAdminSpecialistMeta(id);
+  /* Durable placement flags live on specialist_profiles — prefer remote truth */
+  const approved = getApprovedSpecialistProfileById(id);
   return {
     id,
     name: app.displayName.trim() || app.fullName.trim() || id,
@@ -66,7 +76,8 @@ function applicationAsTrainerRow(
     serviceType: app.serviceType,
     travelRadius: app.travelRadius,
     visibility,
-    featured: meta.featured ?? false,
+    featured: approved?.featured ?? meta.featured ?? false,
+    sponsored: approved?.sponsored ?? meta.sponsored ?? false,
     topRanked: meta.topRanked ?? false,
     isPremium: meta.isPremium ?? false,
     isProtected: meta.isProtected ?? false,
@@ -102,6 +113,7 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
 
     if (seed) {
       const merged = mergeTrainerBase(seed, id);
+      const approved = getApprovedSpecialistProfileById(id);
       rows.push({
         id,
         name: merged.name,
@@ -114,7 +126,8 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
         serviceType: meta.serviceType ?? merged.serviceType ?? "",
         travelRadius: meta.travelRadius ?? merged.travelRadius ?? "",
         visibility,
-        featured: meta.featured ?? merged.featured,
+        featured: approved?.featured ?? meta.featured ?? merged.featured,
+        sponsored: approved?.sponsored ?? meta.sponsored ?? Boolean(merged.sponsored),
         topRanked: meta.topRanked ?? false,
         isPremium: meta.isPremium ?? merged.featured,
         isProtected: meta.isProtected ?? false,
@@ -188,12 +201,54 @@ export function setAdminSpecialistAccountKind(
   });
 }
 
+export type AdminSpecialistFlag =
+  | "featured"
+  | "sponsored"
+  | "topRanked"
+  | "isPremium";
+
+/** @deprecated Prefer setAdminSpecialistFlagAsync — local-only mirror. */
 export function setAdminSpecialistFlag(
   trainerId: string,
-  flag: "featured" | "topRanked" | "isPremium",
+  flag: AdminSpecialistFlag,
   value: boolean
 ): void {
+  void setAdminSpecialistFlagAsync(trainerId, flag, value);
+}
+
+/**
+ * featured / sponsored are durable `specialist_profiles` columns (live home
+ * rails read them). topRanked / isPremium have no DB column yet — local meta
+ * only. Local meta mirror keeps the admin UI responsive in both cases.
+ */
+export async function setAdminSpecialistFlagAsync(
+  trainerId: string,
+  flag: AdminSpecialistFlag,
+  value: boolean
+): Promise<{ ok: true } | { ok: false; message: string }> {
   patchAdminSpecialistMeta(trainerId, { [flag]: value });
+
+  if (flag !== "featured" && flag !== "sponsored") return { ok: true };
+  if (!isMarketplaceSupabaseActive()) return { ok: true };
+
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication is not available." };
+  }
+
+  const result = await setSpecialistProfileFlags(supabase, trainerId, {
+    [flag]: value,
+  });
+  if (!result.ok) {
+    console.warn(
+      "[SMOAC admin] specialist_profiles flag update failed:",
+      result.message
+    );
+    return result;
+  }
+
+  await refreshApprovedSpecialistProfilesFromRemoteAsync();
+  return { ok: true };
 }
 
 export function updateAdminSpecialistBasics(

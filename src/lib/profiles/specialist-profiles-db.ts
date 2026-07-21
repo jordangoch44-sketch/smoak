@@ -50,8 +50,12 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
         ? trainer.specialty
         : asStringArray(row.specialty),
       pricePerSession: trainer.pricePerSession || row.price_per_session || 0,
-      featured: trainer.featured ?? row.featured,
-      sponsored: trainer.sponsored ?? row.sponsored,
+      /* Columns are the source of truth for admin placement flags —
+       * profile_data snapshots go stale when admins toggle featured/sponsored. */
+      featured:
+        typeof row.featured === "boolean" ? row.featured : Boolean(trainer.featured),
+      sponsored:
+        typeof row.sponsored === "boolean" ? row.sponsored : Boolean(trainer.sponsored),
       verified: trainer.verified ?? row.verified,
       rating: trainer.rating || Number(row.rating) || 0,
       reviewCount: trainer.reviewCount || row.review_count || 0,
@@ -137,6 +141,10 @@ export async function upsertSpecialistProfile(
   }
 ): Promise<SpecialistProfilesMutationResult> {
   const row = specialistProfileToRow(input);
+  /* featured/sponsored are intentionally omitted: they are admin placement
+   * flags managed via setSpecialistProfileFlags. Including them here would
+   * let re-approvals / profile edits clobber admin-set values (inserts fall
+   * back to the DB defaults of false). */
   const { error } = await supabase.from("specialist_profiles").upsert(
     {
       id: row.id,
@@ -154,8 +162,6 @@ export async function upsertSpecialistProfile(
       specialty: row.specialty,
       price_per_session: row.price_per_session,
       service_type: row.service_type,
-      featured: row.featured,
-      sponsored: row.sponsored,
       verified: row.verified,
       rating: row.rating,
       review_count: row.review_count,
@@ -165,6 +171,29 @@ export async function upsertSpecialistProfile(
     },
     { onConflict: "id" }
   );
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: true };
+}
+
+/** Admin placement flags (featured / sponsored) — durable column update. */
+export async function setSpecialistProfileFlags(
+  supabase: SupabaseClient,
+  id: string,
+  flags: { featured?: boolean; sponsored?: boolean }
+): Promise<SpecialistProfilesMutationResult> {
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof flags.featured === "boolean") patch.featured = flags.featured;
+  if (typeof flags.sponsored === "boolean") patch.sponsored = flags.sponsored;
+
+  const { error } = await supabase
+    .from("specialist_profiles")
+    .update(patch)
+    .eq("id", id);
 
   if (error) {
     return { ok: false, message: error.message };

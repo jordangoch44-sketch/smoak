@@ -229,11 +229,15 @@ export function AdminDashboardPageClient() {
               }}
               onFeaturedChange={(id, value) => {
                 if (!permissions.canFeatureSpecialists) return;
-                setSpecialistFlag(id, "featured", value);
+                void setSpecialistFlag(id, "featured", value);
+              }}
+              onSponsoredChange={(id, value) => {
+                if (!permissions.canFeatureSpecialists) return;
+                void setSpecialistFlag(id, "sponsored", value);
               }}
               onTopRankedChange={(id, value) => {
                 if (!permissions.canFeatureSpecialists) return;
-                setSpecialistFlag(id, "topRanked", value);
+                void setSpecialistFlag(id, "topRanked", value);
               }}
               onBasicsChange={(id, basics) => {
                 if (!permissions.canEditSpecialists) return;

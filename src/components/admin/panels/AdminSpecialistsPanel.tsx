@@ -33,6 +33,7 @@ interface AdminSpecialistsPanelProps {
     visibility: AdminSpecialistVisibility
   ) => void | Promise<void>;
   onFeaturedChange: (id: string, value: boolean) => void;
+  onSponsoredChange: (id: string, value: boolean) => void;
   onTopRankedChange: (id: string, value: boolean) => void;
   onBasicsChange: (
     id: string,
@@ -57,6 +58,7 @@ function SpecialistCard({
   permissions,
   onVisibilityChange,
   onFeaturedChange,
+  onSponsoredChange,
   onTopRankedChange,
   onBasicsChange,
   onProtectedChange,
@@ -68,6 +70,7 @@ function SpecialistCard({
   permissions: AdminPermissions;
   onVisibilityChange: AdminSpecialistsPanelProps["onVisibilityChange"];
   onFeaturedChange: AdminSpecialistsPanelProps["onFeaturedChange"];
+  onSponsoredChange: AdminSpecialistsPanelProps["onSponsoredChange"];
   onTopRankedChange: AdminSpecialistsPanelProps["onTopRankedChange"];
   onBasicsChange: AdminSpecialistsPanelProps["onBasicsChange"];
   onProtectedChange: AdminSpecialistsPanelProps["onProtectedChange"];
@@ -106,6 +109,7 @@ function SpecialistCard({
       {!showBilling ? (
         <div className="admin-entity-card__chips">
           {row.featured ? <span className="admin-chip">Featured</span> : null}
+          {row.sponsored ? <span className="admin-chip">Sponsored</span> : null}
           {row.topRanked ? <span className="admin-chip">Top ranked</span> : null}
           {row.isProtected || row.accountKind === "real" ? (
             <span className="admin-chip">Real / protected</span>
@@ -179,6 +183,14 @@ function SpecialistCard({
                   onChange={(e) => onFeaturedChange(row.id, e.target.checked)}
                 />
                 Featured
+              </label>
+              <label className="admin-check admin-check--block">
+                <input
+                  type="checkbox"
+                  checked={row.sponsored}
+                  onChange={(e) => onSponsoredChange(row.id, e.target.checked)}
+                />
+                Sponsored
               </label>
               <label className="admin-check admin-check--block">
                 <input
@@ -303,6 +315,7 @@ export function AdminSpecialistsPanel({
   billingById,
   onVisibilityChange,
   onFeaturedChange,
+  onSponsoredChange,
   onTopRankedChange,
   onBasicsChange,
   onProtectedChange,
@@ -373,6 +386,7 @@ export function AdminSpecialistsPanel({
               permissions={permissions}
               onVisibilityChange={onVisibilityChange}
               onFeaturedChange={onFeaturedChange}
+              onSponsoredChange={onSponsoredChange}
               onTopRankedChange={onTopRankedChange}
               onBasicsChange={onBasicsChange}
               onProtectedChange={onProtectedChange}
@@ -445,6 +459,7 @@ export function AdminSpecialistsPanel({
                   <th>Name</th>
                   <th>Visibility</th>
                   <th>Featured</th>
+                  <th>Sponsored</th>
                   <th>Top</th>
                   <th>Category</th>
                   <th>Location</th>
@@ -487,6 +502,19 @@ export function AdminSpecialistsPanel({
                         </label>
                       ) : (
                         row.featured ? "Yes" : "—"
+                      )}
+                    </td>
+                    <td>
+                      {permissions.canFeatureSpecialists ? (
+                        <label className="admin-check">
+                          <input
+                            type="checkbox"
+                            checked={row.sponsored}
+                            onChange={(e) => onSponsoredChange(row.id, e.target.checked)}
+                          />
+                        </label>
+                      ) : (
+                        row.sponsored ? "Yes" : "—"
                       )}
                     </td>
                     <td>
