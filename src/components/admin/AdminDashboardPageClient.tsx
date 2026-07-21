@@ -254,7 +254,7 @@ export function AdminDashboardPageClient() {
             />
           ) : null}
           {resolvedSection === "clients" && permissions.canViewClients ? (
-            <AdminClientsPanel clients={clients} />
+            <AdminClientsPanel canDelete={isOwnerAdmin} />
           ) : null}
           {resolvedSection === "revenue" && permissions.canViewRevenue ? (
             <AdminOwnerRevenuePanel specialists={specialists} />

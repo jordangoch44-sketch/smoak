@@ -6,6 +6,7 @@ type BadgeLabel =
   | AdminSpecialistVisibility
   | "active"
   | "inactive"
+  | "deactivated"
   | TierSubscriptionStatus
   | AdPlacementStatus;
 
