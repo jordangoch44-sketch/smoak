@@ -144,14 +144,6 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
   return rows.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** @deprecated Prefer setAdminSpecialistVisibilityAsync — local-only hide. */
-export function setAdminSpecialistVisibility(
-  trainerId: string,
-  visibility: AdminSpecialistVisibility
-): void {
-  void setAdminSpecialistVisibilityAsync(trainerId, visibility);
-}
-
 /**
  * Public visibility is specialist_profiles.status (approved vs hidden).
  * Local hidden set + admin meta mirror for the admin UI on this device.
@@ -206,15 +198,6 @@ export type AdminSpecialistFlag =
   | "sponsored"
   | "topRanked"
   | "isPremium";
-
-/** @deprecated Prefer setAdminSpecialistFlagAsync — local-only mirror. */
-export function setAdminSpecialistFlag(
-  trainerId: string,
-  flag: AdminSpecialistFlag,
-  value: boolean
-): void {
-  void setAdminSpecialistFlagAsync(trainerId, flag, value);
-}
 
 /**
  * featured / sponsored are durable `specialist_profiles` columns (live home

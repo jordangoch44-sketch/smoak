@@ -332,10 +332,6 @@ export function primePublicCatalogFromSSR(
   primeApprovedSpecialistProfilesCache(trainers ?? [], mode);
 }
 
-export function removeApprovedSpecialistProfile(id: string): void {
-  void removeApprovedSpecialistProfileAsync(id);
-}
-
 export async function removeApprovedSpecialistProfileAsync(
   id: string
 ): Promise<{ ok: true } | { ok: false; message: string }> {
@@ -349,10 +345,6 @@ export async function removeApprovedSpecialistProfileAsync(
 }
 
 /** Soft-remove from public catalog without deleting the row. */
-export function hideApprovedSpecialistProfile(id: string): void {
-  void hideApprovedSpecialistProfileAsync(id);
-}
-
 export async function hideApprovedSpecialistProfileAsync(
   id: string
 ): Promise<{ ok: true } | { ok: false; message: string }> {

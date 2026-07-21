@@ -7,7 +7,6 @@ import { getTrainerById as getSeedTrainerById } from "@/data/trainers";
 import { DEV_SPECIALIST_DASHBOARD_ID } from "@/constants/specialist-dashboard-mock";
 import {
   getApprovedSpecialistProfileById,
-  saveApprovedSpecialistProfile,
   saveApprovedSpecialistProfileAsync,
 } from "@/lib/approved-specialist-profiles-store";
 import {
@@ -126,17 +125,6 @@ export function syncProfileOverridesFromApplication(
   });
 }
 
-export function syncApprovedProfileFromApplication(
-  app: SpecialistApplication
-): void {
-  if (app.profileStatus !== "APPROVED") return;
-  const base = applicationToTrainer(app);
-  const overrides = loadSpecialistOverridesForId(app.id);
-  saveApprovedSpecialistProfile(
-    overrides ? applySpecialistProfileOverrides(base, overrides) : base
-  );
-}
-
 /** Await specialist_profiles upsert + refresh approved catalog from remote. */
 export async function syncApprovedProfileFromApplicationAsync(
   app: SpecialistApplication
@@ -147,11 +135,6 @@ export async function syncApprovedProfileFromApplicationAsync(
   return saveApprovedSpecialistProfileAsync(
     overrides ? applySpecialistProfileOverrides(base, overrides) : base
   );
-}
-
-export function syncApplicationProfileDraft(app: SpecialistApplication): void {
-  syncProfileOverridesFromApplication(app);
-  syncApprovedProfileFromApplication(app);
 }
 
 export async function syncApplicationProfileDraftAsync(

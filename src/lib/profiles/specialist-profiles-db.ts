@@ -217,35 +217,3 @@ export async function setSpecialistProfileStatus(
   return { ok: true };
 }
 
-/** One-time import of local approved Trainers when remote is empty.
- *  Not used by the public catalog hydrate path (local must not write into prod).
- *  Kept for explicit/manual migration tooling only.
- */
-export async function importLocalSpecialistProfiles(
-  supabase: SupabaseClient,
-  local: Record<string, Trainer>,
-  overridesById: Record<string, SpecialistProfileOverrides> = {}
-): Promise<SpecialistProfilesFetchResult> {
-  const entries = Object.values(local);
-  if (entries.length === 0) {
-    return fetchApprovedSpecialistProfiles(supabase);
-  }
-
-  const remote = await fetchApprovedSpecialistProfiles(supabase);
-  if (!remote.ok) return remote;
-  if (remote.profiles.length > 0) return remote;
-
-  for (const trainer of entries) {
-    const result = await upsertSpecialistProfile(supabase, {
-      trainer,
-      overrides: overridesById[trainer.id] ?? {},
-      applicationId: null,
-      status: "approved",
-    });
-    if (!result.ok) {
-      return { ok: false, message: result.message };
-    }
-  }
-
-  return fetchApprovedSpecialistProfiles(supabase);
-}
