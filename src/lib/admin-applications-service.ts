@@ -48,12 +48,14 @@ function normalizeApplicationEdits(
 export async function saveSpecialistApplicationEditsAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
-  const updated = normalizeApplicationEdits(application);
-  const appResult = await saveSpecialistApplicationAsync(updated);
+  const edited = normalizeApplicationEdits(application);
+  const appResult = await saveSpecialistApplicationAsync(edited);
   if (!appResult.ok) {
-    return { ok: false, message: appResult.message, application: updated };
+    return { ok: false, message: appResult.message, application: edited };
   }
 
+  /* Use the saved copy — inline photos may have moved to storage URLs. */
+  const updated = appResult.application;
   syncProfileOverridesFromApplication(updated);
 
   if (updated.profileStatus === "APPROVED") {
@@ -79,14 +81,15 @@ export async function approveSpecialistApplicationWithEditsAsync(
 export async function rejectSpecialistApplicationWithEditsAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
-  const rejected = normalizeApplicationEdits({
+  const rejectedEdits = normalizeApplicationEdits({
     ...application,
     profileStatus: "REJECTED",
   });
-  const appResult = await saveSpecialistApplicationAsync(rejected);
+  const appResult = await saveSpecialistApplicationAsync(rejectedEdits);
   if (!appResult.ok) {
-    return { ok: false, message: appResult.message, application: rejected };
+    return { ok: false, message: appResult.message, application: rejectedEdits };
   }
+  const rejected = appResult.application;
   syncProfileOverridesFromApplication(rejected);
   const removed = await removeApprovedSpecialistProfileAsync(rejected.id);
   if (!removed.ok) {
@@ -99,14 +102,15 @@ export async function rejectSpecialistApplicationWithEditsAsync(
 export async function archiveSpecialistApplicationAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
-  const archived = normalizeApplicationEdits({
+  const archivedEdits = normalizeApplicationEdits({
     ...application,
     profileStatus: "ARCHIVED",
   });
-  const appResult = await saveSpecialistApplicationAsync(archived);
+  const appResult = await saveSpecialistApplicationAsync(archivedEdits);
   if (!appResult.ok) {
-    return { ok: false, message: appResult.message, application: archived };
+    return { ok: false, message: appResult.message, application: archivedEdits };
   }
+  const archived = appResult.application;
   syncProfileOverridesFromApplication(archived);
   const removed = await removeApprovedSpecialistProfileAsync(archived.id);
   if (!removed.ok) {
@@ -128,16 +132,17 @@ export async function activateSpecialistFromApplicationAsync(
     return { ok: false, message: "Application not found." };
   }
 
-  const approved = normalizeApplicationEdits({
+  const approvedEdits = normalizeApplicationEdits({
     ...existing,
     profileStatus: "APPROVED",
   });
 
-  const appResult = await saveSpecialistApplicationAsync(approved);
+  const appResult = await saveSpecialistApplicationAsync(approvedEdits);
   if (!appResult.ok) {
-    return { ok: false, message: appResult.message, application: approved };
+    return { ok: false, message: appResult.message, application: approvedEdits };
   }
 
+  const approved = appResult.application;
   const catalog = await syncApplicationProfileDraftAsync(approved);
   if (!catalog.ok) {
     return { ok: false, message: catalog.message, application: approved };

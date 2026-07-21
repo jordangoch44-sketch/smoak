@@ -1,3 +1,4 @@
+import { uploadApplicationMediaToStorage } from "@/lib/applications/application-media-upload";
 import {
   fetchSpecialistApplications,
   importLocalSpecialistApplications,
@@ -234,53 +235,77 @@ export function listSpecialistApplications(): readonly SpecialistApplication[] {
   return getSpecialistApplicationsSnapshot();
 }
 
+function cacheApplication(app: SpecialistApplication): void {
+  const next = [
+    app,
+    ...listSpecialistApplications().filter((item) => item.id !== app.id),
+  ];
+  applyCache(next);
+  writeLocalApplications(next);
+}
+
 export function saveSpecialistApplication(
   application: SpecialistApplication
 ): void {
   if (typeof window === "undefined") return;
   const nextApp = withSessionUserId({ ...application, password: "" });
-  const existing = listSpecialistApplications();
-  const next = [
-    nextApp,
-    ...existing.filter((item) => item.id !== nextApp.id),
-  ];
-  applyCache(next);
-  writeLocalApplications(next);
+  cacheApplication(nextApp);
 
   if (!isMarketplaceSupabaseActive()) return;
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return;
-  void upsertSpecialistApplication(supabase, nextApp).then((result) => {
-    if (!result.ok) {
-      console.warn(
-        "[SMOAC applications] specialist upsert failed:",
-        result.message
-      );
-    }
-  });
+  void uploadApplicationMediaToStorage(nextApp)
+    .then((prepared) => {
+      if (!prepared.ok) return prepared;
+      if (prepared.application !== nextApp) {
+        cacheApplication(prepared.application);
+      }
+      return upsertSpecialistApplication(supabase, prepared.application);
+    })
+    .then((result) => {
+      if (!result.ok) {
+        console.warn(
+          "[SMOAC applications] specialist upsert failed:",
+          result.message
+        );
+      }
+    });
 }
+
+export type SpecialistApplicationSaveResult =
+  | { ok: true; application: SpecialistApplication }
+  | { ok: false; message: string };
 
 export async function saveSpecialistApplicationAsync(
   application: SpecialistApplication
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<SpecialistApplicationSaveResult> {
   if (typeof window === "undefined") {
     return { ok: false, message: "Unavailable on server" };
   }
   const nextApp = withSessionUserId({ ...application, password: "" });
-  const existing = listSpecialistApplications();
-  const next = [
-    nextApp,
-    ...existing.filter((item) => item.id !== nextApp.id),
-  ];
-  applyCache(next);
-  writeLocalApplications(next);
 
-  if (!isMarketplaceSupabaseActive()) return { ok: true };
+  if (!isMarketplaceSupabaseActive()) {
+    cacheApplication(nextApp);
+    return { ok: true, application: nextApp };
+  }
   const supabase = getMarketplaceAuthClient();
   if (!supabase) {
+    cacheApplication(nextApp);
     return { ok: false, message: "Authentication client unavailable" };
   }
-  return upsertSpecialistApplication(supabase, nextApp);
+
+  /* Move inline photos to storage first — huge base64 blobs in
+   * application_data time out the Postgres upsert. */
+  const prepared = await uploadApplicationMediaToStorage(nextApp);
+  if (!prepared.ok) {
+    cacheApplication(nextApp);
+    return prepared;
+  }
+
+  cacheApplication(prepared.application);
+  const result = await upsertSpecialistApplication(supabase, prepared.application);
+  if (!result.ok) return result;
+  return { ok: true, application: prepared.application };
 }
 
 export function getSpecialistApplicationById(

@@ -1,17 +1,13 @@
 "use client";
 
 import { useId, useRef, useState, type ChangeEvent } from "react";
-import {
-  getMarketplaceAuthClient,
-  isMarketplaceSupabaseActive,
-} from "@/lib/auth/marketplace-auth";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { readFileAsDataUrl } from "@/lib/media/crop-image";
 import {
   SPECIALIST_STORAGE_ACCEPT,
   SPECIALIST_STORAGE_LIMITS,
 } from "@/lib/supabase/constants";
 import { SpecialistStorageValidationError } from "@/lib/supabase/errors";
-import { uploadSpecialistMedia } from "@/lib/supabase/storage";
 import { cn } from "@/lib/utils";
 import type { SpecialistStorageMediaKind } from "@/types/supabase-storage";
 
@@ -86,24 +82,30 @@ export function ProfileMediaUploadField({
           mediaKind === "gallery-image");
 
       if (useStorage) {
-        const client = getMarketplaceAuthClient();
-        if (!client) {
-          throw new Error("Upload is unavailable. Try again after signing in.");
-        }
-        const assetId =
-          mediaKind === "gallery-image"
-            ? `g-${Date.now().toString(36)}`
-            : undefined;
-        const result = await uploadSpecialistMedia(client, {
-          specialistId: specialistId!.trim(),
-          kind: mediaKind,
-          file,
-          fileName: file.name,
-          assetId,
-          contentType: file.type || undefined,
-          upsert: true,
+        /* Server route uploads with the service role — storage RLS on the
+         * live project does not allow direct client uploads. */
+        const id = specialistId!.trim();
+        const basePath =
+          mediaKind === "profile"
+            ? `${id}/profile/avatar`
+            : mediaKind === "cover"
+              ? `${id}/cover/hero`
+              : `${id}/gallery/g-${Date.now().toString(36)}/image`;
+        const dataUrl = await readFileAsDataUrl(file);
+        const response = await fetch("/api/media/specialist-application", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: basePath, dataUrl }),
         });
-        onChange(result.publicUrl);
+        const payload = (await response.json().catch(() => null)) as
+          | { ok: boolean; publicUrl?: string; message?: string }
+          | null;
+        if (!response.ok || !payload?.ok || !payload.publicUrl) {
+          throw new Error(
+            payload?.message ?? "Could not upload image. Try again."
+          );
+        }
+        onChange(payload.publicUrl);
         return;
       }
 

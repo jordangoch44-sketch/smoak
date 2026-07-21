@@ -3,7 +3,7 @@ import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
-import type { Trainer } from "@/types";
+import type { Certification, Trainer } from "@/types";
 import type {
   SpecialistProfileEditForm,
   SpecialistProfileOverrides,
@@ -12,6 +12,25 @@ import type {
 /** DEV ONLY — persisted specialist profile edits */
 export const DEV_SPECIALIST_PROFILE_OVERRIDES_KEY =
   "smoac_specialist_profile_overrides";
+
+export const EMPTY_CERTIFICATION: Certification = {
+  name: "",
+  issuer: "",
+  year: new Date().getFullYear(),
+};
+
+/** Deep-enough copy for section drafts — arrays and cert objects are cloned. */
+export function cloneSpecialistProfileEditForm(
+  form: SpecialistProfileEditForm
+): SpecialistProfileEditForm {
+  return {
+    ...form,
+    specialty: [...form.specialty],
+    homepageSpecialties: [...form.homepageSpecialties],
+    serviceArea: [...form.serviceArea],
+    certifications: form.certifications.map((cert) => ({ ...cert })),
+  };
+}
 
 function syncLocation(trainer: Trainer): Trainer {
   const neighborhood = trainer.neighborhood.trim();

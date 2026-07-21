@@ -16,18 +16,27 @@ const DUPLICATE_WINDOW_MS = 30_000;
 let lastTrackedPath: string | null = null;
 let lastTrackedAt = 0;
 
+/** crypto.randomUUID is unavailable in non-secure contexts (e.g. LAN HTTP on iPhone). */
+function randomVisitorKey(): string {
+  if (typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 function getOrCreateVisitorKey(): { key: string; isNew: boolean } {
   try {
     const existing = window.localStorage.getItem(VISITOR_KEY_STORAGE);
     if (existing && existing.length >= 8) {
       return { key: existing, isNew: false };
     }
-    const key = crypto.randomUUID();
+    const key = randomVisitorKey();
     window.localStorage.setItem(VISITOR_KEY_STORAGE, key);
     return { key, isNew: true };
   } catch {
     /* storage blocked — still count the view under a throwaway key */
-    return { key: crypto.randomUUID(), isNew: true };
+    return { key: randomVisitorKey(), isNew: true };
   }
 }
 

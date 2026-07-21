@@ -22,10 +22,12 @@ export function SpecialistDashboardProfileHeader({
         <span className="dashboard-profile-status dashboard-profile-status--active">
           Live profile
         </span>
-        <span className="specialist-dash-profile-header__plan">Free plan</span>
+        <span className="specialist-dash-profile-header__plan">
+          This is what clients see
+        </span>
       </div>
       <p className="specialist-dash-profile-header__hint">
-        Tap any section to edit
+        Tap any section to edit it right here — saving publishes instantly.
       </p>
     </header>
   );

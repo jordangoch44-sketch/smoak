@@ -24,10 +24,3 @@ export const SPECIALIST_STORAGE_ACCEPT = {
   galleryVideo: "video/mp4,video/quicktime,video/webm",
   galleryVideoPoster: "image/jpeg,image/png,image/webp",
 } as const;
-
-/** Path prefixes inside `specialist-media` */
-export const SPECIALIST_STORAGE_PREFIX = {
-  profile: "profile",
-  cover: "cover",
-  gallery: "gallery",
-} as const;

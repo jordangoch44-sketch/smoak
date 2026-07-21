@@ -129,6 +129,9 @@ export function SpecialistDashboardPageClient() {
               />
             ) : null}
 
+            {/* Plan status + upgrade first — clearest conversion placement */}
+            {dashboardMode === "approved-free" && <SpecialistDashboardUpgradeCta />}
+
             {dashboardMode === "approved-free" && (
               <SpecialistDashboardProfileHeader variant="live-free" />
             )}
@@ -185,13 +188,10 @@ export function SpecialistDashboardPageClient() {
             ) : null}
 
             {dashboardMode === "approved-free" ? (
-              <>
-                <LeadsCard
-                  leads={data.newLeads}
-                  onOpenLead={handleOpenInquiryLead}
-                />
-                <SpecialistDashboardUpgradeCta />
-              </>
+              <LeadsCard
+                leads={data.newLeads}
+                onOpenLead={handleOpenInquiryLead}
+              />
             ) : null}
           </>
         ) : null}

@@ -17,7 +17,7 @@ import {
   findSpecialistApplicationByEmail,
   findSpecialistApplicationByUserId,
   getSpecialistApplicationById,
-  saveSpecialistApplication,
+  saveSpecialistApplicationAsync,
 } from "@/lib/specialist-application-storage";
 import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import {
@@ -223,10 +223,17 @@ export async function saveManagedSpecialistProfileEdits(
 
     if (application) {
       const updated = mergeProfileEditsIntoApplication(application, form);
-      saveSpecialistApplication(updated);
+      const saveResult = await saveSpecialistApplicationAsync(updated);
+      if (!saveResult.ok) {
+        return {
+          ok: false,
+          error: saveResult.message || "Unable to save changes",
+        };
+      }
 
-      if (updated.profileStatus === "APPROVED") {
-        const remote = await syncApprovedProfileFromApplicationAsync(updated);
+      const saved = saveResult.application;
+      if (saved.profileStatus === "APPROVED") {
+        const remote = await syncApprovedProfileFromApplicationAsync(saved);
         if (!remote.ok) {
           return { ok: false, error: remote.message || "Unable to save changes" };
         }

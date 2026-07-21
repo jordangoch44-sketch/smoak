@@ -127,6 +127,26 @@
   color: rgba(252, 165, 165, 0.95);
 }
 
+/* Brief highlight when a live total increases (e.g. specialist approved) */
+.admin-exec-snapshot__value--bump {
+  animation: admin-count-bump 1.2s ease;
+}
+
+@keyframes admin-count-bump {
+  0% {
+    transform: scale(1);
+    color: #fff;
+  }
+  25% {
+    transform: scale(1.18);
+    color: rgba(167, 243, 208, 1);
+  }
+  100% {
+    transform: scale(1);
+    color: #fff;
+  }
+}
+
 .admin-exec-snapshot__sublabel,
 .admin-exec-snapshot__detail {
   margin: 0.15rem 0 0;
@@ -1487,6 +1507,30 @@
   color: rgba(255, 255, 255, 0.5);
   background: rgba(255, 255, 255, 0.04);
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+.admin-review-sheet__feedback--success {
+  color: rgba(167, 243, 208, 0.98);
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.36);
+  animation: admin-feedback-pop 0.35s ease;
+}
+
+.admin-review-sheet__feedback--error {
+  color: rgba(252, 165, 165, 0.98);
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.32);
+}
+
+@keyframes admin-feedback-pop {
+  0% {
+    transform: scale(0.94);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .admin-review-sheet__actions {

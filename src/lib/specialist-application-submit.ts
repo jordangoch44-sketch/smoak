@@ -113,18 +113,19 @@ export async function submitSpecialistApplication(
     );
   }
 
-  const photoUrl = application.media.profilePhotoUrl.trim();
+  /* Saved copy — inline photos may have been moved to storage URLs. */
+  const saved = result.application;
+
+  const photoUrl = saved.media.profilePhotoUrl.trim();
   if (photoUrl) {
     void updateOwnProfileAvatarUrl(photoUrl);
   }
 
-  syncProfileOverridesFromApplication(application);
+  syncProfileOverridesFromApplication(saved);
   hideTrainerId(id);
   clearSpecialistOnboardingDraft();
 
-  const emailResult = await sendSpecialistApplicationConfirmationEmail(
-    application
-  );
+  const emailResult = await sendSpecialistApplicationConfirmationEmail(saved);
   if (!emailResult.success) {
     console.warn(
       "[SMOAC EMAIL] Specialist confirmation email did not send successfully"
@@ -132,7 +133,7 @@ export async function submitSpecialistApplication(
   }
 
   return {
-    application,
+    application: saved,
     emailSent: emailResult.success,
     emailMode: emailResult.mode ?? null,
   };

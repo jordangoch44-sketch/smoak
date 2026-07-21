@@ -6,14 +6,15 @@ values (
   'specialist-media',
   'specialist-media',
   true,
-  104857600, -- 100MB bucket max per object (videos)
+  52428800, -- 50MB max per object (project global upload limit)
   array[
     'image/jpeg',
     'image/png',
     'image/webp',
     'video/mp4',
     'video/quicktime',
-    'video/webm'
+    'video/webm',
+    'application/pdf'
   ]
 )
 on conflict (id) do update set

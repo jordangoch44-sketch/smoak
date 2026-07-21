@@ -133,7 +133,14 @@ export async function startQuickClientAccount(params: {
     logAuth("quick_otp.failed", { message: error.message });
 
     if (/otp|magic|email|disabled|not allowed/i.test(error.message)) {
-      const generated = `Smoac-${crypto.randomUUID().slice(0, 10)}!aA1`;
+      /* randomUUID is unavailable in non-secure contexts (LAN HTTP) */
+      const randomPart =
+        typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID().slice(0, 10)
+          : Array.from(crypto.getRandomValues(new Uint8Array(5)), (b) =>
+              b.toString(16).padStart(2, "0")
+            ).join("");
+      const generated = `Smoac-${randomPart}!aA1`;
       const signup = await signUpWithPassword("client", email, generated, {
         firstName,
       });

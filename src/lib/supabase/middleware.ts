@@ -116,6 +116,12 @@ export async function updateSession(request: NextRequest) {
     if (pendingPassword) {
       return redirectToAppPath(request, COMPLETE_ACCOUNT_PATH);
     }
+    /* Admin sessions have no public-site account — let them reach /login
+     * to sign in as a client/specialist instead of bouncing home. */
+    const role = await fetchUserRole(supabase, user.id);
+    if (role && isAdminAppRole(role)) {
+      return supabaseResponse;
+    }
     return redirectToAppPath(request, "/");
   }
 

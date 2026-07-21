@@ -22,7 +22,11 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useProfileKeyboardChrome } from "@/hooks/useProfileKeyboardChrome";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { computeProfileCompletion } from "@/lib/specialist-profile-overrides";
+import {
+  EMPTY_CERTIFICATION,
+  cloneSpecialistProfileEditForm,
+  computeProfileCompletion,
+} from "@/lib/specialist-profile-overrides";
 import {
   resolveSpecialistDashboardMode,
   showsProfileFirstDashboard,
@@ -43,12 +47,6 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: "non-binary", label: "Non-binary" },
 ];
 
-const EMPTY_CERT: Certification = {
-  name: "",
-  issuer: "",
-  year: new Date().getFullYear(),
-};
-
 type SectionId =
   | "basic-info"
   | "bio"
@@ -61,16 +59,6 @@ type SectionId =
 
 function genderLabel(value: Gender): string {
   return GENDER_OPTIONS.find((option) => option.value === value)?.label ?? value;
-}
-
-function cloneForm(form: SpecialistProfileEditForm): SpecialistProfileEditForm {
-  return {
-    ...form,
-    specialty: [...form.specialty],
-    homepageSpecialties: [...form.homepageSpecialties],
-    serviceArea: [...form.serviceArea],
-    certifications: form.certifications.map((cert) => ({ ...cert })),
-  };
 }
 
 export function SpecialistEditProfilePageClient() {
@@ -128,7 +116,7 @@ export function SpecialistEditProfilePageClient() {
       return;
     }
     setEditingSection(sectionId);
-    setSectionDraft(cloneForm(savedForm));
+    setSectionDraft(cloneSpecialistProfileEditForm(savedForm));
   }
 
   function cancelEdit() {
@@ -196,7 +184,10 @@ export function SpecialistEditProfilePageClient() {
   function addCertification() {
     setSectionDraft((prev) =>
       prev
-        ? { ...prev, certifications: [...prev.certifications, { ...EMPTY_CERT }] }
+        ? {
+            ...prev,
+            certifications: [...prev.certifications, { ...EMPTY_CERTIFICATION }],
+          }
         : prev
     );
   }
@@ -207,7 +198,10 @@ export function SpecialistEditProfilePageClient() {
       const certifications = prev.certifications.filter((_, i) => i !== index);
       return {
         ...prev,
-        certifications: certifications.length > 0 ? certifications : [{ ...EMPTY_CERT }],
+        certifications:
+          certifications.length > 0
+            ? certifications
+            : [{ ...EMPTY_CERTIFICATION }],
       };
     });
   }

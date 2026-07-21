@@ -147,6 +147,9 @@ export function AdminApplicationReviewPanel({
       const result = await onApprove(draft);
       if (result) {
         applyResult(result, "approved");
+        /* Let the confirmation register, then close so the list + specialist
+         * count visibly update behind the sheet. */
+        window.setTimeout(() => onClose(), 1600);
       } else {
         setFeedback("error");
         setErrorMessage("Unable to approve application.");
@@ -214,7 +217,7 @@ export function AdminApplicationReviewPanel({
     feedback === "saved"
       ? "Edits saved."
       : feedback === "approved"
-        ? "Approved and listed on Explore (when activate completed)."
+        ? `✓ Approved — ${draft.displayName || draft.fullName} is now a live specialist.`
         : feedback === "rejected"
           ? "Application rejected — removed from public catalog."
           : feedback === "activated"
@@ -224,6 +227,13 @@ export function AdminApplicationReviewPanel({
               : feedback === "error"
                 ? errorMessage ?? "Something went wrong. Try again."
                 : null;
+
+  const feedbackTone =
+    feedback === "approved" || feedback === "activated"
+      ? "admin-review-sheet__feedback--success"
+      : feedback === "error"
+        ? "admin-review-sheet__feedback--error"
+        : null;
 
   const sheet = (
     <div
@@ -566,7 +576,15 @@ export function AdminApplicationReviewPanel({
 
         <footer className="admin-review-sheet__footer" data-admin-review-actions>
           {feedbackMessage ? (
-            <p className="admin-review-sheet__feedback" role="status" aria-live="polite">
+            <p
+              className={
+                feedbackTone
+                  ? `admin-review-sheet__feedback ${feedbackTone}`
+                  : "admin-review-sheet__feedback"
+              }
+              role="status"
+              aria-live="polite"
+            >
               {feedbackMessage}
             </p>
           ) : null}

@@ -40,15 +40,30 @@ async function countRoles(
   return count ?? 0;
 }
 
-async function fetchWeeklyRoleCount(
+/** Live specialists = approved profiles on the public catalog. */
+async function countApprovedSpecialists(
   supabase: SupabaseClient,
-  role: "specialist" | "client",
-  weekAgoIso: string
-): Promise<AdminWeeklyCount | null> {
-  const [total, weekAgoTotal] = await Promise.all([
-    countRoles(supabase, role),
-    countRoles(supabase, role, weekAgoIso),
-  ]);
+  createdBefore?: string
+): Promise<number | null> {
+  let query = supabase
+    .from("specialist_profiles")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "approved");
+  if (createdBefore) {
+    query = query.lte("created_at", createdBefore);
+  }
+  const { count, error } = await query;
+  if (error) {
+    console.warn("[SMOAC admin] specialist count failed:", error.message);
+    return null;
+  }
+  return count ?? 0;
+}
+
+function toWeeklyCount(
+  total: number | null,
+  weekAgoTotal: number | null
+): AdminWeeklyCount | null {
   if (total == null || weekAgoTotal == null) return null;
   return {
     total,
@@ -56,6 +71,28 @@ async function fetchWeeklyRoleCount(
     delta: total - weekAgoTotal,
     percentChange: percentChange(total, weekAgoTotal),
   };
+}
+
+async function fetchWeeklySpecialistCount(
+  supabase: SupabaseClient,
+  weekAgoIso: string
+): Promise<AdminWeeklyCount | null> {
+  const [total, weekAgoTotal] = await Promise.all([
+    countApprovedSpecialists(supabase),
+    countApprovedSpecialists(supabase, weekAgoIso),
+  ]);
+  return toWeeklyCount(total, weekAgoTotal);
+}
+
+async function fetchWeeklyClientCount(
+  supabase: SupabaseClient,
+  weekAgoIso: string
+): Promise<AdminWeeklyCount | null> {
+  const [total, weekAgoTotal] = await Promise.all([
+    countRoles(supabase, "client"),
+    countRoles(supabase, "client", weekAgoIso),
+  ]);
+  return toWeeklyCount(total, weekAgoTotal);
 }
 
 function sourceLabel(visit: {
@@ -135,8 +172,8 @@ export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
   const weekAgoIso = new Date(now - WEEK_MS).toISOString();
 
   const [specialists, clients, traffic] = await Promise.all([
-    fetchWeeklyRoleCount(supabase, "specialist", weekAgoIso),
-    fetchWeeklyRoleCount(supabase, "client", weekAgoIso),
+    fetchWeeklySpecialistCount(supabase, weekAgoIso),
+    fetchWeeklyClientCount(supabase, weekAgoIso),
     fetchTrafficWeek(supabase, now),
   ]);
 

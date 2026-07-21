@@ -32,6 +32,12 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "fastly.picsum.photos",
       },
+      /* Supabase storage (specialist media, avatars) */
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
     ],
   },
 };

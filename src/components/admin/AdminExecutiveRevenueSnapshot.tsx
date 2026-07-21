@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatRevenueCents } from "@/lib/admin-revenue-service";
 import { getAdminExecutiveRevenueSnapshot } from "@/lib/admin-executive-revenue-service";
 import { fetchAdminPlatformPulse } from "@/lib/admin-platform-pulse-service";
@@ -30,16 +30,29 @@ export function AdminExecutiveRevenueSnapshot({
   specialists,
 }: AdminExecutiveRevenueSnapshotProps) {
   const [pulse, setPulse] = useState<AdminPlatformPulse | null>(null);
+  const [specialistBump, setSpecialistBump] = useState(false);
+  const previousSpecialistTotal = useRef<number | null>(null);
 
+  /* Refetch when the admin specialist list changes (e.g. an approval),
+   * so live totals update without a page reload. */
   useEffect(() => {
     let cancelled = false;
     void fetchAdminPlatformPulse().then((result) => {
-      if (!cancelled) setPulse(result);
+      if (cancelled) return;
+      setPulse(result);
+      if (result.dataSource === "live") {
+        const prev = previousSpecialistTotal.current;
+        if (prev != null && result.specialists.total > prev) {
+          setSpecialistBump(true);
+          window.setTimeout(() => setSpecialistBump(false), 1400);
+        }
+        previousSpecialistTotal.current = result.specialists.total;
+      }
     });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [specialists]);
 
   const snapshot = useMemo(
     () =>
@@ -126,7 +139,12 @@ export function AdminExecutiveRevenueSnapshot({
 
         <article className="admin-exec-snapshot__card">
           <p className="admin-exec-snapshot__label">Specialists</p>
-          <p className="admin-exec-snapshot__value">
+          <p
+            className={cn(
+              "admin-exec-snapshot__value",
+              specialistBump && "admin-exec-snapshot__value--bump"
+            )}
+          >
             {livePulse ? livePulse.specialists.total : "—"}
           </p>
           <p className="admin-exec-snapshot__detail">
