@@ -27,6 +27,7 @@ create index if not exists specialist_reviews_client_created_idx
 create index if not exists specialist_reviews_specialist_id_idx
   on public.specialist_reviews (specialist_id);
 
+drop trigger if exists specialist_reviews_updated_at on public.specialist_reviews;
 create trigger specialist_reviews_updated_at
 before update on public.specialist_reviews
 for each row execute function public.touch_updated_at();
