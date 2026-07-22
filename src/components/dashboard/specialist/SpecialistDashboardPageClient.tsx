@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   DashboardButton,
@@ -19,7 +20,7 @@ import {
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
-import { SpecialistDashboardUpgradeCta } from "@/components/dashboard/specialist/SpecialistDashboardUpgradeCta";
+import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/SpecialistProGhostPreview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
 import { useSpecialistInquiryNotifications } from "@/hooks/useSpecialistInquiryNotifications";
@@ -27,8 +28,20 @@ import {
   showsPremiumDashboard,
   showsProfileFirstDashboard,
 } from "@/lib/specialist-dashboard-mode";
+import { getSpecialistProPreviewAnalytics } from "@/lib/specialist-dashboard-analytics";
+import { SMOAC_FREE_PLAN_LABEL } from "@/lib/specialist-premium";
+import { cn } from "@/lib/utils";
 
-function dashboardSubtitle(mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"]): string {
+type FreeDashboardTab = "plan" | "profile";
+
+const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
+  { id: "plan", label: "Plan & upgrade" },
+  { id: "profile", label: "Live profile" },
+];
+
+function dashboardSubtitle(
+  mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"]
+): string {
   if (mode === "pending" || mode === "rejected") {
     return "Your application is under review.";
   }
@@ -44,9 +57,16 @@ function scrollToInquiries() {
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function parseFreeTab(value: string | null): FreeDashboardTab {
+  return value === "profile" ? "profile" : "plan";
+}
+
 export function SpecialistDashboardPageClient() {
   const searchParams = useSearchParams();
   const justSubmitted = searchParams.get("submitted") === "1";
+  const [activeTab, setActiveTab] = useState<FreeDashboardTab>(() =>
+    parseFreeTab(searchParams.get("tab"))
+  );
 
   const {
     isReady,
@@ -92,9 +112,18 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "demo-premium";
   const isPendingGate =
     dashboardMode === "pending" || dashboardMode === "rejected";
+  const isFreeLive = dashboardMode === "approved-free";
 
   const leadUnread = data.newLeads.filter((lead) => lead.unread).length;
   const bannerUnread = Math.max(notificationUnread, leadUnread);
+
+  function openProfileTabAndInquiries() {
+    dismissAll();
+    setActiveTab("profile");
+    window.requestAnimationFrame(() => {
+      window.setTimeout(scrollToInquiries, 80);
+    });
+  }
 
   return (
     <DashboardPageShell
@@ -102,7 +131,7 @@ export function SpecialistDashboardPageClient() {
       eyebrow="Specialist dashboard"
       title={`Good to see you, ${firstName}`}
       subtitle={dashboardSubtitle(dashboardMode)}
-      roleLabel="Specialist"
+      roleLabel={isFreeLive ? SMOAC_FREE_PLAN_LABEL : "Specialist"}
       statusLabel={profileFirst ? null : profileStatusLabel}
       statusTone={statusTone}
       utilityBar={<DashboardSignOutButton onClick={handleSignOut} />}
@@ -112,15 +141,100 @@ export function SpecialistDashboardPageClient() {
           <InquiryNotificationBanner
             unreadCount={bannerUnread}
             latestSummary={latestSummary}
-            onReview={() => {
-              dismissAll();
-              scrollToInquiries();
-            }}
+            onReview={
+              isFreeLive
+                ? openProfileTabAndInquiries
+                : () => {
+                    dismissAll();
+                    scrollToInquiries();
+                  }
+            }
             onDismiss={dismissAll}
           />
         ) : null}
 
-        {profileFirst ? (
+        {isFreeLive ? (
+          <>
+            <div
+              className="specialist-dash-tabs"
+              role="tablist"
+              aria-label="Specialist dashboard sections"
+            >
+              {FREE_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`specialist-dash-tab-${tab.id}`}
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`specialist-dash-panel-${tab.id}`}
+                  className={cn(
+                    "specialist-dash-tabs__btn",
+                    activeTab === tab.id && "specialist-dash-tabs__btn--active"
+                  )}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                  {tab.id === "profile" && bannerUnread > 0 ? (
+                    <span className="specialist-dash-tabs__count">
+                      {bannerUnread}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+
+            <div className="specialist-dash-panels">
+              {activeTab === "plan" ? (
+                <div
+                  id="specialist-dash-panel-plan"
+                  role="tabpanel"
+                  aria-labelledby="specialist-dash-tab-plan"
+                  className="specialist-dash-panel"
+                >
+                  <SpecialistProGhostPreview
+                    firstName={firstName}
+                    analytics={getSpecialistProPreviewAnalytics({
+                      profileCompletionPercent: profileCompletion,
+                      rankingPosition: data.ranking?.rank ?? null,
+                    })}
+                  />
+                </div>
+              ) : null}
+
+              {activeTab === "profile" ? (
+                <div
+                  id="specialist-dash-panel-profile"
+                  role="tabpanel"
+                  aria-labelledby="specialist-dash-tab-profile"
+                  className="specialist-dash-panel"
+                >
+                  <SpecialistDashboardProfileHeader variant="live-free" />
+
+                  {hasProfilePreview ? (
+                    <SpecialistDashboardProfilePreview
+                      application={application!}
+                      trainer={trainer!}
+                      editable
+                    />
+                  ) : (
+                    <p className="specialist-dash-notice__text">
+                      Your profile preview will appear here once it finishes
+                      loading. Pull to refresh, or open the full editor.
+                    </p>
+                  )}
+
+                  <LeadsCard
+                    leads={data.newLeads}
+                    onOpenLead={handleOpenInquiryLead}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </>
+        ) : null}
+
+        {profileFirst && !isFreeLive ? (
           <>
             {isPendingGate ? (
               <SpecialistPendingApprovalNotice
@@ -128,13 +242,6 @@ export function SpecialistDashboardPageClient() {
                 justSubmitted={justSubmitted && dashboardMode === "pending"}
               />
             ) : null}
-
-            {/* Plan status + upgrade first — clearest conversion placement */}
-            {dashboardMode === "approved-free" && <SpecialistDashboardUpgradeCta />}
-
-            {dashboardMode === "approved-free" && (
-              <SpecialistDashboardProfileHeader variant="live-free" />
-            )}
 
             {dashboardMode === "pending" && hasProfilePreview ? (
               <SpecialistDashboardProfileHeader variant="pending" />
@@ -167,14 +274,14 @@ export function SpecialistDashboardPageClient() {
                   <SpecialistDashboardProfilePreview
                     application={application!}
                     trainer={trainer!}
-                    editable={dashboardMode === "approved-free"}
+                    editable={false}
                   />
                 </div>
               </div>
             ) : isPendingGate ? (
               <p className="specialist-dash-notice__text">
-                Your submitted details will appear here once your application finishes
-                saving. Pull to refresh, or edit your profile below.
+                Your submitted details will appear here once your application
+                finishes saving. Pull to refresh, or edit your profile below.
               </p>
             ) : null}
 
@@ -185,13 +292,6 @@ export function SpecialistDashboardPageClient() {
               >
                 Edit submitted profile
               </DashboardButton>
-            ) : null}
-
-            {dashboardMode === "approved-free" ? (
-              <LeadsCard
-                leads={data.newLeads}
-                onOpenLead={handleOpenInquiryLead}
-              />
             ) : null}
           </>
         ) : null}

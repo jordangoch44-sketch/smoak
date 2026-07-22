@@ -4,6 +4,7 @@ import { useState } from "react";
 import { BOOST_VISIBILITY_MODAL } from "@/constants/specialist-dashboard-mock";
 import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
 import { buildSecondaryStatTiles } from "@/lib/specialist-dashboard-stats";
+import { SMOAC_PRO_UNLOCK } from "@/lib/specialist-premium";
 import { AnalyticsMetricTile } from "@/components/dashboard/specialist/AnalyticsMetricTile";
 import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import {
@@ -117,7 +118,7 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
                 className="dashboard-pro-upgrade-btn"
                 onClick={() => setUpgradeModalOpen(true)}
               >
-                Upgrade — $9.99/mo
+                {SMOAC_PRO_UNLOCK.cta}
               </DashboardButton>
             )}
             <DashboardButton variant="secondary" href="/specialist-dashboard/edit-profile">

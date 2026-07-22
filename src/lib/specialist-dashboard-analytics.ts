@@ -34,3 +34,24 @@ export function getSpecialistProfileAnalytics(
     rankingPosition: context.rankingPosition,
   };
 }
+
+/**
+ * Aspirational Pro dashboard preview for free specialists on the Plan tab.
+ * Readable sample metrics (not blurred) so they can see what Pro feels like,
+ * with their real profile completion % woven in.
+ */
+export function getSpecialistProPreviewAnalytics(
+  context: Pick<
+    SpecialistAnalyticsContext,
+    "profileCompletionPercent" | "rankingPosition"
+  >
+): SpecialistProfileAnalytics {
+  return {
+    ...DEMO_SPECIALIST_ANALYTICS,
+    periodLabel: "Example · last 30 days",
+    profileCompletionPercent: context.profileCompletionPercent,
+    rankingPosition: context.rankingPosition ?? 12,
+    insightMessage:
+      "With Pro you’d see which searches drive views, how you rank nearby, and where clients drop off — so you know what to improve next.",
+  };
+}

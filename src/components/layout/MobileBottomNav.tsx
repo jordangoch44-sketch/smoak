@@ -4,7 +4,6 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   memo,
   useCallback,
-  useEffect,
   useMemo,
   useState,
   type MouseEvent,
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useMobileBottomNavHidden } from "@/hooks/useMobileBottomNavHidden";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
@@ -35,7 +35,7 @@ import {
 } from "@/lib/mobile-bottom-nav";
 import { getBottomNavTransitionKind } from "@/lib/mobile-bottom-nav-transition";
 import { formatSavedCountBadge } from "@/lib/saved-ui";
-import { canSaveSpecialists } from "@/lib/specialist-saves";
+import { canSaveSpecialists, getUserRole } from "@/lib/specialist-saves";
 import { cn } from "@/lib/utils";
 
 const NavIcon = memo(function NavIcon({
@@ -79,14 +79,12 @@ const ProfileNavAvatar = memo(function ProfileNavAvatar({
 }) {
   const avatarUrl =
     presentation.kind === "avatar" ? presentation.avatarUrl : "";
-  const [imageFailed, setImageFailed] = useState(false);
-
-  useEffect(() => {
-    setImageFailed(false);
-  }, [avatarUrl]);
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
 
   const showPhoto =
-    presentation.kind === "avatar" && Boolean(avatarUrl) && !imageFailed;
+    presentation.kind === "avatar" &&
+    Boolean(avatarUrl) &&
+    failedUrl !== avatarUrl;
 
   /* Signed-in: photo or premium initials — never the generic outline icon */
   if (presentation.kind === "avatar" || presentation.kind === "initials") {
@@ -103,7 +101,7 @@ const ProfileNavAvatar = memo(function ProfileNavAvatar({
           )}
           draggable={false}
           decoding="async"
-          onError={() => setImageFailed(true)}
+          onError={() => setFailedUrl(avatarUrl)}
         />
       );
     }
@@ -283,6 +281,7 @@ function MobileBottomNavShell() {
   const isTabletViewport = useTabletViewport();
   const { clientReady } = useStableClientState();
   const { isReady, session } = useAuthSession();
+  const { trainer: managedTrainer, application } = useManagedSpecialistProfile();
   const { isReady: savesReady, isSavesReady, savedCount } = useSavedTrainers();
 
   const profileAuthState = getMobileBottomNavProfileAuthState(
@@ -290,9 +289,20 @@ function MobileBottomNavShell() {
     isReady,
     session
   );
+  const specialistPhotoUrl =
+    getUserRole(session) === "specialist"
+      ? application?.media.profilePhotoUrl?.trim() ||
+        managedTrainer?.image?.trim() ||
+        null
+      : null;
   const profilePresentation = useMemo(
-    () => getMobileBottomNavProfilePresentation(profileAuthState, session),
-    [profileAuthState, session]
+    () =>
+      getMobileBottomNavProfilePresentation(
+        profileAuthState,
+        session,
+        specialistPhotoUrl
+      ),
+    [profileAuthState, session, specialistPhotoUrl]
   );
   const showSaveBadge =
     clientReady &&

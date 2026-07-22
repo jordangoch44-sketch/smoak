@@ -102,10 +102,11 @@ export function useSpecialistDashboard() {
     }
   );
 
+  // Prefer legal/profile first name — never display/brand name ("Coach", studio name, etc.)
   const firstName =
-    trainer?.name.split(" ")[0] ??
-    session?.displayName?.split(" ")[0] ??
-    session?.email.split("@")[0] ??
+    session?.firstName?.trim().split(/\s+/)[0] ||
+    application?.fullName.trim().split(/\s+/)[0] ||
+    session?.email?.split("@")[0] ||
     "Specialist";
 
   const profileStatusLabel = profileStatusToLabel(application?.profileStatus);

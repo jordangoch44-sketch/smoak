@@ -63,7 +63,7 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
           <p className="dashboard-modal__price">{SMOAC_PRO_UPGRADE_MODAL.price}</p>
           <p className="dashboard-modal__note">{SMOAC_PRO_UPGRADE_MODAL.note}</p>
           <DashboardButton className="dashboard-pro-upgrade-btn" onClick={onClose}>
-            Continue with preview
+            Start free month
           </DashboardButton>
         </div>
       </div>

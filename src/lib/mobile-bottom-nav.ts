@@ -104,15 +104,20 @@ function profileNavInitials(session: AuthSession): string {
 /** Avatar / initials / outline icon for the Profile tab. */
 export function getMobileBottomNavProfilePresentation(
   authState: MobileBottomNavProfileAuthState,
-  session: AuthSession | null
+  session: AuthSession | null,
+  /** Specialist live profile photo when session.avatarUrl is empty */
+  profilePhotoUrl?: string | null
 ): MobileBottomNavProfilePresentation {
   if (authState !== "signed-in" || !session || !isLoggedIn(session)) {
     return { kind: "icon" };
   }
 
   const initials = profileNavInitials(session);
-  const avatarUrl = session.avatarUrl?.trim() ?? "";
-  if (avatarUrl) {
+  const avatarUrl =
+    session.avatarUrl?.trim() ||
+    profilePhotoUrl?.trim() ||
+    "";
+  if (avatarUrl && !avatarUrl.includes("placeholder")) {
     return { kind: "avatar", avatarUrl, initials };
   }
   return { kind: "initials", initials };

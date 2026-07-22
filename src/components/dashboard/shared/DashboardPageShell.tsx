@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { DashboardHeader } from "./DashboardHeader";
 
 interface DashboardPageShellProps {
@@ -45,16 +46,29 @@ export function DashboardPageShell({
       }
     >
       <div className="dashboard-page__canvas" aria-hidden>
-        <div className="atmosphere-mesh">
-          <div className="atmosphere-blob atmosphere-blob--indigo" />
-          <div className="atmosphere-blob atmosphere-blob--blue" />
-          <div className="atmosphere-blob atmosphere-blob--violet" />
-          <div className="atmosphere-blob atmosphere-blob--magenta" />
-          {isClient ? (
-            <div className="atmosphere-blob atmosphere-blob--pink dashboard-page__blob--mint" />
-          ) : null}
-          <div className="atmosphere-blob atmosphere-blob--core" />
-        </div>
+        {isSpecialist ? (
+          <div className="dashboard-page__specialist-cosmos">
+            <AuroraAtmosphere
+              intensity="medium"
+              starDensity="light"
+              glowPosition="header"
+              glowColor="mixed"
+              enableMotion
+              className="dashboard-page__specialist-aurora"
+            />
+          </div>
+        ) : (
+          <div className="atmosphere-mesh">
+            <div className="atmosphere-blob atmosphere-blob--indigo" />
+            <div className="atmosphere-blob atmosphere-blob--blue" />
+            <div className="atmosphere-blob atmosphere-blob--violet" />
+            <div className="atmosphere-blob atmosphere-blob--magenta" />
+            {isClient ? (
+              <div className="atmosphere-blob atmosphere-blob--pink dashboard-page__blob--mint" />
+            ) : null}
+            <div className="atmosphere-blob atmosphere-blob--core" />
+          </div>
+        )}
         <div className="dashboard-page__header-glow" />
         {isClient ? <div className="dashboard-page__mid-glow" /> : null}
         <div className="atmosphere-vignette atmosphere-vignette--soft" />
