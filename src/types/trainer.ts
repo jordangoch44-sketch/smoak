@@ -24,6 +24,7 @@ export interface SocialLinks {
   twitter?: string;
   linkedin?: string;
   website?: string;
+  tiktok?: string;
 }
 
 export interface TrainerMediaItem {

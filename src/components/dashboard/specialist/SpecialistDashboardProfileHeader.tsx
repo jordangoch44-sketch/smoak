@@ -27,7 +27,7 @@ export function SpecialistDashboardProfileHeader({
         </span>
       </div>
       <p className="specialist-dash-profile-header__hint">
-        Tap any section to edit it right here — saving publishes instantly.
+        Tap any section to edit — a sheet opens, and saving publishes instantly.
       </p>
     </header>
   );

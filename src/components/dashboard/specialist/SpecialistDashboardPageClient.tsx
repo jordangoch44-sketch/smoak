@@ -7,7 +7,6 @@ import {
   DashboardGrid,
   DashboardLoadingState,
   DashboardPageShell,
-  DashboardSignOutButton,
 } from "@/components/dashboard/shared";
 import {
   AnalyticsCard,
@@ -18,6 +17,7 @@ import {
   VisibilityRankingCard,
 } from "@/components/dashboard/specialist/cards";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
+import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/SpecialistProGhostPreview";
@@ -134,7 +134,7 @@ export function SpecialistDashboardPageClient() {
       roleLabel={isFreeLive ? SMOAC_FREE_PLAN_LABEL : "Specialist"}
       statusLabel={profileFirst ? null : profileStatusLabel}
       statusTone={statusTone}
-      utilityBar={<DashboardSignOutButton onClick={handleSignOut} />}
+      utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
     >
       <div className="specialist-dash-layout">
         {showsInquiries ? (
@@ -213,9 +213,9 @@ export function SpecialistDashboardPageClient() {
 
                   {hasProfilePreview ? (
                     <SpecialistDashboardProfilePreview
-                      application={application!}
                       trainer={trainer!}
                       editable
+                      isPremium={isPremium}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">
@@ -272,7 +272,6 @@ export function SpecialistDashboardPageClient() {
                   }
                 >
                   <SpecialistDashboardProfilePreview
-                    application={application!}
                     trainer={trainer!}
                     editable={false}
                   />

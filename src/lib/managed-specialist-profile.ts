@@ -32,6 +32,7 @@ import type {
   SpecialistApplication,
 } from "@/types/specialist-application";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
+import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
 import type { Trainer } from "@/types/trainer";
 
 export type ManagedProfileSaveResult =
@@ -127,13 +128,16 @@ export function syncProfileOverridesFromApplication(
 
 /** Await specialist_profiles upsert + refresh approved catalog from remote. */
 export async function syncApprovedProfileFromApplicationAsync(
-  app: SpecialistApplication
+  app: SpecialistApplication,
+  overridesExplicit?: SpecialistProfileOverrides | null
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   if (app.profileStatus !== "APPROVED") return { ok: true };
   const base = applicationToTrainer(app);
-  const overrides = loadSpecialistOverridesForId(app.id);
+  const overrides =
+    overridesExplicit ?? loadSpecialistOverridesForId(app.id);
   return saveApprovedSpecialistProfileAsync(
-    overrides ? applySpecialistProfileOverrides(base, overrides) : base
+    overrides ? applySpecialistProfileOverrides(base, overrides) : base,
+    overrides
   );
 }
 
@@ -189,6 +193,7 @@ export function mergeProfileEditsIntoApplication(
       ...app.media,
       profilePhotoUrl: form.profilePhotoUrl.trim() || app.media.profilePhotoUrl,
       transformationPhotoUrls: form.transformationNotes.trim(),
+      /* Legacy field name — stores header/gallery image URLs (not only videos). */
       trainingVideoUrls: form.photoNotes.trim(),
     },
     updatedAt: new Date().toISOString(),
@@ -220,6 +225,7 @@ export async function saveManagedSpecialistProfileEdits(
 
   try {
     const application = getSpecialistApplicationById(trainerId);
+    const overrides = formToOverrides(form);
 
     if (application) {
       const updated = mergeProfileEditsIntoApplication(application, form);
@@ -231,17 +237,22 @@ export async function saveManagedSpecialistProfileEdits(
         };
       }
 
+      /* Persist overrides before approved sync so remote upsert uses fresh data. */
+      saveTrainerProfileOverrides(trainerId, overrides);
+
       const saved = saveResult.application;
       if (saved.profileStatus === "APPROVED") {
-        const remote = await syncApprovedProfileFromApplicationAsync(saved);
+        const remote = await syncApprovedProfileFromApplicationAsync(
+          saved,
+          overrides
+        );
         if (!remote.ok) {
           return { ok: false, error: remote.message || "Unable to save changes" };
         }
       }
+    } else {
+      saveTrainerProfileOverrides(trainerId, overrides);
     }
-
-    const overrides = formToOverrides(form);
-    saveTrainerProfileOverrides(trainerId, overrides);
 
     const photoUrl = form.profilePhotoUrl.trim();
     if (photoUrl && !photoUrl.startsWith("blob:")) {

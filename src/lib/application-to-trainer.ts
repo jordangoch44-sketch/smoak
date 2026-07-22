@@ -110,8 +110,13 @@ export function applicationToTrainer(
       .split(/[,;\n]/)
       .map((item) => item.trim())
       .filter(Boolean)
-      .slice(0, 4),
-    coachingStyle: [app.motivationStyle, app.communicationStyle].filter(Boolean),
+      .slice(0, 8),
+    coachingStyle: app.coachingPhilosophy.trim()
+      ? app.coachingPhilosophy
+          .split(/[,;\n·]+/)
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : [app.motivationStyle, app.communicationStyle].filter(Boolean),
     whyClientsChoose: app.coachingDifferentiator
       ? [app.coachingDifferentiator]
       : [],
@@ -136,6 +141,7 @@ export function applicationToTrainer(
     social: {
       instagram: app.social.instagram,
       website: app.social.website,
+      tiktok: app.social.tiktok,
     },
   };
 }

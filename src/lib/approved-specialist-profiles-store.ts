@@ -281,7 +281,8 @@ export function saveApprovedSpecialistProfile(trainer: Trainer): void {
 
 /** Await remote upsert (admin approve/activate) then refresh from Supabase. */
 export async function saveApprovedSpecialistProfileAsync(
-  trainer: Trainer
+  trainer: Trainer,
+  overrides?: SpecialistProfileOverrides | null
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const next = {
     ...getApprovedSpecialistProfilesSnapshot(),
@@ -289,7 +290,7 @@ export async function saveApprovedSpecialistProfileAsync(
   };
   applyCache(next);
   writeLocalProfiles(next);
-  const result = await persistRemoteApprovedAsync(trainer);
+  const result = await persistRemoteApprovedAsync(trainer, overrides);
   if (result.ok) {
     await refreshApprovedSpecialistProfilesFromRemoteAsync();
   }

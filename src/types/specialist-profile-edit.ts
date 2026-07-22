@@ -25,6 +25,8 @@ export interface SpecialistProfileOverrides {
   pricePerSession?: number;
   bio?: string;
   photoNotes?: string;
+  /** Header / gallery video URLs (Pro) — one per line */
+  videoNotes?: string;
   transformationNotes?: string;
   bookingAvailability?: string;
   profilePhotoUrl?: string;
@@ -58,6 +60,7 @@ export type SpecialistProfileEditForm = Required<
     | "pricePerSession"
     | "bio"
     | "photoNotes"
+    | "videoNotes"
     | "transformationNotes"
     | "bookingAvailability"
     | "profilePhotoUrl"

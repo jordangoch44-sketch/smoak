@@ -14,7 +14,6 @@ import { ShieldCheckIcon } from "@/components/ui/icons";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
-import { TrainerMarketValueCard } from "./TrainerMarketValueCard";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileReviewMeta } from "./ProfileReviewMeta";
@@ -26,6 +25,8 @@ interface ProfileHeroProps {
   canLeaveReview?: boolean;
   hasOwnReview?: boolean;
   onLeaveReview?: () => void;
+  /** Specialist Live tab — same look, no client toolbar / review actions */
+  variant?: "public" | "specialist-live";
 }
 
 export function ProfileHero({
@@ -34,7 +35,9 @@ export function ProfileHero({
   canLeaveReview,
   hasOwnReview,
   onLeaveReview,
+  variant = "public",
 }: ProfileHeroProps) {
+  const isSpecialistLive = variant === "specialist-live";
   const ranking = getTrainerCityRanking(trainer.id);
   const coverImages = buildTrainerGalleryImages(
     trainer.gallery,
@@ -122,32 +125,43 @@ export function ProfileHero({
               <p className="profile-hero__tagline">{heroLine}</p>
             ) : null}
 
-            <div className="profile-hero__meta">
-              <div className="profile-hero__meta-primary">
-                <ProfileReviewMeta
-                  trainer={trainer}
-                  smoacAggregate={smoacAggregate}
-                  canLeaveReview={canLeaveReview}
-                  hasOwnReview={hasOwnReview}
-                  onLeaveReview={onLeaveReview}
-                />
-                <SessionPrice
-                  amount={trainer.pricePerSession}
-                  variant="hero"
-                  className="profile-hero__meta-price shrink-0"
-                />
+            {isSpecialistLive ? (
+              <div className="profile-hero__meta">
+                <button
+                  type="button"
+                  className="profile-hero__view-gallery"
+                  aria-label="View specialist gallery"
+                  onClick={openGallery}
+                >
+                  View Gallery
+                </button>
               </div>
-              <button
-                type="button"
-                className="profile-hero__view-gallery"
-                aria-label="View specialist gallery"
-                onClick={openGallery}
-              >
-                View Gallery
-              </button>
-            </div>
-
-            <TrainerMarketValueCard trainer={trainer} />
+            ) : (
+              <div className="profile-hero__meta">
+                <div className="profile-hero__meta-primary">
+                  <ProfileReviewMeta
+                    trainer={trainer}
+                    smoacAggregate={smoacAggregate}
+                    canLeaveReview={canLeaveReview}
+                    hasOwnReview={hasOwnReview}
+                    onLeaveReview={onLeaveReview}
+                  />
+                  <SessionPrice
+                    amount={trainer.pricePerSession}
+                    variant="hero"
+                    className="profile-hero__meta-price shrink-0"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="profile-hero__view-gallery"
+                  aria-label="View specialist gallery"
+                  onClick={openGallery}
+                >
+                  View Gallery
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -160,10 +174,12 @@ export function ProfileHero({
         onClose={closeGallery}
       />
 
-      <ProfileHeroToolbar
-        trainerId={trainer.id}
-        trainerName={trainer.name}
-      />
+      {isSpecialistLive ? null : (
+        <ProfileHeroToolbar
+          trainerId={trainer.id}
+          trainerName={trainer.name}
+        />
+      )}
     </>
   );
 }

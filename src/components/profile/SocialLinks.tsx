@@ -11,6 +11,7 @@ const socialLabels: Record<keyof SocialLinksType, string> = {
   twitter: "X",
   linkedin: "LinkedIn",
   website: "Website",
+  tiktok: "TikTok",
 };
 
 export function SocialLinks({ social }: SocialLinksProps) {

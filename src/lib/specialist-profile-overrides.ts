@@ -55,6 +55,19 @@ function parseLineList(value: string): string[] {
     .filter(Boolean);
 }
 
+/** Split free-text into pills (commas / newlines / ·), or one item of prose. */
+function parsePillList(value: string): string[] {
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+  if (/[,;\n·]/.test(trimmed)) {
+    return trimmed
+      .split(/[,;\n·]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [trimmed];
+}
+
 function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
@@ -79,6 +92,7 @@ export function applySpecialistProfileOverrides(
         ? parseTravelRadiusMiles(overrides.travelRadius)
         : undefined) ??
       base.serviceRadiusMiles,
+    social: { ...base.social },
   };
 
   merged.homepageSpecialties = sanitizeHomepageSpecialties(
@@ -110,6 +124,28 @@ export function applySpecialistProfileOverrides(
     }
   }
 
+  /* Form fields → public Trainer fields used by marketplace profile UI */
+  if (overrides.trainingStyle?.trim()) {
+    const pills = parsePillList(overrides.trainingStyle);
+    if (pills.length > 0) merged.coachingStyle = pills;
+  }
+  if (overrides.servicesOffered?.trim()) {
+    const pills = parsePillList(overrides.servicesOffered);
+    if (pills.length > 0) merged.bestFor = pills;
+  }
+  if (
+    overrides.instagram !== undefined ||
+    overrides.website !== undefined ||
+    overrides.tiktok !== undefined
+  ) {
+    merged.social = {
+      ...merged.social,
+      instagram: overrides.instagram?.trim() || merged.social.instagram,
+      website: overrides.website?.trim() || merged.social.website,
+      tiktok: overrides.tiktok?.trim() || merged.social.tiktok,
+    };
+  }
+
   if (overrides.profilePhotoUrl?.trim()) {
     const photo = overrides.profilePhotoUrl.trim();
     merged.image = photo;
@@ -135,13 +171,35 @@ export function applySpecialistProfileOverrides(
   if (overrides.photoNotes?.trim()) {
     const photoUrls = parseLineList(overrides.photoNotes).filter(isUrl);
     if (photoUrls.length > 0) {
-      merged.gallery = photoUrls.map((src, index) => ({
+      const cover =
+        overrides.coverImageUrl?.trim() && photoUrls.includes(overrides.coverImageUrl.trim())
+          ? overrides.coverImageUrl.trim()
+          : photoUrls[0];
+      const ordered = cover
+        ? [cover, ...photoUrls.filter((url) => url !== cover)]
+        : photoUrls;
+      merged.heroImage = cover || merged.heroImage;
+      merged.gallery = ordered.map((src, index) => ({
         id: `profile-photo-${index}`,
         type: "image" as const,
         src,
         alt: `${merged.name} gallery photo ${index + 1}`,
       }));
-      merged.galleryImages = photoUrls;
+      merged.galleryImages = ordered;
+    }
+  }
+
+  if (overrides.videoNotes?.trim()) {
+    const videoUrls = parseLineList(overrides.videoNotes).filter(isUrl);
+    if (videoUrls.length > 0) {
+      const imageItems = merged.gallery.filter((item) => item.type === "image");
+      const videoItems = videoUrls.map((src, index) => ({
+        id: `profile-video-${index}`,
+        type: "video" as const,
+        src,
+        alt: `${merged.name} video ${index + 1}`,
+      }));
+      merged.gallery = [...imageItems, ...videoItems];
     }
   }
 
@@ -197,7 +255,15 @@ export function overridesFromTrainer(
     serviceArea: [...(stored?.serviceArea ?? trainer.serviceArea)],
     pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
     bio: stored?.bio ?? trainer.bio,
-    photoNotes: stored?.photoNotes ?? "",
+    photoNotes:
+      stored?.photoNotes ??
+      (trainer.galleryImages.filter(Boolean).join("\n") || ""),
+    videoNotes:
+      stored?.videoNotes ??
+      trainer.gallery
+        .filter((item) => item.type === "video")
+        .map((item) => item.src)
+        .join("\n"),
     transformationNotes: stored?.transformationNotes ?? "",
     bookingAvailability:
       stored?.bookingAvailability ??
@@ -212,12 +278,16 @@ export function overridesFromTrainer(
       (stored?.profilePhotoUrl?.trim() ? "" : trainer.heroImage?.trim() || ""),
     phone: stored?.phone ?? "",
     email: stored?.email ?? "",
-    instagram: stored?.instagram ?? "",
-    website: stored?.website ?? "",
-    tiktok: stored?.tiktok ?? "",
+    instagram: stored?.instagram ?? trainer.social.instagram ?? "",
+    website: stored?.website ?? trainer.social.website ?? "",
+    tiktok: stored?.tiktok ?? trainer.social.tiktok ?? "",
     experienceYears: stored?.experienceYears ?? "",
-    trainingStyle: stored?.trainingStyle ?? "",
-    servicesOffered: stored?.servicesOffered ?? "",
+    trainingStyle:
+      stored?.trainingStyle ??
+      (trainer.coachingStyle.filter(Boolean).join(" · ") || ""),
+    servicesOffered:
+      stored?.servicesOffered ??
+      (trainer.bestFor.filter(Boolean).join(", ") || ""),
   };
 }
 
@@ -247,6 +317,7 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     pricePerSession: form.pricePerSession,
     bio: form.bio.trim(),
     photoNotes: form.photoNotes.trim(),
+    videoNotes: form.videoNotes.trim(),
     transformationNotes: form.transformationNotes.trim(),
     bookingAvailability: form.bookingAvailability.trim(),
     profilePhotoUrl: form.profilePhotoUrl.trim(),

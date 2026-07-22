@@ -6,6 +6,10 @@ import { useCallback, useEffect, useState } from "react";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import {
+  DashboardPageShell,
+} from "@/components/dashboard/shared";
+import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
+import {
   ProfileEditInputField,
   ProfileEditSection,
   ProfileEditViewField,
@@ -13,10 +17,6 @@ import {
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
-import {
-  DashboardPageShell,
-  DashboardSignOutButton,
-} from "@/components/dashboard/shared";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
@@ -258,7 +258,7 @@ export function SpecialistEditProfilePageClient() {
           : "Shape how clients discover and book you on SMOAC."
       }
       roleLabel="Specialist"
-      utilityBar={<DashboardSignOutButton onClick={handleSignOut} />}
+      utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
       actions={
         <Link href="/specialist-dashboard" className="dashboard-back-link">
           ← Dashboard
