@@ -116,7 +116,9 @@ export async function POST(request: Request) {
     .upload(fullPath, buffer, {
       contentType: mime,
       upsert: true,
-      cacheControl: "3600",
+      /* Short cache — profile avatars are re-uploaded often; long CDN cache
+       * made replaced files look "stuck" when the public URL stayed the same. */
+      cacheControl: "60",
     });
 
   if (error) {

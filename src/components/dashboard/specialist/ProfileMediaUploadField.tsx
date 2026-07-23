@@ -85,12 +85,13 @@ export function ProfileMediaUploadField({
         /* Server route uploads with the service role — storage RLS on the
          * live project does not allow direct client uploads. */
         const id = specialistId!.trim();
+        const stamp = Date.now().toString(36);
         const basePath =
           mediaKind === "profile"
-            ? `${id}/profile/avatar`
+            ? `${id}/profile/avatar-${stamp}`
             : mediaKind === "cover"
-              ? `${id}/cover/hero`
-              : `${id}/gallery/g-${Date.now().toString(36)}/image`;
+              ? `${id}/cover/hero-${stamp}`
+              : `${id}/gallery/g-${stamp}/image`;
         const dataUrl = await readFileAsDataUrl(file);
         const response = await fetch("/api/media/specialist-application", {
           method: "POST",
@@ -105,7 +106,11 @@ export function ProfileMediaUploadField({
             payload?.message ?? "Could not upload image. Try again."
           );
         }
-        onChange(payload.publicUrl);
+        /* Unique object path + cache-bust so img/CDN don't keep the old avatar. */
+        const publicUrl = payload.publicUrl.includes("?")
+          ? `${payload.publicUrl}&v=${stamp}`
+          : `${payload.publicUrl}?v=${stamp}`;
+        onChange(publicUrl);
         return;
       }
 

@@ -11,8 +11,6 @@ export function patchAuthSessionAvatarUrl(avatarUrl: string | undefined): void {
   if (!session) return;
 
   const next = avatarUrl?.trim() || undefined;
-  if ((session.avatarUrl ?? undefined) === next) return;
-
   setAuthSession({
     ...session,
     avatarUrl: next,

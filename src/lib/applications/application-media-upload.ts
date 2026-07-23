@@ -26,7 +26,9 @@ async function uploadDataUrl(dataUrl: string, path: string): Promise<string> {
   if (!response.ok || !payload?.ok || !payload.publicUrl) {
     throw new Error(payload?.message ?? `Upload failed (${response.status})`);
   }
-  return payload.publicUrl;
+  const stamp = Date.now().toString(36);
+  const url = payload.publicUrl;
+  return url.includes("?") ? `${url}&v=${stamp}` : `${url}?v=${stamp}`;
 }
 
 /** Line-delimited URL fields (transformations, certifications, videos). */
@@ -67,17 +69,18 @@ export async function uploadApplicationMediaToStorage(
 
   const id = application.id;
   const media = { ...application.media };
+  const stamp = Date.now().toString(36);
   try {
     if (media.profilePhotoUrl.startsWith("data:")) {
       media.profilePhotoUrl = await uploadDataUrl(
         media.profilePhotoUrl,
-        `${id}/profile/avatar`
+        `${id}/profile/avatar-${stamp}`
       );
     }
     if (media.profilePhotoOriginalUrl.startsWith("data:")) {
       media.profilePhotoOriginalUrl = await uploadDataUrl(
         media.profilePhotoOriginalUrl,
-        `${id}/profile/avatar-original`
+        `${id}/profile/avatar-original-${stamp}`
       );
     }
     media.transformationPhotoUrls = await uploadLineField(
