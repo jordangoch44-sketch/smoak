@@ -103,6 +103,8 @@ export interface SpecialistProfileRow {
   service_type: string | null;
   featured: boolean;
   sponsored: boolean;
+  top_ranked: boolean;
+  is_premium: boolean;
   verified: boolean;
   rating: number;
   review_count: number;

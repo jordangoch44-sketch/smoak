@@ -56,6 +56,14 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
         typeof row.featured === "boolean" ? row.featured : Boolean(trainer.featured),
       sponsored:
         typeof row.sponsored === "boolean" ? row.sponsored : Boolean(trainer.sponsored),
+      topRanked:
+        typeof row.top_ranked === "boolean"
+          ? row.top_ranked
+          : Boolean(trainer.topRanked),
+      isPremium:
+        typeof row.is_premium === "boolean"
+          ? row.is_premium
+          : Boolean(trainer.isPremium),
       verified: trainer.verified ?? row.verified,
       rating: trainer.rating || Number(row.rating) || 0,
       reviewCount: trainer.reviewCount || row.review_count || 0,
@@ -91,6 +99,8 @@ export function specialistProfileToRow(input: {
     service_type: trainer.serviceType ?? null,
     featured: Boolean(trainer.featured),
     sponsored: Boolean(trainer.sponsored),
+    top_ranked: Boolean(trainer.topRanked),
+    is_premium: Boolean(trainer.isPremium),
     verified: Boolean(trainer.verified),
     rating: trainer.rating ?? 0,
     review_count: trainer.reviewCount ?? 0,
@@ -141,10 +151,10 @@ export async function upsertSpecialistProfile(
   }
 ): Promise<SpecialistProfilesMutationResult> {
   const row = specialistProfileToRow(input);
-  /* featured/sponsored are intentionally omitted: they are admin placement
-   * flags managed via setSpecialistProfileFlags. Including them here would
-   * let re-approvals / profile edits clobber admin-set values (inserts fall
-   * back to the DB defaults of false). */
+  /* featured/sponsored/top_ranked/is_premium are intentionally omitted: they are
+   * admin placement flags managed via setSpecialistProfileFlags. Including them
+   * here would let re-approvals / profile edits clobber admin-set values
+   * (inserts fall back to the DB defaults of false). */
   const { error } = await supabase.from("specialist_profiles").upsert(
     {
       id: row.id,
@@ -178,17 +188,24 @@ export async function upsertSpecialistProfile(
   return { ok: true };
 }
 
-/** Admin placement flags (featured / sponsored) — durable column update. */
+/** Admin placement flags — durable column update. */
 export async function setSpecialistProfileFlags(
   supabase: SupabaseClient,
   id: string,
-  flags: { featured?: boolean; sponsored?: boolean }
+  flags: {
+    featured?: boolean;
+    sponsored?: boolean;
+    topRanked?: boolean;
+    isPremium?: boolean;
+  }
 ): Promise<SpecialistProfilesMutationResult> {
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
   if (typeof flags.featured === "boolean") patch.featured = flags.featured;
   if (typeof flags.sponsored === "boolean") patch.sponsored = flags.sponsored;
+  if (typeof flags.topRanked === "boolean") patch.top_ranked = flags.topRanked;
+  if (typeof flags.isPremium === "boolean") patch.is_premium = flags.isPremium;
 
   const { error } = await supabase
     .from("specialist_profiles")
@@ -199,6 +216,56 @@ export async function setSpecialistProfileFlags(
     return { ok: false, message: error.message };
   }
   return { ok: true };
+}
+
+export type SpecialistModerationRow = {
+  id: string;
+  status: SpecialistProfileRow["status"];
+  featured: boolean;
+  sponsored: boolean;
+  topRanked: boolean;
+  isPremium: boolean;
+  userId: string | null;
+};
+
+/**
+ * Admin-visible moderation snapshot (all statuses). Used to sync local hide/meta
+ * mirrors after hydrate. Requires admin or owner RLS.
+ */
+export async function fetchSpecialistModerationSnapshot(
+  supabase: SupabaseClient
+): Promise<
+  | { ok: true; rows: SpecialistModerationRow[] }
+  | { ok: false; message: string }
+> {
+  const { data, error } = await supabase
+    .from("specialist_profiles")
+    .select("id, status, featured, sponsored, top_ranked, is_premium, user_id")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  const rows: SpecialistModerationRow[] = ((data ?? []) as Array<{
+    id: string;
+    status: string;
+    featured: boolean | null;
+    sponsored: boolean | null;
+    top_ranked: boolean | null;
+    is_premium: boolean | null;
+    user_id: string | null;
+  }>).map((row) => ({
+    id: row.id,
+    status: row.status,
+    featured: Boolean(row.featured),
+    sponsored: Boolean(row.sponsored),
+    topRanked: Boolean(row.top_ranked),
+    isPremium: Boolean(row.is_premium),
+    userId: row.user_id,
+  }));
+
+  return { ok: true, rows };
 }
 
 export async function setSpecialistProfileStatus(

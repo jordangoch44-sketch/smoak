@@ -25,7 +25,10 @@ import {
 } from "@/lib/specialist-profile-overrides";
 import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
-import { listSpecialistApplications } from "@/lib/specialist-application-storage";
+import {
+  getSpecialistApplicationById,
+  listSpecialistApplications,
+} from "@/lib/specialist-application-storage";
 import type { AdminSpecialistVisibility } from "@/types/admin";
 import type { Trainer } from "@/types/trainer";
 
@@ -78,8 +81,8 @@ function applicationAsTrainerRow(
     visibility,
     featured: approved?.featured ?? meta.featured ?? false,
     sponsored: approved?.sponsored ?? meta.sponsored ?? false,
-    topRanked: meta.topRanked ?? false,
-    isPremium: meta.isPremium ?? false,
+    topRanked: approved?.topRanked ?? meta.topRanked ?? false,
+    isPremium: approved?.isPremium ?? meta.isPremium ?? false,
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? "test",
     inSeedCatalog: false,
@@ -128,8 +131,8 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
         visibility,
         featured: approved?.featured ?? meta.featured ?? merged.featured,
         sponsored: approved?.sponsored ?? meta.sponsored ?? Boolean(merged.sponsored),
-        topRanked: meta.topRanked ?? false,
-        isPremium: meta.isPremium ?? merged.featured,
+        topRanked: approved?.topRanked ?? meta.topRanked ?? false,
+        isPremium: approved?.isPremium ?? meta.isPremium ?? false,
         isProtected: meta.isProtected ?? false,
         accountKind: meta.accountKind ?? "test",
         inSeedCatalog: true,
@@ -200,9 +203,9 @@ export type AdminSpecialistFlag =
   | "isPremium";
 
 /**
- * featured / sponsored are durable `specialist_profiles` columns (live home
- * rails read them). topRanked / isPremium have no DB column yet — local meta
- * only. Local meta mirror keeps the admin UI responsive in both cases.
+ * featured / sponsored / topRanked / isPremium are durable specialist_profiles
+ * columns. Local meta mirror keeps the admin UI responsive. isPremium also
+ * mirrors onto user_roles when the profile has a linked user_id.
  */
 export async function setAdminSpecialistFlagAsync(
   trainerId: string,
@@ -211,7 +214,6 @@ export async function setAdminSpecialistFlagAsync(
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   patchAdminSpecialistMeta(trainerId, { [flag]: value });
 
-  if (flag !== "featured" && flag !== "sponsored") return { ok: true };
   if (!isMarketplaceSupabaseActive()) return { ok: true };
 
   const supabase = getMarketplaceAuthClient();
@@ -228,6 +230,23 @@ export async function setAdminSpecialistFlagAsync(
       result.message
     );
     return result;
+  }
+
+  if (flag === "isPremium") {
+    const userId =
+      getSpecialistApplicationById(trainerId)?.userId?.trim() || null;
+    if (userId) {
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ is_premium: value, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+      if (error) {
+        console.warn(
+          "[SMOAC admin] user_roles is_premium update failed:",
+          error.message
+        );
+      }
+    }
   }
 
   await refreshApprovedSpecialistProfilesFromRemoteAsync();

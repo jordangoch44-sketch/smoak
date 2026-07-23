@@ -116,6 +116,10 @@ export interface Trainer {
   gallery: TrainerMediaItem[];
   clientTransformations: ClientTransformationPhoto[];
   featured: boolean;
+  /** Admin placement — city/leaderboard emphasis */
+  topRanked?: boolean;
+  /** Listing entitlement mirror (also on user_roles.is_premium) */
+  isPremium?: boolean;
   certifications: Certification[];
   reviews: Review[];
   social: SocialLinks;

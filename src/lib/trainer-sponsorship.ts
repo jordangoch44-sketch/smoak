@@ -4,9 +4,10 @@ import type { Trainer } from "@/types";
 /** Marketplace sponsored placement (ads / featured buy-up) */
 export function isTrainerSponsored(trainer: Trainer): boolean {
   if (trainer.sponsored) return true;
+  if (trainer.isPremium || trainer.featured) return true;
   const meta = getAdminSpecialistMeta(trainer.id);
   if (meta.featured === true || meta.isPremium === true) return true;
-  return trainer.featured;
+  return false;
 }
 
 /** Vetted / high-trust organic specialists sort ahead of non-verified at equal distance */

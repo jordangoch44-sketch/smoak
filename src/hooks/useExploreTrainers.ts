@@ -383,7 +383,9 @@ export function useExploreTrainers({
         candidateFilters,
         searchQuery
       )
-        .filter((trainer) => !hiddenSet.has(trainer.id))
+        .filter((trainer) =>
+          catalogMode === "live" ? true : !hiddenSet.has(trainer.id)
+        )
         .map((trainer) => getTrainerWithOverrides(trainer.id) ?? trainer);
     },
     [

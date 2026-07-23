@@ -66,11 +66,19 @@ Local `smoac_approved_specialist_profiles` remains a cache / offline bridge (sam
 
 ---
 
-## Still local (Phase 3d+)
+## Still local (Phase 3e)
 
-- `smoac_hidden_specialists`
-- `smoac_admin_specialist_meta`
-- Seed `data/trainers.ts` (kept as demo catalog until 3d/3e)
+- Seed `data/trainers.ts` (demo catalog when Supabase is off)
+- Ops-only admin fields: `isProtected`, `accountKind` (browser meta)
+
+## Phase 3d (done in code — apply migration)
+
+- Hide = `specialist_profiles.status` (`hidden` / `archived`)
+- Durable flags: `featured`, `sponsored`, `top_ranked`, `is_premium`
+- Local hide/meta mirrors hydrate from remote for admin UI
+- Live Explore skips browser-only hide list
+
+**Migration:** `supabase/migrations/20260723140000_specialist_profiles_admin_flags.sql`
 
 ---
 

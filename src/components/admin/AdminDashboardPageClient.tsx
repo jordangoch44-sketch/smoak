@@ -239,6 +239,10 @@ export function AdminDashboardPageClient() {
                 if (!permissions.canFeatureSpecialists) return;
                 void setSpecialistFlag(id, "topRanked", value);
               }}
+              onPremiumChange={(id, value) => {
+                if (!permissions.canFeatureSpecialists) return;
+                void setSpecialistFlag(id, "isPremium", value);
+              }}
               onBasicsChange={(id, basics) => {
                 if (!permissions.canEditSpecialists) return;
                 updateSpecialistBasics(id, basics);

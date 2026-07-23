@@ -1,5 +1,6 @@
 import {
   fetchApprovedSpecialistProfiles,
+  fetchSpecialistModerationSnapshot,
   setSpecialistProfileStatus,
   upsertSpecialistProfile,
 } from "@/lib/profiles/specialist-profiles-db";
@@ -8,6 +9,11 @@ import {
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
 import { DEV_APPROVED_SPECIALIST_PROFILES_KEY } from "@/lib/dev-storage-keys";
+import { mergeAdminSpecialistMetaFromRemote } from "@/lib/admin-specialist-meta-store";
+import {
+  getHiddenTrainersSnapshot,
+  setHiddenTrainerIds,
+} from "@/lib/hidden-trainers-store";
 import {
   getPublicCatalogMode,
   isLivePublicCatalogMode,
@@ -100,6 +106,56 @@ function mergeOverridesIntoLocalStore(
   }
 }
 
+/**
+ * Sync local hide + admin meta mirrors from durable specialist_profiles rows.
+ * Keeps pending-only local hides that are not yet in the remote table.
+ */
+async function syncModerationMirrorsFromRemote(
+  supabase: NonNullable<ReturnType<typeof getMarketplaceAuthClient>>
+): Promise<void> {
+  const moderation = await fetchSpecialistModerationSnapshot(supabase);
+  if (!moderation.ok) {
+    /* Non-admins get RLS denial — approved catalog still works without mirrors. */
+    return;
+  }
+
+  const remoteHidden = new Set<string>();
+  const metaEntries: Array<{
+    id: string;
+    visibility: "active" | "hidden";
+    featured: boolean;
+    sponsored: boolean;
+    topRanked: boolean;
+    isPremium: boolean;
+  }> = [];
+
+  for (const row of moderation.rows) {
+    const visibility = row.status === "approved" ? "active" : "hidden";
+    if (row.status !== "approved") remoteHidden.add(row.id);
+    metaEntries.push({
+      id: row.id,
+      visibility,
+      featured: row.featured,
+      sponsored: row.sponsored,
+      topRanked: row.topRanked,
+      isPremium: row.isPremium,
+    });
+  }
+
+  mergeAdminSpecialistMetaFromRemote(metaEntries);
+
+  const localHidden = getHiddenTrainersSnapshot();
+  const pendingLocalOnly = localHidden.filter((id) => {
+    if (remoteHidden.has(id)) return false;
+    const knownRemote = moderation.rows.some((row) => row.id === id);
+    if (knownRemote) return false;
+    const app = getSpecialistApplicationById(id);
+    return app?.profileStatus === "PENDING_APPROVAL";
+  });
+
+  setHiddenTrainerIds([...remoteHidden, ...pendingLocalOnly]);
+}
+
 async function hydrateFromSupabase(): Promise<void> {
   if (typeof window === "undefined") return;
   if (!isMarketplaceSupabaseActive()) {
@@ -148,6 +204,8 @@ async function hydrateFromSupabase(): Promise<void> {
     applyCache(next);
     writeLocalProfiles(next);
     mergeOverridesIntoLocalStore(result.overridesById);
+    await syncModerationMirrorsFromRemote(supabase);
+    if (generation !== loadGeneration) return;
     setPublicCatalogMode("live");
     markHydratedAndNotify();
   } finally {

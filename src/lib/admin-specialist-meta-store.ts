@@ -79,3 +79,41 @@ export function patchAdminSpecialistMeta(
   if (mapKey(next) === mapKey(current)) return;
   emit(next);
 }
+
+/** Bulk-merge durable flags from remote specialist_profiles into local meta. */
+export function mergeAdminSpecialistMetaFromRemote(
+  entries: Array<{
+    id: string;
+    visibility?: AdminSpecialistMeta["visibility"];
+    featured?: boolean;
+    sponsored?: boolean;
+    topRanked?: boolean;
+    isPremium?: boolean;
+  }>
+): void {
+  if (entries.length === 0) return;
+  const current = { ...readCache() };
+  let changed = false;
+  for (const entry of entries) {
+    const prev = current[entry.id] ?? {};
+    const nextMeta: AdminSpecialistMeta = {
+      ...prev,
+      ...(entry.visibility != null ? { visibility: entry.visibility } : {}),
+      ...(typeof entry.featured === "boolean" ? { featured: entry.featured } : {}),
+      ...(typeof entry.sponsored === "boolean"
+        ? { sponsored: entry.sponsored }
+        : {}),
+      ...(typeof entry.topRanked === "boolean"
+        ? { topRanked: entry.topRanked }
+        : {}),
+      ...(typeof entry.isPremium === "boolean"
+        ? { isPremium: entry.isPremium }
+        : {}),
+    };
+    if (mapKey({ [entry.id]: nextMeta }) !== mapKey({ [entry.id]: prev })) {
+      current[entry.id] = nextMeta;
+      changed = true;
+    }
+  }
+  if (changed) emit(current);
+}

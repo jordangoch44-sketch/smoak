@@ -98,14 +98,16 @@ export function isPublicMarketplaceTrainerId(
   trainerId: string,
   options: PublicCatalogOptions = {}
 ): boolean {
-  const hiddenSet =
-    options.includeBrowserState === false
-      ? new Set<string>()
-      : new Set(getHiddenTrainersSnapshot());
-  if (isTrainerHidden(trainerId, hiddenSet)) return false;
+  const live = usesLiveCatalog(options);
+  /* Live mode: specialist_profiles.status=approved is the hide gate — skip
+   * browser-local hide list so admin moderation is multi-device durable. */
+  if (!live && options.includeBrowserState !== false) {
+    const hiddenSet = new Set(getHiddenTrainersSnapshot());
+    if (isTrainerHidden(trainerId, hiddenSet)) return false;
+  }
 
   const approvedMap = resolveApprovedMap(options);
-  if (usesLiveCatalog(options)) {
+  if (live) {
     return Boolean(approvedMap[trainerId]);
   }
 
@@ -177,7 +179,6 @@ export function listPublicMarketplaceTrainers(
 
     for (const trainer of Object.values(approvedMap)) {
       if (seen.has(trainer.id)) continue;
-      if (isTrainerHidden(trainer.id, hiddenSet)) continue;
       seen.add(trainer.id);
       result.push(trainer);
     }

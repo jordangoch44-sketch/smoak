@@ -35,6 +35,7 @@ interface AdminSpecialistsPanelProps {
   onFeaturedChange: (id: string, value: boolean) => void;
   onSponsoredChange: (id: string, value: boolean) => void;
   onTopRankedChange: (id: string, value: boolean) => void;
+  onPremiumChange: (id: string, value: boolean) => void;
   onBasicsChange: (
     id: string,
     basics: {
@@ -60,6 +61,7 @@ function SpecialistCard({
   onFeaturedChange,
   onSponsoredChange,
   onTopRankedChange,
+  onPremiumChange,
   onBasicsChange,
   onProtectedChange,
   onAccountKindChange,
@@ -72,6 +74,7 @@ function SpecialistCard({
   onFeaturedChange: AdminSpecialistsPanelProps["onFeaturedChange"];
   onSponsoredChange: AdminSpecialistsPanelProps["onSponsoredChange"];
   onTopRankedChange: AdminSpecialistsPanelProps["onTopRankedChange"];
+  onPremiumChange: AdminSpecialistsPanelProps["onPremiumChange"];
   onBasicsChange: AdminSpecialistsPanelProps["onBasicsChange"];
   onProtectedChange: AdminSpecialistsPanelProps["onProtectedChange"];
   onAccountKindChange: AdminSpecialistsPanelProps["onAccountKindChange"];
@@ -111,6 +114,7 @@ function SpecialistCard({
           {row.featured ? <span className="admin-chip">Featured</span> : null}
           {row.sponsored ? <span className="admin-chip">Sponsored</span> : null}
           {row.topRanked ? <span className="admin-chip">Top ranked</span> : null}
+          {row.isPremium ? <span className="admin-chip">Premium</span> : null}
           {row.isProtected || row.accountKind === "real" ? (
             <span className="admin-chip">Real / protected</span>
           ) : null}
@@ -199,6 +203,14 @@ function SpecialistCard({
                   onChange={(e) => onTopRankedChange(row.id, e.target.checked)}
                 />
                 Top ranked
+              </label>
+              <label className="admin-check admin-check--block">
+                <input
+                  type="checkbox"
+                  checked={row.isPremium}
+                  onChange={(e) => onPremiumChange(row.id, e.target.checked)}
+                />
+                Premium
               </label>
             </>
           ) : null}
@@ -317,6 +329,7 @@ export function AdminSpecialistsPanel({
   onFeaturedChange,
   onSponsoredChange,
   onTopRankedChange,
+  onPremiumChange,
   onBasicsChange,
   onProtectedChange,
   onAccountKindChange,
@@ -388,6 +401,7 @@ export function AdminSpecialistsPanel({
               onFeaturedChange={onFeaturedChange}
               onSponsoredChange={onSponsoredChange}
               onTopRankedChange={onTopRankedChange}
+              onPremiumChange={onPremiumChange}
               onBasicsChange={onBasicsChange}
               onProtectedChange={onProtectedChange}
               onAccountKindChange={onAccountKindChange}
@@ -461,6 +475,7 @@ export function AdminSpecialistsPanel({
                   <th>Featured</th>
                   <th>Sponsored</th>
                   <th>Top</th>
+                  <th>Premium</th>
                   <th>Category</th>
                   <th>Location</th>
                   <th>Profile</th>
@@ -528,6 +543,19 @@ export function AdminSpecialistsPanel({
                         </label>
                       ) : (
                         row.topRanked ? "Yes" : "—"
+                      )}
+                    </td>
+                    <td>
+                      {permissions.canFeatureSpecialists ? (
+                        <label className="admin-check">
+                          <input
+                            type="checkbox"
+                            checked={row.isPremium}
+                            onChange={(e) => onPremiumChange(row.id, e.target.checked)}
+                          />
+                        </label>
+                      ) : (
+                        row.isPremium ? "Yes" : "—"
                       )}
                     </td>
                     <td>
