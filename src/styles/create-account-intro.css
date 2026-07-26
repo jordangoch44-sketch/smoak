@@ -82,11 +82,6 @@
   pointer-events: none;
 }
 
-.smoac-welcome-intro--site .create-account-intro__stage {
-  flex: 1;
-  min-height: 0;
-}
-
 .create-account-intro__content {
   display: flex;
   max-width: 22rem;
@@ -184,6 +179,95 @@
   );
 }
 
+.smoac-welcome-intro__hyperspace {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.smoac-welcome-intro__warp-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 45% at 50% 50%,
+      transparent 0%,
+      transparent 42%,
+      rgba(2, 2, 3, 0.45) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(2, 2, 3, 0.35) 0%,
+      transparent 22%,
+      transparent 78%,
+      rgba(2, 2, 3, 0.5) 100%
+    );
+}
+
+.create-account-intro__content--warp {
+  max-width: none;
+  filter: blur(18px);
+  transform: scale(0.92);
+  transition:
+    opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.create-account-intro__content--warp.create-account-intro__content--visible {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+.create-account-intro__logo--warp {
+  margin-bottom: 0;
+  filter: drop-shadow(0 0 28px rgba(180, 170, 255, 0.35))
+    drop-shadow(0 0 64px rgba(120, 100, 200, 0.28));
+}
+
+.create-account-intro__logo--warp .brand-logo__mark {
+  width: clamp(4.5rem, 18vw, 6.5rem) !important;
+  height: clamp(4.5rem, 18vw, 6.5rem) !important;
+}
+
+.create-account-intro__warp-slogan {
+  margin: 1.25rem 0 0;
+  max-width: 18rem;
+  font-size: clamp(0.875rem, 2.8vw, 1rem);
+  font-weight: 450;
+  letter-spacing: 0.04em;
+  line-height: 1.45;
+  text-align: center;
+  color: rgba(230, 226, 255, 0.78);
+  text-wrap: balance;
+  opacity: 0;
+  transform: translateY(8px);
+  filter: blur(8px);
+  transition:
+    opacity 900ms cubic-bezier(0.22, 1, 0.36, 1) 280ms,
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1) 280ms,
+    filter 900ms cubic-bezier(0.22, 1, 0.36, 1) 280ms;
+}
+
+.create-account-intro__warp-slogan--visible {
+  opacity: 1;
+  transform: translateY(0);
+  filter: blur(0);
+}
+
+.create-account-intro__warp-slogan--exit {
+  opacity: 0;
+  transform: translateY(-4px);
+  filter: blur(6px);
+  transition-delay: 0ms;
+  transition-duration: 500ms;
+}
+
 .create-account-intro__continue {
   margin-top: 1.5rem;
   min-height: 2.75rem;
@@ -208,10 +292,6 @@
 .create-account-intro__continue:active {
   transform: scale(0.98);
   opacity: 0.9;
-}
-
-.create-account-intro__content .create-account-intro__continue {
-  pointer-events: auto !important;
 }
 
 /* Join flow intro — hide chrome under the overlay */
@@ -239,7 +319,7 @@ body.join-intro-open .mobile-bottom-nav {
   opacity: 0 !important;
 }
 
-/* Homepage welcome — hide routed chrome; overlay is portaled to body */
+/* Homepage welcome — cover the page; reveal it when dropping out of warp */
 html.site-intro-open,
 body.site-intro-open {
   overflow: hidden;
@@ -247,7 +327,7 @@ body.site-intro-open {
 }
 
 body.site-intro-open #root {
-  visibility: hidden;
+  /* Keep homepage painted under the warp so arrival can reveal it */
   pointer-events: none;
 }
 
@@ -256,12 +336,47 @@ body.site-intro-open #root.app-shell {
   padding-bottom: 0 !important;
 }
 
-body.site-intro-open #site-header,
-body.site-intro-open footer,
-body.site-intro-open .mobile-bottom-nav {
+body.site-intro-open:not(.site-intro-arriving) #site-header,
+body.site-intro-open:not(.site-intro-arriving) footer,
+body.site-intro-open:not(.site-intro-arriving) .mobile-bottom-nav {
   visibility: hidden !important;
   pointer-events: none !important;
   opacity: 0 !important;
+}
+
+/* Dropping out of light-speed — homepage + chrome come into view underneath */
+body.site-intro-arriving #site-header,
+body.site-intro-arriving footer,
+body.site-intro-arriving .mobile-bottom-nav {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.smoac-welcome-intro--arriving {
+  pointer-events: none !important;
+  background: transparent !important;
+}
+
+.smoac-welcome-intro--arriving .login-page__canvas {
+  background: transparent !important;
+}
+
+.smoac-welcome-intro--arriving .smoac-welcome-intro__warp-vignette {
+  opacity: 0;
+  transition: opacity 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.smoac-welcome-intro--arriving .create-account-intro__content--warp {
+  transition-duration: 700ms;
+}
+
+.create-account-intro__content--warp.create-account-intro__content--exit {
+  opacity: 0;
+  filter: blur(14px);
+  transform: scale(1.12);
+  transition-duration: 900ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -274,6 +389,17 @@ body.site-intro-open .mobile-bottom-nav {
   .create-account-intro__content--exit {
     filter: none !important;
     transform: none !important;
+  }
+
+  .create-account-intro__content--warp {
+    filter: none !important;
+    transform: none !important;
+  }
+
+  .create-account-intro__warp-slogan {
+    filter: none !important;
+    transform: none !important;
+    transition: opacity 600ms ease;
   }
 
   .wizard-aurora-pool {

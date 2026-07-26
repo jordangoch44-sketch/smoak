@@ -6,3 +6,4 @@ export {
   SmoacWelcomeIntro,
   type SmoacWelcomeIntroVariant,
 } from "./SmoacWelcomeIntro";
+export { WelcomeHyperspaceField } from "./WelcomeHyperspaceField";
