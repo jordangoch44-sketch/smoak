@@ -24,7 +24,6 @@ export function ExplorePageClient({
 }) {
   const searchParams = useSearchParams();
   const didFocusSearchRef = useRef(false);
-  const resultsRef = useRef<HTMLElement | null>(null);
 
   const {
     filters,
@@ -62,33 +61,17 @@ export function ExplorePageClient({
     });
   }, [searchParams]);
 
-  const scrollToResults = useCallback(() => {
-    requestAnimationFrame(() => {
-      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, []);
-
-  const handleSearchSubmit = useCallback(
-    (query: string) => {
-      submitSearch(query);
-      scrollToResults();
-    },
-    [submitSearch, scrollToResults]
-  );
-
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
       submitSearch(category.searchQuery);
-      scrollToResults();
     },
-    [submitSearch, scrollToResults]
+    [submitSearch]
   );
 
   const handleViewAll = useCallback(() => {
     clearSearch();
     clearFilters();
-    scrollToResults();
-  }, [clearSearch, clearFilters, scrollToResults]);
+  }, [clearSearch, clearFilters]);
 
   return (
     <div className="explore-page explore-page--results">
@@ -121,7 +104,7 @@ export function ExplorePageClient({
 
         <ExploreSearchToolbar
           searchQuery={displayQuery}
-          onSearchSubmit={handleSearchSubmit}
+          onSearchSubmit={submitSearch}
           onClearSearch={clearSearch}
           activeFilterChips={activeFilterChips}
           onRemoveFilter={removeFilter}
@@ -142,11 +125,7 @@ export function ExplorePageClient({
             onOpenFilters={() => setMobileFiltersOpen(true)}
           />
 
-          <main
-            ref={resultsRef}
-            className="explore-page__results"
-            id="explore-results"
-          >
+          <main className="explore-page__results" id="explore-results">
             <div className="explore-results-heading">
               <h2 className="explore-results-heading__title">
                 Top experts near you

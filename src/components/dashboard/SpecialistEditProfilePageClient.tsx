@@ -40,6 +40,18 @@ import {
   SPECIALIST_TRAVEL_RADIUS_OPTIONS,
 } from "@/types/specialist-service-area";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import {
+  PROFILE_ACCENT_OPTIONS,
+  PROFILE_AVATAR_FRAME_OPTIONS,
+  PROFILE_NAME_FONT_OPTIONS,
+  profileStyleAccentLabel,
+  profileStyleFontLabel,
+  profileStyleFrameLabel,
+  type ProfileAccentId,
+  type ProfileAvatarFrameId,
+  type ProfileNameFontId,
+} from "@/lib/specialist-profile-style";
+import { cn } from "@/lib/utils";
 
 const GENDER_OPTIONS: { value: Gender; label: string }[] = [
   { value: "male", label: "Male" },
@@ -49,6 +61,7 @@ const GENDER_OPTIONS: { value: Gender; label: string }[] = [
 
 type SectionId =
   | "basic-info"
+  | "profile-style"
   | "bio"
   | "experience"
   | "professional-role"
@@ -351,6 +364,125 @@ export function SpecialistEditProfilePageClient() {
                     onChange={(event) => updateField("email", event.target.value)}
                     autoComplete="email"
                   />
+                </ProfileEditInputField>
+              </div>
+            }
+          />
+
+          <ProfileEditSection
+            {...sectionProps("profile-style")}
+            title="Profile style"
+            description="Accent color, avatar frame, and name font"
+            viewContent={
+              <>
+                <ProfileEditViewField
+                  label="Accent"
+                  value={profileStyleAccentLabel(savedForm.profileAccent)}
+                />
+                <ProfileEditViewField
+                  label="Avatar frame"
+                  value={profileStyleFrameLabel(savedForm.profileAvatarFrame)}
+                />
+                <ProfileEditViewField
+                  label="Name font"
+                  value={profileStyleFontLabel(savedForm.profileNameFont)}
+                />
+              </>
+            }
+            editContent={
+              <div className="dashboard-edit-fields">
+                <ProfileEditInputField label="Accent color">
+                  <div
+                    className="profile-style-swatches"
+                    role="radiogroup"
+                    aria-label="Accent color"
+                  >
+                    {PROFILE_ACCENT_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={form.profileAccent === option.id}
+                        aria-label={option.label}
+                        className={cn(
+                          "smoac-control profile-style-swatch",
+                          form.profileAccent === option.id &&
+                            "profile-style-swatch--active"
+                        )}
+                        onClick={() =>
+                          updateField(
+                            "profileAccent",
+                            option.id as ProfileAccentId
+                          )
+                        }
+                      >
+                        <span
+                          className="profile-style-swatch__dot"
+                          style={{ background: option.swatch }}
+                          aria-hidden
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </ProfileEditInputField>
+                <ProfileEditInputField label="Avatar frame">
+                  <div
+                    className="profile-style-options"
+                    role="radiogroup"
+                    aria-label="Avatar frame"
+                  >
+                    {PROFILE_AVATAR_FRAME_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={form.profileAvatarFrame === option.id}
+                        className={cn(
+                          "smoac-control profile-style-option",
+                          form.profileAvatarFrame === option.id &&
+                            "profile-style-option--active"
+                        )}
+                        onClick={() =>
+                          updateField(
+                            "profileAvatarFrame",
+                            option.id as ProfileAvatarFrameId
+                          )
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </ProfileEditInputField>
+                <ProfileEditInputField label="Name font">
+                  <div
+                    className="profile-style-options"
+                    role="radiogroup"
+                    aria-label="Name font"
+                  >
+                    {PROFILE_NAME_FONT_OPTIONS.map((option) => (
+                      <button
+                        key={option.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={form.profileNameFont === option.id}
+                        className={cn(
+                          "smoac-control profile-style-option",
+                          `profile-style-option--font-${option.id}`,
+                          form.profileNameFont === option.id &&
+                            "profile-style-option--active"
+                        )}
+                        onClick={() =>
+                          updateField(
+                            "profileNameFont",
+                            option.id as ProfileNameFontId
+                          )
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </ProfileEditInputField>
               </div>
             }

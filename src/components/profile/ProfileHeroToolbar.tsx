@@ -58,11 +58,11 @@ export function ProfileHeroToolbar({
 }: ProfileHeroToolbarProps) {
   const router = useRouter();
   const sheetDismiss = useProfileSheetDismiss();
-  const toolbarHostRef = useProfileSheetToolbarHost();
+  const toolbarHost = useProfileSheetToolbarHost();
+  const sheetHostEl = toolbarHost?.hostEl ?? null;
   const { showToast } = useToast();
   const { isHidden, toggleHidden } = useHiddenTrainers();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [sheetHostEl, setSheetHostEl] = useState<HTMLElement | null>(null);
   const actionsRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const hidden = isHidden(trainerId);
@@ -71,19 +71,6 @@ export function ProfileHeroToolbar({
     () => true,
     () => false
   );
-
-  /* Resolve sheet host after mount — ref is set by TrainerProfileSheet. */
-  useEffect(() => {
-    if (!toolbarHostRef) {
-      setSheetHostEl(null);
-      return;
-    }
-    setSheetHostEl(toolbarHostRef.current);
-    const id = window.requestAnimationFrame(() => {
-      setSheetHostEl(toolbarHostRef.current);
-    });
-    return () => window.cancelAnimationFrame(id);
-  }, [toolbarHostRef]);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -109,17 +96,9 @@ export function ProfileHeroToolbar({
   }, [menuOpen, closeMenu]);
 
   function handleClose() {
-    const t0 = performance.now();
-    console.info("[close-timing] profile toolbar X click", t0);
     closeMenu();
     if (sheetDismiss) {
       sheetDismiss();
-      console.info(
-        "[close-timing] profile toolbar sheetDismiss returned",
-        performance.now(),
-        "Δms",
-        Math.round(performance.now() - t0)
-      );
       return;
     }
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -319,10 +298,11 @@ export function ProfileHeroToolbar({
     </div>
   );
 
-  /* Sheet mode: portal into the animated sheet so X/actions exit with it. */
-  if (toolbarHostRef) {
-    if (!sheetHostEl) return null;
-    return createPortal(toolbar, sheetHostEl);
+  /* Sheet mode: portal into the animated sheet so X/actions exit with it.
+   * Fall back to document.body until the host node is mounted — never blank
+   * the chrome on slow mobile navigations. */
+  if (toolbarHost) {
+    return createPortal(toolbar, sheetHostEl ?? document.body);
   }
 
   /* Desktop full-page profile: keep fixed viewport chrome. */

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Inter } from "next/font/google";
+import { Cormorant_Garamond, Inter, Outfit, Syne } from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/site-shell.css";
 import { AppMain } from "@/components/layout/AppMain";
@@ -21,6 +21,28 @@ const inter = Inter({
   adjustFontFallback: true,
 });
 
+const outfit = Outfit({
+  variable: "--font-profile-modern",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+const cormorant = Cormorant_Garamond({
+  variable: "--font-profile-editorial",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+  preload: false,
+});
+
+const syne = Syne({
+  variable: "--font-profile-display",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
 export default function SiteLayout({
   children,
   modal = null,
@@ -31,7 +53,7 @@ export default function SiteLayout({
 }>) {
   return (
     <div
-      className={`${inter.variable} app-shell min-h-full flex flex-col bg-black text-white antialiased`}
+      className={`${inter.variable} ${outfit.variable} ${cormorant.variable} ${syne.variable} app-shell min-h-full flex flex-col bg-black text-white antialiased`}
       id="root"
     >
       {process.env.NODE_ENV === "development" ? (

@@ -2,6 +2,7 @@ import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
+import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import type { Certification, Trainer } from "@/types";
 import type {
@@ -86,6 +87,9 @@ export function applySpecialistProfileOverrides(
       overrides.homepageSpecialties ?? base.homepageSpecialties,
     serviceArea: overrides.serviceArea ?? base.serviceArea,
     certifications: overrides.certifications ?? base.certifications,
+    profileStyle: normalizeProfileStyle(
+      overrides.profileStyle ?? base.profileStyle
+    ),
     serviceRadiusMiles:
       overrides.serviceRadiusMiles ??
       (overrides.travelRadius
@@ -228,6 +232,9 @@ export function overridesFromTrainer(
   trainer: Trainer,
   stored?: SpecialistProfileOverrides | null
 ): SpecialistProfileEditForm {
+  const style = normalizeProfileStyle(
+    stored?.profileStyle ?? trainer.profileStyle
+  );
   return {
     name: stored?.name ?? trainer.name,
     title: stored?.title ?? trainer.title,
@@ -288,6 +295,9 @@ export function overridesFromTrainer(
     servicesOffered:
       stored?.servicesOffered ??
       (trainer.bestFor.filter(Boolean).join(", ") || ""),
+    profileAccent: style.accent,
+    profileAvatarFrame: style.avatarFrame,
+    profileNameFont: style.nameFont,
   };
 }
 
@@ -330,6 +340,11 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     experienceYears: form.experienceYears.trim(),
     trainingStyle: form.trainingStyle.trim(),
     servicesOffered: form.servicesOffered.trim(),
+    profileStyle: normalizeProfileStyle({
+      accent: form.profileAccent,
+      avatarFrame: form.profileAvatarFrame,
+      nameFont: form.profileNameFont,
+    }),
   };
 }
 

@@ -278,7 +278,8 @@ function MobileBottomNavShell() {
   const searchParams = useSearchParams();
   const hidden = useMobileBottomNavHidden();
   const beginBottomNavTransition = useBeginBottomNavTransition();
-  const isTabletViewport = useTabletViewport();
+  /* Mobile-first SSR — avoid a blank frame where the main toolbar is missing */
+  const isTabletViewport = useTabletViewport(true);
   const { clientReady } = useStableClientState();
   const { isReady, session } = useAuthSession();
   const { trainer: managedTrainer, application } = useManagedSpecialistProfile();

@@ -17,6 +17,7 @@ import {
 import { createPortal } from "react-dom";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { cn } from "@/lib/utils";
+import type { ProfileAvatarFrameId } from "@/lib/specialist-profile-style";
 
 interface ProfileImagePreviewModalProps {
   open: boolean;
@@ -121,6 +122,7 @@ interface ProfileHeroAvatarProps {
   src?: string | null;
   name: string;
   rankBadge?: React.ReactNode;
+  frame?: ProfileAvatarFrameId;
 }
 
 function normalizeSrc(src: string | null | undefined): string | null {
@@ -134,6 +136,7 @@ export function ProfileHeroAvatar({
   src,
   name,
   rankBadge,
+  frame = "none",
 }: ProfileHeroAvatarProps) {
   const imageSrc = normalizeSrc(src);
   const canExpand = Boolean(imageSrc);
@@ -166,9 +169,21 @@ export function ProfileHeroAvatar({
 
   const closePreview = useCallback(() => setPreviewOpen(false), []);
 
+  const thumbClass = cn(
+    "profile-hero__avatar",
+    frame === "none" && "profile-hero__avatar--frame-none",
+    frame === "ring" && "profile-hero__avatar--frame-ring",
+    frame === "glow" && "profile-hero__avatar--frame-glow"
+  );
+
   return (
     <>
-      <div className="profile-hero__avatar-wrap">
+      <div
+        className={cn(
+          "profile-hero__avatar-wrap",
+          frame === "glow" && "profile-hero__avatar-wrap--glow"
+        )}
+      >
         {rankBadge}
         {canExpand ? (
           <motion.button
@@ -185,9 +200,7 @@ export function ProfileHeroAvatar({
               name={name}
               size="square"
               priority
-              className={cn(
-                "profile-hero__avatar border-2 border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
-              )}
+              className={thumbClass}
             />
           </motion.button>
         ) : (
@@ -196,7 +209,7 @@ export function ProfileHeroAvatar({
               src={null}
               name={name}
               size="square"
-              className="profile-hero__avatar border-2 border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.55)]"
+              className={thumbClass}
             />
           </div>
         )}

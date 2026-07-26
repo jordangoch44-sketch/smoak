@@ -19,7 +19,11 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
-import { ProfileSheetToolbarHostProvider } from "./ProfileSheetToolbarHostContext";
+import {
+  ProfileSheetToolbarHostProvider,
+  useProfileSheetToolbarHost,
+} from "./ProfileSheetToolbarHostContext";
+import type { MotionValue } from "framer-motion";
 
 const OPEN_SPRING = {
   type: "spring" as const,
@@ -43,9 +47,11 @@ function viewportHeight(): number {
 
 /** Blocks remount re-lock while soft-nav still holds the sheet tree. */
 let chromeUnlockGuardUntil = 0;
+/** True while a dismiss animation owns chrome — remounts must not re-lock. */
+let sheetChromeDismissing = false;
 
 function lockSheetChrome() {
-  if (Date.now() < chromeUnlockGuardUntil) return;
+  if (sheetChromeDismissing || Date.now() < chromeUnlockGuardUntil) return;
   document.body.classList.add("profile-sheet-open");
   document.documentElement.classList.add("profile-sheet-open");
   document.body.classList.remove("profile-sheet-dismissing");
@@ -54,14 +60,16 @@ function lockSheetChrome() {
 function unlockSheetChrome() {
   document.body.classList.remove("profile-sheet-open");
   document.documentElement.classList.remove("profile-sheet-open");
-  chromeUnlockGuardUntil = Date.now() + 3000;
+  chromeUnlockGuardUntil = Date.now() + 400;
 }
 
 function markSheetDismissing() {
+  sheetChromeDismissing = true;
   document.body.classList.add("profile-sheet-dismissing");
 }
 
 function clearSheetDismissing() {
+  sheetChromeDismissing = false;
   document.body.classList.remove("profile-sheet-dismissing");
 }
 
@@ -77,12 +85,11 @@ export function TrainerProfileSheet({
 }: TrainerProfileSheetProps) {
   const router = useRouter();
   const hydrated = useHydrated();
-  const isSheetViewport = useTabletViewport();
+  const isSheetViewport = useTabletViewport(true);
   const reduceMotion = useReducedMotion();
   const y = useMotionValue(0);
   const vhRef = useRef(viewportHeight());
   const rootRef = useRef<HTMLDivElement>(null);
-  const toolbarHostRef = useRef<HTMLDivElement>(null);
   const dismissingRef = useRef(false);
   const openAnimRef = useRef<{ stop: () => void } | null>(null);
   const programmaticNavRef = useRef(false);
@@ -105,8 +112,6 @@ export function TrainerProfileSheet({
   const dismiss = useCallback(() => {
     if (dismissingRef.current) return;
     dismissingRef.current = true;
-    const t0 = performance.now();
-    console.info("[close-timing] profile dismiss start", t0);
 
     openAnimRef.current?.stop();
     openAnimRef.current = null;
@@ -123,12 +128,6 @@ export function TrainerProfileSheet({
     root?.setAttribute("inert", "");
 
     const finish = () => {
-      console.info(
-        "[close-timing] profile exit animation done",
-        performance.now(),
-        "Δms",
-        Math.round(performance.now() - t0)
-      );
       clearSheetDismissing();
       /* Route sync after visual close — do not block the slide. */
       navigateAway();
@@ -166,13 +165,15 @@ export function TrainerProfileSheet({
       };
     }
 
-    lockSheetChrome();
     dismissingRef.current = false;
+    sheetChromeDismissing = false;
+    chromeUnlockGuardUntil = 0;
     programmaticNavRef.current = false;
     /* Fresh open — never keep a prior exit's pass-through / inert. */
     const root = rootRef.current;
     root?.classList.remove("profile-sheet-root--pass-through");
     root?.removeAttribute("inert");
+    lockSheetChrome();
     y.set(vhRef.current);
 
     if (reduceMotion) {
@@ -226,7 +227,6 @@ export function TrainerProfileSheet({
       if (programmaticNavRef.current) return;
       if (dismissingRef.current) return;
       dismissingRef.current = true;
-      console.info("[close-timing] profile popstate dismiss", performance.now());
 
       openAnimRef.current?.stop();
       openAnimRef.current = null;
@@ -271,7 +271,7 @@ export function TrainerProfileSheet({
 
   return createPortal(
     <ProfileSheetDismissProvider dismiss={dismiss}>
-      <ProfileSheetToolbarHostProvider hostRef={toolbarHostRef}>
+      <ProfileSheetToolbarHostProvider>
         <div ref={rootRef} className="profile-sheet-root" role="presentation">
           <motion.button
             type="button"
@@ -281,30 +281,51 @@ export function TrainerProfileSheet({
             onClick={dismiss}
           />
 
-          <motion.div
-            className="profile-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label={label}
-            style={{ y }}
+          <ProfileSheetChrome
+            label={label}
+            y={y}
           >
-            <div className="profile-sheet__chrome" aria-hidden>
-              <div className="profile-sheet__handle-hit profile-sheet__handle-hit--static">
-                <span className="profile-sheet__handle" />
-              </div>
-            </div>
-
-            {/* Floating X / actions — same transform layer as the sheet */}
-            <div
-              ref={toolbarHostRef}
-              className="profile-sheet__toolbar-host"
-            />
-
-            <div className="profile-sheet__body">{children}</div>
-          </motion.div>
+            {children}
+          </ProfileSheetChrome>
         </div>
       </ProfileSheetToolbarHostProvider>
     </ProfileSheetDismissProvider>,
     document.body
+  );
+}
+
+/** Inner chrome so toolbar host callback ref can read context. */
+function ProfileSheetChrome({
+  label,
+  y,
+  children,
+}: {
+  label: string;
+  y: MotionValue<number>;
+  children: ReactNode;
+}) {
+  const toolbarHost = useProfileSheetToolbarHost();
+
+  return (
+    <motion.div
+      className="profile-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-label={label}
+      style={{ y }}
+    >
+      <div className="profile-sheet__chrome" aria-hidden>
+        <div className="profile-sheet__handle-hit profile-sheet__handle-hit--static">
+          <span className="profile-sheet__handle" />
+        </div>
+      </div>
+
+      <div
+        ref={toolbarHost?.hostRef}
+        className="profile-sheet__toolbar-host"
+      />
+
+      <div className="profile-sheet__body">{children}</div>
+    </motion.div>
   );
 }

@@ -1,13 +1,15 @@
 import type { NextConfig } from "next";
+import { getLanIpv4 } from "./scripts/lan-utils.mjs";
 
 /**
  * Next.js 16 blocks /_next/* dev chunks when the browser’s host (e.g. 192.168.1.77)
  * is not on the allowlist — iPhone then shows HTML only (no React hydration).
  *
  * Wildcards like "192.168.*" do NOT match IP literals (four segments).
- * Set SMOAC_LAN_HOST when using npm run dev:lan (scripts/dev-lan.mjs does this).
+ * Prefer `npm run dev:lan` (sets SMOAC_LAN_HOST). We also auto-detect the Mac
+ * LAN IP so plain `npm run dev` still hydrates on device.
  */
-const lanHost = process.env.SMOAC_LAN_HOST?.trim();
+const lanHost = process.env.SMOAC_LAN_HOST?.trim() || getLanIpv4() || undefined;
 
 const allowedDevOrigins = [
   "localhost",

@@ -1,5 +1,11 @@
 import type { Certification, Gender } from "@/types/trainer";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import type {
+  ProfileAccentId,
+  ProfileAvatarFrameId,
+  ProfileNameFontId,
+  SpecialistProfileStyle,
+} from "@/lib/specialist-profile-style";
 
 /** DEV ONLY — specialist-editable profile fields (merged onto seed trainer) */
 export interface SpecialistProfileOverrides {
@@ -39,6 +45,8 @@ export interface SpecialistProfileOverrides {
   experienceYears?: string;
   trainingStyle?: string;
   servicesOffered?: string;
+  /** Curated look: accent, avatar frame, name font */
+  profileStyle?: SpecialistProfileStyle;
 }
 
 export type SpecialistProfileEditForm = Required<
@@ -74,4 +82,8 @@ export type SpecialistProfileEditForm = Required<
     | "trainingStyle"
     | "servicesOffered"
   >
->;
+> & {
+  profileAccent: ProfileAccentId;
+  profileAvatarFrame: ProfileAvatarFrameId;
+  profileNameFont: ProfileNameFontId;
+};

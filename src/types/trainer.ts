@@ -1,4 +1,5 @@
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import type { SpecialistProfileStyle } from "@/lib/specialist-profile-style";
 
 export type Gender = "male" | "female" | "non-binary";
 
@@ -120,6 +121,8 @@ export interface Trainer {
   topRanked?: boolean;
   /** Listing entitlement mirror (also on user_roles.is_premium) */
   isPremium?: boolean;
+  /** Curated profile personalization (accent, avatar frame, name font) */
+  profileStyle?: SpecialistProfileStyle;
   certifications: Certification[];
   reviews: Review[];
   social: SocialLinks;

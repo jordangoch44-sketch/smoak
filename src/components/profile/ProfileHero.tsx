@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type MouseEvent } from "react";
+import { useCallback, useState, type CSSProperties, type MouseEvent } from "react";
 import type { Trainer } from "@/types";
 import { getTrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
@@ -9,6 +9,10 @@ import {
   buildTrainerGalleryImages,
   getProfileGalleryMedia,
 } from "@/lib/trainer-gallery";
+import {
+  getProfileAccentRgb,
+  normalizeProfileStyle,
+} from "@/lib/specialist-profile-style";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { ShieldCheckIcon } from "@/components/ui/icons";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
@@ -18,6 +22,7 @@ import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileReviewMeta } from "./ProfileReviewMeta";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
+import { cn } from "@/lib/utils";
 
 interface ProfileHeroProps {
   trainer: Trainer;
@@ -62,9 +67,24 @@ export function ProfileHero({
     setGalleryOpen(false);
   }, []);
 
+  const style = normalizeProfileStyle(trainer.profileStyle);
+  const accentRgb = getProfileAccentRgb(style.accent);
+  const styleVars = {
+    "--profile-accent-rgb": accentRgb,
+  } as CSSProperties;
+
   return (
     <>
-      <section className="profile-hero relative w-full">
+      <section
+        className={cn(
+          "profile-hero relative w-full",
+          `profile-hero--accent-${style.accent}`,
+          `profile-hero--font-${style.nameFont}`
+        )}
+        style={styleVars}
+        data-profile-accent={style.accent}
+        data-profile-name-font={style.nameFont}
+      >
         <div className="profile-hero__stage relative w-full">
           <ProfileHeroCoverGallery
             images={coverImages}
@@ -87,6 +107,7 @@ export function ProfileHero({
                 <ProfileHeroAvatar
                   src={trainer.image}
                   name={trainer.name}
+                  frame={style.avatarFrame}
                   rankBadge={
                     ranking ? (
                       <ProfileRankBadge ranking={ranking} placement="avatar" />
@@ -95,7 +116,14 @@ export function ProfileHero({
                 />
                 <div className="profile-hero__identity-copy min-w-0 flex-1">
                   <div className="profile-hero__name-row">
-                    <h1 className="profile-hero__name">{trainer.name}</h1>
+                    <h1
+                      className={cn(
+                        "profile-hero__name",
+                        `profile-hero__name--font-${style.nameFont}`
+                      )}
+                    >
+                      {trainer.name}
+                    </h1>
                     {trainer.verified ? (
                       <span
                         className="profile-verified-badge"

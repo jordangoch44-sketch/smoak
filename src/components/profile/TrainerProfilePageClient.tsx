@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, type CSSProperties } from "react";
 import type { Trainer } from "@/types";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
@@ -14,6 +14,10 @@ import {
 } from "@/lib/approved-specialist-profiles-store";
 import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
 import { trainerFirstName } from "@/lib/reviews/specialist-review-types";
+import {
+  getProfileAccentRgb,
+  normalizeProfileStyle,
+} from "@/lib/specialist-profile-style";
 import { ProfileHero } from "./ProfileHero";
 import { ProfileContactCta } from "./ProfileContactCta";
 import { ProfilePrimaryHighlights } from "./ProfilePrimaryHighlights";
@@ -22,6 +26,7 @@ import { ProfileDiscoveryRails } from "./ProfileDiscoveryRails";
 import { Reviews } from "./Reviews";
 import { SmoacReviewsSection } from "./SmoacReviewsSection";
 import { TrainerProfileSheet } from "./TrainerProfileSheet";
+import { cn } from "@/lib/utils";
 
 interface TrainerProfilePageClientProps {
   trainerId: string;
@@ -82,9 +87,18 @@ export function TrainerProfilePageClient({
 
   const sources = resolveTrainerReviewSources(trainer);
   const googleCount = sources?.google ?? 0;
+  const profileStyle = normalizeProfileStyle(trainer.profileStyle);
+  const pageStyle = {
+    "--profile-accent-rgb": getProfileAccentRgb(profileStyle.accent),
+  } as CSSProperties;
 
   return (
     <TrainerProfileSheet label={`${trainer.name} profile`}>
+      <div
+        className={cn("profile-page--styled")}
+        style={pageStyle}
+        data-profile-accent={profileStyle.accent}
+      >
       <ProfileHero
         trainer={trainer}
         smoacAggregate={aggregate}
@@ -132,6 +146,7 @@ export function TrainerProfilePageClient({
 
           <ProfileDiscoveryRails trainer={trainer} />
         </div>
+      </div>
       </div>
 
       <ProfileInquiryAction
