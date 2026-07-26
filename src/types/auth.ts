@@ -26,5 +26,13 @@ export interface AuthSession {
   passwordSetupStatus?: "pending" | "complete" | "skipped" | string;
   displayName?: string;
   isPremium?: boolean;
+  /** ISO — complimentary Pro trial end (specialists) */
+  premiumTrialEndsAt?: string;
+  /** True while within signup free Pro window */
+  premiumTrialActive?: boolean;
+  /** Days left in complimentary trial */
+  premiumTrialDaysRemaining?: number;
+  /** Trial ended this session — show continue-Pro prompt once */
+  premiumTrialJustEnded?: boolean;
   adminRole?: AdminRoleType;
 }

@@ -28,14 +28,14 @@ function buildDisplayLabel(
   }
   if (zip && placeName) {
     return {
-      label: `${zip} · ${placeName}`,
+      label: `${placeName} · ${zip}`,
       isPlaceholder: false,
       isUnknownArea: false,
     };
   }
   if (zip) {
     return {
-      label: `${zip} · ${UNKNOWN_ZIP_AREA_LABEL}`,
+      label: `${UNKNOWN_ZIP_AREA_LABEL} · ${zip}`,
       isPlaceholder: false,
       isUnknownArea: true,
     };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/ui/icons";
 import { SMOAC_PRO_UPGRADE_MODAL } from "@/lib/specialist-premium";
@@ -12,11 +12,15 @@ interface SmoacProUpgradeModalProps {
 }
 
 export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProps) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!open) return;
 
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    setError(null);
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -28,6 +32,24 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open, onClose]);
+
+  async function startCheckout() {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/stripe/checkout", { method: "POST" });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        setError(data.error ?? "Checkout is not available yet.");
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setError("Could not start checkout. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (!open || typeof document === "undefined") return null;
 
@@ -62,8 +84,17 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
           </p>
           <p className="dashboard-modal__price">{SMOAC_PRO_UPGRADE_MODAL.price}</p>
           <p className="dashboard-modal__note">{SMOAC_PRO_UPGRADE_MODAL.note}</p>
-          <DashboardButton className="dashboard-pro-upgrade-btn" onClick={onClose}>
-            Start free month
+          {error ? (
+            <p className="dashboard-modal__error" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <DashboardButton
+            className="dashboard-pro-upgrade-btn"
+            onClick={() => void startCheckout()}
+            disabled={busy}
+          >
+            {busy ? "Opening checkout…" : "Start free month"}
           </DashboardButton>
         </div>
       </div>

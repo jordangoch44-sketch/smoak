@@ -90,6 +90,7 @@ function mergeParsedWithUrlFilters(
     gender: fromUrl.gender || parsed.gender,
     priceMin: fromUrl.priceMin || parsed.priceMin,
     priceMax: fromUrl.priceMax || parsed.priceMax,
+    serviceType: fromUrl.serviceType || parsed.serviceType,
   };
 }
 
@@ -107,6 +108,7 @@ function applyExplicitUrlFilters(
     gender: fromUrl.gender || prev.gender,
     priceMin: fromUrl.priceMin || prev.priceMin,
     priceMax: fromUrl.priceMax || prev.priceMax,
+    serviceType: fromUrl.serviceType || prev.serviceType,
   };
 }
 
@@ -119,7 +121,8 @@ function filtersEqual(a: TrainerFilters, b: TrainerFilters): boolean {
     a.specialty === b.specialty &&
     a.gender === b.gender &&
     a.priceMin === b.priceMin &&
-    a.priceMax === b.priceMax
+    a.priceMax === b.priceMax &&
+    a.serviceType === b.serviceType
   );
 }
 
@@ -263,6 +266,7 @@ export function useExploreTrainers({
           gender: fromUrl.gender,
           priceMin: fromUrl.priceMin,
           priceMax: fromUrl.priceMax,
+          serviceType: fromUrl.serviceType,
         });
 
         if (qChanged) {
@@ -455,6 +459,7 @@ export function useExploreTrainers({
           gender: filters.gender,
           priceMin: filters.priceMin,
           priceMax: filters.priceMax,
+          serviceType: filters.serviceType,
         },
         session
       );

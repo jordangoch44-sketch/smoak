@@ -24,6 +24,8 @@ export function AdminOwnerRevenuePanel({ specialists }: AdminOwnerRevenuePanelPr
           name: row.name,
           isPremium: row.isPremium,
           featured: row.featured,
+          sponsored: row.sponsored,
+          topRanked: row.topRanked,
         }))
       ),
     [specialists]
@@ -56,7 +58,8 @@ export function AdminOwnerRevenuePanel({ specialists }: AdminOwnerRevenuePanelPr
       description="Specialist tiers and paid add-ons — owner view."
     >
       <p className="admin-mock-label">
-        DEV mock financial data until Stripe/Supabase connects.
+        Catalog estimate from live specialist flags (premium / featured /
+        sponsored / top ranked). Stripe settlement not connected yet.
       </p>
 
       <div className="admin-revenue-hero">

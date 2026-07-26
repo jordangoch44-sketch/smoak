@@ -7,7 +7,7 @@ interface ExplorePageHeaderProps {
   searchQuery: string;
 }
 
-/** Props kept for ExplorePageClient compatibility; copy is static. */
+/** Props kept for ExplorePageClient compatibility; copy matches Search mockup. */
 export function ExplorePageHeader(props: ExplorePageHeaderProps) {
   void props;
 
@@ -15,7 +15,7 @@ export function ExplorePageHeader(props: ExplorePageHeaderProps) {
     <header className="explore-page__header">
       <h1 className="explore-page__title">Search</h1>
       <p className="explore-page__subtitle">
-        Search by name, profession, specialty, or location.
+        Find the right expert for your goals.
       </p>
     </header>
   );

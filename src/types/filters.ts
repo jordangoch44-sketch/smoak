@@ -10,4 +10,9 @@ export interface TrainerFilters {
   priceMin: string;
   /** Inclusive session price ceiling (dollars). Empty = no maximum. */
   priceMax: string;
+  /**
+   * Quick-filter / Explore service mode.
+   * Empty = any; `in-person` / `virtual` also match specialists marked `both`.
+   */
+  serviceType: "" | "in-person" | "virtual";
 }

@@ -19,6 +19,18 @@ export function filterTrainers(
     if (filters.gender && trainer.gender !== filters.gender) {
       return false;
     }
+    if (filters.serviceType === "in-person") {
+      const mode = trainer.serviceType ?? "both";
+      if (mode !== "in-person" && mode !== "both") {
+        return false;
+      }
+    }
+    if (filters.serviceType === "virtual") {
+      const mode = trainer.serviceType ?? "both";
+      if (mode !== "virtual" && mode !== "both") {
+        return false;
+      }
+    }
     if (filters.priceMin) {
       const min = parseInt(filters.priceMin, 10);
       if (Number.isFinite(min) && trainer.pricePerSession < min) {

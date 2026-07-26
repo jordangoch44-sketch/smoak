@@ -3,11 +3,13 @@
  * Reads real Supabase tables as the signed-in admin (RLS: is_admin).
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { estimateCatalogMonthlyEarningsFromFlags } from "@/lib/admin-live-catalog-earnings";
 import {
   getMarketplaceAuthClient,
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
 import type {
+  AdminLiveEarnings,
   AdminPlatformPulse,
   AdminTrafficWeek,
   AdminWeeklyCount,
@@ -18,6 +20,13 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 function percentChange(current: number, baseline: number): number | null {
   if (baseline <= 0) return null;
   return ((current - baseline) / baseline) * 100;
+}
+
+function formatPeriodLabel(date: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 async function countRoles(
@@ -95,6 +104,83 @@ async function fetchWeeklyClientCount(
   return toWeeklyCount(total, weekAgoTotal);
 }
 
+async function countPendingApplications(
+  supabase: SupabaseClient
+): Promise<number | null> {
+  const [specialists, clients] = await Promise.all([
+    supabase
+      .from("specialist_applications")
+      .select("*", { count: "exact", head: true })
+      .eq("profile_status", "PENDING_APPROVAL"),
+    supabase
+      .from("client_applications")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "PENDING"),
+  ]);
+
+  if (specialists.error) {
+    console.warn(
+      "[SMOAC admin] pending specialist apps failed:",
+      specialists.error.message
+    );
+  }
+  if (clients.error) {
+    console.warn(
+      "[SMOAC admin] pending client apps failed:",
+      clients.error.message
+    );
+  }
+
+  if (specialists.error && clients.error) return null;
+  return (specialists.count ?? 0) + (clients.count ?? 0);
+}
+
+async function fetchLiveEarnings(
+  supabase: SupabaseClient
+): Promise<AdminLiveEarnings | null> {
+  /* Prefer real Stripe MRR when keys are configured */
+  try {
+    const { fetchStripeMrrCents } = await import(
+      "@/lib/stripe/sync-subscription"
+    );
+    const stripeMrr = await fetchStripeMrrCents();
+    if (stripeMrr && stripeMrr.dataSource === "stripe") {
+      return {
+        paidSubscriberCount: stripeMrr.payingCount,
+        subscriberRevenueCents: stripeMrr.mrrCents,
+        adRevenueCents: 0,
+        periodLabel: formatPeriodLabel(new Date()),
+      };
+    }
+  } catch (err) {
+    console.warn("[SMOAC admin] Stripe MRR fetch failed:", err);
+  }
+
+  const { data, error } = await supabase
+    .from("specialist_profiles")
+    .select("is_premium, featured, sponsored, top_ranked")
+    .eq("status", "approved");
+
+  if (error) {
+    console.warn("[SMOAC admin] earnings flags failed:", error.message);
+    return null;
+  }
+
+  const estimated = estimateCatalogMonthlyEarningsFromFlags(
+    (data ?? []).map((row) => ({
+      isPremium: Boolean(row.is_premium),
+      featured: Boolean(row.featured),
+      sponsored: Boolean(row.sponsored),
+      topRanked: Boolean(row.top_ranked),
+    }))
+  );
+
+  return {
+    ...estimated,
+    periodLabel: formatPeriodLabel(new Date()),
+  };
+}
+
 function sourceLabel(visit: {
   utm_source: string | null;
   referrer_host: string | null;
@@ -133,7 +219,9 @@ async function fetchTrafficWeek(
     if (at >= weekAgo) {
       views += 1;
       visitors.add(visit.visitor_key as string);
-      const label = sourceLabel(visit as { utm_source: string | null; referrer_host: string | null });
+      const label = sourceLabel(
+        visit as { utm_source: string | null; referrer_host: string | null }
+      );
       sourceViews.set(label, (sourceViews.get(label) ?? 0) + 1);
     } else {
       prevViews += 1;
@@ -156,11 +244,20 @@ async function fetchTrafficWeek(
   };
 }
 
+const EMPTY_WEEKLY: AdminWeeklyCount = {
+  total: 0,
+  weekAgoTotal: 0,
+  delta: 0,
+  percentChange: null,
+};
+
 const UNAVAILABLE: AdminPlatformPulse = {
   dataSource: "unavailable",
-  specialists: { total: 0, weekAgoTotal: 0, delta: 0, percentChange: null },
-  clients: { total: 0, weekAgoTotal: 0, delta: 0, percentChange: null },
+  specialists: EMPTY_WEEKLY,
+  clients: EMPTY_WEEKLY,
+  pendingApplications: 0,
   traffic: null,
+  earnings: null,
 };
 
 export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
@@ -171,20 +268,31 @@ export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
   const now = Date.now();
   const weekAgoIso = new Date(now - WEEK_MS).toISOString();
 
-  const [specialists, clients, traffic] = await Promise.all([
-    fetchWeeklySpecialistCount(supabase, weekAgoIso),
-    fetchWeeklyClientCount(supabase, weekAgoIso),
-    fetchTrafficWeek(supabase, now),
-  ]);
+  const [specialists, clients, pendingApplications, traffic, earnings] =
+    await Promise.all([
+      fetchWeeklySpecialistCount(supabase, weekAgoIso),
+      fetchWeeklyClientCount(supabase, weekAgoIso),
+      countPendingApplications(supabase),
+      fetchTrafficWeek(supabase, now),
+      fetchLiveEarnings(supabase),
+    ]);
 
-  if (!specialists && !clients && !traffic) return UNAVAILABLE;
+  if (
+    !specialists &&
+    !clients &&
+    pendingApplications == null &&
+    !traffic &&
+    !earnings
+  ) {
+    return UNAVAILABLE;
+  }
 
   return {
     dataSource: "live",
-    specialists:
-      specialists ?? { total: 0, weekAgoTotal: 0, delta: 0, percentChange: null },
-    clients:
-      clients ?? { total: 0, weekAgoTotal: 0, delta: 0, percentChange: null },
+    specialists: specialists ?? EMPTY_WEEKLY,
+    clients: clients ?? EMPTY_WEEKLY,
+    pendingApplications: pendingApplications ?? 0,
     traffic,
+    earnings,
   };
 }

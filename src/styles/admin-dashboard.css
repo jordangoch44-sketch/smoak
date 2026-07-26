@@ -1,16 +1,363 @@
 /* Admin dashboard — mobile control app + desktop tables */
 
-.dashboard-page--admin .dashboard-page__header-glow {
+/* Full-page milky way: persistent stars + opacity-crossfaded color washes */
+.dashboard-page--admin {
+  background: #010106;
+}
+
+.dashboard-page__admin-cosmos {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+
+.dashboard-page__admin-aurora--stars {
+  inset: -8% -6%;
+  z-index: 1;
+}
+
+.dashboard-page--admin .dashboard-page__admin-aurora--stars .aurora-atmosphere__starfield {
+  opacity: 1;
+}
+
+/* Lightweight color washes — GPU opacity only (no remount, no live blur tween) */
+.dashboard-page__admin-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateZ(0);
+  transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity;
+}
+
+.dashboard-page__admin-wash--active {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page__admin-wash {
+    transition: none;
+  }
+}
+
+.dashboard-page__admin-milky-way {
+  position: absolute;
+  left: -35%;
+  top: -25%;
+  width: 170%;
+  height: 150%;
+  transform: rotate(-18deg) translateZ(0);
+  opacity: 0.95;
+  background:
+    radial-gradient(
+      ellipse 42% 18% at 48% 46%,
+      rgba(230, 240, 255, 0.22) 0%,
+      rgba(196, 181, 253, 0.14) 28%,
+      rgba(52, 211, 153, 0.1) 48%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 28% 12% at 62% 52%,
+      rgba(167, 243, 208, 0.16) 0%,
+      rgba(124, 58, 237, 0.1) 45%,
+      transparent 70%
+    ),
+    linear-gradient(
+      112deg,
+      transparent 30%,
+      rgba(139, 92, 246, 0.08) 42%,
+      rgba(226, 232, 255, 0.14) 50%,
+      rgba(45, 212, 191, 0.1) 58%,
+      rgba(168, 85, 247, 0.08) 64%,
+      transparent 76%
+    ),
+    radial-gradient(
+      ellipse 55% 28% at 38% 40%,
+      rgba(76, 29, 149, 0.2) 0%,
+      transparent 68%
+    );
+  /* Soft edges via oversized gradients — avoid filter:blur during dissolves */
+}
+
+.dashboard-page__admin-nebula {
+  position: absolute;
+  border-radius: 50%;
+  transform: translateZ(0);
+  pointer-events: none;
+}
+
+.dashboard-page__admin-nebula--a {
+  top: 2%;
+  left: -10%;
+  width: min(96vw, 48rem);
+  height: min(62vw, 32rem);
+  opacity: 0.72;
   background: radial-gradient(
-    ellipse 72% 100% at 50% 0%,
-    rgba(120, 140, 255, 0.22) 0%,
-    rgba(var(--aurora-violet-rgb), 0.12) 45%,
+    circle at 40% 40%,
+    rgba(168, 85, 247, 0.72) 0%,
+    rgba(124, 58, 237, 0.28) 42%,
     transparent 72%
   );
 }
 
+.dashboard-page__admin-nebula--b {
+  top: 26%;
+  right: -14%;
+  width: min(82vw, 40rem);
+  height: min(68vw, 34rem);
+  opacity: 0.58;
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(52, 211, 153, 0.5) 0%,
+    rgba(16, 185, 129, 0.2) 40%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-nebula--c {
+  top: 48%;
+  left: 12%;
+  width: min(74vw, 34rem);
+  height: min(52vw, 26rem);
+  opacity: 0.42;
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(192, 132, 252, 0.4) 0%,
+    rgba(45, 212, 191, 0.16) 45%,
+    transparent 74%
+  );
+}
+
+/* Per-tab nebula palettes (static colors — opacity crossfade only) */
+.dashboard-page__admin-wash--applications .dashboard-page__admin-nebula--a {
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(124, 58, 237, 0.72) 0%,
+    rgba(99, 102, 241, 0.3) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--applications .dashboard-page__admin-nebula--b {
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(139, 92, 246, 0.48) 0%,
+    rgba(76, 29, 149, 0.2) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--applications .dashboard-page__admin-nebula--c {
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(167, 139, 250, 0.36) 0%,
+    transparent 74%
+  );
+}
+
+.dashboard-page__admin-wash--specialists .dashboard-page__admin-nebula--a {
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(192, 132, 252, 0.7) 0%,
+    rgba(168, 85, 247, 0.3) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--specialists .dashboard-page__admin-nebula--b {
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(236, 72, 153, 0.42) 0%,
+    rgba(124, 58, 237, 0.18) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--specialists .dashboard-page__admin-nebula--c {
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(244, 114, 182, 0.32) 0%,
+    transparent 74%
+  );
+}
+
+.dashboard-page__admin-wash--clients .dashboard-page__admin-nebula--a {
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(99, 102, 241, 0.65) 0%,
+    rgba(52, 62, 108, 0.28) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--clients .dashboard-page__admin-nebula--b {
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(56, 189, 248, 0.4) 0%,
+    rgba(99, 102, 241, 0.16) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--clients .dashboard-page__admin-nebula--c {
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(129, 140, 248, 0.3) 0%,
+    transparent 74%
+  );
+}
+
+.dashboard-page__admin-wash--revenue .dashboard-page__admin-nebula--a {
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(52, 211, 153, 0.58) 0%,
+    rgba(16, 185, 129, 0.24) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--revenue .dashboard-page__admin-nebula--b {
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(168, 85, 247, 0.42) 0%,
+    rgba(45, 212, 191, 0.18) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--revenue .dashboard-page__admin-nebula--c {
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(167, 243, 208, 0.28) 0%,
+    transparent 74%
+  );
+}
+
+.dashboard-page__admin-wash--team .dashboard-page__admin-nebula--a {
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(139, 92, 246, 0.62) 0%,
+    rgba(52, 62, 108, 0.28) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--team .dashboard-page__admin-nebula--b {
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(99, 102, 241, 0.4) 0%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--team .dashboard-page__admin-nebula--c {
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(168, 85, 247, 0.28) 0%,
+    transparent 74%
+  );
+}
+
+.dashboard-page__admin-wash--settings .dashboard-page__admin-nebula--a {
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(124, 58, 237, 0.58) 0%,
+    rgba(76, 29, 149, 0.24) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--settings .dashboard-page__admin-nebula--b {
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(168, 85, 247, 0.36) 0%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--settings .dashboard-page__admin-nebula--c {
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(139, 92, 246, 0.24) 0%,
+    transparent 74%
+  );
+}
+
+/* Header glow stays static — gradient transitions are janky */
+.dashboard-page--admin .dashboard-page__header-glow {
+  height: 28rem;
+  opacity: 1;
+  filter: blur(36px);
+  background:
+    radial-gradient(
+      ellipse 70% 95% at 50% -8%,
+      rgba(168, 85, 247, 0.28) 0%,
+      rgba(52, 211, 153, 0.1) 42%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 46% 70% at 14% 18%,
+      rgba(45, 212, 191, 0.12) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 40% 62% at 88% 22%,
+      rgba(192, 132, 252, 0.14) 0%,
+      transparent 66%
+    );
+}
+
 .dashboard-page--admin .dashboard-page__content {
   padding-bottom: calc(110px + env(safe-area-inset-bottom, 0px));
+}
+
+.dashboard-page--admin .dashboard-page__header {
+  margin-bottom: 0.65rem;
+}
+
+.dashboard-page--admin .dashboard-page__subtitle {
+  margin-top: 0.25rem;
+}
+
+.dashboard-page--admin .dashboard-page__quote {
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0 0.15rem 0.85rem;
+  max-width: 36rem;
+  border: none;
+  border-left: 1px solid rgba(196, 181, 253, 0.28);
+  background: none;
+}
+
+.dashboard-page--admin .dashboard-page__quote-text {
+  margin: 0;
+  font-family: var(--font-display, Georgia, "Times New Roman", serif);
+  font-size: clamp(0.8125rem, 2.4vw, 0.9375rem);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  color: rgba(226, 232, 255, 0.72);
+}
+
+.dashboard-page--admin .dashboard-page__quote-attr {
+  margin: 0.45rem 0 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-style: normal;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(196, 181, 253, 0.55);
+}
+
+@media (min-width: 768px) {
+  .dashboard-page--admin .dashboard-page__quote {
+    max-width: 28rem;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -21,7 +368,7 @@
 
 /* ——— Executive revenue snapshot (top of control dashboard) ——— */
 .admin-exec-snapshot {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   padding: 0.15rem 0 0.25rem;
 }
 
@@ -62,10 +409,28 @@
   background: rgba(255, 255, 255, 0.04);
 }
 
+.admin-exec-snapshot__live {
+  flex-shrink: 0;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(167, 243, 208, 0.95);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.1);
+}
+
 .admin-exec-snapshot__grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.625rem;
+}
+
+.admin-exec-snapshot__grid--core4,
+.admin-exec-snapshot__grid--core6 {
+  grid-template-columns: 1fr 1fr;
 }
 
 .admin-exec-snapshot__card {
@@ -77,6 +442,16 @@
   border: 1px solid rgba(255, 255, 255, 0.09);
   background: rgba(255, 255, 255, 0.03);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.admin-exec-snapshot__card--earn {
+  border-color: rgba(52, 211, 153, 0.18);
+  background:
+    linear-gradient(
+      165deg,
+      rgba(52, 211, 153, 0.07) 0%,
+      rgba(255, 255, 255, 0.03) 55%
+    );
 }
 
 .admin-exec-snapshot__card--hero {
@@ -160,12 +535,23 @@
 }
 
 @media (min-width: 640px) {
-  .admin-exec-snapshot__grid {
+  .admin-exec-snapshot__grid,
+  .admin-exec-snapshot__grid--core4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .admin-exec-snapshot__grid--core6 {
     grid-template-columns: repeat(3, 1fr);
   }
 
   .admin-exec-snapshot__card--hero {
     grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 1100px) {
+  .admin-exec-snapshot__grid--core6 {
+    grid-template-columns: repeat(6, 1fr);
   }
 }
 
@@ -190,7 +576,7 @@
   }
 }
 
-/* ——— App shell: one section at a time ——— */
+/* ——— App shell: tabs under Owner Admin header, then one section ——— */
 .admin-app {
   display: flex;
   flex-direction: column;
@@ -199,14 +585,22 @@
   max-width: 100%;
   min-width: 0;
   min-height: 0;
+  margin-top: -0.25rem;
 }
 
 .admin-app__panel {
+  position: relative;
   width: 100%;
   max-width: 100%;
   min-width: 0;
   min-height: 12rem;
   padding-bottom: max(1.5rem, calc(88px + env(safe-area-inset-bottom, 0px)));
+}
+
+.admin-app__panel-layer {
+  width: 100%;
+  min-width: 0;
+  transform: translateZ(0);
 }
 
 .admin-filter-pills--queue {
@@ -217,7 +611,7 @@
   margin-bottom: 0;
 }
 
-/* ——— Section nav (horizontal scroll on phone) ——— */
+/* ——— Section nav (horizontal scroll) — directly under Owner Admin badge ——— */
 .admin-nav {
   position: sticky;
   top: calc(56px + env(safe-area-inset-top, 0px));
@@ -226,7 +620,7 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  margin: 0 0 1rem;
+  margin: 0 0 0.85rem;
   padding: 0.35rem 0.25rem;
   border-radius: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -340,9 +734,21 @@
   }
 }
 
-/* ——— Metrics & charts ——— */
+/* ——— Metrics ——— */
 .admin-metrics-grid {
   margin-bottom: 1rem;
+}
+
+.admin-metrics-grid--core4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .admin-metrics-grid--core4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .admin-charts-grid {

@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { formatRevenueCents } from "@/lib/admin-revenue-service";
-import { getAdminExecutiveRevenueSnapshot } from "@/lib/admin-executive-revenue-service";
+import { useEffect, useRef, useState } from "react";
 import { fetchAdminPlatformPulse } from "@/lib/admin-platform-pulse-service";
+import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
 import type { AdminPlatformPulse, AdminWeeklyCount } from "@/types/admin-platform-pulse";
-import type { AdminSpecialistRow } from "@/hooks/useAdminDashboard";
 import { cn } from "@/lib/utils";
 
 interface AdminExecutiveRevenueSnapshotProps {
-  specialists: AdminSpecialistRow[];
+  /** Bump pulse refresh when specialists change in-session */
+  refreshKey?: string | number;
 }
 
 function weeklyChangeLabel(count: AdminWeeklyCount): string {
@@ -26,15 +25,16 @@ function trafficChangeLabel(percent: number | null): string {
   return `${sign}${percent.toFixed(1)}% vs. prior week`;
 }
 
+/**
+ * Top-of-admin core pulse — six cards from live Supabase (not demo seeds).
+ */
 export function AdminExecutiveRevenueSnapshot({
-  specialists,
+  refreshKey,
 }: AdminExecutiveRevenueSnapshotProps) {
   const [pulse, setPulse] = useState<AdminPlatformPulse | null>(null);
   const [specialistBump, setSpecialistBump] = useState(false);
   const previousSpecialistTotal = useRef<number | null>(null);
 
-  /* Refetch when the admin specialist list changes (e.g. an approval),
-   * so live totals update without a page reload. */
   useEffect(() => {
     let cancelled = false;
     void fetchAdminPlatformPulse().then((result) => {
@@ -52,91 +52,29 @@ export function AdminExecutiveRevenueSnapshot({
     return () => {
       cancelled = true;
     };
-  }, [specialists]);
+  }, [refreshKey]);
 
-  const snapshot = useMemo(
-    () =>
-      getAdminExecutiveRevenueSnapshot({
-        specialistRows: specialists.map((row) => ({
-          id: row.id,
-          name: row.name,
-          isPremium: row.isPremium,
-          featured: row.featured,
-        })),
-      }),
-    [specialists]
-  );
-
-  const growthPositive =
-    snapshot.monthOverMonthPercent == null ||
-    snapshot.monthOverMonthPercent >= 0;
-
-  const livePulse = pulse?.dataSource === "live" ? pulse : null;
-  const traffic = livePulse?.traffic ?? null;
+  const live = pulse?.dataSource === "live" ? pulse : null;
+  const traffic = live?.traffic ?? null;
+  const earnings = live?.earnings ?? null;
 
   return (
-    <section
-      className="admin-exec-snapshot"
-      aria-label="Executive revenue snapshot"
-    >
+    <section className="admin-exec-snapshot" aria-label="Platform snapshot">
       <header className="admin-exec-snapshot__header">
         <div>
-          <h2 className="admin-exec-snapshot__title">Executive snapshot</h2>
-          <p className="admin-exec-snapshot__period">{snapshot.periodLabel}</p>
+          <h2 className="admin-exec-snapshot__title">Snapshot</h2>
+          <p className="admin-exec-snapshot__period">
+            {live ? "Live platform pulse" : "Connecting to live data…"}
+          </p>
         </div>
-        {snapshot.dataSource === "mock" ? (
-          <span className="admin-exec-snapshot__demo">Revenue: demo data</span>
-        ) : null}
+        {live ? (
+          <span className="admin-exec-snapshot__live">Live</span>
+        ) : (
+          <span className="admin-exec-snapshot__demo">Unavailable</span>
+        )}
       </header>
 
-      <div className="admin-exec-snapshot__grid">
-        <article className="admin-exec-snapshot__card admin-exec-snapshot__card--hero">
-          <p className="admin-exec-snapshot__label">Net Sales This Month</p>
-          <p className="admin-exec-snapshot__value admin-exec-snapshot__value--hero">
-            {formatRevenueCents(snapshot.netSalesCents)}
-          </p>
-          <p className="admin-exec-snapshot__sublabel">Subscribers + Ads</p>
-        </article>
-
-        <article className="admin-exec-snapshot__card">
-          <p className="admin-exec-snapshot__label">Subscriber Revenue</p>
-          <p className="admin-exec-snapshot__value">
-            {formatRevenueCents(snapshot.subscriberRevenueCents)}
-          </p>
-          <p className="admin-exec-snapshot__detail">
-            {snapshot.paidSubscriberCount} paid subscriber
-            {snapshot.paidSubscriberCount === 1 ? "" : "s"}
-          </p>
-        </article>
-
-        <article className="admin-exec-snapshot__card">
-          <p className="admin-exec-snapshot__label">Ad Revenue</p>
-          <p className="admin-exec-snapshot__value">
-            {formatRevenueCents(snapshot.adRevenueCents)}
-          </p>
-          <p className="admin-exec-snapshot__detail">
-            {snapshot.dataSource === "mock"
-              ? "Estimated from active placements"
-              : "Active ad placements"}
-          </p>
-        </article>
-
-        <article className="admin-exec-snapshot__card">
-          <p className="admin-exec-snapshot__label">Monthly Growth</p>
-          <p
-            className={cn(
-              "admin-exec-snapshot__value",
-              "admin-exec-snapshot__value--growth",
-              growthPositive
-                ? "admin-exec-snapshot__value--up"
-                : "admin-exec-snapshot__value--down"
-            )}
-          >
-            {snapshot.monthOverMonthLabel}
-          </p>
-          <p className="admin-exec-snapshot__detail">vs. prior month</p>
-        </article>
-
+      <div className="admin-exec-snapshot__grid admin-exec-snapshot__grid--core6">
         <article className="admin-exec-snapshot__card">
           <p className="admin-exec-snapshot__label">Specialists</p>
           <p
@@ -145,11 +83,11 @@ export function AdminExecutiveRevenueSnapshot({
               specialistBump && "admin-exec-snapshot__value--bump"
             )}
           >
-            {livePulse ? livePulse.specialists.total : "—"}
+            {live ? live.specialists.total : "—"}
           </p>
           <p className="admin-exec-snapshot__detail">
-            {livePulse
-              ? weeklyChangeLabel(livePulse.specialists)
+            {live
+              ? weeklyChangeLabel(live.specialists)
               : "Live count unavailable"}
           </p>
         </article>
@@ -157,17 +95,23 @@ export function AdminExecutiveRevenueSnapshot({
         <article className="admin-exec-snapshot__card">
           <p className="admin-exec-snapshot__label">Clients</p>
           <p className="admin-exec-snapshot__value">
-            {livePulse ? livePulse.clients.total : "—"}
+            {live ? live.clients.total : "—"}
           </p>
           <p className="admin-exec-snapshot__detail">
-            {livePulse
-              ? weeklyChangeLabel(livePulse.clients)
-              : "Live count unavailable"}
+            {live ? weeklyChangeLabel(live.clients) : "Live count unavailable"}
           </p>
         </article>
 
         <article className="admin-exec-snapshot__card">
-          <p className="admin-exec-snapshot__label">Site Views (7d)</p>
+          <p className="admin-exec-snapshot__label">Pending applications</p>
+          <p className="admin-exec-snapshot__value">
+            {live ? live.pendingApplications : "—"}
+          </p>
+          <p className="admin-exec-snapshot__detail">Needs review</p>
+        </article>
+
+        <article className="admin-exec-snapshot__card">
+          <p className="admin-exec-snapshot__label">Site views (7d)</p>
           <p className="admin-exec-snapshot__value">
             {traffic ? traffic.views : "—"}
           </p>
@@ -178,15 +122,33 @@ export function AdminExecutiveRevenueSnapshot({
           </p>
         </article>
 
-        <article className="admin-exec-snapshot__card">
-          <p className="admin-exec-snapshot__label">Visitors (7d)</p>
+        <article className="admin-exec-snapshot__card admin-exec-snapshot__card--earn">
+          <p className="admin-exec-snapshot__label">Paid specialists</p>
           <p className="admin-exec-snapshot__value">
-            {traffic ? traffic.uniqueVisitors : "—"}
+            {earnings
+              ? formatBillingCents(earnings.subscriberRevenueCents, {
+                  decimals: 0,
+                })
+              : "—"}
           </p>
           <p className="admin-exec-snapshot__detail">
-            {traffic && traffic.topSources.length > 0
-              ? `Top source: ${traffic.topSources[0].source}`
-              : "Sources appear with traffic"}
+            {earnings
+              ? `${earnings.paidSubscriberCount} paying · ${earnings.periodLabel}`
+              : "From live premium flags"}
+          </p>
+        </article>
+
+        <article className="admin-exec-snapshot__card admin-exec-snapshot__card--earn">
+          <p className="admin-exec-snapshot__label">Ad revenue</p>
+          <p className="admin-exec-snapshot__value">
+            {earnings
+              ? formatBillingCents(earnings.adRevenueCents, { decimals: 0 })
+              : "—"}
+          </p>
+          <p className="admin-exec-snapshot__detail">
+            {earnings
+              ? `Catalog est. · ${earnings.periodLabel}`
+              : "From live placement flags"}
           </p>
         </article>
       </div>

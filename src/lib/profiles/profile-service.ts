@@ -214,6 +214,14 @@ export async function upsertUserRole(
     return { ok: false, message: error.message };
   }
 
+  /* Specialists get a one-time 30-day Pro trial at signup */
+  if (role === "specialist") {
+    const { grantSpecialistPremiumTrialIfNeeded } = await import(
+      "@/lib/specialist-premium-trial"
+    );
+    await grantSpecialistPremiumTrialIfNeeded(supabase, userId);
+  }
+
   return { ok: true };
 }
 

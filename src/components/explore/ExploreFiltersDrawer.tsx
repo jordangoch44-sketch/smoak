@@ -157,6 +157,7 @@ export function ExploreFiltersDrawer({
       gender: "",
       priceMin: "",
       priceMax: "",
+      serviceType: "",
     });
   }, [onClearFilters]);
 

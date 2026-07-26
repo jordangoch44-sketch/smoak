@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   DashboardButton,
   DashboardGrid,
   DashboardLoadingState,
   DashboardPageShell,
+  PremiumTrialEndedModal,
 } from "@/components/dashboard/shared";
 import {
   AnalyticsCard,
@@ -40,13 +41,20 @@ const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
 ];
 
 function dashboardSubtitle(
-  mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"]
+  mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"],
+  trialDaysRemaining?: number
 ): string {
   if (mode === "pending" || mode === "rejected") {
     return "Your application is under review.";
   }
   if (mode === "approved-free") {
     return "Your profile is live on SMOAC.";
+  }
+  if (
+    (mode === "approved-premium" || mode === "demo-premium") &&
+    typeof trialDaysRemaining === "number"
+  ) {
+    return `Pro trial · ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left`;
   }
   return "Manage your profile, leads, and marketplace visibility.";
 }
@@ -67,6 +75,7 @@ export function SpecialistDashboardPageClient() {
   const [activeTab, setActiveTab] = useState<FreeDashboardTab>(() =>
     parseFreeTab(searchParams.get("tab"))
   );
+  const [trialEndedOpen, setTrialEndedOpen] = useState(false);
 
   const {
     isReady,
@@ -91,6 +100,12 @@ export function SpecialistDashboardPageClient() {
     latestSummary,
     dismissAll,
   } = useSpecialistInquiryNotifications(trainerId);
+
+  useEffect(() => {
+    if (session?.premiumTrialJustEnded) {
+      setTrialEndedOpen(true);
+    }
+  }, [session?.premiumTrialJustEnded]);
 
   if (!isReady || !session) {
     return <DashboardLoadingState />;
@@ -126,12 +141,26 @@ export function SpecialistDashboardPageClient() {
   }
 
   return (
+    <>
     <DashboardPageShell
       variant="specialist"
       eyebrow="Specialist dashboard"
       title={`Good to see you, ${firstName}`}
-      subtitle={dashboardSubtitle(dashboardMode)}
-      roleLabel={isFreeLive ? SMOAC_FREE_PLAN_LABEL : "Specialist"}
+      subtitle={dashboardSubtitle(
+        dashboardMode,
+        session.premiumTrialActive
+          ? session.premiumTrialDaysRemaining
+          : undefined
+      )}
+      roleLabel={
+        isFreeLive
+          ? SMOAC_FREE_PLAN_LABEL
+          : session.premiumTrialActive
+            ? "Pro trial"
+            : isPremium
+              ? "SMOAC Pro"
+              : "Specialist"
+      }
       statusLabel={profileFirst ? null : profileStatusLabel}
       statusTone={statusTone}
       utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
@@ -318,5 +347,10 @@ export function SpecialistDashboardPageClient() {
         ) : null}
       </div>
     </DashboardPageShell>
+    <PremiumTrialEndedModal
+      open={trialEndedOpen}
+      onClose={() => setTrialEndedOpen(false)}
+    />
+    </>
   );
 }

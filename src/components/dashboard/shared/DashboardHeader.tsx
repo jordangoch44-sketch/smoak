@@ -4,6 +4,9 @@ export interface DashboardHeaderProps {
   eyebrow: string;
   title: ReactNode;
   subtitle: string;
+  /** Optional epigraph under the subtitle */
+  quote?: string;
+  quoteAttribution?: string;
   roleLabel?: string;
   statusLabel?: string | null;
   statusTone?: "pending" | "active" | "rejected";
@@ -15,6 +18,8 @@ export function DashboardHeader({
   eyebrow,
   title,
   subtitle,
+  quote,
+  quoteAttribution,
   roleLabel,
   statusLabel,
   statusTone = "pending",
@@ -36,6 +41,16 @@ export function DashboardHeader({
           <p className="dashboard-page__eyebrow">{eyebrow}</p>
           <h1 className="dashboard-page__title">{title}</h1>
           <p className="dashboard-page__subtitle">{subtitle}</p>
+          {quote ? (
+            <blockquote className="dashboard-page__quote">
+              <p className="dashboard-page__quote-text">“{quote}”</p>
+              {quoteAttribution ? (
+                <footer className="dashboard-page__quote-attr">
+                  — {quoteAttribution}
+                </footer>
+              ) : null}
+            </blockquote>
+          ) : null}
           {introActions ? (
             <div className="dashboard-page__intro-actions">{introActions}</div>
           ) : null}

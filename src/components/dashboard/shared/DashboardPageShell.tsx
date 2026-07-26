@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
+import { AdminCosmosBackdrop } from "@/components/admin/AdminCosmosBackdrop";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
+import type { AdminSectionId } from "@/lib/admin-sections";
 import { DashboardHeader } from "./DashboardHeader";
 
 interface DashboardPageShellProps {
   eyebrow: string;
   title: ReactNode;
   subtitle: string;
+  quote?: string;
+  quoteAttribution?: string;
   roleLabel?: string;
   statusLabel?: string | null;
   statusTone?: "pending" | "active" | "rejected";
@@ -13,6 +17,8 @@ interface DashboardPageShellProps {
   utilityBar?: ReactNode;
   introActions?: ReactNode;
   variant?: "default" | "client" | "admin" | "specialist";
+  /** Admin tab — drives milky-way dissolve between sky moods */
+  adminSection?: AdminSectionId;
   children: ReactNode;
 }
 
@@ -20,6 +26,8 @@ export function DashboardPageShell({
   eyebrow,
   title,
   subtitle,
+  quote,
+  quoteAttribution,
   roleLabel,
   statusLabel,
   statusTone = "pending",
@@ -27,6 +35,7 @@ export function DashboardPageShell({
   utilityBar,
   introActions,
   variant = "default",
+  adminSection = "overview",
   children,
 }: DashboardPageShellProps) {
   const isClient = variant === "client";
@@ -44,6 +53,7 @@ export function DashboardPageShell({
               ? "dashboard-page dashboard-page--specialist"
               : "dashboard-page"
       }
+      data-admin-section={isAdmin ? adminSection : undefined}
     >
       <div className="dashboard-page__canvas" aria-hidden>
         {isSpecialist ? (
@@ -57,6 +67,8 @@ export function DashboardPageShell({
               className="dashboard-page__specialist-aurora"
             />
           </div>
+        ) : isAdmin ? (
+          <AdminCosmosBackdrop section={adminSection} />
         ) : (
           <div className="atmosphere-mesh">
             <div className="atmosphere-blob atmosphere-blob--indigo" />
@@ -83,6 +95,8 @@ export function DashboardPageShell({
           eyebrow={eyebrow}
           title={title}
           subtitle={subtitle}
+          quote={quote}
+          quoteAttribution={quoteAttribution}
           roleLabel={roleLabel}
           statusLabel={statusLabel}
           statusTone={statusTone}

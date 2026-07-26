@@ -156,6 +156,29 @@ export async function activateSpecialistFromApplicationAsync(
 
   unhideTrainerId(id);
   patchAdminSpecialistMeta(id, { visibility: "active" });
+
+  /* Ensure activated specialists get the signup Pro trial if not already granted */
+  if (approved.userId) {
+    try {
+      const { createSupabaseServiceClient } = await import(
+        "@/lib/supabase/service"
+      );
+      const { grantSpecialistPremiumTrialIfNeeded } = await import(
+        "@/lib/specialist-premium-trial"
+      );
+      const service = createSupabaseServiceClient();
+      if (service) {
+        await grantSpecialistPremiumTrialIfNeeded(
+          service,
+          approved.userId,
+          id
+        );
+      }
+    } catch (err) {
+      console.warn("[SMOAC trial] activate grant skipped:", err);
+    }
+  }
+
   return { ok: true, application: approved };
 }
 

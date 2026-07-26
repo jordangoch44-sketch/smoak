@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
+import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import type { Trainer } from "@/types/trainer";
 import { ExplorePageHeader } from "./ExplorePageHeader";
-import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
+import {
+  ExploreSearchToolbar,
+  ExploreFiltersBar,
+} from "./ExploreSearchToolbar";
+import { ExploreBrowseCategories } from "./ExploreBrowseCategories";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreResults } from "./ExploreResults";
 
@@ -19,6 +24,8 @@ export function ExplorePageClient({
 }) {
   const searchParams = useSearchParams();
   const didFocusSearchRef = useRef(false);
+  const resultsRef = useRef<HTMLElement | null>(null);
+
   const {
     filters,
     setFilters,
@@ -55,8 +62,36 @@ export function ExplorePageClient({
     });
   }, [searchParams]);
 
+  const scrollToResults = useCallback(() => {
+    requestAnimationFrame(() => {
+      resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
+
+  const handleSearchSubmit = useCallback(
+    (query: string) => {
+      submitSearch(query);
+      scrollToResults();
+    },
+    [submitSearch, scrollToResults]
+  );
+
+  const handleCategorySelect = useCallback(
+    (category: ExploreBrowseCategory) => {
+      submitSearch(category.searchQuery);
+      scrollToResults();
+    },
+    [submitSearch, scrollToResults]
+  );
+
+  const handleViewAll = useCallback(() => {
+    clearSearch();
+    clearFilters();
+    scrollToResults();
+  }, [clearSearch, clearFilters, scrollToResults]);
+
   return (
-    <div className="explore-page">
+    <div className="explore-page explore-page--results">
       <div className="explore-page__canvas" aria-hidden>
         <div className="atmosphere-mesh">
           <div className="atmosphere-blob atmosphere-blob--indigo" />
@@ -86,17 +121,45 @@ export function ExplorePageClient({
 
         <ExploreSearchToolbar
           searchQuery={displayQuery}
-          onSearchSubmit={submitSearch}
+          onSearchSubmit={handleSearchSubmit}
           onClearSearch={clearSearch}
           activeFilterChips={activeFilterChips}
           onRemoveFilter={removeFilter}
           activeFilterCount={activeFilterCount}
           onOpenFilters={() => setMobileFiltersOpen(true)}
           onClearFilters={clearFilters}
+          showInlineFiltersBar={false}
         />
 
         <div className="explore-page__layout">
-          <main className="explore-page__results">
+          <ExploreBrowseCategories
+            onSelect={handleCategorySelect}
+            activeSearchQuery={displayQuery}
+          />
+
+          <ExploreFiltersBar
+            activeFilterCount={activeFilterCount}
+            onOpenFilters={() => setMobileFiltersOpen(true)}
+          />
+
+          <main
+            ref={resultsRef}
+            className="explore-page__results"
+            id="explore-results"
+          >
+            <div className="explore-results-heading">
+              <h2 className="explore-results-heading__title">
+                Top experts near you
+              </h2>
+              <button
+                type="button"
+                className="smoac-control explore-results-heading__view-all"
+                onClick={handleViewAll}
+              >
+                View all
+              </button>
+            </div>
+
             <ExploreResults
               trainers={filtered}
               activeFilterCount={activeFilterCount}

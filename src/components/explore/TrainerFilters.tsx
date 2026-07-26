@@ -78,7 +78,7 @@ export function TrainerFilters({
     onChange(exploreFiltersFromZipCode(zip));
   }
 
-  function clearAll() {
+    function clearAll() {
     onChange({
       zipCode: "",
       city: "",
@@ -88,6 +88,7 @@ export function TrainerFilters({
       gender: "",
       priceMin: "",
       priceMax: "",
+      serviceType: "",
     });
   }
 

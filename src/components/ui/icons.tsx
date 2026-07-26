@@ -465,3 +465,192 @@ export function MessageBubbleIcon({ className = "h-5 w-5" }: IconProps) {
     </svg>
   );
 }
+
+/** Explore browse category — Personal Trainer */
+export function DumbbellIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M6.75 8.25v7.5M17.25 8.25v7.5M4.5 10.5v3M19.5 10.5v3M6.75 12h10.5" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Nutritionist */
+export function LeafIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 21c-4.5-1.5-7.5-5.25-7.5-9.75C4.5 5.25 8.25 3 12 3c0 4.5 1.5 7.5 4.5 9.75C13.5 15.75 12 18.75 12 21z" />
+      <path d="M12 21V9" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Boxing Coach */
+export function BoxingGloveIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M8.25 14.25V9a3.75 3.75 0 017.5 0v1.5" />
+      <path d="M8.25 11.25h7.5a2.25 2.25 0 012.25 2.25v2.25a4.5 4.5 0 01-4.5 4.5h-3a4.5 4.5 0 01-4.5-4.5v-2.25a2.25 2.25 0 012.25-2.25z" />
+      <path d="M9 18.75h6" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Running Coach */
+export function RunningFigureIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="14.25" cy="5.25" r="1.5" />
+      <path d="M8.25 21l2.25-4.5 3-1.5 1.5 3 3 1.5M10.5 16.5l-2.25-3 3-2.25 3.75 1.5" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Sports Performance */
+export function AthleticBallIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="8.25" />
+      <path d="M12 3.75c2.25 2.25 3.375 5.25 3.375 8.25S14.25 18 12 20.25M12 3.75C9.75 6 8.625 9 8.625 12S9.75 18 12 20.25M3.75 12h16.5" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Yoga Instructor */
+export function MeditationIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="6" r="1.75" />
+      <path d="M9 20.25l3-5.25 3 5.25M7.5 14.25c1.5-1.5 3-2.25 4.5-2.25s3 .75 4.5 2.25M8.25 11.25h7.5" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Chiropractor */
+export function SpineIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 3.75v16.5M9.75 6h4.5M9 9.75h6M9.75 13.5h4.5M10.5 17.25h3" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Physical Therapist */
+export function MedicalCrossIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 7.5v9M7.5 12h9" />
+      <rect x="4.5" y="4.5" width="15" height="15" rx="3" />
+    </svg>
+  );
+}
+
+/** Explore browse category — Strength Coach */
+export function StrengthArmIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M15.75 6.75a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+      <path d="M8.25 10.5c1.5-1.5 3-2.25 4.5-1.5 2.25 1.125 3 3.75 2.25 6.75-.75 3-3 4.5-5.25 4.5" />
+      <path d="M11.25 12.75c.75 1.5.75 3 0 4.5" />
+    </svg>
+  );
+}
+
+/** Chevron for Filters expand affordance */
+export function ChevronDownIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  );
+}

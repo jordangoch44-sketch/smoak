@@ -11,6 +11,7 @@ export { DashboardComingSoonModal } from "./DashboardComingSoonModal";
 export { PremiumLockedValues } from "./PremiumLockedValues";
 export { PremiumUnlockCta } from "./PremiumUnlockCta";
 export { SmoacProUpgradeModal } from "./SmoacProUpgradeModal";
+export { PremiumTrialEndedModal } from "./PremiumTrialEndedModal";
 export { DashboardLoadingState } from "./DashboardLoadingState";
 export { DashboardGrid } from "./DashboardGrid";
 export { DashboardSignOutButton } from "./DashboardSignOutButton";

@@ -21,7 +21,8 @@
     "apply:migration": "node scripts/apply-sql-migration.mjs",
     "apply:signup-fix": "node scripts/apply-signup-fix.mjs",
     "verify:auth": "node scripts/verify-auth.mjs",
-    "verify:reviews": "node scripts/verify-specialist-reviews.mjs"
+    "verify:reviews": "node scripts/verify-specialist-reviews.mjs",
+    "setup:stripe": "node scripts/setup-stripe-products.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",
@@ -30,7 +31,8 @@
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "react-easy-crop": "^5.5.7"
+    "react-easy-crop": "^5.5.7",
+    "stripe": "^22.3.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -41,6 +43,7 @@
     "eslint-config-next": "16.2.6",
     "pg": "^8.21.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vercel": "^57.0.0"
   }
 }

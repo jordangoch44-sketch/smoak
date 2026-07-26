@@ -35,7 +35,7 @@ function formatMonthOverMonth(
 
 /**
  * Executive revenue snapshot for the admin control header.
- * Today: mock seed via getAdminRevenueDashboard (+ specialist billing counts).
+ * Prefer live specialist billing rows when provided; else mock revenue seed.
  * Future: Stripe MRR + ad network / placement revenue APIs.
  */
 export function getAdminExecutiveRevenueSnapshot(
@@ -44,17 +44,22 @@ export function getAdminExecutiveRevenueSnapshot(
   const revenue = getAdminRevenueDashboard();
   const { metrics, summary, dataSource } = revenue;
 
-  const subscriberRevenueCents = metrics.tierSubscriptionRevenueCents;
-  const adRevenueCents = metrics.featuredAdRevenueCents;
-  const netSalesCents =
-    metrics.monthlyRecurringRevenueCents ||
-    subscriberRevenueCents + adRevenueCents;
-
+  let subscriberRevenueCents = metrics.tierSubscriptionRevenueCents;
+  let adRevenueCents = metrics.featuredAdRevenueCents;
   let paidSubscriberCount = metrics.activePaidSpecialists;
+  let snapshotSource: "mock" | "live" = dataSource;
+
   if (input.specialistRows?.length) {
     const billing = getAdminOwnerRevenueDashboard(input.specialistRows);
     paidSubscriberCount = billing.metrics.payingSpecialistsCount;
+    subscriberRevenueCents = billing.metrics.tierRevenueCents;
+    adRevenueCents = billing.metrics.addOnRevenueCents;
+    snapshotSource = billing.dataSource;
   }
+
+  const netSalesCents =
+    metrics.monthlyRecurringRevenueCents ||
+    subscriberRevenueCents + adRevenueCents;
 
   const mom = formatMonthOverMonth(
     summary.thisMonthCents,
@@ -69,6 +74,6 @@ export function getAdminExecutiveRevenueSnapshot(
     adRevenueCents,
     monthOverMonthPercent: mom.percent,
     monthOverMonthLabel: mom.label,
-    dataSource,
+    dataSource: snapshotSource,
   };
 }

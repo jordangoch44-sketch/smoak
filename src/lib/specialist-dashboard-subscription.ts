@@ -15,6 +15,22 @@ export function getSpecialistSubscriptionForSession(
   }
 
   if (resolveSessionIsPremium(session)) {
+    if (session.premiumTrialActive && session.premiumTrialEndsAt) {
+      const renewsOn = new Date(session.premiumTrialEndsAt).toLocaleDateString(
+        "en-US",
+        { month: "short", day: "numeric", year: "numeric" }
+      );
+      const days = session.premiumTrialDaysRemaining;
+      return {
+        plan: "SMOAC Pro · Free trial",
+        status:
+          typeof days === "number"
+            ? `Trial · ${days} day${days === 1 ? "" : "s"} left`
+            : "Trial active",
+        renewsOn,
+        isPremium: true,
+      };
+    }
     return { ...DEMO_SPECIALIST_SUBSCRIPTION };
   }
 

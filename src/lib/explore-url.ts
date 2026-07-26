@@ -9,7 +9,16 @@ const FILTER_KEYS = [
   "gender",
   "priceMin",
   "priceMax",
+  "serviceType",
 ] as const;
+
+function parseServiceTypeParam(
+  value: string | null
+): TrainerFilters["serviceType"] {
+  if (value === "in-person" || value === "virtual") return value;
+  if (value === "online") return "virtual";
+  return "";
+}
 
 export function filtersFromSearchParams(
   params: URLSearchParams
@@ -24,6 +33,7 @@ export function filtersFromSearchParams(
     gender: params.get("gender") ?? "",
     priceMin: params.get("priceMin") ?? "",
     priceMax: params.get("priceMax") ?? "",
+    serviceType: parseServiceTypeParam(params.get("serviceType")),
   };
 }
 
@@ -74,6 +84,7 @@ const FILTER_PARAM_KEYS = [
   "gender",
   "priceMin",
   "priceMax",
+  "serviceType",
 ] as const;
 
 /** True when URL carries explicit filter params (not only free-text q) */

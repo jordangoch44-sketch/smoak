@@ -23,10 +23,25 @@ export interface AdminTrafficWeek {
   topSources: AdminTrafficSource[];
 }
 
+export interface AdminLiveEarnings {
+  paidSubscriberCount: number;
+  subscriberRevenueCents: number;
+  adRevenueCents: number;
+  /** e.g. "July 2026" */
+  periodLabel: string;
+}
+
 export interface AdminPlatformPulse {
   dataSource: "live" | "unavailable";
   specialists: AdminWeeklyCount;
   clients: AdminWeeklyCount;
+  /** Pending specialist + client applications (live SQL) */
+  pendingApplications: number;
   /** null until the site_visits table exists / has data access */
   traffic: AdminTrafficWeek | null;
+  /**
+   * Catalog estimate from live specialist_profiles flags.
+   * null when profiles could not be read.
+   */
+  earnings: AdminLiveEarnings | null;
 }

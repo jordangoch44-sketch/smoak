@@ -1,4 +1,3 @@
-import { ADMIN_SPECIALIST_BILLING_SEED } from "@/data/admin-specialist-billing-seed";
 import {
   SPECIALIST_AD_ADDON_CATALOG,
   SPECIALIST_TIER_CATALOG,
@@ -13,21 +12,24 @@ import type {
 } from "@/types/admin-specialist-billing";
 
 function resolveTier(
-  specialistId: string,
   isPremium: boolean,
   featured: boolean
 ): SpecialistBillingTier {
-  const seed = ADMIN_SPECIALIST_BILLING_SEED[specialistId];
-  if (seed) return seed.tier;
   if (isPremium && featured) return "platinum";
   if (isPremium) return "premium";
   return "free";
 }
 
-function resolveAddOnIds(specialistId: string): SpecialistAdAddOnId[] {
-  const seed = ADMIN_SPECIALIST_BILLING_SEED[specialistId];
-  if (seed) return seed.addOnIds;
-  return [];
+function resolveAddOnIdsFromFlags(input: {
+  featured: boolean;
+  sponsored?: boolean;
+  topRanked?: boolean;
+}): SpecialistAdAddOnId[] {
+  const ids: SpecialistAdAddOnId[] = [];
+  if (input.featured) ids.push("homepage_spotlight");
+  if (input.sponsored) ids.push("boosted_profile");
+  if (input.topRanked) ids.push("top_ranking_boost");
+  return ids;
 }
 
 function buildAddOns(ids: SpecialistAdAddOnId[]): SpecialistAdAddOn[] {
@@ -43,16 +45,13 @@ export function buildSpecialistBillingRecord(input: {
   specialistName: string;
   isPremium: boolean;
   featured: boolean;
+  sponsored?: boolean;
+  topRanked?: boolean;
 }): SpecialistBillingRecord {
-  const tier = resolveTier(
-    input.specialistId,
-    input.isPremium,
-    input.featured
-  );
+  const tier = resolveTier(input.isPremium, input.featured);
   const tierMeta = SPECIALIST_TIER_CATALOG[tier];
-  const addOnIds = resolveAddOnIds(input.specialistId);
-  const activeAddOns =
-    tier === "free" ? [] : buildAddOns(addOnIds);
+  const addOnIds = resolveAddOnIdsFromFlags(input);
+  const activeAddOns = buildAddOns(addOnIds);
   const addOnMonthlyCents = activeAddOns.reduce(
     (sum, addOn) => sum + addOn.monthlyCents,
     0
@@ -76,6 +75,8 @@ export function listSpecialistBillingFromRows(
     name: string;
     isPremium: boolean;
     featured: boolean;
+    sponsored?: boolean;
+    topRanked?: boolean;
   }[]
 ): SpecialistBillingRecord[] {
   return rows
@@ -85,6 +86,8 @@ export function listSpecialistBillingFromRows(
         specialistName: row.name,
         isPremium: row.isPremium,
         featured: row.featured,
+        sponsored: row.sponsored,
+        topRanked: row.topRanked,
       })
     )
     .sort((a, b) => b.totalMonthlyCents - a.totalMonthlyCents);
@@ -122,9 +125,16 @@ export function getAdminOwnerRevenueDashboard(
     name: string;
     isPremium: boolean;
     featured: boolean;
+    sponsored?: boolean;
+    topRanked?: boolean;
   }[]
 ): AdminOwnerRevenueDashboard {
-  const key = specialistRows.map((r) => r.id).join("|");
+  const key = specialistRows
+    .map(
+      (r) =>
+        `${r.id}:${r.isPremium}:${r.featured}:${Boolean(r.sponsored)}:${Boolean(r.topRanked)}`
+    )
+    .join("|");
   const cached = OWNER_REVENUE_CACHE.get(key);
   if (cached) return cached;
 
@@ -132,6 +142,7 @@ export function getAdminOwnerRevenueDashboard(
   const dashboard: AdminOwnerRevenueDashboard = {
     metrics: computeOwnerMetrics(specialistBilling),
     specialistBilling,
+    /* Catalog estimate from admin flags — not Stripe settlement */
     dataSource: "mock",
   };
   OWNER_REVENUE_CACHE.set(key, dashboard);

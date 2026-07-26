@@ -2512,6 +2512,30 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: rgba(255, 255, 255, 0.38);
 }
 
+.dashboard-modal__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: #fca5a5;
+}
+
+.dashboard-modal__secondary {
+  margin-top: 0.75rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-modal__secondary:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 /* SMOAC Pro — gated analytics (free tier) */
 
 .dashboard-analytics__badge--pro {

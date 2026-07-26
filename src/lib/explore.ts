@@ -11,7 +11,25 @@ export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
   gender: "",
   priceMin: "",
   priceMax: "",
+  serviceType: "",
 };
+
+/**
+ * Whether Explore should leave the browse-categories default and show result cards.
+ * Saved ZIP alone does not count — only intentional search / category / mode filters.
+ */
+export function hasExploreResultsIntent(
+  filters: TrainerFilters,
+  displayQuery: string,
+  nearMeActive = false
+): boolean {
+  if (displayQuery.trim()) return true;
+  if (nearMeActive) return true;
+  if (filters.profession || filters.specialty || filters.gender) return true;
+  if (filters.priceMin || filters.priceMax) return true;
+  if (filters.serviceType) return true;
+  return false;
+}
 
 export function countActiveFilters(filters: TrainerFilters): number {
   const { priceMin, priceMax, ...rest } = filters;

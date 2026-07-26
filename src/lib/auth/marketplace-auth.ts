@@ -92,6 +92,27 @@ export async function buildAuthSessionFromSupabaseUser(
   const authRole = appRoleToAuthRole(roleRow.role);
   if (!authRole) return null;
 
+  let isPremium = roleRow.is_premium;
+  let premiumTrialEndsAt: string | undefined;
+  let premiumTrialActive = false;
+  let premiumTrialDaysRemaining: number | undefined;
+  let premiumTrialJustEnded = false;
+
+  if (authRole === "specialist") {
+    const { resolveAndSyncSpecialistPremiumAccess } = await import(
+      "@/lib/specialist-premium-trial"
+    );
+    const access = await resolveAndSyncSpecialistPremiumAccess(
+      supabase,
+      user.id
+    );
+    isPremium = access.isPremium;
+    premiumTrialEndsAt = access.trialEndsAt ?? undefined;
+    premiumTrialActive = access.isTrialing;
+    premiumTrialDaysRemaining = access.daysRemaining ?? undefined;
+    premiumTrialJustEnded = access.trialJustEnded;
+  }
+
   const profile = await fetchProfileRow(supabase, user.id);
   const email = (user.email ?? profile?.email ?? "").trim().toLowerCase();
   /* Prefer stable timestamps — never Date.now() (churns session signature). */
@@ -117,7 +138,11 @@ export async function buildAuthSessionFromSupabaseUser(
       profile?.profile_completion_status?.trim() || undefined,
     passwordSetupStatus:
       profile?.password_setup_status?.trim() || undefined,
-    isPremium: roleRow.is_premium,
+    isPremium,
+    premiumTrialEndsAt,
+    premiumTrialActive,
+    premiumTrialDaysRemaining,
+    premiumTrialJustEnded,
     displayName: profile
       ? displayNameFromProfile(
           profile.first_name,

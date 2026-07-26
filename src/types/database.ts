@@ -4,6 +4,9 @@ export interface UserRoleRow {
   user_id: string;
   role: AppRole;
   is_premium: boolean;
+  premium_trial_started_at?: string | null;
+  premium_trial_ends_at?: string | null;
+  premium_trial_ended_notified_at?: string | null;
   created_at: string;
   updated_at: string;
 }

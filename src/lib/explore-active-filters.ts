@@ -40,6 +40,11 @@ export function getActiveFilterChips(filters: TrainerFilters): ActiveFilterChip[
   if (filters.specialty) {
     chips.push({ key: "specialty", label: filters.specialty });
   }
+  if (filters.serviceType === "in-person") {
+    chips.push({ key: "serviceType", label: "In-Person" });
+  } else if (filters.serviceType === "virtual") {
+    chips.push({ key: "serviceType", label: "Online" });
+  }
   if (filters.gender) {
     const label =
       filters.gender.charAt(0).toUpperCase() + filters.gender.slice(1);
