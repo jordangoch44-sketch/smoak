@@ -57,6 +57,7 @@ export function AdminExecutiveRevenueSnapshot({
   const live = pulse?.dataSource === "live" ? pulse : null;
   const traffic = live?.traffic ?? null;
   const earnings = live?.earnings ?? null;
+  const engagement = live?.engagement ?? null;
 
   return (
     <section className="admin-exec-snapshot" aria-label="Platform snapshot">
@@ -151,6 +152,55 @@ export function AdminExecutiveRevenueSnapshot({
               : "From live placement flags"}
           </p>
         </article>
+      </div>
+
+      <div className="admin-exec-snapshot__engagement">
+        <h3 className="admin-exec-snapshot__engagement-title">
+          Marketplace engagement (7d)
+        </h3>
+        <p className="admin-exec-snapshot__engagement-note">
+          Site-wide anonymous totals — not individual specialists.
+        </p>
+        <div className="admin-exec-snapshot__grid admin-exec-snapshot__grid--core4">
+          <article className="admin-exec-snapshot__card">
+            <p className="admin-exec-snapshot__label">Search appearances</p>
+            <p className="admin-exec-snapshot__value">
+              {engagement ? engagement.searchAppearances : "—"}
+            </p>
+            <p className="admin-exec-snapshot__detail">
+              {engagement
+                ? trafficChangeLabel(engagement.searchAppearancesPercentChange)
+                : "Awaiting engagement capture"}
+            </p>
+          </article>
+          <article className="admin-exec-snapshot__card">
+            <p className="admin-exec-snapshot__label">Contact clicks</p>
+            <p className="admin-exec-snapshot__value">
+              {engagement ? engagement.contactClicks : "—"}
+            </p>
+            <p className="admin-exec-snapshot__detail">Inquiry CTA taps</p>
+          </article>
+          <article className="admin-exec-snapshot__card">
+            <p className="admin-exec-snapshot__label">Booking clicks</p>
+            <p className="admin-exec-snapshot__value">
+              {engagement ? engagement.bookingClicks : "—"}
+            </p>
+            <p className="admin-exec-snapshot__detail">Book intent in inquiry</p>
+          </article>
+          <article className="admin-exec-snapshot__card">
+            <p className="admin-exec-snapshot__label">Top surfaces</p>
+            <p className="admin-exec-snapshot__value admin-exec-snapshot__value--surfaces">
+              {engagement && engagement.topSurfaces.length > 0
+                ? engagement.topSurfaces
+                    .map((row) => `${row.surface} (${row.count})`)
+                    .join(" · ")
+                : "—"}
+            </p>
+            <p className="admin-exec-snapshot__detail">
+              Where cards appear most
+            </p>
+          </article>
+        </div>
       </div>
     </section>
   );

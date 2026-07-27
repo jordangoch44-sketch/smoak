@@ -428,6 +428,32 @@
   gap: 0.625rem;
 }
 
+.admin-exec-snapshot__engagement {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-exec-snapshot__engagement-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.admin-exec-snapshot__engagement-note {
+  margin: 0.2rem 0 0.75rem;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-exec-snapshot__value--surfaces {
+  font-size: 0.85rem;
+  line-height: 1.35;
+  font-weight: 550;
+}
+
 .admin-exec-snapshot__grid--core4,
 .admin-exec-snapshot__grid--core6 {
   grid-template-columns: 1fr 1fr;

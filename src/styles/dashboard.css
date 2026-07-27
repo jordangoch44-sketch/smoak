@@ -2325,6 +2325,52 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: rgba(var(--accent-glow-rgb), 0.85);
 }
 
+.dashboard-analytics__discovery {
+  position: relative;
+  z-index: 1;
+  margin-top: 1rem;
+  padding: 0.875rem 1rem;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dashboard-analytics__discovery-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.dashboard-analytics__discovery-note {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.dashboard-analytics__discovery-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.dashboard-analytics__discovery-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dashboard-analytics__discovery-list strong {
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.92);
+}
+
 .dashboard-analytics__insight,
 .dashboard-insight-box {
   position: relative;

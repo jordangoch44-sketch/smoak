@@ -9,6 +9,7 @@ import {
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
 import type {
+  AdminEngagementWeek,
   AdminLiveEarnings,
   AdminPlatformPulse,
   AdminTrafficWeek,
@@ -244,6 +245,84 @@ async function fetchTrafficWeek(
   };
 }
 
+function surfaceLabel(raw: string | null): string {
+  const key = (raw ?? "unknown").trim() || "unknown";
+  const labels: Record<string, string> = {
+    explore: "Explore",
+    saved: "Saved",
+    home_sponsored: "Home sponsored",
+    home_new: "Home new",
+    home_top50: "Home Top 50",
+    profile_rail: "Profile rails",
+    profile: "Profile",
+    rankings: "Rankings",
+    client_dashboard: "Client dashboard",
+    unknown: "Unknown",
+  };
+  return labels[key] ?? key;
+}
+
+async function fetchEngagementWeek(
+  supabase: SupabaseClient,
+  now: number
+): Promise<AdminEngagementWeek | null> {
+  const twoWeeksAgoIso = new Date(now - 2 * WEEK_MS).toISOString();
+  const { data, error } = await supabase
+    .from("specialist_engagement_events")
+    .select("occurred_at, event_type, surface")
+    .gte("occurred_at", twoWeeksAgoIso)
+    .limit(30000);
+
+  if (error) {
+    console.warn("[SMOAC admin] engagement read failed:", error.message);
+    return null;
+  }
+
+  const weekAgo = now - WEEK_MS;
+  let searchAppearances = 0;
+  let prevSearchAppearances = 0;
+  let contactClicks = 0;
+  let bookingClicks = 0;
+  const surfaceCounts = new Map<string, number>();
+
+  for (const row of data ?? []) {
+    const at = new Date(row.occurred_at as string).getTime();
+    const type = String(row.event_type ?? "");
+    const inCurrentWeek = at >= weekAgo;
+
+    if (type === "search_appearance") {
+      if (inCurrentWeek) {
+        searchAppearances += 1;
+        const label = surfaceLabel(row.surface as string | null);
+        surfaceCounts.set(label, (surfaceCounts.get(label) ?? 0) + 1);
+      } else {
+        prevSearchAppearances += 1;
+      }
+    } else if (inCurrentWeek && type === "contact_click") {
+      contactClicks += 1;
+    } else if (inCurrentWeek && type === "booking_click") {
+      bookingClicks += 1;
+    }
+  }
+
+  const topSurfaces = [...surfaceCounts.entries()]
+    .map(([surface, count]) => ({ surface, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+
+  return {
+    searchAppearances,
+    contactClicks,
+    bookingClicks,
+    prevSearchAppearances,
+    searchAppearancesPercentChange: percentChange(
+      searchAppearances,
+      prevSearchAppearances
+    ),
+    topSurfaces,
+  };
+}
+
 const EMPTY_WEEKLY: AdminWeeklyCount = {
   total: 0,
   weekAgoTotal: 0,
@@ -258,6 +337,7 @@ const UNAVAILABLE: AdminPlatformPulse = {
   pendingApplications: 0,
   traffic: null,
   earnings: null,
+  engagement: null,
 };
 
 export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
@@ -268,21 +348,29 @@ export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
   const now = Date.now();
   const weekAgoIso = new Date(now - WEEK_MS).toISOString();
 
-  const [specialists, clients, pendingApplications, traffic, earnings] =
-    await Promise.all([
-      fetchWeeklySpecialistCount(supabase, weekAgoIso),
-      fetchWeeklyClientCount(supabase, weekAgoIso),
-      countPendingApplications(supabase),
-      fetchTrafficWeek(supabase, now),
-      fetchLiveEarnings(supabase),
-    ]);
+  const [
+    specialists,
+    clients,
+    pendingApplications,
+    traffic,
+    earnings,
+    engagement,
+  ] = await Promise.all([
+    fetchWeeklySpecialistCount(supabase, weekAgoIso),
+    fetchWeeklyClientCount(supabase, weekAgoIso),
+    countPendingApplications(supabase),
+    fetchTrafficWeek(supabase, now),
+    fetchLiveEarnings(supabase),
+    fetchEngagementWeek(supabase, now),
+  ]);
 
   if (
     !specialists &&
     !clients &&
     pendingApplications == null &&
     !traffic &&
-    !earnings
+    !earnings &&
+    !engagement
   ) {
     return UNAVAILABLE;
   }
@@ -294,5 +382,6 @@ export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
     pendingApplications: pendingApplications ?? 0,
     traffic,
     earnings,
+    engagement,
   };
 }

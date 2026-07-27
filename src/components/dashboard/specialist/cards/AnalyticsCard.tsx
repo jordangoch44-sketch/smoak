@@ -94,6 +94,40 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
             isPremium={isPremium}
           />
 
+          {isPremium && analytics.discoveryBreakdown ? (
+            <div className="dashboard-analytics__discovery">
+              <h3 className="dashboard-analytics__discovery-title">
+                Discovery mix
+              </h3>
+              <p className="dashboard-analytics__discovery-note">
+                Anonymous — where and how clients find you (not who).
+              </p>
+              <ul className="dashboard-analytics__discovery-list">
+                {analytics.discoveryBreakdown.topSurfaces.length > 0 ? (
+                  analytics.discoveryBreakdown.topSurfaces.map((row) => (
+                    <li key={row.surface}>
+                      <span>{row.surface}</span>
+                      <strong>{row.count.toLocaleString("en-US")}</strong>
+                    </li>
+                  ))
+                ) : (
+                  <li>
+                    <span>No search appearances yet</span>
+                    <strong>0</strong>
+                  </li>
+                )}
+                {analytics.discoveryBreakdown.mobilePercent != null ? (
+                  <li>
+                    <span>Mobile vs desktop</span>
+                    <strong>
+                      {analytics.discoveryBreakdown.mobilePercent}% mobile
+                    </strong>
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+          ) : null}
+
           <aside className="dashboard-analytics__insight dashboard-insight-box">
             <p className="dashboard-analytics__insight-label">Quick tip</p>
             <PremiumLockedValues locked={!isPremium}>

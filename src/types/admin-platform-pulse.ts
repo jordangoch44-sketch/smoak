@@ -31,6 +31,16 @@ export interface AdminLiveEarnings {
   periodLabel: string;
 }
 
+/** Site-wide specialist engagement (anonymous event totals — not per specialist). */
+export interface AdminEngagementWeek {
+  searchAppearances: number;
+  contactClicks: number;
+  bookingClicks: number;
+  prevSearchAppearances: number;
+  searchAppearancesPercentChange: number | null;
+  topSurfaces: Array<{ surface: string; count: number }>;
+}
+
 export interface AdminPlatformPulse {
   dataSource: "live" | "unavailable";
   specialists: AdminWeeklyCount;
@@ -44,4 +54,6 @@ export interface AdminPlatformPulse {
    * null when profiles could not be read.
    */
   earnings: AdminLiveEarnings | null;
+  /** null until specialist_engagement_events exists / has data access */
+  engagement: AdminEngagementWeek | null;
 }

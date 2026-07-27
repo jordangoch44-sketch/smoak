@@ -35,6 +35,12 @@ export interface SpecialistGrowthInsight {
   message: string;
 }
 
+/** Anonymous discovery mix — Pro-only UI; never includes visitor identity. */
+export interface SpecialistDiscoveryBreakdown {
+  topSurfaces: Array<{ surface: string; count: number }>;
+  mobilePercent: number | null;
+}
+
 export interface SpecialistProfileAnalytics {
   periodLabel: string;
   profileViews: number;
@@ -48,6 +54,8 @@ export interface SpecialistProfileAnalytics {
   insightMessage: string;
   coreMetrics: SpecialistAnalyticsMetric[];
   growthInsights: SpecialistGrowthInsight[];
+  /** Present when live engagement data includes surface/device mix */
+  discoveryBreakdown?: SpecialistDiscoveryBreakdown;
 }
 
 export interface SpecialistAnalyticsContext {

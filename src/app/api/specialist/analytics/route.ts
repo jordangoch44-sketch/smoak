@@ -4,6 +4,23 @@ import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const ANALYTICS_WINDOW_DAYS = 30;
 
+const SURFACE_LABELS: Record<string, string> = {
+  explore: "Explore",
+  saved: "Saved list",
+  home_sponsored: "Homepage sponsored",
+  home_new: "Homepage new",
+  home_top50: "Homepage Top 50",
+  profile_rail: "Profile discovery",
+  profile: "Your profile",
+  rankings: "Rankings",
+  client_dashboard: "Client dashboard",
+};
+
+function surfaceLabel(raw: string | null | undefined): string {
+  const key = (raw ?? "").trim() || "unknown";
+  return SURFACE_LABELS[key] ?? key;
+}
+
 async function countEngagement(
   service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
   specialistId: string,
@@ -86,6 +103,12 @@ export async function GET() {
     searchAppearances: 0,
     contactClicks: 0,
     bookingClicks: 0,
+    breakdown: {
+      topSurfaces: [] as Array<{ surface: string; count: number }>,
+      mobileViews: 0,
+      desktopViews: 0,
+      mobilePercent: null as number | null,
+    },
   };
 
   const profileId = profile?.id as string | undefined;
@@ -98,21 +121,33 @@ export async function GET() {
   ).toISOString();
   const profilePath = `/trainers/${profileId}`;
 
-  const [visitsRes, savesRes, searchAppearances, contactClicks, bookingClicks] =
-    await Promise.all([
-      service
-        .from("site_visits")
-        .select("*", { count: "exact", head: true })
-        .eq("path", profilePath)
-        .gte("occurred_at", sinceIso),
-      service
-        .from("saved_trainers")
-        .select("*", { count: "exact", head: true })
-        .eq("specialist_id", profileId),
-      countEngagement(service, profileId, "search_appearance", sinceIso),
-      countEngagement(service, profileId, "contact_click", sinceIso),
-      countEngagement(service, profileId, "booking_click", sinceIso),
-    ]);
+  const [
+    visitsRes,
+    savesRes,
+    searchAppearances,
+    contactClicks,
+    bookingClicks,
+    engagementRows,
+  ] = await Promise.all([
+    service
+      .from("site_visits")
+      .select("*", { count: "exact", head: true })
+      .eq("path", profilePath)
+      .gte("occurred_at", sinceIso),
+    service
+      .from("saved_trainers")
+      .select("*", { count: "exact", head: true })
+      .eq("specialist_id", profileId),
+    countEngagement(service, profileId, "search_appearance", sinceIso),
+    countEngagement(service, profileId, "contact_click", sinceIso),
+    countEngagement(service, profileId, "booking_click", sinceIso),
+    service
+      .from("specialist_engagement_events")
+      .select("event_type, surface, device")
+      .eq("specialist_id", profileId)
+      .gte("occurred_at", sinceIso)
+      .limit(5000),
+  ]);
 
   if (visitsRes.error) {
     console.warn(
@@ -126,6 +161,31 @@ export async function GET() {
       savesRes.error.message
     );
   }
+  if (engagementRows.error) {
+    console.warn(
+      "[SMOAC analytics] engagement breakdown failed:",
+      engagementRows.error.message
+    );
+  }
+
+  const surfaceCounts = new Map<string, number>();
+  let mobileViews = 0;
+  let desktopViews = 0;
+
+  for (const row of engagementRows.data ?? []) {
+    if (row.event_type === "search_appearance") {
+      const label = surfaceLabel(row.surface as string | null);
+      surfaceCounts.set(label, (surfaceCounts.get(label) ?? 0) + 1);
+    }
+    if (row.device === "mobile") mobileViews += 1;
+    else if (row.device === "desktop") desktopViews += 1;
+  }
+
+  const deviceTotal = mobileViews + desktopViews;
+  const topSurfaces = [...surfaceCounts.entries()]
+    .map(([surface, count]) => ({ surface, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4);
 
   return NextResponse.json({
     ok: true,
@@ -135,6 +195,15 @@ export async function GET() {
       searchAppearances,
       contactClicks,
       bookingClicks,
+      breakdown: {
+        topSurfaces,
+        mobileViews,
+        desktopViews,
+        mobilePercent:
+          deviceTotal > 0
+            ? Math.round((mobileViews / deviceTotal) * 100)
+            : null,
+      },
     },
   });
 }
