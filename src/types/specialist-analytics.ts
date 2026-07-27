@@ -53,6 +53,6 @@ export interface SpecialistProfileAnalytics {
 export interface SpecialistAnalyticsContext {
   profileCompletionPercent: number;
   rankingPosition: number | null;
-  /** When false, return zeroed metrics for real submitted profiles */
+  /** When true, show fabricated demo KPIs. Defaults to false (honest zeros). */
   useDemoMetrics?: boolean;
 }

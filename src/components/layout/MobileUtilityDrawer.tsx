@@ -21,6 +21,7 @@ import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile
 import { useStableClientState } from "@/hooks/useStableClientState";
 import { isDashboardPath, LOGIN_PATH } from "@/lib/auth-routes";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
+import { DEMO_SPECIALIST_ID } from "@/constants/specialist-dashboard-mock";
 import { isDemoSpecialistDashboard } from "@/lib/managed-specialist-profile";
 import { getSpecialistProfileAnalytics } from "@/lib/specialist-dashboard-analytics";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
@@ -212,11 +213,13 @@ function DrawerSpecialistAnalytics({
   const { session } = useAuthSession();
   const { trainerId, trainer, profileCompletion } = useManagedSpecialistProfile();
   const useDemoMetrics = isDemoSpecialistDashboard(trainerId, session?.email);
+  const analyticsId =
+    trainerId ?? (useDemoMetrics ? DEMO_SPECIALIST_ID : "empty");
 
-  const analytics = getSpecialistProfileAnalytics(trainerId ?? "demo", {
+  const analytics = getSpecialistProfileAnalytics(analyticsId, {
     profileCompletionPercent: profileCompletion,
     rankingPosition: null,
-    useDemoMetrics: useDemoMetrics || !trainerId,
+    useDemoMetrics,
   });
 
   const viewsMetric = analytics.coreMetrics.find((m) => m.id === "profile-views");

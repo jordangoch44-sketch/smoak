@@ -48,5 +48,6 @@ export interface AdminOverviewStats {
   activeSpecialists: number;
   premiumSpecialists: number;
   totalClients: number;
-  savedSpecialistActivityPlaceholder: string;
+  /** Sum of saved specialists across known client accounts */
+  totalSavedSpecialists: number;
 }

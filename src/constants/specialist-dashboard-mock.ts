@@ -170,6 +170,20 @@ export const DEMO_SPECIALIST_ANALYTICS: DemoAnalyticsBase = {
   growthInsights: DEMO_SPECIALIST_GROWTH_INSIGHTS,
 };
 
+/** Honest empty state for live specialists until real analytics exist */
+export const EMPTY_SPECIALIST_GROWTH_INSIGHTS: SpecialistGrowthInsight[] = [
+  {
+    id: "complete-profile",
+    message:
+      "Complete your photos, specialties, and availability so clients can find and contact you.",
+  },
+  {
+    id: "respond-fast",
+    message:
+      "Fast replies to inquiries help you stand out — respond when leads come in.",
+  },
+];
+
 export const EMPTY_SPECIALIST_ANALYTICS: DemoAnalyticsBase = {
   periodLabel: SPECIALIST_ANALYTICS_PERIOD_LABEL,
   profileViews: 0,
@@ -184,5 +198,5 @@ export const EMPTY_SPECIALIST_ANALYTICS: DemoAnalyticsBase = {
     value: 0,
     trend: { ...metric.trend, direction: "flat" as const, percentChange: 0 },
   })),
-  growthInsights: DEMO_SPECIALIST_GROWTH_INSIGHTS,
+  growthInsights: EMPTY_SPECIALIST_GROWTH_INSIGHTS,
 };

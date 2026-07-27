@@ -17,12 +17,13 @@ const DEMO_ANALYTICS_BY_SPECIALIST: Record<
   [DEV_SPECIALIST_DASHBOARD_ID]: DEMO_SPECIALIST_ANALYTICS,
 };
 
-/** Merge demo metrics with live profile completion + ranking — replace with API fetch */
+/** Merge metrics with live profile completion + ranking. Demo numbers only when opted in. */
 export function getSpecialistProfileAnalytics(
   specialistId: string,
   context: SpecialistAnalyticsContext
 ): SpecialistProfileAnalytics {
-  const useDemoMetrics = context.useDemoMetrics ?? true;
+  /* Default false — real specialists must not inherit fabricated demo KPIs */
+  const useDemoMetrics = context.useDemoMetrics === true;
   const base =
     useDemoMetrics && DEMO_ANALYTICS_BY_SPECIALIST[specialistId]
       ? DEMO_ANALYTICS_BY_SPECIALIST[specialistId]

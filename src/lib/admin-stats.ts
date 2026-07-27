@@ -15,6 +15,10 @@ export function computeAdminOverviewStats(
     (row) => row.visibility === "active"
   ).length;
   const premiumSpecialists = specialists.filter((row) => row.isPremium).length;
+  const totalSavedSpecialists = clients.reduce(
+    (sum, client) => sum + (client.savedSpecialistsCount || 0),
+    0
+  );
 
   return {
     totalSpecialists: specialists.length,
@@ -23,6 +27,6 @@ export function computeAdminOverviewStats(
     activeSpecialists,
     premiumSpecialists,
     totalClients: clients.length,
-    savedSpecialistActivityPlaceholder: "Coming soon — aggregate saves & engagement",
+    totalSavedSpecialists,
   };
 }
