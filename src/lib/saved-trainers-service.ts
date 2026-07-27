@@ -9,6 +9,10 @@ export type SavedTrainerMutationResult =
   | { ok: true }
   | { ok: false; message: string };
 
+export type SavedTrainerCountsResult =
+  | { ok: true; countsByUserId: Record<string, number> }
+  | { ok: false; message: string };
+
 function uniqueIds(ids: readonly string[]): string[] {
   return [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
 }
@@ -97,4 +101,30 @@ export async function importLocalSavedTrainers(
     ok: true,
     specialistIds: uniqueIds([...remote.specialistIds, ...localIds]),
   };
+}
+
+/** Admin utility: count saved specialists for a set of client user ids. */
+export async function fetchSavedTrainerCountsForUsers(
+  supabase: SupabaseClient,
+  userIds: readonly string[]
+): Promise<SavedTrainerCountsResult> {
+  const ids = uniqueIds(userIds);
+  if (ids.length === 0) {
+    return { ok: true, countsByUserId: {} };
+  }
+
+  const { data, error } = await supabase
+    .from("saved_trainers")
+    .select("user_id")
+    .in("user_id", ids);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  const countsByUserId: Record<string, number> = {};
+  for (const row of (data ?? []) as Array<{ user_id: string }>) {
+    countsByUserId[row.user_id] = (countsByUserId[row.user_id] ?? 0) + 1;
+  }
+  return { ok: true, countsByUserId };
 }

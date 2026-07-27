@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useRequireInternalAuth } from "@/hooks/useRequireInternalAuth";
 import { listAdminClients } from "@/lib/admin-clients-service";
+import {
+  getAdminClientSavedCountsServerSnapshot,
+  getAdminClientSavedCountsSnapshot,
+  refreshAdminClientSavedCounts,
+  subscribeAdminClientSavedCounts,
+} from "@/lib/admin-client-saved-counts-store";
 import { ensureAdminApplicationSeeds } from "@/lib/admin-applications-seed";
 import {
   activateSpecialistApplicationWithEditsAsync,
@@ -95,6 +101,11 @@ export function useAdminDashboard() {
     getClientApplicationsSnapshot,
     getClientApplicationsServerSnapshot
   );
+  const savedCountsByUserId = useSyncExternalStore(
+    subscribeAdminClientSavedCounts,
+    getAdminClientSavedCountsSnapshot,
+    getAdminClientSavedCountsServerSnapshot
+  );
   /* Durable featured/sponsored flags come from the remote catalog store */
   const approvedProfiles = useSyncExternalStore(
     subscribeApprovedSpecialistProfiles,
@@ -108,9 +119,13 @@ export function useAdminDashboard() {
   );
 
   const clients = useMemo(
-    () => listAdminClients(null, clientApplications),
-    [clientApplications]
+    () => listAdminClients(null, clientApplications, savedCountsByUserId),
+    [clientApplications, savedCountsByUserId]
   );
+
+  useEffect(() => {
+    void refreshAdminClientSavedCounts(clientApplications);
+  }, [clientApplications]);
 
   const stats = useMemo(
     () => computeAdminOverviewStats(clients, applications, clientApplications),

@@ -31,23 +31,29 @@ const MOCK_CLIENTS: AdminClientRecord[] = [
 ];
 
 function clientApplicationRecords(
-  applications: readonly ClientApplication[]
+  applications: readonly ClientApplication[],
+  savedCountsByUserId: Record<string, number>
 ): AdminClientRecord[] {
   return applications.map((app) => ({
-    id: app.id,
+    id: app.userId?.trim() || app.id,
     email: app.email,
     displayName: app.fullName,
     status: app.status === "ACTIVE" ? "active" : "inactive",
-    savedSpecialistsCount: 0,
+    savedSpecialistsCount: app.userId
+      ? (savedCountsByUserId[app.userId] ?? 0)
+      : 0,
     source: "signup-draft" as const,
   }));
 }
 
-function devClientRecord(session: AuthSession | null): AdminClientRecord | null {
+function devClientRecord(
+  session: AuthSession | null,
+  savedCountsByUserId: Record<string, number>
+): AdminClientRecord | null {
   if (!session || session.role !== "client") return null;
   const userId = getActiveClientUserId(session);
   const savedCount = userId
-    ? loadSavedTrainerIdsForUser(userId).length
+    ? (savedCountsByUserId[userId] ?? loadSavedTrainerIdsForUser(userId).length)
     : 0;
   return {
     id: userId ?? "dev-client",
@@ -61,11 +67,12 @@ function devClientRecord(session: AuthSession | null): AdminClientRecord | null 
 
 export function listAdminClients(
   activeSession: AuthSession | null,
-  clientApplications: readonly ClientApplication[] = listClientApplications()
+  clientApplications: readonly ClientApplication[] = listClientApplications(),
+  savedCountsByUserId: Record<string, number> = {}
 ): AdminClientRecord[] {
   const records: AdminClientRecord[] = [...MOCK_CLIENTS];
 
-  const devClient = devClientRecord(activeSession);
+  const devClient = devClientRecord(activeSession, savedCountsByUserId);
   if (devClient) {
     const idx = records.findIndex(
       (r) => r.email.toLowerCase() === devClient.email.toLowerCase()
@@ -90,7 +97,10 @@ export function listAdminClients(
     });
   }
 
-  for (const appRecord of clientApplicationRecords(clientApplications)) {
+  for (const appRecord of clientApplicationRecords(
+    clientApplications,
+    savedCountsByUserId
+  )) {
     const idx = records.findIndex(
       (r) => r.email.toLowerCase() === appRecord.email.toLowerCase()
     );
