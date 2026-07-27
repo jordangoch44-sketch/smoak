@@ -372,8 +372,7 @@ export async function toggleSavedTrainerId(
       return { ok: false, message: mutation.message };
     }
 
-    /* Keep a local mirror for offline / reload resilience. */
-    persistSavedTrainerIdsForUser(userId, next);
+    /* Supabase is SoT when active — no local mirror after successful write. */
     return { ok: true };
   } catch (error) {
     console.error("[saved-trainers] mutation threw", error);

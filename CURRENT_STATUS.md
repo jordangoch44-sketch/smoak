@@ -1,10 +1,12 @@
 # SMOAC — Current Status
 
-**Last updated:** July 2026  
+**Last updated:** July 26, 2026  
 **Phase 2:** Complete  
 **Phase 3a (saved trainers):** Complete  
-**Phase 3b (applications):** Implemented — apply migration + run tests  
-**Phase 3c+:** Not started
+**Phase 3b (applications):** Complete (fetch-only hydrate when Supabase active)  
+**Phase 3c (specialist profiles):** Complete in code  
+**Phase 3d (admin flags / hide):** Complete in code  
+**Phase 3e (prefer Supabase only):** In progress — first cutover shipped
 
 ---
 
@@ -29,35 +31,60 @@
 |---------|--------|
 | `saved_trainers` table + RLS | ✅ |
 | Cross-device save hearts | ✅ |
+| No local mirror after successful Supabase write | ✅ (3e) |
 
 **Docs:** [`docs/PHASE3A_SAVED_TRAINERS.md`](docs/PHASE3A_SAVED_TRAINERS.md)
 
 ---
 
-## Phase 3b — Applications (implemented)
+## Phase 3b — Applications (done)
 
 | Feature | Status |
 |---------|--------|
-| `client_applications` + `specialist_applications` | ✅ (apply migration) |
+| `client_applications` + `specialist_applications` | ✅ |
 | Signup/onboarding → Supabase | ✅ |
-| Admin hydrate + approve/reject dual-write | ✅ |
+| Admin hydrate from DB (no auto-import of browser leftovers) | ✅ (3e) |
 | Onboarding draft (local until submit) | ✅ (intentional) |
 
 **Docs:** [`docs/PHASE3B_APPLICATIONS.md`](docs/PHASE3B_APPLICATIONS.md)
 
-```bash
-# Apply supabase/migrations/20260607000000_applications.sql then:
-npm run test:supabase:applications
-```
+---
+
+## Phase 3c / 3d — Profiles + admin moderation (done in code)
+
+| Feature | Status |
+|---------|--------|
+| `specialist_profiles` approve → Explore | ✅ |
+| Edit profile dual-write → DB | ✅ |
+| Hide / featured / sponsored / top_ranked flags | ✅ |
+| Live Explore skips browser-only hide list | ✅ |
+
+**Docs:** [`docs/PHASE3C_SPECIALIST_PROFILES.md`](docs/PHASE3C_SPECIALIST_PROFILES.md)
+
+Apply migrations in Supabase if not already:
+
+- `20260716000000_specialist_profiles.sql`
+- `20260723140000_specialist_profiles_admin_flags.sql`
 
 ---
 
-## Phase 3c+ — Not started
+## Phase 3e — Prefer Supabase only (in progress)
 
-Still in `localStorage`:
+**Shipped (this cutover):**
 
-- Approved specialist profiles / overrides  
-- Admin hide list & specialist meta flags  
-- Public catalog still merges seed + local approved store  
+- Live approved catalog: memory + Supabase only (no localStorage write/read as authority)
+- Public Explore / cards: no local override overlay when live
+- Applications hydrate: fetch-only (no auto `importLocal*` into shared DB)
+- Saved trainers: no post-success local mirror when Supabase active
+- Seed + localStorage remain for `npm run dev` without Supabase env
+
+**Still to do:**
+
+- [ ] Admin roster from `specialist_profiles` (not seed union) when live
+- [ ] Stop dual-writing applications to localStorage after remote success (memory only — partially done via write guards)
+- [ ] Explicit backfill scripts for any remaining local-only data
+- [ ] Delete local bridge modules + retire `dev-auth` when demo-without-env is an explicit product mode
+- [ ] Wire admin client saved counts to Supabase
+- [ ] Replace dashboard mock analytics with real rows
 
 **Plan:** [`docs/PHASE3_SUPABASE_MIGRATION.md`](docs/PHASE3_SUPABASE_MIGRATION.md)

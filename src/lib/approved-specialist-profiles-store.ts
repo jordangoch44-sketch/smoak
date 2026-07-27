@@ -21,10 +21,7 @@ import {
   type PublicCatalogMode,
 } from "@/lib/public-catalog-mode";
 import { getSpecialistApplicationById } from "@/lib/specialist-application-storage";
-import {
-  loadSpecialistOverridesForId,
-  saveSpecialistOverridesForId,
-} from "@/lib/specialist-profile-overrides";
+import { loadSpecialistOverridesForId } from "@/lib/specialist-profile-overrides";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
 import type { Trainer } from "@/types/trainer";
 
@@ -55,6 +52,8 @@ function readLocalProfiles(): Record<string, Trainer> {
 
 function writeLocalProfiles(profiles: Record<string, Trainer>): void {
   if (typeof window === "undefined") return;
+  /* Live mode: memory + Supabase only — localStorage is not durable truth */
+  if (isMarketplaceSupabaseActive()) return;
   try {
     if (Object.keys(profiles).length === 0) {
       window.localStorage.removeItem(DEV_APPROVED_SPECIALIST_PROFILES_KEY);
@@ -93,16 +92,6 @@ function markHydratedAndNotify(): void {
   hydrated = true;
   if (!wasHydrated) {
     listeners.forEach((listener) => listener());
-  }
-}
-
-function mergeOverridesIntoLocalStore(
-  overridesById: Record<string, SpecialistProfileOverrides>
-): void {
-  for (const [id, overrides] of Object.entries(overridesById)) {
-    if (!overrides || Object.keys(overrides).length === 0) continue;
-    const existing = loadSpecialistOverridesForId(id) ?? {};
-    saveSpecialistOverridesForId(id, { ...existing, ...overrides });
   }
 }
 
@@ -203,7 +192,8 @@ async function hydrateFromSupabase(): Promise<void> {
     }
     applyCache(next);
     writeLocalProfiles(next);
-    mergeOverridesIntoLocalStore(result.overridesById);
+    /* Do not push remote overrides into localStorage — public display uses
+     * approved profile_data; local overrides stay for seed / draft edits. */
     await syncModerationMirrorsFromRemote(supabase);
     if (generation !== loadGeneration) return;
     setPublicCatalogMode("live");

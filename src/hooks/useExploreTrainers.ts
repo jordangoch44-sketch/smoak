@@ -390,7 +390,11 @@ export function useExploreTrainers({
         .filter((trainer) =>
           catalogMode === "live" ? true : !hiddenSet.has(trainer.id)
         )
-        .map((trainer) => getTrainerWithOverrides(trainer.id) ?? trainer);
+        .map((trainer) =>
+          catalogMode === "live"
+            ? trainer
+            : (getTrainerWithOverrides(trainer.id) ?? trainer)
+        );
     },
     [
       searchQuery,

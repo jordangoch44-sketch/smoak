@@ -4,7 +4,11 @@ import {
   getApprovedSpecialistProfileById,
   saveApprovedSpecialistProfile,
 } from "@/lib/approved-specialist-profiles-store";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { getPublicMarketplaceTrainerBaseById } from "@/lib/marketplace-public-catalog";
+import {
+  isLivePublicCatalogMode,
+} from "@/lib/public-catalog-mode";
 import {
   applySpecialistProfileOverrides,
   loadAllSpecialistOverrides,
@@ -54,6 +58,11 @@ export function getSpecialistProfilesSnapshot(): Record<
 export function getTrainerWithOverrides(trainerId: string): Trainer | undefined {
   const base = getPublicMarketplaceTrainerBaseById(trainerId);
   if (!base) return undefined;
+  /* Live catalog: approved specialist_profiles row is display SoT — do not
+   * layer stale browser overrides on Explore / saves / cards. */
+  if (isLivePublicCatalogMode() || isMarketplaceSupabaseActive()) {
+    return base;
+  }
   const overrides = readCache()[trainerId];
   return applySpecialistProfileOverrides(base, overrides);
 }

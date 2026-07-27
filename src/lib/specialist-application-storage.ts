@@ -1,7 +1,6 @@
 import { uploadApplicationMediaToStorage } from "@/lib/applications/application-media-upload";
 import {
   fetchSpecialistApplications,
-  importLocalSpecialistApplications,
   upsertSpecialistApplication,
 } from "@/lib/applications/specialist-applications-db";
 import {
@@ -70,6 +69,7 @@ function readLocalApplications(): SpecialistApplication[] {
 
 function writeLocalApplications(apps: readonly SpecialistApplication[]): void {
   if (typeof window === "undefined") return;
+  if (isMarketplaceSupabaseActive()) return;
   try {
     const sanitized = apps.map((app) => ({ ...app, password: "" }));
     if (sanitized.length === 0) {
@@ -124,11 +124,7 @@ async function hydrateFromSupabase(): Promise<void> {
       return;
     }
 
-    const local = readLocalApplications();
-    const result =
-      local.length > 0
-        ? await importLocalSpecialistApplications(supabase, local)
-        : await fetchSpecialistApplications(supabase);
+    const result = await fetchSpecialistApplications(supabase);
 
     if (generation !== loadGeneration) return;
 
@@ -137,7 +133,7 @@ async function hydrateFromSupabase(): Promise<void> {
         "[SMOAC applications] specialist hydrate failed:",
         result.message
       );
-      applyCache(local);
+      /* Keep memory cache — do not invent queue from stale localStorage */
       hydrated = true;
       return;
     }

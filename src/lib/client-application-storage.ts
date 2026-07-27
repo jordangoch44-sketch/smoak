@@ -1,6 +1,5 @@
 import {
   fetchClientApplications,
-  importLocalClientApplications,
   upsertClientApplication,
 } from "@/lib/applications/client-applications-db";
 import {
@@ -43,6 +42,7 @@ function readLocalApplications(): ClientApplication[] {
 
 function writeLocalApplications(apps: readonly ClientApplication[]): void {
   if (typeof window === "undefined") return;
+  if (isMarketplaceSupabaseActive()) return;
   try {
     if (apps.length === 0) {
       window.localStorage.removeItem(DEV_CLIENT_APPLICATIONS_KEY);
@@ -94,17 +94,13 @@ async function hydrateFromSupabase(): Promise<void> {
       return;
     }
 
-    const local = readLocalApplications();
-    const result =
-      local.length > 0
-        ? await importLocalClientApplications(supabase, local)
-        : await fetchClientApplications(supabase);
+    const result = await fetchClientApplications(supabase);
 
     if (generation !== loadGeneration) return;
 
     if (!result.ok) {
       console.warn("[SMOAC applications] client hydrate failed:", result.message);
-      applyCache(local);
+      /* Keep memory cache — do not invent queue from stale localStorage */
       hydrated = true;
       return;
     }

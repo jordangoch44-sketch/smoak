@@ -156,13 +156,14 @@ Seed data becomes SQL seed migration or admin-import script, not bundled TS for 
 - [x] Approval promotes application → `specialist_profiles`
 - [x] Edit profile saves to DB (dual-write via approved store + overrides)
 - [x] Explore/trainers routes read from catalog service (hydrate + seed)
-- [ ] Remove `approved-specialist-profiles-store.ts` local cache (Phase 3e)
+- [x] Live mode: no localStorage catalog authority; public display skips local overrides (Phase 3e start)
+- [ ] Remove `approved-specialist-profiles-store.ts` local cache module (Phase 3e end)
 
 ### Admin moderation
 
-- [ ] Hidden list + meta flags in DB
-- [ ] Admin services use service role or admin RLS
-- [ ] Remove `hidden-trainers-storage.ts`, `admin-specialist-meta-store.ts`
+- [x] Hidden list + meta flags in DB (status + placement columns)
+- [ ] Admin services list live roster from `specialist_profiles` (not seed union)
+- [ ] Remove `hidden-trainers-storage.ts`, `admin-specialist-meta-store.ts` mirrors
 
 ---
 
