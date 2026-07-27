@@ -143,7 +143,7 @@ export function getAdminOwnerRevenueDashboard(
     metrics: computeOwnerMetrics(specialistBilling),
     specialistBilling,
     /* Catalog estimate from admin flags — not Stripe settlement */
-    dataSource: "mock",
+    dataSource: "catalog-estimate",
   };
   OWNER_REVENUE_CACHE.set(key, dashboard);
   return dashboard;

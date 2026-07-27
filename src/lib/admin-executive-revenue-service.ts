@@ -54,7 +54,7 @@ export function getAdminExecutiveRevenueSnapshot(
     paidSubscriberCount = billing.metrics.payingSpecialistsCount;
     subscriberRevenueCents = billing.metrics.tierRevenueCents;
     adRevenueCents = billing.metrics.addOnRevenueCents;
-    snapshotSource = billing.dataSource;
+    snapshotSource = "live";
   }
 
   const netSalesCents =

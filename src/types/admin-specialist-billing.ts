@@ -38,8 +38,10 @@ export interface AdminOwnerRevenueMetrics {
   payingSpecialistsCount: number;
 }
 
+export type AdminOwnerRevenueDataSource = "catalog-estimate" | "stripe";
+
 export interface AdminOwnerRevenueDashboard {
   metrics: AdminOwnerRevenueMetrics;
   specialistBilling: readonly SpecialistBillingRecord[];
-  dataSource: "mock";
+  dataSource: AdminOwnerRevenueDataSource;
 }

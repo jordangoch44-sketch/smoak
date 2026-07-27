@@ -32,9 +32,7 @@ export function AdminDashboardPageClient() {
   const {
     isReady,
     session,
-    stats,
     specialists,
-    clients,
     applications,
     clientApplications,
     approveApplication,

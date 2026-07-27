@@ -2,13 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useRequireInternalAuth } from "@/hooks/useRequireInternalAuth";
-import { listAdminClients } from "@/lib/admin-clients-service";
-import {
-  getAdminClientSavedCountsServerSnapshot,
-  getAdminClientSavedCountsSnapshot,
-  refreshAdminClientSavedCounts,
-  subscribeAdminClientSavedCounts,
-} from "@/lib/admin-client-saved-counts-store";
 import { ensureAdminApplicationSeeds } from "@/lib/admin-applications-seed";
 import {
   activateSpecialistApplicationWithEditsAsync,
@@ -25,7 +18,6 @@ import {
   rejectClientApplication,
   saveClientApplicationEdits,
 } from "@/lib/client-applications-service";
-import { computeAdminOverviewStats } from "@/lib/admin-stats";
 import {
   getAdminSpecialistMetaSnapshot,
   getAdminSpecialistMetaServerSnapshot,
@@ -101,11 +93,6 @@ export function useAdminDashboard() {
     getClientApplicationsSnapshot,
     getClientApplicationsServerSnapshot
   );
-  const savedCountsByUserId = useSyncExternalStore(
-    subscribeAdminClientSavedCounts,
-    getAdminClientSavedCountsSnapshot,
-    getAdminClientSavedCountsServerSnapshot
-  );
   /* Durable featured/sponsored flags come from the remote catalog store */
   const approvedProfiles = useSyncExternalStore(
     subscribeApprovedSpecialistProfiles,
@@ -116,20 +103,6 @@ export function useAdminDashboard() {
     subscribeAdminSpecialistDirectory,
     getAdminSpecialistDirectorySnapshot,
     getAdminSpecialistDirectoryServerSnapshot
-  );
-
-  const clients = useMemo(
-    () => listAdminClients(null, clientApplications, savedCountsByUserId),
-    [clientApplications, savedCountsByUserId]
-  );
-
-  useEffect(() => {
-    void refreshAdminClientSavedCounts(clientApplications);
-  }, [clientApplications]);
-
-  const stats = useMemo(
-    () => computeAdminOverviewStats(clients, applications, clientApplications),
-    [clients, applications, clientApplications]
   );
 
   const specialists = useMemo(
@@ -150,9 +123,7 @@ export function useAdminDashboard() {
   return {
     isReady,
     session,
-    stats,
     specialists,
-    clients,
     applications,
     clientApplications,
     getApplications,

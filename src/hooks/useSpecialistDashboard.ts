@@ -8,6 +8,10 @@ import {
 } from "@/constants/specialist-dashboard-mock";
 import { getDemoSpecialistDashboardData } from "@/data/dashboard-mock";
 import { getSpecialistProfileAnalytics } from "@/lib/specialist-dashboard-analytics";
+import {
+  fetchSpecialistLiveAnalytics,
+  mergeLiveSpecialistAnalytics,
+} from "@/lib/specialist-live-analytics";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -28,6 +32,7 @@ import {
   markSpecialistInquiryRead,
 } from "@/lib/inquiry/inquiry-inbox";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
+import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
 
 function resolveAnalyticsTrainerId(trainerId: string | null): string {
   if (!trainerId) return DEMO_SPECIALIST_ID;
@@ -59,6 +64,31 @@ export function useSpecialistDashboard() {
       };
 
   const [inquiryLeads, setInquiryLeads] = useState<SpecialistLead[]>([]);
+  const [liveAnalytics, setLiveAnalytics] = useState<SpecialistProfileAnalytics | null>(
+    null
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!trainerId || useDemoData) {
+      setLiveAnalytics(null);
+      return;
+    }
+
+    void fetchSpecialistLiveAnalytics().then((counts) => {
+      if (cancelled || !counts) return;
+      const base = getSpecialistProfileAnalytics(trainerId, {
+        profileCompletionPercent: profileCompletion,
+        rankingPosition: data.ranking?.rank ?? null,
+        useDemoMetrics: false,
+      });
+      setLiveAnalytics(mergeLiveSpecialistAnalytics(base, counts));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trainerId, useDemoData, profileCompletion, data.ranking?.rank]);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,14 +123,16 @@ export function useSpecialistDashboard() {
   }
 
   const trainer = managedTrainer ?? data.trainer;
-  const analytics = getSpecialistProfileAnalytics(
-    resolveAnalyticsTrainerId(trainerId),
-    {
-      profileCompletionPercent: profileCompletion,
-      rankingPosition: data.ranking?.rank ?? null,
-      useDemoMetrics: useDemoData,
-    }
-  );
+  const analytics =
+    liveAnalytics ??
+    getSpecialistProfileAnalytics(
+      resolveAnalyticsTrainerId(trainerId),
+      {
+        profileCompletionPercent: profileCompletion,
+        rankingPosition: data.ranking?.rank ?? null,
+        useDemoMetrics: useDemoData,
+      }
+    );
 
   // Prefer legal/profile first name — never display/brand name ("Coach", studio name, etc.)
   const firstName =

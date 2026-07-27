@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardGrid, DashboardMetricCard, DashboardSection } from "@/components/dashboard";
 import { AdminCollapsible } from "@/components/admin/AdminCollapsible";
 import { AdminDonutChart } from "@/components/admin/charts/AdminDonutChart";
@@ -15,7 +15,49 @@ interface AdminOwnerRevenuePanelProps {
   specialists: AdminSpecialistRow[];
 }
 
+interface AdminRevenueApiResponse {
+  ok: boolean;
+  stripe?: {
+    mrrCents: number;
+    payingCount: number;
+    dataSource: "stripe";
+  } | null;
+  billingRows?: Array<{
+    userId: string;
+    specialistProfileId: string | null;
+    status: string;
+    stripeSubscriptionId: string | null;
+    cancelAtPeriodEnd: boolean;
+    currentPeriodEnd: string | null;
+  }>;
+}
+
 export function AdminOwnerRevenuePanel({ specialists }: AdminOwnerRevenuePanelProps) {
+  const [liveStripe, setLiveStripe] = useState<
+    AdminRevenueApiResponse["stripe"] | undefined
+  >(undefined);
+  const [stripeBillingCount, setStripeBillingCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/admin/revenue", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: AdminRevenueApiResponse | null) => {
+        if (cancelled || !body?.ok) return;
+        setLiveStripe(body.stripe ?? null);
+        const active = (body.billingRows ?? []).filter((row) =>
+          ["active", "trialing", "past_due"].includes(row.status)
+        );
+        setStripeBillingCount(active.length);
+      })
+      .catch(() => {
+        if (!cancelled) setLiveStripe(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const ownerRevenue = useMemo(
     () =>
       getAdminOwnerRevenueDashboard(
@@ -32,79 +74,102 @@ export function AdminOwnerRevenuePanel({ specialists }: AdminOwnerRevenuePanelPr
   );
 
   const { metrics, specialistBilling } = ownerRevenue;
+  const hasStripeMrr = liveStripe?.dataSource === "stripe";
+  const heroMrrCents = hasStripeMrr
+    ? liveStripe.mrrCents
+    : metrics.projectedMonthlyRecurringRevenueCents;
 
   const chartSegments = [
     {
       id: "tier",
-      label: "Tier subscriptions",
-      value: metrics.tierRevenueCents / 100,
+      label: hasStripeMrr ? "Stripe subscriptions" : "Tier subscriptions",
+      value: hasStripeMrr
+        ? liveStripe.mrrCents / 100
+        : metrics.tierRevenueCents / 100,
       color: "rgb(var(--aurora-lavender-rgb))",
     },
     {
       id: "addons",
       label: "Ad add-ons",
-      value: metrics.addOnRevenueCents / 100,
+      value: hasStripeMrr ? 0 : metrics.addOnRevenueCents / 100,
       color: "rgb(var(--aurora-violet-rgb))",
     },
-  ];
+  ].filter((segment) => segment.value > 0);
 
   const payingSpecialists = specialistBilling.filter(
     (row) => row.totalMonthlyCents > 0
   );
+
+  const dataLabel = hasStripeMrr
+    ? `Stripe MRR · ${liveStripe.payingCount} paying subscription${liveStripe.payingCount === 1 ? "" : "s"}`
+    : "Catalog estimate from live specialist flags (premium / featured / sponsored / top ranked). Ad add-ons are list-price only until Stripe placement billing ships.";
 
   return (
     <DashboardSection
       title="Revenue"
       description="Specialist tiers and paid add-ons — owner view."
     >
-      <p className="admin-mock-label">
-        Catalog estimate from live specialist flags (premium / featured /
-        sponsored / top ranked). Stripe settlement not connected yet.
-      </p>
+      <p className="admin-mock-label">{dataLabel}</p>
+      {liveStripe !== undefined && stripeBillingCount > 0 ? (
+        <p className="admin-mock-label">
+          {stripeBillingCount} specialist billing row
+          {stripeBillingCount === 1 ? "" : "s"} synced from Stripe webhooks.
+        </p>
+      ) : null}
 
       <div className="admin-revenue-hero">
         <div className="admin-revenue-hero__mrr">
           <span className="admin-revenue-hero__label">
-            Projected monthly recurring revenue
+            {hasStripeMrr
+              ? "Monthly recurring revenue (Stripe)"
+              : "Projected monthly recurring revenue"}
           </span>
           <span className="admin-revenue-hero__value">
-            {formatBillingCents(metrics.projectedMonthlyRecurringRevenueCents, {
-              decimals: 0,
-            })}
+            {formatBillingCents(heroMrrCents, { decimals: 0 })}
           </span>
         </div>
         <DashboardGrid className="admin-revenue-hero__grid">
           <DashboardMetricCard
-            label="Tier revenue"
-            value={formatBillingCents(metrics.tierRevenueCents, { decimals: 0 })}
+            label={hasStripeMrr ? "Stripe MRR" : "Tier revenue"}
+            value={formatBillingCents(
+              hasStripeMrr ? liveStripe.mrrCents : metrics.tierRevenueCents,
+              { decimals: 0 }
+            )}
           />
           <DashboardMetricCard
             label="Add-on revenue"
-            value={formatBillingCents(metrics.addOnRevenueCents, { decimals: 0 })}
+            value={formatBillingCents(
+              hasStripeMrr ? 0 : metrics.addOnRevenueCents,
+              { decimals: 0 }
+            )}
           />
           <DashboardMetricCard
             label="Total specialist revenue"
-            value={formatBillingCents(metrics.totalSpecialistRevenueCents, {
-              decimals: 0,
-            })}
+            value={formatBillingCents(
+              hasStripeMrr ? liveStripe.mrrCents : metrics.totalSpecialistRevenueCents,
+              { decimals: 0 }
+            )}
           />
           <DashboardMetricCard
             label="Boosted ads revenue"
-            value={formatBillingCents(metrics.boostedAdsRevenueCents, {
-              decimals: 0,
-            })}
+            value={formatBillingCents(
+              hasStripeMrr ? 0 : metrics.boostedAdsRevenueCents,
+              { decimals: 0 }
+            )}
           />
         </DashboardGrid>
       </div>
 
-      <div className="admin-charts-grid admin-charts-grid--single">
-        <AdminDonutChart
-          title="Tier vs add-on revenue"
-          segments={chartSegments}
-          centerLabel="USD / mo"
-          valuePrefix="$"
-        />
-      </div>
+      {chartSegments.length > 0 ? (
+        <div className="admin-charts-grid admin-charts-grid--single">
+          <AdminDonutChart
+            title={hasStripeMrr ? "Stripe revenue mix" : "Tier vs add-on revenue"}
+            segments={chartSegments}
+            centerLabel="USD / mo"
+            valuePrefix="$"
+          />
+        </div>
+      ) : null}
 
       <div className="admin-owner-block">
         <h3 className="admin-owner-block__title">Revenue by specialist</h3>
@@ -117,7 +182,7 @@ export function AdminOwnerRevenuePanel({ specialists }: AdminOwnerRevenuePanelPr
           ))}
         </ul>
         {payingSpecialists.length === 0 ? (
-          <p className="admin-empty">No paying specialists in mock billing data.</p>
+          <p className="admin-empty">No paying specialists yet.</p>
         ) : null}
       </div>
 

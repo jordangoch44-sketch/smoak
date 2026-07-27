@@ -1,3 +1,4 @@
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { DEV_CLIENT_CREDENTIALS } from "@/lib/dev-auth";
 import { loadCreateAccountProfile } from "@/lib/create-account-profile-storage";
 import { listClientApplications } from "@/lib/client-application-storage";
@@ -70,31 +71,34 @@ export function listAdminClients(
   clientApplications: readonly ClientApplication[] = listClientApplications(),
   savedCountsByUserId: Record<string, number> = {}
 ): AdminClientRecord[] {
-  const records: AdminClientRecord[] = [...MOCK_CLIENTS];
+  const live = isMarketplaceSupabaseActive();
+  const records: AdminClientRecord[] = live ? [] : [...MOCK_CLIENTS];
 
-  const devClient = devClientRecord(activeSession, savedCountsByUserId);
-  if (devClient) {
-    const idx = records.findIndex(
-      (r) => r.email.toLowerCase() === devClient.email.toLowerCase()
-    );
-    if (idx >= 0) records[idx] = devClient;
-    else records.unshift(devClient);
-  } else {
-    records.unshift({
-      id: "dev-client-account",
-      email: DEV_CLIENT_CREDENTIALS.email,
-      displayName: "Dev Client",
-      status: "active",
-      savedSpecialistsCount: loadSavedTrainerIdsForUser(
-        getClientUserId({
-          userId: "dev-client",
-          role: "client",
-          email: DEV_CLIENT_CREDENTIALS.email,
-          signedInAt: "",
-        })
-      ).length,
-      source: "dev-account",
-    });
+  if (!live) {
+    const devClient = devClientRecord(activeSession, savedCountsByUserId);
+    if (devClient) {
+      const idx = records.findIndex(
+        (r) => r.email.toLowerCase() === devClient.email.toLowerCase()
+      );
+      if (idx >= 0) records[idx] = devClient;
+      else records.unshift(devClient);
+    } else {
+      records.unshift({
+        id: "dev-client-account",
+        email: DEV_CLIENT_CREDENTIALS.email,
+        displayName: "Dev Client",
+        status: "active",
+        savedSpecialistsCount: loadSavedTrainerIdsForUser(
+          getClientUserId({
+            userId: "dev-client",
+            role: "client",
+            email: DEV_CLIENT_CREDENTIALS.email,
+            signedInAt: "",
+          })
+        ).length,
+        source: "dev-account",
+      });
+    }
   }
 
   for (const appRecord of clientApplicationRecords(
