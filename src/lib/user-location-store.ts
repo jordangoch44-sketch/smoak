@@ -1,5 +1,6 @@
 import { lookupLocalZipCoordinates } from "@/lib/geo/zip-centroids";
 import { lookupLocalZipPlace } from "@/lib/geo/zip-place-names";
+import { reverseGeocodeCoordinates } from "@/lib/geo/reverse-geocode";
 import { resolveZipLocation } from "@/lib/geo/resolve-zip-location";
 import { recordRecentZipCode } from "@/lib/recent-zip-storage";
 import {
@@ -79,6 +80,40 @@ export function getShouldShowLocationPromptServerSnapshot(): boolean {
 
 export function completeGeolocation(latitude: number, longitude: number): void {
   saveGeolocationCoordinates(latitude, longitude);
+}
+
+export type CompleteGeolocationResult =
+  | { ok: true; zip: string | null; placeName: string | null }
+  | { ok: false; message: string };
+
+/**
+ * High-accuracy GPS → reverse geocode → persist device coords + ZIP/place.
+ * Device coordinates remain the proximity sort source of truth.
+ */
+export async function completeGeolocationAsync(
+  latitude: number,
+  longitude: number
+): Promise<CompleteGeolocationResult> {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return { ok: false, message: "Location is unavailable on this device." };
+  }
+
+  const resolved = await reverseGeocodeCoordinates(latitude, longitude);
+  saveGeolocationCoordinates(latitude, longitude, {
+    zip: resolved?.zip ?? null,
+    placeName: resolved?.placeName ?? null,
+    state: resolved?.state ?? null,
+  });
+
+  if (resolved?.zip) {
+    recordRecentZipCode(resolved.zip);
+  }
+
+  return {
+    ok: true,
+    zip: resolved?.zip ?? null,
+    placeName: resolved?.placeName ?? null,
+  };
 }
 
 export function completeZipEntry(zip: string): void {

@@ -124,12 +124,12 @@ function coordinatesForSavedZip(zip: string): GeoCoordinates | null {
 
 /**
  * Resolved place label for display (header, homepage copy).
- * For ZIP users: neighborhood/city from ZIP lookup only.
+ * Prefer ZIP/neighborhood label; fall back to nearest marketplace city from GPS.
  */
 export function getPersonalizationCity(): string | null {
   const zip = loadSavedZipCode();
   if (zip) {
-    return getZipPlaceDisplayName(zip);
+    return getZipPlaceDisplayName(zip) ?? loadSavedZipPlaceName();
   }
 
   const coords = loadSavedCoordinates();
@@ -149,18 +149,45 @@ export function getPersonalizationMarketplaceCity(): string | null {
 
 export function saveGeolocationCoordinates(
   latitude: number,
-  longitude: number
+  longitude: number,
+  resolved?: {
+    zip?: string | null;
+    placeName?: string | null;
+    state?: string | null;
+  }
 ): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(USER_LATITUDE_KEY, String(latitude));
   window.localStorage.setItem(USER_LONGITUDE_KEY, String(longitude));
   window.localStorage.setItem(HAS_LOCATION_PERMISSION_KEY, "true");
-  window.localStorage.removeItem(USER_ZIP_CODE_KEY);
-  window.localStorage.removeItem(USER_ZIP_PLACE_NAME_KEY);
-  window.localStorage.removeItem(USER_ZIP_STATE_KEY);
-  window.localStorage.removeItem(USER_ZIP_LATITUDE_KEY);
-  window.localStorage.removeItem(USER_ZIP_LONGITUDE_KEY);
   window.localStorage.removeItem(HAS_SKIPPED_LOCATION_PROMPT_KEY);
+
+  const zip = resolved?.zip ? normalizeZipCode(resolved.zip) : "";
+  if (zip && isValidZipCode(zip)) {
+    window.localStorage.setItem(USER_ZIP_CODE_KEY, zip);
+    const placeName = resolved?.placeName?.trim() ?? "";
+    if (placeName) {
+      window.localStorage.setItem(USER_ZIP_PLACE_NAME_KEY, placeName);
+    } else {
+      window.localStorage.removeItem(USER_ZIP_PLACE_NAME_KEY);
+    }
+    const state = resolved?.state?.trim() ?? "";
+    if (state) {
+      window.localStorage.setItem(USER_ZIP_STATE_KEY, state);
+    } else {
+      window.localStorage.removeItem(USER_ZIP_STATE_KEY);
+    }
+    /* Keep device coords as the proximity source of truth; ZIP is for labels/filters */
+    window.localStorage.setItem(USER_ZIP_LATITUDE_KEY, String(latitude));
+    window.localStorage.setItem(USER_ZIP_LONGITUDE_KEY, String(longitude));
+  } else {
+    window.localStorage.removeItem(USER_ZIP_CODE_KEY);
+    window.localStorage.removeItem(USER_ZIP_PLACE_NAME_KEY);
+    window.localStorage.removeItem(USER_ZIP_STATE_KEY);
+    window.localStorage.removeItem(USER_ZIP_LATITUDE_KEY);
+    window.localStorage.removeItem(USER_ZIP_LONGITUDE_KEY);
+  }
+
   dispatchUserLocationChange();
 }
 

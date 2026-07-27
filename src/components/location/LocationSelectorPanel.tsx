@@ -1,15 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
-import { MARKETPLACE_CITIES } from "@/data/locations";
-import { getDefaultZipForMarketplaceCity } from "@/lib/marketplace-city-default-zip";
-import { getRecentZipCodes } from "@/lib/recent-zip-storage";
 import {
   lookupLocalZipPlace,
   UNKNOWN_ZIP_AREA_LABEL,
 } from "@/lib/geo/zip-place-names";
 import {
-  completeGeolocation,
+  completeGeolocationAsync,
   completeZipEntryAsync,
 } from "@/lib/user-location-store";
 import { loadSavedZipCode } from "@/lib/user-location-storage";
@@ -45,24 +42,19 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
   );
 
   const zipFieldId = useId();
-  const cityFieldId = useId();
   const [zip, setZip] = useState("");
   const [zipTouched, setZipTouched] = useState(false);
-  const [cityQuery, setCityQuery] = useState("");
   const [geoLoading, setGeoLoading] = useState(false);
   const [zipSubmitting, setZipSubmitting] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [zipResolveError, setZipResolveError] = useState<string | null>(null);
-  const [recentZips, setRecentZips] = useState<string[]>([]);
 
   useEffect(() => {
     queueMicrotask(() => {
       setZip(loadSavedZipCode() ?? "");
       setZipTouched(false);
-      setCityQuery("");
       setGeoError(null);
       setZipResolveError(null);
-      setRecentZips(getRecentZipCodes());
     });
   }, []);
 
@@ -87,14 +79,6 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
     },
     [onUpdated]
   );
-
-  const cityMatches = useMemo(() => {
-    const q = cityQuery.trim().toLowerCase();
-    if (!q) return [];
-    return MARKETPLACE_CITIES.filter((city) =>
-      city.toLowerCase().includes(q)
-    ).slice(0, 6);
-  }, [cityQuery]);
 
   const zipPreviewPlace = useMemo(() => {
     const normalized = normalizeZipCode(zip);
@@ -121,42 +105,40 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
     setGeoLoading(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        completeGeolocation(
-          position.coords.latitude,
-          position.coords.longitude
-        );
-        setGeoLoading(false);
-        onUpdated();
+        void (async () => {
+          const result = await completeGeolocationAsync(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+          setGeoLoading(false);
+          if (!result.ok) {
+            setGeoError(result.message);
+            return;
+          }
+          onUpdated();
+        })();
       },
-      () => {
+      (error) => {
         setGeoLoading(false);
-        setGeoError("Location access was denied. Enter your ZIP code instead.");
+        if (error.code === error.PERMISSION_DENIED) {
+          setGeoError(
+            "Location access was denied. Allow location for SMOAC in Safari settings, or enter your ZIP."
+          );
+          return;
+        }
+        if (error.code === error.TIMEOUT) {
+          setGeoError("Location timed out. Try again or enter your ZIP.");
+          return;
+        }
+        setGeoError("Couldn’t read your location. Enter your ZIP code instead.");
       },
       {
-        enableHighAccuracy: false,
-        timeout: 12_000,
-        maximumAge: 300_000,
+        enableHighAccuracy: true,
+        timeout: 20_000,
+        maximumAge: 0,
       }
     );
   }, [onUpdated]);
-
-  const applyZip = useCallback(
-    (value: string) => {
-      setZip(normalizeZipCode(value));
-      void submitZip(value);
-    },
-    [submitZip]
-  );
-
-  const handleCityPick = useCallback(
-    (city: string) => {
-      const defaultZip = getDefaultZipForMarketplaceCity(city);
-      if (!defaultZip) return;
-      setZip(defaultZip);
-      void submitZip(defaultZip);
-    },
-    [submitZip]
-  );
 
   return (
     <div className="location-selector-panel__body">
@@ -169,13 +151,32 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
         ) : null}
         <h2 className="location-selector-panel__title">Set your location</h2>
         <p className="location-selector-panel__lede">
-          Personalize rankings, search, and saved specialists near you.
+          Allow SMOAC to use your location for the most accurate specialists near
+          you — or enter a ZIP.
         </p>
       </header>
 
+      <button
+        type="button"
+        className="smoac-control location-selector-panel__btn location-selector-panel__btn--primary"
+        onClick={handleUseLocation}
+        disabled={geoLoading || zipSubmitting}
+      >
+        {geoLoading
+          ? "Finding your location…"
+          : "Allow SMOAC to use your location"}
+      </button>
+      {geoError ? (
+        <p className="location-selector-panel__error" role="status">
+          {geoError}
+        </p>
+      ) : null}
+
+      <div className="location-selector-panel__divider" aria-hidden />
+
       <form className="location-selector-panel__form" onSubmit={handleUpdateZip}>
         <label className="location-selector-panel__label" htmlFor={zipFieldId}>
-          ZIP code
+          Or enter ZIP code
         </label>
         <input
           id={zipFieldId}
@@ -225,7 +226,7 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
 
         <button
           type="submit"
-          className="smoac-control location-selector-panel__btn location-selector-panel__btn--primary"
+          className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
           disabled={
             !isValidZipCode(normalizeZipCode(zip)) || zipSubmitting || geoLoading
           }
@@ -233,68 +234,6 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
           {zipSubmitting ? "Updating…" : "Update location"}
         </button>
       </form>
-
-      <div className="location-selector-panel__divider" aria-hidden />
-
-      <label className="location-selector-panel__label" htmlFor={cityFieldId}>
-        Search by city
-      </label>
-      <input
-        id={cityFieldId}
-        className="location-selector-panel__input"
-        type="search"
-        placeholder="San Diego, Los Angeles…"
-        value={cityQuery}
-        onChange={(event) => setCityQuery(event.target.value)}
-        autoComplete="off"
-      />
-      {cityMatches.length > 0 ? (
-        <ul className="location-selector-panel__city-list">
-          {cityMatches.map((city) => (
-            <li key={city}>
-              <button
-                type="button"
-                className="smoac-control location-selector-panel__city-option"
-                onClick={() => handleCityPick(city)}
-              >
-                {city}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      <button
-        type="button"
-        className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
-        onClick={handleUseLocation}
-        disabled={geoLoading}
-      >
-        {geoLoading ? "Getting location…" : "Use current location"}
-      </button>
-      {geoError ? (
-        <p className="location-selector-panel__error" role="status">
-          {geoError}
-        </p>
-      ) : null}
-
-      {recentZips.length > 0 ? (
-        <div className="location-selector-panel__recents">
-          <p className="location-selector-panel__recents-label">Recent</p>
-          <div className="location-selector-panel__recents-row">
-            {recentZips.map((item) => (
-              <button
-                key={item}
-                type="button"
-                className="smoac-control location-selector-panel__recent-chip"
-                onClick={() => applyZip(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
