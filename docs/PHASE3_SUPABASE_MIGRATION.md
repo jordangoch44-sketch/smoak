@@ -156,8 +156,9 @@ Seed data becomes SQL seed migration or admin-import script, not bundled TS for 
 - [x] Approval promotes application → `specialist_profiles`
 - [x] Edit profile saves to DB (dual-write via approved store + overrides)
 - [x] Explore/trainers routes read from catalog service (hydrate + seed)
-- [x] Live mode: no localStorage catalog authority; public display skips local overrides (Phase 3e start)
-- [ ] Remove `approved-specialist-profiles-store.ts` local cache module (Phase 3e end)
+- [x] Live mode: no localStorage catalog authority; public display skips local overrides (Phase 3e)
+- [x] Live application/catalog reads never promote localStorage (Phase 3e)
+- [ ] Remove `approved-specialist-profiles-store.ts` local cache module (Phase 3e end — keep in-memory store)
 
 ### Admin moderation
 

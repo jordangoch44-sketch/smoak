@@ -219,7 +219,8 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
     console.error("[saved-trainers] load failed", error);
     loadError =
       error instanceof Error ? error.message : "Failed to load saved specialists";
-    reloadSavedTrainersFromLocalStorage(userId);
+    /* Live mode: do not invent saves from stale localStorage */
+    applyCache(userId, []);
     hasLoadedForCachedUser = true;
   } finally {
     if (generation === loadGeneration) {

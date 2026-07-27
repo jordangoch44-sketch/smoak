@@ -167,13 +167,12 @@ async function hydrateFromSupabase(): Promise<void> {
 
   try {
     if (!supabase) {
-      applyCache(readLocalProfiles());
-      setPublicCatalogMode("seed");
+      /* Live mode: rely on SSR prime / empty — never promote localStorage */
+      setPublicCatalogMode("live");
       markHydratedAndNotify();
       return;
     }
 
-    const local = readLocalProfiles();
     const result = await fetchApprovedSpecialistProfiles(supabase);
 
     if (generation !== loadGeneration) return;
@@ -183,10 +182,7 @@ async function hydrateFromSupabase(): Promise<void> {
         "[SMOAC profiles] specialist_profiles hydrate failed:",
         result.message
       );
-      /* Keep SSR prime / existing cache — never push localStorage into the DB */
-      if (cachedProfiles === EMPTY_SNAPSHOT && !isLivePublicCatalogMode()) {
-        applyCache(local);
-      }
+      /* Keep SSR prime / existing memory cache — never invent from localStorage */
       setPublicCatalogMode("live");
       markHydratedAndNotify();
       return;

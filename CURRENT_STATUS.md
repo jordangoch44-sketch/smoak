@@ -1,12 +1,12 @@
 # SMOAC — Current Status
 
-**Last updated:** July 26, 2026  
+**Last updated:** July 27, 2026  
 **Phase 2:** Complete  
 **Phase 3a (saved trainers):** Complete  
 **Phase 3b (applications):** Complete (fetch-only hydrate when Supabase active)  
 **Phase 3c (specialist profiles):** Complete in code  
 **Phase 3d (admin flags / hide):** Complete in code  
-**Phase 3e (prefer Supabase only):** In progress — first cutover shipped
+**Phase 3e (prefer Supabase only):** In progress — live reads no longer promote localStorage
 
 ---
 
@@ -32,6 +32,7 @@
 | `saved_trainers` table + RLS | ✅ |
 | Cross-device save hearts | ✅ |
 | No local mirror after successful Supabase write | ✅ (3e) |
+| Live load error does not fall back to localStorage | ✅ (3e) |
 
 **Docs:** [`docs/PHASE3A_SAVED_TRAINERS.md`](docs/PHASE3A_SAVED_TRAINERS.md)
 
@@ -44,6 +45,7 @@
 | `client_applications` + `specialist_applications` | ✅ |
 | Signup/onboarding → Supabase | ✅ |
 | Admin hydrate from DB (no auto-import of browser leftovers) | ✅ (3e) |
+| Live snapshots do not seed from localStorage pre-hydrate | ✅ (3e) |
 | Onboarding draft (local until submit) | ✅ (intentional) |
 
 **Docs:** [`docs/PHASE3B_APPLICATIONS.md`](docs/PHASE3B_APPLICATIONS.md)
@@ -58,6 +60,8 @@
 | Edit profile dual-write → DB | ✅ |
 | Hide / featured / sponsored / top_ranked flags | ✅ |
 | Live Explore skips browser-only hide list | ✅ |
+| Public profile page skips local overrides when live | ✅ (3e) |
+| Profile overrides memory-only when live | ✅ (3e) |
 
 **Docs:** [`docs/PHASE3C_SPECIALIST_PROFILES.md`](docs/PHASE3C_SPECIALIST_PROFILES.md)
 
@@ -70,22 +74,25 @@ Apply migrations in Supabase if not already:
 
 ## Phase 3e — Prefer Supabase only (in progress)
 
-**Shipped (this cutover):**
+**Shipped:**
 
 - Live approved catalog: memory + Supabase only (no localStorage write/read as authority)
-- Public Explore / cards: no local override overlay when live
+- Public Explore / cards / profile pages: no local override overlay when live
 - Applications hydrate: fetch-only (no auto `importLocal*` into shared DB)
-- Saved trainers: no post-success local mirror when Supabase active
+- Application + catalog snapshots: never seed from localStorage when live
+- Saved trainers: no post-success local mirror; live errors stay empty + error (no local invent)
 - Seed + localStorage remain for `npm run dev` without Supabase env
+- Admin specialists table reads `specialist_profiles` when live
+- Admin revenue can show Stripe MRR; specialist analytics use site_visits + saves
 
 **Still to do:**
 
-- [ ] Stop dual-writing applications to localStorage after remote success (memory only — partially done via write guards)
 - [ ] Explicit backfill scripts for any remaining local-only data
 - [ ] Delete local bridge modules + retire `dev-auth` when demo-without-env is an explicit product mode
-- [ ] Wire admin client saved counts to Supabase
-- [ ] Replace dashboard mock analytics with real rows
+- [ ] Hide / admin-meta mirrors memory-only when live (ops-only fields need DB columns)
+- [ ] Retire saved-trainers one-time `importLocalSavedTrainers` after migration window
+- [ ] Search / contact / booking click event pipeline for specialist analytics
 
-**Also shipped (admin roster):** live admin specialists table reads `specialist_profiles` + pending applications — never seed when Supabase is active.
+**Stripe (prod keys present):** checkout → webhook → `specialist_billing` path is live. Set `CRON_SECRET` in Vercel so daily trial expiry cron is authorized.
 
 **Plan:** [`docs/PHASE3_SUPABASE_MIGRATION.md`](docs/PHASE3_SUPABASE_MIGRATION.md)

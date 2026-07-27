@@ -1,4 +1,5 @@
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
@@ -10,9 +11,13 @@ import type {
   SpecialistProfileOverrides,
 } from "@/types/specialist-profile-edit";
 
-/** DEV ONLY — persisted specialist profile edits */
+/** DEV ONLY — persisted specialist profile edits (offline / seed mode) */
 export const DEV_SPECIALIST_PROFILE_OVERRIDES_KEY =
   "smoac_specialist_profile_overrides";
+
+/** In-session override buffer when Supabase is live (durable SoT is specialist_profiles). */
+let liveMemoryOverrides: Record<string, SpecialistProfileOverrides> | null =
+  null;
 
 export const EMPTY_CERTIFICATION: Certification = {
   name: "",
@@ -380,6 +385,11 @@ export function loadAllSpecialistOverrides(): Record<
   SpecialistProfileOverrides
 > {
   if (typeof window === "undefined") return {};
+  /* Live: memory only — public catalog uses approved rows; dashboard edits
+   * survive the session then sync via specialist_profiles. */
+  if (isMarketplaceSupabaseActive()) {
+    return liveMemoryOverrides ? { ...liveMemoryOverrides } : {};
+  }
   try {
     const raw = window.localStorage.getItem(DEV_SPECIALIST_PROFILE_OVERRIDES_KEY);
     if (!raw) return {};
@@ -394,6 +404,10 @@ export function persistAllSpecialistOverrides(
   map: Record<string, SpecialistProfileOverrides>
 ): void {
   if (typeof window === "undefined") return;
+  if (isMarketplaceSupabaseActive()) {
+    liveMemoryOverrides = { ...map };
+    return;
+  }
   window.localStorage.setItem(
     DEV_SPECIALIST_PROFILE_OVERRIDES_KEY,
     JSON.stringify(map)

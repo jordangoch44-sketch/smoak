@@ -41,11 +41,14 @@ Copy `STRIPE_PRICE_PREMIUM=price_…` into `.env.local` and Vercel.
 - Events: `checkout.session.completed`, `customer.subscription.created|updated|deleted`
 - Secret → `STRIPE_WEBHOOK_SECRET`
 
-## 6. Optional cron (expire trials daily)
+## 6. Cron (expire trials daily)
 
-`vercel.json` already schedules `GET /api/cron/expire-premium-trials` at 14:00 UTC.  
-Set `CRON_SECRET` in Vercel; Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`.
+`vercel.json` schedules `GET /api/cron/expire-premium-trials` at 14:00 UTC.
 
+1. Add `CRON_SECRET` in Vercel (Production) — any long random string
+2. Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically
+
+Without `CRON_SECRET`, the cron route returns 401 (safe default).  
 Trials also expire on the next specialist login if cron has not run yet.
 
 ## Test card

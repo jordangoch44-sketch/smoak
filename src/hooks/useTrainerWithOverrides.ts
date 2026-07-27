@@ -7,7 +7,9 @@ import {
   getApprovedSpecialistProfilesSnapshot,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { getPublicMarketplaceTrainerBaseById } from "@/lib/marketplace-public-catalog";
+import { isLivePublicCatalogMode } from "@/lib/public-catalog-mode";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 import {
   getSpecialistApplicationsServerSnapshot,
@@ -20,7 +22,7 @@ import {
   subscribeSpecialistProfiles,
 } from "@/lib/specialist-profile-store";
 
-/** Trainer record merged with DEV specialist dashboard edits */
+/** Public trainer record — live catalog skips stale browser overrides. */
 export function useTrainerWithOverrides(
   trainerId: string
 ): Trainer | undefined {
@@ -42,6 +44,11 @@ export function useTrainerWithOverrides(
 
   const base = getPublicMarketplaceTrainerBaseById(trainerId);
   if (!base) return undefined;
+
+  /* Match getTrainerWithOverrides: approved row is display SoT when live */
+  if (isLivePublicCatalogMode() || isMarketplaceSupabaseActive()) {
+    return base;
+  }
 
   return applySpecialistProfileOverrides(base, overridesMap[trainerId]);
 }

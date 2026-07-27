@@ -89,7 +89,8 @@ async function hydrateFromSupabase(): Promise<void> {
   const supabase = getMarketplaceAuthClient();
   try {
     if (!supabase) {
-      applyCache(readLocalApplications());
+      /* Live mode: empty until remote — never promote stale localStorage */
+      applyCache([]);
       hydrated = true;
       return;
     }
@@ -137,8 +138,13 @@ export function subscribeClientApplications(
 export function getClientApplicationsSnapshot(): readonly ClientApplication[] {
   if (typeof window === "undefined") return EMPTY_APPLICATIONS;
   ensureHydrated();
-  /* Stable identity for useSyncExternalStore — cache local read once. */
-  if (!hydrated && cachedApplications === EMPTY_APPLICATIONS) {
+  /* Offline/dev only: seed from localStorage before hydrate completes.
+   * Live Supabase mode waits for remote (empty until then). */
+  if (
+    !hydrated &&
+    cachedApplications === EMPTY_APPLICATIONS &&
+    !isMarketplaceSupabaseActive()
+  ) {
     const local = readLocalApplications();
     cachedApplications = local.length > 0 ? local : EMPTY_APPLICATIONS;
   }
