@@ -91,7 +91,8 @@ Apply migrations in Supabase if not already:
 - [ ] Delete local bridge modules + retire `dev-auth` when demo-without-env is an explicit product mode
 - [ ] Hide / admin-meta mirrors memory-only when live (ops-only fields need DB columns)
 - [ ] Retire saved-trainers one-time `importLocalSavedTrainers` after migration window
-- [ ] Search / contact / booking click event pipeline for specialist analytics
+- [x] Search / contact / booking click event pipeline for specialist analytics
+  - Migration: `20260727140000_specialist_engagement_events.sql` (apply in Supabase SQL Editor)
 
 **Stripe (prod keys present):** checkout → webhook → `specialist_billing` path is live. Set `CRON_SECRET` in Vercel so daily trial expiry cron is authorized.
 

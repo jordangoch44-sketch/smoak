@@ -8,6 +8,7 @@ import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import {
   useActiveUserCoordinates,
   useActiveUserCoordinatesKey,
@@ -85,7 +86,11 @@ export function NewSpecialists({
             const href = `/trainers/${trainer.id}`;
 
             return (
-              <div key={trainer.id} className="home-portrait-card" role="listitem">
+              <div key={trainer.id} className="home-portrait-card relative" role="listitem">
+                <SpecialistImpressionBeacon
+                  specialistId={trainer.id}
+                  surface="home_new"
+                />
                 <TapLink href={href} className="home-portrait-card__link">
                   <article className="home-portrait-card__article">
                     <div className="home-portrait-card__media">

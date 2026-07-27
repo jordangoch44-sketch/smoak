@@ -164,7 +164,12 @@ export function SavedPanelContent({
         )
       ) : isReady && saved.length > 0 ? (
         <div className={isOverlay ? "saved-dropdown__list" : "mt-8"}>
-          <TrainerList trainers={saved} variant="explore" priorityCount={4} />
+          <TrainerList
+            trainers={saved}
+            variant="explore"
+            priorityCount={4}
+            impressionSurface="saved"
+          />
         </div>
       ) : isSpecialistSignedIn ? (
         <div

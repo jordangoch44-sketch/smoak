@@ -6,6 +6,7 @@ import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
@@ -30,7 +31,11 @@ function SimilarSpecialistCard({
 }) {
   const href = `/trainers/${trainer.id}`;
   return (
-    <div className="home-portrait-card" role="listitem">
+    <div className="home-portrait-card relative" role="listitem">
+      <SpecialistImpressionBeacon
+        specialistId={trainer.id}
+        surface="profile_rail"
+      />
       <TapLink href={href} className="home-portrait-card__link">
         <article className="home-portrait-card__article">
           <div className="home-portrait-card__media">
@@ -107,6 +112,7 @@ export function ProfileDiscoveryRails({ trainer }: ProfileDiscoveryRailsProps) {
                 trainer={card}
                 priority={index < 2}
                 showSponsoredBadge={Boolean(card.sponsored)}
+                impressionSurface="profile_rail"
               />
             ))}
           </HorizontalCarousel>

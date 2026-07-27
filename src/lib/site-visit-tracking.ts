@@ -25,7 +25,7 @@ function randomVisitorKey(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function getOrCreateVisitorKey(): { key: string; isNew: boolean } {
+export function getOrCreateVisitorKey(): { key: string; isNew: boolean } {
   try {
     const existing = window.localStorage.getItem(VISITOR_KEY_STORAGE);
     if (existing && existing.length >= 8) {

@@ -6,6 +6,7 @@ import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import {
   formatTrainerPriceLabel,
   formatTrainerRatingLabel,
@@ -18,19 +19,25 @@ interface SponsoredSpecialistCardProps {
   priority?: boolean;
   /** When false, hides the Sponsored chip (organic fillers in profile rails) */
   showSponsoredBadge?: boolean;
+  impressionSurface?: "home_sponsored" | "profile_rail";
 }
 
 export function SponsoredSpecialistCard({
   trainer,
   priority = false,
   showSponsoredBadge = true,
+  impressionSurface = "home_sponsored",
 }: SponsoredSpecialistCardProps) {
   const href = `/trainers/${trainer.id}`;
   const sponsored =
     showSponsoredBadge && (trainer.sponsored || trainer.featured);
 
   return (
-    <div className="home-sponsored-card" role="listitem">
+    <div className="home-sponsored-card relative" role="listitem">
+      <SpecialistImpressionBeacon
+        specialistId={trainer.id}
+        surface={impressionSurface}
+      />
       <article className="home-sponsored-card__article">
         <TapLink href={href} className="home-sponsored-card__media-link">
           <div className="home-sponsored-card__media">

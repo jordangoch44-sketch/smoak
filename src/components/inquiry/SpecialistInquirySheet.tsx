@@ -31,6 +31,7 @@ import {
 } from "@/lib/auth/inquiry-auth";
 import { setAuthSession } from "@/lib/auth-session-store";
 import { trackInquiryEvent } from "@/lib/inquiry/inquiry-analytics";
+import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
 import {
   draftToSubmitInput,
   submitSpecialistInquiry,
@@ -453,6 +454,18 @@ export function SpecialistInquirySheet({
                           trackInquiryEvent("inquiry_action_selected", {
                             action: action.id,
                           });
+                          if (
+                            action.id === "book_call" ||
+                            action.id === "book_consultation"
+                          ) {
+                            recordSpecialistEngagement({
+                              event: "booking_click",
+                              specialistId,
+                              surface: "profile",
+                              inquiryAction: action.id,
+                              oncePerSession: true,
+                            });
+                          }
                         }}
                       >
                         {action.label}

@@ -1,3 +1,5 @@
+"use client";
+
 /**
  * Responsive provider card (internal name TrainerCard).
  * TODO: Rename to ProviderCard; routes remain /trainers/[id] until migrated to /providers.
@@ -12,22 +14,30 @@ import {
 } from "./TrainerCardCompact";
 import { TrainerCardGrid } from "./TrainerCardGrid";
 import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
+import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
 
 interface TrainerCardProps {
   trainer: Trainer;
   priority?: boolean;
   compactLayout?: TrainerCardCompactLayout;
+  /** Search-appearance surface for analytics (default explore). */
+  impressionSurface?: "explore" | "saved" | "client_dashboard";
 }
 
 export const TrainerCard = memo(function TrainerCard({
   trainer,
   priority = false,
   compactLayout = "default",
+  impressionSurface = "explore",
 }: TrainerCardProps) {
   const href = `/trainers/${trainer.id}`;
 
   return (
     <div className="trainer-card relative w-full min-w-0 max-w-full overflow-hidden">
+      <SpecialistImpressionBeacon
+        specialistId={trainer.id}
+        surface={impressionSurface}
+      />
       <Link href={href} className="block active:opacity-95">
         <TrainerCardCompact
           trainer={trainer}

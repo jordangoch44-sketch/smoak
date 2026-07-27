@@ -349,7 +349,11 @@ export function ClientDashboardPageClient() {
                   Loading your saved specialists…
                 </p>
               ) : saved.length > 0 ? (
-                <TrainerList trainers={saved} variant="explore" />
+                <TrainerList
+                  trainers={saved}
+                  variant="explore"
+                  impressionSurface="client_dashboard"
+                />
               ) : (
                 <DashboardEmptyState
                   message={

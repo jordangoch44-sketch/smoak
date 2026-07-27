@@ -13,6 +13,7 @@ import {
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
+import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
 import { trainerFirstName } from "@/lib/reviews/specialist-review-types";
 import {
   getProfileAccentRgb,
@@ -111,7 +112,15 @@ export function TrainerProfilePageClient({
         <div className="profile-content profile-content--streamlined min-w-0 max-w-3xl">
           <ProfileContactCta
             specialistName={trainer.name}
-            onContact={() => setInquiryOpen(true)}
+            onContact={() => {
+              recordSpecialistEngagement({
+                event: "contact_click",
+                specialistId: trainer.id,
+                surface: "profile",
+                oncePerSession: true,
+              });
+              setInquiryOpen(true);
+            }}
           />
 
           <ProfilePrimaryHighlights trainer={trainer} />

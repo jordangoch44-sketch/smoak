@@ -7,6 +7,7 @@ import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import {
   formatTrainerPriceLabel,
   formatTrainerRatingLabel,
@@ -31,12 +32,16 @@ export function Top50RankCard({
   return (
     <div
       className={cn(
-        "top50-card",
+        "top50-card relative",
         isPodium && "top50-card--podium",
         rank === 1 && "top50-card--first"
       )}
       role="listitem"
     >
+      <SpecialistImpressionBeacon
+        specialistId={trainer.id}
+        surface="home_top50"
+      />
       <TapLink href={href} className="top50-card__link">
         <article className="top50-card__article">
           <div className="top50-card__rank" aria-label={`Rank ${rank}`}>

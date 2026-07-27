@@ -15,6 +15,7 @@ interface TrainerListProps {
   variant?: keyof typeof listLayouts;
   priorityCount?: number;
   className?: string;
+  impressionSurface?: "explore" | "saved" | "client_dashboard";
 }
 
 export function TrainerList({
@@ -22,6 +23,7 @@ export function TrainerList({
   variant = "explore",
   priorityCount = 4,
   className,
+  impressionSurface = "explore",
 }: TrainerListProps) {
   return (
     <div className={cn(listLayouts[variant], className)}>
@@ -31,6 +33,7 @@ export function TrainerList({
           trainer={trainer}
           priority={index < priorityCount}
           compactLayout={variant === "featured" ? "featured" : "default"}
+          impressionSurface={impressionSurface}
         />
       ))}
     </div>

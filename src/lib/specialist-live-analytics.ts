@@ -3,6 +3,9 @@ import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
 export interface SpecialistLiveAnalyticsCounts {
   profileViews: number;
   savedByClients: number;
+  searchAppearances: number;
+  contactClicks: number;
+  bookingClicks: number;
 }
 
 export interface SpecialistLiveAnalyticsResponse {
@@ -10,24 +13,31 @@ export interface SpecialistLiveAnalyticsResponse {
   counts?: SpecialistLiveAnalyticsCounts;
 }
 
-/** Patch honest base analytics with live Supabase counts (profile views, saves). */
+/** Patch honest base analytics with live Supabase counts. */
 export function mergeLiveSpecialistAnalytics(
   base: SpecialistProfileAnalytics,
   live: SpecialistLiveAnalyticsCounts
 ): SpecialistProfileAnalytics {
+  const byMetricId: Record<string, number> = {
+    "profile-views": live.profileViews,
+    "saved-by-clients": live.savedByClients,
+    "search-appearances": live.searchAppearances,
+    "contact-clicks": live.contactClicks,
+    "booking-clicks": live.bookingClicks,
+  };
+
   return {
     ...base,
     profileViews: live.profileViews,
     savedByClients: live.savedByClients,
-    coreMetrics: base.coreMetrics.map((metric) => {
-      if (metric.id === "profile-views") {
-        return { ...metric, value: live.profileViews };
-      }
-      if (metric.id === "saved-by-clients") {
-        return { ...metric, value: live.savedByClients };
-      }
-      return metric;
-    }),
+    searchAppearances: live.searchAppearances,
+    contactClicks: live.contactClicks,
+    bookingClicks: live.bookingClicks,
+    coreMetrics: base.coreMetrics.map((metric) =>
+      metric.id in byMetricId
+        ? { ...metric, value: byMetricId[metric.id] }
+        : metric
+    ),
   };
 }
 
@@ -40,7 +50,13 @@ export async function fetchSpecialistLiveAnalytics(): Promise<SpecialistLiveAnal
     if (!res.ok) return null;
     const body = (await res.json()) as SpecialistLiveAnalyticsResponse;
     if (!body.ok || !body.counts) return null;
-    return body.counts;
+    return {
+      profileViews: body.counts.profileViews ?? 0,
+      savedByClients: body.counts.savedByClients ?? 0,
+      searchAppearances: body.counts.searchAppearances ?? 0,
+      contactClicks: body.counts.contactClicks ?? 0,
+      bookingClicks: body.counts.bookingClicks ?? 0,
+    };
   } catch {
     return null;
   }
