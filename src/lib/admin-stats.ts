@@ -1,54 +1,23 @@
-import { trainers } from "@/data/trainers";
-import { DEV_SPECIALIST_CREDENTIALS } from "@/lib/dev-auth";
-import { getHiddenTrainersSnapshot } from "@/lib/hidden-trainers-store";
 import { countPendingApplications } from "@/lib/admin-applications-service";
+import { listAdminSpecialists } from "@/lib/admin-specialists-service";
 import { countPendingClientApplications } from "@/lib/client-applications-service";
-import { getAdminSpecialistMetaSnapshot } from "@/lib/admin-specialist-meta-store";
-import { listSpecialistApplications } from "@/lib/specialist-application-storage";
-import type { AdminOverviewStats, AdminSpecialistVisibility } from "@/types/admin";
+import type { AdminOverviewStats } from "@/types/admin";
 import type { AdminClientRecord } from "@/types/admin";
-
-function resolveVisibility(
-  trainerId: string,
-  hiddenIds: readonly string[]
-): AdminSpecialistVisibility {
-  const meta = getAdminSpecialistMetaSnapshot()[trainerId];
-  if (meta?.visibility) return meta.visibility;
-  if (hiddenIds.includes(trainerId)) return "hidden";
-  const app = listSpecialistApplications().find((a) => a.id === trainerId);
-  if (app?.profileStatus === "PENDING_APPROVAL") return "pending";
-  return "active";
-}
+import type { SpecialistApplication } from "@/types/specialist-application";
 
 export function computeAdminOverviewStats(
   clients: AdminClientRecord[],
-  specialistApplications = listSpecialistApplications(),
+  _specialistApplications: readonly SpecialistApplication[] = [],
   _clientApplications: readonly { status: string }[] = []
 ): AdminOverviewStats {
-  const hiddenIds = getHiddenTrainersSnapshot();
-  const meta = getAdminSpecialistMetaSnapshot();
-  const applicationIds = new Set(specialistApplications.map((a) => a.id));
-
-  const catalogIds = new Set(trainers.map((t) => t.id));
-  applicationIds.forEach((id) => catalogIds.add(id));
-
-  let activeSpecialists = 0;
-  let premiumSpecialists = 0;
-
-  for (const id of catalogIds) {
-    const visibility = resolveVisibility(id, hiddenIds);
-    if (visibility === "active") activeSpecialists += 1;
-    const row = meta[id];
-    const seed = trainers.find((t) => t.id === id);
-    const isPremium =
-      row?.isPremium === true ||
-      (id === "anthony-brooks" && DEV_SPECIALIST_CREDENTIALS.isPremium === true) ||
-      seed?.featured === true;
-    if (isPremium) premiumSpecialists += 1;
-  }
+  const specialists = listAdminSpecialists();
+  const activeSpecialists = specialists.filter(
+    (row) => row.visibility === "active"
+  ).length;
+  const premiumSpecialists = specialists.filter((row) => row.isPremium).length;
 
   return {
-    totalSpecialists: catalogIds.size,
+    totalSpecialists: specialists.length,
     pendingApplications:
       countPendingApplications() + countPendingClientApplications(),
     activeSpecialists,

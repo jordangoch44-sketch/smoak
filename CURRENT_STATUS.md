@@ -80,11 +80,12 @@ Apply migrations in Supabase if not already:
 
 **Still to do:**
 
-- [ ] Admin roster from `specialist_profiles` (not seed union) when live
 - [ ] Stop dual-writing applications to localStorage after remote success (memory only — partially done via write guards)
 - [ ] Explicit backfill scripts for any remaining local-only data
 - [ ] Delete local bridge modules + retire `dev-auth` when demo-without-env is an explicit product mode
 - [ ] Wire admin client saved counts to Supabase
 - [ ] Replace dashboard mock analytics with real rows
+
+**Also shipped (admin roster):** live admin specialists table reads `specialist_profiles` + pending applications — never seed when Supabase is active.
 
 **Plan:** [`docs/PHASE3_SUPABASE_MIGRATION.md`](docs/PHASE3_SUPABASE_MIGRATION.md)

@@ -162,7 +162,7 @@ Seed data becomes SQL seed migration or admin-import script, not bundled TS for 
 ### Admin moderation
 
 - [x] Hidden list + meta flags in DB (status + placement columns)
-- [ ] Admin services list live roster from `specialist_profiles` (not seed union)
+- [x] Admin services list live roster from `specialist_profiles` (not seed union)
 - [ ] Remove `hidden-trainers-storage.ts`, `admin-specialist-meta-store.ts` mirrors
 
 ---

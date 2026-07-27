@@ -268,6 +268,38 @@ export async function fetchSpecialistModerationSnapshot(
   return { ok: true, rows };
 }
 
+export type AdminSpecialistDirectoryEntry = {
+  trainer: Trainer;
+  status: SpecialistProfileRow["status"];
+};
+
+/**
+ * Full specialist_profiles directory for admin roster (all statuses).
+ * Requires admin RLS — guests will get an error (callers should ignore).
+ */
+export async function fetchAdminSpecialistDirectory(
+  supabase: SupabaseClient
+): Promise<
+  | { ok: true; entries: AdminSpecialistDirectoryEntry[] }
+  | { ok: false; message: string }
+> {
+  const { data, error } = await supabase
+    .from("specialist_profiles")
+    .select("*")
+    .order("updated_at", { ascending: false });
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  const entries: AdminSpecialistDirectoryEntry[] = [];
+  for (const row of (data ?? []) as SpecialistProfileRow[]) {
+    const parsed = specialistProfileFromRow(row);
+    entries.push({ trainer: parsed.trainer, status: row.status });
+  }
+  return { ok: true, entries };
+}
+
 export async function setSpecialistProfileStatus(
   supabase: SupabaseClient,
   id: string,

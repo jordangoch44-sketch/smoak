@@ -26,11 +26,15 @@ import {
   subscribeAdminSpecialistMeta,
 } from "@/lib/admin-specialist-meta-store";
 import {
+  getAdminSpecialistDirectoryServerSnapshot,
+  getAdminSpecialistDirectorySnapshot,
   listAdminSpecialists,
+  refreshAdminSpecialistDirectoryFromRemote,
   setAdminSpecialistAccountKind,
   setAdminSpecialistFlagAsync,
   setAdminSpecialistProtected,
   setAdminSpecialistVisibilityAsync,
+  subscribeAdminSpecialistDirectory,
   updateAdminSpecialistBasics,
   type AdminSpecialistRow,
 } from "@/lib/admin-specialists-service";
@@ -68,6 +72,7 @@ export function useAdminDashboard() {
     refreshClientApplicationsFromRemote();
     refreshSpecialistApplicationsFromRemote();
     refreshApprovedSpecialistProfilesFromRemote();
+    void refreshAdminSpecialistDirectoryFromRemote();
   }, [isReady]);
 
   const specialistMeta = useSyncExternalStore(
@@ -96,6 +101,11 @@ export function useAdminDashboard() {
     getApprovedSpecialistProfilesSnapshot,
     getApprovedSpecialistProfilesServerSnapshot
   );
+  const adminDirectory = useSyncExternalStore(
+    subscribeAdminSpecialistDirectory,
+    getAdminSpecialistDirectorySnapshot,
+    getAdminSpecialistDirectoryServerSnapshot
+  );
 
   const clients = useMemo(
     () => listAdminClients(null, clientApplications),
@@ -110,7 +120,7 @@ export function useAdminDashboard() {
   const specialists = useMemo(
     () => listAdminSpecialists(),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- store-driven list
-    [applications, hiddenIds, specialistMeta, approvedProfiles]
+    [applications, hiddenIds, specialistMeta, approvedProfiles, adminDirectory]
   );
 
   const refreshKey = applications.length + clientApplications.length;

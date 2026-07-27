@@ -143,6 +143,12 @@ async function syncModerationMirrorsFromRemote(
   });
 
   setHiddenTrainerIds([...remoteHidden, ...pendingLocalOnly]);
+
+  /* Admin roster: full specialist_profiles (all statuses), not seed union */
+  const { refreshAdminSpecialistDirectoryFromRemote } = await import(
+    "@/lib/admin-specialists-service"
+  );
+  await refreshAdminSpecialistDirectoryFromRemote();
 }
 
 async function hydrateFromSupabase(): Promise<void> {

@@ -1,10 +1,12 @@
 import { trainers } from "@/data/trainers";
 import {
   getAdminSpecialistMeta,
+  getAdminSpecialistMetaSnapshot,
   patchAdminSpecialistMeta,
 } from "@/lib/admin-specialist-meta-store";
 import {
   getApprovedSpecialistProfileById,
+  getApprovedSpecialistProfilesSnapshot,
   hideApprovedSpecialistProfileAsync,
   refreshApprovedSpecialistProfilesFromRemoteAsync,
   restoreApprovedSpecialistProfileAsync,
@@ -13,12 +15,17 @@ import {
   getMarketplaceAuthClient,
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
-import { setSpecialistProfileFlags } from "@/lib/profiles/specialist-profiles-db";
+import {
+  fetchAdminSpecialistDirectory,
+  setSpecialistProfileFlags,
+  type AdminSpecialistDirectoryEntry,
+} from "@/lib/profiles/specialist-profiles-db";
 import {
   getHiddenTrainersSnapshot,
   hideTrainerId,
   unhideTrainerId,
 } from "@/lib/hidden-trainers-store";
+import { isLivePublicCatalogMode } from "@/lib/public-catalog-mode";
 import {
   applySpecialistProfileOverrides,
   loadAllSpecialistOverrides,
@@ -54,8 +61,92 @@ export interface AdminSpecialistRow {
   profileHref: string;
 }
 
+const EMPTY_DIRECTORY: Record<string, AdminSpecialistDirectoryEntry> =
+  Object.freeze({});
+const directoryListeners = new Set<() => void>();
+let directoryById: Record<string, AdminSpecialistDirectoryEntry> =
+  EMPTY_DIRECTORY;
+
+function directorySignature(
+  map: Record<string, AdminSpecialistDirectoryEntry>
+): string {
+  return Object.keys(map)
+    .sort()
+    .map(
+      (id) =>
+        `${id}:${map[id]?.status}:${map[id]?.trainer.name}:${map[id]?.trainer.featured}`
+    )
+    .join("|");
+}
+
+function emitDirectory(
+  next: Record<string, AdminSpecialistDirectoryEntry>
+): void {
+  const normalized =
+    Object.keys(next).length > 0 ? { ...next } : EMPTY_DIRECTORY;
+  if (directorySignature(normalized) === directorySignature(directoryById)) {
+    return;
+  }
+  directoryById = normalized;
+  directoryListeners.forEach((listener) => listener());
+}
+
+export function subscribeAdminSpecialistDirectory(
+  onStoreChange: () => void
+): () => void {
+  directoryListeners.add(onStoreChange);
+  return () => directoryListeners.delete(onStoreChange);
+}
+
+export function getAdminSpecialistDirectorySnapshot(): Record<
+  string,
+  AdminSpecialistDirectoryEntry
+> {
+  return directoryById;
+}
+
+export function getAdminSpecialistDirectoryServerSnapshot(): Record<
+  string,
+  AdminSpecialistDirectoryEntry
+> {
+  return EMPTY_DIRECTORY;
+}
+
+/** Replace in-memory admin roster from specialist_profiles (all statuses). */
+export function setAdminSpecialistDirectoryFromRemote(
+  entries: AdminSpecialistDirectoryEntry[]
+): void {
+  const next: Record<string, AdminSpecialistDirectoryEntry> = {};
+  for (const entry of entries) {
+    next[entry.trainer.id] = entry;
+  }
+  emitDirectory(next);
+}
+
+/** Load full admin directory when the signed-in user has admin RLS. */
+export async function refreshAdminSpecialistDirectoryFromRemote(): Promise<void> {
+  if (!isMarketplaceSupabaseActive()) {
+    emitDirectory({});
+    return;
+  }
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return;
+  const result = await fetchAdminSpecialistDirectory(supabase);
+  if (!result.ok) return;
+  setAdminSpecialistDirectoryFromRemote(result.entries);
+}
+
 function mergeTrainerBase(base: Trainer, id: string): Trainer {
   return applySpecialistProfileOverrides(base, loadAllSpecialistOverrides()[id]);
+}
+
+function statusToVisibility(
+  status: string | undefined
+): AdminSpecialistVisibility | null {
+  if (status === "approved") return "active";
+  if (status === "hidden") return "hidden";
+  if (status === "archived") return "hidden";
+  return null;
 }
 
 function applicationAsTrainerRow(
@@ -65,8 +156,8 @@ function applicationAsTrainerRow(
   const app = listSpecialistApplications().find((a) => a.id === id);
   if (!app) return null;
   const meta = getAdminSpecialistMeta(id);
-  /* Durable placement flags live on specialist_profiles — prefer remote truth */
   const approved = getApprovedSpecialistProfileById(id);
+  const directory = directoryById[id]?.trainer;
   return {
     id,
     name: app.displayName.trim() || app.fullName.trim() || id,
@@ -79,10 +170,13 @@ function applicationAsTrainerRow(
     serviceType: app.serviceType,
     travelRadius: app.travelRadius,
     visibility,
-    featured: approved?.featured ?? meta.featured ?? false,
-    sponsored: approved?.sponsored ?? meta.sponsored ?? false,
-    topRanked: approved?.topRanked ?? meta.topRanked ?? false,
-    isPremium: approved?.isPremium ?? meta.isPremium ?? false,
+    featured: approved?.featured ?? directory?.featured ?? meta.featured ?? false,
+    sponsored:
+      approved?.sponsored ?? directory?.sponsored ?? meta.sponsored ?? false,
+    topRanked:
+      approved?.topRanked ?? directory?.topRanked ?? meta.topRanked ?? false,
+    isPremium:
+      approved?.isPremium ?? directory?.isPremium ?? meta.isPremium ?? false,
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? "test",
     inSeedCatalog: false,
@@ -90,10 +184,42 @@ function applicationAsTrainerRow(
   };
 }
 
+function rowFromTrainer(
+  trainer: Trainer,
+  visibility: AdminSpecialistVisibility,
+  inSeedCatalog: boolean
+): AdminSpecialistRow {
+  const meta = getAdminSpecialistMeta(trainer.id);
+  return {
+    id: trainer.id,
+    name: trainer.name,
+    profession: meta.profession ?? trainer.profession,
+    specialty: meta.specialty ?? trainer.specialty,
+    city: meta.city ?? trainer.city,
+    state: meta.state ?? trainer.state ?? "",
+    neighborhood: meta.neighborhood ?? trainer.neighborhood,
+    zipCode: meta.zipCode ?? trainer.zipCode ?? "",
+    serviceType: meta.serviceType ?? trainer.serviceType ?? "",
+    travelRadius: meta.travelRadius ?? trainer.travelRadius ?? "",
+    visibility,
+    featured: trainer.featured ?? meta.featured ?? false,
+    sponsored: Boolean(trainer.sponsored) || Boolean(meta.sponsored),
+    topRanked: Boolean(trainer.topRanked) || Boolean(meta.topRanked),
+    isPremium: Boolean(trainer.isPremium) || Boolean(meta.isPremium),
+    isProtected: meta.isProtected ?? false,
+    accountKind: meta.accountKind ?? (inSeedCatalog ? "test" : "real"),
+    inSeedCatalog,
+    profileHref: `/trainers/${trainer.id}`,
+  };
+}
+
 function resolveVisibility(
   trainerId: string,
   hiddenIds: readonly string[]
 ): AdminSpecialistVisibility {
+  const fromStatus = statusToVisibility(directoryById[trainerId]?.status);
+  if (fromStatus) return fromStatus;
+
   const meta = getAdminSpecialistMeta(trainerId);
   if (meta?.visibility) return meta.visibility;
   if (hiddenIds.includes(trainerId)) return "hidden";
@@ -102,42 +228,84 @@ function resolveVisibility(
   return "active";
 }
 
+function usesLiveAdminRoster(): boolean {
+  return isLivePublicCatalogMode() || isMarketplaceSupabaseActive();
+}
+
+/**
+ * Admin specialists table.
+ * Live: specialist_profiles directory + pending applications (never seed).
+ * Seed mode: demo trainers + local applications.
+ */
 export function listAdminSpecialists(): AdminSpecialistRow[] {
   const hiddenIds = getHiddenTrainersSnapshot();
+  const rows: AdminSpecialistRow[] = [];
+  const seen = new Set<string>();
+
+  if (usesLiveAdminRoster()) {
+    for (const [id, entry] of Object.entries(directoryById)) {
+      seen.add(id);
+      const visibility = resolveVisibility(id, hiddenIds);
+      const approved = getApprovedSpecialistProfileById(id);
+      rows.push(rowFromTrainer(approved ?? entry.trainer, visibility, false));
+    }
+
+    /* Approved cache may be ahead of directory briefly after approve */
+    for (const [id, trainer] of Object.entries(
+      getApprovedSpecialistProfilesSnapshot()
+    )) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      rows.push(rowFromTrainer(trainer, resolveVisibility(id, hiddenIds), false));
+    }
+
+    for (const app of listSpecialistApplications()) {
+      if (seen.has(app.id)) continue;
+      seen.add(app.id);
+      const visibility = resolveVisibility(app.id, hiddenIds);
+      const fromApp = applicationAsTrainerRow(app.id, visibility);
+      if (fromApp) rows.push(fromApp);
+    }
+
+    /* Meta-only stubs (ops flags) without a profile row yet */
+    for (const id of Object.keys(getAdminSpecialistMetaSnapshot())) {
+      if (seen.has(id)) continue;
+      const fromApp = applicationAsTrainerRow(
+        id,
+        resolveVisibility(id, hiddenIds)
+      );
+      if (fromApp) {
+        seen.add(id);
+        rows.push(fromApp);
+      }
+    }
+
+    return rows.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   const ids = new Set<string>(trainers.map((t) => t.id));
   listSpecialistApplications().forEach((a) => ids.add(a.id));
 
-  const rows: AdminSpecialistRow[] = [];
-
   for (const id of ids) {
     const visibility = resolveVisibility(id, hiddenIds);
-    const meta = getAdminSpecialistMeta(id);
     const seed = trainers.find((t) => t.id === id);
 
     if (seed) {
       const merged = mergeTrainerBase(seed, id);
       const approved = getApprovedSpecialistProfileById(id);
-      rows.push({
-        id,
-        name: merged.name,
-        profession: meta.profession ?? merged.profession,
-        specialty: meta.specialty ?? merged.specialty,
-        city: meta.city ?? merged.city,
-        state: meta.state ?? merged.state ?? "",
-        neighborhood: meta.neighborhood ?? merged.neighborhood,
-        zipCode: meta.zipCode ?? merged.zipCode ?? "",
-        serviceType: meta.serviceType ?? merged.serviceType ?? "",
-        travelRadius: meta.travelRadius ?? merged.travelRadius ?? "",
-        visibility,
-        featured: approved?.featured ?? meta.featured ?? merged.featured,
-        sponsored: approved?.sponsored ?? meta.sponsored ?? Boolean(merged.sponsored),
-        topRanked: approved?.topRanked ?? meta.topRanked ?? false,
-        isPremium: approved?.isPremium ?? meta.isPremium ?? false,
-        isProtected: meta.isProtected ?? false,
-        accountKind: meta.accountKind ?? "test",
-        inSeedCatalog: true,
-        profileHref: `/trainers/${id}`,
-      });
+      rows.push(
+        rowFromTrainer(
+          {
+            ...merged,
+            featured: approved?.featured ?? merged.featured,
+            sponsored: approved?.sponsored ?? merged.sponsored,
+            topRanked: approved?.topRanked ?? false,
+            isPremium: approved?.isPremium ?? false,
+          },
+          visibility,
+          true
+        )
+      );
     } else {
       const fromApp = applicationAsTrainerRow(id, visibility);
       if (fromApp) rows.push(fromApp);
@@ -161,6 +329,7 @@ export async function setAdminSpecialistVisibilityAsync(
     const result = await hideApprovedSpecialistProfileAsync(trainerId);
     if (!result.ok) return result;
     hideTrainerId(trainerId);
+    await refreshAdminSpecialistDirectoryFromRemote();
     return { ok: true };
   }
 
@@ -168,6 +337,7 @@ export async function setAdminSpecialistVisibilityAsync(
     const result = await restoreApprovedSpecialistProfileAsync(trainerId);
     if (!result.ok) return result;
     unhideTrainerId(trainerId);
+    await refreshAdminSpecialistDirectoryFromRemote();
     return { ok: true };
   }
 
@@ -250,6 +420,7 @@ export async function setAdminSpecialistFlagAsync(
   }
 
   await refreshApprovedSpecialistProfilesFromRemoteAsync();
+  await refreshAdminSpecialistDirectoryFromRemote();
   return { ok: true };
 }
 
