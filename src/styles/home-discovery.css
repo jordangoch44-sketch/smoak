@@ -142,7 +142,11 @@
   margin-top: 1rem;
   font-size: clamp(0.9375rem, 2.4vw, 1.125rem);
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.48);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow:
+    0 0 18px rgba(255, 255, 255, 0.38),
+    0 0 40px rgba(255, 255, 255, 0.2),
+    0 1px 14px rgba(0, 0, 0, 0.35);
 }
 
 .home-page--discovery .home-hero + .home-sponsored {

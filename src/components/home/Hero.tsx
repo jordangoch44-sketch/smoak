@@ -29,8 +29,8 @@ export function Hero() {
         <div className="home-hero__headline">
           <RotatingSpecialistHeadline />
           <p className="home-hero__lede">
-            Discover San Diego&apos;s highest-rated health &amp; wellness
-            professionals.
+            Discover the highest-rated health &amp; wellness professionals in
+            your area.
           </p>
         </div>
       </div>

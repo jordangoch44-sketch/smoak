@@ -415,9 +415,9 @@
   align-items: center;
   justify-content: flex-start;
   gap: 0.12em;
-  margin-top: 0.1rem;
+  margin-top: 0.15rem;
   min-height: 1.05em;
-  font-size: clamp(1.55rem, 5.4vw, 3.15rem);
+  font-size: clamp(2.35rem, 7.8vw, 4.15rem);
   font-weight: 600;
   line-height: 1.05;
   letter-spacing: -0.04em;
@@ -454,7 +454,7 @@
 
 .rotating-headline__static {
   display: block;
-  font-size: clamp(1.55rem, 5.4vw, 3.15rem);
+  font-size: clamp(2.35rem, 7.8vw, 4.15rem);
   line-height: 1.05;
 }
 
@@ -487,7 +487,7 @@
 
 @media (max-width: 389px) {
   .rotating-headline__typed {
-    font-size: clamp(1.35rem, 6.2vw, 1.85rem);
+    font-size: clamp(2rem, 9vw, 2.5rem);
   }
 }
 
@@ -507,8 +507,11 @@
   max-width: 34rem;
   font-size: clamp(0.875rem, 2vw, 1.0625rem);
   line-height: 1.5;
-  color: rgba(226, 220, 245, 0.72);
-  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.45);
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow:
+    0 0 18px rgba(255, 255, 255, 0.35),
+    0 0 36px rgba(255, 255, 255, 0.18),
+    0 1px 14px rgba(0, 0, 0, 0.35);
 }
 
 @media (min-width: 768px) {
