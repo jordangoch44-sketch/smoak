@@ -22,6 +22,8 @@ interface TrainerCardProps {
   compactLayout?: TrainerCardCompactLayout;
   /** Search-appearance surface for analytics (default explore). */
   impressionSurface?: "explore" | "saved" | "client_dashboard";
+  /** Disable profile link while drag-reordering saved cards. */
+  linkDisabled?: boolean;
 }
 
 export const TrainerCard = memo(function TrainerCard({
@@ -29,8 +31,19 @@ export const TrainerCard = memo(function TrainerCard({
   priority = false,
   compactLayout = "default",
   impressionSurface = "explore",
+  linkDisabled = false,
 }: TrainerCardProps) {
   const href = `/trainers/${trainer.id}`;
+  const cardBody = (
+    <>
+      <TrainerCardCompact
+        trainer={trainer}
+        priority={priority}
+        layout={compactLayout}
+      />
+      <TrainerCardGrid trainer={trainer} priority={priority} />
+    </>
+  );
 
   return (
     <div className="trainer-card relative w-full min-w-0 max-w-full overflow-hidden">
@@ -38,14 +51,15 @@ export const TrainerCard = memo(function TrainerCard({
         specialistId={trainer.id}
         surface={impressionSurface}
       />
-      <Link href={href} className="block active:opacity-95">
-        <TrainerCardCompact
-          trainer={trainer}
-          priority={priority}
-          layout={compactLayout}
-        />
-        <TrainerCardGrid trainer={trainer} priority={priority} />
-      </Link>
+      {linkDisabled ? (
+        <div className="block" aria-hidden={false}>
+          {cardBody}
+        </div>
+      ) : (
+        <Link href={href} className="block active:opacity-95">
+          {cardBody}
+        </Link>
+      )}
       <TrainerCardSaveSlot trainerId={trainer.id} />
     </div>
   );

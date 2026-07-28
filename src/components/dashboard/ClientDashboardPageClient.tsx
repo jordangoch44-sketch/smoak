@@ -25,7 +25,8 @@ import {
   DashboardListItem,
   DashboardPageShell,
 } from "@/components/dashboard";
-import { ClientSavedSpecialistsOrganizer } from "@/components/dashboard/client/ClientSavedSpecialistsOrganizer";
+import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOrganizer";
+import { TrainerList } from "@/components/trainers";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
 import { cn, getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
@@ -348,8 +349,19 @@ export function ClientDashboardPageClient() {
                 <p className="client-dash-panel__status">
                   Loading your saved specialists…
                 </p>
+              ) : saved.length >= 2 ? (
+                <SavedSpecialistsOrganizer
+                  userId={session.userId}
+                  trainers={saved}
+                  impressionSurface="client_dashboard"
+                />
               ) : saved.length > 0 ? (
-                <ClientSavedSpecialistsOrganizer userId={session.userId} trainers={saved} />
+                <TrainerList
+                  trainers={saved}
+                  variant="explore"
+                  priorityCount={4}
+                  impressionSurface="client_dashboard"
+                />
               ) : (
                 <DashboardEmptyState
                   message={

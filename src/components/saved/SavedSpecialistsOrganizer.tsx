@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { TrainerCard } from "@/components/trainers/TrainerCard";
 import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { getTrainerDistanceMiles } from "@/lib/trainer-proximity-sort";
 import type { Trainer } from "@/types";
+import "@/styles/saved-organizer.css";
 
-interface ClientSavedSpecialistsOrganizerProps {
+interface SavedSpecialistsOrganizerProps {
   userId: string;
   trainers: Trainer[];
+  impressionSurface?: "saved" | "client_dashboard";
 }
 
 interface ComparePair {
@@ -18,8 +20,7 @@ interface ComparePair {
   target: Trainer;
 }
 
-const HOLD_TO_DRAG_MS = 340;
-const HOLD_TO_COMPARE_MS = 540;
+const HOLD_TO_DRAG_MS = 380;
 const ORDER_STORAGE_PREFIX = "smoac_saved_specialist_order_v1";
 
 function moveItem(ids: string[], fromId: string, toId: string): string[] {
@@ -46,10 +47,11 @@ function formatDistance(miles: number | null): string {
   return miles < 10 ? `${miles.toFixed(1)} mi` : `${Math.round(miles)} mi`;
 }
 
-export function ClientSavedSpecialistsOrganizer({
+export function SavedSpecialistsOrganizer({
   userId,
   trainers,
-}: ClientSavedSpecialistsOrganizerProps) {
+  impressionSurface = "saved",
+}: SavedSpecialistsOrganizerProps) {
   const [orderedIds, setOrderedIds] = useState<string[]>(() =>
     trainers.map((trainer) => trainer.id)
   );
@@ -59,9 +61,11 @@ export function ClientSavedSpecialistsOrganizer({
   const [compareTargetId, setCompareTargetId] = useState<string | null>(null);
   const [comparePair, setComparePair] = useState<ComparePair | null>(null);
   const holdTimerRef = useRef<number | null>(null);
-  const compareTimerRef = useRef<number | null>(null);
+  const draggingIdRef = useRef<string | null>(null);
   const dragStartedRef = useRef(false);
   const suppressClickRef = useRef(false);
+  const activeShellRef = useRef<HTMLElement | null>(null);
+  const holdOriginRef = useRef<{ x: number; y: number } | null>(null);
   const coords = useActiveUserCoordinates();
   const storageKey = `${ORDER_STORAGE_PREFIX}:${userId}`;
 
@@ -111,83 +115,137 @@ export function ClientSavedSpecialistsOrganizer({
     [orderedIds, trainersById]
   );
 
-  function clearTimers() {
+  function clearHoldTimer() {
     if (holdTimerRef.current != null) {
       window.clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
     }
-    if (compareTimerRef.current != null) {
-      window.clearTimeout(compareTimerRef.current);
-      compareTimerRef.current = null;
-    }
   }
 
-  function beginDrag(id: string) {
-    setEditMode(true);
-    setDraggingId(id);
-    setHoverId(id);
-    setCompareTargetId(null);
-    dragStartedRef.current = true;
-    suppressClickRef.current = true;
-  }
-
-  function handlePointerDown(
-    event: React.PointerEvent<HTMLDivElement>,
-    trainerId: string
-  ) {
-    const target = event.target as HTMLElement;
-    if (target.closest("[data-save-control]")) return;
+  function resetDragState() {
+    draggingIdRef.current = null;
     dragStartedRef.current = false;
-    holdTimerRef.current = window.setTimeout(() => {
-      beginDrag(trainerId);
-    }, HOLD_TO_DRAG_MS);
-  }
-
-  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
-    if (!dragStartedRef.current || !draggingId) return;
-    const element = document.elementFromPoint(event.clientX, event.clientY);
-    const card = element?.closest("[data-saved-draggable-card]") as
-      | HTMLElement
-      | null;
-    const targetId = card?.dataset.savedDraggableCardId ?? null;
-    if (!targetId || targetId === hoverId) return;
-    setHoverId(targetId);
-    setCompareTargetId(null);
-    if (compareTimerRef.current != null) {
-      window.clearTimeout(compareTimerRef.current);
-      compareTimerRef.current = null;
-    }
-    if (targetId !== draggingId) {
-      compareTimerRef.current = window.setTimeout(() => {
-        setCompareTargetId(targetId);
-      }, HOLD_TO_COMPARE_MS);
-    }
-  }
-
-  function handlePointerEnd() {
-    clearTimers();
-    if (!draggingId || !dragStartedRef.current) return;
-    if (hoverId && hoverId !== draggingId) {
-      if (compareTargetId === hoverId) {
-        const dragged = trainersById.get(draggingId);
-        const target = trainersById.get(hoverId);
-        if (dragged && target) {
-          setComparePair({ dragged, target });
-        }
-      } else {
-        setOrderedIds((current) => moveItem(current, draggingId, hoverId));
-      }
-    }
+    activeShellRef.current = null;
     setDraggingId(null);
     setHoverId(null);
     setCompareTargetId(null);
   }
 
-  function handleClickCapture(event: React.MouseEvent<HTMLDivElement>) {
+  function beginDrag(
+    trainerId: string,
+    shell: HTMLElement,
+    pointerId: number
+  ) {
+    dragStartedRef.current = true;
+    draggingIdRef.current = trainerId;
+    activeShellRef.current = shell;
+    setEditMode(true);
+    setDraggingId(trainerId);
+    setHoverId(trainerId);
+    setCompareTargetId(null);
+    suppressClickRef.current = true;
+    try {
+      shell.setPointerCapture(pointerId);
+    } catch {
+      /* pointer capture may fail in some browsers */
+    }
+    if (typeof navigator !== "undefined" && navigator.vibrate) {
+      navigator.vibrate(12);
+    }
+  }
+
+  function cardIdFromPoint(clientX: number, clientY: number): string | null {
+    const element = document.elementFromPoint(clientX, clientY);
+    const card = element?.closest("[data-saved-draggable-card]") as
+      | HTMLElement
+      | null;
+    return card?.dataset.savedDraggableCardId ?? null;
+  }
+
+  function handlePointerDown(
+    event: PointerEvent<HTMLDivElement>,
+    trainerId: string
+  ) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
     const target = event.target as HTMLElement;
-    const inSaveControl = Boolean(target.closest("[data-save-control]"));
-    if (inSaveControl) return;
-    if (suppressClickRef.current || editMode) {
+    if (target.closest("[data-save-control]")) return;
+
+    clearHoldTimer();
+    dragStartedRef.current = false;
+    draggingIdRef.current = null;
+    activeShellRef.current = event.currentTarget;
+    holdOriginRef.current = { x: event.clientX, y: event.clientY };
+
+    if (editMode) {
+      beginDrag(trainerId, event.currentTarget, event.pointerId);
+      return;
+    }
+
+    holdTimerRef.current = window.setTimeout(() => {
+      beginDrag(trainerId, event.currentTarget, event.pointerId);
+    }, HOLD_TO_DRAG_MS);
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!dragStartedRef.current) {
+      if (holdTimerRef.current && holdOriginRef.current) {
+        const dx = event.clientX - holdOriginRef.current.x;
+        const dy = event.clientY - holdOriginRef.current.y;
+        if (dx * dx + dy * dy > 100) {
+          clearHoldTimer();
+        }
+      }
+      return;
+    }
+
+    if (!draggingIdRef.current) return;
+    event.preventDefault();
+
+    const targetId = cardIdFromPoint(event.clientX, event.clientY);
+    if (!targetId || targetId === draggingIdRef.current) return;
+
+    setHoverId(targetId);
+    setCompareTargetId(targetId);
+    setOrderedIds((current) =>
+      moveItem(current, draggingIdRef.current!, targetId)
+    );
+  }
+
+  function finishDrag(event: PointerEvent<HTMLDivElement>) {
+    clearHoldTimer();
+    holdOriginRef.current = null;
+
+    if (!dragStartedRef.current || !draggingIdRef.current) {
+      resetDragState();
+      return;
+    }
+
+    event.preventDefault();
+    const dragging = draggingIdRef.current;
+    const dropId = cardIdFromPoint(event.clientX, event.clientY);
+
+    if (dropId && dropId !== dragging) {
+      const dragged = trainersById.get(dragging);
+      const target = trainersById.get(dropId);
+      if (dragged && target) {
+        setComparePair({ dragged, target });
+      }
+    }
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* ignore */
+    }
+
+    suppressClickRef.current = true;
+    resetDragState();
+  }
+
+  function handleClickCapture(event: PointerEvent<HTMLDivElement>) {
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-save-control]")) return;
+    if (suppressClickRef.current || editMode || draggingId) {
       event.preventDefault();
       event.stopPropagation();
     }
@@ -221,19 +279,17 @@ export function ClientSavedSpecialistsOrganizer({
 
   return (
     <>
-      <div className="client-saved-instructions">
-        <p className="client-saved-instructions__copy">
+      <div className="saved-organizer-instructions">
+        <p className="saved-organizer-instructions__copy">
           Drag specialist card to edit or compare
         </p>
         {orderedTrainers.length > 1 ? (
           <button
             type="button"
-            className="client-saved-instructions__toggle smoac-control"
+            className="saved-organizer-instructions__toggle smoac-control"
             onClick={() => {
-              setEditMode((v) => !v);
-              setDraggingId(null);
-              setHoverId(null);
-              setCompareTargetId(null);
+              setEditMode((value) => !value);
+              resetDragState();
             }}
           >
             {editMode ? "Done arranging" : "Reorder mode"}
@@ -241,7 +297,14 @@ export function ClientSavedSpecialistsOrganizer({
         ) : null}
       </div>
 
-      <div className="trainer-card-list flex min-w-0 w-full max-w-full flex-col gap-2 md:grid md:grid-cols-2 md:gap-6 xl:grid-cols-3">
+      <div
+        className={[
+          "trainer-card-list saved-organizer-list",
+          editMode ? "saved-organizer-list--edit-mode" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
         {orderedTrainers.map((trainer, index) => {
           const isDragging = draggingId === trainer.id;
           const isHover = hoverId === trainer.id && draggingId !== trainer.id;
@@ -250,11 +313,11 @@ export function ClientSavedSpecialistsOrganizer({
             <div
               key={trainer.id}
               className={[
-                "client-saved-card-shell",
-                editMode ? "client-saved-card-shell--editable" : "",
-                isDragging ? "client-saved-card-shell--dragging" : "",
-                isHover ? "client-saved-card-shell--hover" : "",
-                isCompareTarget ? "client-saved-card-shell--compare-target" : "",
+                "saved-organizer-card",
+                editMode ? "saved-organizer-card--editable" : "",
+                isDragging ? "saved-organizer-card--dragging" : "",
+                isHover ? "saved-organizer-card--hover" : "",
+                isCompareTarget ? "saved-organizer-card--compare-target" : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -262,18 +325,21 @@ export function ClientSavedSpecialistsOrganizer({
               data-saved-draggable-card-id={trainer.id}
               onPointerDown={(event) => handlePointerDown(event, trainer.id)}
               onPointerMove={handlePointerMove}
-              onPointerUp={handlePointerEnd}
-              onPointerCancel={handlePointerEnd}
+              onPointerUp={finishDrag}
+              onPointerCancel={finishDrag}
               onClickCapture={handleClickCapture}
             >
               {isCompareTarget ? (
-                <div className="client-saved-card-shell__compare-badge">Release to compare</div>
+                <div className="saved-organizer-card__compare-badge">
+                  Release to compare
+                </div>
               ) : null}
               <TrainerCard
                 trainer={trainer}
                 priority={index < 4}
                 compactLayout="default"
-                impressionSurface="client_dashboard"
+                impressionSurface={impressionSurface}
+                linkDisabled={editMode || isDragging}
               />
             </div>
           );
@@ -281,38 +347,53 @@ export function ClientSavedSpecialistsOrganizer({
       </div>
 
       {comparePair ? (
-        <div className="dashboard-modal client-compare-modal" role="dialog" aria-modal="true">
-          <div className="dashboard-modal__dialog client-compare-modal__dialog">
+        <div
+          className="saved-compare-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="saved-compare-title"
+          onClick={() => setComparePair(null)}
+        >
+          <div
+            className="saved-compare-modal__dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
-              className="dashboard-modal__close"
+              className="saved-compare-modal__close smoac-control"
               onClick={() => setComparePair(null)}
               aria-label="Close comparison"
             >
               ×
             </button>
-            <div className="dashboard-modal__content">
-              <p className="dashboard-modal__eyebrow">Specialist compare</p>
-              <h2 className="dashboard-modal__title">Quick side-by-side</h2>
-              <div className="client-compare-modal__grid">
-                <p className="client-compare-modal__name">{comparePair.dragged.name}</p>
-                <p className="client-compare-modal__name">{comparePair.target.name}</p>
-                {rows.map((row) => (
-                  <div key={row.label} className="client-compare-modal__row">
-                    <p className="client-compare-modal__label">{row.label}</p>
-                    <p className="client-compare-modal__value">{row.left}</p>
-                    <p className="client-compare-modal__value">{row.right}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="client-compare-modal__actions">
-                <Link href={`/trainers/${comparePair.dragged.id}`} className="dashboard-primary-btn">
-                  View {comparePair.dragged.name.split(" ")[0]}
-                </Link>
-                <Link href={`/trainers/${comparePair.target.id}`} className="dashboard-secondary-btn">
-                  View {comparePair.target.name.split(" ")[0]}
-                </Link>
-              </div>
+            <p className="saved-compare-modal__eyebrow">Specialist compare</p>
+            <h2 id="saved-compare-title" className="saved-compare-modal__title">
+              Quick side-by-side
+            </h2>
+            <div className="saved-compare-modal__grid">
+              <p className="saved-compare-modal__name">{comparePair.dragged.name}</p>
+              <p className="saved-compare-modal__name">{comparePair.target.name}</p>
+              {rows.map((row) => (
+                <div key={row.label} className="saved-compare-modal__row">
+                  <p className="saved-compare-modal__label">{row.label}</p>
+                  <p className="saved-compare-modal__value">{row.left}</p>
+                  <p className="saved-compare-modal__value">{row.right}</p>
+                </div>
+              ))}
+            </div>
+            <div className="saved-compare-modal__actions">
+              <Link
+                href={`/trainers/${comparePair.dragged.id}`}
+                className="saved-compare-modal__primary"
+              >
+                View {comparePair.dragged.name.split(" ")[0]}
+              </Link>
+              <Link
+                href={`/trainers/${comparePair.target.id}`}
+                className="saved-compare-modal__secondary"
+              >
+                View {comparePair.target.name.split(" ")[0]}
+              </Link>
             </div>
           </div>
         </div>

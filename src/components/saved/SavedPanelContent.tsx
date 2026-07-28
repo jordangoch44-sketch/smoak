@@ -12,6 +12,7 @@ import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { TrainerList } from "@/components/trainers";
+import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOrganizer";
 import { Button } from "@/components/ui/Button";
 import { SavedAuthGlassCard } from "@/components/saved/SavedAuthGlassCard";
 import { SavedPanelAuthCta } from "@/components/saved/SavedPanelAuthCta";
@@ -164,12 +165,20 @@ export function SavedPanelContent({
         )
       ) : isReady && saved.length > 0 ? (
         <div className={isOverlay ? "saved-dropdown__list" : "mt-8"}>
-          <TrainerList
-            trainers={saved}
-            variant="explore"
-            priorityCount={4}
-            impressionSurface="saved"
-          />
+          {isClientWithSaves && session?.userId && saved.length >= 2 ? (
+            <SavedSpecialistsOrganizer
+              userId={session.userId}
+              trainers={saved}
+              impressionSurface="saved"
+            />
+          ) : (
+            <TrainerList
+              trainers={saved}
+              variant="explore"
+              priorityCount={4}
+              impressionSurface="saved"
+            />
+          )}
         </div>
       ) : isSpecialistSignedIn ? (
         <div
