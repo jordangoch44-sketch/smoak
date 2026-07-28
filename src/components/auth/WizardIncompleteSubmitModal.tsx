@@ -41,8 +41,9 @@ export function WizardIncompleteSubmitModal({
             Some information is missing
           </h2>
           <p className="wizard-incomplete-modal__lead">
-            You can go back to complete these items, or submit your application for
-            review as-is.
+            You can go back to complete these profile items, or submit for review
+            as-is. Your email and password are always required so you can sign in
+            while pending.
           </p>
         </header>
 

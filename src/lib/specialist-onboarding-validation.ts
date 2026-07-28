@@ -33,7 +33,7 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       if (!state.displayName.trim()) missing.push("Display / business name");
       if (!state.headline.trim()) missing.push("Headline");
       if (!isValidEmail(state.email)) missing.push("Valid email");
-      if (state.password.trim().length < 6) missing.push("Password (6+ characters)");
+      if (state.password.trim().length < 8) missing.push("Password (8+ characters)");
       if (!state.phone.trim()) missing.push("Phone number");
       if (!state.gender) missing.push("Gender");
       if (!state.yearsExperience.trim()) missing.push("Years of experience");
@@ -135,6 +135,31 @@ export function getSpecialistOnboardingMissingFields(
   }
 
   return results;
+}
+
+/** Auth credentials required to create an account — cannot submit without these. */
+export function getSpecialistOnboardingAuthGaps(
+  state: SpecialistOnboardingState
+): OnboardingMissingField[] {
+  const gaps: OnboardingMissingField[] = [];
+  if (!isValidEmail(state.email)) {
+    gaps.push({ step: 2, label: "Valid email" });
+  }
+  if (state.password.trim().length < 8) {
+    gaps.push({ step: 2, label: "Password (8+ characters)" });
+  }
+  return gaps;
+}
+
+/** Profile fields that may be submitted incomplete (excludes login credentials). */
+export function getSpecialistOnboardingOptionalMissingFields(
+  state: SpecialistOnboardingState
+): OnboardingMissingField[] {
+  return getSpecialistOnboardingMissingFields(state).filter(
+    (field) =>
+      field.label !== "Valid email" &&
+      !field.label.startsWith("Password")
+  );
 }
 
 /** @deprecated Per-step gating removed — use getSpecialistOnboardingMissingFields at submit */

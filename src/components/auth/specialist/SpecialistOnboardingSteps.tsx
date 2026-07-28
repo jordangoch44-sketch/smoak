@@ -116,6 +116,8 @@ export interface SpecialistOnboardingStepsProps {
   onPatch: (partial: Partial<SpecialistOnboardingState>) => void;
   onEditStep: (step: number) => void;
   profilePhotoCrop: ReturnType<typeof useProfilePhotoCropSession>;
+  confirmPassword: string;
+  onConfirmPasswordChange: (value: string) => void;
 }
 
 export function SpecialistOnboardingSteps({
@@ -124,6 +126,8 @@ export function SpecialistOnboardingSteps({
   onPatch,
   onEditStep,
   profilePhotoCrop,
+  confirmPassword,
+  onConfirmPasswordChange,
 }: SpecialistOnboardingStepsProps) {
   const neighborhoods = useMemo(
     () =>
@@ -286,14 +290,31 @@ export function SpecialistOnboardingSteps({
                 value={state.email}
                 onChange={(e) => onPatch({ email: e.target.value })}
                 autoComplete="email"
+                required
               />
             </label>
             <label className="login-field">
-              <span className="login-field__label">Password</span>
+              <span className="login-field__label">Create a password</span>
               <PasswordInput
                 value={state.password}
                 onChange={(e) => onPatch({ password: e.target.value })}
                 autoComplete="new-password"
+                placeholder="At least 8 characters"
+                required
+              />
+              <span className="login-field__hint">
+                Required to sign in — including while your application is pending
+                review.
+              </span>
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Confirm password</span>
+              <PasswordInput
+                value={confirmPassword}
+                onChange={(e) => onConfirmPasswordChange(e.target.value)}
+                autoComplete="new-password"
+                placeholder="Re-enter your password"
+                required
               />
             </label>
             <label className="login-field">

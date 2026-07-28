@@ -20,7 +20,12 @@ import {
   loadSpecialistOnboardingDraft,
   persistSpecialistOnboardingDraft,
 } from "@/lib/specialist-application-storage";
-import { getSpecialistOnboardingMissingFields } from "@/lib/specialist-onboarding-validation";
+import {
+  getSpecialistOnboardingAuthGaps,
+  getSpecialistOnboardingMissingFields,
+  getSpecialistOnboardingOptionalMissingFields,
+} from "@/lib/specialist-onboarding-validation";
+import { isValidEmail } from "@/lib/validation/email";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistOnboardingState,
@@ -55,6 +60,7 @@ export function SpecialistOnboardingWizard({
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [showSubmittedModal, setShowSubmittedModal] = useState(false);
   const [submittedEmailSent, setSubmittedEmailSent] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const profilePhotoCrop = useProfilePhotoCropSession();
 
   const progressPercent = stepProgressPercent(step);
@@ -64,9 +70,13 @@ export function SpecialistOnboardingWizard({
     () => getSpecialistOnboardingMissingFields(state),
     [state]
   );
+  const optionalMissingFields = useMemo(
+    () => getSpecialistOnboardingOptionalMissingFields(state),
+    [state]
+  );
   const missingLabels = useMemo(
-    () => missingFields.map((field) => field.label),
-    [missingFields]
+    () => optionalMissingFields.map((field) => field.label),
+    [optionalMissingFields]
   );
 
   useEffect(() => {
@@ -116,6 +126,22 @@ export function SpecialistOnboardingWizard({
   function handleContinue() {
     if (isConfirmation || submitting) return;
 
+    /* Step 2 creates the login — never skip email/password. */
+    if (step === 2) {
+      if (!isValidEmail(state.email)) {
+        setError("Enter a valid email — you’ll use it to sign in.");
+        return;
+      }
+      if (state.password.trim().length < 8) {
+        setError("Create a password with at least 8 characters.");
+        return;
+      }
+      if (state.password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+    }
+
     if (step === 11) {
       handleSubmitApplication(false);
       return;
@@ -130,7 +156,21 @@ export function SpecialistOnboardingWizard({
   async function handleSubmitApplication(force: boolean) {
     if (submitting) return;
 
-    if (!force && missingFields.length > 0) {
+    const authGaps = getSpecialistOnboardingAuthGaps(state);
+    if (authGaps.length > 0 || state.password !== confirmPassword) {
+      setShowIncompleteModal(false);
+      setStep(2);
+      if (state.password !== confirmPassword && state.password.trim().length >= 8) {
+        setError("Passwords do not match.");
+      } else if (authGaps.some((g) => g.label.startsWith("Password"))) {
+        setError("Create a password (8+ characters) so you can sign in while pending.");
+      } else {
+        setError("Enter a valid email and password so you can sign in.");
+      }
+      return;
+    }
+
+    if (!force && optionalMissingFields.length > 0) {
       setShowIncompleteModal(true);
       return;
     }
@@ -214,7 +254,7 @@ export function SpecialistOnboardingWizard({
 
   function handleGoBackFromIncompleteModal() {
     setShowIncompleteModal(false);
-    const firstStep = missingFields[0]?.step;
+    const firstStep = optionalMissingFields[0]?.step ?? missingFields[0]?.step;
     if (firstStep != null && firstStep >= 1 && firstStep <= 11) {
       setStep(firstStep as OnboardingStep);
     }
@@ -280,6 +320,11 @@ export function SpecialistOnboardingWizard({
               onPatch={patchState}
               onEditStep={(editStep) => setStep(editStep as OnboardingStep)}
               profilePhotoCrop={profilePhotoCrop}
+              confirmPassword={confirmPassword}
+              onConfirmPasswordChange={(value) => {
+                setConfirmPassword(value);
+                setError(null);
+              }}
             />
           </div>
 
