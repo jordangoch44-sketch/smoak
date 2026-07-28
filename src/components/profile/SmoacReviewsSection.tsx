@@ -15,14 +15,11 @@ import { WriteSpecialistReviewModal } from "./WriteSpecialistReviewModal";
 interface SmoacReviewsSectionProps {
   specialistId: string;
   specialistName: string;
-  firstName: string;
   aggregate: SpecialistReviewAggregate;
   reviews: SpecialistReview[];
   hasMore: boolean;
   loadingMore: boolean;
   onLoadMore: () => void;
-  canLeaveReview: boolean;
-  ownReview: SpecialistReview | null;
   reviewModalOpen: boolean;
   onReviewModalOpenChange: (open: boolean) => void;
   onSubmitted: (review: SpecialistReview) => void;
@@ -52,14 +49,11 @@ function StarRow({ rating }: { rating: number }) {
 export function SmoacReviewsSection({
   specialistId,
   specialistName,
-  firstName,
   aggregate,
   reviews,
   hasMore,
   loadingMore,
   onLoadMore,
-  canLeaveReview,
-  ownReview,
   reviewModalOpen,
   onReviewModalOpenChange,
   onSubmitted,
@@ -102,31 +96,6 @@ export function SmoacReviewsSection({
         <p className="smoac-reviews-summary__note">
           SMOAC Client Reviews · Submitted by signed-in SMOAC clients
         </p>
-
-        {ownReview ? (
-          <p className="smoac-leave-review-status">
-            You reviewed this specialist
-            <button
-              type="button"
-              className="smoac-control smoac-leave-review-status__link"
-              onClick={() => {
-                document
-                  .getElementById(`smoac-review-${ownReview.id}`)
-                  ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-              }}
-            >
-              View your review
-            </button>
-          </p>
-        ) : canLeaveReview ? (
-          <button
-            type="button"
-            className="smoac-control smoac-leave-review-btn"
-            onClick={() => onReviewModalOpenChange(true)}
-          >
-            Trained with {firstName}? Leave a review
-          </button>
-        ) : null}
 
         {reviews.length > 0 ? (
           <ul className="profile-section-body profile-section-body--loose smoac-reviews-list">

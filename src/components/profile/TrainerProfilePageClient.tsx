@@ -15,7 +15,6 @@ import {
 } from "@/lib/approved-specialist-profiles-store";
 import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
 import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
-import { trainerFirstName } from "@/lib/reviews/specialist-review-types";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
@@ -133,14 +132,11 @@ export function TrainerProfilePageClient({
           <SmoacReviewsSection
             specialistId={trainer.id}
             specialistName={trainer.name}
-            firstName={trainerFirstName(trainer.name)}
             aggregate={aggregate}
             reviews={smoacReviews}
             hasMore={hasMore}
             loadingMore={loadingMore}
             onLoadMore={() => void loadMore()}
-            canLeaveReview={canLeaveReview}
-            ownReview={ownReview}
             reviewModalOpen={reviewModalOpen}
             onReviewModalOpenChange={setReviewModalOpen}
             onSubmitted={applySubmittedReview}

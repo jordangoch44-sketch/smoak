@@ -17,9 +17,39 @@ interface ProfileTrainerSpecsProps {
   trainer: Trainer;
 }
 
+function nonEmptyStrings(items: string[] | null | undefined): string[] {
+  if (!Array.isArray(items)) return [];
+  return items.filter((item) => typeof item === "string" && item.trim().length > 0);
+}
+
 export function ProfileTrainerSpecs({ trainer }: ProfileTrainerSpecsProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
+  const bestForItems = nonEmptyStrings(trainer.bestFor);
+  const coachingStyleItems = nonEmptyStrings(trainer.coachingStyle);
+  const showBestFor = bestForItems.length > 0;
+  const showCoachingStyle = coachingStyleItems.length > 0;
+
+  const hasAnySpecsContent =
+    showBestFor ||
+    showCoachingStyle ||
+    Boolean(trainer.bio?.trim()) ||
+    nonEmptyStrings(trainer.specialty).length > 0 ||
+    nonEmptyStrings(trainer.sessionExperience).length > 0 ||
+    nonEmptyStrings(trainer.resultsSnapshot ?? []).length > 0 ||
+    (typeof trainer.reviewCount === "number" && trainer.reviewCount > 0) ||
+    (Array.isArray(trainer.certifications) &&
+      trainer.certifications.some(
+        (cert) => cert && typeof cert.name === "string" && cert.name.trim().length > 0
+      )) ||
+    (trainer.social &&
+      Object.values(trainer.social).some(
+        (url) => typeof url === "string" && url.trim().length > 0
+      )) ||
+    Boolean(trainer.city?.trim()) ||
+    Boolean(trainer.zipCode?.trim());
+
+  if (!hasAnySpecsContent) return null;
 
   return (
     <section className="profile-trainer-specs" aria-label="Full specialist profile">
@@ -61,19 +91,23 @@ export function ProfileTrainerSpecs({ trainer }: ProfileTrainerSpecsProps) {
         <div className="profile-trainer-specs__stack">
           <ProfileServiceArea trainer={trainer} />
 
-          <ProfileSection variant="panel" aria-label="Best for">
-            <ProfileSectionHeader title="Best for" />
-            <div className="profile-section-body">
-              <ProfilePillGrid items={trainer.bestFor} />
-            </div>
-          </ProfileSection>
+          {showBestFor ? (
+            <ProfileSection variant="panel" aria-label="Best for">
+              <ProfileSectionHeader title="Best for" />
+              <div className="profile-section-body">
+                <ProfilePillGrid items={bestForItems} />
+              </div>
+            </ProfileSection>
+          ) : null}
 
-          <ProfileSection variant="panel" aria-label="Coaching style">
-            <ProfileSectionHeader title="Coaching style" />
-            <div className="profile-section-body">
-              <ProfilePillGrid items={trainer.coachingStyle} />
-            </div>
-          </ProfileSection>
+          {showCoachingStyle ? (
+            <ProfileSection variant="panel" aria-label="Coaching style">
+              <ProfileSectionHeader title="Coaching style" />
+              <div className="profile-section-body">
+                <ProfilePillGrid items={coachingStyleItems} />
+              </div>
+            </ProfileSection>
+          ) : null}
 
           <ProfileSessionExperience trainer={trainer} />
           <ProfileResultsSnapshot trainer={trainer} />
