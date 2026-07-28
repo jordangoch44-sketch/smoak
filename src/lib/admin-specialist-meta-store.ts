@@ -1,3 +1,4 @@
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { DEV_ADMIN_SPECIALIST_META_KEY } from "@/lib/dev-storage-keys";
 import type { AdminSpecialistMeta } from "@/types/admin";
 
@@ -5,6 +6,7 @@ type MetaMap = Record<string, AdminSpecialistMeta>;
 
 const EMPTY: MetaMap = {};
 let cached: MetaMap = EMPTY;
+let hasHydratedMemory = false;
 const listeners = new Set<() => void>();
 
 function mapKey(map: MetaMap): string {
@@ -13,6 +15,8 @@ function mapKey(map: MetaMap): string {
 
 function readStorage(): MetaMap {
   if (typeof window === "undefined") return EMPTY;
+  /* Live: durable flags come from specialist_profiles — ops-only fields stay memory */
+  if (isMarketplaceSupabaseActive()) return EMPTY;
   try {
     const raw = window.localStorage.getItem(DEV_ADMIN_SPECIALIST_META_KEY);
     if (!raw) return EMPTY;
@@ -25,6 +29,7 @@ function readStorage(): MetaMap {
 
 function persist(map: MetaMap): void {
   if (typeof window === "undefined") return;
+  if (isMarketplaceSupabaseActive()) return;
   try {
     window.localStorage.setItem(DEV_ADMIN_SPECIALIST_META_KEY, JSON.stringify(map));
   } catch {
@@ -34,9 +39,12 @@ function persist(map: MetaMap): void {
 
 function readCache(): MetaMap {
   if (typeof window === "undefined") return EMPTY;
-  if (cached === EMPTY && Object.keys(cached).length === 0) {
-    const loaded = readStorage();
-    cached = Object.keys(loaded).length > 0 ? { ...loaded } : EMPTY;
+  if (!hasHydratedMemory) {
+    hasHydratedMemory = true;
+    if (!isMarketplaceSupabaseActive()) {
+      const loaded = readStorage();
+      cached = Object.keys(loaded).length > 0 ? { ...loaded } : EMPTY;
+    }
   }
   return cached;
 }
@@ -63,6 +71,7 @@ export function getAdminSpecialistMeta(trainerId: string): AdminSpecialistMeta {
 
 function emit(map: MetaMap): void {
   cached = Object.keys(map).length > 0 ? { ...map } : EMPTY;
+  hasHydratedMemory = true;
   persist(cached);
   listeners.forEach((listener) => listener());
 }

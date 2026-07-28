@@ -17,6 +17,8 @@ function readCache(): readonly string[] {
     return EMPTY_SNAPSHOT;
   }
 
+  /* First access: offline/dev may seed from localStorage; live starts empty
+   * until remote moderation sync fills memory. */
   if (cachedIds === EMPTY_SNAPSHOT) {
     const loaded = loadHiddenTrainerIds();
     cachedIds = loaded.length > 0 ? [...loaded] : EMPTY_SNAPSHOT;

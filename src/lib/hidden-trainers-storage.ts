@@ -1,7 +1,10 @@
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { DEV_HIDDEN_SPECIALISTS_KEY } from "@/lib/dev-storage-keys";
 
 export function loadHiddenTrainerIds(): string[] {
   if (typeof window === "undefined") return [];
+  /* Live: durable hide is specialist_profiles.status — do not seed from localStorage */
+  if (isMarketplaceSupabaseActive()) return [];
 
   try {
     const raw = window.localStorage.getItem(DEV_HIDDEN_SPECIALISTS_KEY);
@@ -16,6 +19,8 @@ export function loadHiddenTrainerIds(): string[] {
 
 export function persistHiddenTrainerIds(ids: string[]): void {
   if (typeof window === "undefined") return;
+  /* Live: memory-only mirror after remote sync */
+  if (isMarketplaceSupabaseActive()) return;
 
   try {
     window.localStorage.setItem(

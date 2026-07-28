@@ -89,7 +89,7 @@ Apply migrations in Supabase if not already:
 
 - [ ] Explicit backfill scripts for any remaining local-only data
 - [ ] Delete local bridge modules + retire `dev-auth` when demo-without-env is an explicit product mode
-- [ ] Hide / admin-meta mirrors memory-only when live (ops-only fields need DB columns)
+- [x] Hide / admin-meta mirrors memory-only when live (ops-only fields `isProtected` / `accountKind` remain session memory until DB columns)
 - [ ] Retire saved-trainers one-time `importLocalSavedTrainers` after migration window
 - [x] Search / contact / booking click event pipeline for specialist analytics
   - Migration: `20260727140000_specialist_engagement_events.sql` (apply in Supabase SQL Editor)
