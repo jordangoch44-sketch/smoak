@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { TrainerFilters as Filters } from "@/types";
-import { MARKETPLACE_CITIES, getNeighborhoodsForCity } from "@/data/locations";
 import { exploreFiltersFromZipCode } from "@/lib/explore-location-filters";
+import { completeGeolocationAsync } from "@/lib/user-location-store";
 import { normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { professions, specialties, genders } from "@/data/trainers";
 import {
@@ -11,6 +11,7 @@ import {
   isFullExplorePriceRange,
   parseExplorePriceBound,
 } from "@/lib/explore-price-range";
+import { LocationMarkIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { PriceRangeSlider } from "./PriceRangeSlider";
 
@@ -28,14 +29,26 @@ const GENDER_CHIPS: { label: string; value: string }[] = [
   { label: "Non-binary", value: "non-binary" },
 ];
 
+function applyLocationFilters(filters: Filters, rawZip: string): Filters {
+  const location = exploreFiltersFromZipCode(rawZip);
+  return {
+    ...filters,
+    zipCode: location.zipCode,
+    city: location.city,
+    neighborhood: location.neighborhood,
+  };
+}
+
 export function TrainerFilters({
   filters,
   onChange,
   compact = false,
   hideHeader = false,
 }: TrainerFiltersProps) {
-  const neighborhoods = getNeighborhoodsForCity(filters.city);
-  const citySelected = Boolean(filters.city);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
 
   const priceMinRaw = parseExplorePriceBound(
     filters.priceMin,
@@ -52,15 +65,8 @@ export function TrainerFilters({
     onChange({ ...filters, [key]: value });
   }
 
-  function updateCity(value: string) {
-    onChange({
-      ...filters,
-      city: value,
-      neighborhood: "",
-    });
-  }
-
   function clearLocation() {
+    setGeoError(null);
     onChange({
       ...filters,
       zipCode: "",
@@ -70,15 +76,22 @@ export function TrainerFilters({
   }
 
   function applyZipInput(raw: string) {
+    setGeoError(null);
     const zip = normalizeZipCode(raw);
     if (!zip) {
-      onChange({ ...filters, zipCode: raw.trim() });
+      onChange({
+        ...filters,
+        zipCode: raw.trim(),
+        city: "",
+        neighborhood: "",
+      });
       return;
     }
-    onChange(exploreFiltersFromZipCode(zip));
+    onChange(applyLocationFilters(filters, zip));
   }
 
-    function clearAll() {
+  function clearAll() {
+    setGeoError(null);
     onChange({
       zipCode: "",
       city: "",
@@ -90,6 +103,58 @@ export function TrainerFilters({
       priceMax: "",
       serviceType: "",
     });
+  }
+
+  function handleUseCurrentLocation() {
+    setGeoError(null);
+
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoError("Location is unavailable on this device. Enter a ZIP instead.");
+      return;
+    }
+
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        void (async () => {
+          const result = await completeGeolocationAsync(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+          setGeoLoading(false);
+          if (!result.ok) {
+            setGeoError(result.message);
+            return;
+          }
+          if (!result.zip) {
+            setGeoError(
+              "Couldn’t find a ZIP for your location. Enter one below."
+            );
+            return;
+          }
+          onChange(applyLocationFilters(filtersRef.current, result.zip));
+        })();
+      },
+      (error) => {
+        setGeoLoading(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setGeoError(
+            "Location access was denied. Enter a ZIP below, or allow location in your browser settings."
+          );
+          return;
+        }
+        if (error.code === error.TIMEOUT) {
+          setGeoError("Location timed out. Try again, or enter a ZIP.");
+          return;
+        }
+        setGeoError("Couldn’t read your location. Enter a ZIP instead.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20_000,
+        maximumAge: 0,
+      }
+    );
   }
 
   const handlePriceRangeChange = useCallback(
@@ -156,6 +221,34 @@ export function TrainerFilters({
           ) : null}
         </div>
 
+        <button
+          type="button"
+          className={cn(
+            "smoac-control explore-filter-location-btn",
+            hasLocation && !geoLoading && "explore-filter-location-btn--active"
+          )}
+          onClick={handleUseCurrentLocation}
+          disabled={geoLoading}
+        >
+          <span className="explore-filter-location-btn__icon" aria-hidden>
+            <LocationMarkIcon className="h-4 w-4" />
+          </span>
+          <span className="explore-filter-location-btn__copy">
+            <span className="explore-filter-location-btn__label">
+              {geoLoading
+                ? "Finding your location…"
+                : "Use your current location"}
+            </span>
+            <span className="explore-filter-location-btn__hint">
+              Show specialists near you
+            </span>
+          </span>
+        </button>
+
+        <div className="explore-filter-location-divider" aria-hidden>
+          <span>or enter a ZIP</span>
+        </div>
+
         <div className="explore-filter-field">
           <label className="explore-filter-field__label" htmlFor="filter-zip">
             ZIP code
@@ -176,36 +269,11 @@ export function TrainerFilters({
           />
         </div>
 
-        <FilterSelect
-          label="City"
-          value={filters.city}
-          onChange={updateCity}
-          options={[
-            { label: "Select location", value: "" },
-            ...MARKETPLACE_CITIES.map((c) => ({ label: c, value: c })),
-          ]}
-        />
-
-        <FilterSelect
-          label="Neighborhood / area"
-          value={filters.neighborhood}
-          onChange={(v) => update("neighborhood", v)}
-          disabled={!citySelected}
-          placeholder={
-            citySelected
-              ? "Select neighborhood or area"
-              : "Select a city first"
-          }
-          options={[
-            {
-              label: citySelected
-                ? "All neighborhoods in city"
-                : "Select a city first",
-              value: "",
-            },
-            ...neighborhoods.map((n) => ({ label: n, value: n })),
-          ]}
-        />
+        {geoError ? (
+          <p className="explore-filter-location-error" role="status">
+            {geoError}
+          </p>
+        ) : null}
       </section>
 
       <section

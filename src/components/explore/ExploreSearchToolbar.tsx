@@ -43,6 +43,8 @@ export function ExploreSearchToolbar({
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const blurCloseTimerRef = useRef<number | null>(null);
+  /** Only open location suggestion after a real tap/click — not tab autofocus. */
+  const openSuggestionsFromUserRef = useRef(false);
   const hasChips = activeFilterChips.length > 0;
   const hasDraft = Boolean(draft.trim());
 
@@ -77,14 +79,22 @@ export function ExploreSearchToolbar({
     onClearSearch();
   }
 
+  function handlePointerDown() {
+    openSuggestionsFromUserRef.current = true;
+  }
+
   function handleFocus() {
     clearBlurCloseTimer();
     setGeoError(null);
-    setSuggestionsOpen(true);
+    if (openSuggestionsFromUserRef.current) {
+      setSuggestionsOpen(true);
+    }
+    openSuggestionsFromUserRef.current = false;
   }
 
   function handleBlur() {
     clearBlurCloseTimer();
+    openSuggestionsFromUserRef.current = false;
     blurCloseTimerRef.current = window.setTimeout(() => {
       setSuggestionsOpen(false);
     }, 140);
@@ -161,6 +171,7 @@ export function ExploreSearchToolbar({
               autoComplete="off"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              onPointerDown={handlePointerDown}
               onFocus={handleFocus}
               onBlur={handleBlur}
               placeholder="Search trainers, coaches, nutritionists..."

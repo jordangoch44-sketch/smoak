@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
@@ -23,7 +23,6 @@ export function ExplorePageClient({
   catalogMode?: "live" | "seed";
 }) {
   const searchParams = useSearchParams();
-  const didFocusSearchRef = useRef(false);
 
   const {
     filters,
@@ -47,19 +46,6 @@ export function ExplorePageClient({
     initialCatalog,
     catalogMode,
   });
-
-  useEffect(() => {
-    if (searchParams.get("focus") !== "search" || didFocusSearchRef.current) {
-      return;
-    }
-    didFocusSearchRef.current = true;
-    const input = document.getElementById("explore-search-input");
-    if (!(input instanceof HTMLInputElement)) return;
-    requestAnimationFrame(() => {
-      input.focus({ preventScroll: true });
-      input.select();
-    });
-  }, [searchParams]);
 
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
