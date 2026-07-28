@@ -6,6 +6,7 @@ import type { Trainer } from "@/types";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
+import { AdminProfileModerationBar } from "@/components/admin/AdminProfileModerationBar";
 import { ProfileInquiryAction } from "@/components/inquiry";
 import {
   getApprovedSpecialistProfilesHydratedServerSnapshot,
@@ -100,6 +101,10 @@ export function TrainerProfilePageClient({
         style={pageStyle}
         data-profile-accent={profileStyle.accent}
       >
+      <AdminProfileModerationBar
+        specialistId={trainer.id}
+        specialistName={trainer.name}
+      />
       <ProfileHero
         trainer={trainer}
         smoacAggregate={aggregate}

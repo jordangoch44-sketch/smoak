@@ -22,6 +22,7 @@ import {
   SPECIALIST_SERVICE_TYPE_OPTIONS,
   SPECIALIST_TRAVEL_RADIUS_OPTIONS,
 } from "@/types/specialist-service-area";
+import { purgeSpecialistFromMarketplace } from "@/lib/admin-specialist-purge-client";
 
 interface AdminSpecialistsPanelProps {
   specialists: AdminSpecialistRow[];
@@ -57,6 +58,7 @@ function SpecialistCard({
   billing,
   showBilling,
   permissions,
+  canDelete,
   onVisibilityChange,
   onFeaturedChange,
   onSponsoredChange,
@@ -70,6 +72,7 @@ function SpecialistCard({
   billing?: SpecialistBillingRecord;
   showBilling: boolean;
   permissions: AdminPermissions;
+  canDelete: boolean;
   onVisibilityChange: AdminSpecialistsPanelProps["onVisibilityChange"];
   onFeaturedChange: AdminSpecialistsPanelProps["onFeaturedChange"];
   onSponsoredChange: AdminSpecialistsPanelProps["onSponsoredChange"];
@@ -80,6 +83,27 @@ function SpecialistCard({
   onAccountKindChange: AdminSpecialistsPanelProps["onAccountKindChange"];
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!canDelete || deleting) return;
+    if (row.isProtected) {
+      window.alert(
+        "This specialist is marked protected. Uncheck “Protected real account” first, then delete."
+      );
+      return;
+    }
+    const confirmed = window.confirm(
+      `Permanently delete ${row.name}? This removes their profile from the site, clears saves of them, and deletes their specialist login. This cannot be undone.`
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    const result = await purgeSpecialistFromMarketplace(row.id);
+    setDeleting(false);
+    if (!result.ok) {
+      window.alert(result.message);
+    }
+  }
 
   return (
     <li className="admin-entity-card admin-entity-card--specialist">
@@ -133,6 +157,16 @@ function SpecialistCard({
             aria-expanded={expanded}
           >
             {expanded ? "Hide details" : "Edit"}
+          </button>
+        ) : null}
+        {canDelete ? (
+          <button
+            type="button"
+            className="admin-btn smoac-control admin-btn--danger"
+            disabled={deleting}
+            onClick={() => void handleDelete()}
+          >
+            {deleting ? "Deleting…" : "Delete permanently"}
           </button>
         ) : null}
       </div>
@@ -335,6 +369,7 @@ export function AdminSpecialistsPanel({
   onAccountKindChange,
 }: AdminSpecialistsPanelProps) {
   const showTierBilling = isOwnerAdmin && billingById != null;
+  const canDelete = isOwnerAdmin;
   const [activeCategory, setActiveCategory] = useState<SpecialistTierCategory>("free");
 
   const tierCounts = useMemo(() => {
@@ -397,6 +432,7 @@ export function AdminSpecialistsPanel({
               billing={billingById?.get(row.id)}
               showBilling={showTierBilling}
               permissions={permissions}
+              canDelete={canDelete}
               onVisibilityChange={onVisibilityChange}
               onFeaturedChange={onFeaturedChange}
               onSponsoredChange={onSponsoredChange}

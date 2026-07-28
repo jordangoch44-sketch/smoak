@@ -395,6 +395,15 @@ export async function removeApprovedSpecialistProfileAsync(
   return persistRemoteStatusAsync(id, "archived");
 }
 
+/** Drop from in-memory / local catalog after a hard server purge. */
+export function purgeApprovedSpecialistProfileLocal(id: string): void {
+  const current = { ...getApprovedSpecialistProfilesSnapshot() };
+  if (!(id in current)) return;
+  delete current[id];
+  applyCache(current);
+  writeLocalProfiles(current);
+}
+
 /** Soft-remove from public catalog without deleting the row. */
 export async function hideApprovedSpecialistProfileAsync(
   id: string
