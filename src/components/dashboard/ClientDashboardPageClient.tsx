@@ -20,12 +20,12 @@ import {
 import { loadClientProfileFormState } from "@/lib/profiles/client-profile-service";
 import { CLIENT_SEARCH_RADIUS_OPTIONS } from "@/constants/client-profile-options";
 import type { ClientProfileFormState } from "@/types/client-profile";
-import { TrainerList } from "@/components/trainers";
 import {
   DashboardEmptyState,
   DashboardListItem,
   DashboardPageShell,
 } from "@/components/dashboard";
+import { ClientSavedSpecialistsOrganizer } from "@/components/dashboard/client/ClientSavedSpecialistsOrganizer";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
 import { cn, getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
@@ -349,11 +349,7 @@ export function ClientDashboardPageClient() {
                   Loading your saved specialists…
                 </p>
               ) : saved.length > 0 ? (
-                <TrainerList
-                  trainers={saved}
-                  variant="explore"
-                  impressionSurface="client_dashboard"
-                />
+                <ClientSavedSpecialistsOrganizer userId={session.userId} trainers={saved} />
               ) : (
                 <DashboardEmptyState
                   message={
