@@ -476,6 +476,51 @@
   background: #050508;
 }
 
+.dashboard-page--client .dashboard-page__canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.72;
+  background-image:
+    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.95) 0 1px, transparent 1.2px),
+    radial-gradient(circle at 78% 22%, rgba(196, 214, 255, 0.82) 0 1px, transparent 1.2px),
+    radial-gradient(circle at 68% 76%, rgba(255, 255, 255, 0.8) 0 1px, transparent 1.2px),
+    radial-gradient(circle at 34% 68%, rgba(186, 244, 226, 0.75) 0 1px, transparent 1.2px);
+  background-size:
+    210px 210px,
+    270px 270px,
+    320px 320px,
+    380px 380px;
+}
+
+.dashboard-page--client .dashboard-page__canvas::after {
+  content: "";
+  position: absolute;
+  inset: -20% -12% -10%;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.78;
+  filter: blur(26px);
+  background:
+    radial-gradient(
+      ellipse 60% 48% at 22% 18%,
+      rgba(76, 196, 219, 0.2) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 52% 44% at 78% 16%,
+      rgba(var(--aurora-lavender-rgb), 0.24) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 62% 46% at 52% 62%,
+      rgba(var(--aurora-violet-rgb), 0.2) 0%,
+      transparent 72%
+    );
+}
+
 .dashboard-page--client .dashboard-page__canvas .atmosphere-mesh {
   inset: -32% -20% -48%;
 }
