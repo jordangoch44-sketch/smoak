@@ -1,4 +1,4 @@
-/* Saved specialists — drag reorder + drop-to-compare */
+/* Saved specialists — tap-to-compare */
 
 .saved-organizer-instructions {
   display: flex;
@@ -57,40 +57,34 @@
 .saved-organizer-card {
   position: relative;
   border-radius: 1rem;
-  touch-action: pan-y;
 }
 
-.saved-organizer-list--edit-mode .saved-organizer-card,
-.saved-organizer-card--editable,
-.saved-organizer-card--dragging {
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
+.saved-organizer-card .trainer-card-compact,
+.saved-organizer-card .trainer-card > a > article,
+.saved-organizer-card .trainer-card > div > article {
+  border-color: rgba(162, 132, 255, 0.34) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(162, 132, 255, 0.08),
+    0 0 22px rgba(162, 132, 255, 0.12),
+    0 0 30px rgba(118, 214, 172, 0.08);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.saved-organizer-card--editable {
-  cursor: grab;
-  animation: saved-organizer-jiggle 0.34s ease-in-out infinite alternate;
+.saved-organizer-card:hover .trainer-card-compact,
+.saved-organizer-card:hover .trainer-card > a > article,
+.saved-organizer-card:hover .trainer-card > div > article {
+  border-color: rgba(118, 214, 172, 0.4) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(118, 214, 172, 0.14),
+    0 0 24px rgba(162, 132, 255, 0.16),
+    0 0 36px rgba(118, 214, 172, 0.16);
 }
 
-.saved-organizer-card--dragging {
-  cursor: grabbing;
-  z-index: 2;
-  animation: none;
-  transform: scale(0.985);
-  opacity: 0.88;
-}
-
-.saved-organizer-card--hover::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  pointer-events: none;
-}
-
-.saved-organizer-card--compare-target::after {
+.saved-organizer-card--selected::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -118,18 +112,30 @@
   pointer-events: none;
 }
 
-.saved-organizer-card--editable .trainer-card > a,
-.saved-organizer-card--dragging .trainer-card > a {
+.saved-organizer-card--compare-mode .trainer-card > a {
   pointer-events: none;
 }
 
-@keyframes saved-organizer-jiggle {
-  from {
-    transform: rotate(-0.55deg);
-  }
-  to {
-    transform: rotate(0.55deg);
-  }
+.saved-organizer-compare-action {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 3;
+  margin-top: 0.9rem;
+}
+
+.saved-organizer-compare-action__button {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid rgba(var(--accent-glow-rgb), 0.35);
+  border-radius: 999px;
+  background: rgba(7, 10, 14, 0.85);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.saved-organizer-compare-action__button:disabled {
+  opacity: 0.6;
 }
 
 .saved-compare-modal {
@@ -260,8 +266,3 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .saved-organizer-card--editable {
-    animation: none;
-  }
-}

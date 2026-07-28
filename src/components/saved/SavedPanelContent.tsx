@@ -167,7 +167,6 @@ export function SavedPanelContent({
         <div className={isOverlay ? "saved-dropdown__list" : "mt-8"}>
           {isClientWithSaves && session?.userId && saved.length >= 2 ? (
             <SavedSpecialistsOrganizer
-              userId={session.userId}
               trainers={saved}
               impressionSurface="saved"
             />

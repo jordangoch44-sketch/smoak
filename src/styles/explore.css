@@ -503,9 +503,18 @@
 }
 
 .explore-browse__card--active {
-  border-color: rgba(var(--aurora-lavender-rgb), 0.55);
-  background: rgba(var(--aurora-violet-rgb), 0.28);
-  box-shadow: 0 0 18px rgba(var(--aurora-lavender-rgb), 0.16);
+  border-color: rgba(118, 214, 172, 0.62);
+  background:
+    radial-gradient(
+      circle at 16% 12%,
+      rgba(118, 214, 172, 0.18) 0%,
+      transparent 52%
+    ),
+    rgba(var(--aurora-violet-rgb), 0.24);
+  box-shadow:
+    0 0 0 1px rgba(118, 214, 172, 0.18) inset,
+    0 0 14px rgba(118, 214, 172, 0.16),
+    0 0 24px rgba(var(--aurora-lavender-rgb), 0.14);
 }
 
 .explore-browse__card-icon {
@@ -518,6 +527,15 @@
   border-radius: 0;
   background: transparent;
   color: rgb(168, 130, 255);
+}
+
+.explore-browse__card--active .explore-browse__card-icon {
+  color: rgb(132, 235, 190);
+  filter: drop-shadow(0 0 8px rgba(118, 214, 172, 0.4));
+}
+
+.explore-browse__card--active .explore-browse__card-label {
+  color: rgba(226, 255, 242, 0.95);
 }
 
 .explore-browse__card-svg {

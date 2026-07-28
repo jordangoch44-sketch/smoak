@@ -351,7 +351,6 @@ export function ClientDashboardPageClient() {
                 </p>
               ) : saved.length >= 2 ? (
                 <SavedSpecialistsOrganizer
-                  userId={session.userId}
                   trainers={saved}
                   impressionSurface="client_dashboard"
                 />
