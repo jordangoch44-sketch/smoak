@@ -1302,6 +1302,13 @@ body:has(.login-page--wizard) main {
   width: 100%;
 }
 
+.wizard-submitted-modal__note {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.62);
+}
+
 .wizard-profile-photo-preview {
   display: flex;
   flex-direction: column;

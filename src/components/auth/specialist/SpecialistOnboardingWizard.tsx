@@ -8,11 +8,12 @@ import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
 import { WizardIncompleteSubmitModal } from "@/components/auth/WizardIncompleteSubmitModal";
+import { WizardApplicationSubmittedModal } from "@/components/auth/WizardApplicationSubmittedModal";
 import {
   SPECIALIST_ONBOARDING_STEP_LABELS,
   SPECIALIST_ONBOARDING_TOTAL_STEPS,
 } from "@/constants/specialist-onboarding-options";
-import { LOGIN_PATH } from "@/lib/auth-routes";
+import { LOGIN_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import { submitSpecialistApplication } from "@/lib/specialist-application-submit";
 import {
@@ -52,6 +53,8 @@ export function SpecialistOnboardingWizard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
+  const [submittedEmailSent, setSubmittedEmailSent] = useState(false);
   const profilePhotoCrop = useProfilePhotoCropSession();
 
   const progressPercent = stepProgressPercent(step);
@@ -69,6 +72,20 @@ export function SpecialistOnboardingWizard({
   useEffect(() => {
     persistSpecialistOnboardingDraft(state);
   }, [state]);
+
+  const goToPendingApplicationPortal = useCallback(() => {
+    setShowSubmittedModal(false);
+    router.replace(`${SPECIALIST_DASHBOARD_PATH}?submitted=1`);
+  }, [router]);
+
+  /* After submit confirmation, send them to the pending portal automatically. */
+  useEffect(() => {
+    if (!showSubmittedModal) return;
+    const timer = window.setTimeout(() => {
+      goToPendingApplicationPortal();
+    }, 1800);
+    return () => window.clearTimeout(timer);
+  }, [showSubmittedModal, goToPendingApplicationPortal]);
 
   const patchState = useCallback((partial: Partial<SpecialistOnboardingState>) => {
     setState((prev) => ({
@@ -171,13 +188,9 @@ export function SpecialistOnboardingWizard({
 
       const submitResult = await submitSpecialistApplication(state, { userId });
 
-      showToast({
-        type: "success",
-        message: submitResult.emailSent
-          ? "Application submitted. Check your email for confirmation."
-          : "Application submitted — pending SMOAC review.",
-      });
-      router.replace("/specialist-dashboard?submitted=1");
+      setSubmittedEmailSent(Boolean(submitResult.emailSent));
+      setShowSubmittedModal(true);
+      setStep(12);
     } catch (err) {
       const message =
         err instanceof ApplicationSubmitError
@@ -189,7 +202,7 @@ export function SpecialistOnboardingWizard({
       /* Already approved — send them to the dashboard instead of trapping on submit */
       if (/already approved/i.test(message)) {
         showToast({ type: "info", message });
-        router.replace("/specialist-dashboard");
+        router.replace(SPECIALIST_DASHBOARD_PATH);
         return;
       }
 
@@ -282,16 +295,10 @@ export function SpecialistOnboardingWizard({
                 <button
                   type="button"
                   className="login-submit wizard-nav__continue"
-                  onClick={() => router.push("/")}
+                  onClick={goToPendingApplicationPortal}
                 >
-                  Return Home
+                  Go to my application
                 </button>
-                <Link
-                  href="/explore"
-                  className="wizard-success-actions__secondary"
-                >
-                  Explore Specialists
-                </Link>
               </div>
             ) : (
               <div className="wizard-nav">
@@ -330,6 +337,11 @@ export function SpecialistOnboardingWizard({
         submitting={submitting}
         onGoBack={handleGoBackFromIncompleteModal}
         onSubmitAnyway={() => handleSubmitApplication(true)}
+      />
+      <WizardApplicationSubmittedModal
+        open={showSubmittedModal}
+        emailSent={submittedEmailSent}
+        onContinue={goToPendingApplicationPortal}
       />
     </div>
 

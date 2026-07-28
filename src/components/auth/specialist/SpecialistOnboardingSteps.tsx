@@ -1110,7 +1110,7 @@ export function SpecialistOnboardingSteps({
               Your profile is now under review by the SMOAC team.
             </p>
             <p className="wizard-success-screen__sub">
-              You&apos;ll receive an email once approved.
+              Taking you to your pending application portal…
             </p>
           </div>
         </WizardStepPanel>
