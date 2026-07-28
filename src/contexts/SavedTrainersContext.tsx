@@ -17,8 +17,7 @@ import {
 } from "react";
 import { SavedTrainersOverlayHost } from "@/components/auth/SavedTrainersOverlayHost";
 import { setPendingSave } from "@/lib/specialist-saves";
-import { getTrainerWithOverrides } from "@/lib/specialist-profile-store";
-import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
+import { resolveSavedTrainers } from "@/lib/resolve-saved-trainers";
 import { openSaveSignupModal } from "@/lib/save-signup-modal-store";
 import type { Trainer } from "@/types";
 import { getActiveClientUserId } from "@/lib/saved-trainers-user";
@@ -26,6 +25,12 @@ import {
   getAuthSessionSnapshot,
   subscribeAuthSession,
 } from "@/lib/auth-session-store";
+import {
+  getApprovedSpecialistProfilesHydratedSnapshot,
+  getApprovedSpecialistProfilesServerSnapshot,
+  getApprovedSpecialistProfilesSnapshot,
+  subscribeApprovedSpecialistProfiles,
+} from "@/lib/approved-specialist-profiles-store";
 import {
   getSavedTrainersErrorServerSnapshot,
   getSavedTrainersErrorSnapshot,
@@ -135,9 +140,12 @@ export function SavedTrainersProvider({
     (specialistId: string, options?: OpenSaveQuickSignupOptions) => {
       const id = specialistId.trim();
       if (!id) return;
-      const trainer = getTrainerWithOverrides(id);
+      const resolved = resolveSavedTrainers([id])[0];
       const name =
-        options?.specialistName?.trim() || trainer?.name?.trim() || undefined;
+        options?.specialistName?.trim() ||
+        (resolved && resolved.name !== "Specialist unavailable"
+          ? resolved.name.trim()
+          : undefined);
       const path =
         options?.profilePath?.trim() ||
         (typeof window !== "undefined" ? window.location.pathname : "") ||
@@ -155,6 +163,18 @@ export function SavedTrainersProvider({
 
   const savedIdSet = useMemo(() => new Set(savedIds), [savedIds]);
 
+  /* Recompute when catalog hydrates — badge count used to show while list stayed empty */
+  const approvedCatalog = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesSnapshot,
+    getApprovedSpecialistProfilesServerSnapshot
+  );
+  const approvedHydrated = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesHydratedSnapshot,
+    () => false
+  );
+
   const isSaved = useCallback(
     (trainerId: string) => isSavesReady && savedIdSet.has(trainerId),
     [savedIdSet, isSavesReady]
@@ -164,12 +184,15 @@ export function SavedTrainersProvider({
     return toggleSavedTrainerId(trainerId);
   }, []);
 
+  const savedTrainersList = useMemo(
+    () => resolveSavedTrainers(savedIds),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- catalog identity for refresh
+    [savedIds, approvedCatalog, approvedHydrated]
+  );
+
   const getSavedTrainers = useCallback(() => {
-    const idSet = new Set(savedIds);
-    return listPublicMarketplaceTrainers()
-      .filter((t) => idSet.has(t.id))
-      .map((t) => getTrainerWithOverrides(t.id) ?? t);
-  }, [savedIds]);
+    return savedTrainersList;
+  }, [savedTrainersList]);
 
   const value = useMemo(
     () => ({
