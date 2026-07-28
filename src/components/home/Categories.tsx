@@ -47,9 +47,6 @@ export function Categories() {
           <h2 id="home-specialty-heading" className="home-section__title">
             Browse by Specialty
           </h2>
-          <p className="home-section__subtitle">
-            Start with the care you need.
-          </p>
         </header>
 
         <div className="home-specialty__grid">
