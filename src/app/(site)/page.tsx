@@ -3,7 +3,6 @@ import {
   LocationPersonalizationGate,
   SponsoredSpecialists,
   Top50InYourCity,
-  Categories,
   NewSpecialists,
 } from "@/components/home";
 import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
@@ -21,7 +20,6 @@ export default async function HomePage() {
       <Hero />
       <SponsoredSpecialists initialCatalog={trainers} catalogMode={mode} />
       <Top50InYourCity catalogMode={mode} initialCatalog={trainers} />
-      <Categories />
       <NewSpecialists initialCatalog={trainers} catalogMode={mode} />
     </div>
   );

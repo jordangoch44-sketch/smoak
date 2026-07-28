@@ -71,6 +71,12 @@
   --aurora-magenta-rgb: 124, 58, 237;
   --aurora-plum-rgb: 56, 42, 72;
   --aurora-pink-rgb: 168, 85, 247;
+  /* Nebula green — category accents (deep body + neon glow) */
+  --nebula-green-deep: #053526;
+  --nebula-green-deep-rgb: 5, 53, 38;
+  --nebula-green-mid-rgb: 12, 110, 72;
+  --nebula-green-neon: #39ff87;
+  --nebula-green-neon-rgb: 57, 255, 135;
   --brand-wordmark-tracking: 0.34em;
 }
 

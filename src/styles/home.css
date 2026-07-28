@@ -1255,8 +1255,7 @@ button.smoked-glass:hover {
   font-weight: 500;
   letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: rgba(167, 233, 205, 0.76);
-  text-shadow: 0 0 14px rgba(118, 214, 172, 0.16);
+  color: var(--silver-400);
 }
 
 .home-top50__title {
@@ -1278,7 +1277,7 @@ button.smoked-glass:hover {
   max-width: 28rem;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: rgba(172, 238, 211, 0.68);
+  color: var(--silver-400);
 }
 
 .home-top50__city-line {
