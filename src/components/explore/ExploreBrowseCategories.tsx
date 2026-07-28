@@ -48,8 +48,11 @@ export function ExploreBrowseCategories({
     >
       <header className="explore-browse__header">
         <h2 id="explore-browse-heading" className="explore-browse__title">
-          Popular categories
+          What are you looking for?
         </h2>
+        <p className="explore-browse__subtitle">
+          Tap a category to get started
+        </p>
       </header>
 
       <div className="explore-browse__grid">

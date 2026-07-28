@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ActiveFilterChip, ActiveFilterKey } from "@/lib/explore-active-filters";
 import {
   SearchIcon,
   FilterIcon,
   ChevronDownIcon,
+  LocationMarkIcon,
 } from "@/components/ui/icons";
 import { ExploreActiveFilterChips } from "./ExploreActiveFilterChips";
+import { completeGeolocationAsync } from "@/lib/user-location-store";
 import { cn } from "@/lib/utils";
 
 interface ExploreSearchToolbarProps {
@@ -37,6 +39,10 @@ export function ExploreSearchToolbar({
 }: ExploreSearchToolbarProps) {
   const [draft, setDraft] = useState(searchQuery);
   const [appliedQuery, setAppliedQuery] = useState(searchQuery);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const blurCloseTimerRef = useRef<number | null>(null);
   const hasChips = activeFilterChips.length > 0;
   const hasDraft = Boolean(draft.trim());
 
@@ -45,8 +51,24 @@ export function ExploreSearchToolbar({
     setDraft(searchQuery);
   }
 
+  useEffect(() => {
+    return () => {
+      if (blurCloseTimerRef.current != null) {
+        window.clearTimeout(blurCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  function clearBlurCloseTimer() {
+    if (blurCloseTimerRef.current != null) {
+      window.clearTimeout(blurCloseTimerRef.current);
+      blurCloseTimerRef.current = null;
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setSuggestionsOpen(false);
     onSearchSubmit(draft);
   }
 
@@ -55,9 +77,80 @@ export function ExploreSearchToolbar({
     onClearSearch();
   }
 
+  function handleFocus() {
+    clearBlurCloseTimer();
+    setGeoError(null);
+    setSuggestionsOpen(true);
+  }
+
+  function handleBlur() {
+    clearBlurCloseTimer();
+    blurCloseTimerRef.current = window.setTimeout(() => {
+      setSuggestionsOpen(false);
+    }, 140);
+  }
+
+  function handleUseCurrentLocation() {
+    clearBlurCloseTimer();
+    setGeoError(null);
+
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoError("Location is unavailable on this device.");
+      setSuggestionsOpen(true);
+      return;
+    }
+
+    setGeoLoading(true);
+    setSuggestionsOpen(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        void (async () => {
+          const result = await completeGeolocationAsync(
+            position.coords.latitude,
+            position.coords.longitude
+          );
+          setGeoLoading(false);
+          if (!result.ok) {
+            setGeoError(result.message);
+            setSuggestionsOpen(true);
+            return;
+          }
+          setSuggestionsOpen(false);
+          document.getElementById("explore-search-input")?.blur();
+        })();
+      },
+      (error) => {
+        setGeoLoading(false);
+        setSuggestionsOpen(true);
+        if (error.code === error.PERMISSION_DENIED) {
+          setGeoError(
+            "Location access was denied. Allow location in your browser settings, or set it from the header."
+          );
+          return;
+        }
+        if (error.code === error.TIMEOUT) {
+          setGeoError("Location timed out. Try again.");
+          return;
+        }
+        setGeoError("Couldn’t read your location. Try again.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20_000,
+        maximumAge: 0,
+      }
+    );
+  }
+
   return (
     <div className="explore-toolbar">
-      <form onSubmit={handleSubmit} className="explore-search-shell">
+      <form
+        onSubmit={handleSubmit}
+        className={cn(
+          "explore-search-shell",
+          suggestionsOpen && "explore-search-shell--suggestions-open"
+        )}
+      >
         <div className="explore-search-shell__row">
           <div className="explore-search-shell__field">
             <SearchIcon className="explore-search-shell__icon" />
@@ -65,10 +158,15 @@ export function ExploreSearchToolbar({
               id="explore-search-input"
               type="search"
               enterKeyHint="search"
+              autoComplete="off"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
               placeholder="Search trainers, coaches, nutritionists..."
               aria-label="Search specialists"
+              aria-expanded={suggestionsOpen}
+              aria-controls="explore-search-suggestions"
               className="smoac-control explore-search-shell__input"
             />
             {hasDraft ? (
@@ -83,6 +181,44 @@ export function ExploreSearchToolbar({
             ) : null}
           </div>
         </div>
+
+        {suggestionsOpen ? (
+          <div
+            id="explore-search-suggestions"
+            className="explore-search-suggestions"
+            role="listbox"
+            aria-label="Search suggestions"
+          >
+            <button
+              type="button"
+              role="option"
+              aria-selected={false}
+              className="smoac-control explore-search-suggestions__item"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={handleUseCurrentLocation}
+              disabled={geoLoading}
+            >
+              <span className="explore-search-suggestions__icon" aria-hidden>
+                <LocationMarkIcon className="h-4 w-4" />
+              </span>
+              <span className="explore-search-suggestions__copy">
+                <span className="explore-search-suggestions__label">
+                  {geoLoading
+                    ? "Finding your location…"
+                    : "Use your current location"}
+                </span>
+                <span className="explore-search-suggestions__hint">
+                  Show specialists near you
+                </span>
+              </span>
+            </button>
+            {geoError ? (
+              <p className="explore-search-suggestions__error" role="status">
+                {geoError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
       </form>
 
       {showInlineFiltersBar ? (

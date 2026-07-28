@@ -159,7 +159,6 @@ Use these instead of magic numbers:
 
 - `--z-mobile-bottom-nav` (8200)
 - `--z-save-toast` (8600)
-- `--z-hero-search-suggestions` (8500)
 - `--z-header-overlay` (9000)
 - `--z-site-header` (10000)
 - `--z-profile-sheet` (header + 40)

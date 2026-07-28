@@ -5,7 +5,6 @@
 export {
   trainers,
   getTrainerById,
-  getFeaturedTrainers,
   professions,
   specialties,
   genders,

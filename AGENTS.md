@@ -45,11 +45,10 @@ AuthSessionProvider
 ## Interaction rules (do not regress)
 
 1. **No new full-screen `pointer-events: none` on `.app-main`** — use a portaled overlay with `pointer-events: auto` instead (`login-gate`, welcome intro pattern).
-2. **Hero search suggestions**: portaled `HeroSearchSuggestionsLayer` — root layer stays `pointer-events: none` in `home.css`; only backdrop/panel get taps. Do **not** add `.hero-search-suggestions-layer` to the blanket `pointer-events: auto !important` list in `site-chrome.css`.
-3. **iOS Safari scroll lock**: use body classes + `.app-main { overflow: hidden }` under `@supports (-webkit-touch-callout: none)` in `globals.css` — never `touch-action: none` on `body`, avoid inline `body.style.overflow` in modals.
-4. **Mobile page transitions**: `PageTransition` skips `AnimatePresence` on mobile — do not reintroduce exit layers that steal taps.
-5. **Save control**: real `<button>`, heart **outside** card `<Link>`, `data-save-control` on slot — use `onClick` + `stopPropagation`, not pointer-up/click dedupe hacks.
-6. **Header overlays**: mount only when open (`HeaderOverlayRoot`, desktop `SavedPanelDropdown` in `SiteHeader`).
+2. **iOS Safari scroll lock**: use body classes + `.app-main { overflow: hidden }` under `@supports (-webkit-touch-callout: none)` in `globals.css` — never `touch-action: none` on `body`, avoid inline `body.style.overflow` in modals.
+3. **Mobile page transitions**: `PageTransition` skips `AnimatePresence` on mobile — do not reintroduce exit layers that steal taps.
+4. **Save control**: real `<button>`, heart **outside** card `<Link>`, `data-save-control` on slot — use `onClick` + `stopPropagation`, not pointer-up/click dedupe hacks.
+5. **Header overlays**: mount only when open (`HeaderOverlayRoot`, desktop `SavedPanelDropdown` in `SiteHeader`).
 
 ## CSS organization
 

@@ -496,10 +496,6 @@ export function getTrainerById(id: string): Trainer | undefined {
   return trainers.find((t) => t.id === id);
 }
 
-export function getFeaturedTrainers(): Trainer[] {
-  return trainers.filter((t) => t.featured);
-}
-
 /** Main profession filter options (canonical categories only) */
 export const professions = [...MAIN_PROFESSION_CATEGORIES];
 

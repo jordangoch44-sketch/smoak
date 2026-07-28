@@ -163,7 +163,6 @@ body.complete-account-lock,
 body.client-profile-sheet-open,
 body.site-intro-open,
 body.location-personalization-open,
-body.hero-search-suggestions-open,
 body.admin-review-open {
   overflow: hidden;
   overscroll-behavior: none;
@@ -182,7 +181,6 @@ body.admin-review-open {
   body.client-profile-sheet-open,
   body.site-intro-open,
   body.location-personalization-open,
-  body.hero-search-suggestions-open,
   body.admin-review-open {
     overflow: visible;
     overscroll-behavior: none;
@@ -205,18 +203,11 @@ body.admin-review-open {
     touch-action: pan-y;
   }
 
-  body.hero-search-suggestions-open .app-main {
-    overflow: hidden;
-    overscroll-behavior: none;
-    touch-action: none;
-  }
-
   html.login-gate-open,
   html.complete-account-lock,
   html.client-profile-sheet-open,
   html.site-intro-open,
-  html.location-personalization-open,
-  html.hero-search-suggestions-open {
+  html.location-personalization-open {
     overflow: visible;
   }
 }

@@ -22,7 +22,7 @@ interface TrainerCardProps {
   compactLayout?: TrainerCardCompactLayout;
   /** Search-appearance surface for analytics (default explore). */
   impressionSurface?: "explore" | "saved" | "client_dashboard";
-  /** Disable profile link while drag-reordering saved cards. */
+  /** Disable profile link while compare mode is selecting saved cards. */
   linkDisabled?: boolean;
 }
 

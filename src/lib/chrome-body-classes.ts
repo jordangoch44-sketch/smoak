@@ -15,7 +15,6 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "complete-account-lock",
   "site-intro-open",
   "location-personalization-open",
-  "hero-search-suggestions-open",
   "gallery-modal-open",
   "profile-image-preview-open",
   "admin-review-open",
