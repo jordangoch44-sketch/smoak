@@ -6,6 +6,7 @@ const ALLOWED_KINDS = new Set([
   "inquiry_specialist",
   "confirmation_client",
   "confirmation_specialist",
+  "approval_specialist",
   "email_test",
 ]);
 

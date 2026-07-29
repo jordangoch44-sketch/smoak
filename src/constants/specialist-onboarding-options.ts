@@ -1,5 +1,5 @@
-/** Specialist onboarding — 12 steps after role selection on create-account */
-export const SPECIALIST_ONBOARDING_TOTAL_STEPS = 12;
+/** Specialist onboarding — short signup path; depth deferred to dashboard after approval */
+export const SPECIALIST_ONBOARDING_TOTAL_STEPS = 6;
 
 export const PROFESSIONAL_TYPE_OPTIONS = [
   "Personal Trainer",
@@ -92,15 +92,9 @@ export const GENDER_OPTIONS = [
 
 export const SPECIALIST_ONBOARDING_STEP_LABELS = [
   "Professional type",
-  "Profile details",
+  "Account details",
   "Service area",
   "Specialties",
-  "Credentials",
-  "Coaching style",
-  "Pricing",
-  "Availability",
-  "Social proof",
-  "Bio",
+  "Short bio",
   "Preview",
-  "Confirmation",
 ] as const;

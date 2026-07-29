@@ -40,13 +40,14 @@ export function WizardApplicationSubmittedModal({
             Your specialist profile is now under review by the SMOAC team.
             {emailSent
               ? " Check your email for a confirmation."
-              : " You’ll get an email when you’re verified."}
+              : " You’ll get an email when you’re approved."}
           </p>
         </header>
 
         <p className="wizard-submitted-modal__note">
-          Typical review time is within 24 hours. You can track status and edit
-          your submitted profile in your pending application portal.
+          Typical review time is within 24 hours. After approval, log in and open
+          Edit profile to finish your in-depth listing — pricing, availability,
+          photos, and more.
         </p>
 
         <footer className="wizard-incomplete-modal__footer">

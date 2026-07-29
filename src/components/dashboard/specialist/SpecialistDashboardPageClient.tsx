@@ -48,7 +48,7 @@ function dashboardSubtitle(
     return "Your application is under review.";
   }
   if (mode === "approved-free") {
-    return "Your profile is live on SMOAC.";
+    return "Your profile is live — finish your in-depth profile anytime.";
   }
   if (
     (mode === "approved-premium" || mode === "demo-premium") &&
@@ -320,6 +320,12 @@ export function SpecialistDashboardPageClient() {
               >
                 Edit submitted profile
               </DashboardButton>
+            ) : null}
+            {isPendingGate ? (
+              <p className="specialist-dash-notice__text">
+                After approval, come back here to finish your full in-depth
+                profile — pricing, availability, media, and more.
+              </p>
             ) : null}
           </>
         ) : null}

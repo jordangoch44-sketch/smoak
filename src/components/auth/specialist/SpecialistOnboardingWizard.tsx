@@ -32,7 +32,7 @@ import {
 } from "@/types/specialist-application";
 import { SpecialistOnboardingSteps } from "@/components/auth/specialist/SpecialistOnboardingSteps";
 
-type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
 
 function stepProgressPercent(step: OnboardingStep): number {
   return Math.round(((step - 1) / SPECIALIST_ONBOARDING_TOTAL_STEPS) * 100);
@@ -64,7 +64,6 @@ export function SpecialistOnboardingWizard({
   const profilePhotoCrop = useProfilePhotoCropSession();
 
   const progressPercent = stepProgressPercent(step);
-  const isConfirmation = step === 12;
 
   const missingFields = useMemo(
     () => getSpecialistOnboardingMissingFields(state),
@@ -114,7 +113,7 @@ export function SpecialistOnboardingWizard({
   }, []);
 
   function handleBack() {
-    if (isConfirmation) return;
+    if (submitting || showSubmittedModal) return;
     if (step === 1) {
       onBackToRole();
       return;
@@ -124,7 +123,7 @@ export function SpecialistOnboardingWizard({
   }
 
   function handleContinue() {
-    if (isConfirmation || submitting) return;
+    if (showSubmittedModal || submitting) return;
 
     /* Step 2 creates the login — never skip email/password. */
     if (step === 2) {
@@ -142,7 +141,7 @@ export function SpecialistOnboardingWizard({
       }
     }
 
-    if (step === 11) {
+    if (step === 6) {
       handleSubmitApplication(false);
       return;
     }
@@ -230,7 +229,6 @@ export function SpecialistOnboardingWizard({
 
       setSubmittedEmailSent(Boolean(submitResult.emailSent));
       setShowSubmittedModal(true);
-      setStep(12);
     } catch (err) {
       const message =
         err instanceof ApplicationSubmitError
@@ -255,14 +253,14 @@ export function SpecialistOnboardingWizard({
   function handleGoBackFromIncompleteModal() {
     setShowIncompleteModal(false);
     const firstStep = optionalMissingFields[0]?.step ?? missingFields[0]?.step;
-    if (firstStep != null && firstStep >= 1 && firstStep <= 11) {
+    if (firstStep != null && firstStep >= 1 && firstStep <= 5) {
       setStep(firstStep as OnboardingStep);
     }
   }
 
   function continueLabel(): string {
     if (submitting) return "Submitting…";
-    if (step === 11) return "Submit Application";
+    if (step === 6) return "Submit Application";
     return "Continue";
   }
 
@@ -293,25 +291,23 @@ export function SpecialistOnboardingWizard({
         </header>
 
         <div className="login-card wizard-card">
-          {!isConfirmation ? (
-            <div className="wizard-progress">
-              <div className="wizard-progress__header">
-                <p className="wizard-progress__step">
-                  Step {step} of {SPECIALIST_ONBOARDING_TOTAL_STEPS}
-                </p>
-                <p className="wizard-progress__complete">
-                  {progressPercent}% complete
-                </p>
-              </div>
-              <p className="wizard-progress__label">{stepLabel}</p>
-              <div className="wizard-progress__track">
-                <div
-                  className="wizard-progress__fill"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
+          <div className="wizard-progress">
+            <div className="wizard-progress__header">
+              <p className="wizard-progress__step">
+                Step {step} of {SPECIALIST_ONBOARDING_TOTAL_STEPS}
+              </p>
+              <p className="wizard-progress__complete">
+                {progressPercent}% complete
+              </p>
             </div>
-          ) : null}
+            <p className="wizard-progress__label">{stepLabel}</p>
+            <div className="wizard-progress__track">
+              <div
+                className="wizard-progress__fill"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
 
           <div className="login-card__form">
             <SpecialistOnboardingSteps
@@ -335,44 +331,30 @@ export function SpecialistOnboardingWizard({
               </p>
             ) : null}
 
-            {isConfirmation ? (
-              <div className="wizard-success-actions">
-                <button
-                  type="button"
-                  className="login-submit wizard-nav__continue"
-                  onClick={goToPendingApplicationPortal}
-                >
-                  Go to my application
-                </button>
-              </div>
-            ) : (
-              <div className="wizard-nav">
-                <button
-                  type="button"
-                  className="wizard-nav__back"
-                  onClick={handleBack}
-                  disabled={submitting}
-                >
-                  {step === 1 ? "Change role" : "Back"}
-                </button>
-                <button
-                  type="button"
-                  className="login-submit wizard-nav__continue"
-                  onClick={handleContinue}
-                  disabled={submitting}
-                >
-                  {continueLabel()}
-                </button>
-              </div>
-            )}
+            <div className="wizard-nav">
+              <button
+                type="button"
+                className="wizard-nav__back"
+                onClick={handleBack}
+                disabled={submitting}
+              >
+                {step === 1 ? "Change role" : "Back"}
+              </button>
+              <button
+                type="button"
+                className="login-submit wizard-nav__continue"
+                onClick={handleContinue}
+                disabled={submitting}
+              >
+                {continueLabel()}
+              </button>
+            </div>
           </div>
 
-          {!isConfirmation ? (
-            <p className="wizard-footer-link">
-              <span>Already have an account?</span>
-              <Link href={LOGIN_PATH}>Log in</Link>
-            </p>
-          ) : null}
+          <p className="wizard-footer-link">
+            <span>Already have an account?</span>
+            <Link href={LOGIN_PATH}>Log in</Link>
+          </p>
         </div>
       </div>
 

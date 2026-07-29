@@ -22,7 +22,7 @@ export function ProfileCompletionCard({
   return (
     <DashboardSection
       title="Profile completion"
-      description="Complete your profile to improve discovery"
+      description="Finish your in-depth profile to improve discovery — pricing, availability, media, and more."
       span="full"
     >
       <div className="dashboard-profile-completion">

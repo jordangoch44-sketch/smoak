@@ -79,7 +79,9 @@ export function SpecialistApplicationPreview({
       <div className="wizard-profile-preview__row">
         <span className="wizard-profile-preview__label">1-on-1</span>
         <span className="wizard-profile-preview__value">
-          {state.pricing.oneOnOnePrice || "—"}
+          {state.pricing.oneOnOnePrice.trim()
+            ? state.pricing.oneOnOnePrice
+            : "Add after approval"}
         </span>
       </div>
 

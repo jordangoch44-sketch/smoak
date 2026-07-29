@@ -179,6 +179,21 @@ export async function activateSpecialistFromApplicationAsync(
     }
   }
 
+  try {
+    const { sendSpecialistApplicationApprovedEmail } = await import(
+      "@/lib/email/confirmation-email-service"
+    );
+    void sendSpecialistApplicationApprovedEmail(approved).then((result) => {
+      if (!result.success) {
+        console.warn("[SMOAC EMAIL] Approval email did not send", {
+          applicationId: approved.id,
+        });
+      }
+    });
+  } catch (err) {
+    console.warn("[SMOAC EMAIL] Approval email dispatch skipped:", err);
+  }
+
   return { ok: true, application: approved };
 }
 
@@ -205,6 +220,24 @@ export async function activateSpecialistApplicationWithEditsAsync(
 
   unhideTrainerId(saved.application.id);
   patchAdminSpecialistMeta(saved.application.id, { visibility: "active" });
+
+  try {
+    const { sendSpecialistApplicationApprovedEmail } = await import(
+      "@/lib/email/confirmation-email-service"
+    );
+    void sendSpecialistApplicationApprovedEmail(saved.application).then(
+      (result) => {
+        if (!result.success) {
+          console.warn("[SMOAC EMAIL] Approval email did not send", {
+            applicationId: saved.application.id,
+          });
+        }
+      }
+    );
+  } catch (err) {
+    console.warn("[SMOAC EMAIL] Approval email dispatch skipped:", err);
+  }
+
   return saved;
 }
 

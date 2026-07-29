@@ -34,7 +34,7 @@ export function SpecialistPendingApprovalNotice({
       <p className="specialist-dash-notice__text">
         {isRejected
           ? "Your application needs a few updates before it can go live. Edit your submitted profile below and resubmit when ready."
-          : "Every application is individually reviewed and typically verified within 24 hours. You’ll receive an email when your account is verified — then your profile can go live on SMOAC."}
+          : "Every application is reviewed individually — typically within 24 hours. You’ll get an email at the address you signed up with when you’re approved. Then log back in and finish your full in-depth profile (pricing, availability, media, and more) from Edit profile."}
       </p>
     </section>
   );
