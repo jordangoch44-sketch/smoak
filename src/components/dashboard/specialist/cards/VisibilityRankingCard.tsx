@@ -18,8 +18,8 @@ export function VisibilityRankingCard({
 }: VisibilityRankingCardProps) {
   return (
     <DashboardSection
-      title="Visibility / ranking"
-      description="How you appear in SMOAC rankings"
+      title="Ranking"
+      description="How you appear in SMOAC city rankings"
       href={isPremium ? "/rankings" : undefined}
       linkLabel="View rankings"
     >

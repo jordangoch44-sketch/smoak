@@ -89,16 +89,6 @@ function buildLiveGrowthInsights(
   return insights.slice(0, 5);
 }
 
-function computeVisibilityScore(live: SpecialistLiveAnalyticsCounts): number {
-  const raw =
-    live.profileViews * 2 +
-    live.searchAppearances +
-    live.savedByClients * 8 +
-    live.contactClicks * 12 +
-    live.bookingClicks * 16;
-  return Math.min(99, Math.round(Math.log10(raw + 1) * 40));
-}
-
 /** Patch honest base analytics with live Supabase counts + Pro insights. */
 export function mergeLiveSpecialistAnalytics(
   base: SpecialistProfileAnalytics,
@@ -113,7 +103,6 @@ export function mergeLiveSpecialistAnalytics(
   };
 
   const liveInsights = buildLiveGrowthInsights(live);
-  const visibilityScore = computeVisibilityScore(live);
 
   return {
     ...base,
@@ -122,10 +111,7 @@ export function mergeLiveSpecialistAnalytics(
     searchAppearances: live.searchAppearances,
     contactClicks: live.contactClicks,
     bookingClicks: live.bookingClicks,
-    visibilityScore,
-    insightMessage:
-      liveInsights[0]?.message ??
-      base.insightMessage,
+    insightMessage: liveInsights[0]?.message ?? base.insightMessage,
     growthInsights:
       liveInsights.length > 0 ? liveInsights : base.growthInsights,
     discoveryBreakdown: {

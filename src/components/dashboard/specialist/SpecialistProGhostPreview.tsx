@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
-import { SMOAC_PRO_UNLOCK, SMOAC_PRO_PRICE_LABEL } from "@/lib/specialist-premium";
+import { SMOAC_PRO_UNLOCK } from "@/lib/specialist-premium";
 import { buildSecondaryStatTiles } from "@/lib/specialist-dashboard-stats";
 import { AnalyticsMetricTile } from "@/components/dashboard/specialist/AnalyticsMetricTile";
 import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
@@ -139,8 +139,8 @@ export function SpecialistProGhostPreview({
               Boost profile & ads
             </h3>
             <p className="specialist-boost-teaser__text">
-              Stand out in Explore with sponsored placement and boosted
-              visibility — reach more clients in your city.
+              Stand out in Explore with a Homepage Sponsored boost — separate
+              from Pro analytics.
             </p>
           </div>
           <DashboardButton
@@ -150,7 +150,7 @@ export function SpecialistProGhostPreview({
             Explore boosts
           </DashboardButton>
           <p className="specialist-boost-teaser__fineprint">
-            Available with Pro · from {SMOAC_PRO_PRICE_LABEL}
+            Optional paid placement · separate from SMOAC Pro
           </p>
         </section>
       </section>

@@ -50,7 +50,6 @@ export interface SpecialistProfileAnalytics {
   bookingClicks: number;
   profileCompletionPercent: number;
   rankingPosition: number | null;
-  visibilityScore: number;
   insightMessage: string;
   coreMetrics: SpecialistAnalyticsMetric[];
   growthInsights: SpecialistGrowthInsight[];

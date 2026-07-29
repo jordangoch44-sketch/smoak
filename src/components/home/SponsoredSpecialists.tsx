@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import {
@@ -11,7 +11,10 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicSponsoredTrainers } from "@/lib/marketplace-public-catalog";
-import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
+import {
+  selectSponsoredRailTrainers,
+  type SponsoredRailResult,
+} from "@/lib/sponsored-rail";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
 import { SponsoredSpecialistCard } from "./SponsoredSpecialistCard";
@@ -27,32 +30,43 @@ export function SponsoredSpecialists({
   const personalizationCity = usePersonalizationCity();
   const userCoords = useActiveUserCoordinates();
   const coordsKey = useActiveUserCoordinatesKey();
+  const [rail, setRail] = useState<SponsoredRailResult>({
+    trainers: [],
+    isLocal: false,
+  });
 
   useEffect(() => {
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
   }, [initialCatalog, catalogMode]);
 
-  const sponsored = useMemo(() => {
-    const coords = hydrated ? userCoords : null;
-    return sortTrainersByPersonalizationCity(
+  const sponsoredPool = useMemo(
+    () =>
       listPublicSponsoredTrainers({
         includeBrowserState: hydrated,
         remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
         catalogMode,
       }),
-      hydrated ? personalizationCity : null,
-      coords
-    ).slice(0, 6);
+    [hydrated, initialCatalog, catalogMode]
+  );
+
+  /* Shuffle on mount and whenever location / pool changes (fresh page visit). */
+  useEffect(() => {
+    if (!hydrated) return;
+    setRail(
+      selectSponsoredRailTrainers(sponsoredPool, {
+        personalizationCity,
+        userCoords,
+      })
+    );
   }, [
     hydrated,
+    sponsoredPool,
     personalizationCity,
     coordsKey,
     userCoords,
-    initialCatalog,
-    catalogMode,
   ]);
 
-  if (sponsored.length === 0) return null;
+  if (!hydrated || rail.trainers.length === 0) return null;
 
   return (
     <section
@@ -70,10 +84,12 @@ export function SponsoredSpecialists({
       <div className="home-section__inner home-sponsored__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header">
           <h2 id="home-sponsored-heading" className="home-section__title">
-            Sponsored Specialists
+            {rail.isLocal ? "Sponsored near you" : "Featured on SMOAC"}
           </h2>
           <p className="home-section__subtitle">
-            Premium featured listings near you.
+            {rail.isLocal
+              ? "Homepage spotlight for specialists boosting in your area."
+              : "Homepage spotlight placements. Enter your ZIP to see boosts near you."}
           </p>
         </header>
 
@@ -81,7 +97,7 @@ export function SponsoredSpecialists({
           className="home-sponsored__carousel"
           ariaLabel="Sponsored specialists"
         >
-          {sponsored.map((trainer, index) => (
+          {rail.trainers.map((trainer, index) => (
             <SponsoredSpecialistCard
               key={trainer.id}
               trainer={trainer}

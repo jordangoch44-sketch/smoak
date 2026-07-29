@@ -53,10 +53,9 @@ export function buildSecondaryStatTiles(
       value: `${analytics.profileCompletionPercent}%`,
     },
     {
-      id: "ranking-visibility",
-      label: "Ranking / visibility",
+      id: "ranking",
+      label: "City ranking",
       value: analytics.rankingPosition ? `#${analytics.rankingPosition}` : "Unranked",
-      detail: `Visibility score ${analytics.visibilityScore}`,
     },
   ];
 }

@@ -30,7 +30,7 @@ export function SponsoredSpecialistCard({
 }: SponsoredSpecialistCardProps) {
   const href = `/trainers/${trainer.id}`;
   const sponsored =
-    showSponsoredBadge && (trainer.sponsored || trainer.featured);
+    showSponsoredBadge && trainer.sponsored === true;
 
   return (
     <div className="home-sponsored-card relative" role="listitem">

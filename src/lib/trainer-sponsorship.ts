@@ -1,13 +1,14 @@
 import { getAdminSpecialistMeta } from "@/lib/admin-specialist-meta-store";
 import type { Trainer } from "@/types";
 
-/** Marketplace sponsored placement (ads / featured buy-up) */
+/**
+ * Homepage Sponsored / paid placement boost.
+ * Pro membership alone does NOT grant sponsored placement.
+ */
 export function isTrainerSponsored(trainer: Trainer): boolean {
-  if (trainer.sponsored) return true;
-  if (trainer.isPremium || trainer.featured) return true;
+  if (trainer.sponsored === true) return true;
   const meta = getAdminSpecialistMeta(trainer.id);
-  if (meta.featured === true || meta.isPremium === true) return true;
-  return false;
+  return meta.sponsored === true;
 }
 
 /** Vetted / high-trust organic specialists sort ahead of non-verified at equal distance */

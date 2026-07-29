@@ -215,14 +215,13 @@ export function listPublicMarketplaceTrainers(
   return result;
 }
 
-/** Sponsored / premium placements for homepage discovery rail */
+/** Homepage Sponsored boost placements only — Pro membership is not enough. */
 export function listPublicSponsoredTrainers(
   options: PublicCatalogOptions = {}
 ): Trainer[] {
-  const all = listPublicMarketplaceTrainers(options);
-  const sponsored = all.filter((trainer) => trainer.sponsored);
-  if (sponsored.length > 0) return sponsored;
-  return all.filter((trainer) => trainer.featured);
+  return listPublicMarketplaceTrainers(options).filter(
+    (trainer) => trainer.sponsored === true
+  );
 }
 
 /**

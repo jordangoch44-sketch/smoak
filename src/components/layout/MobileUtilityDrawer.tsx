@@ -284,11 +284,9 @@ function DrawerSpecialistAnalytics({
             <span className="mobile-utility-drawer__metric-value">
               {analytics.rankingPosition != null
                 ? `#${analytics.rankingPosition}`
-                : formatMetric(analytics.visibilityScore)}
+                : "—"}
             </span>
-            <span className="mobile-utility-drawer__metric-label">
-              {analytics.rankingPosition != null ? "Ranking" : "Visibility"}
-            </span>
+            <span className="mobile-utility-drawer__metric-label">Ranking</span>
           </li>
         </ul>
         {growth ? (

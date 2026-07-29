@@ -164,7 +164,6 @@ export const DEMO_SPECIALIST_ANALYTICS: DemoAnalyticsBase = {
   savedByClients: 47,
   contactClicks: 89,
   bookingClicks: 34,
-  visibilityScore: 78,
   insightMessage: SPECIALIST_ANALYTICS_INSIGHT,
   coreMetrics: DEMO_SPECIALIST_CORE_METRICS,
   growthInsights: DEMO_SPECIALIST_GROWTH_INSIGHTS,
@@ -191,7 +190,6 @@ export const EMPTY_SPECIALIST_ANALYTICS: DemoAnalyticsBase = {
   savedByClients: 0,
   contactClicks: 0,
   bookingClicks: 0,
-  visibilityScore: 0,
   insightMessage: SPECIALIST_ANALYTICS_INSIGHT,
   coreMetrics: DEMO_SPECIALIST_CORE_METRICS.map((metric) => ({
     ...metric,
