@@ -28,6 +28,7 @@ import {
 import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOrganizer";
 import { TrainerList } from "@/components/trainers";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
+import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
 import { cn, getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 import "@/styles/client-dashboard.css";
@@ -94,6 +95,12 @@ export function ClientDashboardPageClient() {
     if (searchParams.get("editProfile") === "1") {
       setProfileOpen(true);
       setActiveTab("profile");
+      router.replace("/client-dashboard", { scroll: false });
+      return;
+    }
+    const tab = searchParams.get("tab");
+    if (tab === "messages" || tab === "saved" || tab === "profile") {
+      setActiveTab(tab);
       router.replace("/client-dashboard", { scroll: false });
     }
   }, [isReady, session, searchParams, router]);
@@ -390,7 +397,16 @@ export function ClientDashboardPageClient() {
                       <DashboardListItem
                         title={message.specialist}
                         subtitle={message.preview}
-                        meta={message.time}
+                        meta={
+                          message.specialistId
+                            ? `${message.time} · Leave a review`
+                            : message.time
+                        }
+                        href={
+                          message.specialistId
+                            ? buildLeaveReviewHref(message.specialistId)
+                            : undefined
+                        }
                         badge={
                           message.unread ? (
                             <span className="dashboard-badge">New</span>

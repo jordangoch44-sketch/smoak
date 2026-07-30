@@ -23,6 +23,7 @@ interface SmoacReviewsSectionProps {
   reviewModalOpen: boolean;
   onReviewModalOpenChange: (open: boolean) => void;
   onSubmitted: (review: SpecialistReview) => void;
+  canLeaveReview?: boolean;
   scrollToOwnReview?: boolean;
 }
 
@@ -57,13 +58,16 @@ export function SmoacReviewsSection({
   reviewModalOpen,
   onReviewModalOpenChange,
   onSubmitted,
+  canLeaveReview = false,
 }: SmoacReviewsSectionProps) {
   const count = aggregate.reviewCount;
   const avg = aggregate.avgRating;
+  const firstName = specialistName.trim().split(/\s+/)[0] || specialistName;
 
   return (
     <>
       <ProfileSection
+        id="smoac-reviews"
         variant="panel"
         className="profile-section--smoac-reviews"
         aria-label="SMOAC Reviews"
@@ -96,6 +100,16 @@ export function SmoacReviewsSection({
         <p className="smoac-reviews-summary__note">
           SMOAC Client Reviews · Submitted by signed-in SMOAC clients
         </p>
+
+        {canLeaveReview ? (
+          <button
+            type="button"
+            className="smoac-leave-review-btn"
+            onClick={() => onReviewModalOpenChange(true)}
+          >
+            Trained with {firstName}? Leave a review
+          </button>
+        ) : null}
 
         {reviews.length > 0 ? (
           <ul className="profile-section-body profile-section-body--loose smoac-reviews-list">

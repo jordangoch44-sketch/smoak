@@ -14,6 +14,8 @@ export interface InquiryClientEmailInput {
   inquiryTopics: string[];
   message: string;
   messagesPath: string;
+  /** Profile deep-link that opens the leave-review modal */
+  leaveReviewPath?: string;
 }
 
 export interface InquirySpecialistEmailInput {
@@ -38,6 +40,9 @@ export async function sendInquiryClientConfirmationEmail(
       topics.length > 0
         ? topics.map((t) => `- ${t}`).join("\n")
         : "- (none selected)";
+    const reviewLine = input.leaveReviewPath
+      ? `\nAfter you connect, leave a SMOAC review (helps city rankings):\n${input.leaveReviewPath}\n`
+      : "";
     const text = `Hi ${first},
 
 Your inquiry was sent to ${input.specialistName}. They'll follow up with you by email.
@@ -47,8 +52,8 @@ Inquiry type: ${action}
 Topics:
 ${topicLine}
 
-${input.message.trim() ? `Your message:\n${input.message.trim()}\n\n` : ""}Open your dashboard: ${input.messagesPath}
-
+${input.message.trim() ? `Your message:\n${input.message.trim()}\n\n` : ""}Open your messages: ${input.messagesPath}
+${reviewLine}
 Thank you,
 SMOAC`;
 

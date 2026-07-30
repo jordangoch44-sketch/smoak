@@ -16,6 +16,7 @@ import {
 } from "@/lib/approved-specialist-profiles-store";
 import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
+import { isLeaveReviewQuery } from "@/lib/reviews/leave-review-href";
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
 import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
@@ -72,6 +73,22 @@ export function TrainerProfilePageClient({
     canLeaveReview,
     applySubmittedReview,
   } = useSpecialistReviews(trainerId);
+
+  useEffect(() => {
+    if (!hydrated || !canLeaveReview) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (!isLeaveReviewQuery(params.get("review"))) return;
+      setReviewModalOpen(true);
+      params.delete("review");
+      const next = `${window.location.pathname}${
+        params.toString() ? `?${params.toString()}` : ""
+      }${window.location.hash}`;
+      window.history.replaceState({}, "", next);
+    } catch {
+      /* ignore malformed URL */
+    }
+  }, [hydrated, canLeaveReview, trainerId]);
 
   useEffect(() => {
     const current = liveTrainer ?? initialTrainer;
@@ -188,6 +205,7 @@ export function TrainerProfilePageClient({
             reviewModalOpen={reviewModalOpen}
             onReviewModalOpenChange={setReviewModalOpen}
             onSubmitted={applySubmittedReview}
+            canLeaveReview={canLeaveReview}
           />
 
           {(trainer.reviews?.length ?? 0) > 0 ? (

@@ -28,6 +28,7 @@ import { getSpecialistApplicationById } from "@/lib/specialist-application-stora
 import { CLIENT_DASHBOARD_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { getAuthSiteOrigin } from "@/lib/auth/site-origin";
 import { labelsForInquiryTopics, labelForInquiryAction } from "@/lib/inquiry-options";
+import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
 
 async function resolveSpecialistUserId(
   supabase: SupabaseClient,
@@ -243,7 +244,8 @@ async function submitInquiryViaSupabase(
     inquiryAction: input.inquiryAction,
     inquiryTopics: input.inquiryTopics,
     message: sanitizedMessage,
-    messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}`,
+    messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}?tab=messages`,
+    leaveReviewPath: `${origin}${buildLeaveReviewHref(input.specialistId)}`,
   });
 
   const specialistEmail = await resolveSpecialistNotifyEmail(
@@ -364,7 +366,8 @@ export async function submitSpecialistInquiry(
       inquiryAction: normalized.inquiryAction,
       inquiryTopics: normalized.inquiryTopics,
       message: normalized.message,
-      messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}`,
+      messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}?tab=messages`,
+      leaveReviewPath: `${origin}${buildLeaveReviewHref(normalized.specialistId)}`,
     });
 
     const specialistEmail = resolveLocalSpecialistNotifyEmail(

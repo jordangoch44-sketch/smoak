@@ -20,6 +20,7 @@ import { markSpecialistInquiryNotificationRead } from "@/lib/inquiry/specialist-
 export interface ClientInquiryListItem {
   id: string;
   specialist: string;
+  specialistId: string;
   preview: string;
   time: string;
   unread: boolean;
@@ -144,6 +145,7 @@ async function fetchClientConversations(
     return {
       id: conversation.id,
       specialist: conversation.specialist_name || "Specialist",
+      specialistId: conversation.specialist_id,
       preview:
         topics.length > 0
           ? topics.slice(0, 3).join(" · ")
@@ -216,6 +218,7 @@ export async function loadClientInquiryMessages(
       return {
         id: record.conversation.id,
         specialist: record.conversation.specialist_name || "Specialist",
+        specialistId: record.conversation.specialist_id,
         preview:
           topics.length > 0
             ? topics.slice(0, 3).join(" · ")

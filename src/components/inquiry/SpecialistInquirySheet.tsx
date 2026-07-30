@@ -25,6 +25,7 @@ import {
 } from "@/components/auth/QuickClientAccountAuthUI";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { CLIENT_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
 import {
   startInquiryQuickAccount,
   signInClientForInquiry,
@@ -574,11 +575,22 @@ export function SpecialistInquirySheet({
                       : "Your message is saved in SMOAC. Confirmation email sends when Resend is configured (RESEND_API_KEY)."}
                   </p>
                   <Link
-                    href={CLIENT_DASHBOARD_PATH}
+                    href={buildLeaveReviewHref(specialistId)}
+                    className="smoac-control inquiry-sheet__submit"
+                    onClick={onClose}
+                  >
+                    Leave a SMOAC review
+                  </Link>
+                  <p className="inquiry-sheet__helper inquiry-sheet__helper--tight">
+                    After you connect, share how it went — reviews power city
+                    rankings.
+                  </p>
+                  <Link
+                    href={`${CLIENT_DASHBOARD_PATH}?tab=messages`}
                     className="smoac-control inquiry-sheet__secondary-link"
                     onClick={onClose}
                   >
-                    Open dashboard
+                    Open messages
                   </Link>
                 </div>
               ) : null}
