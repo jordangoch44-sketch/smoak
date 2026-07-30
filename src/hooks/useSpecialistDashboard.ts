@@ -7,11 +7,14 @@ import {
   DEV_SPECIALIST_DASHBOARD_ID,
 } from "@/constants/specialist-dashboard-mock";
 import { getDemoSpecialistDashboardData } from "@/data/dashboard-mock";
+import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import { getSpecialistProfileAnalytics } from "@/lib/specialist-dashboard-analytics";
 import {
   fetchSpecialistLiveAnalytics,
   mergeLiveSpecialistAnalytics,
 } from "@/lib/specialist-live-analytics";
+import { fetchSpecialistReviewAggregates } from "@/lib/reviews/specialist-reviews-client";
+import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
@@ -31,7 +34,10 @@ import {
   loadSpecialistInquiryLeads,
   markSpecialistInquiryRead,
 } from "@/lib/inquiry/inquiry-inbox";
-import type { SpecialistLead } from "@/types/specialist-dashboard";
+import type {
+  SpecialistDashboardRanking,
+  SpecialistLead,
+} from "@/types/specialist-dashboard";
 import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
 
 function resolveAnalyticsTrainerId(trainerId: string | null): string {
@@ -54,19 +60,64 @@ export function useSpecialistDashboard() {
 
   const useDemoData = isDemoSpecialistDashboard(trainerId, session?.email);
   const demoData = getDemoSpecialistDashboardData(session);
+
+  const [inquiryLeads, setInquiryLeads] = useState<SpecialistLead[]>([]);
+  const [liveRanking, setLiveRanking] =
+    useState<SpecialistDashboardRanking | null>(null);
+  const [smoacRating, setSmoacRating] = useState<number | null>(null);
+  const [smoacReviewCount, setSmoacReviewCount] = useState(0);
+  const [liveAnalytics, setLiveAnalytics] = useState<SpecialistProfileAnalytics | null>(
+    null
+  );
+
   const data = useDemoData
     ? demoData
     : {
         trainer: managedTrainer,
-        ranking: null,
+        ranking: liveRanking,
         newLeads: [] as SpecialistLead[],
         subscription: getSpecialistSubscriptionForSession(session),
       };
 
-  const [inquiryLeads, setInquiryLeads] = useState<SpecialistLead[]>([]);
-  const [liveAnalytics, setLiveAnalytics] = useState<SpecialistProfileAnalytics | null>(
-    null
-  );
+  useEffect(() => {
+    let cancelled = false;
+    if (!trainerId || useDemoData || !managedTrainer) {
+      if (!useDemoData) {
+        setLiveRanking(null);
+        setSmoacRating(null);
+        setSmoacReviewCount(0);
+      }
+      return;
+    }
+
+    const city = managedTrainer.city.trim().toLowerCase();
+    const catalog = listPublicMarketplaceTrainers({
+      includeBrowserState: true,
+      catalogMode: "live",
+    });
+    const peers =
+      city.length > 0
+        ? catalog.filter((t) => t.city.trim().toLowerCase() === city)
+        : [managedTrainer];
+    const pool = peers.length > 0 ? peers : [managedTrainer];
+
+    void fetchSpecialistReviewAggregates(pool.map((t) => t.id)).then((map) => {
+      if (cancelled) return;
+      const live = getLiveTrainerCityRanking(managedTrainer, pool, map);
+      setLiveRanking(
+        live
+          ? { rank: live.rank, listingTitle: live.listingTitle }
+          : null
+      );
+      const self = map.get(trainerId);
+      setSmoacRating(self?.avgRating ?? null);
+      setSmoacReviewCount(self?.reviewCount ?? 0);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [trainerId, useDemoData, managedTrainer?.id, managedTrainer?.city]);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,7 +130,7 @@ export function useSpecialistDashboard() {
       if (cancelled || !counts) return;
       const base = getSpecialistProfileAnalytics(trainerId, {
         profileCompletionPercent: profileCompletion,
-        rankingPosition: data.ranking?.rank ?? null,
+        rankingPosition: liveRanking?.rank ?? null,
         useDemoMetrics: false,
       });
       setLiveAnalytics(mergeLiveSpecialistAnalytics(base, counts));
@@ -88,7 +139,7 @@ export function useSpecialistDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [trainerId, useDemoData, profileCompletion, data.ranking?.rank]);
+  }, [trainerId, useDemoData, profileCompletion, liveRanking?.rank]);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +184,13 @@ export function useSpecialistDashboard() {
         useDemoMetrics: useDemoData,
       }
     );
+
+  const rankingRating = useDemoData
+    ? {
+        rating: demoData.trainer?.rating ?? null,
+        reviewCount: demoData.trainer?.reviewCount ?? 0,
+      }
+    : { rating: smoacRating, reviewCount: smoacReviewCount };
 
   // Prefer legal/profile first name — never display/brand name ("Coach", studio name, etc.)
   const firstName =
@@ -185,6 +243,7 @@ export function useSpecialistDashboard() {
     completionChecklist,
     profileStatusLabel,
     analytics,
+    rankingRating,
     isPremium,
     dashboardMode,
     firstName,

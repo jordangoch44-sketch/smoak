@@ -89,6 +89,7 @@ export function SpecialistDashboardPageClient() {
     profileStatusLabel,
     analytics,
     isPremium,
+    rankingRating,
     firstName,
     dashboardMode,
     handleSignOut,
@@ -344,8 +345,9 @@ export function SpecialistDashboardPageClient() {
             />
             <VisibilityRankingCard
               ranking={data.ranking ?? null}
-              trainer={trainer}
               isPremium={isPremium}
+              smoacRating={rankingRating.rating}
+              smoacReviewCount={rankingRating.reviewCount}
             />
             <ReviewsCard trainer={trainer} isPremium={isPremium} />
             <SubscriptionCard subscription={data.subscription} />

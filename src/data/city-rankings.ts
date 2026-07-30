@@ -1,9 +1,9 @@
-import { getTrainerById } from "@/data/trainers";
-import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
-import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
-import type { Trainer } from "@/types";
+/**
+ * Shared rankings filter options + demo city-rank lookup for the specialist
+ * dashboard preview. Live boards use `lib/smoac-rankings.ts`.
+ */
 
-/** Single entry in a city Top 50 leaderboard (mock / future API shape) */
+/** Single entry in a city leaderboard (demo / seed shape) */
 export interface CityRankingEntry {
   rank: number;
   trainerId: string;
@@ -20,19 +20,6 @@ export interface CityTop50Listing {
   displayTitle: string;
   subtitle: string;
   entries: CityRankingEntry[];
-}
-
-export interface RankedSpecialist {
-  rank: number;
-  trainer: Trainer;
-  smoacScore: number;
-  experienceYears: number;
-  showTopRatedBadge: boolean;
-}
-
-export interface RankingsBoardRow extends RankedSpecialist {
-  /** Recomputed order when filters are applied */
-  displayRank: number;
 }
 
 /** Default marketplace city until geo/search detection ships */
@@ -66,8 +53,8 @@ export const RANKINGS_PROFESSION_OPTIONS = [
 ] as const;
 
 /**
- * Mock Top 50 ordering for San Diego metro.
- * TODO(city-rankings): Replace with API sorted by rating, reviews, and local signals.
+ * Demo Top 50 ordering for San Diego — used only by the demo specialist dashboard.
+ * Public rankings use live SMOAC review aggregates.
  */
 const SAN_DIEGO_TOP_50: CityTop50Listing = {
   city: "San Diego",
@@ -95,95 +82,6 @@ const LISTINGS_BY_SLUG: Record<string, CityTop50Listing> = {
   [DEFAULT_RANKING_CITY_SLUG]: SAN_DIEGO_TOP_50,
 };
 
-function normalize(value: string): string {
-  return value.trim().toLowerCase();
-}
-
-/** Match trainer major market city only (neighborhood is display-only) */
-function trainerMatchesCity(trainer: Trainer, cityFilter: string): boolean {
-  if (!cityFilter) return true;
-  return normalize(trainer.city) === normalize(cityFilter);
-}
-
-const PROFESSION_FILTER_MATCHERS: Record<string, (profession: string) => boolean> = {
-  "personal-trainer": (p) => p === "personal trainer",
-  "physical-therapist": (p) => p === "physical therapist",
-  chiropractor: (p) => p === "chiropractor",
-  nutritionist: (p) => p === "nutritionist",
-  "massage-therapist": (p) => p === "massage therapist",
-  "recovery-specialist": (p) => p === "recovery specialist",
-  "wellness-coach": (p) => p === "wellness coach",
-};
-
-function trainerMatchesProfession(trainer: Trainer, professionFilter: string): boolean {
-  if (!professionFilter) return true;
-
-  const profession = normalize(trainer.profession);
-  const matcher = PROFESSION_FILTER_MATCHERS[professionFilter];
-  return matcher?.(profession) ?? false;
-}
-
-export function getCityTop50Listing(
-  citySlug: string = DEFAULT_RANKING_CITY_SLUG
-): CityTop50Listing {
-  return LISTINGS_BY_SLUG[citySlug] ?? SAN_DIEGO_TOP_50;
-}
-
-function sortRankedSpecialistsByProximity(
-  rows: RankedSpecialist[],
-  user: UserGeoPoint | null
-): RankedSpecialist[] {
-  if (!user || rows.length === 0) return rows;
-
-  const sortedTrainers = sortTrainersByProximity(
-    rows.map((row) => row.trainer),
-    user
-  );
-  const order = new Map(sortedTrainers.map((trainer, index) => [trainer.id, index]));
-
-  return [...rows]
-    .sort(
-      (a, b) =>
-        (order.get(a.trainer.id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.trainer.id) ?? Number.MAX_SAFE_INTEGER)
-    )
-    .map((row, index) => ({
-      ...row,
-      rank: index + 1,
-    }));
-}
-
-/** Canonical listing order — safe for SSR / hydration */
-export function getRankedSpecialistsBaseline(
-  citySlug: string = DEFAULT_RANKING_CITY_SLUG
-): RankedSpecialist[] {
-  const listing = getCityTop50Listing(citySlug);
-  const results: RankedSpecialist[] = [];
-
-  for (const entry of listing.entries) {
-    const trainer = getTrainerById(entry.trainerId);
-    if (!trainer) continue;
-    results.push({
-      rank: entry.rank,
-      trainer,
-      smoacScore: entry.smoacScore,
-      experienceYears: entry.experienceYears,
-      showTopRatedBadge: entry.topRated ?? entry.rank <= 3,
-    });
-  }
-
-  return results;
-}
-
-/** @deprecated Use getRankedSpecialistsBaseline + client proximity sort */
-export function getRankedSpecialistsForCity(
-  citySlug: string = DEFAULT_RANKING_CITY_SLUG
-): RankedSpecialist[] {
-  return getRankedSpecialistsBaseline(citySlug);
-}
-
-export { sortRankedSpecialistsByProximity };
-
 /** City ranking snapshot for a single trainer profile (null if unranked) */
 export interface TrainerCityRanking {
   rank: number;
@@ -205,73 +103,16 @@ const RANKING_BY_TRAINER_ID: Map<string, TrainerCityRanking> = (() => {
   return map;
 })();
 
-/** Lookup city rank for profile badge — undefined when trainer is not ranked */
+/** Lookup demo city rank for specialist dashboard preview */
 export function getTrainerCityRanking(
   trainerId: string
 ): TrainerCityRanking | undefined {
   return RANKING_BY_TRAINER_ID.get(trainerId);
 }
 
-export function getRankingsBoardRows(options?: {
-  citySlug?: string;
-  cityFilter?: string;
-  professionFilter?: string;
-}): RankingsBoardRow[] {
-  return buildRankingsBoardBaseline(options);
-}
-
-export function sortRankingsBoardByProximity(
-  rows: RankingsBoardRow[],
-  user: UserGeoPoint | null
-): RankingsBoardRow[] {
-  if (!user || rows.length === 0) return rows;
-
-  const sorted = sortTrainersByProximity(
-    rows.map((row) => row.trainer),
-    user
-  );
-  const order = new Map(sorted.map((trainer, index) => [trainer.id, index]));
-
-  return [...rows]
-    .sort(
-      (a, b) =>
-        (order.get(a.trainer.id) ?? Number.MAX_SAFE_INTEGER) -
-        (order.get(b.trainer.id) ?? Number.MAX_SAFE_INTEGER)
-    )
-    .map((row, index) => ({
-      ...row,
-      displayRank: index + 1,
-    }));
-}
-
-function buildRankingsBoardBaseline(
-  options?: {
-    citySlug?: string;
-    cityFilter?: string;
-    professionFilter?: string;
-  }
-): RankingsBoardRow[] {
-  const listing = getCityTop50Listing(options?.citySlug);
-  const cityFilter = options?.cityFilter ?? "";
-  const professionFilter = options?.professionFilter ?? "";
-
-  const rows: RankingsBoardRow[] = [];
-
-  for (const entry of listing.entries) {
-    const trainer = getTrainerById(entry.trainerId);
-    if (!trainer) continue;
-    if (!trainerMatchesCity(trainer, cityFilter)) continue;
-    if (!trainerMatchesProfession(trainer, professionFilter)) continue;
-
-    rows.push({
-      rank: entry.rank,
-      displayRank: 0,
-      trainer,
-      smoacScore: entry.smoacScore,
-      experienceYears: entry.experienceYears,
-      showTopRatedBadge: entry.topRated ?? entry.rank <= 3,
-    });
-  }
-
-  return rows;
+/** Kept for any callers that still want the demo listing object */
+export function getCityTop50Listing(
+  citySlug: string = DEFAULT_RANKING_CITY_SLUG
+): CityTop50Listing {
+  return LISTINGS_BY_SLUG[citySlug] ?? SAN_DIEGO_TOP_50;
 }

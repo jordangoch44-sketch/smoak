@@ -1,4 +1,3 @@
-import type { Trainer } from "@/types";
 import type { SpecialistDashboardRanking } from "@/types/specialist-dashboard";
 import {
   DashboardMetricCard,
@@ -7,20 +6,25 @@ import {
 
 interface VisibilityRankingCardProps {
   ranking: SpecialistDashboardRanking | null;
-  trainer: Trainer | undefined;
   isPremium: boolean;
+  /** SMOAC client review average (not Google/catalog ★) */
+  smoacRating?: number | null;
+  smoacReviewCount?: number;
 }
 
 export function VisibilityRankingCard({
   ranking,
-  trainer,
   isPremium,
+  smoacRating = null,
+  smoacReviewCount = 0,
 }: VisibilityRankingCardProps) {
+  const hasSmoacReviews = smoacReviewCount > 0 && smoacRating != null && smoacRating > 0;
+
   return (
     <DashboardSection
       title="Ranking"
       description="How you appear in SMOAC city rankings"
-      href={isPremium ? "/rankings" : undefined}
+      href="/rankings"
       linkLabel="View rankings"
     >
       <div className="dashboard-metrics-row">
@@ -28,14 +32,20 @@ export function VisibilityRankingCard({
           label="City rank"
           value={ranking ? `#${ranking.rank}` : "Unranked"}
           detail={
-            ranking ? ranking.listingTitle : "Complete profile to enter rankings"
+            ranking
+              ? ranking.listingTitle
+              : "Earn SMOAC client reviews to enter city rankings"
           }
           lockValues={!isPremium}
         />
         <DashboardMetricCard
-          label="Rating"
-          value={trainer ? trainer.rating.toFixed(1) : "—"}
-          detail={trainer ? `${trainer.reviewCount} reviews` : undefined}
+          label="SMOAC ★"
+          value={hasSmoacReviews ? smoacRating.toFixed(1) : "—"}
+          detail={
+            hasSmoacReviews
+              ? `${smoacReviewCount} SMOAC review${smoacReviewCount === 1 ? "" : "s"}`
+              : "No SMOAC reviews yet"
+          }
           lockValues={!isPremium}
         />
       </div>
