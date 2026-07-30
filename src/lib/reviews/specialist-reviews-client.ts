@@ -101,27 +101,12 @@ export async function fetchClientReviewForSpecialist(
 export async function fetchSpecialistReviewAggregates(
   specialistIds: string[]
 ): Promise<Map<string, SpecialistReviewAggregate>> {
-  const map = new Map<string, SpecialistReviewAggregate>();
   const supabase = createSupabaseBrowserClient();
-  const ids = [...new Set(specialistIds.filter(Boolean))];
-  if (!supabase || ids.length === 0) return map;
-
-  const { data, error } = await supabase
-    .from("specialist_review_aggregates")
-    .select("specialist_id, review_count, avg_rating")
-    .in("specialist_id", ids);
-
-  if (error || !data) return map;
-
-  for (const row of data) {
-    map.set(row.specialist_id as string, {
-      specialistId: row.specialist_id as string,
-      reviewCount: Number(row.review_count) || 0,
-      avgRating:
-        row.avg_rating == null ? null : Number(row.avg_rating),
-    });
-  }
-  return map;
+  if (!supabase) return new Map();
+  const { fetchSmoacReviewAggregates } = await import(
+    "@/lib/reviews/specialist-review-aggregates-query"
+  );
+  return fetchSmoacReviewAggregates(supabase, specialistIds);
 }
 
 export async function submitSpecialistReview(input: {

@@ -1,49 +1,73 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
+import { RANKINGS_PROFESSION_OPTIONS } from "@/data/city-rankings";
+import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
+import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
+import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
+import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
+import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 import {
-  getCityTop50Listing,
-  getRankingsBoardRows,
-  sortRankingsBoardByProximity,
-} from "@/data/city-rankings";
-import {
-  useActiveUserCoordinates,
-  useActiveUserCoordinatesKey,
-} from "@/hooks/useActiveUserCoordinates";
-import { useHydrated } from "@/hooks/useHydrated";
-import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
+  buildSmoacRankingsBoard,
+  listRankingCitiesFromCatalog,
+} from "@/lib/smoac-rankings";
+import type { Trainer } from "@/types/trainer";
 import { RankingsFilters } from "./RankingsFilters";
 import { RankingsRow } from "./RankingsRow";
 
-export function RankingsPageClient() {
-  const hydrated = useHydrated();
-  const personalizationCity = usePersonalizationCity();
-  const userCoords = useActiveUserCoordinates();
-  const coordsKey = useActiveUserCoordinatesKey();
-  const listing = getCityTop50Listing();
+interface RankingsPageClientProps {
+  initialCatalog?: Trainer[];
+  catalogMode?: PublicCatalogMode;
+  initialAggregates?: SpecialistReviewAggregate[];
+}
+
+export function RankingsPageClient({
+  initialCatalog = [],
+  catalogMode = "live",
+  initialAggregates = [],
+}: RankingsPageClientProps) {
   const [cityTouched, setCityTouched] = useState(false);
   const [cityOverride, setCityOverride] = useState("");
   const [profession, setProfession] = useState("");
-  const city = cityTouched
-    ? cityOverride
-    : hydrated
-      ? (personalizationCity ?? "")
-      : "";
 
-  const rows = useMemo(() => {
-    const baseline = getRankingsBoardRows({
-      cityFilter: city,
-      professionFilter: profession,
-    });
-    if (!hydrated || !userCoords) {
-      return baseline.map((row, index) => ({
-        ...row,
-        displayRank: index + 1,
-      }));
-    }
-    return sortRankingsBoardByProximity(baseline, userCoords);
-  }, [city, profession, hydrated, coordsKey, userCoords]);
+  useEffect(() => {
+    primePublicCatalogFromSSR(initialCatalog, catalogMode);
+  }, [initialCatalog, catalogMode]);
+
+  const trainers = useMemo(
+    () =>
+      listPublicMarketplaceTrainers({
+        remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
+        catalogMode,
+        includeBrowserState: true,
+      }),
+    [initialCatalog, catalogMode]
+  );
+
+  const aggregates = useMemo(
+    () => reviewAggregatesFromSerialized(initialAggregates),
+    [initialAggregates]
+  );
+
+  const cityOptions = useMemo(() => {
+    const fromCatalog = listRankingCitiesFromCatalog(trainers);
+    return [
+      { value: "", label: "All Cities" },
+      ...fromCatalog.map((city) => ({ value: city, label: city })),
+    ];
+  }, [trainers]);
+
+  const city = cityTouched ? cityOverride : "";
+
+  const rows = useMemo(
+    () =>
+      buildSmoacRankingsBoard(trainers, aggregates, {
+        cityFilter: city,
+        professionFilter: profession,
+      }),
+    [trainers, aggregates, city, profession]
+  );
 
   return (
     <div className="rankings-page">
@@ -70,12 +94,17 @@ export function RankingsPageClient() {
         <header className="rankings-page__header">
           <p className="rankings-page__eyebrow">SMOAC</p>
           <h1 className="rankings-page__title">City Rankings</h1>
-          <p className="rankings-page__subtitle">{listing.subtitle}</p>
+          <p className="rankings-page__subtitle">
+            Ranked by SMOAC client reviews — rating and review count. Sponsored
+            boosts and Google ratings don’t affect this board.
+          </p>
         </header>
 
         <RankingsFilters
           city={city}
           profession={profession}
+          cityOptions={cityOptions}
+          professionOptions={[...RANKINGS_PROFESSION_OPTIONS]}
           onCityChange={(value) => {
             setCityTouched(true);
             setCityOverride(value);
@@ -92,7 +121,7 @@ export function RankingsPageClient() {
               Specialist
             </span>
             <span className="rankings-board__col rankings-board__col--stats">
-              Stats
+              SMOAC reviews
             </span>
             <span className="rankings-board__col rankings-board__col--action">
               Profile
@@ -112,10 +141,11 @@ export function RankingsPageClient() {
           ) : (
             <div className="rankings-empty">
               <p className="rankings-empty__title">
-                No specialists match these filters yet.
+                No ranked specialists yet
               </p>
               <p className="rankings-empty__text">
-                Try another city or profession to explore the board.
+                Rankings appear once specialists have SMOAC client reviews. Try
+                another city or profession, or check back soon.
               </p>
               <button
                 type="button"

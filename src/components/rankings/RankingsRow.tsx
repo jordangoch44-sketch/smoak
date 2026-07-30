@@ -1,17 +1,17 @@
 import Link from "next/link";
-import type { RankingsBoardRow } from "@/data/city-rankings";
+import type { SmoacRankedSpecialist } from "@/lib/smoac-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { cn } from "@/lib/utils";
 
 interface RankingsRowProps {
-  row: RankingsBoardRow;
+  row: SmoacRankedSpecialist;
   priority?: boolean;
 }
 
 export function RankingsRow({ row, priority = false }: RankingsRowProps) {
-  const { trainer, displayRank, smoacScore, experienceYears } = row;
+  const { trainer, displayRank, avgRating, reviewCount } = row;
   const profileHref = `/trainers/${trainer.id}`;
   const isPodium = displayRank <= 3;
 
@@ -48,16 +48,14 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
       <div className="rankings-row__trail">
         <div className="rankings-row__stats" role="list">
           <div className="rankings-row__stat" role="listitem">
-            <span className="rankings-row__stat-label">Rating</span>
+            <span className="rankings-row__stat-label">SMOAC ★</span>
             <span className="rankings-row__stat-value">
-              {trainer.rating.toFixed(1)}
+              {avgRating > 0 ? avgRating.toFixed(1) : "—"}
             </span>
           </div>
           <div className="rankings-row__stat" role="listitem">
             <span className="rankings-row__stat-label">Reviews</span>
-            <span className="rankings-row__stat-value">
-              {trainer.reviewCount}
-            </span>
+            <span className="rankings-row__stat-value">{reviewCount}</span>
           </div>
           <div className="rankings-row__stat" role="listitem">
             <span className="rankings-row__stat-label">Price</span>
@@ -66,21 +64,6 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
               variant="stat"
               className="rankings-row__stat-value"
             />
-          </div>
-          <div className="rankings-row__stat" role="listitem">
-            <span className="rankings-row__stat-label">Experience</span>
-            <span className="rankings-row__stat-value">
-              {experienceYears} yrs
-            </span>
-          </div>
-          <div
-            className="rankings-row__stat rankings-row__stat--score"
-            role="listitem"
-          >
-            <span className="rankings-row__stat-label">SMOAC</span>
-            <span className="rankings-row__stat-value rankings-row__score">
-              {smoacScore}
-            </span>
           </div>
         </div>
 

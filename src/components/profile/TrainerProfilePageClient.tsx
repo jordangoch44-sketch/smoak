@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
 import type { Trainer } from "@/types";
+import type { TrainerCityRanking } from "@/data/city-rankings";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
@@ -13,6 +14,9 @@ import {
   getApprovedSpecialistProfilesHydratedSnapshot,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
+import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
+import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
+import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
 import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
 import {
@@ -32,11 +36,18 @@ import { cn } from "@/lib/utils";
 interface TrainerProfilePageClientProps {
   trainerId: string;
   initialTrainer: Trainer | null;
+  /** Same-city peers for competitive rank (SSR). */
+  initialCatalog?: Trainer[];
+  initialAggregates?: SpecialistReviewAggregate[];
+  initialCityRanking?: TrainerCityRanking | null;
 }
 
 export function TrainerProfilePageClient({
   trainerId,
   initialTrainer,
+  initialCatalog = [],
+  initialAggregates = [],
+  initialCityRanking = null,
 }: TrainerProfilePageClientProps) {
   const hydrated = useHydrated();
   const catalogReady = useSyncExternalStore(
@@ -48,6 +59,9 @@ export function TrainerProfilePageClient({
   const trainer = liveTrainer ?? initialTrainer;
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [cityRanking, setCityRanking] = useState<TrainerCityRanking | null>(
+    initialCityRanking
+  );
   const {
     aggregate,
     reviews: smoacReviews,
@@ -58,6 +72,39 @@ export function TrainerProfilePageClient({
     canLeaveReview,
     applySubmittedReview,
   } = useSpecialistReviews(trainerId);
+
+  useEffect(() => {
+    const current = liveTrainer ?? initialTrainer;
+    if (!current) {
+      setCityRanking(null);
+      return;
+    }
+
+    const peers =
+      initialCatalog.length > 0
+        ? initialCatalog
+        : initialTrainer
+          ? [initialTrainer]
+          : [];
+    const map = reviewAggregatesFromSerialized(initialAggregates);
+    // Refresh when this specialist's SMOAC aggregate changes (new review).
+    if (aggregate) {
+      map.set(current.id, {
+        specialistId: current.id,
+        reviewCount: aggregate.reviewCount,
+        avgRating: aggregate.avgRating,
+      });
+    }
+    setCityRanking(getLiveTrainerCityRanking(current, peers, map));
+  }, [
+    trainerId,
+    liveTrainer,
+    initialTrainer,
+    initialCatalog,
+    initialAggregates,
+    aggregate?.reviewCount,
+    aggregate?.avgRating,
+  ]);
 
   if (!trainer && hydrated && catalogReady) {
     return (
@@ -107,6 +154,7 @@ export function TrainerProfilePageClient({
       <ProfileHero
         trainer={trainer}
         smoacAggregate={aggregate}
+        cityRanking={cityRanking}
         canLeaveReview={canLeaveReview}
         hasOwnReview={Boolean(ownReview)}
         onLeaveReview={() => setReviewModalOpen(true)}

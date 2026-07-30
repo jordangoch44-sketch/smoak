@@ -4,6 +4,9 @@ import {
   loadPublicCatalogForServer,
   loadPublicTrainerByIdForServer,
 } from "@/lib/profiles/fetch-approved-catalog-server";
+import { loadSmoacReviewAggregatesForServer } from "@/lib/reviews/load-review-aggregates-server";
+import { serializeReviewAggregates } from "@/lib/reviews/specialist-review-types";
+import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { trainers } from "@/data/trainers";
 
 interface PageProps {
@@ -34,13 +37,33 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default async function TrainerProfilePage({ params }: PageProps) {
   const { id } = await params;
-  const trainer = await loadPublicTrainerByIdForServer(id);
+  const [{ trainers: catalog }, trainer] = await Promise.all([
+    loadPublicCatalogForServer(),
+    loadPublicTrainerByIdForServer(id),
+  ]);
   if (!trainer) notFound();
+
+  const city = trainer.city.trim().toLowerCase();
+  const cityPeers =
+    city.length > 0
+      ? catalog.filter((t) => t.city.trim().toLowerCase() === city)
+      : [trainer];
+  const peerIds =
+    cityPeers.length > 0 ? cityPeers.map((t) => t.id) : [trainer.id];
+  const aggregates = await loadSmoacReviewAggregatesForServer(peerIds);
+  const initialCityRanking = getLiveTrainerCityRanking(
+    trainer,
+    cityPeers.length > 0 ? cityPeers : [trainer],
+    aggregates
+  );
 
   return (
     <TrainerProfilePageClient
       trainerId={id}
       initialTrainer={trainer}
+      initialCatalog={cityPeers.length > 0 ? cityPeers : [trainer]}
+      initialAggregates={serializeReviewAggregates(aggregates)}
+      initialCityRanking={initialCityRanking}
     />
   );
 }

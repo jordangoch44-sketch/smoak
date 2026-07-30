@@ -4,11 +4,14 @@ import {
   RANKINGS_CITY_OPTIONS,
   RANKINGS_PROFESSION_OPTIONS,
 } from "@/data/city-rankings";
+
 interface RankingsFiltersProps {
   city: string;
   profession: string;
   onCityChange: (value: string) => void;
   onProfessionChange: (value: string) => void;
+  cityOptions?: ReadonlyArray<{ value: string; label: string }>;
+  professionOptions?: ReadonlyArray<{ value: string; label: string }>;
 }
 
 export function RankingsFilters({
@@ -16,6 +19,8 @@ export function RankingsFilters({
   profession,
   onCityChange,
   onProfessionChange,
+  cityOptions = RANKINGS_CITY_OPTIONS,
+  professionOptions = RANKINGS_PROFESSION_OPTIONS,
 }: RankingsFiltersProps) {
   return (
     <div className="rankings-filters">
@@ -28,7 +33,7 @@ export function RankingsFilters({
             onChange={(e) => onCityChange(e.target.value)}
             aria-label="Filter by city"
           >
-            {RANKINGS_CITY_OPTIONS.map((option) => (
+            {cityOptions.map((option) => (
               <option key={option.value || "all"} value={option.value}>
                 {option.label}
               </option>
@@ -46,7 +51,7 @@ export function RankingsFilters({
             onChange={(e) => onProfessionChange(e.target.value)}
             aria-label="Filter by profession"
           >
-            {RANKINGS_PROFESSION_OPTIONS.map((option) => (
+            {professionOptions.map((option) => (
               <option key={option.value || "all"} value={option.value}>
                 {option.label}
               </option>

@@ -19,15 +19,26 @@ interface Top50RankCardProps {
   trainer: Trainer;
   showTopRatedBadge?: boolean;
   priority?: boolean;
+  /** SMOAC review average — preferred over catalog/Google ★ */
+  smoacRating?: number;
+  smoacReviewCount?: number;
 }
 
 export function Top50RankCard({
   rank,
   trainer,
   priority = false,
+  smoacRating,
+  smoacReviewCount,
 }: Top50RankCardProps) {
   const href = `/trainers/${trainer.id}`;
   const isPodium = rank <= 3;
+  const ratingLabel =
+    smoacRating != null && smoacRating > 0
+      ? `${smoacRating.toFixed(1)}${
+          smoacReviewCount != null ? ` (${smoacReviewCount})` : ""
+        }`
+      : formatTrainerRatingLabel(trainer);
 
   return (
     <div
@@ -82,7 +93,7 @@ export function Top50RankCard({
                   ★
                 </span>
                 <span className="top50-card__rating-value">
-                  {formatTrainerRatingLabel(trainer)}
+                  {ratingLabel}
                 </span>
               </div>
               <span className="top50-card__price">

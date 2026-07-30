@@ -50,6 +50,23 @@ export function formatSmoacReviewCountLabel(count: number): string {
   return count === 1 ? "1 SMOAC Review" : `${count} SMOAC Reviews`;
 }
 
+/** Serialize aggregate Map for RSC → client props. */
+export function serializeReviewAggregates(
+  map: Map<string, SpecialistReviewAggregate>
+): SpecialistReviewAggregate[] {
+  return [...map.values()];
+}
+
+export function reviewAggregatesFromSerialized(
+  rows: SpecialistReviewAggregate[] | undefined
+): Map<string, SpecialistReviewAggregate> {
+  const map = new Map<string, SpecialistReviewAggregate>();
+  for (const row of rows ?? []) {
+    map.set(row.specialistId, row);
+  }
+  return map;
+}
+
 export function formatReviewAuthorFallback(): string {
   return "Verified SMOAC Client";
 }

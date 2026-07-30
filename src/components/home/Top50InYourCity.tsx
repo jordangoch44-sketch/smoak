@@ -2,12 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
-import {
-  DEFAULT_RANKING_CITY_SLUG,
-  getCityTop50Listing,
-  getRankedSpecialistsBaseline,
-  sortRankedSpecialistsByProximity,
-} from "@/data/city-rankings";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import {
   useActiveUserCoordinates,
@@ -18,18 +12,21 @@ import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { usePersonalizationMarketplaceCity } from "@/hooks/usePersonalizationMarketplaceCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listLiveTopRatedSpecialistsForCity } from "@/lib/live-city-rankings";
-import { marketplaceCityToSlug } from "@/lib/marketplace-city-centers";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
+import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
+import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 import type { Trainer } from "@/types/trainer";
 import { Top50RankCard } from "./Top50RankCard";
 
-/** Homepage “Top Rated Near You” — live catalog + proximity when available */
+/** Homepage “Top Rated Near You” — SMOAC review ranks, location-filtered */
 export function Top50InYourCity({
   catalogMode = "live",
   initialCatalog,
+  initialAggregates = [],
 }: {
   catalogMode?: PublicCatalogMode;
   initialCatalog?: Trainer[];
+  initialAggregates?: SpecialistReviewAggregate[];
 }) {
   const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
@@ -41,37 +38,33 @@ export function Top50InYourCity({
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
   }, [initialCatalog, catalogMode]);
 
-  const citySlug = marketplaceCity
-    ? marketplaceCityToSlug(marketplaceCity)
-    : DEFAULT_RANKING_CITY_SLUG;
-  const listing = getCityTop50Listing(citySlug);
-  const cityName = marketplaceCity?.trim() || listing.city;
+  const aggregates = useMemo(
+    () => reviewAggregatesFromSerialized(initialAggregates),
+    [initialAggregates]
+  );
+
+  const cityName = marketplaceCity?.trim() || personalizationCity?.trim() || "";
 
   const ranked = useMemo(() => {
-    const live = listLiveTopRatedSpecialistsForCity(cityName, 20, {
-      remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
-      catalogMode,
-      includeBrowserState: hydrated,
-    });
-
-    /* Seed baseline only when marketplace is offline demo mode */
-    const list =
-      live.length > 0
-        ? live
-        : catalogMode === "seed"
-          ? getRankedSpecialistsBaseline(citySlug)
-          : live;
-
-    if (!hydrated || !userCoords) return list;
-    return sortRankedSpecialistsByProximity(list, userCoords);
+    return listLiveTopRatedSpecialistsForCity(
+      cityName,
+      20,
+      {
+        remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
+        catalogMode,
+        includeBrowserState: hydrated,
+      },
+      aggregates,
+      hydrated ? userCoords : null
+    );
   }, [
     cityName,
-    citySlug,
     hydrated,
     coordsKey,
     userCoords,
     catalogMode,
     initialCatalog,
+    aggregates,
   ]);
 
   const displayCity = hydrated ? personalizationCity : null;
@@ -91,8 +84,8 @@ export function Top50InYourCity({
             </h2>
             <p className="home-section__subtitle">
               {displayCity
-                ? `Highest-rated specialists near you in ${displayCity}.`
-                : "Highest-rated specialists near you."}
+                ? `Highest SMOAC-reviewed specialists near you in ${displayCity}.`
+                : "Highest-rated specialists by SMOAC client reviews."}
             </p>
           </div>
           <Link
@@ -105,13 +98,15 @@ export function Top50InYourCity({
 
         <HorizontalCarousel
           className="home-top50__carousel"
-          ariaLabel={`${listing.displayTitle} specialists`}
+          ariaLabel="Top rated specialists"
         >
-          {ranked.map(({ rank, trainer }, index) => (
+          {ranked.map(({ rank, trainer, avgRating, reviewCount }, index) => (
             <Top50RankCard
               key={trainer.id}
               rank={rank}
               trainer={trainer}
+              smoacRating={avgRating}
+              smoacReviewCount={reviewCount}
               priority={index < 3}
             />
           ))}

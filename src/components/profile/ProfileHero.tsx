@@ -2,7 +2,7 @@
 
 import { useCallback, useState, type CSSProperties, type MouseEvent } from "react";
 import type { Trainer } from "@/types";
-import { getTrainerCityRanking } from "@/data/city-rankings";
+import type { TrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { firstSentence } from "@/lib/related-trainers";
 import {
@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 interface ProfileHeroProps {
   trainer: Trainer;
   smoacAggregate?: SpecialistReviewAggregate | null;
+  cityRanking?: TrainerCityRanking | null;
   canLeaveReview?: boolean;
   hasOwnReview?: boolean;
   onLeaveReview?: () => void;
@@ -37,13 +38,14 @@ interface ProfileHeroProps {
 export function ProfileHero({
   trainer,
   smoacAggregate,
+  cityRanking = null,
   canLeaveReview,
   hasOwnReview,
   onLeaveReview,
   variant = "public",
 }: ProfileHeroProps) {
   const isSpecialistLive = variant === "specialist-live";
-  const ranking = getTrainerCityRanking(trainer.id);
+  const ranking = cityRanking;
   const coverImages = buildTrainerGalleryImages(
     trainer.gallery,
     trainer.heroImage,
