@@ -52,4 +52,16 @@ API: `POST /api/email` (browser-safe; key stays on server). Optional `html` fiel
 
 ## Auth emails
 
-Magic link / password reset / signup confirm are **Supabase Auth** templates (dashboard), not this Resend stack. Style those separately in Supabase to match the SMOAC look.
+Magic link / password reset / signup confirm are **Supabase Auth** templates (dashboard), not this Resend stack.
+
+Paste-ready branded HTML (same dark SMOAC shell):
+
+[`docs/email-templates/supabase-auth/README.md`](./email-templates/supabase-auth/README.md)
+
+Regenerate:
+
+```bash
+node scripts/generate-supabase-auth-emails.mjs
+```
+
+For production From-address branding, point Supabase Auth **custom SMTP** at Resend.

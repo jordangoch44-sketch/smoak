@@ -30,6 +30,16 @@ break on iPhone even when the app sends the correct redirect.
 
 For local dev, disable **Confirm email** under **Authentication → Providers → Email** so signup returns a session immediately.
 
+### Branded Auth email templates
+
+Paste-ready SMOAC HTML (matches Resend transactional emails):
+
+[`docs/email-templates/supabase-auth/README.md`](./email-templates/supabase-auth/README.md)
+
+Supabase Dashboard → **Authentication → Emails** → update Confirm signup, Magic Link, Reset password, Change email, Invite.
+
+Production tip: configure **custom SMTP** (Resend) so Auth mail sends from `SMOAC <noreply@yourdomain.com>`.
+
 ## Admin users
 
 1. Create a user in **Authentication → Users** (or sign up via SQL).

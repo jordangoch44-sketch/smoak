@@ -18,6 +18,7 @@
     "test:supabase:profiles": "node scripts/test-specialist-profiles.mjs",
     "test:product-workflow": "node scripts/test-product-workflow.mjs",
     "test:email": "node scripts/test-email.mjs",
+    "generate:auth-emails": "node scripts/generate-supabase-auth-emails.mjs",
     "apply:migration": "node scripts/apply-sql-migration.mjs",
     "apply:signup-fix": "node scripts/apply-signup-fix.mjs",
     "verify:auth": "node scripts/verify-auth.mjs",
