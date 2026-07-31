@@ -2,6 +2,8 @@ export interface OutboundEmail {
   to: string;
   subject: string;
   text: string;
+  /** Branded HTML multipart body — always prefer sending with text fallback */
+  html?: string;
   kind: string;
 }
 
@@ -36,6 +38,7 @@ export async function sendOutboundEmail(
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from =
     process.env.EMAIL_FROM?.trim() || "SMOAC <onboarding@resend.dev>";
+  const html = payload.html?.trim() || undefined;
 
   if (apiKey) {
     try {
@@ -50,6 +53,7 @@ export async function sendOutboundEmail(
           to: [to],
           subject: payload.subject,
           text: payload.text,
+          ...(html ? { html } : {}),
         }),
       });
 
@@ -67,6 +71,7 @@ export async function sendOutboundEmail(
         kind: payload.kind,
         to,
         subject: payload.subject,
+        html: Boolean(html),
       });
       return { success: true, mode };
     } catch (error) {
@@ -79,6 +84,7 @@ export async function sendOutboundEmail(
     kind: payload.kind,
     to,
     subject: payload.subject,
+    html: Boolean(html),
     bodyPreview: payload.text.split("\n").slice(0, 6).join(" "),
     fullText: payload.text,
   });

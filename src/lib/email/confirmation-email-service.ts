@@ -1,4 +1,8 @@
 import { dispatchTransactionalEmail } from "@/lib/email/email-transport";
+import {
+  renderEmailParagraphs,
+  wrapTransactionalEmailHtml,
+} from "@/lib/email/email-html-shell";
 import { getSiteUrlForStripe } from "@/lib/stripe/config";
 import { LOGIN_PATH } from "@/lib/auth-routes";
 import type { ClientApplication } from "@/types/client-application";
@@ -41,6 +45,10 @@ function specialistLoginUrl(): string {
   return `${getSiteUrlForStripe()}${LOGIN_PATH}`;
 }
 
+function exploreUrl(): string {
+  return `${getSiteUrlForStripe()}/explore`;
+}
+
 function buildSpecialistConfirmationEmail(
   application: SpecialistApplication
 ): ConfirmationEmailPayload {
@@ -54,10 +62,24 @@ Every application is reviewed individually. We typically verify accounts within 
 Thank you,
 SMOAC`;
 
+  const html = wrapTransactionalEmailHtml({
+    preheader: "We received your specialist application",
+    eyebrow: "Application received",
+    title: "You’re under review",
+    bodyHtml: renderEmailParagraphs([
+      `Hi ${firstName},`,
+      "Thank you for applying to join SMOAC as a specialist.",
+      "Every application is reviewed individually. We typically verify accounts within 24 hours.",
+      "You’ll receive another email when you’re approved — then you can log in and finish your in-depth profile, including pricing, availability, media, and credentials.",
+    ]),
+    footerNote: "No action needed right now — we’ll email you when you’re approved.",
+  });
+
   return {
     to: application.email.trim(),
     subject: "SMOAC application received — under review",
     text,
+    html,
     applicationId: application.id,
     kind: "specialist",
   };
@@ -80,10 +102,27 @@ Choose Continue as Specialist, then open Edit profile to finish your in-depth pr
 Welcome to SMOAC,
 The SMOAC team`;
 
+  const html = wrapTransactionalEmailHtml({
+    preheader: "You’re approved — log in to finish your profile",
+    eyebrow: "You’re approved",
+    title: "Welcome to SMOAC",
+    bodyHtml: renderEmailParagraphs([
+      `Hi ${firstName},`,
+      "Your specialist account has been approved. Your profile can go live once you finish the details clients need to book with confidence.",
+      "Log in with the email and password you used to apply. Choose Continue as Specialist, then open Edit profile to add pricing, availability, photos, credentials, and coaching details.",
+    ]),
+    cta: {
+      label: "Log in to finish your profile",
+      href: loginUrl,
+    },
+    footerNote: "Clients discover you on SMOAC once your listing is complete and live.",
+  });
+
   return {
     to: application.email.trim(),
     subject: "You’re approved on SMOAC — log in to finish your profile",
     text,
+    html,
     applicationId: application.id,
     kind: "specialist",
   };
@@ -102,10 +141,27 @@ You can now continue exploring specialists and saving profiles.
 Thank you,
 SMOAC`;
 
+  const html = wrapTransactionalEmailHtml({
+    preheader: "Welcome to SMOAC",
+    eyebrow: "Welcome",
+    title: "You’re in",
+    bodyHtml: renderEmailParagraphs([
+      `Hi ${firstName},`,
+      "Your SMOAC client account is ready.",
+      "Explore specialists near you, save favorites, and send inquiries when you’re ready to connect.",
+    ]),
+    cta: {
+      label: "Explore specialists",
+      href: exploreUrl(),
+    },
+    footerNote: "Luxury wellness specialists, curated for your area.",
+  });
+
   return {
     to: application.email.trim(),
     subject: "Welcome to SMOAC",
     text,
+    html,
     applicationId: application.id,
     kind: "client",
   };
@@ -121,6 +177,7 @@ export async function sendSpecialistApplicationConfirmationEmail(
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
+      html: payload.html,
       kind: "confirmation_specialist",
     });
   } catch (error) {
@@ -139,6 +196,7 @@ export async function sendSpecialistApplicationApprovedEmail(
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
+      html: payload.html,
       kind: "approval_specialist",
     });
   } catch (error) {
@@ -157,6 +215,7 @@ export async function sendClientApplicationConfirmationEmail(
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
+      html: payload.html,
       kind: "confirmation_client",
     });
   } catch (error) {

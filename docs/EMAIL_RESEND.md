@@ -1,8 +1,8 @@
 # SMOAC transactional email (Resend)
 
-Inquiry + application confirmation emails go through `src/lib/email/email-transport.ts`.
+Inquiry + application emails go through `src/lib/email/email-transport.ts` and share a branded HTML shell in `src/lib/email/email-html-shell.ts` (dark graphite, silver type, lavender CTA). Plain-text fallback is always included.
 
-- **With `RESEND_API_KEY`:** real sends via Resend  
+- **With `RESEND_API_KEY`:** real sends via Resend (HTML + text)
 - **Without:** payloads log to the server console (safe for local UI work)
 
 ## Setup (MVP)
@@ -17,7 +17,10 @@ Inquiry + application confirmation emails go through `src/lib/email/email-transp
 ```bash
 RESEND_API_KEY=re_xxxxxxxx
 EMAIL_FROM=SMOAC <onboarding@resend.dev>
+NEXT_PUBLIC_SITE_URL=https://smoac.com
 ```
+
+`NEXT_PUBLIC_SITE_URL` is used for logo + CTA absolute URLs in HTML emails.
 
 5. Restart the Next.js server (`npm run dev` / `npm run start:lan`)
 
@@ -43,5 +46,10 @@ EMAIL_FROM=SMOAC <noreply@yourdomain.com>
 | Client inquiry | Specialist | `inquiry_specialist` |
 | Client Join Now | Client | `confirmation_client` |
 | Specialist Join Now | Specialist | `confirmation_specialist` |
+| Specialist approved | Specialist | `approval_specialist` |
 
-API: `POST /api/email` (browser-safe; key stays on server).
+API: `POST /api/email` (browser-safe; key stays on server). Optional `html` field is accepted with `text`.
+
+## Auth emails
+
+Magic link / password reset / signup confirm are **Supabase Auth** templates (dashboard), not this Resend stack. Style those separately in Supabase to match the SMOAC look.

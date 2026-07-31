@@ -14,6 +14,7 @@ interface EmailBody {
   to?: string;
   subject?: string;
   text?: string;
+  html?: string;
   kind?: string;
 }
 
@@ -29,6 +30,10 @@ export async function POST(request: Request) {
   const to = typeof body.to === "string" ? body.to.trim() : "";
   const subject = typeof body.subject === "string" ? body.subject.trim() : "";
   const text = typeof body.text === "string" ? body.text.trim() : "";
+  const html =
+    typeof body.html === "string" && body.html.trim()
+      ? body.html.trim()
+      : undefined;
   const kind = typeof body.kind === "string" ? body.kind.trim() : "";
 
   if (!to || !subject || !text || !kind || !ALLOWED_KINDS.has(kind)) {
@@ -38,7 +43,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const result = await sendOutboundEmail({ to, subject, text, kind });
+  const result = await sendOutboundEmail({ to, subject, text, html, kind });
   return NextResponse.json(
     { success: result.success, mode: result.mode },
     { status: result.success ? 200 : 502 }

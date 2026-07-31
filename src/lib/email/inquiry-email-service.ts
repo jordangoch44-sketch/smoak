@@ -1,6 +1,13 @@
 import type { ConfirmationEmailResult } from "@/lib/email/confirmation-email-service";
 import { dispatchTransactionalEmail } from "@/lib/email/email-transport";
 import {
+  renderEmailDetailRows,
+  renderEmailParagraphs,
+  renderEmailQuote,
+  renderEmailTextLink,
+  wrapTransactionalEmailHtml,
+} from "@/lib/email/email-html-shell";
+import {
   labelsForInquiryTopics,
   labelForInquiryAction,
   type InquiryActionId,
@@ -36,31 +43,61 @@ export async function sendInquiryClientConfirmationEmail(
     const first = input.clientFirstName.trim() || "there";
     const topics = labelsForInquiryTopics(input.inquiryTopics);
     const action = labelForInquiryAction(input.inquiryAction);
-    const topicLine =
-      topics.length > 0
-        ? topics.map((t) => `- ${t}`).join("\n")
-        : "- (none selected)";
-    const reviewLine = input.leaveReviewPath
-      ? `\nAfter you connect, leave a SMOAC review (helps city rankings):\n${input.leaveReviewPath}\n`
-      : "";
+    const topicText =
+      topics.length > 0 ? topics.join(", ") : "None selected";
+    const message = input.message.trim();
+
     const text = `Hi ${first},
 
 Your inquiry was sent to ${input.specialistName}. They'll follow up with you by email.
 
 Inquiry type: ${action}
+Topics: ${topicText}
 
-Topics:
-${topicLine}
-
-${input.message.trim() ? `Your message:\n${input.message.trim()}\n\n` : ""}Open your messages: ${input.messagesPath}
-${reviewLine}
+${message ? `Your message:\n${message}\n\n` : ""}Open your messages: ${input.messagesPath}
+${
+  input.leaveReviewPath
+    ? `\nAfter you connect, leave a SMOAC review:\n${input.leaveReviewPath}\n`
+    : ""
+}
 Thank you,
 SMOAC`;
+
+    const bodyHtml = [
+      renderEmailParagraphs([
+        `Hi ${first},`,
+        `Your inquiry was sent to ${input.specialistName}. They’ll follow up with you by email.`,
+      ]),
+      renderEmailDetailRows([
+        { label: "Inquiry", value: action },
+        { label: "Topics", value: topicText },
+      ]),
+      renderEmailQuote("Your message", message),
+      input.leaveReviewPath
+        ? renderEmailParagraphs([
+            "After you connect, you’re welcome to leave a SMOAC review — it helps city rankings and other clients choose with confidence.",
+          ]) +
+          renderEmailTextLink("Leave a SMOAC review", input.leaveReviewPath)
+        : "",
+    ].join("");
+
+    const html = wrapTransactionalEmailHtml({
+      preheader: `Inquiry sent to ${input.specialistName}`,
+      eyebrow: "Inquiry confirmation",
+      title: "Message sent",
+      bodyHtml,
+      cta: {
+        label: "Open your messages",
+        href: input.messagesPath,
+      },
+      footerNote: "We’ll keep your conversation history in your SMOAC dashboard.",
+    });
 
     return await dispatchTransactionalEmail({
       to: input.to.trim().toLowerCase(),
       subject: `Inquiry sent to ${input.specialistName}`,
       text,
+      html,
       kind: "inquiry_client",
     });
   } catch (error) {
@@ -77,30 +114,62 @@ export async function sendInquirySpecialistNotificationEmail(
     const clientEmail = input.clientEmail.trim().toLowerCase();
     const topics = labelsForInquiryTopics(input.inquiryTopics);
     const action = labelForInquiryAction(input.inquiryAction);
-    const topicLine =
-      topics.length > 0
-        ? topics.map((t) => `- ${t}`).join("\n")
-        : "- (general inquiry)";
+    const topicText =
+      topics.length > 0 ? topics.join(", ") : "General inquiry";
     const message = input.message.trim();
-    const text = `Hi ${input.specialistName.split(" ")[0] || "there"},
+    const specialistFirst =
+      input.specialistName.trim().split(/\s+/)[0] || "there";
+
+    const text = `Hi ${specialistFirst},
 
 You have a new SMOAC inquiry from ${first}.
 
 Reply to this client by email: ${clientEmail || "(email not provided)"}
 
 Inquiry type: ${action}
-
-Interested in:
-${topicLine}
+Interested in: ${topicText}
 
 ${message ? `Message:\n${message}\n\n` : ""}Open your specialist portal: ${input.dashboardPath}
 
 SMOAC`;
 
+    const bodyHtml = [
+      renderEmailParagraphs([
+        `Hi ${specialistFirst},`,
+        `You have a new inquiry from ${first}. Reply by email to start the conversation.`,
+      ]),
+      renderEmailDetailRows([
+        { label: "Client", value: first },
+        {
+          label: "Reply to",
+          value: clientEmail || "Email not provided",
+        },
+        { label: "Inquiry", value: action },
+        { label: "Interested in", value: topicText },
+      ]),
+      renderEmailQuote("Message", message),
+    ].join("");
+
+    const html = wrapTransactionalEmailHtml({
+      preheader: `New inquiry from ${first}`,
+      eyebrow: "New client inquiry",
+      title: `${first} reached out`,
+      bodyHtml,
+      cta: {
+        label: "Open specialist portal",
+        href: input.dashboardPath,
+      },
+      secondaryLink: clientEmail
+        ? { label: `Email ${first}`, href: `mailto:${clientEmail}` }
+        : undefined,
+      footerNote: "Reply promptly — clients often compare a few specialists.",
+    });
+
     return await dispatchTransactionalEmail({
       to: input.to.trim().toLowerCase(),
       subject: `New SMOAC inquiry from ${first}`,
       text,
+      html,
       kind: "inquiry_specialist",
     });
   } catch (error) {
