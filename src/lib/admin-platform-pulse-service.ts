@@ -1,13 +1,8 @@
-/**
- * Live platform totals + traffic for the admin executive snapshot.
- * Reads real Supabase tables as the signed-in admin (RLS: is_admin).
- */
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { estimateCatalogMonthlyEarningsFromFlags } from "@/lib/admin-live-catalog-earnings";
 import {
-  getMarketplaceAuthClient,
-  isMarketplaceSupabaseActive,
-} from "@/lib/auth/marketplace-auth";
+  SPECIALIST_AD_ADDON_CATALOG,
+  SPECIALIST_TIER_CATALOG,
+} from "@/data/admin-specialist-billing-catalog";
 import type {
   AdminEngagementWeek,
   AdminLiveEarnings,
@@ -139,7 +134,9 @@ async function countPendingApplications(
 async function fetchLiveEarnings(
   supabase: SupabaseClient
 ): Promise<AdminLiveEarnings | null> {
-  /* Prefer real Stripe MRR when keys are configured */
+  const periodLabel = formatPeriodLabel(new Date());
+
+  /* Prefer live Stripe MRR (server-only — secret key) */
   try {
     const { fetchStripeMrrCents } = await import(
       "@/lib/stripe/sync-subscription"
@@ -150,35 +147,70 @@ async function fetchLiveEarnings(
         paidSubscriberCount: stripeMrr.payingCount,
         subscriberRevenueCents: stripeMrr.mrrCents,
         adRevenueCents: 0,
-        periodLabel: formatPeriodLabel(new Date()),
+        periodLabel,
+        source: "stripe",
       };
     }
   } catch (err) {
     console.warn("[SMOAC admin] Stripe MRR fetch failed:", err);
   }
 
+  /* Fallback: specialist_billing rows synced from Stripe webhooks (not profile flags) */
   const { data, error } = await supabase
-    .from("specialist_profiles")
-    .select("is_premium, featured, sponsored, top_ranked")
-    .eq("status", "approved");
+    .from("specialist_billing")
+    .select("status, plan, active_addons")
+    .in("status", ["active", "trialing"]);
 
   if (error) {
-    console.warn("[SMOAC admin] earnings flags failed:", error.message);
-    return null;
+    console.warn("[SMOAC admin] billing table earnings failed:", error.message);
+    return {
+      paidSubscriberCount: 0,
+      subscriberRevenueCents: 0,
+      adRevenueCents: 0,
+      periodLabel,
+      source: "none",
+    };
   }
 
-  const estimated = estimateCatalogMonthlyEarningsFromFlags(
-    (data ?? []).map((row) => ({
-      isPremium: Boolean(row.is_premium),
-      featured: Boolean(row.featured),
-      sponsored: Boolean(row.sponsored),
-      topRanked: Boolean(row.top_ranked),
-    }))
-  );
+  let paidSubscriberCount = 0;
+  let subscriberRevenueCents = 0;
+  let adRevenueCents = 0;
+
+  for (const row of data ?? []) {
+    const plan = String(row.plan ?? "free");
+    if (plan === "premium" || plan === "platinum") {
+      paidSubscriberCount += 1;
+      subscriberRevenueCents +=
+        plan === "platinum"
+          ? SPECIALIST_TIER_CATALOG.platinum.monthlyCents
+          : SPECIALIST_TIER_CATALOG.premium.monthlyCents;
+    }
+    const addons = Array.isArray(row.active_addons)
+      ? (row.active_addons as string[])
+      : [];
+    for (const addon of addons) {
+      if (addon === "boosted_profile") {
+        adRevenueCents +=
+          SPECIALIST_AD_ADDON_CATALOG.boosted_profile.monthlyCents;
+      } else if (addon === "category_spotlight") {
+        adRevenueCents +=
+          SPECIALIST_AD_ADDON_CATALOG.category_spotlight.monthlyCents;
+      } else if (addon === "homepage_spotlight") {
+        adRevenueCents +=
+          SPECIALIST_AD_ADDON_CATALOG.homepage_spotlight.monthlyCents;
+      } else if (addon === "top_ranking_boost") {
+        adRevenueCents +=
+          SPECIALIST_AD_ADDON_CATALOG.top_ranking_boost.monthlyCents;
+      }
+    }
+  }
 
   return {
-    ...estimated,
-    periodLabel: formatPeriodLabel(new Date()),
+    paidSubscriberCount,
+    subscriberRevenueCents,
+    adRevenueCents,
+    periodLabel,
+    source: "billing_table",
   };
 }
 
@@ -340,11 +372,10 @@ const UNAVAILABLE: AdminPlatformPulse = {
   engagement: null,
 };
 
-export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
-  if (!isMarketplaceSupabaseActive()) return UNAVAILABLE;
-  const supabase = getMarketplaceAuthClient();
-  if (!supabase) return UNAVAILABLE;
-
+/** Build pulse from a Supabase client (browser admin session or server). */
+export async function buildAdminPlatformPulse(
+  supabase: SupabaseClient
+): Promise<AdminPlatformPulse> {
   const now = Date.now();
   const weekAgoIso = new Date(now - WEEK_MS).toISOString();
 
@@ -384,4 +415,14 @@ export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
     earnings,
     engagement,
   };
+}
+
+/** @deprecated Prefer /api/admin/platform-pulse from the admin UI */
+export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
+  const { getMarketplaceAuthClient, isMarketplaceSupabaseActive } =
+    await import("@/lib/auth/marketplace-auth");
+  if (!isMarketplaceSupabaseActive()) return UNAVAILABLE;
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return UNAVAILABLE;
+  return buildAdminPlatformPulse(supabase);
 }

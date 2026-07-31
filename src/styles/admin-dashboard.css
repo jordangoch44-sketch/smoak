@@ -396,7 +396,8 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
-.admin-exec-snapshot__demo {
+.admin-exec-snapshot__demo,
+.admin-exec-snapshot__unavailable {
   flex-shrink: 0;
   padding: 0.2rem 0.5rem;
   border-radius: 999px;

@@ -29,6 +29,8 @@ export interface AdminLiveEarnings {
   adRevenueCents: number;
   /** e.g. "July 2026" */
   periodLabel: string;
+  /** Where the dollar amounts came from */
+  source: "stripe" | "billing_table" | "none";
 }
 
 /** Site-wide specialist engagement (anonymous event totals — not per specialist). */
@@ -50,8 +52,8 @@ export interface AdminPlatformPulse {
   /** null until the site_visits table exists / has data access */
   traffic: AdminTrafficWeek | null;
   /**
-   * Catalog estimate from live specialist_profiles flags.
-   * null when profiles could not be read.
+   * Stripe / specialist_billing settlement — not catalog flag estimates.
+   * null when earnings could not be read.
    */
   earnings: AdminLiveEarnings | null;
   /** null until specialist_engagement_events exists / has data access */

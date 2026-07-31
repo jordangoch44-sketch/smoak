@@ -399,7 +399,7 @@ export function AdminSpecialistsPanel({
     >
       {showTierBilling && tierCounts ? (
         <>
-          <p className="admin-mock-label">
+          <p className="admin-status-note">
             Entitlement projection from placement flags. Stripe settlement is on
             Revenue when connected.
           </p>

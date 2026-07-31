@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { fetchAdminPlatformPulse } from "@/lib/admin-platform-pulse-service";
 import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
-import type { AdminPlatformPulse, AdminWeeklyCount } from "@/types/admin-platform-pulse";
+import type {
+  AdminPlatformPulse,
+  AdminWeeklyCount,
+} from "@/types/admin-platform-pulse";
 import { cn } from "@/lib/utils";
 
 interface AdminExecutiveRevenueSnapshotProps {
@@ -25,8 +27,16 @@ function trafficChangeLabel(percent: number | null): string {
   return `${sign}${percent.toFixed(1)}% vs. prior week`;
 }
 
+function earningsSourceLabel(
+  source: NonNullable<AdminPlatformPulse["earnings"]>["source"]
+): string {
+  if (source === "stripe") return "Stripe live MRR";
+  if (source === "billing_table") return "From specialist_billing (Stripe sync)";
+  return "No paid Stripe subscriptions yet";
+}
+
 /**
- * Top-of-admin core pulse — six cards from live Supabase (not demo seeds).
+ * Top-of-admin core pulse — live Supabase counts + Stripe settlement dollars.
  */
 export function AdminExecutiveRevenueSnapshot({
   refreshKey,
@@ -37,18 +47,24 @@ export function AdminExecutiveRevenueSnapshot({
 
   useEffect(() => {
     let cancelled = false;
-    void fetchAdminPlatformPulse().then((result) => {
-      if (cancelled) return;
-      setPulse(result);
-      if (result.dataSource === "live") {
-        const prev = previousSpecialistTotal.current;
-        if (prev != null && result.specialists.total > prev) {
-          setSpecialistBump(true);
-          window.setTimeout(() => setSpecialistBump(false), 1400);
+    void fetch("/api/admin/platform-pulse", { credentials: "include" })
+      .then((res) => res.json())
+      .then((body: { ok?: boolean; pulse?: AdminPlatformPulse }) => {
+        if (cancelled || !body?.ok || !body.pulse) return;
+        const result = body.pulse;
+        setPulse(result);
+        if (result.dataSource === "live") {
+          const prev = previousSpecialistTotal.current;
+          if (prev != null && result.specialists.total > prev) {
+            setSpecialistBump(true);
+            window.setTimeout(() => setSpecialistBump(false), 1400);
+          }
+          previousSpecialistTotal.current = result.specialists.total;
         }
-        previousSpecialistTotal.current = result.specialists.total;
-      }
-    });
+      })
+      .catch(() => {
+        if (!cancelled) setPulse(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -71,7 +87,7 @@ export function AdminExecutiveRevenueSnapshot({
         {live ? (
           <span className="admin-exec-snapshot__live">Live</span>
         ) : (
-          <span className="admin-exec-snapshot__demo">Unavailable</span>
+          <span className="admin-exec-snapshot__unavailable">Unavailable</span>
         )}
       </header>
 
@@ -124,7 +140,7 @@ export function AdminExecutiveRevenueSnapshot({
         </article>
 
         <article className="admin-exec-snapshot__card admin-exec-snapshot__card--earn">
-          <p className="admin-exec-snapshot__label">Pro list-price est.</p>
+          <p className="admin-exec-snapshot__label">Stripe MRR</p>
           <p className="admin-exec-snapshot__value">
             {earnings
               ? formatBillingCents(earnings.subscriberRevenueCents, {
@@ -134,22 +150,24 @@ export function AdminExecutiveRevenueSnapshot({
           </p>
           <p className="admin-exec-snapshot__detail">
             {earnings
-              ? `${earnings.paidSubscriberCount} flagged Pro · catalog est. · Stripe truth in Owner Revenue`
-              : "Catalog estimate — not Stripe"}
+              ? `${earnings.paidSubscriberCount} paying · ${earningsSourceLabel(earnings.source)}`
+              : "Stripe settlement"}
           </p>
         </article>
 
         <article className="admin-exec-snapshot__card admin-exec-snapshot__card--earn">
-          <p className="admin-exec-snapshot__label">Ad list-price est.</p>
+          <p className="admin-exec-snapshot__label">Ad spend (billing)</p>
           <p className="admin-exec-snapshot__value">
             {earnings
               ? formatBillingCents(earnings.adRevenueCents, { decimals: 0 })
               : "—"}
           </p>
           <p className="admin-exec-snapshot__detail">
-            {earnings
-              ? `Placement flags × list price · ${earnings.periodLabel}`
-              : "Catalog estimate — not Stripe"}
+            {earnings?.source === "stripe"
+              ? "Included in Stripe MRR above · Owner Revenue for detail"
+              : earnings
+                ? `Boost add-ons · ${earnings.periodLabel}`
+                : "From Stripe-synced billing"}
           </p>
         </article>
       </div>
