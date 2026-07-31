@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { AdminDonutChart } from "@/components/admin/charts/AdminDonutChart";
 import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
+import { useBlockingModalOpen } from "@/hooks/useBlockingModalOpen";
 import type {
   AdminPlatformPulse,
+  AdminTrafficSource,
   AdminWeeklyCount,
 } from "@/types/admin-platform-pulse";
 import { cn } from "@/lib/utils";
@@ -12,6 +16,12 @@ interface AdminExecutiveRevenueSnapshotProps {
   /** Bump pulse refresh when specialists change in-session */
   refreshKey?: string | number;
 }
+
+const SOURCE_COLORS = [
+  "rgb(var(--aurora-lavender-rgb))",
+  "rgb(var(--aurora-violet-rgb))",
+  "rgb(167, 139, 250)",
+] as const;
 
 function weeklyChangeLabel(count: AdminWeeklyCount): string {
   const sign = count.delta >= 0 ? "+" : "";
@@ -35,6 +45,100 @@ function earningsSourceLabel(
   return "No paid Stripe subscriptions yet";
 }
 
+function TrafficSourcesPopover({
+  open,
+  onClose,
+  views,
+  sources,
+}: {
+  open: boolean;
+  onClose: () => void;
+  views: number;
+  sources: readonly AdminTrafficSource[];
+}) {
+  useBlockingModalOpen(open);
+  const titleId = useId();
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    closeRef.current?.focus();
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  const segments = useMemo(
+    () =>
+      sources.slice(0, 3).map((row, index) => ({
+        id: row.source,
+        label: row.source,
+        value: row.views,
+        color: SOURCE_COLORS[index] ?? SOURCE_COLORS[0],
+      })),
+    [sources]
+  );
+
+  if (!open || typeof document === "undefined") return null;
+
+  const sheet = (
+    <div
+      className="admin-traffic-popover"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={titleId}
+    >
+      <button
+        type="button"
+        className="admin-traffic-popover__backdrop"
+        aria-label="Close traffic sources"
+        onClick={onClose}
+      />
+      <div className="admin-traffic-popover__panel">
+        <header className="admin-traffic-popover__header">
+          <div>
+            <p className="admin-traffic-popover__eyebrow">Last 7 days</p>
+            <h3 id={titleId} className="admin-traffic-popover__title">
+              Top traffic sources
+            </h3>
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            className="admin-btn smoac-control"
+            onClick={onClose}
+          >
+            Close
+          </button>
+        </header>
+
+        {segments.length === 0 ? (
+          <p className="admin-empty">
+            No attributed sources yet. Direct visits and links without UTMs
+            show as Direct once traffic starts flowing.
+          </p>
+        ) : (
+          <AdminDonutChart
+            title={`${views.toLocaleString()} views`}
+            segments={segments}
+            centerLabel="Views"
+          />
+        )}
+
+        <p className="admin-traffic-popover__note">
+          Sources come from UTM tags and external referrers (Google, Instagram,
+          ChatGPT, etc.). In-app browsers often hide referrers — use UTMs on
+          share links for cleaner attribution.
+        </p>
+      </div>
+    </div>
+  );
+
+  return createPortal(sheet, document.body);
+}
+
 /**
  * Top-of-admin core pulse — live Supabase counts + Stripe settlement dollars.
  */
@@ -43,6 +147,7 @@ export function AdminExecutiveRevenueSnapshot({
 }: AdminExecutiveRevenueSnapshotProps) {
   const [pulse, setPulse] = useState<AdminPlatformPulse | null>(null);
   const [specialistBump, setSpecialistBump] = useState(false);
+  const [trafficOpen, setTrafficOpen] = useState(false);
   const previousSpecialistTotal = useRef<number | null>(null);
 
   useEffect(() => {
@@ -74,6 +179,7 @@ export function AdminExecutiveRevenueSnapshot({
   const traffic = live?.traffic ?? null;
   const earnings = live?.earnings ?? null;
   const engagement = live?.engagement ?? null;
+  const canOpenTraffic = Boolean(traffic);
 
   return (
     <section className="admin-exec-snapshot" aria-label="Platform snapshot">
@@ -127,17 +233,28 @@ export function AdminExecutiveRevenueSnapshot({
           <p className="admin-exec-snapshot__detail">Needs review</p>
         </article>
 
-        <article className="admin-exec-snapshot__card">
-          <p className="admin-exec-snapshot__label">Site views (7d)</p>
-          <p className="admin-exec-snapshot__value">
-            {traffic ? traffic.views : "—"}
-          </p>
-          <p className="admin-exec-snapshot__detail">
-            {traffic
-              ? trafficChangeLabel(traffic.viewsPercentChange)
-              : "Awaiting traffic capture"}
-          </p>
-        </article>
+        {canOpenTraffic ? (
+          <button
+            type="button"
+            className="admin-exec-snapshot__card admin-exec-snapshot__card--button"
+            onClick={() => setTrafficOpen(true)}
+            aria-haspopup="dialog"
+            aria-expanded={trafficOpen}
+          >
+            <p className="admin-exec-snapshot__label">Site views (7d)</p>
+            <p className="admin-exec-snapshot__value">{traffic!.views}</p>
+            <p className="admin-exec-snapshot__detail">
+              {trafficChangeLabel(traffic!.viewsPercentChange)}
+            </p>
+            <p className="admin-exec-snapshot__hint">Tap for top sources</p>
+          </button>
+        ) : (
+          <article className="admin-exec-snapshot__card">
+            <p className="admin-exec-snapshot__label">Site views (7d)</p>
+            <p className="admin-exec-snapshot__value">—</p>
+            <p className="admin-exec-snapshot__detail">Awaiting traffic capture</p>
+          </article>
+        )}
 
         <article className="admin-exec-snapshot__card admin-exec-snapshot__card--earn">
           <p className="admin-exec-snapshot__label">Stripe MRR</p>
@@ -220,6 +337,13 @@ export function AdminExecutiveRevenueSnapshot({
           </article>
         </div>
       </div>
+
+      <TrafficSourcesPopover
+        open={trafficOpen}
+        onClose={() => setTrafficOpen(false)}
+        views={traffic?.views ?? 0}
+        sources={traffic?.topSources ?? []}
+      />
     </section>
   );
 }

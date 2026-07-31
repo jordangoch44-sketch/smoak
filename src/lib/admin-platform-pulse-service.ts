@@ -218,9 +218,52 @@ function sourceLabel(visit: {
   utm_source: string | null;
   referrer_host: string | null;
 }): string {
-  if (visit.utm_source) return visit.utm_source;
-  if (visit.referrer_host) return visit.referrer_host;
-  return "direct";
+  if (visit.utm_source) return friendlyTrafficSource(visit.utm_source);
+  if (visit.referrer_host) return friendlyTrafficSource(visit.referrer_host);
+  return "Direct";
+}
+
+/** Normalize raw UTM / host strings into readable channel names. */
+export function friendlyTrafficSource(raw: string): string {
+  const value = raw.trim().toLowerCase();
+  if (!value) return "Direct";
+
+  if (
+    value.includes("google") ||
+    value === "www.google.com" ||
+    value.endsWith(".google.com")
+  ) {
+    return "Google";
+  }
+  if (value.includes("instagram") || value.includes("ig.")) {
+    return "Instagram";
+  }
+  if (
+    value.includes("chatgpt") ||
+    value.includes("openai") ||
+    value.includes("chat.openai")
+  ) {
+    return "ChatGPT";
+  }
+  if (
+    value === "x.com" ||
+    value.includes("twitter") ||
+    value === "t.co" ||
+    value.endsWith(".x.com")
+  ) {
+    return "X";
+  }
+  if (value.includes("facebook") || value.includes("fb.")) {
+    return "Facebook";
+  }
+  if (value.includes("tiktok")) return "TikTok";
+  if (value.includes("youtube") || value.includes("youtu.be")) return "YouTube";
+  if (value.includes("bing")) return "Bing";
+  if (value.includes("linkedin")) return "LinkedIn";
+  if (value === "direct") return "Direct";
+
+  /* Strip www. for cleaner host display */
+  return raw.replace(/^www\./i, "").slice(0, 40);
 }
 
 async function fetchTrafficWeek(
