@@ -101,13 +101,14 @@ export function AdminOwnerRevenuePanel() {
     [billingRows]
   );
 
-  const hasStripeMrr = data?.stripe?.dataSource === "stripe";
-  const heroMrrCents = hasStripeMrr
-    ? (data?.stripe?.mrrCents ?? 0)
-    : (data?.attributedMrrCents ?? 0);
-  const payingCount = hasStripeMrr
-    ? (data?.stripe?.payingCount ?? 0)
-    : payingRows.length;
+  /* Primary truth = specialist_billing (webhook sync). Stripe account MRR is cross-check only. */
+  const heroMrrCents = data?.attributedMrrCents ?? 0;
+  const payingCount = payingRows.length;
+  const stripeCrossCheck = data?.stripe?.dataSource === "stripe" ? data.stripe : null;
+  const stripeDiverges =
+    stripeCrossCheck != null &&
+    (stripeCrossCheck.payingCount !== payingCount ||
+      stripeCrossCheck.mrrCents !== heroMrrCents);
 
   const chartSegments = [
     {
@@ -145,18 +146,25 @@ export function AdminOwnerRevenuePanel() {
         <>
           <p className="admin-status-note">
             {data.stripeConfigured
-              ? hasStripeMrr
-                ? `Live Stripe MRR · ${payingCount} paying subscription${payingCount === 1 ? "" : "s"}`
-                : "Stripe is configured, but no active subscriptions were returned yet."
+              ? payingCount > 0
+                ? `SMOAC billing · ${payingCount} paying specialist${payingCount === 1 ? "" : "s"} (from specialist_billing)`
+                : "No SMOAC paid subscriptions in specialist_billing yet. Complimentary Pro trials do not count as revenue."
               : "Stripe is not configured on the server (STRIPE_SECRET_KEY). Billing rows still show webhook sync state when present."}
           </p>
+          {stripeDiverges && stripeCrossCheck ? (
+            <p className="admin-status-note">
+              Stripe SMOAC-price cross-check:{" "}
+              {formatBillingCents(stripeCrossCheck.mrrCents, { decimals: 0 })}{" "}
+              MRR · {stripeCrossCheck.payingCount} sub
+              {stripeCrossCheck.payingCount === 1 ? "" : "s"} — differs from
+              billing table (check webhook sync).
+            </p>
+          ) : null}
 
           <div className="admin-revenue-hero">
             <div className="admin-revenue-hero__mrr">
               <span className="admin-revenue-hero__label">
-                {hasStripeMrr
-                  ? "Monthly recurring revenue (Stripe)"
-                  : "Attributed MRR from billing rows"}
+                Monthly recurring revenue (SMOAC billing)
               </span>
               <span className="admin-revenue-hero__value">
                 {formatBillingCents(heroMrrCents, { decimals: 0 })}

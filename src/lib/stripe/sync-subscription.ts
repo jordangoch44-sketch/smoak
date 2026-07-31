@@ -306,13 +306,18 @@ export async function clearSpecialistSubscription(input: {
   }
 }
 
-/** Sum active/trialing subscription amounts for admin MRR (cents). */
+/**
+ * Sum active/trialing SMOAC subscription amounts for admin MRR (cents).
+ * Only counts subscriptions that resolve to a known SMOAC price / metadata —
+ * ignores unrelated Stripe account subscriptions.
+ */
 export async function fetchStripeMrrCents(): Promise<{
   mrrCents: number;
   payingCount: number;
   dataSource: "stripe" | "unavailable";
 } | null> {
   const { getStripe } = await import("@/lib/stripe/config");
+  const { resolveProductKeyFromStripe } = await import("@/lib/stripe/products");
   const stripe = getStripe();
   if (!stripe) return null;
 
@@ -330,12 +335,28 @@ export async function fetchStripeMrrCents(): Promise<{
 
     for (const sub of list.data) {
       if (!subscriptionGrantsPremium(sub.status)) continue;
-      payingCount += 1;
+
+      let subMonthly = 0;
+      let hasSmoacItem = false;
+
       for (const item of sub.items.data) {
-        const amount = item.price?.unit_amount ?? 0;
+        const price = item.price;
+        const priceId = typeof price?.id === "string" ? price.id : null;
+        const meta = {
+          ...(typeof price?.metadata === "object" && price.metadata
+            ? price.metadata
+            : {}),
+          ...(sub.metadata ?? {}),
+        } as Record<string, string>;
+
+        const key = resolveProductKeyFromStripe({ priceId, metadata: meta });
+        if (!key) continue;
+
+        hasSmoacItem = true;
+        const amount = price?.unit_amount ?? 0;
         const qty = item.quantity ?? 1;
-        const interval = item.price?.recurring?.interval;
-        const intervalCount = item.price?.recurring?.interval_count ?? 1;
+        const interval = price?.recurring?.interval;
+        const intervalCount = price?.recurring?.interval_count ?? 1;
         let monthly = amount * qty;
         if (interval === "year") monthly = Math.round((amount * qty) / 12);
         else if (interval === "week")
@@ -345,8 +366,12 @@ export async function fetchStripeMrrCents(): Promise<{
         else if (interval === "month" && intervalCount > 1) {
           monthly = Math.round((amount * qty) / intervalCount);
         }
-        mrrCents += monthly;
+        subMonthly += monthly;
       }
+
+      if (!hasSmoacItem) continue;
+      payingCount += 1;
+      mrrCents += subMonthly;
     }
 
     if (!list.has_more) break;
