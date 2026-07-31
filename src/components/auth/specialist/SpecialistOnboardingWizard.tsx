@@ -87,15 +87,6 @@ export function SpecialistOnboardingWizard({
     router.replace(`${SPECIALIST_DASHBOARD_PATH}?submitted=1`);
   }, [router]);
 
-  /* After submit confirmation, send them to the pending portal automatically. */
-  useEffect(() => {
-    if (!showSubmittedModal) return;
-    const timer = window.setTimeout(() => {
-      goToPendingApplicationPortal();
-    }, 1800);
-    return () => window.clearTimeout(timer);
-  }, [showSubmittedModal, goToPendingApplicationPortal]);
-
   const patchState = useCallback((partial: Partial<SpecialistOnboardingState>) => {
     setState((prev) => ({
       ...prev,

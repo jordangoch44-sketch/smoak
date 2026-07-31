@@ -4,7 +4,10 @@ import {
 } from "@/lib/application-to-trainer";
 import { getDevDashboardTrainerSeed } from "@/data/demo/dev-dashboard-trainer";
 import { getTrainerById as getSeedTrainerById } from "@/data/trainers";
-import { DEV_SPECIALIST_DASHBOARD_ID } from "@/constants/specialist-dashboard-mock";
+import {
+  DEMO_SPECIALIST_ID,
+  DEV_SPECIALIST_DASHBOARD_ID,
+} from "@/constants/specialist-dashboard-mock";
 import {
   getApprovedSpecialistProfileById,
   saveApprovedSpecialistProfileAsync,
@@ -315,7 +318,10 @@ export function buildProfileCompletionChecklist(
   ];
 }
 
-/** Demo dashboard metrics only — never when a real application exists for the session. */
+/**
+ * Demo dashboard metrics only for seeded demo/dev identities.
+ * Never treat "no trainer id yet" as demo — real pending specialists must see an empty honest dashboard.
+ */
 export function isDemoSpecialistDashboard(
   trainerId: string | null,
   sessionEmail?: string
@@ -325,6 +331,6 @@ export function isDemoSpecialistDashboard(
   }
   return (
     trainerId === DEV_SPECIALIST_DASHBOARD_ID ||
-    trainerId === null
+    trainerId === DEMO_SPECIALIST_ID
   );
 }

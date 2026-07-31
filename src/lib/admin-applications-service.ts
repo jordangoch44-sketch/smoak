@@ -199,6 +199,7 @@ export async function activateSpecialistFromApplicationAsync(
 
 /**
  * Activate from a reviewed draft (saves edits first, then activates).
+ * Reuses activateSpecialistFromApplicationAsync so Pro trial + email always run.
  */
 export async function activateSpecialistApplicationWithEditsAsync(
   application: SpecialistApplication
@@ -209,36 +210,7 @@ export async function activateSpecialistApplicationWithEditsAsync(
   });
   if (!saved.ok) return saved;
 
-  const restored = await restoreApprovedSpecialistProfileAsync(saved.application.id);
-  if (!restored.ok) {
-    return {
-      ok: false,
-      message: restored.message,
-      application: saved.application,
-    };
-  }
-
-  unhideTrainerId(saved.application.id);
-  patchAdminSpecialistMeta(saved.application.id, { visibility: "active" });
-
-  try {
-    const { sendSpecialistApplicationApprovedEmail } = await import(
-      "@/lib/email/confirmation-email-service"
-    );
-    void sendSpecialistApplicationApprovedEmail(saved.application).then(
-      (result) => {
-        if (!result.success) {
-          console.warn("[SMOAC EMAIL] Approval email did not send", {
-            applicationId: saved.application.id,
-          });
-        }
-      }
-    );
-  } catch (err) {
-    console.warn("[SMOAC EMAIL] Approval email dispatch skipped:", err);
-  }
-
-  return saved;
+  return activateSpecialistFromApplicationAsync(saved.application.id);
 }
 
 export function listApplicationsByStatus(

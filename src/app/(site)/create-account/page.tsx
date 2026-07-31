@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CreateAccountWizardClient } from "@/components/auth/CreateAccountWizardClient";
 import { isAuthReturnToSavedFromParams } from "@/lib/auth-return";
-import { JOIN_INTRO_PARAM } from "@/lib/join-flow";
+import { JOIN_INTRO_PARAM, JOIN_ROLE_PARAM, parseJoinAccountRole } from "@/lib/join-flow";
 
 export const metadata: Metadata = {
   title: "Create Account",
@@ -25,11 +25,13 @@ export default async function CreateAccountPage({
   const params = await searchParams;
   const initialJoinIntro = hasIntroFlag(params[JOIN_INTRO_PARAM]);
   const initialReturnToSaved = isAuthReturnToSavedFromParams(params);
+  const initialAccountType = parseJoinAccountRole(params[JOIN_ROLE_PARAM]);
 
   return (
     <CreateAccountWizardClient
       initialJoinIntro={initialJoinIntro}
       initialReturnToSaved={initialReturnToSaved}
+      initialAccountType={initialAccountType}
     />
   );
 }

@@ -45,8 +45,9 @@ export function WizardApplicationSubmittedModal({
         </header>
 
         <p className="wizard-submitted-modal__note">
-          Typical review time is within 24 hours. After approval, log in and open
-          Edit profile to finish your in-depth listing — pricing, availability,
+          Typical review is within 24 hours. You can open your pending dashboard
+          now to review or edit what you submitted while you wait. After approval,
+          finish your full listing from Edit profile — pricing, availability,
           photos, and more.
         </p>
 
@@ -56,7 +57,7 @@ export function WizardApplicationSubmittedModal({
             className="login-submit wizard-nav__continue wizard-incomplete-modal__btn"
             onClick={onContinue}
           >
-            Go to my application
+            Open pending dashboard
           </button>
         </footer>
       </div>

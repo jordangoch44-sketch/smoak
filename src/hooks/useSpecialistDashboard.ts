@@ -40,10 +40,15 @@ import type {
 } from "@/types/specialist-dashboard";
 import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
 
-function resolveAnalyticsTrainerId(trainerId: string | null): string {
-  if (!trainerId) return DEMO_SPECIALIST_ID;
-  if (trainerId === DEV_SPECIALIST_DASHBOARD_ID) return DEV_SPECIALIST_DASHBOARD_ID;
-  return trainerId;
+function resolveAnalyticsTrainerId(
+  trainerId: string | null,
+  useDemoData: boolean
+): string {
+  if (trainerId) {
+    if (trainerId === DEV_SPECIALIST_DASHBOARD_ID) return DEV_SPECIALIST_DASHBOARD_ID;
+    return trainerId;
+  }
+  return useDemoData ? DEMO_SPECIALIST_ID : "empty";
 }
 
 export function useSpecialistDashboard() {
@@ -177,7 +182,7 @@ export function useSpecialistDashboard() {
   const analytics =
     liveAnalytics ??
     getSpecialistProfileAnalytics(
-      resolveAnalyticsTrainerId(trainerId),
+      resolveAnalyticsTrainerId(trainerId, useDemoData),
       {
         profileCompletionPercent: profileCompletion,
         rankingPosition: data.ranking?.rank ?? null,

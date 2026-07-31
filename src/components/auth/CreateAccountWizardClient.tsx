@@ -179,24 +179,33 @@ function AccountTypeCard({
 interface CreateAccountWizardClientProps {
   initialJoinIntro?: boolean;
   initialReturnToSaved?: boolean;
+  /** From `?role=specialist|client` — deep links from promos / save complete */
+  initialAccountType?: PublicAuthRole | null;
 }
 
 export function CreateAccountWizardClient({
   initialJoinIntro = false,
   initialReturnToSaved = false,
+  initialAccountType = null,
 }: CreateAccountWizardClientProps) {
   const router = useRouter();
   const { isReady, session, signUp } = useAuthSession();
   const { showToast } = useToast();
   const { showToast: showSaveToast } = useSaveToast();
-  const [step, setStep] = useState<WizardStep>(1);
-  const [state, setState] = useState<CreateAccountWizardState>(
-    INITIAL_CREATE_ACCOUNT_STATE
+  const [step, setStep] = useState<WizardStep>(() =>
+    initialAccountType === "client" ? 2 : 1
+  );
+  const [state, setState] = useState<CreateAccountWizardState>(() =>
+    initialAccountType
+      ? { ...INITIAL_CREATE_ACCOUNT_STATE, accountType: initialAccountType }
+      : INITIAL_CREATE_ACCOUNT_STATE
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
-  const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(false);
+  const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(
+    () => initialAccountType === "specialist" && !initialJoinIntro
+  );
   const { ready: introReady, showIntro, completeIntro } =
     useCreateAccountIntroGate(initialJoinIntro);
   const portalReady = useHydrated();
@@ -700,6 +709,16 @@ export function CreateAccountWizardClient({
     }
   }
 
+  function handleIntroComplete() {
+    completeIntro();
+    if (
+      initialAccountType === "specialist" ||
+      state.accountType === "specialist"
+    ) {
+      setShowSpecialistOnboarding(true);
+    }
+  }
+
   if (showIntro) {
     if (!introReady) {
       return null;
@@ -707,7 +726,7 @@ export function CreateAccountWizardClient({
     const intro = (
       <SmoacWelcomeIntro
         variant="join"
-        onComplete={completeIntro}
+        onComplete={handleIntroComplete}
         onVisible={() => setIntroVisible(true)}
       />
     );

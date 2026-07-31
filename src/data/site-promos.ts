@@ -50,7 +50,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     body: "Join SMOAC, then boost Sponsored or Featured placements when you’re ready to grow faster.",
     ctaLabel: "Become a specialist",
     ctaKind: "link",
-    ctaHref: "/create-account?role=specialist",
+    ctaHref: "/create-account?role=specialist&intro=1",
     dismissible: true,
   },
   {
