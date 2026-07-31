@@ -124,7 +124,7 @@ export function AdminExecutiveRevenueSnapshot({
         </article>
 
         <article className="admin-exec-snapshot__card admin-exec-snapshot__card--earn">
-          <p className="admin-exec-snapshot__label">Paid specialists</p>
+          <p className="admin-exec-snapshot__label">Pro list-price est.</p>
           <p className="admin-exec-snapshot__value">
             {earnings
               ? formatBillingCents(earnings.subscriberRevenueCents, {
@@ -134,13 +134,13 @@ export function AdminExecutiveRevenueSnapshot({
           </p>
           <p className="admin-exec-snapshot__detail">
             {earnings
-              ? `${earnings.paidSubscriberCount} paying · ${earnings.periodLabel}`
-              : "From live premium flags"}
+              ? `${earnings.paidSubscriberCount} flagged Pro · catalog est. · Stripe truth in Owner Revenue`
+              : "Catalog estimate — not Stripe"}
           </p>
         </article>
 
         <article className="admin-exec-snapshot__card admin-exec-snapshot__card--earn">
-          <p className="admin-exec-snapshot__label">Ad revenue</p>
+          <p className="admin-exec-snapshot__label">Ad list-price est.</p>
           <p className="admin-exec-snapshot__value">
             {earnings
               ? formatBillingCents(earnings.adRevenueCents, { decimals: 0 })
@@ -148,8 +148,8 @@ export function AdminExecutiveRevenueSnapshot({
           </p>
           <p className="admin-exec-snapshot__detail">
             {earnings
-              ? `Catalog est. · ${earnings.periodLabel}`
-              : "From live placement flags"}
+              ? `Placement flags × list price · ${earnings.periodLabel}`
+              : "Catalog estimate — not Stripe"}
           </p>
         </article>
       </div>

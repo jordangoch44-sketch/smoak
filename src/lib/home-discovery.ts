@@ -13,7 +13,9 @@ export function formatTrainerDistanceLabel(
   return `${Math.round(miles)} mi`;
 }
 
+/** Classic ★ for cards — "New" when there are no reviews yet (avoid ★0.0). */
 export function formatTrainerRatingLabel(trainer: Trainer): string {
+  if (trainer.reviewCount <= 0) return "New";
   return formatTrainerRating(trainer.rating);
 }
 

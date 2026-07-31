@@ -3,7 +3,7 @@ import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
-import { formatTrainerRating } from "@/lib/utils";
+import { formatTrainerRatingLabel } from "@/lib/home-discovery";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +21,8 @@ export function TrainerCardCompact({
   priority = false,
   layout = "default",
 }: TrainerCardCompactProps) {
+  const hasReviews = trainer.reviewCount > 0;
+
   return (
     <article
       className={cn(
@@ -49,20 +51,26 @@ export function TrainerCardCompact({
           />
         </div>
 
-          <SpecialtyChips
-            specialties={trainer.specialty}
-            className="trainer-card-compact__chips specialty-chips--row"
-          />
+        <SpecialtyChips
+          specialties={trainer.specialty}
+          className="trainer-card-compact__chips specialty-chips--row"
+        />
 
         <div className="trainer-card-compact__footer">
           <div className="trainer-card-compact__rating">
-            <span className="trainer-card-compact__rating-star" aria-hidden>
-              ★
-            </span>
-            <span>{formatTrainerRating(trainer.rating)}</span>
-            <span className="trainer-card-compact__rating-count">
-              ({trainer.reviewCount})
-            </span>
+            {hasReviews ? (
+              <>
+                <span className="trainer-card-compact__rating-star" aria-hidden>
+                  ★
+                </span>
+                <span>{formatTrainerRatingLabel(trainer)}</span>
+                <span className="trainer-card-compact__rating-count">
+                  ({trainer.reviewCount})
+                </span>
+              </>
+            ) : (
+              <span>New on SMOAC</span>
+            )}
           </div>
           <SessionPrice
             amount={trainer.pricePerSession}

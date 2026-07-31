@@ -30,33 +30,38 @@ export function ProfileReviewMeta({
   const smoacCount = smoacAggregate?.reviewCount ?? 0;
   const smoacAvg = smoacAggregate?.avgRating ?? null;
   const firstName = trainerFirstName(trainer.name);
+  const hasClassicReviews = total > 0;
 
   return (
     <div className="profile-hero__reviews shrink-0">
-      <div className="profile-hero__reviews-rating">
-        <span className="profile-hero__reviews-star" aria-hidden>
-          ★
-        </span>
-        <span className="profile-hero__reviews-score">
-          {formatTrainerRating(trainer.rating)}
-        </span>
-      </div>
-      <p className="profile-hero__reviews-total">
-        {total} total review{total === 1 ? "" : "s"}
-      </p>
-      {sourceLabels.length > 0 ? (
-        <p className="profile-hero__reviews-sources">
-          {sourceLabels.map((label, index) => (
-            <span key={label} className="profile-hero__reviews-source-item">
-              {index > 0 ? (
-                <span className="profile-hero__reviews-sources-dot" aria-hidden>
-                  ·
-                </span>
-              ) : null}
-              <span className="profile-hero__reviews-source-tag">{label}</span>
+      {hasClassicReviews ? (
+        <>
+          <div className="profile-hero__reviews-rating">
+            <span className="profile-hero__reviews-star" aria-hidden>
+              ★
             </span>
-          ))}
-        </p>
+            <span className="profile-hero__reviews-score">
+              {formatTrainerRating(trainer.rating)}
+            </span>
+          </div>
+          <p className="profile-hero__reviews-total">
+            {total} total review{total === 1 ? "" : "s"}
+          </p>
+          {sourceLabels.length > 0 ? (
+            <p className="profile-hero__reviews-sources">
+              {sourceLabels.map((label, index) => (
+                <span key={label} className="profile-hero__reviews-source-item">
+                  {index > 0 ? (
+                    <span className="profile-hero__reviews-sources-dot" aria-hidden>
+                      ·
+                    </span>
+                  ) : null}
+                  <span className="profile-hero__reviews-source-tag">{label}</span>
+                </span>
+              ))}
+            </p>
+          ) : null}
+        </>
       ) : null}
 
       <div className="profile-hero__reviews-smoac">

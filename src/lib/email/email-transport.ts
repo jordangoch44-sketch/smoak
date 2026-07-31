@@ -80,6 +80,10 @@ export async function sendOutboundEmail(
     }
   }
 
+  const isProd =
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NODE_ENV === "production";
+
   console.info("[SMOAC EMAIL TEST] Email queued (no RESEND_API_KEY)", {
     kind: payload.kind,
     to,
@@ -88,7 +92,9 @@ export async function sendOutboundEmail(
     bodyPreview: payload.text.split("\n").slice(0, 6).join(" "),
     fullText: payload.text,
   });
-  return { success: true, mode: "console" };
+
+  /* In production, console mode must not look like a successful send */
+  return { success: !isProd, mode: "console" };
 }
 
 /**

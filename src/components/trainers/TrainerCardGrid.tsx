@@ -3,7 +3,7 @@ import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
-import { formatTrainerRating } from "@/lib/utils";
+import { formatTrainerRatingLabel } from "@/lib/home-discovery";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 
 interface TrainerCardGridProps {
@@ -16,6 +16,8 @@ export function TrainerCardGrid({
   trainer,
   priority = false,
 }: TrainerCardGridProps) {
+  const hasReviews = trainer.reviewCount > 0;
+
   return (
     <article className="hidden flex-col overflow-hidden rounded-2xl border border-white/5 bg-graphite-900 transition-all duration-300 active:scale-[0.99] active:border-white/10 active:bg-graphite-800 md:flex md:group-hover:border-white/10 md:group-hover:bg-graphite-800">
       <div className="relative aspect-[4/5] overflow-hidden bg-graphite-800">
@@ -30,11 +32,17 @@ export function TrainerCardGrid({
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         <div className="pointer-events-none absolute right-4 bottom-4 left-4">
           <div className="flex items-center gap-1 text-sm text-silver-200">
-            <span className="text-white">★</span>
-            <span className="font-medium text-white">
-              {formatTrainerRating(trainer.rating)}
-            </span>
-            <span className="text-silver-400">({trainer.reviewCount})</span>
+            {hasReviews ? (
+              <>
+                <span className="text-white">★</span>
+                <span className="font-medium text-white">
+                  {formatTrainerRatingLabel(trainer)}
+                </span>
+                <span className="text-silver-400">({trainer.reviewCount})</span>
+              </>
+            ) : (
+              <span className="font-medium text-silver-200">New on SMOAC</span>
+            )}
           </div>
         </div>
       </div>

@@ -1,12 +1,9 @@
-import {
-  DEMO_SPECIALIST_SUBSCRIPTION,
-  DEMO_SPECIALIST_SUBSCRIPTION_FREE,
-} from "@/constants/specialist-dashboard-mock";
+import { DEMO_SPECIALIST_SUBSCRIPTION_FREE } from "@/constants/specialist-dashboard-mock";
 import { resolveSessionIsPremium } from "@/lib/dev-auth";
 import type { AuthSession } from "@/types/auth";
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 
-/** DEV — subscription row for specialist dashboard from signed-in session */
+/** Subscription row for specialist dashboard from signed-in session. */
 export function getSpecialistSubscriptionForSession(
   session: AuthSession | null | undefined
 ): SpecialistSubscription {
@@ -31,7 +28,13 @@ export function getSpecialistSubscriptionForSession(
         isPremium: true,
       };
     }
-    return { ...DEMO_SPECIALIST_SUBSCRIPTION };
+    /* Paid Pro — renew date comes from Stripe billing-summary, not a demo date */
+    return {
+      plan: "SMOAC Pro",
+      status: "Active",
+      renewsOn: "—",
+      isPremium: true,
+    };
   }
 
   return {

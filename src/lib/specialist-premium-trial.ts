@@ -1,6 +1,7 @@
 /**
- * SMOAC Pro signup trial — 30 days free on specialist signup, then free tier
- * unless they subscribe via Stripe ($9.99/mo, no second free month).
+ * SMOAC Pro complimentary trial — 30 days free when a specialist is activated
+ * (approved + live), then free tier unless they subscribe via Stripe
+ * ($9.99/mo, no second free month). Idempotent; not granted at signup.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -46,7 +47,7 @@ async function hasActiveStripeSubscription(
 
 /**
  * Start the one-time 30-day Pro trial if this specialist has never had one.
- * Idempotent — safe to call on every signup/activate.
+ * Idempotent — safe to call on every activate.
  */
 export async function grantSpecialistPremiumTrialIfNeeded(
   supabase: SupabaseClient,

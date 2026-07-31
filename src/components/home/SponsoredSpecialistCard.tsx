@@ -85,7 +85,13 @@ export function SponsoredSpecialistCard({
 
           <div className="home-sponsored-card__meta">
             <span className="home-sponsored-card__rating">
-              <span aria-hidden>★</span> {formatTrainerRatingLabel(trainer)}
+              {trainer.reviewCount > 0 ? (
+                <>
+                  <span aria-hidden>★</span> {formatTrainerRatingLabel(trainer)}
+                </>
+              ) : (
+                formatTrainerRatingLabel(trainer)
+              )}
             </span>
             <span className="home-sponsored-card__price">
               {formatTrainerPriceLabel(trainer.pricePerSession)}

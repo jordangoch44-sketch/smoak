@@ -214,13 +214,7 @@ export async function upsertUserRole(
     return { ok: false, message: error.message };
   }
 
-  /* Specialists get a one-time 30-day Pro trial at signup */
-  if (role === "specialist") {
-    const { grantSpecialistPremiumTrialIfNeeded } = await import(
-      "@/lib/specialist-premium-trial"
-    );
-    await grantSpecialistPremiumTrialIfNeeded(supabase, userId);
-  }
+  /* Pro trial starts on admin activate — not signup — so pending days don't burn the trial */
 
   return { ok: true };
 }

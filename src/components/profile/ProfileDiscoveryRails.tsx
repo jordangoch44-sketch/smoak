@@ -54,8 +54,14 @@ function SimilarSpecialistCard({
             <p className="home-portrait-card__profession">{trainer.profession}</p>
             <div className="home-portrait-card__meta">
               <span>
-                <span aria-hidden>★ </span>
-                {formatTrainerRatingLabel(trainer)}
+                {trainer.reviewCount > 0 ? (
+                  <>
+                    <span aria-hidden>★ </span>
+                    {formatTrainerRatingLabel(trainer)}
+                  </>
+                ) : (
+                  formatTrainerRatingLabel(trainer)
+                )}
               </span>
             </div>
             <p className="home-portrait-card__price">

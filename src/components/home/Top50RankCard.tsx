@@ -38,7 +38,12 @@ export function Top50RankCard({
       ? `${smoacRating.toFixed(1)}${
           smoacReviewCount != null ? ` (${smoacReviewCount})` : ""
         }`
-      : formatTrainerRatingLabel(trainer);
+      : trainer.reviewCount > 0
+        ? formatTrainerRatingLabel(trainer)
+        : "New";
+
+  const showStar =
+    (smoacRating != null && smoacRating > 0) || trainer.reviewCount > 0;
 
   return (
     <div
@@ -89,9 +94,11 @@ export function Top50RankCard({
             />
             <div className="top50-card__footer">
               <div className="top50-card__rating">
-                <span className="top50-card__star" aria-hidden>
-                  ★
-                </span>
+                {showStar ? (
+                  <span className="top50-card__star" aria-hidden>
+                    ★
+                  </span>
+                ) : null}
                 <span className="top50-card__rating-value">
                   {ratingLabel}
                 </span>

@@ -21,11 +21,19 @@ export const ExploreResults = memo(function ExploreResults({
   onClearAll,
 }: ExploreResultsProps) {
   if (trainers.length === 0) {
+    const isUnfilteredEmpty = !hasSearch && activeFilterCount === 0;
+
     return (
       <div className="explore-empty">
-        <p className="explore-empty__title">No specialists found</p>
+        <p className="explore-empty__title">
+          {isUnfilteredEmpty
+            ? "Specialists are joining SMOAC"
+            : "No specialists found"}
+        </p>
         <p className="explore-empty__text">
-          Try adjusting your filters or search query.
+          {isUnfilteredEmpty
+            ? "We’re building the roster carefully. Check back soon — or create an account to get notified as specialists go live near you."
+            : "Try adjusting your filters or search query."}
         </p>
         <div className="explore-empty__actions">
           {hasSearch ? (
@@ -46,18 +54,27 @@ export const ExploreResults = memo(function ExploreResults({
               Clear filters
             </button>
           ) : null}
-          <Link
-            href="/explore"
-            onClick={(e) => {
-              if (hasSearch || activeFilterCount > 0) {
-                e.preventDefault();
-                onClearAll();
-              }
-            }}
-            className="explore-empty__btn explore-empty__btn--ghost"
-          >
-            View all specialists
-          </Link>
+          {isUnfilteredEmpty ? (
+            <Link
+              href="/create-account?role=client"
+              className="explore-empty__btn explore-empty__btn--primary"
+            >
+              Create client account
+            </Link>
+          ) : (
+            <Link
+              href="/explore"
+              onClick={(e) => {
+                if (hasSearch || activeFilterCount > 0) {
+                  e.preventDefault();
+                  onClearAll();
+                }
+              }}
+              className="explore-empty__btn explore-empty__btn--ghost"
+            >
+              View all specialists
+            </Link>
+          )}
         </div>
       </div>
     );
