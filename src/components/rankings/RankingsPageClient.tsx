@@ -18,6 +18,7 @@ import {
 import type { Trainer } from "@/types/trainer";
 import { RankingsFilters } from "./RankingsFilters";
 import { RankingsRow } from "./RankingsRow";
+import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 interface RankingsPageClientProps {
   initialCatalog?: Trainer[];
@@ -205,6 +206,11 @@ export function RankingsPageClient({
             </div>
           )}
         </div>
+
+        <SitePromoSlot
+          slotId="rankings_footer_promo"
+          variant="banner"
+        />
       </div>
     </div>
   );

@@ -28,6 +28,7 @@
 @import "./modal-open.css";
 @import "./bottom-nav-panel-transition.css";
 @import "./mobile-safari.css";
+@import "./site-promo.css";
 
 /* Design tokens — single source for Tailwind @theme and CSS variables */
 :root {

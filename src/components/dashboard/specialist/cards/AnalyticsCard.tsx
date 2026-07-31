@@ -14,6 +14,7 @@ import {
   SmoacProUpgradeModal,
   StatTile,
 } from "@/components/dashboard/shared";
+import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 import { cn } from "@/lib/utils";
 
 interface AnalyticsCardProps {
@@ -157,6 +158,16 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
               Improve Profile
             </DashboardButton>
           </div>
+
+          {isPremium ? (
+            <SitePromoSlot
+              slotId="specialist_dashboard_boost"
+              className="dashboard-analytics__promo"
+              variant="compact"
+              onOpenBoost={() => setBoostModalOpen(true)}
+              onOpenPro={() => setUpgradeModalOpen(true)}
+            />
+          ) : null}
         </div>
       </section>
 

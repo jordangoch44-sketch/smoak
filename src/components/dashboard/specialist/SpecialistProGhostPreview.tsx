@@ -12,6 +12,7 @@ import {
   SmoacProUpgradeModal,
   StatTile,
 } from "@/components/dashboard/shared";
+import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 interface SpecialistProGhostPreviewProps {
   firstName: string;
@@ -20,7 +21,7 @@ interface SpecialistProGhostPreviewProps {
 
 /**
  * Plan-tab Pro tease: core analytics readable, deeper metrics blurred,
- * trial CTA, then room for a Boost / ads teaser below.
+ * trial CTA, then house promo slot for Boost / deals.
  */
 export function SpecialistProGhostPreview({
   firstName,
@@ -34,6 +35,12 @@ export function SpecialistProGhostPreview({
 
   return (
     <>
+      <SitePromoSlot
+        slotId="specialist_dashboard_hero"
+        onOpenPro={() => setUpgradeOpen(true)}
+        onOpenBoost={() => setBoostOpen(true)}
+      />
+
       <section
         className="specialist-pro-ghost"
         aria-labelledby="specialist-pro-ghost-title"
@@ -125,33 +132,11 @@ export function SpecialistProGhostPreview({
           </p>
         </div>
 
-        <section
-          className="specialist-boost-teaser"
-          aria-labelledby="specialist-boost-teaser-title"
-        >
-          <div className="specialist-boost-teaser__copy">
-            <p className="specialist-boost-teaser__eyebrow">Grow faster</p>
-            <h3
-              id="specialist-boost-teaser-title"
-              className="specialist-boost-teaser__title"
-            >
-              Boost profile & ads
-            </h3>
-            <p className="specialist-boost-teaser__text">
-              Stand out in Explore with a Homepage Sponsored boost — separate
-              from Pro analytics.
-            </p>
-          </div>
-          <DashboardButton
-            className="specialist-boost-teaser__btn"
-            onClick={() => setBoostOpen(true)}
-          >
-            Explore boosts
-          </DashboardButton>
-          <p className="specialist-boost-teaser__fineprint">
-            Optional paid placement · separate from SMOAC Pro
-          </p>
-        </section>
+        <SitePromoSlot
+          slotId="specialist_dashboard_boost"
+          onOpenBoost={() => setBoostOpen(true)}
+          onOpenPro={() => setUpgradeOpen(true)}
+        />
       </section>
 
       <SmoacProUpgradeModal

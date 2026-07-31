@@ -14,6 +14,7 @@ import {
 import { ExploreBrowseCategories } from "./ExploreBrowseCategories";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreResults } from "./ExploreResults";
+import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 export function ExplorePageClient({
   initialCatalog,
@@ -112,6 +113,10 @@ export function ExplorePageClient({
           />
 
           <main className="explore-page__results" id="explore-results">
+            <SitePromoSlot
+              slotId="explore_results_rail"
+              variant="compact"
+            />
             <div className="explore-results-heading">
               <h2 className="explore-results-heading__title">
                 Top experts near you
