@@ -11,7 +11,7 @@ Owner + Staff platform dashboards. **Not** used on public marketplace routes.
 | `panels/` | One panel per admin section |
 | `applications/` | Application review sheet |
 | `specialists/` | Tier subcategory nav |
-| `owner/` | Owner-only billing / P&L blocks |
+| `owner/` | Owner-only specialist billing block |
 | `charts/` | Overview donuts/bars |
 
 ## Related code

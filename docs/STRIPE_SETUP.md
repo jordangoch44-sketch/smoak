@@ -23,7 +23,7 @@ Webhook sync aggregates **all** active Stripe subscriptions for the customer and
 | Env var | Value |
 |---------|--------|
 | `STRIPE_SECRET_KEY` | Secret key (`sk_test_…` / `sk_live_…`) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (optional; Checkout redirects) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key — **required** for embedded Payment Element (boost checkout) |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret |
 
 ## 2. Create products / prices

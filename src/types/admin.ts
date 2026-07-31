@@ -41,13 +41,3 @@ export interface AdminClientRecord {
   savedSpecialistsCount: number;
   source: "dev-account" | "signup-draft" | "mock";
 }
-
-export interface AdminOverviewStats {
-  totalSpecialists: number;
-  pendingApplications: number;
-  activeSpecialists: number;
-  premiumSpecialists: number;
-  totalClients: number;
-  /** Sum of saved specialists across known client accounts */
-  totalSavedSpecialists: number;
-}

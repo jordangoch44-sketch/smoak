@@ -89,6 +89,13 @@ export function listPriceCents(key: SmoacStripeProductKey): number {
   return SPECIALIST_AD_ADDON_CATALOG[key].monthlyCents;
 }
 
+/** Display label for catalog / checkout list prices */
+export function formatListPriceLabel(cents: number): string {
+  const dollars = cents / 100;
+  const fixed = dollars.toFixed(cents % 100 === 0 ? 0 : 2);
+  return `$${fixed}/mo`;
+}
+
 export function productLabel(key: SmoacStripeProductKey): string {
   if (isMembershipProduct(key)) {
     return key === "premium" ? "SMOAC Pro" : SPECIALIST_TIER_CATALOG[key].label;
@@ -184,7 +191,5 @@ export const BOOST_PRODUCT_OPTIONS: readonly {
   key,
   label: productLabel(key),
   description: productDescription(key),
-  priceLabel: `$${(listPriceCents(key) / 100).toFixed(
-    listPriceCents(key) % 100 === 0 ? 0 : 2
-  )}/mo`,
+  priceLabel: formatListPriceLabel(listPriceCents(key)),
 }));

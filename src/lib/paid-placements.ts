@@ -35,14 +35,6 @@ export function listPublicTopRankedBoostTrainers(
   );
 }
 
-export function listPublicCategorySpotlightTrainers(
-  options: PublicCatalogOptions = {}
-): Trainer[] {
-  return listPublicMarketplaceTrainers(options).filter(
-    (trainer) => trainer.categorySpotlight === true
-  );
-}
-
 export function trainerMatchesCategoryBrowse(
   trainer: Trainer,
   filters: { profession?: string; specialty?: string }

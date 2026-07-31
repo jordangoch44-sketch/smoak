@@ -9,6 +9,7 @@ import {
 import {
   isMembershipProduct,
   isSmoacStripeProductKey,
+  formatListPriceLabel,
   listPriceCents,
   productDescription,
   productLabel,
@@ -169,9 +170,7 @@ export async function POST(request: Request) {
     product: productKey,
     label: productLabel(productKey),
     description: productDescription(productKey),
-    priceLabel: `$${(listPriceCents(productKey) / 100).toFixed(
-      listPriceCents(productKey) % 100 === 0 ? 0 : 2
-    )}/mo`,
+    priceLabel: formatListPriceLabel(listPriceCents(productKey)),
     monthlyCents: listPriceCents(productKey),
   });
 }

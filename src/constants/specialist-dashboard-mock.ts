@@ -16,12 +16,6 @@ export const SPECIALIST_ANALYTICS_PERIOD_LABEL = "Last 30 days";
 export const SPECIALIST_ANALYTICS_INSIGHT =
   "Profiles with complete photos, specialties, credentials, and booking availability receive more client interest.";
 
-export const BOOST_VISIBILITY_MODAL = {
-  title: "Boost Visibility",
-  description:
-    "Premium placement and boosted discovery are on the way. You'll soon be able to elevate your profile in search, rankings, and featured spots across SMOAC.",
-} as const;
-
 export const DEMO_SPECIALIST_LEADS: SpecialistLead[] = [
   {
     id: "lead-1",

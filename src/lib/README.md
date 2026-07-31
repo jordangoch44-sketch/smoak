@@ -75,7 +75,8 @@ See `docs/PHASE2_AUTH_ARCHITECTURE.md`.
 
 ## Admin platform
 
-- `admin/*` barrel, `admin-stats.ts`, permissions, revenue, notifications
+- permissions, notifications, specialist billing catalog projection
+- live revenue via `/api/admin/revenue` + Stripe sync
 - `internal-auth*.ts`, `internal-routes.ts`
 
 ## Cross-cutting

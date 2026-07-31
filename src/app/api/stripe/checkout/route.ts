@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   getSiteUrlForStripe,
   getStripe,
@@ -8,7 +7,10 @@ import {
   isStripeConfigured,
 } from "@/lib/stripe/config";
 import {
-  isAddonProduct,
+  assertProductPurchasable,
+  ensureSpecialistStripeCustomer,
+} from "@/lib/stripe/ensure-customer";
+import {
   isMembershipProduct,
   isSmoacStripeProductKey,
   productLabel,
@@ -18,6 +20,7 @@ import {
 /**
  * Create a Stripe Checkout Session for membership or paid placement add-ons.
  * Body: `{ product?: SmoacStripeProductKey }` — defaults to `premium`.
+ * Boosts prefer embedded Payment Element via `/api/stripe/subscription-intent`.
  */
 export async function POST(request: Request) {
   if (!isStripeConfigured()) {
@@ -48,16 +51,6 @@ export async function POST(request: Request) {
     /* empty body → premium (legacy clients) */
   }
 
-  const priceId = getStripePriceId(productKey);
-  if (!priceId) {
-    return NextResponse.json(
-      {
-        error: `${productLabel(productKey)} is not configured in Stripe yet.`,
-      },
-      { status: 503 }
-    );
-  }
-
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return NextResponse.json({ error: "Auth unavailable." }, { status: 503 });
@@ -83,89 +76,47 @@ export async function POST(request: Request) {
     );
   }
 
-  const service = createSupabaseServiceClient();
-  let customerId: string | null = null;
-  let specialistProfileId: string | null = null;
-  let billingPlan: string | null = null;
-  let activeAddons: string[] = [];
-
-  if (service) {
-    const { data: profile } = await service
-      .from("specialist_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    specialistProfileId = profile?.id ?? null;
-
-    const { data: billing } = await service
-      .from("specialist_billing")
-      .select(
-        "stripe_customer_id, status, plan, active_addons"
-      )
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    customerId = billing?.stripe_customer_id ?? null;
-    billingPlan = billing?.plan ?? null;
-    activeAddons = Array.isArray(billing?.active_addons)
-      ? (billing.active_addons as string[])
-      : [];
-
-    if (
-      isMembershipProduct(productKey) &&
-      (billing?.status === "active" || billing?.status === "trialing") &&
-      billingPlan === productKey
-    ) {
-      return NextResponse.json(
-        { error: `You already have an active ${productLabel(productKey)} plan.` },
-        { status: 409 }
-      );
-    }
-
-    if (isAddonProduct(productKey) && activeAddons.includes(productKey)) {
-      return NextResponse.json(
-        { error: `${productLabel(productKey)} is already active.` },
-        { status: 409 }
-      );
-    }
+  const customer = await ensureSpecialistStripeCustomer({ user });
+  if (!customer.ok) {
+    return NextResponse.json(
+      { error: customer.error },
+      { status: customer.status }
+    );
   }
 
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      metadata: {
-        supabase_user_id: user.id,
-        specialist_profile_id: specialistProfileId ?? "",
-      },
-    });
-    customerId = customer.id;
+  const purchasable = assertProductPurchasable({
+    productKey,
+    billingPlan: customer.billingPlan,
+    billingStatus: customer.billingStatus,
+    activeAddons: customer.activeAddons,
+  });
+  if (!purchasable.ok) {
+    return NextResponse.json(
+      { error: purchasable.error },
+      { status: purchasable.status }
+    );
+  }
 
-    if (service) {
-      await service.from("specialist_billing").upsert(
-        {
-          user_id: user.id,
-          specialist_profile_id: specialistProfileId,
-          stripe_customer_id: customerId,
-          status: "none",
-          plan: "free",
-          active_addons: [],
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" }
-      );
-    }
+  const priceId = getStripePriceId(productKey);
+  if (!priceId) {
+    return NextResponse.json(
+      {
+        error: `${productLabel(productKey)} is not configured in Stripe yet.`,
+      },
+      { status: 503 }
+    );
   }
 
   const siteUrl = getSiteUrlForStripe();
   const kind = isMembershipProduct(productKey) ? "plan" : "addon";
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
-    customer: customerId,
+    customer: customer.customerId,
     line_items: [{ price: priceId, quantity: 1 }],
     subscription_data: {
       metadata: {
         supabase_user_id: user.id,
-        specialist_profile_id: specialistProfileId ?? "",
+        specialist_profile_id: customer.specialistProfileId ?? "",
         smoac_product: productKey,
         smoac_kind: kind,
         ...(isMembershipProduct(productKey)
@@ -175,7 +126,7 @@ export async function POST(request: Request) {
     },
     metadata: {
       supabase_user_id: user.id,
-      specialist_profile_id: specialistProfileId ?? "",
+      specialist_profile_id: customer.specialistProfileId ?? "",
       smoac_product: productKey,
       smoac_kind: kind,
       ...(isMembershipProduct(productKey)

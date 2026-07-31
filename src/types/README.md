@@ -15,8 +15,6 @@ Shared TypeScript interfaces. Import from `@/types` (barrel: `types/index.ts`).
 | `admin-permissions.ts` | Owner vs Staff permission flags |
 | `admin-notifications.ts` | Nav badge + alert issue types |
 | `admin-specialist-billing.ts` | Tier + add-on billing records |
-| `admin-revenue.ts` | Legacy overview revenue dashboard seed shape |
-| `admin-owner-financials.ts` | Owner P&L snapshot |
 | `specialist-application.ts` | Join-flow application payload |
 
 Add new cross-cutting types here; feature-only types may live next to the feature until reused.
