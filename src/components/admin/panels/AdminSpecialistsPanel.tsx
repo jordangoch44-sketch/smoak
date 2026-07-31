@@ -138,7 +138,7 @@ function SpecialistCard({
           {row.featured ? <span className="admin-chip">Featured</span> : null}
           {row.sponsored ? <span className="admin-chip">Sponsored</span> : null}
           {row.topRanked ? <span className="admin-chip">Top ranked</span> : null}
-          {row.isPremium ? <span className="admin-chip">Premium</span> : null}
+          {row.isPremium ? <span className="admin-chip">Pro</span> : null}
           {row.isProtected || row.accountKind === "real" ? (
             <span className="admin-chip">Real / protected</span>
           ) : null}
@@ -244,7 +244,7 @@ function SpecialistCard({
                   checked={row.isPremium}
                   onChange={(e) => onPremiumChange(row.id, e.target.checked)}
                 />
-                Premium
+                Pro
               </label>
             </>
           ) : null}
@@ -512,7 +512,7 @@ export function AdminSpecialistsPanel({
                   <th>Featured</th>
                   <th>Sponsored</th>
                   <th>Top</th>
-                  <th>Premium</th>
+                  <th>Pro</th>
                   <th>Category</th>
                   <th>Location</th>
                   <th>Profile</th>

@@ -72,7 +72,7 @@ export function AnalyticsMetricTile({
           </span>
         ) : (
           <span className="dashboard-metric-tile__trend dashboard-metric-tile__trend--locked">
-            Premium
+            Pro
           </span>
         )}
       </div>

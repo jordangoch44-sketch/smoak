@@ -2,9 +2,9 @@
 
 ## Product model
 
-### Membership (analytics)
-1. **Specialist signs up** → automatic **30-day free Pro trial** (no card)
-2. **Day 30** → Free + option to continue **SMOAC Pro ($9.99/mo)**
+### Membership (analytics) — display names: Free · Pro · Platinum
+1. **Specialist approved** → automatic **30-day free Pro trial** (no card)
+2. **Day 30** → Free + option to continue **Pro ($9.99/mo)** (Stripe product key: `premium`)
 3. **Platinum ($19.99/mo)** → Pro analytics **plus featured** placement
 4. Pro membership **never** grants Homepage Sponsored by itself
 

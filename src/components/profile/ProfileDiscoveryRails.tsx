@@ -105,7 +105,7 @@ export function ProfileDiscoveryRails({ trainer }: ProfileDiscoveryRailsProps) {
               Featured Specialists Near You
             </h2>
             <p className="profile-discovery__subtitle">
-              Premium listings in and around {trainer.city}.
+              Featured listings in and around {trainer.city}.
             </p>
           </header>
           <HorizontalCarousel

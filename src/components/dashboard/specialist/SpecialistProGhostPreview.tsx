@@ -69,7 +69,7 @@ export function SpecialistProGhostPreview({
                   <p className="specialist-pro-ghost__card-title">
                     Profile Analytics
                   </p>
-                  <span className="dashboard-analytics__badge">Premium</span>
+                  <span className="dashboard-analytics__badge">Pro</span>
                 </div>
                 <p className="specialist-pro-ghost__card-period">
                   {analytics.periodLabel}

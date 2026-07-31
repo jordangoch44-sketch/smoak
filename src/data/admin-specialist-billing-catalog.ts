@@ -9,7 +9,7 @@ export const SPECIALIST_TIER_CATALOG: Record<
   { label: string; monthlyCents: number }
 > = {
   free: { label: "Free", monthlyCents: 0 },
-  premium: { label: "Premium", monthlyCents: 999 },
+  premium: { label: "Pro", monthlyCents: 999 },
   platinum: { label: "Platinum", monthlyCents: 1999 },
 };
 

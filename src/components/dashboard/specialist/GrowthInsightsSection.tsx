@@ -53,7 +53,7 @@ export function GrowthInsightsSection({
       </PremiumLockedValues>
       {!isPremium ? (
         <div className="dashboard-growth-insights__frost" aria-hidden>
-          <p className="dashboard-growth-insights__frost-label">Unlock Premium Insights</p>
+          <p className="dashboard-growth-insights__frost-label">Unlock Pro Insights</p>
         </div>
       ) : null}
     </section>

@@ -20,7 +20,7 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 ## Specialist dashboard
 
 - `managed-specialist-profile.ts` — session id resolve, save orchestration, demo vs real
-- `specialist-dashboard-mode.ts` — pending / free / premium dashboard modes
+- `specialist-dashboard-mode.ts` — pending / free / pro dashboard modes
 - `specialist-dashboard-analytics.ts`, `specialist-dashboard-stats.ts`, `specialist-dashboard-subscription.ts`
 - `specialist-premium.ts`
 

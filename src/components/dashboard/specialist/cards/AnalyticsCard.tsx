@@ -50,13 +50,13 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
                     !isPremium && "dashboard-analytics__badge--pro"
                   )}
                 >
-                  {isPremium ? "Premium" : "PRO"}
+                  {isPremium ? "Pro" : "Pro"}
                 </span>
               </div>
               <p className="dashboard-analytics__subtitle">
                 {isPremium
                   ? "Business intelligence for your marketplace visibility and client demand."
-                  : "See how clients discover you — unlock full performance data with Premium."}
+                  : "See how clients discover you — unlock full performance data with Pro."}
               </p>
             </div>
             <p className="dashboard-analytics__period">{analytics.periodLabel}</p>

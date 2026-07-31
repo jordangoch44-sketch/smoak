@@ -2,7 +2,7 @@
  * SMOAC specialist Stripe products — membership vs paid placement add-ons.
  *
  * Rules:
- * - Premium / Platinum set membership only (is_premium). Platinum also includes featured.
+ * - Pro (`premium` key) / Platinum set membership only (is_premium). Platinum also includes featured.
  * - Pro membership never grants sponsored placement by itself.
  * - Add-ons set placement flags independently and do not require Pro.
  */
