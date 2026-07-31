@@ -3,16 +3,22 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/ui/icons";
-import { SMOAC_PRO_UPGRADE_MODAL } from "@/lib/specialist-premium";
-import { DashboardButton } from "./DashboardButton";
+import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
+import {
+  BOOST_PRODUCT_OPTIONS,
+  type SmoacAddonProduct,
+} from "@/lib/stripe/products";
 
-interface SmoacProUpgradeModalProps {
+interface BoostVisibilityModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProps) {
-  const [busy, setBusy] = useState(false);
+export function BoostVisibilityModal({
+  open,
+  onClose,
+}: BoostVisibilityModalProps) {
+  const [busyKey, setBusyKey] = useState<SmoacAddonProduct | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -21,6 +27,7 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     setError(null);
+    setBusyKey(null);
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -33,8 +40,8 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
     };
   }, [open, onClose]);
 
-  async function startCheckout(product: "premium" | "platinum" = "premium") {
-    setBusy(true);
+  async function startCheckout(product: SmoacAddonProduct) {
+    setBusyKey(product);
     setError(null);
     try {
       const res = await fetch("/api/stripe/checkout", {
@@ -51,7 +58,7 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
     } catch {
       setError("Could not start checkout. Try again.");
     } finally {
-      setBusy(false);
+      setBusyKey(null);
     }
   }
 
@@ -60,11 +67,11 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
   return createPortal(
     <div className="dashboard-modal" role="presentation" onClick={onClose}>
       <div
-        className="dashboard-modal__dialog dashboard-modal__dialog--pro"
+        className="dashboard-modal__dialog dashboard-modal__dialog--boost"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="smoac-pro-modal-title"
-        aria-describedby="smoac-pro-modal-desc"
+        aria-labelledby="boost-modal-title"
+        aria-describedby="boost-modal-desc"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="dashboard-modal__glow" aria-hidden />
@@ -79,35 +86,45 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
         </button>
 
         <div className="dashboard-modal__content">
-          <p className="dashboard-modal__eyebrow">{SMOAC_PRO_UPGRADE_MODAL.eyebrow}</p>
-          <h2 id="smoac-pro-modal-title" className="dashboard-modal__title">
-            {SMOAC_PRO_UPGRADE_MODAL.title}
+          <p className="dashboard-modal__eyebrow">Paid placement</p>
+          <h2 id="boost-modal-title" className="dashboard-modal__title">
+            Boost profile & ads
           </h2>
-          <p id="smoac-pro-modal-desc" className="dashboard-modal__body">
-            {SMOAC_PRO_UPGRADE_MODAL.description}
+          <p id="boost-modal-desc" className="dashboard-modal__body">
+            Optional placements separate from SMOAC Pro. Pro never includes
+            Sponsored — boosts set placement only.
           </p>
-          <p className="dashboard-modal__price">{SMOAC_PRO_UPGRADE_MODAL.price}</p>
-          <p className="dashboard-modal__note">{SMOAC_PRO_UPGRADE_MODAL.note}</p>
+
+          <ul className="dashboard-boost-list">
+            {BOOST_PRODUCT_OPTIONS.map((option) => (
+              <li key={option.key} className="dashboard-boost-list__item">
+                <div className="dashboard-boost-list__copy">
+                  <p className="dashboard-boost-list__label">{option.label}</p>
+                  <p className="dashboard-boost-list__desc">
+                    {option.description}
+                  </p>
+                  <p className="dashboard-boost-list__price">{option.priceLabel}</p>
+                </div>
+                <DashboardButton
+                  inline
+                  onClick={() => void startCheckout(option.key)}
+                  disabled={busyKey !== null}
+                >
+                  {busyKey === option.key ? "Opening…" : "Subscribe"}
+                </DashboardButton>
+              </li>
+            ))}
+          </ul>
+
           {error ? (
             <p className="dashboard-modal__error" role="alert">
               {error}
             </p>
           ) : null}
-          <DashboardButton
-            className="dashboard-pro-upgrade-btn"
-            onClick={() => void startCheckout("premium")}
-            disabled={busy}
-          >
-            {busy ? "Opening checkout…" : `Continue Pro · ${SMOAC_PRO_UPGRADE_MODAL.price}`}
-          </DashboardButton>
-          <button
-            type="button"
-            className="dashboard-modal__secondary"
-            onClick={() => void startCheckout("platinum")}
-            disabled={busy}
-          >
-            Or Platinum · $19.99/mo (includes featured)
-          </button>
+
+          <p className="dashboard-modal__note">
+            Billed monthly via Stripe. Manage or cancel anytime in billing.
+          </p>
         </div>
       </div>
     </div>,

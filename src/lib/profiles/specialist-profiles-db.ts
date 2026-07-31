@@ -100,6 +100,7 @@ export function specialistProfileToRow(input: {
     featured: Boolean(trainer.featured),
     sponsored: Boolean(trainer.sponsored),
     top_ranked: Boolean(trainer.topRanked),
+    category_spotlight: false,
     is_premium: Boolean(trainer.isPremium),
     verified: Boolean(trainer.verified),
     rating: trainer.rating ?? 0,

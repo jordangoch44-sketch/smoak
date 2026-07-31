@@ -4,15 +4,22 @@ import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   getSiteUrlForStripe,
   getStripe,
-  getStripePremiumPriceId,
+  getStripePriceId,
   isStripeConfigured,
 } from "@/lib/stripe/config";
+import {
+  isAddonProduct,
+  isMembershipProduct,
+  isSmoacStripeProductKey,
+  productLabel,
+  type SmoacStripeProductKey,
+} from "@/lib/stripe/products";
 
 /**
- * Create a Stripe Checkout Session for SMOAC Pro (Premium) with 30-day trial.
- * Authenticated specialists only.
+ * Create a Stripe Checkout Session for membership or paid placement add-ons.
+ * Body: `{ product?: SmoacStripeProductKey }` — defaults to `premium`.
  */
-export async function POST() {
+export async function POST(request: Request) {
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Stripe is not configured yet." },
@@ -21,10 +28,32 @@ export async function POST() {
   }
 
   const stripe = getStripe();
-  const priceId = getStripePremiumPriceId();
-  if (!stripe || !priceId) {
+  if (!stripe) {
+    return NextResponse.json({ error: "Stripe unavailable." }, { status: 503 });
+  }
+
+  let productKey: SmoacStripeProductKey = "premium";
+  try {
+    const body = (await request.json()) as { product?: string };
+    if (body.product) {
+      if (!isSmoacStripeProductKey(body.product)) {
+        return NextResponse.json(
+          { error: "Unknown product." },
+          { status: 400 }
+        );
+      }
+      productKey = body.product;
+    }
+  } catch {
+    /* empty body → premium (legacy clients) */
+  }
+
+  const priceId = getStripePriceId(productKey);
+  if (!priceId) {
     return NextResponse.json(
-      { error: "Stripe Premium price is not configured (STRIPE_PRICE_PREMIUM)." },
+      {
+        error: `${productLabel(productKey)} is not configured in Stripe yet.`,
+      },
       { status: 503 }
     );
   }
@@ -49,7 +78,7 @@ export async function POST() {
 
   if (roleRow?.role !== "specialist") {
     return NextResponse.json(
-      { error: "Only specialists can subscribe to SMOAC Pro." },
+      { error: "Only specialists can purchase marketplace plans." },
       { status: 403 }
     );
   }
@@ -57,6 +86,8 @@ export async function POST() {
   const service = createSupabaseServiceClient();
   let customerId: string | null = null;
   let specialistProfileId: string | null = null;
+  let billingPlan: string | null = null;
+  let activeAddons: string[] = [];
 
   if (service) {
     const { data: profile } = await service
@@ -68,21 +99,35 @@ export async function POST() {
 
     const { data: billing } = await service
       .from("specialist_billing")
-      .select("stripe_customer_id, stripe_subscription_id, status")
+      .select(
+        "stripe_customer_id, status, plan, active_addons"
+      )
       .eq("user_id", user.id)
       .maybeSingle();
 
+    customerId = billing?.stripe_customer_id ?? null;
+    billingPlan = billing?.plan ?? null;
+    activeAddons = Array.isArray(billing?.active_addons)
+      ? (billing.active_addons as string[])
+      : [];
+
     if (
-      billing?.status === "active" ||
-      billing?.status === "trialing"
+      isMembershipProduct(productKey) &&
+      (billing?.status === "active" || billing?.status === "trialing") &&
+      billingPlan === productKey
     ) {
       return NextResponse.json(
-        { error: "You already have an active Pro subscription." },
+        { error: `You already have an active ${productLabel(productKey)} plan.` },
         { status: 409 }
       );
     }
 
-    customerId = billing?.stripe_customer_id ?? null;
+    if (isAddonProduct(productKey) && activeAddons.includes(productKey)) {
+      return NextResponse.json(
+        { error: `${productLabel(productKey)} is already active.` },
+        { status: 409 }
+      );
+    }
   }
 
   if (!customerId) {
@@ -102,6 +147,8 @@ export async function POST() {
           specialist_profile_id: specialistProfileId,
           stripe_customer_id: customerId,
           status: "none",
+          plan: "free",
+          active_addons: [],
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" }
@@ -110,7 +157,7 @@ export async function POST() {
   }
 
   const siteUrl = getSiteUrlForStripe();
-  /* Signup already includes a 30-day free Pro trial — Checkout is paid only */
+  const kind = isMembershipProduct(productKey) ? "plan" : "addon";
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customerId,
@@ -119,15 +166,23 @@ export async function POST() {
       metadata: {
         supabase_user_id: user.id,
         specialist_profile_id: specialistProfileId ?? "",
-        plan: "premium",
+        smoac_product: productKey,
+        smoac_kind: kind,
+        ...(isMembershipProduct(productKey)
+          ? { smoac_plan: productKey, plan: productKey }
+          : { smoac_addon: productKey }),
       },
     },
     metadata: {
       supabase_user_id: user.id,
       specialist_profile_id: specialistProfileId ?? "",
-      plan: "premium",
+      smoac_product: productKey,
+      smoac_kind: kind,
+      ...(isMembershipProduct(productKey)
+        ? { smoac_plan: productKey, plan: productKey }
+        : { smoac_addon: productKey }),
     },
-    success_url: `${siteUrl}/specialist-dashboard?billing=success`,
+    success_url: `${siteUrl}/specialist-dashboard?billing=success&product=${productKey}`,
     cancel_url: `${siteUrl}/specialist-dashboard?billing=cancel`,
     allow_promotion_codes: true,
   });
@@ -139,5 +194,5 @@ export async function POST() {
     );
   }
 
-  return NextResponse.json({ url: session.url });
+  return NextResponse.json({ url: session.url, product: productKey });
 }

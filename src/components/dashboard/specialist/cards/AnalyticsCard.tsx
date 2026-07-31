@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { BOOST_VISIBILITY_MODAL } from "@/constants/specialist-dashboard-mock";
 import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
 import { buildSecondaryStatTiles } from "@/lib/specialist-dashboard-stats";
 import { SMOAC_PRO_UNLOCK } from "@/lib/specialist-premium";
 import { AnalyticsMetricTile } from "@/components/dashboard/specialist/AnalyticsMetricTile";
 import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import {
+  BoostVisibilityModal,
   DashboardButton,
-  DashboardComingSoonModal,
   PremiumLockedValues,
   PremiumUnlockCta,
   SmoacProUpgradeModal,
@@ -142,11 +141,10 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
           ) : null}
 
           <div className="dashboard-analytics__actions dashboard-actions-row">
-            {isPremium ? (
-              <DashboardButton inline onClick={() => setBoostModalOpen(true)}>
-                Boost Visibility
-              </DashboardButton>
-            ) : (
+            <DashboardButton inline onClick={() => setBoostModalOpen(true)}>
+              Boost Visibility
+            </DashboardButton>
+            {!isPremium ? (
               <DashboardButton
                 inline
                 className="dashboard-pro-upgrade-btn"
@@ -154,7 +152,7 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
               >
                 {SMOAC_PRO_UNLOCK.cta}
               </DashboardButton>
-            )}
+            ) : null}
             <DashboardButton variant="secondary" href="/specialist-dashboard/edit-profile">
               Improve Profile
             </DashboardButton>
@@ -162,10 +160,8 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
         </div>
       </section>
 
-      <DashboardComingSoonModal
+      <BoostVisibilityModal
         open={boostModalOpen}
-        title={BOOST_VISIBILITY_MODAL.title}
-        description={BOOST_VISIBILITY_MODAL.description}
         onClose={() => setBoostModalOpen(false)}
       />
 

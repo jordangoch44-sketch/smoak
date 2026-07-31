@@ -2588,6 +2588,63 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   border-color: rgba(var(--accent-glow-rgb), 0.22);
 }
 
+.dashboard-modal__dialog--boost {
+  max-width: 28rem;
+  border-color: rgba(var(--accent-glow-rgb), 0.18);
+}
+
+.dashboard-boost-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-boost-list__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dashboard-boost-list__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.dashboard-boost-list__label {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.dashboard-boost-list__desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dashboard-boost-list__price {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.dashboard-account-card__error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: #fca5a5;
+}
+
 .dashboard-modal__price {
   margin: 0.25rem 0 0;
   font-size: 1.375rem;

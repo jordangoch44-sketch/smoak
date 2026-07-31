@@ -76,8 +76,8 @@ export function AdminSettingsPanel() {
             <h3>Stripe</h3>
             <p>
               {status.stripeConfigured
-                ? "Configured — Revenue uses live MRR when available"
-                : "Not configured — Revenue shows entitlement estimates only"}
+                ? "Configured — Revenue + Checkout use live Stripe products"
+                : "Not configured — set STRIPE_SECRET_KEY and STRIPE_PRICE_*"}
             </p>
           </div>
           <div className="admin-placeholder-card">

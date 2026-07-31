@@ -1,4 +1,8 @@
 import Stripe from "stripe";
+import {
+  getStripePriceIdForProduct,
+  type SmoacStripeProductKey,
+} from "@/lib/stripe/products";
 
 let stripeSingleton: Stripe | null = null;
 
@@ -18,9 +22,13 @@ export function getStripe(): Stripe | null {
   return stripeSingleton;
 }
 
-/** Premium ($9.99/mo) price id from Stripe Dashboard or setup script */
+/** @deprecated Prefer getStripePriceIdForProduct("premium") */
 export function getStripePremiumPriceId(): string | null {
-  return process.env.STRIPE_PRICE_PREMIUM?.trim() || null;
+  return getStripePriceIdForProduct("premium");
+}
+
+export function getStripePriceId(key: SmoacStripeProductKey): string | null {
+  return getStripePriceIdForProduct(key);
 }
 
 export function getStripeWebhookSecret(): string | null {

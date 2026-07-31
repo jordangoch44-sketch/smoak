@@ -1,55 +1,69 @@
-# Stripe — SMOAC Pro subscriptions
+# Stripe — specialist membership + paid placement
 
 ## Product model
 
-1. **Specialist signs up** → automatic **30-day free Pro trial** (no card required)
-2. **Day 30** → dropped to **Free** + modal: continue Pro for **$9.99/mo** or stay Free
-3. **Paid Pro** → Stripe Checkout (no second free month)
+### Membership (analytics)
+1. **Specialist signs up** → automatic **30-day free Pro trial** (no card)
+2. **Day 30** → Free + option to continue **SMOAC Pro ($9.99/mo)**
+3. **Platinum ($19.99/mo)** → Pro analytics **plus featured** placement
+4. Pro membership **never** grants Homepage Sponsored by itself
 
-## 1. Create a Stripe account
+### Paid placement add-ons (optional, stackable, do not require Pro)
+| Product | Price | Entitlement flag |
+|---------|-------|------------------|
+| Boosted profile | $49/mo | `sponsored` |
+| Category spotlight | $99/mo | `category_spotlight` |
+| Homepage spotlight | $199/mo | `featured` |
+| Top ranking boost | $149/mo | `top_ranked` |
 
-1. Sign up at [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register)
-2. Stay in **Test mode** until ready for real charges
+Webhook sync aggregates **all** active Stripe subscriptions for the customer and writes flags on `specialist_profiles` + `plan` / `active_addons` on `specialist_billing`.
 
-## 2. Copy API keys
-
-Dashboard → **Developers** → **API keys**:
+## 1. API keys
 
 | Env var | Value |
 |---------|--------|
-| `STRIPE_SECRET_KEY` | Secret key (`sk_test_…`) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (`pk_test_…`) |
+| `STRIPE_SECRET_KEY` | Secret key (`sk_test_…` / `sk_live_…`) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Publishable key (optional; Checkout redirects) |
+| `STRIPE_WEBHOOK_SECRET` | Webhook signing secret |
 
-Add to `.env.local` and Vercel (Production + Preview).
-
-## 3. Create the Pro product / price
+## 2. Create products / prices
 
 ```bash
 STRIPE_SECRET_KEY=sk_test_... npm run setup:stripe
 ```
 
-Copy `STRIPE_PRICE_PREMIUM=price_…` into `.env.local` and Vercel.
+Copy every printed `STRIPE_PRICE_*` line into `.env.local` and Vercel:
 
-## 4. Apply migrations in Supabase SQL Editor
+- `STRIPE_PRICE_PREMIUM`
+- `STRIPE_PRICE_PLATINUM`
+- `STRIPE_PRICE_BOOSTED_PROFILE`
+- `STRIPE_PRICE_CATEGORY_SPOTLIGHT`
+- `STRIPE_PRICE_HOMEPAGE_SPOTLIGHT`
+- `STRIPE_PRICE_TOP_RANKING_BOOST`
+
+Safe to re-run — reuses products matched by `metadata.smoac_product`.
+
+## 3. Migrations (Supabase SQL Editor)
 
 1. `supabase/migrations/20260725180000_specialist_billing_stripe.sql`
 2. `supabase/migrations/20260725190000_specialist_premium_trial.sql`
+3. `supabase/migrations/20260731020000_specialist_billing_products.sql`
 
-## 5. Webhook endpoint
+## 4. Webhook
 
 - URL: `https://smoac.com/api/stripe/webhook`
 - Events: `checkout.session.completed`, `customer.subscription.created|updated|deleted`
 - Secret → `STRIPE_WEBHOOK_SECRET`
 
-## 6. Cron (expire trials daily)
+## 5. Cron (expire complimentary trials)
 
-`vercel.json` schedules `GET /api/cron/expire-premium-trials` at 14:00 UTC.
+`vercel.json` → `GET /api/cron/expire-premium-trials` daily. Set `CRON_SECRET` in Vercel.
 
-1. Add `CRON_SECRET` in Vercel (Production) — any long random string
-2. Vercel Cron sends `Authorization: Bearer <CRON_SECRET>` automatically
+## 6. Specialist UX
 
-Without `CRON_SECRET`, the cron route returns 401 (safe default).  
-Trials also expire on the next specialist login if cron has not run yet.
+- **Pro upgrade** → `POST /api/stripe/checkout` `{ "product": "premium" }`
+- **Boost modal** → checkout for each add-on product key
+- **Manage billing** → `POST /api/stripe/portal`
 
 ## Test card
 

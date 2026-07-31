@@ -107,6 +107,7 @@ export interface SpecialistProfileRow {
   featured: boolean;
   sponsored: boolean;
   top_ranked: boolean;
+  category_spotlight: boolean;
   is_premium: boolean;
   verified: boolean;
   rating: number;

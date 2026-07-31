@@ -7,12 +7,11 @@ import { buildSecondaryStatTiles } from "@/lib/specialist-dashboard-stats";
 import { AnalyticsMetricTile } from "@/components/dashboard/specialist/AnalyticsMetricTile";
 import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import {
+  BoostVisibilityModal,
   DashboardButton,
-  DashboardComingSoonModal,
   SmoacProUpgradeModal,
   StatTile,
 } from "@/components/dashboard/shared";
-import { BOOST_VISIBILITY_MODAL } from "@/constants/specialist-dashboard-mock";
 
 interface SpecialistProGhostPreviewProps {
   firstName: string;
@@ -159,10 +158,8 @@ export function SpecialistProGhostPreview({
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}
       />
-      <DashboardComingSoonModal
+      <BoostVisibilityModal
         open={boostOpen}
-        title={BOOST_VISIBILITY_MODAL.title}
-        description={BOOST_VISIBILITY_MODAL.description}
         onClose={() => setBoostOpen(false)}
       />
     </>

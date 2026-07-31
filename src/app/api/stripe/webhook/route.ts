@@ -116,9 +116,14 @@ export async function POST(request: Request) {
         const subscription = event.data.object as Stripe.Subscription;
         const resolved = await resolveUserIdFromSubscription(subscription);
         if (!resolved) break;
+        const customerId =
+          typeof subscription.customer === "string"
+            ? subscription.customer
+            : subscription.customer?.id;
         await clearSpecialistSubscription({
           userId: resolved.userId,
           specialistProfileId: resolved.profileId,
+          customerId: customerId ?? null,
         });
         break;
       }
