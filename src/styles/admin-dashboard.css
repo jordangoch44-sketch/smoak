@@ -1781,6 +1781,15 @@
     0 8px 28px rgba(var(--aurora-violet-rgb), 0.14);
 }
 
+.admin-tier-card--static {
+  cursor: default;
+  pointer-events: none;
+}
+
+.admin-clients-summary {
+  margin-bottom: 0.75rem;
+}
+
 .admin-tier-card__count {
   font-size: 1.375rem;
   font-weight: 700;

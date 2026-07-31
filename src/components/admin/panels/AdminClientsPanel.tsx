@@ -9,20 +9,14 @@ import {
   setAdminManagedUserActive,
   updateAdminManagedUserName,
 } from "@/lib/admin-managed-users-service";
+import { cn } from "@/lib/utils";
 import type { AdminManagedUser } from "@/types/admin-managed-user";
 
-type RoleFilter = "all" | "client" | "specialist" | "none";
+type ClientStatusFilter = "all" | "active" | "deactivated";
 
 interface AdminClientsPanelProps {
   /** Owner-only destructive actions (delete account) */
   canDelete: boolean;
-}
-
-function roleLabel(role: AdminManagedUser["role"]): string {
-  if (!role) return "no role";
-  if (role === "owner_admin") return "owner admin";
-  if (role === "staff_admin") return "staff admin";
-  return role;
 }
 
 function formatDate(iso: string | null): string {
@@ -34,7 +28,7 @@ function formatDate(iso: string | null): string {
   }).format(new Date(iso));
 }
 
-function UserCard({
+function ClientCard({
   user,
   busy,
   canDelete,
@@ -52,7 +46,6 @@ function UserCard({
   const [expanded, setExpanded] = useState(false);
   const [firstName, setFirstName] = useState(user.firstName);
   const [lastName, setLastName] = useState(user.lastName);
-  const isAdmin = user.role === "owner_admin" || user.role === "staff_admin";
   const nameDirty =
     firstName.trim() !== user.firstName || lastName.trim() !== user.lastName;
 
@@ -68,11 +61,7 @@ function UserCard({
 
       <dl className="admin-entity-card__meta">
         <div>
-          <dt>Role</dt>
-          <dd>{roleLabel(user.role)}</dd>
-        </div>
-        <div>
-          <dt>Saved</dt>
+          <dt>Saved specialists</dt>
           <dd>{user.savedSpecialistsCount}</dd>
         </div>
         <div>
@@ -80,45 +69,45 @@ function UserCard({
           <dd>{formatDate(user.createdAt)}</dd>
         </div>
         <div>
-          <dt>Last sign-in</dt>
+          <dt>Last active</dt>
           <dd>{formatDate(user.lastSignInAt)}</dd>
+        </div>
+        <div>
+          <dt>Email</dt>
+          <dd>{user.emailConfirmed ? "Confirmed" : "Unconfirmed"}</dd>
         </div>
       </dl>
 
-      {!isAdmin ? (
-        <div className="admin-entity-card__actions admin-entity-card__actions--row">
+      <div className="admin-entity-card__actions admin-entity-card__actions--row">
+        <button
+          type="button"
+          className="admin-btn smoac-control"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+        >
+          {expanded ? "Hide details" : "Edit"}
+        </button>
+        <button
+          type="button"
+          className="admin-btn smoac-control"
+          disabled={busy}
+          onClick={onToggleActive}
+        >
+          {user.status === "active" ? "Deactivate" : "Reactivate"}
+        </button>
+        {canDelete ? (
           <button
             type="button"
-            className="admin-btn smoac-control"
-            onClick={() => setExpanded((v) => !v)}
-            aria-expanded={expanded}
-          >
-            {expanded ? "Hide details" : "Edit"}
-          </button>
-          <button
-            type="button"
-            className="admin-btn smoac-control"
+            className="admin-btn smoac-control admin-btn--danger"
             disabled={busy}
-            onClick={onToggleActive}
+            onClick={onDelete}
           >
-            {user.status === "active" ? "Deactivate" : "Reactivate"}
+            Delete
           </button>
-          {canDelete ? (
-            <button
-              type="button"
-              className="admin-btn smoac-control admin-btn--danger"
-              disabled={busy}
-              onClick={onDelete}
-            >
-              Delete
-            </button>
-          ) : null}
-        </div>
-      ) : (
-        <p className="admin-entity-card__sub">Admin account — manage in Supabase.</p>
-      )}
+        ) : null}
+      </div>
 
-      {expanded && !isAdmin ? (
+      {expanded ? (
         <div className="admin-entity-card__expand">
           <label className="admin-field-label">
             First name
@@ -154,7 +143,7 @@ export function AdminClientsPanel({ canDelete }: AdminClientsPanelProps) {
   const [users, setUsers] = useState<AdminManagedUser[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<ClientStatusFilter>("all");
   const [busyIds, setBusyIds] = useState<ReadonlySet<string>>(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -174,20 +163,37 @@ export function AdminClientsPanel({ canDelete }: AdminClientsPanelProps) {
     };
   }, [refreshKey]);
 
+  const clients = useMemo(
+    () => (users ?? []).filter((user) => user.role === "client"),
+    [users]
+  );
+
+  const stats = useMemo(() => {
+    const active = clients.filter((c) => c.status === "active").length;
+    const deactivated = clients.filter((c) => c.status === "deactivated").length;
+    const withSaves = clients.filter((c) => c.savedSpecialistsCount > 0).length;
+    return {
+      total: clients.length,
+      active,
+      deactivated,
+      withSaves,
+    };
+  }, [clients]);
+
   const filtered = useMemo(() => {
-    if (!users) return [];
     const query = search.trim().toLowerCase();
-    return users.filter((user) => {
-      if (roleFilter === "client" && user.role !== "client") return false;
-      if (roleFilter === "specialist" && user.role !== "specialist") return false;
-      if (roleFilter === "none" && user.role !== null) return false;
+    return clients.filter((user) => {
+      if (statusFilter === "active" && user.status !== "active") return false;
+      if (statusFilter === "deactivated" && user.status !== "deactivated") {
+        return false;
+      }
       if (!query) return true;
       return (
         user.email.toLowerCase().includes(query) ||
         user.displayName.toLowerCase().includes(query)
       );
     });
-  }, [users, search, roleFilter]);
+  }, [clients, search, statusFilter]);
 
   async function runMutation(
     userId: string,
@@ -210,7 +216,7 @@ export function AdminClientsPanel({ canDelete }: AdminClientsPanelProps) {
 
   function handleDelete(user: AdminManagedUser) {
     const confirmed = window.confirm(
-      `Permanently delete ${user.email}? This removes their account, profile, and saved specialists. This cannot be undone.`
+      `Permanently delete ${user.email}? This removes their client account, profile, and saved specialists. This cannot be undone.`
     );
     if (!confirmed) return;
     void runMutation(user.userId, () => deleteAdminManagedUser(user.userId));
@@ -218,9 +224,76 @@ export function AdminClientsPanel({ canDelete }: AdminClientsPanelProps) {
 
   return (
     <DashboardSection
-      title="Users"
-      description="Real platform accounts — search, edit, deactivate, or remove."
+      title="Clients"
+      description="Client accounts only — profiles, saves, and last activity."
     >
+      <div
+        className="admin-tier-nav admin-clients-summary"
+        role="tablist"
+        aria-label="Client status filters"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={statusFilter === "all"}
+          className={cn(
+            "admin-tier-card",
+            statusFilter === "all" && "admin-tier-card--active"
+          )}
+          onClick={() => setStatusFilter("all")}
+        >
+          <span className="admin-tier-card__count">{stats.total}</span>
+          <span className="admin-tier-card__label">Total clients</span>
+          <span className="admin-tier-card__tier">All accounts</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={statusFilter === "active"}
+          className={cn(
+            "admin-tier-card",
+            statusFilter === "active" && "admin-tier-card--active"
+          )}
+          onClick={() => setStatusFilter("active")}
+        >
+          <span className="admin-tier-card__count">{stats.active}</span>
+          <span className="admin-tier-card__label">Active</span>
+          <span className="admin-tier-card__tier">Can sign in</span>
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={statusFilter === "deactivated"}
+          className={cn(
+            "admin-tier-card",
+            statusFilter === "deactivated" && "admin-tier-card--active"
+          )}
+          onClick={() => setStatusFilter("deactivated")}
+        >
+          <span className="admin-tier-card__count">{stats.deactivated}</span>
+          <span className="admin-tier-card__label">Deactivated</span>
+          <span className="admin-tier-card__tier">Blocked</span>
+        </button>
+        <div className="admin-tier-card admin-tier-card--static" aria-hidden>
+          <span className="admin-tier-card__count">{stats.withSaves}</span>
+          <span className="admin-tier-card__label">With saves</span>
+          <span className="admin-tier-card__tier">Saved ≥ 1 specialist</span>
+        </div>
+      </div>
+
+      <p className="admin-tier-section__summary">
+        <strong>
+          {statusFilter === "all"
+            ? "All clients"
+            : statusFilter === "active"
+              ? "Active clients"
+              : "Deactivated clients"}
+        </strong>
+        <span className="admin-tier-section__summary-meta">
+          {filtered.length} client{filtered.length === 1 ? "" : "s"}
+        </span>
+      </p>
+
       <div className="admin-entity-card__actions admin-entity-card__actions--row">
         <input
           className="admin-field"
@@ -228,19 +301,8 @@ export function AdminClientsPanel({ canDelete }: AdminClientsPanelProps) {
           placeholder="Search name or email…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          aria-label="Search users"
+          aria-label="Search clients"
         />
-        <select
-          className="admin-field admin-field--select"
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value as RoleFilter)}
-          aria-label="Filter by role"
-        >
-          <option value="all">All roles</option>
-          <option value="client">Clients</option>
-          <option value="specialist">Specialists</option>
-          <option value="none">No role</option>
-        </select>
       </div>
 
       {error ? (
@@ -250,16 +312,20 @@ export function AdminClientsPanel({ canDelete }: AdminClientsPanelProps) {
       ) : null}
 
       {users === null && !error ? (
-        <p className="admin-empty">Loading accounts…</p>
+        <p className="admin-empty">Loading clients…</p>
       ) : null}
 
       {users !== null && filtered.length === 0 ? (
-        <p className="admin-empty">No accounts match.</p>
+        <p className="admin-empty">
+          {clients.length === 0
+            ? "No client accounts yet."
+            : "No clients match this filter."}
+        </p>
       ) : null}
 
       <ul className="admin-card-list">
         {filtered.map((user) => (
-          <UserCard
+          <ClientCard
             key={user.userId}
             user={user}
             busy={busyIds.has(user.userId)}
