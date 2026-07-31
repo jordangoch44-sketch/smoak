@@ -40,3 +40,8 @@ export function getSiteUrlForStripe(): string {
   if (fromEnv) return fromEnv.replace(/\/$/, "");
   return "http://localhost:3000";
 }
+
+/** Publishable key for Stripe.js / Payment Element (browser). */
+export function getStripePublishableKey(): string | null {
+  return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
+}

@@ -61,8 +61,9 @@ Safe to re-run — reuses products matched by `metadata.smoac_product`.
 
 ## 6. Specialist UX
 
-- **Pro upgrade** → `POST /api/stripe/checkout` `{ "product": "premium" }`
-- **Boost modal** → checkout for each add-on product key
+- **Pro upgrade** → Checkout Session or modal
+- **Boost modal** → in-app Payment Element (`POST /api/stripe/subscription-intent`) — description + card on SMOAC
+- **Ad spend** → Subscription / account settings via `GET /api/stripe/billing-summary`
 - **Manage billing** → `POST /api/stripe/portal`
 
 ## Test card

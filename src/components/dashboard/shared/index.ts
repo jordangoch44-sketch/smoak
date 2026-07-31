@@ -12,6 +12,7 @@ export { PremiumLockedValues } from "./PremiumLockedValues";
 export { PremiumUnlockCta } from "./PremiumUnlockCta";
 export { SmoacProUpgradeModal } from "./SmoacProUpgradeModal";
 export { BoostVisibilityModal } from "./BoostVisibilityModal";
+export { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
 export { PremiumTrialEndedModal } from "./PremiumTrialEndedModal";
 export { DashboardLoadingState } from "./DashboardLoadingState";
 export { DashboardGrid } from "./DashboardGrid";

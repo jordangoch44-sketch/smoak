@@ -2639,6 +2639,105 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.dashboard-boost-checkout {
+  margin-top: 0.75rem;
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.dashboard-boost-checkout__label {
+  margin: 0 0 0.65rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.stripe-pay {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.stripe-pay__submit {
+  width: 100%;
+}
+
+.stripe-pay__secure {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.38);
+  text-align: center;
+}
+
+.dashboard-ad-spend {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-ad-spend__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 550;
+  color: #fff;
+}
+
+.dashboard-ad-spend__lede {
+  margin: 0.3rem 0 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.dashboard-ad-spend__empty {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.dashboard-ad-spend__list {
+  margin: 0.65rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dashboard-ad-spend__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.dashboard-ad-spend__list strong {
+  font-weight: 550;
+  color: #fff;
+}
+
+.dashboard-ad-spend__list--plan {
+  margin-top: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-account-card__row--total {
+  margin-top: 0.25rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-account-card__row--total .dashboard-account-card__value {
+  font-weight: 600;
+}
+
 .dashboard-account-card__error {
   margin: 0.5rem 0 0;
   font-size: 0.8125rem;
