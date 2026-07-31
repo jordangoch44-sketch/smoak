@@ -10,16 +10,17 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
-import { listPublicSponsoredTrainers } from "@/lib/marketplace-public-catalog";
 import {
-  selectSponsoredRailTrainers,
-  type SponsoredRailResult,
-} from "@/lib/sponsored-rail";
+  listPublicFeaturedTrainers,
+  selectFeaturedSpotlightTrainers,
+} from "@/lib/paid-placements";
+import type { SponsoredRailResult } from "@/lib/sponsored-rail";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
 import { SponsoredSpecialistCard } from "./SponsoredSpecialistCard";
 
-export function SponsoredSpecialists({
+/** Homepage spotlight for `featured` (Platinum / homepage_spotlight add-on). */
+export function FeaturedSpotlightSpecialists({
   initialCatalog,
   catalogMode = "live",
 }: {
@@ -39,9 +40,9 @@ export function SponsoredSpecialists({
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
   }, [initialCatalog, catalogMode]);
 
-  const sponsoredPool = useMemo(
+  const featuredPool = useMemo(
     () =>
-      listPublicSponsoredTrainers({
+      listPublicFeaturedTrainers({
         includeBrowserState: hydrated,
         remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
         catalogMode,
@@ -49,29 +50,22 @@ export function SponsoredSpecialists({
     [hydrated, initialCatalog, catalogMode]
   );
 
-  /* Shuffle on mount and whenever location / pool changes (fresh page visit). */
   useEffect(() => {
     if (!hydrated) return;
     setRail(
-      selectSponsoredRailTrainers(sponsoredPool, {
+      selectFeaturedSpotlightTrainers(featuredPool, {
         personalizationCity,
         userCoords,
       })
     );
-  }, [
-    hydrated,
-    sponsoredPool,
-    personalizationCity,
-    coordsKey,
-    userCoords,
-  ]);
+  }, [hydrated, featuredPool, personalizationCity, coordsKey, userCoords]);
 
   if (!hydrated || rail.trainers.length === 0) return null;
 
   return (
     <section
       className="home-sponsored home-section-aurora relative"
-      aria-labelledby="home-sponsored-heading"
+      aria-labelledby="home-featured-heading"
     >
       <AuroraAtmosphere
         intensity="subtle"
@@ -83,25 +77,27 @@ export function SponsoredSpecialists({
       />
       <div className="home-section__inner home-sponsored__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header">
-          <h2 id="home-sponsored-heading" className="home-section__title">
-            {rail.isLocal ? "Sponsored near you" : "Sponsored on SMOAC"}
+          <h2 id="home-featured-heading" className="home-section__title">
+            {rail.isLocal ? "Spotlight near you" : "Homepage spotlight"}
           </h2>
           <p className="home-section__subtitle">
             {rail.isLocal
-              ? "Paid Sponsored placements from specialists boosting in your area."
-              : "Paid Sponsored profile boosts. Enter your ZIP to see specialists near you."}
+              ? "Featured specialists elevating their presence in your area."
+              : "Paid homepage spotlight placements across SMOAC."}
           </p>
         </header>
 
         <HorizontalCarousel
           className="home-sponsored__carousel"
-          ariaLabel="Sponsored specialists"
+          ariaLabel="Featured spotlight specialists"
         >
           {rail.trainers.map((trainer, index) => (
             <SponsoredSpecialistCard
               key={trainer.id}
               trainer={trainer}
               priority={index < 2}
+              badgeLabel="Featured"
+              impressionSurface="home_featured"
             />
           ))}
         </HorizontalCarousel>

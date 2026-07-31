@@ -12,25 +12,30 @@ import {
   formatTrainerRatingLabel,
 } from "@/lib/home-discovery";
 import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
+import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
 interface SponsoredSpecialistCardProps {
   trainer: Trainer;
   priority?: boolean;
-  /** When false, hides the Sponsored chip (organic fillers in profile rails) */
+  /** When false, hides the placement chip (organic fillers in profile rails) */
   showSponsoredBadge?: boolean;
-  impressionSurface?: "home_sponsored" | "profile_rail";
+  /** Override chip label — Sponsored / Featured / Boosted / Category spotlight */
+  badgeLabel?: string;
+  impressionSurface?: SpecialistEngagementSurface;
 }
 
 export function SponsoredSpecialistCard({
   trainer,
   priority = false,
   showSponsoredBadge = true,
+  badgeLabel,
   impressionSurface = "home_sponsored",
 }: SponsoredSpecialistCardProps) {
   const href = `/trainers/${trainer.id}`;
-  const sponsored =
-    showSponsoredBadge && trainer.sponsored === true;
+  const chip =
+    badgeLabel ??
+    (showSponsoredBadge && trainer.sponsored === true ? "Sponsored" : null);
 
   return (
     <div className="home-sponsored-card relative" role="listitem">
@@ -50,8 +55,8 @@ export function SponsoredSpecialistCard({
               imageClassName="home-sponsored-card__thumb-img"
             />
             <div className="home-sponsored-card__media-scrim" aria-hidden />
-            {sponsored ? (
-              <span className="home-sponsored-card__sponsored">Sponsored</span>
+            {chip ? (
+              <span className="home-sponsored-card__sponsored">{chip}</span>
             ) : null}
           </div>
         </TapLink>

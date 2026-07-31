@@ -25,7 +25,7 @@ export function shuffleTrainers<T>(items: readonly T[]): T[] {
   return next;
 }
 
-function isNearbySponsored(
+function isNearbyPlacement(
   trainer: Trainer,
   personalizationCity: string | null,
   userCoords: UserGeoPoint | null
@@ -49,13 +49,11 @@ export type SponsoredRailResult = {
 };
 
 /**
- * Homepage Sponsored rail:
- * - Eligible = `sponsored` boost only (not Pro membership)
- * - With location: nearby first, shuffled; fill from farther sponsored if needed
- * - Without location: national/fair shuffle of all sponsored
+ * Geo-aware rail picker for a pre-filtered eligible pool
+ * (Sponsored, Featured spotlight, etc.).
  */
-export function selectSponsoredRailTrainers(
-  candidates: readonly Trainer[],
+export function selectPlacementRailTrainers(
+  eligible: readonly Trainer[],
   options: {
     personalizationCity: string | null;
     userCoords: UserGeoPoint | null;
@@ -63,8 +61,7 @@ export function selectSponsoredRailTrainers(
   }
 ): SponsoredRailResult {
   const limit = options.limit ?? SPONSORED_RAIL_LIMIT;
-  const sponsored = candidates.filter(isTrainerSponsored);
-  if (sponsored.length === 0) {
+  if (eligible.length === 0) {
     return { trainers: [], isLocal: false };
   }
 
@@ -74,16 +71,16 @@ export function selectSponsoredRailTrainers(
 
   if (!hasLocation) {
     return {
-      trainers: shuffleTrainers(sponsored).slice(0, limit),
+      trainers: shuffleTrainers(eligible).slice(0, limit),
       isLocal: false,
     };
   }
 
   const nearby: Trainer[] = [];
   const farther: Trainer[] = [];
-  for (const trainer of sponsored) {
+  for (const trainer of eligible) {
     if (
-      isNearbySponsored(
+      isNearbyPlacement(
         trainer,
         options.personalizationCity,
         options.userCoords
@@ -104,4 +101,24 @@ export function selectSponsoredRailTrainers(
     trainers: picked,
     isLocal: nearby.length > 0,
   };
+}
+
+/**
+ * Homepage Sponsored rail:
+ * - Eligible = `sponsored` boost only (not Pro membership)
+ * - With location: nearby first, shuffled; fill from farther sponsored if needed
+ * - Without location: national/fair shuffle of all sponsored
+ */
+export function selectSponsoredRailTrainers(
+  candidates: readonly Trainer[],
+  options: {
+    personalizationCity: string | null;
+    userCoords: UserGeoPoint | null;
+    limit?: number;
+  }
+): SponsoredRailResult {
+  return selectPlacementRailTrainers(
+    candidates.filter(isTrainerSponsored),
+    options
+  );
 }

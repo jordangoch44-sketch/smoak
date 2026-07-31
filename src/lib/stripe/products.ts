@@ -101,15 +101,15 @@ export function productDescription(key: SmoacStripeProductKey): string {
     case "premium":
       return "Full analytics, ranking intelligence, and growth insights.";
     case "platinum":
-      return "Pro analytics plus featured marketplace placement.";
+      return "Pro analytics plus Featured homepage spotlight placement.";
     case "boosted_profile":
-      return "Homepage Sponsored rail placement near clients in your area.";
+      return "Homepage Sponsored rail near clients in your area.";
     case "category_spotlight":
-      return "Priority placement within your specialty category.";
+      return "Pinned first in Explore when clients browse your specialty.";
     case "homepage_spotlight":
-      return "Featured homepage / discovery spotlight placement.";
+      return "Featured homepage spotlight rail across SMOAC.";
     case "top_ranking_boost":
-      return "Elevated placement in city ranking surfaces.";
+      return "Labeled ranking boost on homepage Top Rated and City Rankings.";
   }
 }
 

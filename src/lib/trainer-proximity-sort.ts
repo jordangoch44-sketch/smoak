@@ -1,12 +1,13 @@
+import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { haversineMiles } from "@/lib/geo/haversine";
 import {
   getTrainerCoordinates,
   trainerHasResolvableCoordinates,
 } from "@/lib/trainer-location";
 import {
-  isTrainerSponsored,
-  isTrainerVerified,
-} from "@/lib/trainer-sponsorship";
+  hasCategoryBrowseFilter,
+  isCategorySpotlightActive,
+} from "@/lib/paid-placements";
 import type { Trainer } from "@/types";
 
 export interface UserGeoPoint {
@@ -31,6 +32,7 @@ export function getTrainerDistanceMiles(
 
 interface TrainerSortMeta {
   trainer: Trainer;
+  categorySpotlight: boolean;
   sponsored: boolean;
   verified: boolean;
   distance: number | null;
@@ -39,11 +41,13 @@ interface TrainerSortMeta {
 
 function buildSortMeta(
   trainer: Trainer,
-  user: UserGeoPoint | null
+  user: UserGeoPoint | null,
+  categoryFilters: { profession?: string; specialty?: string }
 ): TrainerSortMeta {
   const distance = getTrainerDistanceMiles(trainer, user);
   return {
     trainer,
+    categorySpotlight: isCategorySpotlightActive(trainer, categoryFilters),
     sponsored: isTrainerSponsored(trainer),
     verified: isTrainerVerified(trainer),
     distance,
@@ -52,6 +56,11 @@ function buildSortMeta(
 }
 
 function compareSortMeta(a: TrainerSortMeta, b: TrainerSortMeta): number {
+  /* Category spotlight pins to top when browsing a matching category */
+  if (a.categorySpotlight !== b.categorySpotlight) {
+    return a.categorySpotlight ? -1 : 1;
+  }
+
   if (a.sponsored !== b.sponsored) {
     return a.sponsored ? -1 : 1;
   }
@@ -80,17 +89,21 @@ function compareSortMeta(a: TrainerSortMeta, b: TrainerSortMeta): number {
 }
 
 /**
- * Sponsored first, then verified organic by nearest distance, then remainder.
- * Profiles without coordinates sink to the bottom of their tier.
+ * Explore sort:
+ * 1. Category spotlight (when profession/specialty browse matches)
+ * 2. Sponsored boost
+ * 3. Verified + proximity + rating
  */
 export function sortTrainersByProximity(
   trainers: readonly Trainer[],
-  user: UserGeoPoint | null
+  user: UserGeoPoint | null,
+  categoryFilters: { profession?: string; specialty?: string } = {}
 ): Trainer[] {
-  if (!user) return [...trainers];
+  const useCategoryPin = hasCategoryBrowseFilter(categoryFilters);
+  const filters = useCategoryPin ? categoryFilters : {};
 
   return [...trainers]
-    .map((trainer) => buildSortMeta(trainer, user))
+    .map((trainer) => buildSortMeta(trainer, user, filters))
     .sort(compareSortMeta)
     .map((entry) => entry.trainer);
 }

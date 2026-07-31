@@ -669,4 +669,12 @@
   .home-page--discovery .home-top50 {
     padding-bottom: clamp(2.25rem, 5vw, 3.5rem);
   }
+
+  .home-ranking-boost {
+    margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+  }
+
+  .home-section__title--sm {
+    font-size: clamp(1.15rem, 2.4vw, 1.45rem);
+  }
 }

@@ -410,7 +410,10 @@ export function useExploreTrainers({
   const filtered = useMemo(() => {
     const matches = getVisibleExploreMatches(filters);
     const coords = hydrated ? userCoords : null;
-    return sortTrainersByProximity(matches, coords);
+    return sortTrainersByProximity(matches, coords, {
+      profession: filters.profession,
+      specialty: filters.specialty,
+    });
   }, [filters, getVisibleExploreMatches, hydrated, coordsKey, userCoords]);
 
   const getExploreMatchCount = useCallback(

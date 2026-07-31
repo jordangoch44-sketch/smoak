@@ -8,11 +8,14 @@ const SURFACE_LABELS: Record<string, string> = {
   explore: "Explore",
   saved: "Saved list",
   home_sponsored: "Homepage sponsored",
+  home_featured: "Homepage spotlight",
   home_new: "Homepage new",
   home_top50: "Homepage Top 50",
+  home_ranking_boost: "Homepage ranking boost",
   profile_rail: "Profile discovery",
   profile: "Your profile",
   rankings: "Rankings",
+  rankings_boost: "Rankings boost",
   client_dashboard: "Client dashboard",
 };
 

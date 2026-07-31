@@ -124,6 +124,12 @@ export function ExplorePageClient({
                 View all
               </button>
             </div>
+            {(filters.profession || filters.specialty) &&
+            filtered.some((t) => t.categorySpotlight) ? (
+              <p className="explore-results-heading__note">
+                Category spotlight specialists appear first in these results.
+              </p>
+            ) : null}
 
             <ExploreResults
               trainers={filtered}

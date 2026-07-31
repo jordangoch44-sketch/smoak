@@ -523,6 +523,13 @@
   color: #fff;
 }
 
+.explore-results-heading__note {
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+}
+
 .explore-results-heading__view-all:focus-visible {
   outline: 2px solid rgba(var(--aurora-lavender-rgb), 0.7);
   outline-offset: 2px;

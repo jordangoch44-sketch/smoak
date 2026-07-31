@@ -17,11 +17,14 @@ export type SpecialistEngagementSurface =
   | "explore"
   | "saved"
   | "home_sponsored"
+  | "home_featured"
   | "home_new"
   | "home_top50"
+  | "home_ranking_boost"
   | "profile_rail"
   | "profile"
   | "rankings"
+  | "rankings_boost"
   | "client_dashboard";
 
 const SESSION_SEEN = new Set<string>();

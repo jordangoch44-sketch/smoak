@@ -15,6 +15,7 @@ import {
 import { TrainerCardGrid } from "./TrainerCardGrid";
 import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
+import { getTrainerPlacementBadge } from "@/lib/trainer-placement-badge";
 
 interface TrainerCardProps {
   trainer: Trainer;
@@ -34,6 +35,7 @@ export const TrainerCard = memo(function TrainerCard({
   linkDisabled = false,
 }: TrainerCardProps) {
   const href = `/trainers/${trainer.id}`;
+  const placementBadge = getTrainerPlacementBadge(trainer);
   const cardBody = (
     <>
       <TrainerCardCompact
@@ -51,6 +53,9 @@ export const TrainerCard = memo(function TrainerCard({
         specialistId={trainer.id}
         surface={impressionSurface}
       />
+      {placementBadge ? (
+        <span className="trainer-card__placement-badge">{placementBadge}</span>
+      ) : null}
       {linkDisabled ? (
         <div className="block" aria-hidden={false}>
           {cardBody}

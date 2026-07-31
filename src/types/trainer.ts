@@ -89,6 +89,11 @@ export interface Trainer {
   serviceType?: SpecialistServiceType;
   /** Paid placement — stays above organic results when sorting by user ZIP */
   sponsored?: boolean;
+  /**
+   * Paid category spotlight — prioritized in Explore when browsing matching
+   * profession / specialty.
+   */
+  categorySpotlight?: boolean;
   /** High-trust badge — organic tie-breaker near equal distance */
   verified?: boolean;
   specialty: string[];

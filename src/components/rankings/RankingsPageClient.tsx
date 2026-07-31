@@ -3,8 +3,11 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { RANKINGS_PROFESSION_OPTIONS } from "@/data/city-rankings";
+import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
+import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
+import { selectTopRankedBoostForRankings } from "@/lib/paid-placements";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
@@ -69,6 +72,16 @@ export function RankingsPageClient({
     [trainers, aggregates, city, profession]
   );
 
+  const rankingBoosts = useMemo(
+    () =>
+      selectTopRankedBoostForRankings(trainers, {
+        city,
+        profession,
+        limit: 6,
+      }),
+    [trainers, city, profession]
+  );
+
   return (
     <div className="rankings-page">
       <div className="rankings-page__canvas" aria-hidden>
@@ -95,8 +108,9 @@ export function RankingsPageClient({
           <p className="rankings-page__eyebrow">SMOAC</p>
           <h1 className="rankings-page__title">City Rankings</h1>
           <p className="rankings-page__subtitle">
-            Ranked by SMOAC client reviews — rating and review count. Sponsored
-            boosts and Google ratings don’t affect this board.
+            Ranked by SMOAC client reviews — rating and review count. Paid
+            ranking boosts appear in a labeled strip and never change organic
+            ranks.
           </p>
         </header>
 
@@ -111,6 +125,36 @@ export function RankingsPageClient({
           }}
           onProfessionChange={setProfession}
         />
+
+        {rankingBoosts.length > 0 ? (
+          <section
+            className="rankings-boost"
+            aria-labelledby="rankings-boost-heading"
+          >
+            <header className="rankings-boost__header">
+              <h2 id="rankings-boost-heading" className="rankings-boost__title">
+                Ranking boosts
+              </h2>
+              <p className="rankings-boost__subtitle">
+                Paid placement — separate from the review board below.
+              </p>
+            </header>
+            <HorizontalCarousel
+              className="rankings-boost__carousel"
+              ariaLabel="Ranking boost specialists"
+            >
+              {rankingBoosts.map((trainer, index) => (
+                <SponsoredSpecialistCard
+                  key={trainer.id}
+                  trainer={trainer}
+                  priority={index < 2}
+                  badgeLabel="Ranking boost"
+                  impressionSurface="rankings_boost"
+                />
+              ))}
+            </HorizontalCarousel>
+          </section>
+        ) : null}
 
         <div className="rankings-board" aria-live="polite">
           <div className="rankings-board__header" aria-hidden>

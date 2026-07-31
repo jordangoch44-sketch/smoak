@@ -2,6 +2,7 @@ import {
   Hero,
   LocationPersonalizationGate,
   SponsoredSpecialists,
+  FeaturedSpotlightSpecialists,
   Top50InYourCity,
   Categories,
   NewSpecialists,
@@ -27,6 +28,10 @@ export default async function HomePage() {
       <LocationPersonalizationGate />
       <Hero />
       <SponsoredSpecialists initialCatalog={trainers} catalogMode={mode} />
+      <FeaturedSpotlightSpecialists
+        initialCatalog={trainers}
+        catalogMode={mode}
+      />
       <Top50InYourCity
         catalogMode={mode}
         initialCatalog={trainers}

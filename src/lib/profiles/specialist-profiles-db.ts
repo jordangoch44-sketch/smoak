@@ -60,6 +60,10 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
         typeof row.top_ranked === "boolean"
           ? row.top_ranked
           : Boolean(trainer.topRanked),
+      categorySpotlight:
+        typeof row.category_spotlight === "boolean"
+          ? row.category_spotlight
+          : Boolean(trainer.categorySpotlight),
       isPremium:
         typeof row.is_premium === "boolean"
           ? row.is_premium
@@ -100,7 +104,7 @@ export function specialistProfileToRow(input: {
     featured: Boolean(trainer.featured),
     sponsored: Boolean(trainer.sponsored),
     top_ranked: Boolean(trainer.topRanked),
-    category_spotlight: false,
+    category_spotlight: Boolean(trainer.categorySpotlight),
     is_premium: Boolean(trainer.isPremium),
     verified: Boolean(trainer.verified),
     rating: trainer.rating ?? 0,
