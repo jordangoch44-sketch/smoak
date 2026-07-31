@@ -262,15 +262,15 @@ export function AdminDashboardPageClient() {
                   }}
                   onBasicsChange={(id, basics) => {
                     if (!permissions.canEditSpecialists) return;
-                    updateSpecialistBasics(id, basics);
+                    void updateSpecialistBasics(id, basics);
                   }}
                   onProtectedChange={(id, value) => {
                     if (!permissions.canEditSpecialists) return;
-                    setSpecialistProtected(id, value);
+                    void setSpecialistProtected(id, value);
                   }}
                   onAccountKindChange={(id, value) => {
                     if (!permissions.canEditSpecialists) return;
-                    setSpecialistAccountKind(id, value);
+                    void setSpecialistAccountKind(id, value);
                   }}
                 />
               ) : null}

@@ -101,17 +101,17 @@ export function AdminOwnerRevenuePanel({ specialists }: AdminOwnerRevenuePanelPr
   );
 
   const dataLabel = hasStripeMrr
-    ? `Stripe MRR · ${liveStripe.payingCount} paying subscription${liveStripe.payingCount === 1 ? "" : "s"}`
-    : "Catalog estimate from live specialist flags (premium / featured / sponsored / top ranked). Ad add-ons are list-price only until Stripe placement billing ships.";
+    ? `Live Stripe MRR · ${liveStripe.payingCount} paying subscription${liveStripe.payingCount === 1 ? "" : "s"}`
+    : "List-price estimate from specialist entitlements (premium / featured / sponsored / top ranked). Connect Stripe for live settlement.";
 
   return (
     <DashboardSection
       title="Revenue"
-      description="Specialist tiers and paid add-ons — owner view."
+      description="Live Stripe MRR when configured — otherwise entitlement estimates only."
     >
-      <p className="admin-mock-label">{dataLabel}</p>
+      <p className="admin-status-note">{dataLabel}</p>
       {liveStripe !== undefined && stripeBillingCount > 0 ? (
-        <p className="admin-mock-label">
+        <p className="admin-status-note">
           {stripeBillingCount} specialist billing row
           {stripeBillingCount === 1 ? "" : "s"} synced from Stripe webhooks.
         </p>

@@ -28,12 +28,12 @@ import {
   getAdminSpecialistDirectorySnapshot,
   listAdminSpecialists,
   refreshAdminSpecialistDirectoryFromRemote,
-  setAdminSpecialistAccountKind,
+  setAdminSpecialistAccountKindAsync,
   setAdminSpecialistFlagAsync,
-  setAdminSpecialistProtected,
+  setAdminSpecialistProtectedAsync,
   setAdminSpecialistVisibilityAsync,
   subscribeAdminSpecialistDirectory,
-  updateAdminSpecialistBasics,
+  updateAdminSpecialistBasicsAsync,
   type AdminSpecialistRow,
 } from "@/lib/admin-specialists-service";
 import {
@@ -139,9 +139,9 @@ export function useAdminDashboard() {
     saveClientApplicationEdits,
     setSpecialistVisibility: setAdminSpecialistVisibilityAsync,
     setSpecialistFlag: setAdminSpecialistFlagAsync,
-    setSpecialistProtected: setAdminSpecialistProtected,
-    setSpecialistAccountKind: setAdminSpecialistAccountKind,
-    updateSpecialistBasics: updateAdminSpecialistBasics,
+    setSpecialistProtected: setAdminSpecialistProtectedAsync,
+    setSpecialistAccountKind: setAdminSpecialistAccountKindAsync,
+    updateSpecialistBasics: updateAdminSpecialistBasicsAsync,
   };
 }
 

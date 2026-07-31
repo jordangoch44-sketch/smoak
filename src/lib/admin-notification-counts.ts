@@ -1,5 +1,3 @@
-import { ADMIN_SPECIALIST_BILLING_SEED } from "@/data/admin-specialist-billing-seed";
-import { ADMIN_NOTIFICATION_ISSUES_SEED } from "@/data/admin-notification-issues-seed";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
 import { clientApplicationStatusLabel } from "@/lib/client-applications-service";
 import type { ClientApplication } from "@/types/client-application";
@@ -16,8 +14,9 @@ export interface AdminNotificationCountInput {
   clientApplications?: readonly ClientApplication[];
   specialists: readonly AdminSpecialistRow[];
   billingById?: ReadonlyMap<string, SpecialistBillingRecord>;
+  /** Live Stripe billing statuses keyed by specialist profile id */
+  stripeBillingByProfileId?: ReadonlyMap<string, string>;
   dismissedIssueIds?: ReadonlySet<string>;
-  /** Owner sees billing/client/revenue mock alerts; staff gets reduced counts */
   isOwnerAdmin?: boolean;
 }
 
@@ -50,14 +49,18 @@ function isMissingTierPaymentData(
   row: AdminSpecialistRow,
   app: SpecialistApplication | undefined,
   billing: SpecialistBillingRecord | undefined,
+  stripeStatus: string | undefined,
   isOwnerAdmin: boolean
 ): boolean {
   if (!isOwnerAdmin || row.inSeedCatalog) return false;
   if (!app || app.profileStatus !== "APPROVED") return false;
-  if (!ADMIN_SPECIALIST_BILLING_SEED[row.id] && row.isPremium && !billing) {
+  if (row.isPremium && !stripeStatus && billing?.tier === "free") return true;
+  if (
+    stripeStatus &&
+    ["past_due", "unpaid", "canceled", "incomplete"].includes(stripeStatus)
+  ) {
     return true;
   }
-  if (billing && billing.tier === "free" && row.isPremium) return true;
   return false;
 }
 
@@ -65,13 +68,16 @@ function specialistNeedsAttention(
   row: AdminSpecialistRow,
   app: SpecialistApplication | undefined,
   billing: SpecialistBillingRecord | undefined,
+  stripeStatus: string | undefined,
   isOwnerAdmin: boolean
 ): boolean {
   if (row.visibility === "pending") return true;
   if (row.visibility === "hidden") return true;
   if (isFailedApprovalConversion(row, app)) return true;
   if (isIncompleteSpecialistProfile(row, app)) return true;
-  if (isMissingTierPaymentData(row, app, billing, isOwnerAdmin)) return true;
+  if (isMissingTierPaymentData(row, app, billing, stripeStatus, isOwnerAdmin)) {
+    return true;
+  }
   return false;
 }
 
@@ -79,14 +85,18 @@ export function countSpecialistsNeedingAttention(
   specialists: readonly AdminSpecialistRow[],
   applications: readonly SpecialistApplication[],
   billingById: ReadonlyMap<string, SpecialistBillingRecord> | undefined,
-  isOwnerAdmin: boolean
+  isOwnerAdmin: boolean,
+  stripeBillingByProfileId?: ReadonlyMap<string, string>
 ): number {
   const appMap = applicationsById(applications);
   let count = 0;
   for (const row of specialists) {
     const app = appMap.get(row.id);
     const billing = billingById?.get(row.id);
-    if (specialistNeedsAttention(row, app, billing, isOwnerAdmin)) {
+    const stripeStatus = stripeBillingByProfileId?.get(row.id);
+    if (
+      specialistNeedsAttention(row, app, billing, stripeStatus, isOwnerAdmin)
+    ) {
       count += 1;
     }
   }
@@ -107,28 +117,37 @@ function countStaffSpecialistsNeedingAttention(
   return count;
 }
 
-function countOpenMockIssues(
-  section: "clients" | "revenue",
-  dismissedIssueIds: ReadonlySet<string>
+function countPendingClientApps(
+  clientApplications: readonly ClientApplication[] | undefined
 ): number {
-  return ADMIN_NOTIFICATION_ISSUES_SEED.filter(
-    (issue) => issue.section === section && !dismissedIssueIds.has(issue.id)
+  return (clientApplications ?? []).filter(
+    (app) => clientApplicationStatusLabel(app.status) === "pending"
   ).length;
 }
 
-/** Compute nav badge counts — replace with Supabase RPC later */
+function countStripeBillingIssues(
+  stripeBillingByProfileId: ReadonlyMap<string, string> | undefined
+): number {
+  if (!stripeBillingByProfileId) return 0;
+  let count = 0;
+  for (const status of stripeBillingByProfileId.values()) {
+    if (["past_due", "unpaid", "canceled", "incomplete"].includes(status)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/** Compute nav badge counts from live admin queues + Stripe billing. */
 export function computeAdminSectionBadgeCounts(
   input: AdminNotificationCountInput
 ): AdminSectionBadgeCounts {
-  const dismissed = input.dismissedIssueIds ?? new Set<string>();
   const isOwner = input.isOwnerAdmin ?? false;
 
   const pendingSpecialists = input.applications.filter(
     (app) => applicationStatusLabel(app.profileStatus) === "pending"
   ).length;
-  const pendingClients = (input.clientApplications ?? []).filter(
-    (app) => clientApplicationStatusLabel(app.status) === "pending"
-  ).length;
+  const pendingClients = countPendingClientApps(input.clientApplications);
   const pendingApplications = pendingSpecialists + pendingClients;
 
   const specialists = isOwner
@@ -136,15 +155,18 @@ export function computeAdminSectionBadgeCounts(
         input.specialists,
         input.applications,
         input.billingById,
-        true
+        true,
+        input.stripeBillingByProfileId
       )
     : countStaffSpecialistsNeedingAttention(
         input.specialists,
         input.applications
       );
 
-  const clients = isOwner ? countOpenMockIssues("clients", dismissed) : 0;
-  const revenue = isOwner ? countOpenMockIssues("revenue", dismissed) : 0;
+  const clients = isOwner ? pendingClients : 0;
+  const revenue = isOwner
+    ? countStripeBillingIssues(input.stripeBillingByProfileId)
+    : 0;
 
   return {
     applications: pendingApplications,

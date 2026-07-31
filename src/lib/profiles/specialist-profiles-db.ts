@@ -218,6 +218,72 @@ export async function setSpecialistProfileFlags(
   return { ok: true };
 }
 
+/** Admin ops fields — protected + account kind. */
+export async function setSpecialistProfileOpsFields(
+  supabase: SupabaseClient,
+  id: string,
+  fields: {
+    isProtected?: boolean;
+    accountKind?: "real" | "test";
+  }
+): Promise<SpecialistProfilesMutationResult> {
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (typeof fields.isProtected === "boolean") {
+    patch.is_protected = fields.isProtected;
+  }
+  if (fields.accountKind === "real" || fields.accountKind === "test") {
+    patch.account_kind = fields.accountKind;
+  }
+
+  const { error } = await supabase
+    .from("specialist_profiles")
+    .update(patch)
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: true };
+}
+
+/** Admin basics edit — durable columns on specialist_profiles. */
+export async function updateSpecialistProfileBasics(
+  supabase: SupabaseClient,
+  id: string,
+  basics: {
+    profession?: string;
+    specialty?: string[];
+    city?: string;
+    state?: string;
+    neighborhood?: string;
+    zipCode?: string;
+    serviceType?: "in-person" | "virtual" | "both";
+  }
+): Promise<SpecialistProfilesMutationResult> {
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (basics.profession != null) patch.profession = basics.profession;
+  if (basics.specialty != null) patch.specialty = basics.specialty;
+  if (basics.city != null) patch.city = basics.city;
+  if (basics.state != null) patch.state = basics.state;
+  if (basics.neighborhood != null) patch.neighborhood = basics.neighborhood;
+  if (basics.zipCode != null) patch.zip_code = basics.zipCode;
+  if (basics.serviceType != null) patch.service_type = basics.serviceType;
+
+  const { error } = await supabase
+    .from("specialist_profiles")
+    .update(patch)
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: true };
+}
+
 export type SpecialistModerationRow = {
   id: string;
   status: SpecialistProfileRow["status"];

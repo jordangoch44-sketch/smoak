@@ -18,6 +18,8 @@ import {
 import {
   fetchAdminSpecialistDirectory,
   setSpecialistProfileFlags,
+  setSpecialistProfileOpsFields,
+  updateSpecialistProfileBasics,
   type AdminSpecialistDirectoryEntry,
 } from "@/lib/profiles/specialist-profiles-db";
 import {
@@ -346,24 +348,66 @@ export async function setAdminSpecialistVisibilityAsync(
   return { ok: true };
 }
 
-export function setAdminSpecialistProtected(
+export async function setAdminSpecialistProtectedAsync(
   trainerId: string,
   isProtected: boolean
-): void {
+): Promise<{ ok: true } | { ok: false; message: string }> {
   patchAdminSpecialistMeta(trainerId, {
     isProtected,
     ...(isProtected ? { accountKind: "real" as const } : {}),
   });
+
+  if (!isMarketplaceSupabaseActive()) return { ok: true };
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication is not available." };
+  }
+  const result = await setSpecialistProfileOpsFields(supabase, trainerId, {
+    isProtected,
+    ...(isProtected ? { accountKind: "real" as const } : {}),
+  });
+  if (!result.ok) return result;
+  await refreshAdminSpecialistDirectoryFromRemote();
+  return { ok: true };
 }
 
-export function setAdminSpecialistAccountKind(
+export async function setAdminSpecialistAccountKindAsync(
   trainerId: string,
   accountKind: "real" | "test"
-): void {
+): Promise<{ ok: true } | { ok: false; message: string }> {
   patchAdminSpecialistMeta(trainerId, {
     accountKind,
     ...(accountKind === "real" ? { isProtected: true } : {}),
   });
+
+  if (!isMarketplaceSupabaseActive()) return { ok: true };
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication is not available." };
+  }
+  const result = await setSpecialistProfileOpsFields(supabase, trainerId, {
+    accountKind,
+    ...(accountKind === "real" ? { isProtected: true } : {}),
+  });
+  if (!result.ok) return result;
+  await refreshAdminSpecialistDirectoryFromRemote();
+  return { ok: true };
+}
+
+/** @deprecated Prefer setAdminSpecialistProtectedAsync */
+export function setAdminSpecialistProtected(
+  trainerId: string,
+  isProtected: boolean
+): void {
+  void setAdminSpecialistProtectedAsync(trainerId, isProtected);
+}
+
+/** @deprecated Prefer setAdminSpecialistAccountKindAsync */
+export function setAdminSpecialistAccountKind(
+  trainerId: string,
+  accountKind: "real" | "test"
+): void {
+  void setAdminSpecialistAccountKindAsync(trainerId, accountKind);
 }
 
 export type AdminSpecialistFlag =
@@ -424,7 +468,7 @@ export async function setAdminSpecialistFlagAsync(
   return { ok: true };
 }
 
-export function updateAdminSpecialistBasics(
+export async function updateAdminSpecialistBasicsAsync(
   trainerId: string,
   basics: {
     profession?: string;
@@ -436,7 +480,7 @@ export function updateAdminSpecialistBasics(
     serviceType?: "in-person" | "virtual" | "both";
     travelRadius?: string;
   }
-): void {
+): Promise<{ ok: true } | { ok: false; message: string }> {
   patchAdminSpecialistMeta(trainerId, basics);
 
   const existing = loadAllSpecialistOverrides()[trainerId] ?? {};
@@ -457,4 +501,42 @@ export function updateAdminSpecialistBasics(
         }
       : {}),
   });
+
+  if (!isMarketplaceSupabaseActive()) return { ok: true };
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication is not available." };
+  }
+
+  const result = await updateSpecialistProfileBasics(supabase, trainerId, {
+    profession: basics.profession,
+    specialty: basics.specialty,
+    city: basics.city,
+    state: basics.state,
+    neighborhood: basics.neighborhood,
+    zipCode: basics.zipCode,
+    serviceType: basics.serviceType,
+  });
+  if (!result.ok) return result;
+
+  await refreshApprovedSpecialistProfilesFromRemoteAsync();
+  await refreshAdminSpecialistDirectoryFromRemote();
+  return { ok: true };
+}
+
+/** @deprecated Prefer updateAdminSpecialistBasicsAsync */
+export function updateAdminSpecialistBasics(
+  trainerId: string,
+  basics: {
+    profession?: string;
+    specialty?: string[];
+    city?: string;
+    state?: string;
+    neighborhood?: string;
+    zipCode?: string;
+    serviceType?: "in-person" | "virtual" | "both";
+    travelRadius?: string;
+  }
+): void {
+  void updateAdminSpecialistBasicsAsync(trainerId, basics);
 }

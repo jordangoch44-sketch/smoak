@@ -400,7 +400,8 @@ export function AdminSpecialistsPanel({
       {showTierBilling && tierCounts ? (
         <>
           <p className="admin-mock-label">
-            DEV mock billing until Stripe/Supabase connects.
+            Entitlement projection from placement flags. Stripe settlement is on
+            Revenue when connected.
           </p>
           <AdminSpecialistsTierNav
             activeCategory={activeCategory}

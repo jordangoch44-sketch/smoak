@@ -29,17 +29,10 @@ function wrap({ eyebrow, title, paragraphs, ctaLabel, extrasHtml = "" }) {
       (p) =>
         `<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${COLORS.body};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">${p}</p>`
     )
-    .join("\n              ");
+    .join("\n");
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="color-scheme" content="dark"/>
-  <title>${title}</title>
-</head>
-<body style="margin:0;padding:0;background:${COLORS.page};">
+  // Supabase wraps this fragment — do not include <html>/<body> document chrome.
+  return `<div style="margin:0;padding:0;background:${COLORS.page};">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${title}</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.page};border-collapse:collapse;">
     <tr>
@@ -81,8 +74,7 @@ function wrap({ eyebrow, title, paragraphs, ctaLabel, extrasHtml = "" }) {
       </td>
     </tr>
   </table>
-</body>
-</html>
+</div>
 `;
 }
 
