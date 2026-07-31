@@ -1,229 +1,276 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { DashboardGrid, DashboardMetricCard, DashboardSection } from "@/components/dashboard";
+import {
+  DashboardGrid,
+  DashboardMetricCard,
+  DashboardSection,
+} from "@/components/dashboard";
 import { AdminCollapsible } from "@/components/admin/AdminCollapsible";
 import { AdminDonutChart } from "@/components/admin/charts/AdminDonutChart";
-import { SpecialistBillingBlock } from "@/components/admin/owner/SpecialistBillingBlock";
-import {
-  formatBillingCents,
-  getAdminOwnerRevenueDashboard,
-} from "@/lib/admin-specialist-billing-service";
-import type { AdminSpecialistRow } from "@/hooks/useAdminDashboard";
+import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
 
-interface AdminOwnerRevenuePanelProps {
-  specialists: AdminSpecialistRow[];
+interface StripeBillingRow {
+  userId: string;
+  specialistProfileId: string | null;
+  specialistName: string;
+  email: string;
+  status: string;
+  stripeSubscriptionId: string | null;
+  stripePriceId: string | null;
+  cancelAtPeriodEnd: boolean;
+  currentPeriodEnd: string | null;
+  monthlyCents: number;
+  isPaying: boolean;
 }
 
 interface AdminRevenueApiResponse {
   ok: boolean;
+  message?: string;
+  stripeConfigured?: boolean;
   stripe?: {
     mrrCents: number;
     payingCount: number;
     dataSource: "stripe";
   } | null;
-  billingRows?: Array<{
-    userId: string;
-    specialistProfileId: string | null;
-    status: string;
-    stripeSubscriptionId: string | null;
-    cancelAtPeriodEnd: boolean;
-    currentPeriodEnd: string | null;
-  }>;
+  premiumMonthlyCents?: number;
+  attributedMrrCents?: number;
+  billingRows?: StripeBillingRow[];
 }
 
-export function AdminOwnerRevenuePanel({ specialists }: AdminOwnerRevenuePanelProps) {
-  const [liveStripe, setLiveStripe] = useState<
-    AdminRevenueApiResponse["stripe"] | undefined
-  >(undefined);
-  const [stripeBillingCount, setStripeBillingCount] = useState(0);
+function formatStatus(status: string): string {
+  return status.replace(/_/g, " ");
+}
+
+function formatPeriodEnd(iso: string | null): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Owner Revenue — Stripe / specialist_billing only (no catalog estimates). */
+export function AdminOwnerRevenuePanel() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<AdminRevenueApiResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     void fetch("/api/admin/revenue", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((body: AdminRevenueApiResponse | null) => {
-        if (cancelled || !body?.ok) return;
-        setLiveStripe(body.stripe ?? null);
-        const active = (body.billingRows ?? []).filter((row) =>
-          ["active", "trialing", "past_due"].includes(row.status)
-        );
-        setStripeBillingCount(active.length);
+      .then((res) => res.json())
+      .then((body: AdminRevenueApiResponse) => {
+        if (cancelled) return;
+        if (!body?.ok) {
+          setError(body?.message ?? "Could not load revenue.");
+          setData(null);
+          return;
+        }
+        setData(body);
+        setError(null);
       })
       .catch(() => {
-        if (!cancelled) setLiveStripe(null);
+        if (!cancelled) {
+          setError("Could not load revenue.");
+          setData(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
       });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const ownerRevenue = useMemo(
+  const billingRows = data?.billingRows ?? [];
+  const payingRows = useMemo(
+    () => billingRows.filter((row) => row.isPaying),
+    [billingRows]
+  );
+  const issueRows = useMemo(
     () =>
-      getAdminOwnerRevenueDashboard(
-        specialists.map((row) => ({
-          id: row.id,
-          name: row.name,
-          isPremium: row.isPremium,
-          featured: row.featured,
-          sponsored: row.sponsored,
-          topRanked: row.topRanked,
-        }))
+      billingRows.filter((row) =>
+        ["past_due", "unpaid", "canceled", "incomplete"].includes(row.status)
       ),
-    [specialists]
+    [billingRows]
   );
 
-  const { metrics, specialistBilling } = ownerRevenue;
-  const hasStripeMrr = liveStripe?.dataSource === "stripe";
+  const hasStripeMrr = data?.stripe?.dataSource === "stripe";
   const heroMrrCents = hasStripeMrr
-    ? liveStripe.mrrCents
-    : metrics.projectedMonthlyRecurringRevenueCents;
+    ? (data?.stripe?.mrrCents ?? 0)
+    : (data?.attributedMrrCents ?? 0);
+  const payingCount = hasStripeMrr
+    ? (data?.stripe?.payingCount ?? 0)
+    : payingRows.length;
 
   const chartSegments = [
     {
-      id: "tier",
-      label: hasStripeMrr ? "Stripe subscriptions" : "Tier subscriptions",
-      value: hasStripeMrr
-        ? liveStripe.mrrCents / 100
-        : metrics.tierRevenueCents / 100,
+      id: "paying",
+      label: "Paying",
+      value: payingRows.length,
       color: "rgb(var(--aurora-lavender-rgb))",
     },
     {
-      id: "addons",
-      label: "Ad add-ons",
-      value: hasStripeMrr ? 0 : metrics.addOnRevenueCents / 100,
+      id: "issues",
+      label: "Needs attention",
+      value: issueRows.length,
+      color: "rgb(252, 165, 165)",
+    },
+    {
+      id: "other",
+      label: "Other",
+      value: Math.max(
+        0,
+        billingRows.length - payingRows.length - issueRows.length
+      ),
       color: "rgb(var(--aurora-violet-rgb))",
     },
   ].filter((segment) => segment.value > 0);
 
-  const payingSpecialists = specialistBilling.filter(
-    (row) => row.totalMonthlyCents > 0
-  );
-
-  const dataLabel = hasStripeMrr
-    ? `Live Stripe MRR · ${liveStripe.payingCount} paying subscription${liveStripe.payingCount === 1 ? "" : "s"}`
-    : "List-price estimate from specialist entitlements (premium / featured / sponsored / top ranked). Connect Stripe for live settlement.";
-
   return (
     <DashboardSection
       title="Revenue"
-      description="Live Stripe MRR when configured — otherwise entitlement estimates only."
+      description="Live Stripe settlement from specialist_billing — no catalog estimates."
     >
-      <p className="admin-status-note">{dataLabel}</p>
-      {liveStripe !== undefined && stripeBillingCount > 0 ? (
-        <p className="admin-status-note">
-          {stripeBillingCount} specialist billing row
-          {stripeBillingCount === 1 ? "" : "s"} synced from Stripe webhooks.
-        </p>
+      {loading ? <p className="admin-empty">Loading Stripe billing…</p> : null}
+      {error ? <p className="admin-status-error">{error}</p> : null}
+
+      {!loading && data ? (
+        <>
+          <p className="admin-status-note">
+            {data.stripeConfigured
+              ? hasStripeMrr
+                ? `Live Stripe MRR · ${payingCount} paying subscription${payingCount === 1 ? "" : "s"}`
+                : "Stripe is configured, but no active subscriptions were returned yet."
+              : "Stripe is not configured on the server (STRIPE_SECRET_KEY). Billing rows still show webhook sync state when present."}
+          </p>
+
+          <div className="admin-revenue-hero">
+            <div className="admin-revenue-hero__mrr">
+              <span className="admin-revenue-hero__label">
+                {hasStripeMrr
+                  ? "Monthly recurring revenue (Stripe)"
+                  : "Attributed MRR from billing rows"}
+              </span>
+              <span className="admin-revenue-hero__value">
+                {formatBillingCents(heroMrrCents, { decimals: 0 })}
+              </span>
+            </div>
+            <DashboardGrid className="admin-revenue-hero__grid">
+              <DashboardMetricCard
+                label="Paying specialists"
+                value={String(payingCount)}
+              />
+              <DashboardMetricCard
+                label="Billing rows"
+                value={String(billingRows.length)}
+              />
+              <DashboardMetricCard
+                label="Needs attention"
+                value={String(issueRows.length)}
+              />
+              <DashboardMetricCard
+                label="Pro price / mo"
+                value={formatBillingCents(data.premiumMonthlyCents ?? 0, {
+                  decimals: 2,
+                })}
+              />
+            </DashboardGrid>
+          </div>
+
+          {chartSegments.length > 0 ? (
+            <div className="admin-charts-grid admin-charts-grid--single">
+              <AdminDonutChart
+                title="Billing roster mix"
+                segments={chartSegments}
+                centerLabel="Accounts"
+              />
+            </div>
+          ) : null}
+
+          <div className="admin-owner-block">
+            <h3 className="admin-owner-block__title">Paying specialists</h3>
+            {payingRows.length === 0 ? (
+              <p className="admin-empty">
+                No active or trialing Stripe subscriptions yet.
+              </p>
+            ) : (
+              <ul className="admin-card-list">
+                {payingRows.map((row) => (
+                  <li key={row.userId} className="admin-entity-card">
+                    <h4 className="admin-entity-card__title">
+                      {row.specialistName}
+                    </h4>
+                    <p className="admin-card__meta">
+                      {row.email || "No email"} · {formatStatus(row.status)}
+                      {row.cancelAtPeriodEnd ? " · cancels at period end" : ""}
+                    </p>
+                    <p className="admin-card__meta">
+                      {formatBillingCents(row.monthlyCents, { decimals: 2 })}
+                      /mo · renews {formatPeriodEnd(row.currentPeriodEnd)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <AdminCollapsible title="All Stripe billing rows" defaultOpen>
+            <div className="admin-table-wrap">
+              <table className="admin-table admin-table--billing">
+                <thead>
+                  <tr>
+                    <th>Specialist</th>
+                    <th>Status</th>
+                    <th>/ mo</th>
+                    <th>Period end</th>
+                    <th>Subscription</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {billingRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No specialist_billing rows yet.</td>
+                    </tr>
+                  ) : (
+                    billingRows.map((row) => (
+                      <tr key={row.userId}>
+                        <td>
+                          <div>{row.specialistName}</div>
+                          <div className="admin-card__meta">{row.email || "—"}</div>
+                        </td>
+                        <td>
+                          {formatStatus(row.status)}
+                          {row.cancelAtPeriodEnd ? " · canceling" : ""}
+                        </td>
+                        <td className="admin-table__money">
+                          {row.monthlyCents > 0
+                            ? formatBillingCents(row.monthlyCents, {
+                                decimals: 2,
+                              })
+                            : "—"}
+                        </td>
+                        <td>{formatPeriodEnd(row.currentPeriodEnd)}</td>
+                        <td>
+                          {row.stripeSubscriptionId
+                            ? `${row.stripeSubscriptionId.slice(0, 18)}…`
+                            : "—"}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </AdminCollapsible>
+        </>
       ) : null}
-
-      <div className="admin-revenue-hero">
-        <div className="admin-revenue-hero__mrr">
-          <span className="admin-revenue-hero__label">
-            {hasStripeMrr
-              ? "Monthly recurring revenue (Stripe)"
-              : "Projected monthly recurring revenue"}
-          </span>
-          <span className="admin-revenue-hero__value">
-            {formatBillingCents(heroMrrCents, { decimals: 0 })}
-          </span>
-        </div>
-        <DashboardGrid className="admin-revenue-hero__grid">
-          <DashboardMetricCard
-            label={hasStripeMrr ? "Stripe MRR" : "Tier revenue"}
-            value={formatBillingCents(
-              hasStripeMrr ? liveStripe.mrrCents : metrics.tierRevenueCents,
-              { decimals: 0 }
-            )}
-          />
-          <DashboardMetricCard
-            label="Add-on revenue"
-            value={formatBillingCents(
-              hasStripeMrr ? 0 : metrics.addOnRevenueCents,
-              { decimals: 0 }
-            )}
-          />
-          <DashboardMetricCard
-            label="Total specialist revenue"
-            value={formatBillingCents(
-              hasStripeMrr ? liveStripe.mrrCents : metrics.totalSpecialistRevenueCents,
-              { decimals: 0 }
-            )}
-          />
-          <DashboardMetricCard
-            label="Boosted ads revenue"
-            value={formatBillingCents(
-              hasStripeMrr ? 0 : metrics.boostedAdsRevenueCents,
-              { decimals: 0 }
-            )}
-          />
-        </DashboardGrid>
-      </div>
-
-      {chartSegments.length > 0 ? (
-        <div className="admin-charts-grid admin-charts-grid--single">
-          <AdminDonutChart
-            title={hasStripeMrr ? "Stripe revenue mix" : "Tier vs add-on revenue"}
-            segments={chartSegments}
-            centerLabel="USD / mo"
-            valuePrefix="$"
-          />
-        </div>
-      ) : null}
-
-      <div className="admin-owner-block">
-        <h3 className="admin-owner-block__title">Revenue by specialist</h3>
-        <ul className="admin-card-list">
-          {payingSpecialists.map((billing) => (
-            <li key={billing.specialistId} className="admin-entity-card">
-              <h4 className="admin-entity-card__title">{billing.specialistName}</h4>
-              <SpecialistBillingBlock billing={billing} />
-            </li>
-          ))}
-        </ul>
-        {payingSpecialists.length === 0 ? (
-          <p className="admin-empty">No paying specialists yet.</p>
-        ) : null}
-      </div>
-
-      <AdminCollapsible title="All specialists billing table">
-        <div className="admin-table-wrap">
-          <table className="admin-table admin-table--billing">
-            <thead>
-              <tr>
-                <th>Specialist</th>
-                <th>Tier</th>
-                <th>Tier / mo</th>
-                <th>Add-ons</th>
-                <th>Add-on / mo</th>
-                <th>Total / mo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {specialistBilling.map((row) => (
-                <tr key={row.specialistId}>
-                  <td>{row.specialistName}</td>
-                  <td>{row.tierLabel}</td>
-                  <td>{formatBillingCents(row.tierMonthlyCents, { decimals: 2 })}</td>
-                  <td>
-                    {row.activeAddOns.length > 0
-                      ? row.activeAddOns.map((a) => a.label).join(", ")
-                      : "—"}
-                  </td>
-                  <td>
-                    {row.addOnMonthlyCents > 0
-                      ? formatBillingCents(row.addOnMonthlyCents, { decimals: 0 })
-                      : "—"}
-                  </td>
-                  <td className="admin-table__money">
-                    {formatBillingCents(row.totalMonthlyCents, { decimals: 2 })}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </AdminCollapsible>
     </DashboardSection>
   );
 }
