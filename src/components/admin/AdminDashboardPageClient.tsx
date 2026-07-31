@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DashboardLoadingState, DashboardPageShell } from "@/components/dashboard";
 import {
@@ -18,13 +18,29 @@ import { AdminSpecialistsPanel } from "@/components/admin/panels/AdminSpecialist
 import { AdminTeamPanel } from "@/components/admin/panels/AdminTeamPanel";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
-import { useAdminSectionBadgeCounts } from "@/hooks/useAdminSectionBadgeCounts";
+import {
+  useAdminSectionAttentionItemIds,
+  useAdminSectionBadgeCounts,
+} from "@/hooks/useAdminSectionBadgeCounts";
 import { getAdminOwnerRevenueDashboard } from "@/lib/admin-specialist-billing-service";
+import { markAdminSectionBadgeSeen } from "@/lib/admin-section-badge-seen-store";
 import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
 import { buildInternalLoginHref } from "@/lib/internal-routes";
 import { PAGE_TRANSITION_EASE } from "@/lib/motion";
+import type { AdminNotifiableSectionId } from "@/types/admin-notifications";
 import type { SpecialistApplication } from "@/types/specialist-application";
 import type { AdminSpecialistVisibility } from "@/types/admin";
+
+function isNotifiableAdminSection(
+  id: AdminSectionId
+): id is AdminNotifiableSectionId {
+  return (
+    id === "applications" ||
+    id === "specialists" ||
+    id === "clients" ||
+    id === "revenue"
+  );
+}
 
 export function AdminDashboardPageClient() {
   const router = useRouter();
@@ -80,10 +96,27 @@ export function AdminDashboardPageClient() {
     isOwnerAdmin: access?.isOwnerAdmin ?? false,
   });
 
+  const attentionItemIds = useAdminSectionAttentionItemIds({
+    applications,
+    clientApplications,
+    specialists,
+    billingById,
+    isOwnerAdmin: access?.isOwnerAdmin ?? false,
+  });
+
   const resolvedSection: AdminSectionId =
     access && !access.allowedSectionIds.includes(activeSection)
       ? access.defaultSection
       : activeSection;
+
+  /* Opening a tab clears its badge until new attention items appear */
+  useEffect(() => {
+    if (!isNotifiableAdminSection(resolvedSection)) return;
+    markAdminSectionBadgeSeen(
+      resolvedSection,
+      attentionItemIds[resolvedSection]
+    );
+  }, [resolvedSection, attentionItemIds]);
 
   if (!isReady || !session || !access) {
     return <DashboardLoadingState message="Loading admin dashboard…" />;

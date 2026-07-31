@@ -125,6 +125,14 @@ function countPendingClientApps(
   ).length;
 }
 
+function listPendingClientAppIds(
+  clientApplications: readonly ClientApplication[] | undefined
+): string[] {
+  return (clientApplications ?? [])
+    .filter((app) => clientApplicationStatusLabel(app.status) === "pending")
+    .map((app) => app.id);
+}
+
 function countStripeBillingIssues(
   stripeBillingByProfileId: ReadonlyMap<string, string> | undefined
 ): number {
@@ -136,6 +144,81 @@ function countStripeBillingIssues(
     }
   }
   return count;
+}
+
+function listStripeBillingIssueIds(
+  stripeBillingByProfileId: ReadonlyMap<string, string> | undefined
+): string[] {
+  if (!stripeBillingByProfileId) return [];
+  const ids: string[] = [];
+  for (const [profileId, status] of stripeBillingByProfileId.entries()) {
+    if (["past_due", "unpaid", "canceled", "incomplete"].includes(status)) {
+      ids.push(profileId);
+    }
+  }
+  return ids;
+}
+
+/** Item IDs that currently drive each section badge (for seen-on-view). */
+export function listAdminSectionAttentionItemIds(
+  input: AdminNotificationCountInput
+): Record<AdminNotifiableSectionId, string[]> {
+  const isOwner = input.isOwnerAdmin ?? false;
+  const pendingSpecialistIds = input.applications
+    .filter((app) => applicationStatusLabel(app.profileStatus) === "pending")
+    .map((app) => `specialist-app:${app.id}`);
+  const pendingClientIds = listPendingClientAppIds(input.clientApplications).map(
+    (id) => `client-app:${id}`
+  );
+
+  const appMap = applicationsById(input.applications);
+  const specialistIds: string[] = [];
+  for (const row of input.specialists) {
+    const app = appMap.get(row.id);
+    const billing = input.billingById?.get(row.id);
+    const stripeStatus = input.stripeBillingByProfileId?.get(row.id);
+    if (isOwner) {
+      if (
+        specialistNeedsAttention(row, app, billing, stripeStatus, true)
+      ) {
+        specialistIds.push(`specialist:${row.id}`);
+      }
+    } else if (
+      row.visibility === "pending" ||
+      isFailedApprovalConversion(row, app)
+    ) {
+      specialistIds.push(`specialist:${row.id}`);
+    }
+  }
+
+  return {
+    applications: [...pendingSpecialistIds, ...pendingClientIds],
+    specialists: specialistIds,
+    clients: isOwner ? pendingClientIds : [],
+    revenue: isOwner
+      ? listStripeBillingIssueIds(input.stripeBillingByProfileId).map(
+          (id) => `billing:${id}`
+        )
+      : [],
+  };
+}
+
+/**
+ * Apply “viewed this tab” — hide items already marked seen until new IDs appear.
+ */
+export function filterBadgeCountsBySeen(
+  counts: AdminSectionBadgeCounts,
+  itemIds: Record<AdminNotifiableSectionId, string[]>,
+  seenBySection: Partial<Record<AdminNotifiableSectionId, ReadonlySet<string>>>
+): AdminSectionBadgeCounts {
+  const next = { ...counts };
+  (Object.keys(counts) as AdminNotifiableSectionId[]).forEach((section) => {
+    const seen = seenBySection[section];
+    if (!seen || seen.size === 0) return;
+    const unseen = itemIds[section].filter((id) => !seen.has(id)).length;
+    next[section] = unseen;
+  });
+  return next;
 }
 
 /** Compute nav badge counts from live admin queues + Stripe billing. */
