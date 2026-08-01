@@ -19,11 +19,12 @@ html.site-intro-pending #root {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+/* Below --z-welcome-intro (10050) so the warp paints on top of this cover */
 html.site-intro-pending body::before {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 2147483646;
+  z-index: 10040;
   background: #020203;
   pointer-events: none;
 }

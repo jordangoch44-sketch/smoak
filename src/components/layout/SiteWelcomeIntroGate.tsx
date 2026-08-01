@@ -74,16 +74,12 @@ export function SiteWelcomeIntroGate() {
     setArriving(true);
   }, []);
 
-  /* Drop the pre-paint cover only once the real intro is up, or when skipped. */
+  /* Keep the dark cover until the warp portal is mounted; cover sits under the intro z-index. */
   useLayoutEffect(() => {
     if (!pendingFirstVisit) {
       clearIntroPendingClass();
-      return;
     }
-    if (playing) {
-      clearIntroPendingClass();
-    }
-  }, [pendingFirstVisit, playing]);
+  }, [pendingFirstVisit]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("site-intro-open", playing);
