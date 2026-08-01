@@ -58,7 +58,7 @@ export function getMobileBottomNavItems(
     signedIn && role ? getDashboardPathForRole(role) : SITE_ROUTES.profile;
 
   return [
-    { id: "home", href: SITE_ROUTES.home, label: "Home", isPrimary: true },
+    { id: "home", href: SITE_ROUTES.home, label: "Marketplace", isPrimary: true },
     {
       id: "search",
       href: SITE_ROUTES.exploreSearchFocus,

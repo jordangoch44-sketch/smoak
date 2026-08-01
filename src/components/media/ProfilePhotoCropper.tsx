@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
 import { createPortal } from "react-dom";
+import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { getCroppedImageDataUrl } from "@/lib/media/crop-image";
 import { useBlockingModalOpen } from "@/hooks/useBlockingModalOpen";
 import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
@@ -159,6 +160,12 @@ export function ProfilePhotoCropper({
           </button>
         </footer>
       </div>
+
+      {saving ? (
+        <div className="profile-photo-cropper__saving">
+          <SmoacSavingMark label="Saving" />
+        </div>
+      ) : null}
     </div>
   );
 

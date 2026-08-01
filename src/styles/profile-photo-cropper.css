@@ -95,3 +95,72 @@
 .profile-photo-cropper__btn {
   width: 100%;
 }
+
+.profile-photo-cropper__saving {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(5, 5, 8, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.smoac-saving-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  color: rgba(190, 255, 210, 0.96);
+}
+
+.smoac-saving-mark__svg {
+  width: 4.25rem;
+  height: 4.25rem;
+  filter: drop-shadow(0 0 16px rgba(52, 255, 136, 0.45));
+}
+
+.smoac-saving-mark__path {
+  stroke-dasharray: 120;
+  stroke-dashoffset: 120;
+  animation: smoac-saving-draw 1.35s ease-in-out infinite;
+}
+
+.smoac-saving-mark__label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(200, 255, 220, 0.88);
+  text-shadow: 0 0 18px rgba(52, 255, 136, 0.35);
+}
+
+@keyframes smoac-saving-draw {
+  0% {
+    stroke-dashoffset: 120;
+    opacity: 0.55;
+  }
+  45% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  70% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -120;
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .smoac-saving-mark__path {
+    animation: none;
+    stroke-dashoffset: 0;
+    opacity: 0.9;
+  }
+}

@@ -2,36 +2,43 @@
 
 import { TapLink } from "@/components/ui/TapLink";
 
-const SPECIALTIES = [
+/** Main marketplace categories only — no specialty sub-filters on the homepage. */
+const CATEGORIES = [
   {
-    id: "personal-training",
+    id: "personal-trainer",
     emoji: "🏋️",
-    name: "Personal Training",
+    name: "Personal Trainer",
     href: "/explore?profession=Personal+Trainer",
   },
   {
-    id: "physical-therapy",
+    id: "physical-therapist",
     emoji: "🩺",
-    name: "Physical Therapy",
+    name: "Physical Therapist",
     href: "/explore?profession=Physical+Therapist",
   },
   {
-    id: "nutrition",
+    id: "nutritionist",
     emoji: "🥗",
-    name: "Nutrition",
-    href: "/explore?specialty=Nutrition+Coaching",
+    name: "Nutritionist",
+    href: "/explore?profession=Nutritionist",
   },
   {
-    id: "recovery",
-    emoji: "🏃",
-    name: "Recovery",
-    href: "/explore?specialty=Recovery",
+    id: "strength-coach",
+    emoji: "💪",
+    name: "Strength Coach",
+    href: "/explore?profession=Strength+Coach",
   },
   {
-    id: "mobility",
+    id: "yoga-instructor",
     emoji: "🧘",
-    name: "Mobility",
-    href: "/explore?specialty=Mobility",
+    name: "Yoga Instructor",
+    href: "/explore?profession=Yoga+Instructor",
+  },
+  {
+    id: "running-coach",
+    emoji: "🏃",
+    name: "Running Coach",
+    href: "/explore?profession=Running+Coach",
   },
 ] as const;
 
@@ -45,21 +52,21 @@ export function Categories() {
       <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header">
           <h2 id="home-specialty-heading" className="home-section__title">
-            Browse by Specialty
+            Browse by category
           </h2>
         </header>
 
         <div className="home-specialty__grid">
-          {SPECIALTIES.map((specialty) => (
+          {CATEGORIES.map((category) => (
             <TapLink
-              key={specialty.id}
-              href={specialty.href}
+              key={category.id}
+              href={category.href}
               className="home-specialty-card"
             >
               <span className="home-specialty-card__emoji" aria-hidden>
-                {specialty.emoji}
+                {category.emoji}
               </span>
-              <span className="home-specialty-card__name">{specialty.name}</span>
+              <span className="home-specialty-card__name">{category.name}</span>
             </TapLink>
           ))}
         </div>

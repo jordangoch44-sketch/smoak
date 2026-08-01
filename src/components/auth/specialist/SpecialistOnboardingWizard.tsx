@@ -46,7 +46,7 @@ export function SpecialistOnboardingWizard({
   onBackToRole,
 }: SpecialistOnboardingWizardProps) {
   const router = useRouter();
-  const { signUp, signInWithPassword } = useAuthSession();
+  const { signUp, signInWithPassword, refreshSession } = useAuthSession();
   const { showToast } = useToast();
   const [step, setStep] = useState<OnboardingStep>(1);
   const [state, setState] = useState<SpecialistOnboardingState>(() => {
@@ -60,6 +60,9 @@ export function SpecialistOnboardingWizard({
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [showSubmittedModal, setShowSubmittedModal] = useState(false);
   const [submittedEmailSent, setSubmittedEmailSent] = useState(false);
+  const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState<string | null>(
+    null
+  );
   const [confirmPassword, setConfirmPassword] = useState("");
   const profilePhotoCrop = useProfilePhotoCropSession();
 
@@ -82,10 +85,21 @@ export function SpecialistOnboardingWizard({
     persistSpecialistOnboardingDraft(state);
   }, [state]);
 
-  const goToPendingApplicationPortal = useCallback(() => {
+  /* Each Continue / Back question should land the user at the top of the step. */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [step]);
+
+  const goToPendingApplicationPortal = useCallback(async () => {
     setShowSubmittedModal(false);
+    try {
+      await refreshSession();
+    } catch {
+      /* Session may already be current — still open the pending portal. */
+    }
     router.replace(`${SPECIALIST_DASHBOARD_PATH}?submitted=1`);
-  }, [router]);
+  }, [refreshSession, router]);
 
   const patchState = useCallback((partial: Partial<SpecialistOnboardingState>) => {
     setState((prev) => ({
@@ -205,12 +219,12 @@ export function SpecialistOnboardingWizard({
       }
 
       if (signUpResult.ok === "confirm_email") {
+        persistSpecialistOnboardingDraft(state);
+        setAwaitingEmailConfirm(trimmedEmail);
         showToast({
           type: "info",
-          message:
-            "Check your email to confirm your account. After you sign in, your application will submit automatically.",
+          message: `Confirm ${trimmedEmail} — then sign in and your application finishes automatically.`,
         });
-        router.replace(LOGIN_PATH);
         return;
       }
 
@@ -220,6 +234,15 @@ export function SpecialistOnboardingWizard({
 
       setSubmittedEmailSent(Boolean(submitResult.emailSent));
       setShowSubmittedModal(true);
+      try {
+        await refreshSession();
+      } catch {
+        /* Dashboard still opens with local session from signUp. */
+      }
+      /* Land them in the logged-in pending portal without an extra click. */
+      window.setTimeout(() => {
+        router.replace(`${SPECIALIST_DASHBOARD_PATH}?submitted=1`);
+      }, 1600);
     } catch (err) {
       const message =
         err instanceof ApplicationSubmitError
@@ -365,8 +388,55 @@ export function SpecialistOnboardingWizard({
       <WizardApplicationSubmittedModal
         open={showSubmittedModal}
         emailSent={submittedEmailSent}
-        onContinue={goToPendingApplicationPortal}
+        onContinue={() => {
+          void goToPendingApplicationPortal();
+        }}
       />
+      {awaitingEmailConfirm ? (
+        <div
+          className="wizard-incomplete-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="wizard-confirm-email-title"
+        >
+          <div className="wizard-incomplete-modal__panel">
+            <header className="wizard-incomplete-modal__header">
+              <h2
+                id="wizard-confirm-email-title"
+                className="wizard-incomplete-modal__title"
+              >
+                Confirm your email to finish
+              </h2>
+              <p className="wizard-incomplete-modal__lead">
+                We sent a confirmation link to{" "}
+                <strong>{awaitingEmailConfirm}</strong>. Open it, then sign in
+                with the same email and password — your application draft will
+                submit automatically.
+              </p>
+            </header>
+            <p className="wizard-submitted-modal__note">
+              Tip: use one email for the whole signup. Switching emails mid-flow
+              can leave a half-created account.
+            </p>
+            <footer className="wizard-incomplete-modal__footer">
+              <button
+                type="button"
+                className="login-submit wizard-nav__continue wizard-incomplete-modal__btn"
+                onClick={() => router.replace(LOGIN_PATH)}
+              >
+                Go to log in
+              </button>
+              <button
+                type="button"
+                className="wizard-nav__back wizard-incomplete-modal__btn"
+                onClick={() => setAwaitingEmailConfirm(null)}
+              >
+                Stay on application
+              </button>
+            </footer>
+          </div>
+        </div>
+      ) : null}
     </div>
 
       {profilePhotoCrop.cropModal}

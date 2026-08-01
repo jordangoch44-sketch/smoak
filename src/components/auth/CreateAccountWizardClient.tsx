@@ -253,6 +253,11 @@ export function CreateAccountWizardClient({
     router.replace(getDashboardPathForRole(session.role));
   }, [isReady, session, router, wantsSaved]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+  }, [step]);
+
   function patchState(partial: Partial<CreateAccountWizardState>) {
     setState((prev) => ({ ...prev, ...partial }));
     setError(null);

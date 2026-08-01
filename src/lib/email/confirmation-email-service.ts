@@ -55,7 +55,7 @@ function buildSpecialistConfirmationEmail(
   const firstName = specialistFirstName(application);
   const text = `Hi ${firstName},
 
-We received your SMOAC specialist application.
+Welcome to SMOAC — we received your specialist application.
 
 Every application is reviewed individually. We typically verify accounts within 24 hours. You'll receive another email when your account is approved — then you can log in and finish your full in-depth profile (pricing, availability, media, and more).
 
@@ -63,12 +63,12 @@ Thank you,
 SMOAC`;
 
   const html = wrapTransactionalEmailHtml({
-    preheader: "We received your specialist application",
-    eyebrow: "Application received",
-    title: "You’re under review",
+    preheader: "Welcome to SMOAC — your application is under review",
+    eyebrow: "Welcome",
+    title: "We received your application",
     bodyHtml: renderEmailParagraphs([
       `Hi ${firstName},`,
-      "Thank you for applying to join SMOAC as a specialist.",
+      "Welcome to SMOAC — thank you for applying as a specialist.",
       "Every application is reviewed individually. We typically verify accounts within 24 hours.",
       "You’ll receive another email when you’re approved — then you can log in and finish your in-depth profile, including pricing, availability, media, and credentials.",
     ]),
@@ -77,7 +77,7 @@ SMOAC`;
 
   return {
     to: application.email.trim(),
-    subject: "SMOAC application received — under review",
+    subject: "Welcome to SMOAC — application received & under review",
     text,
     html,
     applicationId: application.id,

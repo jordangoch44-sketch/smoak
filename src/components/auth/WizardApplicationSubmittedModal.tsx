@@ -37,18 +37,18 @@ export function WizardApplicationSubmittedModal({
             Application submitted
           </h2>
           <p className="wizard-incomplete-modal__lead">
-            Your specialist profile is now under review by the SMOAC team.
+            Welcome — your specialist profile is now under review by the SMOAC
+            team.
             {emailSent
-              ? " Check your email for a confirmation."
-              : " You’ll get an email when you’re approved."}
+              ? " We also emailed you a welcome note confirming we received your application."
+              : " If you don’t see a welcome email soon, check spam — we’ll still email you when you’re approved."}
           </p>
         </header>
 
         <p className="wizard-submitted-modal__note">
-          Typical review is within 24 hours. You can open your pending dashboard
-          now to review or edit what you submitted while you wait. After approval,
-          finish your full listing from Edit profile — pricing, availability,
-          photos, and more.
+          Typical review is within 24 hours. Opening your pending dashboard
+          next so you can review what you submitted while you wait. After
+          approval, finish your full listing from Edit profile.
         </p>
 
         <footer className="wizard-incomplete-modal__footer">

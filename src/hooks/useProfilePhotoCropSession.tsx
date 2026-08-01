@@ -77,12 +77,14 @@ export function useProfilePhotoCropSession() {
         initialZoom={session.initialZoom}
         aspect={1}
         onCancel={closeCrop}
-        onSave={(croppedImageData, cropSettings) => {
-          session.onSave({
-            croppedImageData,
-            originalImageData: session.originalImageData,
-            cropSettings,
-          });
+        onSave={async (croppedImageData, cropSettings) => {
+          await Promise.resolve(
+            session.onSave({
+              croppedImageData,
+              originalImageData: session.originalImageData,
+              cropSettings,
+            })
+          );
           closeCrop();
         }}
       />

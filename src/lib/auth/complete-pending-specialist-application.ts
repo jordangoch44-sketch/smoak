@@ -15,14 +15,20 @@ import { findSpecialistApplicationByEmail } from "@/lib/specialist-application-s
 export async function completePendingSpecialistApplicationAfterAuth(
   email: string
 ): Promise<{ submitted: boolean; message?: string }> {
-  const pending = readPendingMarketplaceSignup();
   const normalized = email.trim().toLowerCase();
-  if (
-    !pending ||
-    pending.email !== normalized ||
-    pending.role !== "specialist" ||
-    !pending.submitSpecialistApplication
-  ) {
+  const pending = readPendingMarketplaceSignup();
+  const draft = loadSpecialistOnboardingDraft();
+  const draftMatches =
+    Boolean(draft) && draft!.email.trim().toLowerCase() === normalized;
+
+  const pendingMatches =
+    Boolean(pending) &&
+    pending!.email === normalized &&
+    pending!.role === "specialist" &&
+    Boolean(pending!.submitSpecialistApplication);
+
+  /* Recover when the user tried multiple emails: draft for this login still counts. */
+  if (!pendingMatches && !draftMatches) {
     return { submitted: false };
   }
 
@@ -36,8 +42,7 @@ export async function completePendingSpecialistApplicationAfterAuth(
     return { submitted: false };
   }
 
-  const draft = loadSpecialistOnboardingDraft();
-  if (!draft || draft.email.trim().toLowerCase() !== normalized) {
+  if (!draftMatches || !draft) {
     clearPendingMarketplaceSignup();
     return {
       submitted: false,

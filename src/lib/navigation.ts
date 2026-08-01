@@ -34,7 +34,7 @@ export const SITE_ROUTES = {
 
 /** Desktop header text links (saved uses heart control) */
 export const navLinks = [
-  { href: SITE_ROUTES.home, label: "Home" },
+  { href: SITE_ROUTES.home, label: "Marketplace" },
   { href: SITE_ROUTES.explore, label: "Explore" },
   { href: SITE_ROUTES.saved, label: "Saved" },
 ] as const;

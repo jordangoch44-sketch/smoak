@@ -87,13 +87,26 @@
 .saved-organizer-card--selected::after {
   content: "";
   position: absolute;
-  inset: 0;
-  border-radius: 1rem;
-  border: 1px solid rgba(var(--accent-glow-rgb), 0.55);
+  inset: -2px;
+  border-radius: 1.1rem;
+  border: 2px solid rgba(var(--nebula-green-neon-rgb), 0.95);
   box-shadow:
-    0 0 0 1px rgba(var(--accent-glow-rgb), 0.25) inset,
-    0 0 22px rgba(var(--accent-glow-rgb), 0.2);
+    0 0 0 1px rgba(var(--nebula-green-neon-rgb), 0.35) inset,
+    0 0 18px rgba(var(--nebula-green-neon-rgb), 0.55),
+    0 0 36px rgba(var(--nebula-green-neon-rgb), 0.35),
+    0 0 56px rgba(var(--nebula-green-mid-rgb), 0.28);
   pointer-events: none;
+  z-index: 5;
+}
+
+.saved-organizer-card--selected .trainer-card-compact,
+.saved-organizer-card--selected .trainer-card > a > article,
+.saved-organizer-card--selected .trainer-card > div > article {
+  border-color: rgba(var(--nebula-green-neon-rgb), 0.7) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(var(--nebula-green-neon-rgb), 0.2),
+    0 0 28px rgba(var(--nebula-green-neon-rgb), 0.28);
 }
 
 .saved-organizer-card__compare-badge {
@@ -104,12 +117,27 @@
   transform: translateX(-50%);
   padding: 0.28rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid rgba(var(--accent-glow-rgb), 0.45);
-  background: rgba(14, 20, 26, 0.92);
+  border: 1px solid rgba(var(--nebula-green-neon-rgb), 0.45);
+  background: rgba(5, 20, 14, 0.92);
   color: rgba(220, 245, 236, 0.95);
   font-size: 0.68rem;
   letter-spacing: 0.02em;
   pointer-events: none;
+}
+
+.saved-organizer-card--selected .saved-organizer-card__compare-badge {
+  border-color: rgba(var(--nebula-green-neon-rgb), 0.85);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(var(--nebula-green-neon-rgb), 0.28) 0%,
+      rgba(var(--nebula-green-deep-rgb), 0.95) 100%
+    );
+  color: rgba(210, 255, 225, 0.98);
+  font-weight: 700;
+  box-shadow:
+    0 0 16px rgba(var(--nebula-green-neon-rgb), 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .saved-organizer-card--compare-mode .trainer-card > a {
@@ -126,16 +154,31 @@
 .saved-organizer-compare-action__button {
   width: 100%;
   min-height: 2.75rem;
-  border: 1px solid rgba(var(--accent-glow-rgb), 0.35);
+  border: 1px solid rgba(var(--nebula-green-neon-rgb), 0.7);
   border-radius: 999px;
-  background: rgba(7, 10, 14, 0.85);
-  color: rgba(255, 255, 255, 0.92);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(var(--nebula-green-neon-rgb), 0.32) 0%,
+      rgba(var(--nebula-green-mid-rgb), 0.55) 42%,
+      rgba(var(--nebula-green-deep-rgb), 0.98) 100%
+    );
+  color: rgba(230, 255, 240, 0.98);
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 0 0 1px rgba(var(--nebula-green-neon-rgb), 0.22) inset,
+    0 0 22px rgba(var(--nebula-green-neon-rgb), 0.4),
+    0 0 40px rgba(var(--nebula-green-mid-rgb), 0.28);
 }
 
 .saved-organizer-compare-action__button:disabled {
-  opacity: 0.6;
+  opacity: 0.45;
+  box-shadow: none;
+  border-color: rgba(var(--nebula-green-neon-rgb), 0.28);
+  background: rgba(var(--nebula-green-deep-rgb), 0.55);
+  color: rgba(200, 230, 210, 0.65);
 }
 
 .saved-compare-modal {
