@@ -1,9 +1,9 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import { SmoacWelcomeIntro } from "@/components/brand/SmoacWelcomeIntro";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
   clearSiteIntroSeen,
@@ -12,17 +12,13 @@ import {
   subscribeSiteIntroChange,
 } from "@/lib/site-intro-storage";
 
-const SmoacWelcomeIntro = dynamic(
-  () =>
-    import("@/components/brand/SmoacWelcomeIntro").then(
-      (mod) => mod.SmoacWelcomeIntro
-    ),
-  { ssr: false }
-);
+function clearIntroPendingClass() {
+  document.documentElement.classList.remove("site-intro-pending");
+}
 
 /**
- * Homepage welcome — deferred until after first paint so iPhone can hydrate
- * and become interactive before the overlay loads.
+ * Homepage welcome warp. A pre-paint boot script (`SiteIntroBoot`) covers the
+ * page until this mounts so the site never peeks through first.
  *
  * Force replay: `/?replay-intro=1` (dev / QA).
  */
@@ -30,7 +26,6 @@ export function SiteWelcomeIntroGate() {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const [finished, setFinished] = useState(false);
-  const [allowIntro, setAllowIntro] = useState(false);
   const [forceReplay, setForceReplay] = useState(false);
   const [arriving, setArriving] = useState(false);
   const introSeen = useSyncExternalStore(
@@ -45,25 +40,22 @@ export function SiteWelcomeIntroGate() {
     if (params.get("replay-intro") === "1") {
       clearSiteIntroSeen();
       setFinished(false);
-      setAllowIntro(false);
       setArriving(false);
       setForceReplay(true);
+      document.documentElement.classList.add("site-intro-pending");
     }
   }, []);
 
   const pendingFirstVisit =
     pathname === "/" && (!introSeen || forceReplay) && !finished;
-  const playing = hydrated && allowIntro && pendingFirstVisit;
-
-  if (!pendingFirstVisit && allowIntro) {
-    setAllowIntro(false);
-  }
+  const playing = hydrated && pendingFirstVisit;
 
   const handleComplete = useCallback(() => {
     markSiteIntroSeen();
     setFinished(true);
     setForceReplay(false);
     setArriving(false);
+    clearIntroPendingClass();
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       if (url.searchParams.has("replay-intro")) {
@@ -81,12 +73,16 @@ export function SiteWelcomeIntroGate() {
     setArriving(true);
   }, []);
 
-  useEffect(() => {
-    if (!pendingFirstVisit) return;
-    /* Short delay so first paint / hydration can settle, then start the warp. */
-    const id = window.setTimeout(() => setAllowIntro(true), 280);
-    return () => window.clearTimeout(id);
-  }, [pendingFirstVisit, forceReplay]);
+  /* Drop the pre-paint cover only once the real intro is up, or when skipped. */
+  useLayoutEffect(() => {
+    if (!pendingFirstVisit) {
+      clearIntroPendingClass();
+      return;
+    }
+    if (playing) {
+      clearIntroPendingClass();
+    }
+  }, [pendingFirstVisit, playing]);
 
   useEffect(() => {
     document.documentElement.classList.toggle("site-intro-open", playing);

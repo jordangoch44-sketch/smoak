@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { SiteIntroBoot } from "@/components/layout/SiteIntroBoot";
 
 export const metadata: Metadata = {
   title: "SMOAC",
@@ -18,7 +19,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <body style={{ margin: 0 }}>{children}</body>
+      <body style={{ margin: 0, background: "#020203" }}>
+        <SiteIntroBoot />
+        {children}
+      </body>
     </html>
   );
 }

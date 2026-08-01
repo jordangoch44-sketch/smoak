@@ -319,6 +319,13 @@ body.join-intro-open .mobile-bottom-nav {
   opacity: 0 !important;
 }
 
+/* Pre-paint cover — html.site-intro-pending (see SiteIntroBoot). Keep #root hidden
+   until the warp portal mounts so the homepage never flashes underneath. */
+html.site-intro-pending #root.app-shell {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Homepage welcome — overlay only; never lock document scroll */
 body.site-intro-open:not(.site-intro-arriving) #root {
   /* Keep homepage painted under the warp so arrival can reveal it */
