@@ -104,7 +104,8 @@
 html {
   width: 100%;
   max-width: 100%;
-  scroll-behavior: smooth;
+  /* auto — smooth fights touch momentum / mid-scroll stalls on iOS Safari */
+  scroll-behavior: auto;
   overflow-x: hidden;
   box-sizing: border-box;
 }
@@ -162,7 +163,7 @@ body.saved-panel-open,
 body.login-gate-open,
 body.complete-account-lock,
 body.client-profile-sheet-open,
-body.site-intro-open,
+body.site-intro-open:not(.site-intro-arriving),
 body.location-personalization-open,
 body.admin-review-open {
   overflow: hidden;
@@ -180,7 +181,7 @@ body.admin-review-open {
   body.login-gate-open,
   body.complete-account-lock,
   body.client-profile-sheet-open,
-  body.site-intro-open,
+  body.site-intro-open:not(.site-intro-arriving),
   body.location-personalization-open,
   body.admin-review-open {
     overflow: visible;
@@ -196,7 +197,7 @@ body.admin-review-open {
   body.login-gate-open .app-main,
   body.complete-account-lock .app-main,
   body.client-profile-sheet-open .app-main,
-  body.site-intro-open .app-main,
+  body.site-intro-open:not(.site-intro-arriving) .app-main,
   body.location-personalization-open .app-main,
   body.admin-review-open .app-main {
     overflow: hidden;
@@ -207,7 +208,7 @@ body.admin-review-open {
   html.login-gate-open,
   html.complete-account-lock,
   html.client-profile-sheet-open,
-  html.site-intro-open,
+  html.site-intro-open:not(.site-intro-arriving),
   html.location-personalization-open {
     overflow: visible;
   }

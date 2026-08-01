@@ -1,53 +1,22 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
-import { useHydrated } from "@/hooks/useHydrated";
-import { scheduleAfterFirstPaint } from "@/lib/schedule-after-paint";
-import {
-  hasSeenSiteIntro,
-  subscribeSiteIntroChange,
-} from "@/lib/site-intro-storage";
-import {
-  getShouldShowLocationPromptServerSnapshot,
-  getShouldShowLocationPromptSnapshot,
-  subscribeUserLocation,
-} from "@/lib/user-location-store";
 
 /**
- * Homepage first-visit location — opens the header dropdown (not a modal).
+ * Closes the location dropdown when leaving the homepage.
+ * (No longer auto-opens on first visit — that blocked mid-page scroll.)
  */
 export function LocationPersonalizationGate() {
   const pathname = usePathname();
-  const hydrated = useHydrated();
-  const { openLocationPanel, closeLocationPanel } = useUserLocationEditor();
-
-  const introSeen = useSyncExternalStore(
-    subscribeSiteIntroChange,
-    hasSeenSiteIntro,
-    () => true
-  );
-
-  const shouldPrompt = useSyncExternalStore(
-    subscribeUserLocation,
-    getShouldShowLocationPromptSnapshot,
-    getShouldShowLocationPromptServerSnapshot
-  );
-
-  const eligible =
-    hydrated && pathname === "/" && introSeen && shouldPrompt;
+  const { closeLocationPanel } = useUserLocationEditor();
 
   useEffect(() => {
     if (pathname !== "/") {
       closeLocationPanel();
     }
   }, [pathname, closeLocationPanel]);
-
-  useEffect(() => {
-    if (!eligible) return;
-    return scheduleAfterFirstPaint(() => openLocationPanel());
-  }, [eligible, openLocationPanel]);
 
   return null;
 }

@@ -5,6 +5,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useRef,
   useState,
   type RefObject,
 } from "react";
@@ -68,6 +69,7 @@ export function LocationSelectorDropdown({
 }: LocationSelectorDropdownProps) {
   const panelId = useId();
   const titleId = `${panelId}-title`;
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const [anchorRect, setAnchorRect] = useState<AnchorRect | null>(null);
   const [visible, setVisible] = useState(false);
 
@@ -78,12 +80,11 @@ export function LocationSelectorDropdown({
   useLayoutEffect(() => {
     if (!open) return;
     updateAnchor();
+    /* Anchor lives in the fixed header — resize only; never scroll (avoids jank). */
     const onLayout = () => updateAnchor();
     window.addEventListener("resize", onLayout);
-    window.addEventListener("scroll", onLayout, true);
     return () => {
       window.removeEventListener("resize", onLayout);
-      window.removeEventListener("scroll", onLayout, true);
     };
   }, [open, updateAnchor]);
 
@@ -115,13 +116,30 @@ export function LocationSelectorDropdown({
       if (event.key === "Escape") handleDismiss();
     }
 
+    function onDocumentClick(event: MouseEvent) {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (panelRef.current?.contains(target)) return;
+      if (anchorRef.current?.contains(target)) return;
+      handleDismiss();
+    }
+
+    function onPageScroll() {
+      handleDismiss();
+    }
+
     window.addEventListener("keydown", onKeyDown);
+    document.addEventListener("click", onDocumentClick, true);
+    /* Close on page scroll so browsing never fights the dropdown */
+    window.addEventListener("scroll", onPageScroll, { passive: true });
     return () => {
       document.body.classList.remove("location-selector-open");
       document.documentElement.classList.remove("location-selector-open");
       window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("click", onDocumentClick, true);
+      window.removeEventListener("scroll", onPageScroll);
     };
-  }, [open, handleDismiss]);
+  }, [open, handleDismiss, anchorRef]);
 
   const handleUpdated = useCallback(() => {
     onClose();
@@ -141,20 +159,19 @@ export function LocationSelectorDropdown({
 
   return createPortal(
     <div className="location-selector-root" role="presentation">
-      <button
-        type="button"
+      <div
         className={cn(
-          "location-selector-backdrop smoac-control",
+          "location-selector-backdrop",
           visible && open && "location-selector-backdrop--visible"
         )}
-        aria-label="Close location selector"
-        onClick={handleDismiss}
+        aria-hidden
       />
 
       <div
+        ref={panelRef}
         id={panelId}
         role="dialog"
-        aria-modal="true"
+        aria-modal="false"
         aria-labelledby={titleId}
         className={cn(
           "location-selector-dropdown glass-panel",
@@ -166,7 +183,6 @@ export function LocationSelectorDropdown({
           width: panelStyle.width,
           transitionTimingFunction: MENU_EASE,
         }}
-        onClick={(event) => event.stopPropagation()}
       >
         <div className="location-selector-dropdown__glow" aria-hidden />
         <div className="location-selector-dropdown__scroll">
