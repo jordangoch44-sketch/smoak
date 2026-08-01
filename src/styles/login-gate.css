@@ -168,6 +168,47 @@ html.login-gate-open {
   padding-top: 2rem;
 }
 
+.login-gate__reassure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.35rem;
+  text-align: center;
+}
+
+.login-gate__reassure-title {
+  margin: 0;
+  font-size: clamp(1.35rem, 4.2vw, 1.65rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: rgba(190, 255, 210, 0.98);
+  text-shadow:
+    0 0 12px rgba(52, 255, 136, 0.55),
+    0 0 28px rgba(52, 255, 136, 0.35),
+    0 0 48px rgba(52, 255, 136, 0.18);
+}
+
+.login-gate__reassure-punch {
+  margin: 0;
+  font-size: clamp(1rem, 3vw, 1.125rem);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  color: rgba(210, 255, 225, 0.96);
+  text-shadow:
+    0 0 10px rgba(52, 255, 136, 0.42),
+    0 0 22px rgba(52, 255, 136, 0.24);
+}
+
+.login-gate__reassure-sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgba(160, 230, 185, 0.75);
+  text-shadow: 0 0 18px rgba(52, 255, 136, 0.18);
+}
+
 .login-gate__content--save .login-gate__title {
   text-align: center;
 }

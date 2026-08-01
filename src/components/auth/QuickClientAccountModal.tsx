@@ -279,12 +279,28 @@ export function QuickClientAccountModal({
         </button>
 
         <div className="login-gate__content login-gate__content--save">
-          <h2 id={titleId} className="login-gate__title">
-            {title}
-          </h2>
-          <p id={descId} className="login-gate__body">
-            {support}
-          </p>
+          {view === "signup" ? (
+            <div className="login-gate__reassure">
+              <h2 id={titleId} className="login-gate__reassure-title">
+                Quick sign up
+              </h2>
+              <p className="login-gate__reassure-punch">
+                Email and that&apos;s it!
+              </p>
+              <p id={descId} className="login-gate__reassure-sub">
+                Browse and compare specialists near you instantly.
+              </p>
+            </div>
+          ) : (
+            <>
+              <h2 id={titleId} className="login-gate__title">
+                {title}
+              </h2>
+              <p id={descId} className="login-gate__body">
+                {support}
+              </p>
+            </>
+          )}
 
           {view === "signup" ? (
             <QuickClientAccountSignupFields
