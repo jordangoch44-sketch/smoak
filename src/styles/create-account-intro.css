@@ -319,13 +319,7 @@ body.join-intro-open .mobile-bottom-nav {
   opacity: 0 !important;
 }
 
-/* Homepage welcome — lock only while warp covers the page; unlock on arrival */
-html.site-intro-open:not(.site-intro-arriving),
-body.site-intro-open:not(.site-intro-arriving) {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
+/* Homepage welcome — overlay only; never lock document scroll */
 body.site-intro-open:not(.site-intro-arriving) #root {
   /* Keep homepage painted under the warp so arrival can reveal it */
   pointer-events: none;

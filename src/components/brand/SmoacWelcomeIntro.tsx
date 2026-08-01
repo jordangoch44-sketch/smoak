@@ -98,6 +98,20 @@ export function SmoacWelcomeIntro({
     onVisible,
   ]);
 
+  /* Any browse gesture ends the site warp immediately — never trap scroll */
+  useEffect(() => {
+    if (!isSite) return;
+    const end = () => finish();
+    window.addEventListener("wheel", end, { passive: true });
+    window.addEventListener("touchmove", end, { passive: true });
+    window.addEventListener("keydown", end);
+    return () => {
+      window.removeEventListener("wheel", end);
+      window.removeEventListener("touchmove", end);
+      window.removeEventListener("keydown", end);
+    };
+  }, [isSite, finish]);
+
   const motionMs = reducedMotion ? 220 : isSite ? 900 : fadeIn;
 
   return (

@@ -55,7 +55,7 @@ function buildSavedMobileVariants(): Variants {
 function buildSavedDesktopVariants(): Variants {
   return {
     initial: { opacity: 0, y: -18, scale: 0.996, filter: "blur(8px)" },
-    animate: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" },
+    animate: { opacity: 1, y: 0, scale: 1, filter: "none" },
     exit: { opacity: 0, y: -12, scale: 0.998, filter: "blur(5px)" },
   };
 }
@@ -70,7 +70,7 @@ function buildDesktopVariants(profileReveal: boolean): Variants {
       scale: enterScale,
       filter: "blur(12px)",
     },
-    animate: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)" },
+    animate: { opacity: 1, y: 0, scale: 1, filter: "none" },
     exit: { opacity: 0, y: -4, scale: 0.997, filter: "blur(6px)" },
   };
 }

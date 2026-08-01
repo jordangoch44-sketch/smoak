@@ -745,8 +745,8 @@ button.smoked-glass:hover {
   scroll-padding-inline: 1rem;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
-  /* Claim horizontal only so vertical page scroll keeps going over cards */
-  touch-action: pan-x pan-y;
+  /* Claim horizontal pans only — pan-y must go to the document (not the track) */
+  touch-action: pan-x;
   scrollbar-width: none;
 }
 
@@ -798,7 +798,7 @@ button.smoked-glass:hover {
   height: 100%;
   border-radius: 1.125rem;
   text-decoration: none;
-  touch-action: pan-x pan-y;
+  touch-action: pan-x;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }

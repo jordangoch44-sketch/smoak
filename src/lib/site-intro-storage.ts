@@ -16,7 +16,13 @@ export function subscribeSiteIntroChange(onStoreChange: () => void): () => void 
 export function hasSeenSiteIntro(): boolean {
   if (typeof window === "undefined") return true;
   try {
-    return sessionStorage.getItem(SITE_INTRO_SEEN_KEY) === "1";
+    /* localStorage — once per device; sessionStorage replayed every Safari tab */
+    if (localStorage.getItem(SITE_INTRO_SEEN_KEY) === "1") return true;
+    if (sessionStorage.getItem(SITE_INTRO_SEEN_KEY) === "1") {
+      localStorage.setItem(SITE_INTRO_SEEN_KEY, "1");
+      return true;
+    }
+    return false;
   } catch {
     return true;
   }
@@ -25,6 +31,7 @@ export function hasSeenSiteIntro(): boolean {
 export function markSiteIntroSeen(): void {
   if (typeof window === "undefined") return;
   try {
+    localStorage.setItem(SITE_INTRO_SEEN_KEY, "1");
     sessionStorage.setItem(SITE_INTRO_SEEN_KEY, "1");
     notifySiteIntroChange();
   } catch {
@@ -36,6 +43,7 @@ export function markSiteIntroSeen(): void {
 export function clearSiteIntroSeen(): void {
   if (typeof window === "undefined") return;
   try {
+    localStorage.removeItem(SITE_INTRO_SEEN_KEY);
     sessionStorage.removeItem(SITE_INTRO_SEEN_KEY);
     notifySiteIntroChange();
   } catch {
