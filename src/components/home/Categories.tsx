@@ -63,6 +63,7 @@ export function Categories() {
               href={category.href}
               className="home-specialty-card"
             >
+              <span className="home-specialty-card__stars" aria-hidden />
               <span className="home-specialty-card__emoji" aria-hidden>
                 {category.emoji}
               </span>
