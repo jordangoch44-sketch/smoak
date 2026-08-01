@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SiteVisitTracker } from "@/components/layout/SiteVisitTracker";
-import { SiteWelcomeIntroGateLazy } from "@/components/layout/SiteWelcomeIntroGateLazy";
+import { SiteWelcomeIntroGate } from "@/components/layout/SiteWelcomeIntroGate";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ToastProvider } from "@/components/ui/toast";
@@ -62,7 +62,7 @@ export default function SiteLayout({
       <ToastProvider>
         <AppProviders supabaseConfigured={isSupabaseConfigured()}>
           <SiteVisitTracker />
-          <SiteWelcomeIntroGateLazy />
+          <SiteWelcomeIntroGate />
           <SiteHeader />
           <AppMain>{children}</AppMain>
           {/* Soft-nav profile intercept — previous page stays mounted in AppMain */}

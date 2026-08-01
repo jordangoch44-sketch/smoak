@@ -1,12 +1,29 @@
 # SMOAC — Current Status
 
-**Last updated:** July 27, 2026  
+**Last updated:** July 31, 2026  
 **Phase 2:** Complete  
 **Phase 3a (saved trainers):** Complete  
 **Phase 3b (applications):** Complete (fetch-only hydrate when Supabase active)  
 **Phase 3c (specialist profiles):** Complete in code  
 **Phase 3d (admin flags / hide):** Complete in code  
 **Phase 3e (prefer Supabase only):** In progress — live reads no longer promote localStorage
+
+---
+
+## Homepage baseline (July 31 — good build-from point)
+
+Live on `smoac.com` / branch `supabase-storage-setup`:
+
+| Area | Status |
+|------|--------|
+| Document scroll (no nested page-transition scrollport) | ✅ |
+| Mobile header stays solid while scrolling | ✅ |
+| Light-speed welcome (first visit + `/?replay-intro=1`) | ✅ |
+| No homepage peek before warp (SiteIntroBoot) | ✅ |
+| Dead location-modal gate/CSS removed | ✅ |
+| Ops: `scripts/wipe-marketplace-users.mjs` | ✅ |
+
+**Do not regress:** `overflow-x: clip` (not `hidden`) on `.app-main` / `.page-transition*`; welcome cover z-index below `--z-welcome-intro`.
 
 ---
 

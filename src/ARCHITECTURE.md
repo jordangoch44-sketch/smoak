@@ -139,10 +139,13 @@ Search entry on mobile is bottom-nav Search → `/explore?focus=search`.
 ### Welcome intro
 
 ```
-SiteWelcomeIntroGateLazy → SiteWelcomeIntroGate → SmoacWelcomeIntro (brand/)
+SiteIntroBoot (root layout, pre-paint) → SiteWelcomeIntroGate → SmoacWelcomeIntro + WelcomeHyperspaceField
 ```
 
-Site variant: overlay captures taps; do not disable `.app-main` with `pointer-events: none`.
+- First visit only (`localStorage` `smoac_site_intro_seen`). Replay: `/?replay-intro=1`.
+- Boot script covers `/` before paint so the homepage never peeks under the warp.
+- Cover z-index sits below `--z-welcome-intro` (10050) so the hyperspace layer is visible.
+- Do not lock document scroll for the site intro; do not add full-screen `pointer-events: none` on `.app-main`.
 
 ## Mobile vs desktop patterns
 
@@ -164,7 +167,7 @@ Use these instead of magic numbers:
 - `--z-profile-sheet` (header + 40)
 - `--z-profile-gallery` (header + 200) — above sheet + toolbar
 - `--z-modal` (1000000) — login gate, inquiry, review modal
-- `--z-welcome-intro` (1000001) — welcome splash
+- `--z-welcome-intro` (10050) — homepage light-speed splash (above header)
 
 ## Imports
 
