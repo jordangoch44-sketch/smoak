@@ -110,6 +110,11 @@ export interface Trainer {
   reviewSources?: TrainerReviewSources;
   /** Hero slideshow URLs — falls back to `heroImage` when empty */
   galleryImages: string[];
+  /**
+   * Pro / trial only — up to 3 gallery URLs pinned under the hero bio.
+   * Hidden on public profiles when empty or when not Pro.
+   */
+  pinnedPhotos?: string[];
   image: string;
   heroImage: string;
   bio: string;

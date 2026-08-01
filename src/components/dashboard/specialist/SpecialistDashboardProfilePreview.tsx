@@ -435,6 +435,7 @@ export function SpecialistDashboardProfilePreview({
                 coverImageUrl={form.coverImageUrl}
                 photoNotes={form.photoNotes}
                 videoNotes={form.videoNotes}
+                pinnedPhotos={form.pinnedPhotos}
                 isPremium={isPremium}
                 specialistId={trainerId}
                 onChange={(next) => {

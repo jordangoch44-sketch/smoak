@@ -2,6 +2,7 @@ import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
+import { normalizePinnedPhotos, parseMediaUrlList } from "@/lib/specialist-media-limits";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
@@ -34,6 +35,7 @@ export function cloneSpecialistProfileEditForm(
     specialty: [...form.specialty],
     homepageSpecialties: [...form.homepageSpecialties],
     serviceArea: [...form.serviceArea],
+    pinnedPhotos: [...form.pinnedPhotos],
     certifications: form.certifications.map((cert) => ({ ...cert })),
   };
 }
@@ -219,6 +221,21 @@ export function applySpecialistProfileOverrides(
   );
   merged.reviewCount = computeTrainerReviewCount(merged);
 
+  if (overrides.pinnedPhotos !== undefined) {
+    merged.pinnedPhotos = normalizePinnedPhotos(
+      overrides.pinnedPhotos,
+      merged.galleryImages
+    );
+  } else if (base.pinnedPhotos?.length) {
+    merged.pinnedPhotos = normalizePinnedPhotos(
+      base.pinnedPhotos,
+      merged.galleryImages
+    );
+  }
+  if (!merged.pinnedPhotos?.length) {
+    delete merged.pinnedPhotos;
+  }
+
   if (overrides.transformationNotes?.trim()) {
     const transformUrls = parseLineList(overrides.transformationNotes).filter(isUrl);
     if (transformUrls.length > 0) {
@@ -288,6 +305,17 @@ export function overridesFromTrainer(
     coverImageUrl:
       stored?.coverImageUrl?.trim() ||
       (stored?.profilePhotoUrl?.trim() ? "" : trainer.heroImage?.trim() || ""),
+    pinnedPhotos: normalizePinnedPhotos(
+      stored?.pinnedPhotos ?? trainer.pinnedPhotos,
+      (
+        stored?.photoNotes?.trim()
+          ? stored.photoNotes
+              .split("\n")
+              .map((line) => line.trim())
+              .filter(Boolean)
+          : trainer.galleryImages
+      ).filter(Boolean)
+    ),
     phone: stored?.phone ?? "",
     email: stored?.email ?? "",
     instagram: stored?.instagram ?? trainer.social.instagram ?? "",
@@ -337,6 +365,10 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     bookingAvailability: form.bookingAvailability.trim(),
     profilePhotoUrl: form.profilePhotoUrl.trim(),
     coverImageUrl: form.coverImageUrl.trim(),
+    pinnedPhotos: normalizePinnedPhotos(
+      form.pinnedPhotos,
+      parseMediaUrlList(form.photoNotes)
+    ),
     phone: form.phone.trim(),
     email: form.email.trim(),
     instagram: form.instagram.trim(),

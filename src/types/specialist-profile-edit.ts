@@ -37,6 +37,8 @@ export interface SpecialistProfileOverrides {
   bookingAvailability?: string;
   profilePhotoUrl?: string;
   coverImageUrl?: string;
+  /** Pro / trial — up to 3 header gallery URLs pinned on the public profile */
+  pinnedPhotos?: string[];
   phone?: string;
   email?: string;
   instagram?: string;
@@ -73,6 +75,7 @@ export type SpecialistProfileEditForm = Required<
     | "bookingAvailability"
     | "profilePhotoUrl"
     | "coverImageUrl"
+    | "pinnedPhotos"
     | "phone"
     | "email"
     | "instagram"

@@ -5,7 +5,9 @@ import { ProfileMediaUploadField } from "@/components/dashboard/specialist/Profi
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { readFileAsDataUrl } from "@/lib/media/crop-image";
 import {
+  normalizePinnedPhotos,
   parseMediaUrlList,
+  PINNED_PHOTOS_MAX,
   promoteMediaUrl,
   serializeMediaUrlList,
   specialistMediaLimitsForPlan,
@@ -18,6 +20,7 @@ interface SpecialistProfileMediaEditorProps {
   coverImageUrl: string;
   photoNotes: string;
   videoNotes: string;
+  pinnedPhotos: string[];
   isPremium: boolean;
   specialistId?: string | null;
   onChange: (patch: {
@@ -25,6 +28,7 @@ interface SpecialistProfileMediaEditorProps {
     coverImageUrl?: string;
     photoNotes?: string;
     videoNotes?: string;
+    pinnedPhotos?: string[];
   }) => void;
 }
 
@@ -58,6 +62,7 @@ export function SpecialistProfileMediaEditor({
   coverImageUrl,
   photoNotes,
   videoNotes,
+  pinnedPhotos,
   isPremium,
   specialistId,
   onChange,
@@ -65,6 +70,7 @@ export function SpecialistProfileMediaEditor({
   const limits = specialistMediaLimitsForPlan(isPremium);
   const headerImages = parseMediaUrlList(photoNotes);
   const headerVideos = parseMediaUrlList(videoNotes);
+  const pins = normalizePinnedPhotos(pinnedPhotos, headerImages);
   const cover = coverImageUrl.trim() || headerImages[0] || "";
   const fileRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
@@ -73,14 +79,16 @@ export function SpecialistProfileMediaEditor({
 
   const atImageLimit = headerImages.length >= limits.images;
   const atVideoLimit = headerVideos.length >= limits.videos;
+  const atPinLimit = pins.length >= PINNED_PHOTOS_MAX;
 
-  function setHeaderImages(next: string[]) {
+  function setHeaderImages(next: string[], nextPins?: string[]) {
     const trimmed = next.map((url) => url.trim()).filter(Boolean);
     const nextCover =
       cover && trimmed.includes(cover) ? cover : trimmed[0] || "";
     onChange({
       photoNotes: serializeMediaUrlList(trimmed),
       coverImageUrl: nextCover,
+      pinnedPhotos: normalizePinnedPhotos(nextPins ?? pins, trimmed),
     });
   }
 
@@ -93,7 +101,26 @@ export function SpecialistProfileMediaEditor({
     onChange({
       photoNotes: serializeMediaUrlList(promoted),
       coverImageUrl: url.trim(),
+      pinnedPhotos: normalizePinnedPhotos(pins, promoted),
     });
+  }
+
+  function togglePin(url: string) {
+    if (!isPremium) return;
+    const trimmed = url.trim();
+    if (!trimmed || !headerImages.includes(trimmed)) return;
+    if (pins.includes(trimmed)) {
+      onChange({
+        pinnedPhotos: pins.filter((item) => item !== trimmed),
+      });
+      return;
+    }
+    if (atPinLimit) {
+      setError(`You can pin up to ${PINNED_PHOTOS_MAX} photos.`);
+      return;
+    }
+    setError(null);
+    onChange({ pinnedPhotos: [...pins, trimmed] });
   }
 
   async function handleAddHeaderImage(event: ChangeEvent<HTMLInputElement>) {
@@ -136,6 +163,10 @@ export function SpecialistProfileMediaEditor({
             <strong>Header images</strong> — the slideshow behind your name on
             your public profile. Tap one to make it play first.
           </li>
+          <li>
+            <strong>Pinned photos</strong> — Pro only. Up to three highlights
+            clients see under your bio (hidden until you pin).
+          </li>
         </ol>
       </div>
 
@@ -168,12 +199,14 @@ export function SpecialistProfileMediaEditor({
         <div className="specialist-media-editor__thumbs">
           {headerImages.map((url) => {
             const isCover = url === cover;
+            const isPinned = pins.includes(url);
             return (
               <div
                 key={url}
                 className={cn(
                   "specialist-media-editor__thumb",
-                  isCover && "specialist-media-editor__thumb--cover"
+                  isCover && "specialist-media-editor__thumb--cover",
+                  isPinned && "specialist-media-editor__thumb--pinned"
                 )}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -187,11 +220,27 @@ export function SpecialistProfileMediaEditor({
                   >
                     {isCover ? "Cover" : "Make cover"}
                   </button>
+                  {isPremium ? (
+                    <button
+                      type="button"
+                      className={cn(
+                        "smoac-control specialist-media-editor__thumb-btn",
+                        isPinned && "specialist-media-editor__thumb-btn--pinned"
+                      )}
+                      onClick={() => togglePin(url)}
+                      disabled={!isPinned && atPinLimit}
+                    >
+                      {isPinned ? "Pinned" : "Pin"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className="smoac-control specialist-media-editor__thumb-btn specialist-media-editor__thumb-btn--danger"
                     onClick={() =>
-                      setHeaderImages(headerImages.filter((item) => item !== url))
+                      setHeaderImages(
+                        headerImages.filter((item) => item !== url),
+                        pins.filter((item) => item !== url)
+                      )
                     }
                   >
                     Remove
@@ -232,8 +281,53 @@ export function SpecialistProfileMediaEditor({
         ) : null}
       </div>
 
+      <div className="specialist-media-editor__pins">
+        <p className="login-field__label">3. Pinned photos</p>
+        {isPremium ? (
+          <>
+            <p className="specialist-media-editor__hint">
+              Instagram-style highlights under your bio (
+              {pins.length} / {PINNED_PHOTOS_MAX}). Use Pin on a header image
+              above. Empty pins stay hidden on your public profile.
+            </p>
+            {pins.length > 0 ? (
+              <div className="specialist-media-editor__pin-row" aria-label="Pinned photos">
+                {pins.map((url, index) => (
+                  <button
+                    key={url}
+                    type="button"
+                    className="specialist-media-editor__pin-tile"
+                    onClick={() => togglePin(url)}
+                    aria-label={`Unpin photo ${index + 1}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" />
+                    <span className="specialist-media-editor__pin-index">{index + 1}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="specialist-media-editor__hint">
+                No pins yet — clients won’t see this row until you pin at least
+                one photo.
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="specialist-media-editor__video-lock">
+            <p className="specialist-media-editor__video-lock-title">
+              Pinned photos are a Pro feature
+            </p>
+            <p className="specialist-media-editor__hint">
+              Pro and the 30-day trial unlock up to three pinned highlights under
+              your bio.
+            </p>
+          </div>
+        )}
+      </div>
+
       <div className="specialist-media-editor__videos">
-        <p className="login-field__label">3. Header videos</p>
+        <p className="login-field__label">4. Header videos</p>
         {isPremium ? (
           <>
             <p className="specialist-media-editor__hint">

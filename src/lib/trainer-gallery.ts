@@ -67,6 +67,18 @@ export function resolveGalleryIndexForCover(
   return match >= 0 ? match : 0;
 }
 
+export function resolveGalleryIndexForUrl(
+  media: ProfileGalleryMedia[],
+  url: string
+): number {
+  const trimmed = url.trim();
+  if (!trimmed) return 0;
+  const match = media.findIndex(
+    (item) => item.url === trimmed || item.thumbnail === trimmed
+  );
+  return match >= 0 ? match : 0;
+}
+
 export function syncTrainerGalleryImages(trainer: Trainer): Trainer {
   const galleryImages = buildTrainerGalleryImages(
     trainer.gallery,

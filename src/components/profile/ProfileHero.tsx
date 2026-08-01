@@ -8,7 +8,9 @@ import { firstSentence } from "@/lib/related-trainers";
 import {
   buildTrainerGalleryImages,
   getProfileGalleryMedia,
+  resolveGalleryIndexForUrl,
 } from "@/lib/trainer-gallery";
+import { normalizePinnedPhotos } from "@/lib/specialist-media-limits";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
@@ -56,14 +58,27 @@ export function ProfileHero({
     trainer.galleryImages,
     trainer.heroImage
   );
+  const pinnedPhotos =
+    trainer.isPremium === true
+      ? normalizePinnedPhotos(trainer.pinnedPhotos, coverImages)
+      : [];
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
   const heroLine = firstSentence(trainer.bio);
 
-  const openGallery = useCallback((event: MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setGalleryOpen(true);
-  }, []);
+  const openGallery = useCallback(
+    (event: MouseEvent<HTMLButtonElement>, startUrl?: string) => {
+      event.preventDefault();
+      event.stopPropagation();
+      setGalleryIndex(
+        startUrl
+          ? resolveGalleryIndexForUrl(galleryMedia, startUrl)
+          : 0
+      );
+      setGalleryOpen(true);
+    },
+    [galleryMedia]
+  );
 
   const closeGallery = useCallback(() => {
     setGalleryOpen(false);
@@ -161,7 +176,7 @@ export function ProfileHero({
                   type="button"
                   className="profile-hero__view-gallery"
                   aria-label="View specialist gallery"
-                  onClick={openGallery}
+                  onClick={(event) => openGallery(event)}
                 >
                   View Gallery
                 </button>
@@ -186,12 +201,32 @@ export function ProfileHero({
                   type="button"
                   className="profile-hero__view-gallery"
                   aria-label="View specialist gallery"
-                  onClick={openGallery}
+                  onClick={(event) => openGallery(event)}
                 >
                   View Gallery
                 </button>
               </div>
             )}
+
+            {pinnedPhotos.length > 0 ? (
+              <div
+                className="profile-hero__pinned"
+                aria-label="Pinned photos"
+              >
+                {pinnedPhotos.map((url, index) => (
+                  <button
+                    key={url}
+                    type="button"
+                    className="profile-hero__pinned-tile"
+                    aria-label={`Open pinned photo ${index + 1}`}
+                    onClick={(event) => openGallery(event, url)}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={url} alt="" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </section>
@@ -199,7 +234,7 @@ export function ProfileHero({
       <ProfileGalleryModal
         open={galleryOpen}
         media={galleryMedia}
-        initialIndex={0}
+        initialIndex={galleryIndex}
         trainerName={trainer.name}
         onClose={closeGallery}
       />
