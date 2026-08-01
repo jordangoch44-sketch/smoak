@@ -12,6 +12,19 @@ export interface AdminWeeklyCount {
 export interface AdminTrafficSource {
   source: string;
   views: number;
+  /** Share of current-week views (0–100) */
+  sharePercent: number;
+}
+
+export interface AdminTrafficPath {
+  path: string;
+  views: number;
+}
+
+export interface AdminTrafficDeviceSplit {
+  mobile: number;
+  desktop: number;
+  unknown: number;
 }
 
 export interface AdminTrafficWeek {
@@ -20,7 +33,13 @@ export interface AdminTrafficWeek {
   prevViews: number;
   prevUniqueVisitors: number;
   viewsPercentChange: number | null;
+  uniqueVisitorsPercentChange: number | null;
+  newVisitors: number;
+  /** Ranked sources for the current week (up to 10) */
   topSources: AdminTrafficSource[];
+  /** Ranked paths for the current week (up to 8) */
+  topPaths: AdminTrafficPath[];
+  devices: AdminTrafficDeviceSplit;
 }
 
 export interface AdminLiveEarnings {

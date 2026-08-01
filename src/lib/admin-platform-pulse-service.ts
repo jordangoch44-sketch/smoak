@@ -7,6 +7,7 @@ import type {
   AdminEngagementWeek,
   AdminLiveEarnings,
   AdminPlatformPulse,
+  AdminTrafficDeviceSplit,
   AdminTrafficWeek,
   AdminWeeklyCount,
 } from "@/types/admin-platform-pulse";
@@ -273,7 +274,9 @@ async function fetchTrafficWeek(
   const twoWeeksAgoIso = new Date(now - 2 * WEEK_MS).toISOString();
   const { data, error } = await supabase
     .from("site_visits")
-    .select("occurred_at, visitor_key, utm_source, referrer_host")
+    .select(
+      "occurred_at, visitor_key, utm_source, referrer_host, path, device, is_new_visitor"
+    )
     .gte("occurred_at", twoWeeksAgoIso)
     .limit(20000);
 
@@ -286,29 +289,56 @@ async function fetchTrafficWeek(
   const weekAgo = now - WEEK_MS;
   let views = 0;
   let prevViews = 0;
+  let newVisitors = 0;
   const visitors = new Set<string>();
   const prevVisitors = new Set<string>();
   const sourceViews = new Map<string, number>();
+  const pathViews = new Map<string, number>();
+  const devices: AdminTrafficDeviceSplit = {
+    mobile: 0,
+    desktop: 0,
+    unknown: 0,
+  };
 
   for (const visit of data ?? []) {
     const at = new Date(visit.occurred_at as string).getTime();
     if (at >= weekAgo) {
       views += 1;
       visitors.add(visit.visitor_key as string);
+      if (visit.is_new_visitor) newVisitors += 1;
+
       const label = sourceLabel(
         visit as { utm_source: string | null; referrer_host: string | null }
       );
       sourceViews.set(label, (sourceViews.get(label) ?? 0) + 1);
+
+      const path = String(visit.path ?? "/").slice(0, 80) || "/";
+      pathViews.set(path, (pathViews.get(path) ?? 0) + 1);
+
+      const device = String(visit.device ?? "");
+      if (device === "mobile") devices.mobile += 1;
+      else if (device === "desktop") devices.desktop += 1;
+      else devices.unknown += 1;
     } else {
       prevViews += 1;
       prevVisitors.add(visit.visitor_key as string);
     }
   }
 
+  const viewTotal = Math.max(views, 1);
   const topSources = [...sourceViews.entries()]
-    .map(([source, count]) => ({ source, views: count }))
+    .map(([source, count]) => ({
+      source,
+      views: count,
+      sharePercent: Math.round((count / viewTotal) * 1000) / 10,
+    }))
     .sort((a, b) => b.views - a.views)
-    .slice(0, 3);
+    .slice(0, 10);
+
+  const topPaths = [...pathViews.entries()]
+    .map(([path, count]) => ({ path, views: count }))
+    .sort((a, b) => b.views - a.views)
+    .slice(0, 8);
 
   return {
     views,
@@ -316,7 +346,14 @@ async function fetchTrafficWeek(
     prevViews,
     prevUniqueVisitors: prevVisitors.size,
     viewsPercentChange: percentChange(views, prevViews),
+    uniqueVisitorsPercentChange: percentChange(
+      visitors.size,
+      prevVisitors.size
+    ),
+    newVisitors,
     topSources,
+    topPaths,
+    devices,
   };
 }
 

@@ -7,7 +7,7 @@ import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
 import { useBlockingModalOpen } from "@/hooks/useBlockingModalOpen";
 import type {
   AdminPlatformPulse,
-  AdminTrafficSource,
+  AdminTrafficWeek,
   AdminWeeklyCount,
 } from "@/types/admin-platform-pulse";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,11 @@ const SOURCE_COLORS = [
   "rgb(var(--aurora-lavender-rgb))",
   "rgb(var(--aurora-violet-rgb))",
   "rgb(167, 139, 250)",
+  "rgb(196, 181, 253)",
+  "rgb(221, 214, 254)",
+  "rgb(139, 92, 246)",
+  "rgb(124, 58, 237)",
+  "rgb(109, 40, 217)",
 ] as const;
 
 function weeklyChangeLabel(count: AdminWeeklyCount): string {
@@ -45,16 +50,14 @@ function earningsSourceLabel(
   return "No paid Stripe subscriptions yet";
 }
 
-function TrafficSourcesPopover({
+function TrafficDeepPanel({
   open,
   onClose,
-  views,
-  sources,
+  traffic,
 }: {
   open: boolean;
   onClose: () => void;
-  views: number;
-  sources: readonly AdminTrafficSource[];
+  traffic: AdminTrafficWeek;
 }) {
   useBlockingModalOpen(open);
   const titleId = useId();
@@ -70,16 +73,21 @@ function TrafficSourcesPopover({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const segments = useMemo(
+  const chartSegments = useMemo(
     () =>
-      sources.slice(0, 3).map((row, index) => ({
+      traffic.topSources.slice(0, 5).map((row, index) => ({
         id: row.source,
         label: row.source,
         value: row.views,
         color: SOURCE_COLORS[index] ?? SOURCE_COLORS[0],
       })),
-    [sources]
+    [traffic.topSources]
   );
+
+  const deviceTotal =
+    traffic.devices.mobile +
+      traffic.devices.desktop +
+      traffic.devices.unknown || 1;
 
   if (!open || typeof document === "undefined") return null;
 
@@ -93,15 +101,15 @@ function TrafficSourcesPopover({
       <button
         type="button"
         className="admin-traffic-popover__backdrop"
-        aria-label="Close traffic sources"
+        aria-label="Close traffic panel"
         onClick={onClose}
       />
-      <div className="admin-traffic-popover__panel">
+      <div className="admin-traffic-popover__panel admin-traffic-popover__panel--deep">
         <header className="admin-traffic-popover__header">
           <div>
             <p className="admin-traffic-popover__eyebrow">Last 7 days</p>
             <h3 id={titleId} className="admin-traffic-popover__title">
-              Top traffic sources
+              Traffic deep dive
             </h3>
           </div>
           <button
@@ -114,18 +122,120 @@ function TrafficSourcesPopover({
           </button>
         </header>
 
-        {segments.length === 0 ? (
+        <div className="admin-traffic-deep__stats">
+          <div className="admin-traffic-deep__stat">
+            <span className="admin-traffic-deep__stat-label">Views</span>
+            <span className="admin-traffic-deep__stat-value">
+              {traffic.views.toLocaleString()}
+            </span>
+            <span className="admin-traffic-deep__stat-detail">
+              {trafficChangeLabel(traffic.viewsPercentChange)}
+            </span>
+          </div>
+          <div className="admin-traffic-deep__stat">
+            <span className="admin-traffic-deep__stat-label">Unique</span>
+            <span className="admin-traffic-deep__stat-value">
+              {traffic.uniqueVisitors.toLocaleString()}
+            </span>
+            <span className="admin-traffic-deep__stat-detail">
+              {trafficChangeLabel(traffic.uniqueVisitorsPercentChange)}
+            </span>
+          </div>
+          <div className="admin-traffic-deep__stat">
+            <span className="admin-traffic-deep__stat-label">New visitors</span>
+            <span className="admin-traffic-deep__stat-value">
+              {traffic.newVisitors.toLocaleString()}
+            </span>
+            <span className="admin-traffic-deep__stat-detail">First visit</span>
+          </div>
+        </div>
+
+        {chartSegments.length === 0 ? (
           <p className="admin-empty">
             No attributed sources yet. Direct visits and links without UTMs
             show as Direct once traffic starts flowing.
           </p>
         ) : (
           <AdminDonutChart
-            title={`${views.toLocaleString()} views`}
-            segments={segments}
+            title="Top sources"
+            segments={chartSegments}
             centerLabel="Views"
           />
         )}
+
+        {traffic.topSources.length > 0 ? (
+          <div className="admin-traffic-deep__section">
+            <h4 className="admin-traffic-deep__section-title">All sources</h4>
+            <ul className="admin-traffic-deep__bars">
+              {traffic.topSources.map((row) => (
+                <li key={row.source} className="admin-traffic-deep__bar-row">
+                  <div className="admin-traffic-deep__bar-meta">
+                    <span className="admin-traffic-deep__bar-label">
+                      {row.source}
+                    </span>
+                    <span className="admin-traffic-deep__bar-value">
+                      {row.views.toLocaleString()} · {row.sharePercent}%
+                    </span>
+                  </div>
+                  <div
+                    className="admin-traffic-deep__bar-track"
+                    aria-hidden
+                  >
+                    <span
+                      className="admin-traffic-deep__bar-fill"
+                      style={{ width: `${Math.min(100, row.sharePercent)}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className="admin-traffic-deep__section">
+          <h4 className="admin-traffic-deep__section-title">Devices</h4>
+          <ul className="admin-traffic-deep__devices">
+            {(
+              [
+                ["Mobile", traffic.devices.mobile],
+                ["Desktop", traffic.devices.desktop],
+                ["Unknown", traffic.devices.unknown],
+              ] as const
+            )
+              .filter(([, count]) => count > 0)
+              .map(([label, count]) => (
+                <li key={label} className="admin-traffic-deep__device">
+                  <span>{label}</span>
+                  <strong>
+                    {count.toLocaleString()} ·{" "}
+                    {Math.round((count / deviceTotal) * 100)}%
+                  </strong>
+                </li>
+              ))}
+            {traffic.devices.mobile +
+              traffic.devices.desktop +
+              traffic.devices.unknown ===
+            0 ? (
+              <li className="admin-empty">No device data yet.</li>
+            ) : null}
+          </ul>
+        </div>
+
+        {traffic.topPaths.length > 0 ? (
+          <div className="admin-traffic-deep__section">
+            <h4 className="admin-traffic-deep__section-title">Top pages</h4>
+            <ul className="admin-traffic-deep__paths">
+              {traffic.topPaths.map((row) => (
+                <li key={row.path} className="admin-traffic-deep__path">
+                  <code className="admin-traffic-deep__path-code">
+                    {row.path}
+                  </code>
+                  <span>{row.views.toLocaleString()}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         <p className="admin-traffic-popover__note">
           Sources come from UTM tags and external referrers (Google, Instagram,
@@ -245,8 +355,11 @@ export function AdminExecutiveRevenueSnapshot({
             <p className="admin-exec-snapshot__value">{traffic!.views}</p>
             <p className="admin-exec-snapshot__detail">
               {trafficChangeLabel(traffic!.viewsPercentChange)}
+              {traffic!.uniqueVisitors > 0
+                ? ` · ${traffic!.uniqueVisitors} unique`
+                : ""}
             </p>
-            <p className="admin-exec-snapshot__hint">Tap for top sources</p>
+            <p className="admin-exec-snapshot__hint">Tap for deep dive</p>
           </button>
         ) : (
           <article className="admin-exec-snapshot__card">
@@ -338,12 +451,13 @@ export function AdminExecutiveRevenueSnapshot({
         </div>
       </div>
 
-      <TrafficSourcesPopover
-        open={trafficOpen}
-        onClose={() => setTrafficOpen(false)}
-        views={traffic?.views ?? 0}
-        sources={traffic?.topSources ?? []}
-      />
+      {traffic ? (
+        <TrafficDeepPanel
+          open={trafficOpen}
+          onClose={() => setTrafficOpen(false)}
+          traffic={traffic}
+        />
+      ) : null}
     </section>
   );
 }
