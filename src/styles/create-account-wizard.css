@@ -297,14 +297,19 @@ body:has(.login-page--wizard) main {
   font-weight: 500;
   letter-spacing: -0.02em;
   line-height: 1.2;
-  color: #fff;
+  color: rgba(190, 255, 210, 0.98);
+  text-shadow:
+    0 0 12px rgba(52, 255, 136, 0.55),
+    0 0 28px rgba(52, 255, 136, 0.35),
+    0 0 48px rgba(52, 255, 136, 0.18);
 }
 
 .wizard-signup-reassure__sub {
   margin: 0;
   font-size: 0.875rem;
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(160, 230, 185, 0.72);
+  text-shadow: 0 0 18px rgba(52, 255, 136, 0.18);
 }
 
 .login-page--wizard .wizard-progress__header {
