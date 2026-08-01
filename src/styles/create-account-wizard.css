@@ -304,6 +304,18 @@ body:has(.login-page--wizard) main {
     0 0 48px rgba(52, 255, 136, 0.18);
 }
 
+.wizard-signup-reassure__punch {
+  margin: 0;
+  font-size: clamp(0.95rem, 2.8vw, 1.0625rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: rgba(210, 255, 225, 0.95);
+  text-shadow:
+    0 0 10px rgba(52, 255, 136, 0.4),
+    0 0 22px rgba(52, 255, 136, 0.22);
+}
+
 .wizard-signup-reassure__sub {
   margin: 0;
   font-size: 0.875rem;

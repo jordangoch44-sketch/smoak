@@ -766,6 +766,28 @@ export function CreateAccountWizardClient({
 
         <div className="login-card wizard-card">
           <div className="wizard-progress">
+            <div className="wizard-signup-reassure">
+              {state.accountType === "client" ? (
+                <>
+                  <p className="wizard-signup-reassure__title">Quick sign up</p>
+                  <p className="wizard-signup-reassure__punch">
+                    Email and that&apos;s it!
+                  </p>
+                  <p className="wizard-signup-reassure__sub">
+                    Browse and compare specialists near you instantly.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="wizard-signup-reassure__title">
+                    Quick &amp; easy signup
+                  </p>
+                  <p className="wizard-signup-reassure__sub">
+                    About 5 minutes — short steps, then you&apos;re in.
+                  </p>
+                </>
+              )}
+            </div>
             <div className="wizard-progress__header">
               <p className="wizard-progress__step">
                 Step {step} of {CREATE_ACCOUNT_TOTAL_STEPS}
