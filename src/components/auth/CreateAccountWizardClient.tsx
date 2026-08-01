@@ -30,7 +30,6 @@ import {
 import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
-import { submitClientApplication } from "@/lib/client-application-submit";
 import { persistCreateAccountProfile } from "@/lib/create-account-profile-storage";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import type { PublicAuthRole } from "@/types/auth-roles";
@@ -202,6 +201,7 @@ export function CreateAccountWizardClient({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(
     () => initialAccountType === "specialist" && !initialJoinIntro
@@ -224,9 +224,11 @@ export function CreateAccountWizardClient({
   }, [showIntro, introVisible]);
 
   const progressPercent = stepProgressPercent(step);
+  const isClientQuickSignup = state.accountType === "client";
   const missingFields = useMemo(
-    () => getClientAccountMissingFields(state),
-    [state]
+    () =>
+      isClientQuickSignup ? [] : getClientAccountMissingFields(state),
+    [state, isClientQuickSignup]
   );
   const missingLabels = useMemo(
     () => missingFields.map((field) => field.label),
@@ -276,6 +278,16 @@ export function CreateAccountWizardClient({
       setError(null);
       return;
     }
+    if (step === 1 && state.accountType === "client") {
+      setStep(2);
+      setError(null);
+      return;
+    }
+    /* Client path: credentials only — sign up from this screen */
+    if (isClientQuickSignup && step === 2) {
+      void handleCreateAccount(true);
+      return;
+    }
     if (
       step === 4 &&
       (state.accountType ?? "client") === "client" &&
@@ -298,33 +310,41 @@ export function CreateAccountWizardClient({
   async function handleCreateAccount(force: boolean) {
     if (submitting) return;
 
-    if (!force && missingFields.length > 0) {
+    const resolvedAccountType = state.accountType ?? "client";
+    const trimmedEmail = state.email.trim();
+    const quickClient = resolvedAccountType === "client";
+
+    if (quickClient) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+        setError("Enter a valid email address.");
+        return;
+      }
+      if (state.password.trim().length < 6) {
+        setError("Password must be at least 6 characters.");
+        return;
+      }
+      if (state.password !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+    } else if (!force && missingFields.length > 0) {
       setShowIncompleteModal(true);
       return;
     }
 
     setShowIncompleteModal(false);
-
-    const resolvedAccountType = state.accountType ?? "client";
-    const trimmedEmail = state.email.trim();
-
-    if (
-      resolvedAccountType === "client" &&
-      !/^\d{5}$/.test(state.clientZipCode.trim())
-    ) {
-      setError("Enter a valid 5-digit ZIP code before creating your account.");
-      setShowIncompleteModal(false);
-      setStep(4);
-      return;
-    }
-
     setSubmitting(true);
     setError(null);
+
+    const derivedFirst =
+      state.firstName.trim() ||
+      trimmedEmail.split("@")[0]?.trim() ||
+      "Client";
 
     try {
       const profile: CreateAccountProfile = {
         accountType: resolvedAccountType,
-        firstName: state.firstName.trim(),
+        firstName: derivedFirst,
         lastName: state.lastName.trim(),
         email: trimmedEmail,
         createdAt: new Date().toISOString(),
@@ -353,7 +373,7 @@ export function CreateAccountWizardClient({
         trimmedEmail,
         state.password,
         {
-          firstName: state.firstName.trim(),
+          firstName: derivedFirst,
           lastName: state.lastName.trim(),
           clientProfile:
             resolvedAccountType === "client" ? profile : undefined,
@@ -382,36 +402,19 @@ export function CreateAccountWizardClient({
         await hydrateClientLocationFromSession(signUpResult.session);
       }
 
-      if (resolvedAccountType === "client") {
-        await submitClientApplication({
-          firstName: state.firstName.trim(),
-          lastName: state.lastName.trim(),
-          email: trimmedEmail,
-          preferredCity: state.clientCity.trim(),
-          preferredNeighborhood: state.clientNeighborhood.trim(),
-          preferredZipCode: state.clientZipCode.trim(),
-          fitnessGoals: state.clientGoals,
-          preferredSpecialistCategories: state.clientTrainingStyle
-            ? [state.clientTrainingStyle]
-            : [],
-          budget: state.clientBudget,
-        });
-      }
-
       showToast({
         type: "success",
-        message:
-          resolvedAccountType === "client"
-            ? "Application submitted — welcome to SMOAC"
-            : "Account created — welcome to SMOAC",
+        message: quickClient
+          ? "You're in — edit your full profile anytime!"
+          : "Account created — welcome to SMOAC",
       });
 
       const navRole: PublicAuthRole =
         signUpResult.session.role === "specialist" ? "specialist" : "client";
 
       const { path, toast } = resolvePostLoginNavigation(navRole, {
-        returnToSaved: wantsReturnToSaved() }
-      );
+        returnToSaved: wantsReturnToSaved(),
+      });
       if (toast) {
         showSaveToast(toast);
       }
@@ -485,35 +488,41 @@ export function CreateAccountWizardClient({
       case 2:
         return (
           <WizardStepPanel key="step-2">
-            <WizardStepHeading
-              title="Tell us about yourself"
-              subtitle="We'll use this to set up your account."
-            />
+            {isClientQuickSignup ? null : (
+              <WizardStepHeading
+                title="Tell us about yourself"
+                subtitle="We'll use this to set up your account."
+              />
+            )}
             <div className="login-fields">
-              <label className="login-field">
-                <span className="login-field__label">First name</span>
-                <input
-                  type="text"
-                  name="firstName"
-                  autoComplete="given-name"
-                  value={state.firstName}
-                  onChange={(e) => patchState({ firstName: e.target.value })}
-                  placeholder="First name"
-                  className="login-field__input"
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Last name</span>
-                <input
-                  type="text"
-                  name="lastName"
-                  autoComplete="family-name"
-                  value={state.lastName}
-                  onChange={(e) => patchState({ lastName: e.target.value })}
-                  placeholder="Last name"
-                  className="login-field__input"
-                />
-              </label>
+              {isClientQuickSignup ? null : (
+                <>
+                  <label className="login-field">
+                    <span className="login-field__label">First name</span>
+                    <input
+                      type="text"
+                      name="firstName"
+                      autoComplete="given-name"
+                      value={state.firstName}
+                      onChange={(e) => patchState({ firstName: e.target.value })}
+                      placeholder="First name"
+                      className="login-field__input"
+                    />
+                  </label>
+                  <label className="login-field">
+                    <span className="login-field__label">Last name</span>
+                    <input
+                      type="text"
+                      name="lastName"
+                      autoComplete="family-name"
+                      value={state.lastName}
+                      onChange={(e) => patchState({ lastName: e.target.value })}
+                      placeholder="Last name"
+                      className="login-field__input"
+                    />
+                  </label>
+                </>
+              )}
               <label className="login-field">
                 <span className="login-field__label">Email</span>
                 <input
@@ -527,7 +536,9 @@ export function CreateAccountWizardClient({
                 />
               </label>
               <label className="login-field">
-                <span className="login-field__label">Password</span>
+                <span className="login-field__label">
+                  {isClientQuickSignup ? "Create password" : "Password"}
+                </span>
                 <PasswordInput
                   name="password"
                   autoComplete="new-password"
@@ -536,6 +547,21 @@ export function CreateAccountWizardClient({
                   placeholder="At least 6 characters"
                 />
               </label>
+              {isClientQuickSignup ? (
+                <label className="login-field">
+                  <span className="login-field__label">Confirm password</span>
+                  <PasswordInput
+                    name="confirmPassword"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setError(null);
+                    }}
+                    placeholder="Re-enter password"
+                  />
+                </label>
+              ) : null}
             </div>
           </WizardStepPanel>
         );
@@ -772,7 +798,7 @@ export function CreateAccountWizardClient({
         <div className="login-card wizard-card">
           <div className="wizard-progress">
             <div className="wizard-signup-reassure">
-              {state.accountType === "client" ? (
+              {isClientQuickSignup ? (
                 <>
                   <p className="wizard-signup-reassure__title">Quick sign up</p>
                   <p className="wizard-signup-reassure__punch">
@@ -793,20 +819,24 @@ export function CreateAccountWizardClient({
                 </>
               )}
             </div>
-            <div className="wizard-progress__header">
-              <p className="wizard-progress__step">
-                Step {step} of {CREATE_ACCOUNT_TOTAL_STEPS}
-              </p>
-              <p className="wizard-progress__complete">
-                {progressPercent}% complete
-              </p>
-            </div>
-            <div className="wizard-progress__track">
-              <div
-                className="wizard-progress__fill"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+            {isClientQuickSignup ? null : (
+              <>
+                <div className="wizard-progress__header">
+                  <p className="wizard-progress__step">
+                    Step {step} of {CREATE_ACCOUNT_TOTAL_STEPS}
+                  </p>
+                  <p className="wizard-progress__complete">
+                    {progressPercent}% complete
+                  </p>
+                </div>
+                <div className="wizard-progress__track">
+                  <div
+                    className="wizard-progress__fill"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="login-card__form">{renderStepContent()}</div>
@@ -819,7 +849,7 @@ export function CreateAccountWizardClient({
             ) : null}
 
             <div className="wizard-nav">
-              {step > 1 ? (
+              {step > 1 && !(isClientQuickSignup && initialAccountType === "client") ? (
                 <button
                   type="button"
                   className="wizard-nav__back"
@@ -837,9 +867,11 @@ export function CreateAccountWizardClient({
               >
                 {submitting
                   ? "Creating account…"
-                  : step === CREATE_ACCOUNT_TOTAL_STEPS
-                    ? "Create Account"
-                    : "Continue"}
+                  : isClientQuickSignup && step === 2
+                    ? "Sign up"
+                    : step === CREATE_ACCOUNT_TOTAL_STEPS
+                      ? "Create Account"
+                      : "Continue"}
               </button>
             </div>
           </div>

@@ -64,7 +64,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     body: "Sign up free in 5 seconds and compare specialists instantly.",
     ctaLabel: "Quick sign up",
     ctaKind: "link",
-    ctaHref: "/create-account?role=client&intro=1",
+    ctaHref: "/create-account?role=client",
     dismissible: true,
   },
   {
