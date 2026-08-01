@@ -283,6 +283,12 @@ export function SpecialistOnboardingWizard({
 
         <div className="login-card wizard-card">
           <div className="wizard-progress">
+            <div className="wizard-signup-reassure">
+              <p className="wizard-signup-reassure__title">Quick &amp; easy signup</p>
+              <p className="wizard-signup-reassure__sub">
+                About 5 minutes — short steps, then you&apos;re in.
+              </p>
+            </div>
             <div className="wizard-progress__header">
               <p className="wizard-progress__step">
                 Step {step} of {SPECIALIST_ONBOARDING_TOTAL_STEPS}
