@@ -41,7 +41,8 @@ export function SmoacWelcomeIntro({
   const completedRef = useRef(false);
   const arriveFiredRef = useRef(false);
   const isSite = variant === "site";
-  const useWarp = isSite && !reducedMotion;
+  /* Site welcome always uses the warp field — reduced motion only shortens timing. */
+  const useWarp = isSite;
 
   const finish = useCallback(() => {
     if (completedRef.current) return;
@@ -97,20 +98,6 @@ export function SmoacWelcomeIntro({
     reducedMotion,
     onVisible,
   ]);
-
-  /* Any browse gesture ends the site warp immediately — never trap scroll */
-  useEffect(() => {
-    if (!isSite) return;
-    const end = () => finish();
-    window.addEventListener("wheel", end, { passive: true });
-    window.addEventListener("touchmove", end, { passive: true });
-    window.addEventListener("keydown", end);
-    return () => {
-      window.removeEventListener("wheel", end);
-      window.removeEventListener("touchmove", end);
-      window.removeEventListener("keydown", end);
-    };
-  }, [isSite, finish]);
 
   const motionMs = reducedMotion ? 220 : isSite ? 900 : fadeIn;
 

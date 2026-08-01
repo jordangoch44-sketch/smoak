@@ -34,7 +34,8 @@ export function SiteWelcomeIntroGate() {
     () => false
   );
 
-  useEffect(() => {
+  /* Sync force-replay before paint so we don't skip the warp on first client frame. */
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("replay-intro") === "1") {
