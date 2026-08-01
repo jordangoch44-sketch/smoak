@@ -22,7 +22,6 @@
 @import "./legal.css";
 @import "./footer.css";
 @import "./login-gate.css";
-@import "./location-personalization.css";
 @import "./location-selector.css";
 @import "./mobile-bottom-nav.css";
 @import "./modal-open.css";
@@ -164,7 +163,6 @@ body.saved-panel-open,
 body.login-gate-open,
 body.complete-account-lock,
 body.client-profile-sheet-open,
-body.location-personalization-open,
 body.admin-review-open {
   overflow: hidden;
   overscroll-behavior: none;
@@ -181,7 +179,6 @@ body.admin-review-open {
   body.login-gate-open,
   body.complete-account-lock,
   body.client-profile-sheet-open,
-  body.location-personalization-open,
   body.admin-review-open {
     overflow: visible;
     overscroll-behavior: none;
@@ -196,7 +193,6 @@ body.admin-review-open {
   body.login-gate-open .app-main,
   body.complete-account-lock .app-main,
   body.client-profile-sheet-open .app-main,
-  body.location-personalization-open .app-main,
   body.admin-review-open .app-main {
     overflow: hidden;
     overscroll-behavior: none;
@@ -205,8 +201,7 @@ body.admin-review-open {
 
   html.login-gate-open,
   html.complete-account-lock,
-  html.client-profile-sheet-open,
-  html.location-personalization-open {
+  html.client-profile-sheet-open {
     overflow: visible;
   }
 }

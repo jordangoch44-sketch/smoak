@@ -14,7 +14,6 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "login-gate-open",
   "complete-account-lock",
   "site-intro-open",
-  "location-personalization-open",
   "gallery-modal-open",
   "profile-image-preview-open",
   "admin-review-open",

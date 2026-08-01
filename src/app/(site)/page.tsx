@@ -1,6 +1,5 @@
 import {
   Hero,
-  LocationPersonalizationGate,
   SponsoredSpecialists,
   FeaturedSpotlightSpecialists,
   Top50InYourCity,
@@ -26,7 +25,6 @@ export default async function HomePage() {
   return (
     <div className="home-page home-page--discovery">
       <div className="home-page__sky" aria-hidden />
-      <LocationPersonalizationGate />
       <Hero />
       <SponsoredSpecialists initialCatalog={trainers} catalogMode={mode} />
       <FeaturedSpotlightSpecialists

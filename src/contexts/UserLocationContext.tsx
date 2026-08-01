@@ -4,12 +4,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
   type RefObject,
 } from "react";
+import { usePathname } from "next/navigation";
 import { LocationSelectorDropdown } from "@/components/location/LocationSelectorDropdown";
 
 interface UserLocationContextValue {
@@ -41,12 +43,17 @@ function resolveAnchor(
 }
 
 export function UserLocationProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const panelAnchorRef = useRef<HTMLButtonElement | null>(null);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const closeLocationPanel = useCallback(() => {
     setIsPanelOpen(false);
   }, []);
+
+  useEffect(() => {
+    setIsPanelOpen(false);
+  }, [pathname]);
 
   const openLocationPanel = useCallback(
     (anchor?: HTMLButtonElement | null) => {
