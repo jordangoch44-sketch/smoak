@@ -38,8 +38,9 @@ export default async function HomePage() {
         initialCatalog={trainers}
         initialAggregates={serializeReviewAggregates(aggregates)}
       />
-      <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="home-section__inner home-promo-stack mx-auto max-w-7xl px-4 sm:px-6">
         <SitePromoSlot slotId="home_mid_promo" variant="banner" />
+        <SitePromoSlot slotId="home_client_promo" variant="banner" />
       </div>
       <Categories />
       <NewSpecialists initialCatalog={trainers} catalogMode={mode} />

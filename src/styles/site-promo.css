@@ -140,6 +140,17 @@
   max-width: 80rem;
 }
 
+.site-promo--slot-home_client_promo {
+  margin: 0 auto;
+  max-width: 80rem;
+}
+
+.home-promo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .site-promo--slot-explore_results_rail {
   margin-bottom: 1rem;
 }
@@ -155,14 +166,16 @@
 
 @media (min-width: 768px) {
   .site-promo--banner,
-  .site-promo--slot-home_mid_promo {
+  .site-promo--slot-home_mid_promo,
+  .site-promo--slot-home_client_promo {
     grid-template-columns: 1fr auto;
     align-items: center;
     gap: 1.25rem;
   }
 
   .site-promo--banner .site-promo__copy,
-  .site-promo--slot-home_mid_promo .site-promo__copy {
+  .site-promo--slot-home_mid_promo .site-promo__copy,
+  .site-promo--slot-home_client_promo .site-promo__copy {
     padding-right: 2rem;
   }
 }
