@@ -138,17 +138,93 @@
 .site-promo--slot-home_mid_promo {
   margin: 0 auto;
   max-width: 80rem;
+  border-color: rgba(var(--aurora-lavender-rgb), 0.22);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(var(--aurora-lavender-rgb), 0.1),
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(10, 8, 16, 0.72);
+}
+
+.site-promo--slot-home_mid_promo .site-promo__glow {
+  background: radial-gradient(
+    circle,
+    rgba(var(--aurora-lavender-rgb), 0.28),
+    transparent 70%
+  );
+}
+
+.site-promo--slot-home_mid_promo .site-promo__cta {
+  border-color: rgba(var(--aurora-lavender-rgb), 0.35);
+  background: rgba(var(--aurora-lavender-rgb), 0.14);
+}
+
+.site-promo--slot-home_mid_promo .site-promo__cta:hover {
+  border-color: rgba(var(--aurora-lavender-rgb), 0.5);
+  background: rgba(var(--aurora-lavender-rgb), 0.22);
 }
 
 .site-promo--slot-home_client_promo {
   margin: 0 auto;
   max-width: 80rem;
+  border-color: rgba(var(--nebula-green-neon-rgb), 0.28);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(var(--nebula-green-neon-rgb), 0.08),
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(6, 12, 10, 0.72);
+}
+
+.site-promo--slot-home_client_promo .site-promo__glow {
+  inset: auto -18% -45% auto;
+  background: radial-gradient(
+    circle,
+    rgba(var(--nebula-green-neon-rgb), 0.22),
+    transparent 70%
+  );
+}
+
+.site-promo--slot-home_client_promo .site-promo__eyebrow {
+  color: rgba(190, 255, 210, 0.92);
+  text-shadow: 0 0 14px rgba(var(--nebula-green-neon-rgb), 0.35);
+}
+
+.site-promo--slot-home_client_promo .site-promo__cta {
+  border-color: rgba(var(--nebula-green-neon-rgb), 0.55);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(var(--nebula-green-neon-rgb), 0.28) 0%,
+      rgba(var(--nebula-green-deep-rgb), 0.88) 100%
+    );
+  color: rgba(230, 255, 240, 0.98);
+  box-shadow:
+    0 0 0 1px rgba(var(--nebula-green-neon-rgb), 0.16) inset,
+    0 0 18px rgba(var(--nebula-green-neon-rgb), 0.28);
+}
+
+.site-promo--slot-home_client_promo .site-promo__cta:hover {
+  border-color: rgba(var(--nebula-green-neon-rgb), 0.75);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(var(--nebula-green-neon-rgb), 0.36) 0%,
+      rgba(var(--nebula-green-mid-rgb), 0.55) 45%,
+      rgba(var(--nebula-green-deep-rgb), 0.92) 100%
+    );
+  box-shadow:
+    0 0 0 1px rgba(var(--nebula-green-neon-rgb), 0.22) inset,
+    0 0 24px rgba(var(--nebula-green-neon-rgb), 0.38);
 }
 
 .home-promo-stack {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .site-promo--slot-explore_results_rail {
