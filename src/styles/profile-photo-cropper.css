@@ -123,9 +123,10 @@
 }
 
 .smoac-saving-mark__path {
-  stroke-dasharray: 120;
-  stroke-dashoffset: 120;
-  animation: smoac-saving-draw 1.35s ease-in-out infinite;
+  /* pathLength="1" on the SVG path — dash units are 0→1, not guessed pixels */
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: smoac-saving-draw 1.7s linear infinite;
 }
 
 .smoac-saving-mark__label {
@@ -138,22 +139,28 @@
   text-shadow: 0 0 18px rgba(52, 255, 136, 0.35);
 }
 
+/* Draw → hold → fade out → reset while invisible (no negative-offset glitch) */
 @keyframes smoac-saving-draw {
   0% {
-    stroke-dashoffset: 120;
-    opacity: 0.55;
+    stroke-dashoffset: 1;
+    opacity: 1;
   }
-  45% {
+  48% {
     stroke-dashoffset: 0;
     opacity: 1;
   }
-  70% {
+  62% {
     stroke-dashoffset: 0;
     opacity: 1;
   }
+  78% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+  79%,
   100% {
-    stroke-dashoffset: -120;
-    opacity: 0.45;
+    stroke-dashoffset: 1;
+    opacity: 0;
   }
 }
 

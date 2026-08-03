@@ -8,10 +8,11 @@ interface SmoacSavingMarkProps {
 }
 
 /**
- * Drawn “S” mark + label — used while profile photo crop saves.
+ * Drawn “S” mark + label — used while profile photo crop uploads.
+ * pathLength="1" keeps the stroke draw loop stable across browsers.
  */
 export function SmoacSavingMark({
-  label = "Saving",
+  label = "Uploading",
   className,
 }: SmoacSavingMarkProps) {
   return (
@@ -29,6 +30,7 @@ export function SmoacSavingMark({
       >
         <path
           className="smoac-saving-mark__path"
+          pathLength={1}
           d="M42.5 18.5c-2.4-3.2-6.4-5.2-11.2-5.2-8.2 0-14 4.8-14 11.6 0 5.6 3.6 8.8 11.4 11.2l3.2.9c6.2 1.8 8.8 3.8 8.8 7.6 0 4.4-3.8 7.4-9.6 7.4-4.6 0-8.4-1.8-11-5.4"
           stroke="currentColor"
           strokeWidth="3.25"

@@ -41,7 +41,7 @@ export function ProfilePhotoCropper({
   title = "Crop Profile Photo",
   lead = "Drag to reposition. Pinch or use slider to zoom.",
   confirmLabel = "Confirm Crop",
-  confirmingLabel = "Saving…",
+  confirmingLabel = "Uploading…",
   onCancel,
   onSave,
 }: ProfilePhotoCropperProps) {
@@ -163,7 +163,7 @@ export function ProfilePhotoCropper({
 
       {saving ? (
         <div className="profile-photo-cropper__saving">
-          <SmoacSavingMark label="Saving" />
+          <SmoacSavingMark label="Uploading" />
         </div>
       ) : null}
     </div>
