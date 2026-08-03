@@ -118,7 +118,7 @@ export async function submitSpecialistApplication(
 
   const photoUrl = saved.media.profilePhotoUrl.trim();
   if (photoUrl) {
-    void updateOwnProfileAvatarUrl(photoUrl);
+    await updateOwnProfileAvatarUrl(photoUrl);
   }
 
   syncProfileOverridesFromApplication(saved);

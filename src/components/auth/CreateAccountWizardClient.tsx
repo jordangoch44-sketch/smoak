@@ -248,12 +248,15 @@ export function CreateAccountWizardClient({
 
   useEffect(() => {
     if (!isReady || !session || session.role === "admin") return;
+    /* Specialist onboarding owns navigation after submit — don't bounce
+     * mid-signup when Auth session appears (that aborted saves + sent people home). */
+    if (showSpecialistOnboarding) return;
     if (wantsSaved && session.role === "client") {
       router.replace("/saved");
       return;
     }
     router.replace(getDashboardPathForRole(session.role));
-  }, [isReady, session, router, wantsSaved]);
+  }, [isReady, session, router, wantsSaved, showSpecialistOnboarding]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

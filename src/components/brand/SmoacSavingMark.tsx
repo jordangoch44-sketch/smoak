@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import "@/styles/smoac-saving-mark.css";
 
 interface SmoacSavingMarkProps {
   label?: string;
@@ -8,7 +9,8 @@ interface SmoacSavingMarkProps {
 }
 
 /**
- * Clean spinning ring + label — used while profile photo crop uploads.
+ * Clean spinning ring + label — used while profile photo crop uploads
+ * and specialist application submit.
  */
 export function SmoacSavingMark({
   label = "Uploading",

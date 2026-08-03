@@ -2,24 +2,29 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/components/ui/toast";
+import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
 import { WizardIncompleteSubmitModal } from "@/components/auth/WizardIncompleteSubmitModal";
-import { WizardApplicationSubmittedModal } from "@/components/auth/WizardApplicationSubmittedModal";
 import {
   SPECIALIST_ONBOARDING_STEP_LABELS,
   SPECIALIST_ONBOARDING_TOTAL_STEPS,
 } from "@/constants/specialist-onboarding-options";
 import { LOGIN_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import { submitSpecialistApplication } from "@/lib/specialist-application-submit";
 import {
+  findSpecialistApplicationByEmail,
+  findSpecialistApplicationByUserId,
   loadSpecialistOnboardingDraft,
   persistSpecialistOnboardingDraft,
 } from "@/lib/specialist-application-storage";
+import { patchAuthSessionAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import {
   getSpecialistOnboardingAuthGaps,
   getSpecialistOnboardingMissingFields,
@@ -58,8 +63,6 @@ export function SpecialistOnboardingWizard({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
-  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
-  const [submittedEmailSent, setSubmittedEmailSent] = useState(false);
   const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState<string | null>(
     null
   );
@@ -105,12 +108,27 @@ export function SpecialistOnboardingWizard({
   }, [step]);
 
   const goToPendingApplicationPortal = useCallback(async () => {
-    setShowSubmittedModal(false);
+    const priorAvatar = getAuthSessionSnapshot()?.avatarUrl?.trim() || "";
     try {
       await refreshSession();
     } catch {
       /* Session may already be current — still open the pending portal. */
     }
+
+    const session = getAuthSessionSnapshot();
+    const application =
+      (session?.userId
+        ? findSpecialistApplicationByUserId(session.userId)
+        : null) ??
+      (session?.email
+        ? findSpecialistApplicationByEmail(session.email)
+        : null);
+    const photoFromApp = application?.media.profilePhotoUrl?.trim() || "";
+    const nextAvatar = photoFromApp || priorAvatar;
+    if (nextAvatar) {
+      patchAuthSessionAvatarUrl(nextAvatar);
+    }
+
     router.replace(`${SPECIALIST_DASHBOARD_PATH}?submitted=1`);
   }, [refreshSession, router]);
 
@@ -131,7 +149,7 @@ export function SpecialistOnboardingWizard({
   }, []);
 
   function handleBack() {
-    if (submitting || showSubmittedModal) return;
+    if (submitting) return;
     if (step === 1) {
       onBackToRole();
       return;
@@ -141,7 +159,7 @@ export function SpecialistOnboardingWizard({
   }
 
   function handleContinue() {
-    if (showSubmittedModal || submitting) return;
+    if (submitting) return;
 
     /* Step 2 creates the login — never skip email/password. */
     if (step === 2) {
@@ -250,17 +268,14 @@ export function SpecialistOnboardingWizard({
 
       const submitResult = await submitSpecialistApplication(state, { userId });
 
-      setSubmittedEmailSent(Boolean(submitResult.emailSent));
-      setShowSubmittedModal(true);
-      try {
-        await refreshSession();
-      } catch {
-        /* Dashboard still opens with local session from signUp. */
-      }
-      /* Land them in the logged-in pending portal without an extra click. */
-      window.setTimeout(() => {
-        router.replace(`${SPECIALIST_DASHBOARD_PATH}?submitted=1`);
-      }, 1600);
+      showToast({
+        type: "success",
+        message: submitResult.emailSent
+          ? "Application submitted — check your email for a welcome note."
+          : "Application submitted — you're under review.",
+      });
+
+      await goToPendingApplicationPortal();
     } catch (err) {
       const message =
         err instanceof ApplicationSubmitError
@@ -414,13 +429,22 @@ export function SpecialistOnboardingWizard({
         onGoBack={handleGoBackFromIncompleteModal}
         onSubmitAnyway={() => handleSubmitApplication(true)}
       />
-      <WizardApplicationSubmittedModal
-        open={showSubmittedModal}
-        emailSent={submittedEmailSent}
-        onContinue={() => {
-          void goToPendingApplicationPortal();
-        }}
-      />
+      {submitting
+        ? createPortal(
+            <div
+              className="wizard-submitting-overlay"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              aria-label="Submitting profile to SMOAC admin"
+            >
+              <div className="wizard-submitting-overlay__panel">
+                <SmoacSavingMark label="Submitting profile to SMOAC admin" />
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
       {awaitingEmailConfirm ? (
         <div
           className="wizard-incomplete-modal"
