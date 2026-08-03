@@ -414,9 +414,15 @@ export async function signInWithPassword(
   const session = await buildAuthSessionFromSupabaseUser(supabase, user);
   if (!session) {
     const recovered = await ensureMarketplaceSignupProfile(supabase, user, role);
-    if (recovered && recovered.role === role) {
-      logAuth("signin.recovered_incomplete_signup", { userId: user.id, role });
-      clearPendingMarketplaceSignup();
+    if (recovered) {
+      logAuth("signin.recovered_incomplete_signup", {
+        userId: user.id,
+        requestedRole: role,
+        actualRole: recovered.role,
+      });
+      if (!peekPendingMarketplaceSignupForEmail(trimmedEmail)?.submitSpecialistApplication) {
+        clearPendingMarketplaceSignup();
+      }
       return { ok: true, session: recovered };
     }
     await supabase.auth.signOut();
@@ -426,22 +432,31 @@ export async function signInWithPassword(
     };
   }
 
+  /* Password proves identity — use the account's real role (pending specialists
+   * included). The login UI role picker is only a preference, not a gate. */
   if (session.role !== role) {
-    await supabase.auth.signOut();
-    return { ok: false, message: PUBLIC_INVALID_LOGIN_MESSAGE };
+    logAuth("signin.role_ui_mismatch_allowed", {
+      userId: user.id,
+      requestedRole: role,
+      actualRole: session.role,
+    });
   }
 
   /* Finish role/profile if pending payload exists (email-confirm path).
    * Keep pending when a specialist application still needs submitting. */
   const pending = peekPendingMarketplaceSignupForEmail(trimmedEmail);
   if (pending) {
-    await ensureMarketplaceSignupProfile(supabase, user, role);
+    const profileRole: PublicAuthRole =
+      session.role === "specialist" || session.role === "client"
+        ? session.role
+        : role;
+    await ensureMarketplaceSignupProfile(supabase, user, profileRole);
     if (!pending.submitSpecialistApplication) {
       clearPendingMarketplaceSignup();
     }
   }
 
-  logAuth("signin.success", { userId: user.id, role });
+  logAuth("signin.success", { userId: user.id, role: session.role });
   return { ok: true, session };
 }
 

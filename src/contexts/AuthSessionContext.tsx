@@ -176,7 +176,7 @@ export function AuthSessionProvider({
       const result = await signInWithPassword(role, email, password);
       if (result.ok === true) {
         setAuthSession(result.session);
-        if (role === "specialist") {
+        if (result.session.role === "specialist") {
           const { completePendingSpecialistApplicationAfterAuth } = await import(
             "@/lib/auth/complete-pending-specialist-application"
           );

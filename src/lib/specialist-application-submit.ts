@@ -1,4 +1,5 @@
 import { sendSpecialistApplicationConfirmationEmail } from "@/lib/email/confirmation-email-service";
+import { clearPendingMarketplaceSignup } from "@/lib/auth/pending-marketplace-signup";
 import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import {
   getMarketplaceAuthClient,
@@ -124,6 +125,7 @@ export async function submitSpecialistApplication(
   syncProfileOverridesFromApplication(saved);
   hideTrainerId(id);
   clearSpecialistOnboardingDraft();
+  clearPendingMarketplaceSignup();
 
   const emailResult = await sendSpecialistApplicationConfirmationEmail(saved);
   if (!emailResult.success) {

@@ -12,6 +12,7 @@ import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { PUBLIC_INVALID_LOGIN_MESSAGE, type PublicAuthRole } from "@/lib/dev-auth";
 import { sendMagicLinkForLogin } from "@/lib/auth/marketplace-auth";
+import { getDashboardPathForRole } from "@/lib/auth-routes";
 import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
@@ -70,8 +71,15 @@ export function LoginPageClient() {
 
   useEffect(() => {
     if (!isReady || !session || session.role === "admin") return;
-    router.replace("/");
-  }, [isReady, session, router]);
+    const publicRole = getUserRole(session);
+    if (!publicRole) return;
+    /* Pending specialists must land on their dashboard, not the homepage. */
+    router.replace(
+      returnToSaved && publicRole === "client"
+        ? "/saved"
+        : getDashboardPathForRole(publicRole)
+    );
+  }, [isReady, session, router, returnToSaved]);
 
   useEffect(() => {
     if (searchParams.get("error") !== "auth_callback") return;
@@ -161,6 +169,13 @@ export function LoginPageClient() {
       trimmedPassword
     );
 
+    if (result.ok === false) {
+      setSubmitPressed(false);
+      setSubmitting(false);
+      await showLoginFailure(result.message);
+      return;
+    }
+
     if (result.ok !== true) {
       setSubmitPressed(false);
       setSubmitting(false);
@@ -181,6 +196,11 @@ export function LoginPageClient() {
       setSubmitting(false);
       await showLoginFailure();
       return;
+    }
+
+    /* Keep the picker in sync with the account we actually signed into. */
+    if (signedInRole !== role) {
+      setRole(signedInRole);
     }
 
     const { path, toast } = resolvePostLoginNavigation(signedInRole, {
