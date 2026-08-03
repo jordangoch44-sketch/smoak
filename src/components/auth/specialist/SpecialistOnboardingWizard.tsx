@@ -64,7 +64,20 @@ export function SpecialistOnboardingWizard({
     null
   );
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordFieldsError, setPasswordFieldsError] = useState(false);
+  const [shakePasswordFields, setShakePasswordFields] = useState(false);
   const profilePhotoCrop = useProfilePhotoCropSession();
+
+  function flagPasswordFieldsError(message: string) {
+    setError(message);
+    setPasswordFieldsError(true);
+    setShakePasswordFields(true);
+  }
+
+  function clearPasswordFieldsError() {
+    setPasswordFieldsError(false);
+    setError(null);
+  }
 
   const progressPercent = stepProgressPercent(step);
 
@@ -133,17 +146,19 @@ export function SpecialistOnboardingWizard({
     /* Step 2 creates the login — never skip email/password. */
     if (step === 2) {
       if (!isValidEmail(state.email)) {
+        setPasswordFieldsError(false);
         setError("Enter a valid email — you’ll use it to sign in.");
         return;
       }
       if (state.password.trim().length < 8) {
-        setError("Create a password with at least 8 characters.");
+        flagPasswordFieldsError("Create a password with at least 8 characters.");
         return;
       }
       if (state.password !== confirmPassword) {
-        setError("Passwords do not match.");
+        flagPasswordFieldsError("Passwords do not match.");
         return;
       }
+      setPasswordFieldsError(false);
     }
 
     if (step === 6) {
@@ -165,10 +180,13 @@ export function SpecialistOnboardingWizard({
       setShowIncompleteModal(false);
       setStep(2);
       if (state.password !== confirmPassword && state.password.trim().length >= 8) {
-        setError("Passwords do not match.");
+        flagPasswordFieldsError("Passwords do not match.");
       } else if (authGaps.some((g) => g.label.startsWith("Password"))) {
-        setError("Create a password (8+ characters) so you can sign in while pending.");
+        flagPasswordFieldsError(
+          "Create a password (8+ characters) so you can sign in while pending."
+        );
       } else {
+        setPasswordFieldsError(false);
         setError("Enter a valid email and password so you can sign in.");
       }
       return;
@@ -333,20 +351,31 @@ export function SpecialistOnboardingWizard({
             <SpecialistOnboardingSteps
               step={step}
               state={state}
-              onPatch={patchState}
+              onPatch={(partial) => {
+                if (partial.password !== undefined) {
+                  clearPasswordFieldsError();
+                }
+                patchState(partial);
+              }}
               onEditStep={(editStep) => setStep(editStep as OnboardingStep)}
               profilePhotoCrop={profilePhotoCrop}
               confirmPassword={confirmPassword}
+              passwordFieldsError={passwordFieldsError}
+              shakePasswordFields={shakePasswordFields}
+              onPasswordShakeEnd={() => setShakePasswordFields(false)}
               onConfirmPasswordChange={(value) => {
                 setConfirmPassword(value);
-                setError(null);
+                clearPasswordFieldsError();
               }}
             />
           </div>
 
           <div className="login-form__section login-form__section--cta">
             {error ? (
-              <p className="login-card__message" role="alert">
+              <p
+                className="login-card__message login-card__message--error login-card__message--error-visible"
+                role="alert"
+              >
                 {error}
               </p>
             ) : null}

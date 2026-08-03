@@ -905,7 +905,25 @@ body.complete-account-lock .login-page--complete-account {
 }
 
 .login-field__input--error {
-  border-color: rgba(248, 113, 113, 0.55) !important;
+  border-color: rgba(210, 110, 120, 0.55) !important;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(48, 14, 22, 0.42) 0%,
+      rgba(24, 8, 12, 0.38) 100%
+    ),
+    rgba(0, 0, 0, 0.32) !important;
+  box-shadow:
+    0 0 0 1px rgba(210, 90, 105, 0.22),
+    0 0 18px rgba(180, 70, 95, 0.22),
+    inset 0 1px 0 rgba(255, 180, 190, 0.04) !important;
+}
+
+/* Nested password pair inside wizard forms — keep login-fields gap */
+.wizard-password-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
 }
 
 /* Complete-account card + form — natural flow, no fixed heights */

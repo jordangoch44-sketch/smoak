@@ -58,6 +58,9 @@ export interface SpecialistOnboardingStepsProps {
   profilePhotoCrop: ReturnType<typeof useProfilePhotoCropSession>;
   confirmPassword: string;
   onConfirmPasswordChange: (value: string) => void;
+  passwordFieldsError?: boolean;
+  shakePasswordFields?: boolean;
+  onPasswordShakeEnd?: () => void;
 }
 
 export function SpecialistOnboardingSteps({
@@ -68,6 +71,9 @@ export function SpecialistOnboardingSteps({
   profilePhotoCrop,
   confirmPassword,
   onConfirmPasswordChange,
+  passwordFieldsError = false,
+  shakePasswordFields = false,
+  onPasswordShakeEnd,
 }: SpecialistOnboardingStepsProps) {
   function handleProfilePhotoFile(file: File) {
     profilePhotoCrop.openCropFromFile(file, (payload) => {
@@ -189,26 +195,44 @@ export function SpecialistOnboardingSteps({
                 required
               />
             </label>
-            <label className="login-field">
-              <span className="login-field__label">Create a password</span>
-              <PasswordInput
-                value={state.password}
-                onChange={(e) => onPatch({ password: e.target.value })}
-                autoComplete="new-password"
-                placeholder="At least 8 characters"
-                required
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">Confirm password</span>
-              <PasswordInput
-                value={confirmPassword}
-                onChange={(e) => onConfirmPasswordChange(e.target.value)}
-                autoComplete="new-password"
-                placeholder="Re-enter your password"
-                required
-              />
-            </label>
+            <div
+              className={cn(
+                "wizard-password-fields",
+                passwordFieldsError && "login-fields--error",
+                shakePasswordFields && "login-fields--shake"
+              )}
+              onAnimationEnd={onPasswordShakeEnd}
+            >
+              <label className="login-field">
+                <span className="login-field__label">Create a password</span>
+                <PasswordInput
+                  value={state.password}
+                  onChange={(e) => onPatch({ password: e.target.value })}
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
+                  required
+                  aria-invalid={passwordFieldsError}
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">Confirm password</span>
+                <PasswordInput
+                  value={confirmPassword}
+                  onChange={(e) => onConfirmPasswordChange(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Re-enter your password"
+                  required
+                  aria-invalid={passwordFieldsError}
+                />
+              </label>
+              {passwordFieldsError ? (
+                <p className="wizard-field-error" role="alert">
+                  {state.password.trim().length < 8
+                    ? "Use at least 8 characters."
+                    : "Passwords do not match."}
+                </p>
+              ) : null}
+            </div>
             <label className="login-field">
               <span className="login-field__label">Phone number</span>
               <input
