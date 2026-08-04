@@ -24,6 +24,11 @@ interface SitePromoSlotProps {
   variant?: "default" | "compact" | "banner";
 }
 
+const ORBIT_SLOTS = new Set<SitePromoSlotId>([
+  "specialist_dashboard_hero",
+  "specialist_dashboard_pro_upgrade",
+]);
+
 export function SitePromoSlot({
   slotId,
   className,
@@ -82,8 +87,7 @@ export function SitePromoSlot({
     }
   }
 
-  const useOrbit = slotId === "specialist_dashboard_hero";
-  const hasSecondary = Boolean(campaign.secondaryCtaLabel);
+  const useOrbit = ORBIT_SLOTS.has(slotId);
 
   return (
     <aside
@@ -123,12 +127,7 @@ export function SitePromoSlot({
         ) : null}
       </div>
 
-      <div
-        className={cn(
-          "site-promo__actions",
-          hasSecondary && "site-promo__actions--split"
-        )}
-      >
+      <div className="site-promo__actions">
         {campaign.ctaKind === "link" && campaign.ctaHref ? (
           <span
             className={cn(
@@ -156,41 +155,6 @@ export function SitePromoSlot({
             </button>
           </span>
         )}
-
-        {campaign.secondaryCtaLabel ? (
-          campaign.secondaryCtaKind === "link" && campaign.secondaryCtaHref ? (
-            <span
-              className={cn(
-                "site-promo__cta-wrap",
-                useOrbit && "site-promo__cta-wrap--orbit"
-              )}
-            >
-              <Link href={campaign.secondaryCtaHref} className="site-promo__cta">
-                {campaign.secondaryCtaLabel}
-              </Link>
-            </span>
-          ) : (
-            <span
-              className={cn(
-                "site-promo__cta-wrap",
-                useOrbit && "site-promo__cta-wrap--orbit"
-              )}
-            >
-              <button
-                type="button"
-                className="site-promo__cta"
-                onClick={() =>
-                  runCta(
-                    campaign.secondaryCtaKind ?? "open_pro",
-                    campaign.secondaryCtaHref
-                  )
-                }
-              >
-                {campaign.secondaryCtaLabel}
-              </button>
-            </span>
-          )
-        ) : null}
       </div>
     </aside>
   );

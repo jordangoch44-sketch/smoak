@@ -18,8 +18,8 @@ interface SpecialistProGhostPreviewProps {
 }
 
 /**
- * Plan-tab Pro tease: core analytics readable, deeper metrics blurred,
- * then house promo slot for Boost / deals. Pro CTA lives in the hero promo.
+ * Plan-tab Pro tease: free-trial + paid upgrade promos, then a ghosted
+ * analytics preview. Boost deals sit below.
  */
 export function SpecialistProGhostPreview({
   firstName,
@@ -35,6 +35,11 @@ export function SpecialistProGhostPreview({
     <>
       <SitePromoSlot
         slotId="specialist_dashboard_hero"
+        onOpenPro={() => setUpgradeOpen(true)}
+        onOpenBoost={() => setBoostOpen(true)}
+      />
+      <SitePromoSlot
+        slotId="specialist_dashboard_pro_upgrade"
         onOpenPro={() => setUpgradeOpen(true)}
         onOpenBoost={() => setBoostOpen(true)}
       />

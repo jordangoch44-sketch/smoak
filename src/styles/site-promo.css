@@ -130,23 +130,6 @@
   width: 100%;
 }
 
-.site-promo__actions--split {
-  flex-direction: column;
-}
-
-@media (min-width: 420px) {
-  .site-promo__actions--split {
-    flex-direction: row;
-    align-items: stretch;
-    flex-wrap: wrap;
-  }
-
-  .site-promo__actions--split .site-promo__cta-wrap {
-    flex: 1 1 calc(50% - 0.35rem);
-    min-width: 10.5rem;
-  }
-}
-
 .site-promo__cta-wrap {
   position: relative;
   z-index: 1;
@@ -376,6 +359,7 @@
 }
 
 .site-promo--slot-specialist_dashboard_hero,
+.site-promo--slot-specialist_dashboard_pro_upgrade,
 .site-promo--slot-specialist_dashboard_boost {
   margin-bottom: 1rem;
 }
@@ -474,6 +458,71 @@
       transparent 280deg
     );
   }
+}
+
+.site-promo--slot-specialist_dashboard_pro_upgrade {
+  overflow: visible;
+  border-color: rgba(var(--aurora-lavender-rgb), 0.42);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(var(--aurora-lavender-rgb), 0.16),
+      rgba(76, 29, 149, 0.12) 45%,
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(10, 8, 18, 0.78);
+  box-shadow:
+    0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.14) inset,
+    0 0 28px rgba(var(--aurora-lavender-rgb), 0.2);
+}
+
+.site-promo--slot-specialist_dashboard_pro_upgrade .site-promo__glow {
+  background: radial-gradient(
+    circle,
+    rgba(var(--aurora-lavender-rgb), 0.4),
+    transparent 70%
+  );
+}
+
+.site-promo--slot-specialist_dashboard_pro_upgrade .site-promo__eyebrow {
+  color: rgba(220, 210, 255, 0.95);
+  text-shadow: 0 0 16px rgba(var(--aurora-lavender-rgb), 0.55);
+}
+
+.site-promo--slot-specialist_dashboard_pro_upgrade .site-promo__stat {
+  border-left-color: rgba(var(--aurora-lavender-rgb), 0.65);
+  color: rgba(230, 220, 255, 0.88);
+}
+
+.site-promo--slot-specialist_dashboard_pro_upgrade
+  .site-promo__cta-wrap--orbit {
+  box-shadow: 0 0 22px rgba(var(--aurora-lavender-rgb), 0.38);
+}
+
+.site-promo--slot-specialist_dashboard_pro_upgrade
+  .site-promo__cta-wrap--orbit
+  .site-promo__cta {
+  border-color: rgba(var(--aurora-lavender-rgb), 0.4);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--aurora-lavender-rgb), 0.28),
+      rgba(76, 29, 149, 0.35)
+    );
+  box-shadow: 0 0 18px rgba(var(--aurora-lavender-rgb), 0.32);
+  text-shadow: 0 0 12px rgba(var(--aurora-lavender-rgb), 0.4);
+}
+
+.site-promo--slot-specialist_dashboard_pro_upgrade
+  .site-promo__cta-wrap--orbit
+  .site-promo__cta:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--aurora-lavender-rgb), 0.38),
+      rgba(76, 29, 149, 0.45)
+    );
+  border-color: rgba(220, 200, 255, 0.55);
 }
 
 @media (min-width: 768px) {
