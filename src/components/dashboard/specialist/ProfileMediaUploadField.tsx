@@ -123,7 +123,7 @@ export function ProfileMediaUploadField({
           ? error.message
           : error instanceof Error
             ? error.message
-            : "Could not upload image. Try again or paste a URL.";
+            : "Could not upload image. Try again.";
       setUploadError(message);
     } finally {
       setUploading(false);
@@ -177,15 +177,6 @@ export function ProfileMediaUploadField({
         onChange={(event) => void handleFileChange(event)}
         tabIndex={-1}
       />
-      <label className="login-field dashboard-upload-field__url">
-        <span className="login-field__label">Image URL</span>
-        <input
-          className="login-field__input profile-edit-input"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder="https://… or upload above"
-        />
-      </label>
       {value && onClear ? (
         <button
           type="button"

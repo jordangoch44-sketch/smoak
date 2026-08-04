@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
-import { SMOAC_PRO_UNLOCK } from "@/lib/specialist-premium";
 import { buildSecondaryStatTiles } from "@/lib/specialist-dashboard-stats";
 import { AnalyticsMetricTile } from "@/components/dashboard/specialist/AnalyticsMetricTile";
 import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import {
   BoostVisibilityModal,
-  DashboardButton,
   SmoacProUpgradeModal,
   StatTile,
 } from "@/components/dashboard/shared";
@@ -21,7 +19,7 @@ interface SpecialistProGhostPreviewProps {
 
 /**
  * Plan-tab Pro tease: core analytics readable, deeper metrics blurred,
- * trial CTA, then house promo slot for Boost / deals.
+ * then house promo slot for Boost / deals. Pro CTA lives in the hero promo.
  */
 export function SpecialistProGhostPreview({
   firstName,
@@ -112,24 +110,6 @@ export function SpecialistProGhostPreview({
               </p>
             </div>
           </div>
-        </div>
-
-        <div className="specialist-pro-ghost__offer">
-          <p className="specialist-pro-ghost__offer-title">
-            {SMOAC_PRO_UNLOCK.title}
-          </p>
-          <p className="specialist-pro-ghost__offer-text">
-            Unlock the rest of your dashboard — free for 30 days.
-          </p>
-          <DashboardButton
-            className="dashboard-pro-upgrade-btn specialist-pro-ghost__cta"
-            onClick={() => setUpgradeOpen(true)}
-          >
-            {SMOAC_PRO_UNLOCK.cta}
-          </DashboardButton>
-          <p className="specialist-pro-ghost__fineprint">
-            {SMOAC_PRO_UNLOCK.afterTrial}
-          </p>
         </div>
 
         <SitePromoSlot

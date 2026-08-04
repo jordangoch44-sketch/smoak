@@ -30,6 +30,10 @@ export interface SitePromoCampaign {
   ctaKind: SitePromoCtaKind;
   /** Required when ctaKind is link */
   ctaHref?: string;
+  /** Optional second action (e.g. free trial next to paid CTA) */
+  secondaryCtaLabel?: string;
+  secondaryCtaKind?: SitePromoCtaKind;
+  secondaryCtaHref?: string;
   dismissible?: boolean;
   /** ISO dates — omit for always-on */
   startsAt?: string;

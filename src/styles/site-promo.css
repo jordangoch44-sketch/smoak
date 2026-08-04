@@ -121,11 +121,37 @@
   border-color: rgba(255, 255, 255, 0.28);
 }
 
+.site-promo__actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  width: 100%;
+}
+
+.site-promo__actions--split {
+  flex-direction: column;
+}
+
+@media (min-width: 420px) {
+  .site-promo__actions--split {
+    flex-direction: row;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .site-promo__actions--split .site-promo__cta-wrap {
+    flex: 1 1 calc(50% - 0.35rem);
+    min-width: 10.5rem;
+  }
+}
+
 .site-promo__cta-wrap {
   position: relative;
   z-index: 1;
   display: inline-flex;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   border-radius: 999px;
 }
@@ -356,6 +382,98 @@
 
 .site-promo--slot-specialist_dashboard_hero {
   overflow: visible;
+  border-color: rgba(56, 189, 248, 0.42);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(56, 189, 248, 0.14),
+      rgba(14, 165, 233, 0.04) 45%,
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(4, 12, 22, 0.78);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.12) inset,
+    0 0 28px rgba(14, 165, 233, 0.18);
+}
+
+.site-promo--slot-specialist_dashboard_hero .site-promo__glow {
+  background: radial-gradient(
+    circle,
+    rgba(56, 189, 248, 0.38),
+    transparent 70%
+  );
+}
+
+.site-promo--slot-specialist_dashboard_hero .site-promo__eyebrow {
+  color: rgba(125, 211, 252, 0.95);
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.55);
+}
+
+.site-promo--slot-specialist_dashboard_hero .site-promo__stat {
+  border-left-color: rgba(56, 189, 248, 0.65);
+  color: rgba(186, 230, 253, 0.88);
+}
+
+.site-promo--slot-specialist_dashboard_hero .site-promo__cta-wrap--orbit {
+  box-shadow: 0 0 22px rgba(56, 189, 248, 0.35);
+}
+
+.site-promo--slot-specialist_dashboard_hero
+  .site-promo__cta-wrap--orbit::before {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 210deg,
+    rgba(14, 165, 233, 0.1) 250deg,
+    rgba(56, 189, 248, 0.75) 290deg,
+    rgba(186, 230, 253, 1) 318deg,
+    rgba(14, 165, 233, 0.85) 342deg,
+    transparent 360deg
+  );
+}
+
+.site-promo--slot-specialist_dashboard_hero
+  .site-promo__cta-wrap--orbit::after {
+  background: rgba(4, 14, 24, 0.96);
+}
+
+.site-promo--slot-specialist_dashboard_hero
+  .site-promo__cta-wrap--orbit
+  .site-promo__cta {
+  border-color: rgba(56, 189, 248, 0.35);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(56, 189, 248, 0.22),
+      rgba(14, 165, 233, 0.08)
+    );
+  box-shadow: 0 0 18px rgba(56, 189, 248, 0.28);
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+.site-promo--slot-specialist_dashboard_hero
+  .site-promo__cta-wrap--orbit
+  .site-promo__cta:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(56, 189, 248, 0.32),
+      rgba(14, 165, 233, 0.14)
+    );
+  border-color: rgba(125, 211, 252, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-promo--slot-specialist_dashboard_hero
+    .site-promo__cta-wrap--orbit::before {
+    background: conic-gradient(
+      from 90deg,
+      transparent 0deg,
+      rgba(14, 165, 233, 0.4) 120deg,
+      rgba(186, 230, 253, 0.85) 180deg,
+      transparent 280deg
+    );
+  }
 }
 
 @media (min-width: 768px) {

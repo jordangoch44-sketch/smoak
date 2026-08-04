@@ -76,15 +76,23 @@ export function SpecialistProfileMediaEditor({
   const inputId = useId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [brokenHeaderUrls, setBrokenHeaderUrls] = useState<string[]>([]);
 
   const atImageLimit = headerImages.length >= limits.images;
   const atVideoLimit = headerVideos.length >= limits.videos;
   const atPinLimit = pins.length >= PINNED_PHOTOS_MAX;
 
+  function markHeaderBroken(url: string) {
+    setBrokenHeaderUrls((prev) =>
+      prev.includes(url) ? prev : [...prev, url]
+    );
+  }
+
   function setHeaderImages(next: string[], nextPins?: string[]) {
     const trimmed = next.map((url) => url.trim()).filter(Boolean);
     const nextCover =
       cover && trimmed.includes(cover) ? cover : trimmed[0] || "";
+    setBrokenHeaderUrls((prev) => prev.filter((url) => trimmed.includes(url)));
     onChange({
       photoNotes: serializeMediaUrlList(trimmed),
       coverImageUrl: nextCover,
@@ -200,52 +208,80 @@ export function SpecialistProfileMediaEditor({
           {headerImages.map((url) => {
             const isCover = url === cover;
             const isPinned = pins.includes(url);
+            const isBroken = brokenHeaderUrls.includes(url);
             return (
               <div
                 key={url}
                 className={cn(
                   "specialist-media-editor__thumb",
                   isCover && "specialist-media-editor__thumb--cover",
-                  isPinned && "specialist-media-editor__thumb--pinned"
+                  isPinned && "specialist-media-editor__thumb--pinned",
+                  isBroken && "specialist-media-editor__thumb--broken"
                 )}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" className="specialist-media-editor__thumb-img" />
-                <div className="specialist-media-editor__thumb-actions">
+                {isBroken ? (
                   <button
                     type="button"
-                    className="smoac-control specialist-media-editor__thumb-btn"
-                    onClick={() => makeCover(url)}
-                    disabled={isCover}
-                  >
-                    {isCover ? "Cover" : "Make cover"}
-                  </button>
-                  {isPremium ? (
-                    <button
-                      type="button"
-                      className={cn(
-                        "smoac-control specialist-media-editor__thumb-btn",
-                        isPinned && "specialist-media-editor__thumb-btn--pinned"
-                      )}
-                      onClick={() => togglePin(url)}
-                      disabled={!isPinned && atPinLimit}
-                    >
-                      {isPinned ? "Pinned" : "Pin"}
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    className="smoac-control specialist-media-editor__thumb-btn specialist-media-editor__thumb-btn--danger"
-                    onClick={() =>
+                    className="smoac-control specialist-media-editor__thumb-empty"
+                    onClick={() => {
                       setHeaderImages(
                         headerImages.filter((item) => item !== url),
                         pins.filter((item) => item !== url)
-                      )
-                    }
+                      );
+                      window.setTimeout(() => fileRef.current?.click(), 0);
+                    }}
+                    disabled={busy}
                   >
-                    Remove
+                    <span aria-hidden>+</span>
+                    <span>Add a photo</span>
                   </button>
-                </div>
+                ) : (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt=""
+                      className="specialist-media-editor__thumb-img"
+                      onError={() => markHeaderBroken(url)}
+                    />
+                    <div className="specialist-media-editor__thumb-actions">
+                      <button
+                        type="button"
+                        className="smoac-control specialist-media-editor__thumb-btn"
+                        onClick={() => makeCover(url)}
+                        disabled={isCover}
+                      >
+                        {isCover ? "Cover" : "Make cover"}
+                      </button>
+                      {isPremium ? (
+                        <button
+                          type="button"
+                          className={cn(
+                            "smoac-control specialist-media-editor__thumb-btn",
+                            isPinned &&
+                              "specialist-media-editor__thumb-btn--pinned"
+                          )}
+                          onClick={() => togglePin(url)}
+                          disabled={!isPinned && atPinLimit}
+                        >
+                          {isPinned ? "Pinned" : "Pin"}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="smoac-control specialist-media-editor__thumb-btn specialist-media-editor__thumb-btn--danger"
+                        onClick={() =>
+                          setHeaderImages(
+                            headerImages.filter((item) => item !== url),
+                            pins.filter((item) => item !== url)
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}
@@ -258,7 +294,7 @@ export function SpecialistProfileMediaEditor({
               disabled={busy}
             >
               <span aria-hidden>+</span>
-              <span>{busy ? "Uploading…" : "Add image"}</span>
+              <span>{busy ? "Uploading…" : "Add a photo"}</span>
             </button>
           ) : null}
         </div>
