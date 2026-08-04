@@ -28,7 +28,6 @@ import {
   hasExplicitFilterParams,
 } from "@/lib/explore-url";
 import {
-  getSavedZipExploreFilters,
   mergeExploreFiltersWithSavedLocation,
 } from "@/lib/explore-location-filters";
 import {
@@ -61,7 +60,6 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
-import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import { recordRecentSearch } from "@/lib/recent-searches-store";
 import type { AuthSession } from "@/types/auth";
 
@@ -129,25 +127,22 @@ function filtersEqual(a: TrainerFilters, b: TrainerFilters): boolean {
 function buildInitialFilters(
   searchParams: URLSearchParams,
   initialSpecialty: string,
-  session: AuthSession | null
+  _session: AuthSession | null
 ): TrainerFilters {
   const fromUrl = filtersFromSearchParams(searchParams);
-  const base: TrainerFilters = {
+  return {
     ...EMPTY_TRAINER_FILTERS,
     ...fromUrl,
     specialty: initialSpecialty || fromUrl.specialty,
   };
-  if (hasExplicitFilterParams(searchParams)) return base;
-  return mergeExploreFiltersWithSavedLocation(base, session);
 }
 
 function filtersFromUrlOrSaved(
   fromUrl: TrainerFilters,
-  hasExplicit: boolean,
-  session: AuthSession | null
+  _hasExplicit: boolean,
+  _session: AuthSession | null
 ): TrainerFilters {
-  const merged = { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
-  return hasExplicit ? merged : mergeExploreFiltersWithSavedLocation(merged, session);
+  return { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
 }
 
 /** Apply URL-driven state updates outside the effect body (satisfies react-hooks/set-state-in-effect) */
@@ -296,46 +291,6 @@ export function useExploreTrainers({
     });
   }, [searchParams, session]);
 
-  /* Re-apply profile/saved ZIP when auth session or header location changes */
-  useEffect(() => {
-    function applyPreferredLocation() {
-      if (hasExplicitFilterParams(searchParams)) return;
-      applyUrlSearchSync(() => {
-        setFiltersState((prev) => {
-          const saved = getSavedZipExploreFilters(session);
-          const next = saved.zipCode
-            ? {
-                ...prev,
-                zipCode: saved.zipCode,
-                city: saved.city,
-                neighborhood: saved.neighborhood,
-              }
-            : {
-                ...prev,
-                zipCode: "",
-                city: "",
-                neighborhood: "",
-              };
-          if (filtersEqual(prev, next)) return prev;
-          scheduleUrlSync(next, displayQuery);
-          return next;
-        });
-      });
-    }
-
-    window.addEventListener(
-      USER_LOCATION_CHANGE_EVENT,
-      applyPreferredLocation
-    );
-    applyPreferredLocation();
-    return () => {
-      window.removeEventListener(
-        USER_LOCATION_CHANGE_EVENT,
-        applyPreferredLocation
-      );
-    };
-  }, [searchParams, scheduleUrlSync, displayQuery, session?.userId, session?.clientZipCode]);
-
   const setFilters = useCallback(
     (action: SetStateAction<TrainerFilters>) => {
       let nextFilters: TrainerFilters | null = null;
@@ -434,21 +389,18 @@ export function useExploreTrainers({
   const clearFilters = useCallback(() => {
     let nextFilters: TrainerFilters | null = null;
     setFiltersState((prev) => {
-      nextFilters = mergeExploreFiltersWithSavedLocation(
-        {
-          ...EMPTY_TRAINER_FILTERS,
-          gender: prev.gender,
-          priceMin: prev.priceMin,
-          priceMax: prev.priceMax,
-        },
-        session
-      );
+      nextFilters = {
+        ...EMPTY_TRAINER_FILTERS,
+        gender: prev.gender,
+        priceMin: prev.priceMin,
+        priceMax: prev.priceMax,
+      };
       return nextFilters;
     });
     if (nextFilters) {
       scheduleUrlSync(nextFilters, displayQuery);
     }
-  }, [scheduleUrlSync, displayQuery, session]);
+  }, [scheduleUrlSync, displayQuery]);
 
   const submitSearch = useCallback(
     (rawQuery: string) => {
@@ -460,6 +412,8 @@ export function useExploreTrainers({
         profession: "",
         specialty: "",
       });
+      /* Keep any explicit city/neighborhood parsed from the query; never
+       * inject the client's ZIP as a hard location filter. */
       const nextFilters = mergeExploreFiltersWithSavedLocation(
         {
           ...applied.filters,
@@ -474,7 +428,6 @@ export function useExploreTrainers({
       setSearchQuery(applied.residualQuery);
       setFiltersState(nextFilters);
       if (applied.displayQuery.trim()) {
-        /* Persist for future Explore recent-search UI — see recent-searches-store.ts */
         recordRecentSearch(applied.displayQuery);
       }
       scheduleUrlSync(nextFilters, applied.displayQuery);
@@ -487,23 +440,20 @@ export function useExploreTrainers({
     setDisplayQuery("");
     setSearchQuery("");
     setFiltersState((prev) => {
-      nextFilters = mergeExploreFiltersWithSavedLocation(
-        {
-          ...prev,
-          zipCode: "",
-          city: "",
-          neighborhood: "",
-          profession: "",
-          specialty: "",
-        },
-        session
-      );
+      nextFilters = {
+        ...prev,
+        zipCode: "",
+        city: "",
+        neighborhood: "",
+        profession: "",
+        specialty: "",
+      };
       return nextFilters;
     });
     if (nextFilters) {
       scheduleUrlSync(nextFilters, "");
     }
-  }, [scheduleUrlSync, session]);
+  }, [scheduleUrlSync]);
 
   const clearAll = useCallback(() => {
     const cleared = { ...EMPTY_TRAINER_FILTERS };

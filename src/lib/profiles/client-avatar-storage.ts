@@ -165,11 +165,6 @@ export function formatClientAvatarPipelineError(error: unknown): string {
   return safeJson(serialized);
 }
 
-/** @deprecated Prefer formatClientAvatarPipelineError during diagnosis. */
-export function mapClientAvatarUploadError(error: unknown): string {
-  return formatClientAvatarPipelineError(error);
-}
-
 export function validateClientAvatarSourceFile(file: File): void {
   const mime = (file.type || "").toLowerCase();
   if (!ALLOWED_MIME.has(mime) && mime !== "") {

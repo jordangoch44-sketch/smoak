@@ -21,11 +21,6 @@ export function formatAnalyticsMetricValue(value: number): string {
   return formatCount(value);
 }
 
-export function formatTrendLabel(trend: SpecialistAnalyticsMetric["trend"]): string {
-  const { change, period } = formatTrendParts(trend);
-  return `${change} ${period}`;
-}
-
 export function formatTrendParts(trend: SpecialistAnalyticsMetric["trend"]): {
   change: string;
   period: string;

@@ -496,13 +496,3 @@ export async function buildAdminPlatformPulse(
     engagement,
   };
 }
-
-/** @deprecated Prefer /api/admin/platform-pulse from the admin UI */
-export async function fetchAdminPlatformPulse(): Promise<AdminPlatformPulse> {
-  const { getMarketplaceAuthClient, isMarketplaceSupabaseActive } =
-    await import("@/lib/auth/marketplace-auth");
-  if (!isMarketplaceSupabaseActive()) return UNAVAILABLE;
-  const supabase = getMarketplaceAuthClient();
-  if (!supabase) return UNAVAILABLE;
-  return buildAdminPlatformPulse(supabase);
-}

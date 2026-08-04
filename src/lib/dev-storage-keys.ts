@@ -16,8 +16,6 @@ export const DEV_SAVED_SPECIALISTS_KEY = "smoac_saved_specialists";
 export const DEV_HIDDEN_SPECIALISTS_KEY = "smoac_hidden_specialists";
 /** DEV — admin specialist flags (visibility, featured, top ranked, premium) */
 export const DEV_ADMIN_SPECIALIST_META_KEY = "smoac_admin_specialist_meta";
-export const DEV_ADMIN_NOTIFICATION_DISMISSED_KEY =
-  "smoac_admin_notification_dismissed";
 /** Admin nav badges — item IDs last seen when a section tab was opened */
 export const DEV_ADMIN_SECTION_BADGE_SEEN_KEY =
   "smoac_admin_section_badge_seen";

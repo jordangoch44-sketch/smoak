@@ -15,7 +15,7 @@ export function promoSignInToken(input: {
   return `${input.userId}:${input.signedInAt}`;
 }
 
-export function isPromoDismissed(
+function isPromoDismissed(
   campaignId: string,
   signInToken?: string | null
 ): boolean {
@@ -76,7 +76,6 @@ export function resolveSitePromoForSlot(
   options: {
     audience: SitePromoAudience;
     nowMs?: number;
-    includeDismissed?: boolean;
     /** Required for campaigns with `reappearOnSignIn` */
     signInToken?: string | null;
   }
@@ -87,13 +86,9 @@ export function resolveSitePromoForSlot(
     if (!campaign.slotIds.includes(slotId)) return false;
     if (!audienceMatches(campaign, options.audience)) return false;
     if (!isWithinSchedule(campaign, nowMs)) return false;
-    if (!options.includeDismissed) {
-      const token = campaign.reappearOnSignIn
-        ? options.signInToken
-        : undefined;
-      if (isPromoDismissed(campaign.id, token ?? null)) {
-        return false;
-      }
+    const token = campaign.reappearOnSignIn ? options.signInToken : undefined;
+    if (isPromoDismissed(campaign.id, token ?? null)) {
+      return false;
     }
     return true;
   });

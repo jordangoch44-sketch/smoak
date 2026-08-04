@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
-import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
+import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
@@ -113,7 +113,7 @@ export function NewSpecialists({
                         provider={trainer}
                         className="home-portrait-card__location"
                       />
-                      <DevTrainerDistance
+                      <TrainerDistanceLabel
                         trainer={trainer}
                         className="home-portrait-card__distance"
                       />

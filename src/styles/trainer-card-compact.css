@@ -189,8 +189,9 @@
   line-height: 1.3;
 }
 
+.trainer-card-compact--featured .trainer-distance-label,
 .trainer-card-compact--featured .dev-trainer-distance {
-  color: rgba(167, 139, 250, 0.92);
+  color: rgba(125, 211, 252, 0.92);
 }
 
 .trainer-card-compact--featured .trainer-card-compact__chips.specialty-chips {

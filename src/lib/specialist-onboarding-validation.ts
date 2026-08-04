@@ -99,14 +99,3 @@ export function getSpecialistOnboardingOptionalMissingFields(
       !field.label.startsWith("Password")
   );
 }
-
-/** @deprecated Per-step gating removed — use getSpecialistOnboardingMissingFields at submit */
-export function isSpecialistOnboardingStepValid(
-  step: number,
-  state: SpecialistOnboardingState
-): boolean {
-  if (step === 6) {
-    return getSpecialistOnboardingMissingFields(state).length === 0;
-  }
-  return missingForStep(step, state).length === 0;
-}

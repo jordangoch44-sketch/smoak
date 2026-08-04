@@ -3,7 +3,7 @@
 import { TapLink } from "@/components/ui/TapLink";
 import type { Trainer } from "@/types";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
-import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
+import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
@@ -84,7 +84,7 @@ export function Top50RankCard({
               provider={trainer}
               className="top50-card__location"
             />
-            <DevTrainerDistance
+            <TrainerDistanceLabel
               trainer={trainer}
               className="top50-card__distance"
             />

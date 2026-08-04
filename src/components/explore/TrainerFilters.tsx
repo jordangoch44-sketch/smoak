@@ -3,7 +3,10 @@
 import { useCallback, useRef, useState } from "react";
 import type { TrainerFilters as Filters } from "@/types";
 import { exploreFiltersFromZipCode } from "@/lib/explore-location-filters";
-import { completeGeolocationAsync } from "@/lib/user-location-store";
+import {
+  completeGeolocationAsync,
+  completeZipEntryAsync,
+} from "@/lib/user-location-store";
 import { normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { professions, specialties, genders } from "@/data/trainers";
 import {
@@ -29,13 +32,14 @@ const GENDER_CHIPS: { label: string; value: string }[] = [
   { label: "Non-binary", value: "non-binary" },
 ];
 
+/** Persist ZIP for proximity sort; chip shows ZIP without hard city/neighborhood exclude. */
 function applyLocationFilters(filters: Filters, rawZip: string): Filters {
   const location = exploreFiltersFromZipCode(rawZip);
   return {
     ...filters,
     zipCode: location.zipCode,
-    city: location.city,
-    neighborhood: location.neighborhood,
+    city: "",
+    neighborhood: "",
   };
 }
 
@@ -88,6 +92,7 @@ export function TrainerFilters({
       return;
     }
     onChange(applyLocationFilters(filters, zip));
+    void completeZipEntryAsync(zip);
   }
 
   function clearAll() {

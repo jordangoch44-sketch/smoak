@@ -1,5 +1,5 @@
 import type { Trainer } from "@/types";
-import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
+import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
@@ -57,7 +57,7 @@ export function TrainerCardGrid({
           provider={trainer}
           className="mt-1.5 text-xs text-silver-400"
         />
-        <DevTrainerDistance trainer={trainer} className="mt-1 block" />
+        <TrainerDistanceLabel trainer={trainer} className="mt-1 block" />
         <SpecialtyChips
           specialties={trainer.specialty}
           className="mt-3 specialty-chips--row"

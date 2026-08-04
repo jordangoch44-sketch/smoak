@@ -4707,53 +4707,6 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   white-space: nowrap;
 }
 
-.specialist-pro-ghost__offer {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 1.125rem 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(var(--accent-glow-rgb), 0.32);
-  background:
-    linear-gradient(
-      150deg,
-      rgba(var(--accent-glow-rgb), 0.14) 0%,
-      rgba(var(--accent-glow-rgb), 0.05) 55%,
-      rgba(255, 255, 255, 0.02) 100%
-    );
-  box-shadow: 0 0 36px rgba(var(--accent-glow-rgb), 0.12);
-}
-
-.specialist-pro-ghost__offer-title {
-  margin: 0;
-  text-align: center;
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.94);
-}
-
-.specialist-pro-ghost__offer-text {
-  margin: 0;
-  text-align: center;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.specialist-pro-ghost__cta {
-  width: 100%;
-}
-
-.specialist-pro-ghost__fineprint {
-  margin: 0;
-  text-align: center;
-  font-size: 0.6875rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.4);
-}
-
 @media (max-width: 1023px) {
   .dashboard-page--specialist .dashboard-page__content {
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1.5rem);

@@ -32,12 +32,3 @@ export type AdminApplicationStatusLabel =
   | "approved"
   | "rejected"
   | "archived";
-
-export interface AdminClientRecord {
-  id: string;
-  email: string;
-  displayName: string;
-  status: "active" | "inactive";
-  savedSpecialistsCount: number;
-  source: "dev-account" | "signup-draft" | "mock";
-}

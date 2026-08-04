@@ -4,7 +4,7 @@
  */
 
 /** Single entry in a city leaderboard (demo / seed shape) */
-export interface CityRankingEntry {
+interface CityRankingEntry {
   rank: number;
   trainerId: string;
   smoacScore: number;
@@ -13,7 +13,7 @@ export interface CityRankingEntry {
   topRated?: boolean;
 }
 
-export interface CityTop50Listing {
+interface CityTop50Listing {
   city: string;
   slug: string;
   /** e.g. “Top 50 in San Diego” */
@@ -23,7 +23,7 @@ export interface CityTop50Listing {
 }
 
 /** Default marketplace city until geo/search detection ships */
-export const DEFAULT_RANKING_CITY_SLUG = "san-diego";
+const DEFAULT_RANKING_CITY_SLUG = "san-diego";
 
 /** Major market city filter options for the rankings board */
 export const RANKINGS_CITY_OPTIONS = [
@@ -108,11 +108,4 @@ export function getTrainerCityRanking(
   trainerId: string
 ): TrainerCityRanking | undefined {
   return RANKING_BY_TRAINER_ID.get(trainerId);
-}
-
-/** Kept for any callers that still want the demo listing object */
-export function getCityTop50Listing(
-  citySlug: string = DEFAULT_RANKING_CITY_SLUG
-): CityTop50Listing {
-  return LISTINGS_BY_SLUG[citySlug] ?? SAN_DIEGO_TOP_50;
 }

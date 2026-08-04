@@ -151,8 +151,8 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
         ) : null}
         <h2 className="location-selector-panel__title">Set your location</h2>
         <p className="location-selector-panel__lede">
-          Allow SMOAC to use your location for the most accurate specialists near
-          you — or enter a ZIP.
+          Search ranks specialists by how close they are to you. Use your current
+          location or enter a ZIP to continue.
         </p>
       </header>
 

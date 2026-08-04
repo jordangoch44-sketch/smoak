@@ -1,5 +1,5 @@
 import type { Trainer } from "@/types";
-import { DevTrainerDistance } from "@/components/trainers/DevTrainerDistance";
+import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
@@ -45,7 +45,7 @@ export function TrainerCardCompact({
             provider={trainer}
             className="trainer-card-compact__location"
           />
-          <DevTrainerDistance
+          <TrainerDistanceLabel
             trainer={trainer}
             className="trainer-card-compact__distance"
           />

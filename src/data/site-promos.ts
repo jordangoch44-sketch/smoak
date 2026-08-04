@@ -38,6 +38,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     ctaLabel: "Unlock Pro · 1 month free",
     ctaKind: "claim_pro_trial",
     dismissible: true,
+    orbitCta: true,
   },
   {
     id: "pro-upgrade-now-2026",
@@ -52,6 +53,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     ctaLabel: "Upgrade to Pro · $9.99/mo",
     ctaKind: "open_pro",
     dismissible: true,
+    orbitCta: true,
   },
   {
     id: "home-specialist-boost-2026",

@@ -181,44 +181,10 @@ export function saveClientApplication(application: ClientApplication): void {
   });
 }
 
-export async function saveClientApplicationAsync(
-  application: ClientApplication
-): Promise<{ ok: true } | { ok: false; message: string }> {
-  if (typeof window === "undefined") {
-    return { ok: false, message: "Unavailable on server" };
-  }
-  const nextApp = withSessionUserId(application);
-  const existing = listClientApplications();
-  const next = [
-    nextApp,
-    ...existing.filter((item) => item.id !== nextApp.id),
-  ];
-  applyCache(next);
-  writeLocalApplications(next);
-
-  if (!isMarketplaceSupabaseActive()) return { ok: true };
-  const supabase = getMarketplaceAuthClient();
-  if (!supabase) {
-    return { ok: false, message: "Authentication client unavailable" };
-  }
-  return upsertClientApplication(supabase, nextApp);
-}
-
 export function getClientApplicationById(
   id: string
 ): ClientApplication | null {
   return listClientApplications().find((item) => item.id === id) ?? null;
-}
-
-export function findClientApplicationByEmail(
-  email: string
-): ClientApplication | null {
-  const normalized = email.trim().toLowerCase();
-  return (
-    listClientApplications().find(
-      (item) => item.email.trim().toLowerCase() === normalized
-    ) ?? null
-  );
 }
 
 /** Force re-fetch from Supabase (e.g. after admin login). */

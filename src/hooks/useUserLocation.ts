@@ -86,8 +86,6 @@ export function useUserLocation() {
     pillLabel,
     isPlaceholder,
     isUnknownArea,
-    openEditor: editor.openLocationPanel,
-    isEditorOpen: editor.isPanelOpen,
     isPanelOpen: editor.isPanelOpen,
     toggleLocationPanel: editor.toggleLocationPanel,
   };

@@ -22,16 +22,3 @@ export interface ClientApplication {
   /** Supabase auth user id when available */
   userId?: string | null;
 }
-
-export interface ClientApplicationSubmitInput {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  preferredCity: string;
-  preferredNeighborhood: string;
-  preferredZipCode?: string;
-  fitnessGoals: string[];
-  preferredSpecialistCategories: string[];
-  budget: string;
-}

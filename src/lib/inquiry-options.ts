@@ -86,9 +86,6 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
   ],
 };
 
-/** @deprecated Prefer getInquiryTopicsForProfession — kept for label lookups */
-export const INQUIRY_TOPICS = INQUIRY_TOPICS_DEFAULT;
-
 export type InquiryTopicId = string;
 
 export const INQUIRY_MESSAGE_MAX_LENGTH = 500;

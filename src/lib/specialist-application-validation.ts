@@ -1,4 +1,3 @@
-import { findClientApplicationByEmail } from "@/lib/client-application-storage";
 import {
   findSpecialistApplicationByEmail,
   findSpecialistApplicationByUserId,
@@ -28,17 +27,6 @@ export function assertCanSubmitSpecialistApplication(
   if (BLOCKING_SPECIALIST_STATUSES.includes(existing.profileStatus)) {
     throw new ApplicationSubmitError(
       "This account is already approved. Sign in to your specialist dashboard to continue."
-    );
-  }
-}
-
-export function assertCanSubmitClientApplication(email: string): void {
-  const existing = findClientApplicationByEmail(email);
-  if (!existing) return;
-
-  if (existing.status === "PENDING" || existing.status === "ACTIVE") {
-    throw new ApplicationSubmitError(
-      "An account with this email already exists. Sign in to continue."
     );
   }
 }

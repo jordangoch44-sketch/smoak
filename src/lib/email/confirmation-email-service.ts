@@ -5,7 +5,6 @@ import {
 } from "@/lib/email/email-html-shell";
 import { getSiteUrlForStripe } from "@/lib/stripe/config";
 import { LOGIN_PATH } from "@/lib/auth-routes";
-import type { ClientApplication } from "@/types/client-application";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 export interface ConfirmationEmailPayload {
@@ -37,16 +36,8 @@ function specialistFirstName(application: SpecialistApplication): string {
   );
 }
 
-function clientFirstName(application: ClientApplication): string {
-  return firstNameFromFullName(application.fullName) || "there";
-}
-
 function specialistLoginUrl(): string {
   return `${getSiteUrlForStripe()}${LOGIN_PATH}`;
-}
-
-function exploreUrl(): string {
-  return `${getSiteUrlForStripe()}/explore`;
 }
 
 function buildSpecialistConfirmationEmail(
@@ -128,45 +119,6 @@ The SMOAC team`;
   };
 }
 
-function buildClientConfirmationEmail(
-  application: ClientApplication
-): ConfirmationEmailPayload {
-  const firstName = clientFirstName(application);
-  const text = `Hi ${firstName},
-
-Your SMOAC client account/application has been received.
-
-You can now continue exploring specialists and saving profiles.
-
-Thank you,
-SMOAC`;
-
-  const html = wrapTransactionalEmailHtml({
-    preheader: "Welcome to SMOAC",
-    eyebrow: "Welcome",
-    title: "You’re in",
-    bodyHtml: renderEmailParagraphs([
-      `Hi ${firstName},`,
-      "Your SMOAC client account is ready.",
-      "Explore specialists near you, save favorites, and send inquiries when you’re ready to connect.",
-    ]),
-    cta: {
-      label: "Explore specialists",
-      href: exploreUrl(),
-    },
-    footerNote: "Luxury wellness specialists, curated for your area.",
-  });
-
-  return {
-    to: application.email.trim(),
-    subject: "Welcome to SMOAC",
-    text,
-    html,
-    applicationId: application.id,
-    kind: "client",
-  };
-}
-
 /** Send specialist Join Now confirmation — Resend when configured. */
 export async function sendSpecialistApplicationConfirmationEmail(
   application: SpecialistApplication
@@ -201,25 +153,6 @@ export async function sendSpecialistApplicationApprovedEmail(
     });
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist approval email failed", error);
-    return { success: false };
-  }
-}
-
-/** Send client Join Now confirmation — Resend when configured. */
-export async function sendClientApplicationConfirmationEmail(
-  application: ClientApplication
-): Promise<ConfirmationEmailResult> {
-  try {
-    const payload = buildClientConfirmationEmail(application);
-    return await dispatchTransactionalEmail({
-      to: payload.to,
-      subject: payload.subject,
-      text: payload.text,
-      html: payload.html,
-      kind: "confirmation_client",
-    });
-  } catch (error) {
-    console.warn("[SMOAC EMAIL] Client confirmation email failed", error);
     return { success: false };
   }
 }

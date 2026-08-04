@@ -13,14 +13,3 @@ export function persistCreateAccountProfile(profile: CreateAccountProfile): void
     /* ignore quota / private mode */
   }
 }
-
-export function loadCreateAccountProfile(): CreateAccountProfile | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(DEV_CREATE_ACCOUNT_PROFILE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as CreateAccountProfile;
-  } catch {
-    return null;
-  }
-}

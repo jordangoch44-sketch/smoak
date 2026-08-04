@@ -1,16 +1,7 @@
 "use client";
 
-import type { TrainerFilters } from "@/types";
-
-interface ExplorePageHeaderProps {
-  filters: TrainerFilters;
-  searchQuery: string;
-}
-
-/** Props kept for ExplorePageClient compatibility; copy matches Search mockup. */
-export function ExplorePageHeader(props: ExplorePageHeaderProps) {
-  void props;
-
+/** Explore page header — matches Search mockup. */
+export function ExplorePageHeader() {
   return (
     <header className="explore-page__header">
       <h1 className="explore-page__title">Search</h1>

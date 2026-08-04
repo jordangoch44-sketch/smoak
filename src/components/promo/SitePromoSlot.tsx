@@ -27,11 +27,6 @@ interface SitePromoSlotProps {
   variant?: "default" | "compact" | "banner";
 }
 
-const ORBIT_SLOTS = new Set<SitePromoSlotId>([
-  "specialist_dashboard_hero",
-  "specialist_dashboard_pro_upgrade",
-]);
-
 export function SitePromoSlot({
   slotId,
   className,
@@ -137,7 +132,7 @@ export function SitePromoSlot({
     }
   }
 
-  const useOrbit = Boolean(campaign.orbitCta) || ORBIT_SLOTS.has(slotId);
+  const useOrbit = Boolean(campaign.orbitCta);
   const accent = campaign.accent ?? "default";
 
   return (

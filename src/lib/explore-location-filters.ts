@@ -12,8 +12,6 @@ import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
 import type { AuthSession } from "@/types/auth";
 import type { Trainer, TrainerFilters } from "@/types";
 import { providerMatchesNeighborhood } from "@/lib/provider-location";
-import { haversineMiles } from "@/lib/geo/haversine";
-import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import {
   isValidZipCode,
   normalizeZipCode,
@@ -30,10 +28,9 @@ function findParentCityForNeighborhood(placeName: string): string {
 }
 
 /**
- * Explore filter seeds from the user's saved preferred ZIP (header location).
- * Never uses marketplace-city guessing or hardcoded defaults.
+ * Display helpers for ZIP → place labels (filter chips / drawer).
+ * Client ZIP is proximity sort context — not a hard include/exclude filter.
  */
-/** Build explore location filters from any 5-digit ZIP (saved or filter drawer). */
 export function exploreFiltersFromZipCode(rawZip: string): TrainerFilters {
   const zip = normalizeZipCode(rawZip.trim());
   if (!isValidZipCode(zip)) {
@@ -76,85 +73,35 @@ export function getSavedZipExploreFilters(
   return exploreFiltersFromZipCode(zip);
 }
 
-/** Merge profile or saved ZIP location into filters without overwriting explicit user choices */
+/**
+ * Client location ranks results by distance — it must not become a ZIP/city
+ * hard filter (that hid nearby specialists across different ZIPs).
+ */
 export function mergeExploreFiltersWithSavedLocation(
   filters: TrainerFilters,
-  session?: AuthSession | null
+  _session?: AuthSession | null
 ): TrainerFilters {
-  const saved = getSavedZipExploreFilters(session);
-  if (!saved.zipCode) {
-    return filters;
-  }
-
-  return {
-    ...filters,
-    zipCode: filters.zipCode || saved.zipCode,
-    city: filters.city || saved.city,
-    neighborhood: filters.neighborhood || saved.neighborhood,
-  };
+  return filters;
 }
 
 export function hasExploreLocationFilters(filters: TrainerFilters): boolean {
-  return Boolean(filters.zipCode || filters.city || filters.neighborhood);
-}
-
-function trainerOffersTravel(trainer: Trainer): boolean {
-  if (trainer.willingToTravel != null) {
-    return trainer.willingToTravel;
-  }
-  return (
-    trainer.serviceType === "in-person" ||
-    trainer.serviceType === "both" ||
-    (trainer.serviceRadiusMiles ?? 0) > 0
-  );
+  return Boolean(filters.city || filters.neighborhood);
 }
 
 /**
- * Location match for Explore: ZIP first, then neighborhood, then city.
- * TODO(proximity-matching): When user ZIP and specialist willingToTravel are set,
- * include specialists whose serviceRadiusMiles covers haversine distance to user.
+ * Location match for Explore:
+ * - Client ZIP never excludes — proximity sort handles “near you”
+ * - Explicit city / neighborhood (search parse or filter drawer) still narrows
  */
 export function trainerMatchesExploreLocation(
   trainer: Trainer,
   filters: TrainerFilters
 ): boolean {
-  const zip = filters.zipCode.trim();
   const city = filters.city.trim();
   const neighborhood = filters.neighborhood.trim();
 
-  if (!zip && !city && !neighborhood) {
+  if (!city && !neighborhood) {
     return true;
-  }
-
-  if (zip && trainer.zipCode.trim() === zip) {
-    return true;
-  }
-
-  if (zip && trainer.serviceAreaZipCodes?.includes(zip)) {
-    return true;
-  }
-
-  if (zip) {
-    const specialistCoords =
-      trainer.latitude != null && trainer.longitude != null
-        ? { latitude: trainer.latitude, longitude: trainer.longitude }
-        : zipCodeToCoordinates(trainer.zipCode);
-    const userFromZip = zipCodeToCoordinates(zip);
-
-    if (userFromZip && specialistCoords && trainerOffersTravel(trainer)) {
-      const radius = trainer.serviceRadiusMiles ?? 0;
-      if (radius > 0) {
-        const distance = haversineMiles(
-          userFromZip.latitude,
-          userFromZip.longitude,
-          specialistCoords.latitude,
-          specialistCoords.longitude
-        );
-        if (distance <= radius) {
-          return true;
-        }
-      }
-    }
   }
 
   if (neighborhood && providerMatchesNeighborhood(trainer, neighborhood)) {
@@ -166,4 +113,11 @@ export function trainerMatchesExploreLocation(
   }
 
   return false;
+}
+
+/** True when the client can sort Explore by proximity. */
+export function hasClientSearchLocation(
+  session?: AuthSession | null
+): boolean {
+  return Boolean(getEffectiveClientZip(session ?? null) ?? loadSavedZipCode());
 }

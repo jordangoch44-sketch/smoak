@@ -89,10 +89,11 @@ function compareSortMeta(a: TrainerSortMeta, b: TrainerSortMeta): number {
 }
 
 /**
- * Explore sort:
+ * Explore sort (after category / text filters):
  * 1. Category spotlight (when profession/specialty browse matches)
  * 2. Sponsored boost
- * 3. Verified + proximity + rating
+ * 3. Proximity (closest first)
+ * 4. Verified + rating
  */
 export function sortTrainersByProximity(
   trainers: readonly Trainer[],

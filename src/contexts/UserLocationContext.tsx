@@ -20,10 +20,6 @@ interface UserLocationContextValue {
   toggleLocationPanel: (anchor?: HTMLButtonElement | null) => void;
   openLocationPanel: (anchor?: HTMLButtonElement | null) => void;
   closeLocationPanel: () => void;
-  /** @deprecated Use openLocationPanel */
-  openLocationEditor: () => void;
-  /** @deprecated Use isPanelOpen */
-  isEditorOpen: boolean;
 }
 
 const UserLocationContext = createContext<UserLocationContextValue | null>(
@@ -82,8 +78,6 @@ export function UserLocationProvider({ children }: { children: ReactNode }) {
       toggleLocationPanel,
       openLocationPanel,
       closeLocationPanel,
-      openLocationEditor: () => openLocationPanel(),
-      isEditorOpen: isPanelOpen,
     }),
     [
       isPanelOpen,

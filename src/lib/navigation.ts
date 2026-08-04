@@ -5,7 +5,7 @@
  */
 
 import { LOGIN_PATH } from "@/lib/auth-routes";
-import { JOIN_FLOW_PATH, buildJoinFlowHref } from "@/lib/join-flow";
+import { buildJoinFlowHref } from "@/lib/join-flow";
 
 /** Canonical app routes used across chrome */
 export const SITE_ROUTES = {
@@ -45,6 +45,3 @@ export const primaryNavLinks = navLinks.filter(
 
 /** Overlay / drawer transition easing */
 export const MENU_EASE = "cubic-bezier(0.32, 0.72, 0, 1)";
-
-/** @deprecated Use SITE_ROUTES.join — kept for any external imports */
-export { JOIN_FLOW_PATH, buildJoinFlowHref };

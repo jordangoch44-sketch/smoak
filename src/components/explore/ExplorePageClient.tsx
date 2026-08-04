@@ -1,9 +1,13 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { useUserLocationEditor } from "@/contexts/UserLocationContext";
+import { hasClientSearchLocation } from "@/lib/explore-location-filters";
+import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import type { Trainer } from "@/types/trainer";
 import { ExplorePageHeader } from "./ExplorePageHeader";
@@ -24,6 +28,9 @@ export function ExplorePageClient({
   catalogMode?: "live" | "seed";
 }) {
   const searchParams = useSearchParams();
+  const { session } = useAuthSession();
+  const { openLocationPanel } = useUserLocationEditor();
+  const pendingSearchRef = useRef<string | null>(null);
 
   const {
     filters,
@@ -48,11 +55,39 @@ export function ExplorePageClient({
     catalogMode,
   });
 
+  const runSearchOrAskLocation = useCallback(
+    (query: string) => {
+      if (!hasClientSearchLocation(session)) {
+        pendingSearchRef.current = query;
+        openLocationPanel();
+        return;
+      }
+      pendingSearchRef.current = null;
+      submitSearch(query);
+    },
+    [session, openLocationPanel, submitSearch]
+  );
+
+  useEffect(() => {
+    function flushPendingSearch() {
+      const pending = pendingSearchRef.current;
+      if (!pending) return;
+      if (!hasClientSearchLocation(session)) return;
+      pendingSearchRef.current = null;
+      submitSearch(pending);
+    }
+
+    window.addEventListener(USER_LOCATION_CHANGE_EVENT, flushPendingSearch);
+    return () => {
+      window.removeEventListener(USER_LOCATION_CHANGE_EVENT, flushPendingSearch);
+    };
+  }, [session, submitSearch]);
+
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
-      submitSearch(category.searchQuery);
+      runSearchOrAskLocation(category.searchQuery);
     },
-    [submitSearch]
+    [runSearchOrAskLocation]
   );
 
   const handleViewAll = useCallback(() => {
@@ -84,14 +119,11 @@ export function ExplorePageClient({
       </div>
 
       <div className="explore-page__content">
-        <ExplorePageHeader
-          filters={filters}
-          searchQuery={displayQuery}
-        />
+        <ExplorePageHeader />
 
         <ExploreSearchToolbar
           searchQuery={displayQuery}
-          onSearchSubmit={submitSearch}
+          onSearchSubmit={runSearchOrAskLocation}
           onClearSearch={clearSearch}
           activeFilterChips={activeFilterChips}
           onRemoveFilter={removeFilter}
