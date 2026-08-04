@@ -365,7 +365,8 @@
 }
 
 .site-promo--slot-specialist_dashboard_hero {
-  overflow: visible;
+  overflow: hidden;
+  isolation: isolate;
   border-color: rgba(56, 189, 248, 0.42);
   background:
     linear-gradient(
@@ -377,13 +378,16 @@
     rgba(4, 12, 22, 0.78);
   box-shadow:
     0 0 0 1px rgba(56, 189, 248, 0.12) inset,
-    0 0 28px rgba(14, 165, 233, 0.18);
+    0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .site-promo--slot-specialist_dashboard_hero .site-promo__glow {
+  inset: -18% auto auto -12%;
+  width: 11rem;
+  height: 11rem;
   background: radial-gradient(
     circle,
-    rgba(56, 189, 248, 0.38),
+    rgba(56, 189, 248, 0.28),
     transparent 70%
   );
 }
@@ -399,7 +403,7 @@
 }
 
 .site-promo--slot-specialist_dashboard_hero .site-promo__cta-wrap--orbit {
-  box-shadow: 0 0 22px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.28);
 }
 
 .site-promo--slot-specialist_dashboard_hero
@@ -461,7 +465,8 @@
 }
 
 .site-promo--slot-specialist_dashboard_pro_upgrade {
-  overflow: visible;
+  overflow: hidden;
+  isolation: isolate;
   border-color: rgba(var(--aurora-lavender-rgb), 0.42);
   background:
     linear-gradient(
@@ -473,13 +478,16 @@
     rgba(10, 8, 18, 0.78);
   box-shadow:
     0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.14) inset,
-    0 0 28px rgba(var(--aurora-lavender-rgb), 0.2);
+    0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .site-promo--slot-specialist_dashboard_pro_upgrade .site-promo__glow {
+  inset: -18% auto auto -12%;
+  width: 11rem;
+  height: 11rem;
   background: radial-gradient(
     circle,
-    rgba(var(--aurora-lavender-rgb), 0.4),
+    rgba(var(--aurora-lavender-rgb), 0.3),
     transparent 70%
   );
 }
@@ -496,7 +504,7 @@
 
 .site-promo--slot-specialist_dashboard_pro_upgrade
   .site-promo__cta-wrap--orbit {
-  box-shadow: 0 0 22px rgba(var(--aurora-lavender-rgb), 0.38);
+  box-shadow: 0 0 14px rgba(var(--aurora-lavender-rgb), 0.3);
 }
 
 .site-promo--slot-specialist_dashboard_pro_upgrade

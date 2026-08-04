@@ -122,6 +122,9 @@ export async function updateSession(request: NextRequest) {
     if (role && isAdminAppRole(role)) {
       return supabaseResponse;
     }
+    if (role && isPublicAuthRole(role)) {
+      return redirectToAppPath(request, getDashboardForRole(role));
+    }
     return redirectToAppPath(request, "/");
   }
 

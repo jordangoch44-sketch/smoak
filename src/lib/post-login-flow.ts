@@ -55,3 +55,9 @@ export function resolvePostLoginNavigation(
     path: getDashboardPathForRole(role),
   };
 }
+
+/** Hard navigation after auth so proxy/cookies see the new session (avoids soft-nav bounce to /login). */
+export function navigateAfterAuth(path: string): void {
+  if (typeof window === "undefined") return;
+  window.location.assign(path);
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { Logo } from "@/components/ui/Logo";
@@ -15,7 +15,7 @@ import { sendMagicLinkForLogin } from "@/lib/auth/marketplace-auth";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
 import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
-import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
+import { resolvePostLoginNavigation, navigateAfterAuth } from "@/lib/post-login-flow";
 import { cn } from "@/lib/utils";
 
 const LOGIN_FAILURE_DELAY_MS = 300;
@@ -47,7 +47,6 @@ function delay(ms: number): Promise<void> {
 }
 
 export function LoginPageClient() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const returnToSaved = isAuthReturnToSaved(searchParams);
   const reducedMotion = useReducedMotion();
@@ -74,12 +73,12 @@ export function LoginPageClient() {
     const publicRole = getUserRole(session);
     if (!publicRole) return;
     /* Pending specialists must land on their dashboard, not the homepage. */
-    router.replace(
+    navigateAfterAuth(
       returnToSaved && publicRole === "client"
         ? "/saved"
         : getDashboardPathForRole(publicRole)
     );
-  }, [isReady, session, router, returnToSaved]);
+  }, [isReady, session, returnToSaved]);
 
   useEffect(() => {
     if (searchParams.get("error") !== "auth_callback") return;
@@ -210,10 +209,8 @@ export function LoginPageClient() {
       showSaveToast(toast);
     }
 
-    window.setTimeout(() => {
-      router.push(path);
-      setSubmitting(false);
-    }, 80);
+    /* Hard navigate so the proxy sees auth cookies (soft push can bounce to /login). */
+    navigateAfterAuth(path);
   }
 
   async function handleMagicLinkSubmit(e: React.FormEvent) {
@@ -259,6 +256,40 @@ export function LoginPageClient() {
     : signInMethod === "magic_link"
       ? "Enter your email and we’ll send you a sign-in link."
       : "Sign in to your SMOAC account.";
+
+  const publicSessionRole =
+    isReady && session && session.role !== "admin"
+      ? getUserRole(session)
+      : null;
+
+  if (publicSessionRole) {
+    return (
+      <div className="login-page" aria-busy="true">
+        <div className="login-page__canvas" aria-hidden>
+          <div className="atmosphere-mesh">
+            <div className="atmosphere-blob atmosphere-blob--indigo" />
+            <div className="atmosphere-blob atmosphere-blob--blue" />
+            <div className="atmosphere-blob atmosphere-blob--violet" />
+            <div className="atmosphere-blob atmosphere-blob--magenta" />
+            <div className="atmosphere-blob atmosphere-blob--pink" />
+            <div className="atmosphere-blob atmosphere-blob--core" />
+          </div>
+          <div className="login-page__card-glow" />
+          <div className="atmosphere-vignette atmosphere-vignette--soft" />
+          <div className="atmosphere-grain" />
+        </div>
+        <div className="login-page__shell">
+          <div className="login-card">
+            <p className="login-card__eyebrow">Welcome back</p>
+            <h1 className="login-card__title">Opening your account…</h1>
+            <p className="login-card__subtitle">
+              Taking you to your {publicSessionRole} dashboard.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">

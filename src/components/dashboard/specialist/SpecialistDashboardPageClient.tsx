@@ -45,7 +45,7 @@ type FreeDashboardTab = "plan" | "profile";
 
 const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
   { id: "plan", label: "Plan & upgrade" },
-  { id: "profile", label: "Live profile" },
+  { id: "profile", label: "Edit profile" },
 ];
 
 function dashboardSubtitle(

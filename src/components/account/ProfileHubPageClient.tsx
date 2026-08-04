@@ -2,12 +2,12 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { SmoacWordmark } from "@/components/brand/SmoacWordmark";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
+import { navigateAfterAuth } from "@/lib/post-login-flow";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
 import "@/styles/profile-hub.css";
@@ -19,7 +19,6 @@ const PROFILE_BENEFITS = [
 ] as const;
 
 export function ProfileHubPageClient() {
-  const router = useRouter();
   const hydrated = useHydrated();
   const { isReady, session } = useAuthSession();
 
@@ -29,8 +28,8 @@ export function ProfileHubPageClient() {
   useEffect(() => {
     if (!hydrated || !isReady) return;
     if (!signedIn || !role) return;
-    router.replace(getDashboardPathForRole(role));
-  }, [hydrated, isReady, role, router, signedIn]);
+    navigateAfterAuth(getDashboardPathForRole(role));
+  }, [hydrated, isReady, role, signedIn]);
 
   if (!hydrated || !isReady) {
     return (

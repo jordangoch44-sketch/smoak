@@ -3581,6 +3581,8 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .specialist-dash-tabs {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 0.35rem;
   width: 100%;
