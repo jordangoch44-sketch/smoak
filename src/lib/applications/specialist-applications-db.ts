@@ -102,6 +102,35 @@ export async function fetchSpecialistApplications(
   };
 }
 
+export async function fetchSpecialistApplicationByUserId(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<
+  | { ok: true; application: SpecialistApplication | null }
+  | { ok: false; message: string }
+> {
+  const trimmed = userId.trim();
+  if (!trimmed) return { ok: true, application: null };
+
+  const { data, error } = await supabase
+    .from("specialist_applications")
+    .select("*")
+    .eq("user_id", trimmed)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  if (!data) return { ok: true, application: null };
+  return {
+    ok: true,
+    application: specialistApplicationFromRow(data as SpecialistApplicationRow),
+  };
+}
+
 export async function upsertSpecialistApplication(
   supabase: SupabaseClient,
   application: SpecialistApplication

@@ -171,6 +171,27 @@ export function AuthSessionProvider({
     session?.clientCity,
   ]);
 
+  useEffect(() => {
+    if (!supabaseAuth || !session || session.role !== "specialist") return;
+    let cancelled = false;
+    void (async () => {
+      const { ensurePendingSpecialistApplicationForAuthUser } = await import(
+        "@/lib/auth/ensure-specialist-application"
+      );
+      if (cancelled) return;
+      await ensurePendingSpecialistApplicationForAuthUser({
+        userId: session.userId,
+        email: session.email,
+        firstName: session.firstName,
+        displayName: session.displayName,
+        avatarUrl: session.avatarUrl,
+      });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabaseAuth, session?.userId, session?.role, session?.email]);
+
   const handleSignInWithPassword = useCallback(
     async (role: PublicAuthRole, email: string, password: string) => {
       const result = await signInWithPassword(role, email, password);
@@ -190,6 +211,25 @@ export function AuthSessionProvider({
             });
           } else if (pending.message) {
             showToast({ type: "info", message: pending.message });
+          }
+
+          const { ensurePendingSpecialistApplicationForAuthUser } = await import(
+            "@/lib/auth/ensure-specialist-application"
+          );
+          const ensured = await ensurePendingSpecialistApplicationForAuthUser({
+            userId: result.session.userId,
+            email: result.session.email,
+            firstName: result.session.firstName,
+            displayName: result.session.displayName,
+            avatarUrl: result.session.avatarUrl,
+          });
+          if (ensured.created) {
+            showToast({
+              type: "success",
+              message: "Application submitted — pending SMOAC review.",
+            });
+          } else if (ensured.message) {
+            showToast({ type: "info", message: ensured.message });
           }
         }
       }

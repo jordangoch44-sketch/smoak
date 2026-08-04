@@ -1,5 +1,5 @@
 interface SpecialistPendingApprovalNoticeProps {
-  variant: "pending" | "rejected";
+  variant: "pending" | "rejected" | "missing";
   /** First landing after submit from onboarding */
   justSubmitted?: boolean;
 }
@@ -9,6 +9,7 @@ export function SpecialistPendingApprovalNotice({
   justSubmitted = false,
 }: SpecialistPendingApprovalNoticeProps) {
   const isRejected = variant === "rejected";
+  const isMissing = variant === "missing";
 
   return (
     <section
@@ -27,16 +28,20 @@ export function SpecialistPendingApprovalNotice({
       <h2 id="specialist-dash-notice-title" className="specialist-dash-notice__title">
         {isRejected
           ? "Needs changes"
-          : justSubmitted
-            ? "Application submitted"
-            : "Pending verification"}
+          : isMissing
+            ? "Finish submitting your application"
+            : justSubmitted
+              ? "Application submitted"
+              : "Pending verification"}
       </h2>
       <p className="specialist-dash-notice__text">
         {isRejected
           ? "Your application needs a few updates before it can go live. Edit your submitted profile below and resubmit when ready."
-          : justSubmitted
-            ? "Thanks — we have your application. Typical review is within 24 hours. You’ll get an email when you’re approved. You can edit your submitted details below anytime while you wait."
-            : "Every application is reviewed individually — typically within 24 hours. You’ll get an email at the address you signed up with when you’re approved. Then log back in and finish your full in-depth profile (pricing, availability, media, and more) from Edit profile."}
+          : isMissing
+            ? "Your specialist account exists, but SMOAC admin hasn’t received your application yet. Open Edit profile, save your details, then sign out and back in — or contact support if this keeps happening."
+            : justSubmitted
+              ? "Thanks — we have your application. Typical review is within 24 hours. You’ll get an email when you’re approved. You can edit your submitted details below anytime while you wait."
+              : "Every application is reviewed individually — typically within 24 hours. You’ll get an email at the address you signed up with when you’re approved. Then log back in and finish your full in-depth profile (pricing, availability, media, and more) from Edit profile."}
       </p>
     </section>
   );

@@ -292,7 +292,6 @@ export async function saveSpecialistApplicationAsync(
   }
   const supabase = getMarketplaceAuthClient();
   if (!supabase) {
-    cacheApplication(nextApp);
     return { ok: false, message: "Authentication client unavailable" };
   }
 
@@ -300,13 +299,17 @@ export async function saveSpecialistApplicationAsync(
    * application_data time out the Postgres upsert. */
   const prepared = await uploadApplicationMediaToStorage(nextApp);
   if (!prepared.ok) {
-    cacheApplication(nextApp);
     return prepared;
   }
 
-  cacheApplication(prepared.application);
-  const result = await upsertSpecialistApplication(supabase, prepared.application);
+  const result = await upsertSpecialistApplication(
+    supabase,
+    prepared.application
+  );
   if (!result.ok) return result;
+
+  /* Only cache after the remote write succeeds so admin/hydrate stay truthful. */
+  cacheApplication(prepared.application);
   return { ok: true, application: prepared.application };
 }
 

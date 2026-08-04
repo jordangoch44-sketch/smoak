@@ -268,8 +268,18 @@ export function SpecialistDashboardPageClient() {
           <>
             {isPendingGate ? (
               <SpecialistPendingApprovalNotice
-                variant={dashboardMode === "rejected" ? "rejected" : "pending"}
-                justSubmitted={justSubmitted && dashboardMode === "pending"}
+                variant={
+                  dashboardMode === "rejected"
+                    ? "rejected"
+                    : application
+                      ? "pending"
+                      : "missing"
+                }
+                justSubmitted={
+                  justSubmitted &&
+                  dashboardMode === "pending" &&
+                  Boolean(application)
+                }
               />
             ) : null}
 
