@@ -20,6 +20,8 @@ interface SitePromoSlotProps {
   /** Dashboard can open Boost / Pro modals instead of navigating */
   onOpenBoost?: () => void;
   onOpenPro?: () => void;
+  /** Opens free-trial benefits confirm modal */
+  onOpenProTrial?: () => void;
   /** Visual density */
   variant?: "default" | "compact" | "banner";
 }
@@ -34,6 +36,7 @@ export function SitePromoSlot({
   className,
   onOpenBoost,
   onOpenPro,
+  onOpenProTrial,
   variant = "default",
 }: SitePromoSlotProps) {
   const hydrated = useHydrated();
@@ -80,6 +83,14 @@ export function SitePromoSlot({
         return;
       }
       router.push("/specialist-dashboard?promo=pro");
+      return;
+    }
+    if (kind === "claim_pro_trial") {
+      if (onOpenProTrial) {
+        onOpenProTrial();
+        return;
+      }
+      router.push("/specialist-dashboard?promo=pro-trial");
       return;
     }
     if (href) {

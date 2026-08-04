@@ -32,6 +32,7 @@ import {
 import { getSpecialistProPreviewAnalytics } from "@/lib/specialist-dashboard-analytics";
 import {
   SMOAC_FREE_PLAN_LABEL,
+  formatProTrialBadgeLabel,
   showSpecialistFreeTrialPromo,
   showSpecialistPaidUpgradePromo,
 } from "@/lib/specialist-premium";
@@ -133,6 +134,7 @@ export function SpecialistDashboardPageClient() {
   const isPendingGate =
     dashboardMode === "pending" || dashboardMode === "rejected";
   const isFreeLive = dashboardMode === "approved-free";
+  const onProTrial = Boolean(session.premiumTrialActive);
 
   const leadUnread = data.newLeads.filter((lead) => lead.unread).length;
   const bannerUnread = Math.max(notificationUnread, leadUnread);
@@ -145,6 +147,14 @@ export function SpecialistDashboardPageClient() {
     });
   }
 
+  const roleLabel = onProTrial
+    ? formatProTrialBadgeLabel(session.premiumTrialDaysRemaining)
+    : isFreeLive
+      ? SMOAC_FREE_PLAN_LABEL
+      : isPremium
+        ? "SMOAC Pro"
+        : "Specialist";
+
   return (
     <>
     <DashboardPageShell
@@ -153,19 +163,10 @@ export function SpecialistDashboardPageClient() {
       title={`Good to see you, ${firstName}`}
       subtitle={dashboardSubtitle(
         dashboardMode,
-        session.premiumTrialActive
-          ? session.premiumTrialDaysRemaining
-          : undefined
+        onProTrial ? session.premiumTrialDaysRemaining : undefined
       )}
-      roleLabel={
-        isFreeLive
-          ? SMOAC_FREE_PLAN_LABEL
-          : session.premiumTrialActive
-            ? "Pro trial"
-            : isPremium
-              ? "SMOAC Pro"
-              : "Specialist"
-      }
+      roleLabel={roleLabel}
+      roleLabelTone={onProTrial ? "pro-trial" : "default"}
       statusLabel={profileFirst ? null : profileStatusLabel}
       statusTone={statusTone}
       utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}

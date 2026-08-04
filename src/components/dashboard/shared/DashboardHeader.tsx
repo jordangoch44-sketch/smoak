@@ -8,6 +8,8 @@ export interface DashboardHeaderProps {
   quote?: string;
   quoteAttribution?: string;
   roleLabel?: string;
+  /** Visual tone for the plan badge (e.g. neon Pro Trial) */
+  roleLabelTone?: "default" | "pro-trial";
   statusLabel?: string | null;
   statusTone?: "pending" | "active" | "rejected";
   actions?: ReactNode;
@@ -21,6 +23,7 @@ export function DashboardHeader({
   quote,
   quoteAttribution,
   roleLabel,
+  roleLabelTone = "default",
   statusLabel,
   statusTone = "pending",
   actions,
@@ -58,7 +61,15 @@ export function DashboardHeader({
         {hasAside ? (
           <div className="dashboard-page__header-aside">
             {roleLabel ? (
-              <span className="dashboard-role-badge">{roleLabel}</span>
+              <span
+                className={
+                  roleLabelTone === "pro-trial"
+                    ? "dashboard-role-badge dashboard-role-badge--pro-trial"
+                    : "dashboard-role-badge"
+                }
+              >
+                {roleLabel}
+              </span>
             ) : null}
             {statusLabel ? (
               <span

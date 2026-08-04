@@ -7,6 +7,7 @@ import { AnalyticsMetricTile } from "@/components/dashboard/specialist/Analytics
 import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import {
   BoostVisibilityModal,
+  SmoacProTrialConfirmModal,
   SmoacProUpgradeModal,
   StatTile,
 } from "@/components/dashboard/shared";
@@ -32,6 +33,7 @@ export function SpecialistProGhostPreview({
   showUpgradePromo = true,
 }: SpecialistProGhostPreviewProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [trialConfirmOpen, setTrialConfirmOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
   const name = firstName.trim() || "Your";
   const secondaryTiles = buildSecondaryStatTiles(analytics);
@@ -43,6 +45,7 @@ export function SpecialistProGhostPreview({
         <SitePromoSlot
           slotId="specialist_dashboard_hero"
           onOpenPro={() => setUpgradeOpen(true)}
+          onOpenProTrial={() => setTrialConfirmOpen(true)}
           onOpenBoost={() => setBoostOpen(true)}
         />
       ) : null}
@@ -134,6 +137,10 @@ export function SpecialistProGhostPreview({
         />
       </section>
 
+      <SmoacProTrialConfirmModal
+        open={trialConfirmOpen}
+        onClose={() => setTrialConfirmOpen(false)}
+      />
       <SmoacProUpgradeModal
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}

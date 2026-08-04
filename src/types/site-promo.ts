@@ -14,7 +14,11 @@ export type SitePromoSlotId =
 
 export type SitePromoAudience = "specialist" | "client" | "guest" | "all";
 
-export type SitePromoCtaKind = "link" | "open_boost" | "open_pro";
+export type SitePromoCtaKind =
+  | "link"
+  | "open_boost"
+  | "open_pro"
+  | "claim_pro_trial";
 
 export interface SitePromoCampaign {
   id: string;

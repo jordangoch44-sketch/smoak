@@ -11,6 +11,7 @@ interface DashboardPageShellProps {
   quote?: string;
   quoteAttribution?: string;
   roleLabel?: string;
+  roleLabelTone?: "default" | "pro-trial";
   statusLabel?: string | null;
   statusTone?: "pending" | "active" | "rejected";
   actions?: ReactNode;
@@ -29,6 +30,7 @@ export function DashboardPageShell({
   quote,
   quoteAttribution,
   roleLabel,
+  roleLabelTone = "default",
   statusLabel,
   statusTone = "pending",
   actions,
@@ -98,6 +100,7 @@ export function DashboardPageShell({
           quote={quote}
           quoteAttribution={quoteAttribution}
           roleLabel={roleLabel}
+          roleLabelTone={roleLabelTone}
           statusLabel={statusLabel}
           statusTone={statusTone}
           actions={actions}

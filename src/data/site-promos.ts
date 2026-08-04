@@ -36,7 +36,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     body: "One-time offer. No card required. You get full Pro access for 30 days, then your account returns to Free unless you upgrade.",
     stat: "Available once per specialist account.",
     ctaLabel: "Unlock Pro · 1 month free",
-    ctaKind: "open_pro",
+    ctaKind: "claim_pro_trial",
     dismissible: true,
   },
   {

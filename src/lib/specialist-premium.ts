@@ -26,6 +26,23 @@ export const SMOAC_PRO_UPGRADE_MODAL = {
   note: "Billed monthly. Cancel anytime.",
 } as const;
 
+/** Confirm before starting the one-time complimentary Pro trial */
+export const SMOAC_PRO_TRIAL_CONFIRM_MODAL = {
+  eyebrow: "One-time offer",
+  title: "Start your free Pro month",
+  description:
+    "No card required. Full Pro access for 30 days — then you return to Free unless you upgrade.",
+  benefits: [
+    "Full profile analytics unlocked",
+    "Visibility & ranking intelligence",
+    "Client engagement metrics",
+    "Growth insights across your marketplace profile",
+  ] as const,
+  note: "Available once per specialist account.",
+  primaryCta: "Confirm & start trial",
+  secondaryCta: "Not now",
+} as const;
+
 /** Shown once when the complimentary trial expires */
 export const SMOAC_PRO_TRIAL_ENDED_MODAL = {
   eyebrow: "Trial ended",
@@ -42,6 +59,15 @@ export function isSpecialistPremium(
   subscription: SpecialistSubscription | undefined
 ): boolean {
   return subscription?.isPremium === true;
+}
+
+/** Header badge while complimentary Pro trial is active */
+export function formatProTrialBadgeLabel(
+  daysRemaining: number | null | undefined
+): string {
+  if (typeof daysRemaining !== "number") return "Pro Trial";
+  if (daysRemaining <= 0) return "Pro Trial · ending today";
+  return `Pro Trial · ${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left`;
 }
 
 /** Neon free-trial bubble — once per specialist, gone after trial starts. */

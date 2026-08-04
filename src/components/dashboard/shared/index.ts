@@ -11,6 +11,7 @@ export { DashboardComingSoonModal } from "./DashboardComingSoonModal";
 export { PremiumLockedValues } from "./PremiumLockedValues";
 export { PremiumUnlockCta } from "./PremiumUnlockCta";
 export { SmoacProUpgradeModal } from "./SmoacProUpgradeModal";
+export { SmoacProTrialConfirmModal } from "./SmoacProTrialConfirmModal";
 export { BoostVisibilityModal } from "./BoostVisibilityModal";
 export { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
 export { PremiumTrialEndedModal } from "./PremiumTrialEndedModal";
