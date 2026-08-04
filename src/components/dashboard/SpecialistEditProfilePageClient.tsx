@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import {
@@ -17,6 +18,7 @@ import {
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
+import { CloseIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
@@ -74,7 +76,13 @@ function genderLabel(value: Gender): string {
   return GENDER_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 
-export function SpecialistEditProfilePageClient() {
+export function SpecialistEditProfilePageClient({
+  presentation = "page",
+  onRequestClose,
+}: {
+  presentation?: "page" | "modal";
+  onRequestClose?: () => void;
+} = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isReady, session } = useRequireAuth("specialist");
@@ -88,10 +96,32 @@ export function SpecialistEditProfilePageClient() {
     null
   );
   const [saving, setSaving] = useState(false);
+  const [modalMounted, setModalMounted] = useState(false);
   const focusPhoto = searchParams.get("focus") === "photo";
   const photoFocusOpenedRef = useRef(false);
+  const isModal = presentation === "modal";
 
   useProfileKeyboardChrome();
+
+  useEffect(() => {
+    if (!isModal) return;
+    setModalMounted(true);
+  }, [isModal]);
+
+  useEffect(() => {
+    if (!isModal) return;
+    document.body.classList.add("specialist-full-editor-open");
+    document.documentElement.classList.add("specialist-full-editor-open");
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape" && !saving) onRequestClose?.();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("specialist-full-editor-open");
+      document.documentElement.classList.remove("specialist-full-editor-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isModal, onRequestClose, saving]);
 
   const savedForm = formDefaults;
   const form = editingSection != null && sectionDraft ? sectionDraft : savedForm;
@@ -260,6 +290,19 @@ export function SpecialistEditProfilePageClient() {
   }
 
   if (!isReady || !session || !savedForm || !form) {
+    if (isModal) {
+      if (!modalMounted || typeof document === "undefined") return null;
+      return createPortal(
+        <div className="specialist-full-editor" role="presentation">
+          <div className="specialist-full-editor__panel">
+            <p className="specialist-full-editor__loading">
+              Loading profile editor…
+            </p>
+          </div>
+        </div>,
+        document.body
+      );
+    }
     return (
       <div className="dashboard-page dashboard-page--loading">
         <div className="dashboard-page__content">
@@ -271,44 +314,32 @@ export function SpecialistEditProfilePageClient() {
 
   const completion = computeProfileCompletion(savedForm);
 
-  return (
-    <DashboardPageShell
-      variant="specialist"
-      eyebrow="Specialist dashboard"
-      title="Edit profile"
-      subtitle={
-        profileFirst
-          ? "Update one section at a time — changes save to your profile draft."
-          : "Shape how clients discover and book you on SMOAC."
-      }
-      roleLabel="Specialist"
-      utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
-      actions={
-        <Link href="/specialist-dashboard" className="dashboard-back-link">
-          ← Dashboard
-        </Link>
-      }
+  const editorBody = (
+    <div
+      className={cn(
+        "dashboard-edit dashboard-edit--profile dashboard-edit--sections",
+        isModal && "dashboard-edit--full-editor-modal"
+      )}
     >
-      <div className="dashboard-edit dashboard-edit--profile dashboard-edit--sections">
-        {dashboardMode === "pending" || dashboardMode === "rejected" ? (
-          <SpecialistPendingApprovalNotice
-            variant={dashboardMode === "rejected" ? "rejected" : "pending"}
-          />
-        ) : null}
+      {dashboardMode === "pending" || dashboardMode === "rejected" ? (
+        <SpecialistPendingApprovalNotice
+          variant={dashboardMode === "rejected" ? "rejected" : "pending"}
+        />
+      ) : null}
 
-        {dashboardMode === "approved-free" ? (
-          <SpecialistDashboardProfileHeader variant="live-free" />
-        ) : null}
+      {!isModal && dashboardMode === "approved-free" ? (
+        <SpecialistDashboardProfileHeader variant="live-free" />
+      ) : null}
 
-        <div className="dashboard-edit__summary">
-          <p className="dashboard-edit__summary-label">Profile strength</p>
-          <p className="dashboard-edit__summary-value">{completion}% complete</p>
-          <p className="dashboard-edit__unsaved">
-            Tap Edit on a section to make changes.
-          </p>
-        </div>
+      <div className="dashboard-edit__summary">
+        <p className="dashboard-edit__summary-label">Profile strength</p>
+        <p className="dashboard-edit__summary-value">{completion}% complete</p>
+        <p className="dashboard-edit__unsaved">
+          Tap Edit on a section to make changes.
+        </p>
+      </div>
 
-        <div className="dashboard-edit__sections">
+      <div className="dashboard-edit__sections">
           <ProfileEditSection
             {...sectionProps("basic-info")}
             title="Basic info"
@@ -1056,6 +1087,75 @@ export function SpecialistEditProfilePageClient() {
           />
         </div>
       </div>
+  );
+
+  if (isModal) {
+    if (!modalMounted || typeof document === "undefined") return null;
+    return createPortal(
+      <div
+        className="specialist-full-editor"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="specialist-full-editor-title"
+      >
+        <div className="specialist-full-editor__panel">
+          <header className="specialist-full-editor__head">
+            <div className="specialist-full-editor__head-row">
+              <button
+                type="button"
+                className="specialist-full-editor__exit"
+                onClick={onRequestClose}
+                disabled={saving}
+              >
+                ← Exit full editor
+              </button>
+              <button
+                type="button"
+                className="specialist-full-editor__close"
+                onClick={onRequestClose}
+                aria-label="Close full editor"
+                disabled={saving}
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <h2
+              id="specialist-full-editor-title"
+              className="specialist-full-editor__title"
+            >
+              Full profile editor
+            </h2>
+            <p className="specialist-full-editor__sub">
+              Pricing, photos, credentials, and more. Exit anytime to return to
+              your live profile.
+            </p>
+          </header>
+          <div className="specialist-full-editor__body">{editorBody}</div>
+        </div>
+      </div>,
+      document.body
+    );
+  }
+
+  return (
+    <DashboardPageShell
+      variant="specialist"
+      eyebrow="Specialist dashboard"
+      title="Edit profile"
+      subtitle={
+        profileFirst
+          ? "Update one section at a time — changes save to your profile draft."
+          : "Shape how clients discover and book you on SMOAC."
+      }
+      roleLabel="Specialist"
+      utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
+      actions={
+        <Link href="/specialist-dashboard" className="dashboard-back-link">
+          ← Dashboard
+        </Link>
+      }
+    >
+      {editorBody}
     </DashboardPageShell>
   );
 }

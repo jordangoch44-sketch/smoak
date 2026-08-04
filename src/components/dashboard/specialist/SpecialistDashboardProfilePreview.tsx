@@ -6,11 +6,12 @@ import {
   useState,
   type MouseEvent,
   type ReactNode,
+  Suspense,
 } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
+import { SpecialistEditProfilePageClient } from "@/components/dashboard/SpecialistEditProfilePageClient";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { Bio } from "@/components/profile/Bio";
 import { Certifications } from "@/components/profile/Certifications";
@@ -35,8 +36,8 @@ import {
 } from "@/types/specialist-service-area";
 import type { Trainer } from "@/types/trainer";
 
-const EDIT_PROFILE_PATH = "/specialist-dashboard/edit-profile";
 const LOCK_CLASS = "specialist-live-edit-open";
+const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
 
 type SectionId =
   | "hero"
@@ -223,8 +224,21 @@ export function SpecialistDashboardProfilePreview({
   const [editing, setEditing] = useState<SectionId | null>(null);
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fullEditorOpen, setFullEditorOpen] = useState(false);
 
   const canEdit = editable && Boolean(formDefaults && trainerId);
+
+  function closeFullEditor() {
+    setFullEditorOpen(false);
+    window.requestAnimationFrame(() => {
+      const anchor = document.getElementById(LIVE_PROFILE_ANCHOR_ID);
+      if (anchor) {
+        anchor.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
 
   function startEdit(section: SectionId) {
     if (!canEdit || !formDefaults) return;
@@ -274,6 +288,7 @@ export function SpecialistDashboardProfilePreview({
 
   return (
     <article
+      id={LIVE_PROFILE_ANCHOR_ID}
       className="specialist-live-marketplace"
       aria-label="Live marketplace profile"
     >
@@ -418,13 +433,23 @@ export function SpecialistDashboardProfilePreview({
 
       {canEdit ? (
         <div className="specialist-live-marketplace__footer">
-          <Link
-            href={EDIT_PROFILE_PATH}
-            className="specialist-dash-profile__full-editor-link"
+          <button
+            type="button"
+            className="smoac-control specialist-dash-profile__full-editor-link"
+            onClick={() => setFullEditorOpen(true)}
           >
-            Open full editor (pricing, photos & more) →
-          </Link>
+            Open full editor (pricing, photos & more)
+          </button>
         </div>
+      ) : null}
+
+      {fullEditorOpen ? (
+        <Suspense fallback={null}>
+          <SpecialistEditProfilePageClient
+            presentation="modal"
+            onRequestClose={closeFullEditor}
+          />
+        </Suspense>
       ) : null}
 
       {editing && form ? (
