@@ -284,7 +284,13 @@ export function SpecialistDashboardProfilePreview({
         className="specialist-live-zone--hero"
       >
         <div data-live-edit-ignore>
-          <ProfileHero trainer={trainer} variant="specialist-live" />
+          <ProfileHero
+            trainer={trainer}
+            variant="specialist-live"
+            onEditProfilePhoto={
+              canEdit ? () => startEdit("hero") : undefined
+            }
+          />
         </div>
       </LiveEditZone>
 

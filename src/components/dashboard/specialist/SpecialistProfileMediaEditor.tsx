@@ -55,7 +55,7 @@ async function uploadGalleryImage(
 }
 
 /**
- * Clear directions for display photo vs header slideshow, with free/Pro caps.
+ * Clear directions for profile photo vs header slideshow, with free/Pro caps.
  */
 export function SpecialistProfileMediaEditor({
   profilePhotoUrl,
@@ -156,7 +156,7 @@ export function SpecialistProfileMediaEditor({
         <p className="specialist-media-editor__guide-title">How your photos work</p>
         <ol className="specialist-media-editor__guide-list">
           <li>
-            <strong>Display photo</strong> — your face on Explore cards, saves,
+            <strong>Profile photo</strong> — your face on Explore cards, saves,
             and the top-right of your portal.
           </li>
           <li>
@@ -171,7 +171,7 @@ export function SpecialistProfileMediaEditor({
       </div>
 
       <ProfileMediaUploadField
-        label="1. Display photo"
+        label="1. Profile photo"
         hint="Square headshot clients recognize"
         value={profilePhotoUrl}
         onChange={(value) => onChange({ profilePhotoUrl: value })}

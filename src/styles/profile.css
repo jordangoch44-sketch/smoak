@@ -556,6 +556,36 @@
   flex-shrink: 0;
 }
 
+.profile-hero__avatar-wrap--editable {
+  isolation: isolate;
+}
+
+.profile-hero__avatar-edit {
+  position: absolute;
+  right: -0.2rem;
+  bottom: -0.15rem;
+  z-index: 4;
+  min-height: 1.625rem;
+  padding: 0 0.625rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(12, 10, 24, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.94);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.profile-hero__avatar-edit:hover {
+  background: rgba(20, 16, 36, 0.95);
+  color: #fff;
+}
+
 .profile-hero__avatar-btn {
   display: block;
   padding: 0;

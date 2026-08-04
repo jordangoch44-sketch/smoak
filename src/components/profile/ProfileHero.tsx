@@ -35,6 +35,8 @@ interface ProfileHeroProps {
   onLeaveReview?: () => void;
   /** Specialist Live tab — same look, no client toolbar / review actions */
   variant?: "public" | "specialist-live";
+  /** Live tab — Edit chip on the circular profile photo */
+  onEditProfilePhoto?: () => void;
 }
 
 export function ProfileHero({
@@ -45,6 +47,7 @@ export function ProfileHero({
   hasOwnReview,
   onLeaveReview,
   variant = "public",
+  onEditProfilePhoto,
 }: ProfileHeroProps) {
   const isSpecialistLive = variant === "specialist-live";
   const ranking = cityRanking;
@@ -125,6 +128,11 @@ export function ProfileHero({
                   src={trainer.image}
                   name={trainer.name}
                   frame={style.avatarFrame}
+                  onEdit={
+                    isSpecialistLive && onEditProfilePhoto
+                      ? onEditProfilePhoto
+                      : undefined
+                  }
                   rankBadge={
                     ranking ? (
                       <ProfileRankBadge ranking={ranking} placement="avatar" />

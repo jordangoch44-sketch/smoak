@@ -123,6 +123,8 @@ interface ProfileHeroAvatarProps {
   name: string;
   rankBadge?: React.ReactNode;
   frame?: ProfileAvatarFrameId;
+  /** Specialist Live tab — Edit chip over the profile photo */
+  onEdit?: () => void;
 }
 
 function normalizeSrc(src: string | null | undefined): string | null {
@@ -137,6 +139,7 @@ export function ProfileHeroAvatar({
   name,
   rankBadge,
   frame = "none",
+  onEdit,
 }: ProfileHeroAvatarProps) {
   const imageSrc = normalizeSrc(src);
   const canExpand = Boolean(imageSrc);
@@ -181,7 +184,8 @@ export function ProfileHeroAvatar({
       <div
         className={cn(
           "profile-hero__avatar-wrap",
-          frame === "glow" && "profile-hero__avatar-wrap--glow"
+          frame === "glow" && "profile-hero__avatar-wrap--glow",
+          onEdit && "profile-hero__avatar-wrap--editable"
         )}
       >
         {rankBadge}
@@ -213,6 +217,21 @@ export function ProfileHeroAvatar({
             />
           </div>
         )}
+        {onEdit ? (
+          <button
+            type="button"
+            className="smoac-control profile-hero__avatar-edit"
+            aria-label="Edit profile photo"
+            data-live-edit-ignore
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onEdit();
+            }}
+          >
+            Edit
+          </button>
+        ) : null}
       </div>
 
       {imageSrc ? (
