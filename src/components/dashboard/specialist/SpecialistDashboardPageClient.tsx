@@ -7,6 +7,7 @@ import {
   DashboardGrid,
   DashboardLoadingState,
   DashboardPageShell,
+  BoostVisibilityModal,
   PremiumTrialEndedModal,
   SmoacProUpgradeModal,
 } from "@/components/dashboard/shared";
@@ -85,6 +86,7 @@ export function SpecialistDashboardPageClient() {
   );
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [boostOpen, setBoostOpen] = useState(false);
 
   const {
     isReady,
@@ -118,8 +120,12 @@ export function SpecialistDashboardPageClient() {
   }, [session?.premiumTrialJustEnded]);
 
   useEffect(() => {
-    if (searchParams.get("promo") === "pro") {
+    const promo = searchParams.get("promo");
+    if (promo === "pro") {
       setUpgradeOpen(true);
+    }
+    if (promo === "boost") {
+      setBoostOpen(true);
     }
   }, [searchParams]);
 
@@ -396,6 +402,10 @@ export function SpecialistDashboardPageClient() {
     <SmoacProUpgradeModal
       open={upgradeOpen}
       onClose={() => setUpgradeOpen(false)}
+    />
+    <BoostVisibilityModal
+      open={boostOpen}
+      onClose={() => setBoostOpen(false)}
     />
     </>
   );

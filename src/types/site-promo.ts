@@ -36,6 +36,17 @@ export interface SitePromoCampaign {
   /** Required when ctaKind is link */
   ctaHref?: string;
   dismissible?: boolean;
+  /**
+   * When true, dismiss lasts only for the current sign-in token
+   * (`userId` + `signedInAt`) so the promo returns on the next login.
+   */
+  reappearOnSignIn?: boolean;
+  /** Hide when the specialist already has an active placement add-on */
+  hideWhenBoosting?: boolean;
+  /** Circulating edge glow on the CTA (Plan-tab style) */
+  orbitCta?: boolean;
+  /** Visual accent — home specialist boost uses neon blue */
+  accent?: "default" | "neon-blue";
   /** ISO dates — omit for always-on */
   startsAt?: string;
   endsAt?: string;

@@ -6,7 +6,7 @@ import {
   Categories,
   NewSpecialists,
 } from "@/components/home";
-import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
+import { HomePromoStack } from "@/components/promo/HomePromoStack";
 import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
 import {
   loadSmoacReviewAggregatesForServer,
@@ -37,8 +37,7 @@ export default async function HomePage() {
         initialAggregates={serializeReviewAggregates(aggregates)}
       />
       <div className="home-section__inner home-promo-stack mx-auto max-w-7xl px-4 sm:px-6">
-        <SitePromoSlot slotId="home_mid_promo" variant="banner" />
-        <SitePromoSlot slotId="home_client_promo" variant="banner" />
+        <HomePromoStack />
       </div>
       <Categories />
       <NewSpecialists initialCatalog={trainers} catalogMode={mode} />

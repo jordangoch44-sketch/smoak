@@ -8,6 +8,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
   dismissPromo,
+  promoSignInToken,
   resolvePromoAudience,
   resolveSitePromoForSlot,
 } from "@/lib/site-promos";
@@ -43,6 +44,7 @@ export function SitePromoSlot({
   const { session, isSignedIn } = useAuthSession();
   const router = useRouter();
   const [dismissedLocal, setDismissedLocal] = useState(false);
+  const [boosting, setBoosting] = useState<boolean | null>(null);
   const [revision, setRevision] = useState(0);
 
   const audience = resolvePromoAudience({
@@ -50,21 +52,58 @@ export function SitePromoSlot({
     isLoggedIn: isSignedIn,
   });
 
+  const signInToken = promoSignInToken({
+    userId: session?.userId,
+    signedInAt: session?.signedInAt,
+  });
+
   const campaign =
     hydrated && !dismissedLocal
-      ? resolveSitePromoForSlot(slotId, { audience })
+      ? resolveSitePromoForSlot(slotId, { audience, signInToken })
       : null;
 
   useEffect(() => {
-    /* Re-resolve after hydrate so dismiss state is accurate */
+    /* New sign-in should resurface reappearOnSignIn campaigns */
+    setDismissedLocal(false);
     setRevision((n) => n + 1);
-  }, [hydrated, audience]);
+  }, [hydrated, audience, signInToken]);
+
+  useEffect(() => {
+    if (!campaign?.hideWhenBoosting || audience !== "specialist") {
+      setBoosting(null);
+      return;
+    }
+
+    let cancelled = false;
+    setBoosting(null);
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/stripe/billing-summary");
+        if (!res.ok) {
+          if (!cancelled) setBoosting(false);
+          return;
+        }
+        const data = (await res.json()) as { activeAddons?: string[] };
+        const addons = Array.isArray(data.activeAddons) ? data.activeAddons : [];
+        if (!cancelled) setBoosting(addons.length > 0);
+      } catch {
+        if (!cancelled) setBoosting(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaign?.id, campaign?.hideWhenBoosting, audience]);
 
   if (!hydrated || !campaign) return null;
+  if (campaign.hideWhenBoosting && boosting !== false) return null;
   void revision;
 
   function handleDismiss() {
-    dismissPromo(campaign!.id);
+    const token = campaign!.reappearOnSignIn ? signInToken : null;
+    dismissPromo(campaign!.id, token);
     setDismissedLocal(true);
   }
 
@@ -98,7 +137,8 @@ export function SitePromoSlot({
     }
   }
 
-  const useOrbit = ORBIT_SLOTS.has(slotId);
+  const useOrbit = Boolean(campaign.orbitCta) || ORBIT_SLOTS.has(slotId);
+  const accent = campaign.accent ?? "default";
 
   return (
     <aside
@@ -106,6 +146,7 @@ export function SitePromoSlot({
         "site-promo",
         `site-promo--${variant}`,
         `site-promo--slot-${slotId}`,
+        accent !== "default" && `site-promo--accent-${accent}`,
         className
       )}
       aria-labelledby={`site-promo-title-${slotId}`}

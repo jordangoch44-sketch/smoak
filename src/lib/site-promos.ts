@@ -7,19 +7,39 @@ import type {
 
 const DISMISS_PREFIX = "smoac_promo_dismissed:";
 
-export function isPromoDismissed(campaignId: string): boolean {
+export function promoSignInToken(input: {
+  userId?: string | null;
+  signedInAt?: string | null;
+}): string | null {
+  if (!input.userId || !input.signedInAt) return null;
+  return `${input.userId}:${input.signedInAt}`;
+}
+
+export function isPromoDismissed(
+  campaignId: string,
+  signInToken?: string | null
+): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return window.sessionStorage.getItem(`${DISMISS_PREFIX}${campaignId}`) === "1";
+    const raw = window.sessionStorage.getItem(`${DISMISS_PREFIX}${campaignId}`);
+    if (!raw) return false;
+    if (signInToken) return raw === signInToken;
+    return raw === "1";
   } catch {
     return false;
   }
 }
 
-export function dismissPromo(campaignId: string): void {
+export function dismissPromo(
+  campaignId: string,
+  signInToken?: string | null
+): void {
   if (typeof window === "undefined") return;
   try {
-    window.sessionStorage.setItem(`${DISMISS_PREFIX}${campaignId}`, "1");
+    window.sessionStorage.setItem(
+      `${DISMISS_PREFIX}${campaignId}`,
+      signInToken || "1"
+    );
   } catch {
     /* ignore quota / private mode */
   }
@@ -57,6 +77,8 @@ export function resolveSitePromoForSlot(
     audience: SitePromoAudience;
     nowMs?: number;
     includeDismissed?: boolean;
+    /** Required for campaigns with `reappearOnSignIn` */
+    signInToken?: string | null;
   }
 ): SitePromoCampaign | null {
   const nowMs = options.nowMs ?? Date.now();
@@ -65,8 +87,13 @@ export function resolveSitePromoForSlot(
     if (!campaign.slotIds.includes(slotId)) return false;
     if (!audienceMatches(campaign, options.audience)) return false;
     if (!isWithinSchedule(campaign, nowMs)) return false;
-    if (!options.includeDismissed && isPromoDismissed(campaign.id)) {
-      return false;
+    if (!options.includeDismissed) {
+      const token = campaign.reappearOnSignIn
+        ? options.signInToken
+        : undefined;
+      if (isPromoDismissed(campaign.id, token ?? null)) {
+        return false;
+      }
     }
     return true;
   });

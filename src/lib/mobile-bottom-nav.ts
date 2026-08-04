@@ -34,7 +34,7 @@ const PROFILE_NAV_PATHS = [
   SPECIALIST_DASHBOARD_PATH,
 ] as const;
 
-function isProfileNavPath(pathname: string): boolean {
+export function isProfileNavPath(pathname: string): boolean {
   if (isDashboardPath(pathname)) return true;
 
   return PROFILE_NAV_PATHS.some(
