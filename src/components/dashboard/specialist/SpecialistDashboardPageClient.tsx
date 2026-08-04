@@ -8,6 +8,7 @@ import {
   DashboardLoadingState,
   DashboardPageShell,
   PremiumTrialEndedModal,
+  SmoacProUpgradeModal,
 } from "@/components/dashboard/shared";
 import {
   AnalyticsCard,
@@ -18,6 +19,7 @@ import {
   VisibilityRankingCard,
 } from "@/components/dashboard/specialist/cards";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
+import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
@@ -33,6 +35,7 @@ import { getSpecialistProPreviewAnalytics } from "@/lib/specialist-dashboard-ana
 import {
   SMOAC_FREE_PLAN_LABEL,
   formatProTrialBadgeLabel,
+  showProTrialLastChance,
   showSpecialistFreeTrialPromo,
   showSpecialistPaidUpgradePromo,
 } from "@/lib/specialist-premium";
@@ -81,6 +84,7 @@ export function SpecialistDashboardPageClient() {
     parseFreeTab(searchParams.get("tab"))
   );
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const {
     isReady,
@@ -113,6 +117,12 @@ export function SpecialistDashboardPageClient() {
     }
   }, [session?.premiumTrialJustEnded]);
 
+  useEffect(() => {
+    if (searchParams.get("promo") === "pro") {
+      setUpgradeOpen(true);
+    }
+  }, [searchParams]);
+
   if (!isReady || !session) {
     return <DashboardLoadingState />;
   }
@@ -135,6 +145,7 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "pending" || dashboardMode === "rejected";
   const isFreeLive = dashboardMode === "approved-free";
   const onProTrial = Boolean(session.premiumTrialActive);
+  const showLastChance = showProTrialLastChance(session);
 
   const leadUnread = data.newLeads.filter((lead) => lead.unread).length;
   const bannerUnread = Math.max(notificationUnread, leadUnread);
@@ -172,6 +183,12 @@ export function SpecialistDashboardPageClient() {
       utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
     >
       <div className="specialist-dash-layout">
+        {showLastChance ? (
+          <ProTrialLastChanceBanner
+            daysRemaining={session.premiumTrialDaysRemaining}
+          />
+        ) : null}
+
         {showsInquiries ? (
           <InquiryNotificationBanner
             unreadCount={bannerUnread}
@@ -375,6 +392,10 @@ export function SpecialistDashboardPageClient() {
     <PremiumTrialEndedModal
       open={trialEndedOpen}
       onClose={() => setTrialEndedOpen(false)}
+    />
+    <SmoacProUpgradeModal
+      open={upgradeOpen}
+      onClose={() => setUpgradeOpen(false)}
     />
     </>
   );

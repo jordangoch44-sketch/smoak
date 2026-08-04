@@ -3733,6 +3733,106 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: rgba(255, 255, 255, 0.78);
 }
 
+/* Final-day Pro trial — LAST CHANCE */
+.specialist-last-chance-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1.1rem 1.15rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(56, 189, 248, 0.2),
+      rgba(14, 165, 233, 0.06) 55%,
+      rgba(255, 255, 255, 0.02)
+    );
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.12) inset,
+    0 0 28px rgba(14, 165, 233, 0.22);
+}
+
+.specialist-last-chance-banner__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(125, 211, 252, 0.95);
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.45);
+}
+
+.specialist-last-chance-banner__title {
+  margin: 0.35rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(186, 230, 253, 0.98);
+  text-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+}
+
+.specialist-last-chance-banner__body {
+  margin: 0.45rem 0 0;
+  max-width: 40rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: rgba(226, 242, 255, 0.82);
+}
+
+.specialist-last-chance-banner__error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: rgba(252, 165, 165, 0.95);
+}
+
+.specialist-last-chance-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.specialist-last-chance-banner__primary {
+  min-height: 2.5rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.65);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(56, 189, 248, 0.42) 0%,
+      rgba(14, 165, 233, 0.28) 100%
+    );
+  color: rgba(240, 249, 255, 0.98);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.16) inset,
+    0 0 20px rgba(14, 165, 233, 0.35);
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+  cursor: pointer;
+}
+
+.specialist-last-chance-banner__primary:hover:not(:disabled) {
+  border-color: rgba(125, 211, 252, 0.85);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(56, 189, 248, 0.52) 0%,
+      rgba(14, 165, 233, 0.36) 100%
+    );
+}
+
+.specialist-last-chance-banner__primary:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
 .specialist-inquiry-item {
   border-radius: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.08);

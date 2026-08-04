@@ -98,6 +98,16 @@ export function showSpecialistPaidUpgradePromo(session: {
   return !isSpecialistPayingPro(session);
 }
 
+/** Final-day LAST CHANCE banner while complimentary trial is still active. */
+export function showProTrialLastChance(session: {
+  premiumTrialActive?: boolean;
+  premiumTrialDaysRemaining?: number;
+} | null | undefined): boolean {
+  if (!session?.premiumTrialActive) return false;
+  const days = session.premiumTrialDaysRemaining;
+  return typeof days === "number" && days <= 1;
+}
+
 function isSpecialistPayingPro(session: {
   premiumIsPaid?: boolean;
   premiumTrialActive?: boolean;

@@ -266,3 +266,139 @@ export async function expireDuePremiumTrials(): Promise<number> {
   }
   return expired;
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function daysElapsedSince(startedAt: string, nowMs: number): number {
+  const started = Date.parse(startedAt);
+  if (!Number.isFinite(started)) return 0;
+  return Math.max(0, Math.floor((nowMs - started) / DAY_MS));
+}
+
+/**
+ * Daily cron helper: day-10, day-20, and last-day trial reminder emails.
+ * Idempotent via premium_trial_*_emailed_at columns.
+ */
+export async function sendDuePremiumTrialReminderEmails(): Promise<{
+  day10: number;
+  day20: number;
+  lastDay: number;
+}> {
+  const empty = { day10: 0, day20: 0, lastDay: 0 };
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) return empty;
+
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+
+  const { data: rows, error } = await supabase
+    .from("user_roles")
+    .select(
+      "user_id, premium_trial_started_at, premium_trial_ends_at, premium_trial_day10_emailed_at, premium_trial_day20_emailed_at, premium_trial_last_day_emailed_at"
+    )
+    .eq("role", "specialist")
+    .eq("is_premium", true)
+    .not("premium_trial_started_at", "is", null)
+    .not("premium_trial_ends_at", "is", null)
+    .gt("premium_trial_ends_at", nowIso);
+
+  if (error || !rows?.length) {
+    if (error) {
+      console.warn("[SMOAC trial] reminder query failed:", error.message);
+    }
+    return empty;
+  }
+
+  const { sendPremiumTrialReminderEmail } = await import(
+    "@/lib/email/premium-trial-email-service"
+  );
+
+  const counts = { day10: 0, day20: 0, lastDay: 0 };
+  const db = supabase;
+
+  for (const row of rows) {
+    const userId = row.user_id as string;
+    const startedAt = row.premium_trial_started_at as string | null;
+    const endsAt = row.premium_trial_ends_at as string | null;
+    if (!startedAt || !endsAt) continue;
+
+    const paid = await hasActiveStripeSubscription(db, userId);
+    if (paid) continue;
+
+    const remaining = daysUntil(endsAt, nowMs);
+    const elapsed = daysElapsedSince(startedAt, nowMs);
+
+    const { data: profile } = await db
+      .from("profiles")
+      .select("email, first_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const email = profile?.email?.trim() ?? "";
+    if (!email.includes("@")) continue;
+    const firstName = profile?.first_name?.trim() || "there";
+
+    async function stamp(column: string): Promise<boolean> {
+      const { error: updateError } = await db
+        .from("user_roles")
+        .update({
+          [column]: nowIso,
+          updated_at: nowIso,
+        })
+        .eq("user_id", userId);
+      if (updateError) {
+        console.warn("[SMOAC trial] reminder stamp failed:", updateError.message);
+        return false;
+      }
+      return true;
+    }
+
+    if (elapsed >= 10 && !row.premium_trial_day10_emailed_at) {
+      const sent = await sendPremiumTrialReminderEmail({
+        to: email,
+        firstName,
+        daysRemaining: remaining,
+        kind: "day10",
+      });
+      if (sent.success && (await stamp("premium_trial_day10_emailed_at"))) {
+        counts.day10 += 1;
+      }
+    }
+
+    if (elapsed >= 20 && !row.premium_trial_day20_emailed_at) {
+      const sent = await sendPremiumTrialReminderEmail({
+        to: email,
+        firstName,
+        daysRemaining: remaining,
+        kind: "day20",
+      });
+      if (sent.success && (await stamp("premium_trial_day20_emailed_at"))) {
+        counts.day20 += 1;
+      }
+    }
+
+    if (remaining <= 1 && !row.premium_trial_last_day_emailed_at) {
+      const sent = await sendPremiumTrialReminderEmail({
+        to: email,
+        firstName,
+        daysRemaining: remaining,
+        kind: "last_day",
+      });
+      if (sent.success && (await stamp("premium_trial_last_day_emailed_at"))) {
+        counts.lastDay += 1;
+      }
+    }
+  }
+
+  return counts;
+}
+
+/** Reminders first, then expire due trials. */
+export async function processPremiumTrialLifecycle(): Promise<{
+  reminders: { day10: number; day20: number; lastDay: number };
+  expired: number;
+}> {
+  const reminders = await sendDuePremiumTrialReminderEmails();
+  const expired = await expireDuePremiumTrials();
+  return { reminders, expired };
+}

@@ -7,6 +7,9 @@ export interface UserRoleRow {
   premium_trial_started_at?: string | null;
   premium_trial_ends_at?: string | null;
   premium_trial_ended_notified_at?: string | null;
+  premium_trial_day10_emailed_at?: string | null;
+  premium_trial_day20_emailed_at?: string | null;
+  premium_trial_last_day_emailed_at?: string | null;
   created_at: string;
   updated_at: string;
 }

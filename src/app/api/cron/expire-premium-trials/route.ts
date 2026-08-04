@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { expireDuePremiumTrials } from "@/lib/specialist-premium-trial";
+import { processPremiumTrialLifecycle } from "@/lib/specialist-premium-trial";
 
 export const runtime = "nodejs";
 
 /**
- * Daily cron: drop expired complimentary Pro trials to free (unless Stripe paid).
+ * Daily cron: Pro trial reminder emails (day 10 / 20 / last day), then expire
+ * due complimentary trials to Free (unless Stripe paid).
  * Secure with CRON_SECRET header from Vercel Cron.
  */
 export async function GET(request: Request) {
@@ -15,6 +16,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const expired = await expireDuePremiumTrials();
-  return NextResponse.json({ ok: true, expired });
+  const { reminders, expired } = await processPremiumTrialLifecycle();
+  return NextResponse.json({ ok: true, reminders, expired });
 }
