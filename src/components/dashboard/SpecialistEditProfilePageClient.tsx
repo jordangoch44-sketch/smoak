@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import {
@@ -76,6 +76,7 @@ function genderLabel(value: Gender): string {
 
 export function SpecialistEditProfilePageClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
   const { showToast } = useToast();
@@ -87,6 +88,8 @@ export function SpecialistEditProfilePageClient() {
     null
   );
   const [saving, setSaving] = useState(false);
+  const focusPhoto = searchParams.get("focus") === "photo";
+  const photoFocusOpenedRef = useRef(false);
 
   useProfileKeyboardChrome();
 
@@ -94,7 +97,10 @@ export function SpecialistEditProfilePageClient() {
   const form = editingSection != null && sectionDraft ? sectionDraft : savedForm;
 
   useEffect(() => {
-    const hash = window.location.hash.replace("#", "");
+    if (!savedForm) return;
+    const hash =
+      window.location.hash.replace("#", "") ||
+      (focusPhoto ? "photos-links" : "");
     if (!hash) return;
     const section = document.getElementById(hash);
     if (section) {
@@ -102,7 +108,12 @@ export function SpecialistEditProfilePageClient() {
         section.scrollIntoView({ block: "start", behavior: "smooth" });
       });
     }
-  }, [savedForm]);
+    if (focusPhoto && !photoFocusOpenedRef.current) {
+      photoFocusOpenedRef.current = true;
+      setEditingSection("photos-links");
+      setSectionDraft(cloneSpecialistProfileEditForm(savedForm));
+    }
+  }, [savedForm, focusPhoto]);
 
   const dashboardMode = resolveSpecialistDashboardMode({
     sessionEmail: session?.email,

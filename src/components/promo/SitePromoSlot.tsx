@@ -121,13 +121,27 @@ export function SitePromoSlot({
       </div>
 
       {campaign.ctaKind === "link" && campaign.ctaHref ? (
-        <Link href={campaign.ctaHref} className="site-promo__cta">
-          {campaign.ctaLabel}
-        </Link>
+        <span
+          className={cn(
+            "site-promo__cta-wrap",
+            slotId === "specialist_dashboard_hero" && "site-promo__cta-wrap--orbit"
+          )}
+        >
+          <Link href={campaign.ctaHref} className="site-promo__cta">
+            {campaign.ctaLabel}
+          </Link>
+        </span>
       ) : (
-        <button type="button" className="site-promo__cta" onClick={handleCta}>
-          {campaign.ctaLabel}
-        </button>
+        <span
+          className={cn(
+            "site-promo__cta-wrap",
+            slotId === "specialist_dashboard_hero" && "site-promo__cta-wrap--orbit"
+          )}
+        >
+          <button type="button" className="site-promo__cta" onClick={handleCta}>
+            {campaign.ctaLabel}
+          </button>
+        </span>
       )}
     </aside>
   );

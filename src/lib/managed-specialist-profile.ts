@@ -259,7 +259,7 @@ export async function saveManagedSpecialistProfileEdits(
 
     const photoUrl = form.profilePhotoUrl.trim();
     if (photoUrl && !photoUrl.startsWith("blob:")) {
-      void updateOwnProfileAvatarUrl(photoUrl);
+      await updateOwnProfileAvatarUrl(photoUrl);
     }
 
     return { ok: true, source };

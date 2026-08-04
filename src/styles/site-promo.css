@@ -101,7 +101,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: fit-content;
+  width: 100%;
   min-height: 2.5rem;
   padding: 0.55rem 1rem;
   border-radius: 999px;
@@ -119,6 +119,95 @@
 .site-promo__cta:hover {
   background: rgba(255, 255, 255, 0.16);
   border-color: rgba(255, 255, 255, 0.28);
+}
+
+.site-promo__cta-wrap {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+}
+
+/* Circulating purple edge glow — Plan & upgrade Pro CTA */
+.site-promo__cta-wrap--orbit {
+  padding: 2px;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 999px;
+  box-shadow: 0 0 20px rgba(var(--aurora-lavender-rgb), 0.28);
+}
+
+.site-promo__cta-wrap--orbit::before {
+  content: "";
+  position: absolute;
+  inset: -120%;
+  z-index: 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 210deg,
+    rgba(var(--aurora-lavender-rgb), 0.08) 250deg,
+    rgba(var(--aurora-lavender-rgb), 0.65) 290deg,
+    rgba(230, 215, 255, 1) 318deg,
+    rgba(var(--aurora-lavender-rgb), 0.75) 342deg,
+    transparent 360deg
+  );
+  animation: site-promo-cta-orbit 2.2s linear infinite;
+  pointer-events: none;
+}
+
+.site-promo__cta-wrap--orbit::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: 0;
+  border-radius: inherit;
+  background: rgba(12, 10, 18, 0.96);
+  pointer-events: none;
+}
+
+.site-promo__cta-wrap--orbit .site-promo__cta {
+  position: relative;
+  z-index: 1;
+  border-color: rgba(var(--aurora-lavender-rgb), 0.28);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--aurora-lavender-rgb), 0.16),
+      rgba(255, 255, 255, 0.06)
+    );
+  box-shadow: 0 0 18px rgba(var(--aurora-lavender-rgb), 0.22);
+}
+
+.site-promo__cta-wrap--orbit .site-promo__cta:hover {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(var(--aurora-lavender-rgb), 0.24),
+      rgba(255, 255, 255, 0.1)
+    );
+  border-color: rgba(var(--aurora-lavender-rgb), 0.45);
+}
+
+@keyframes site-promo-cta-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-promo__cta-wrap--orbit::before {
+    animation: none;
+    background: conic-gradient(
+      from 90deg,
+      transparent 0deg,
+      rgba(var(--aurora-lavender-rgb), 0.35) 120deg,
+      rgba(220, 200, 255, 0.7) 180deg,
+      transparent 280deg
+    );
+  }
 }
 
 .site-promo--compact {
@@ -263,6 +352,10 @@
 .site-promo--slot-specialist_dashboard_hero,
 .site-promo--slot-specialist_dashboard_boost {
   margin-bottom: 1rem;
+}
+
+.site-promo--slot-specialist_dashboard_hero {
+  overflow: visible;
 }
 
 @media (min-width: 768px) {

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { SpecialistEditProfilePageClient } from "@/components/dashboard/SpecialistEditProfilePageClient";
+import { DashboardLoadingState } from "@/components/dashboard/shared";
 
 export const metadata: Metadata = {
   title: "Edit Profile",
@@ -7,5 +9,9 @@ export const metadata: Metadata = {
 };
 
 export default function SpecialistEditProfilePage() {
-  return <SpecialistEditProfilePageClient />;
+  return (
+    <Suspense fallback={<DashboardLoadingState />}>
+      <SpecialistEditProfilePageClient />
+    </Suspense>
+  );
 }
