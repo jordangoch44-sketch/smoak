@@ -18,7 +18,6 @@ import {
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
-import { CloseIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
@@ -1098,6 +1097,13 @@ export function SpecialistEditProfilePageClient({
         aria-modal="true"
         aria-labelledby="specialist-full-editor-title"
       >
+        <button
+          type="button"
+          className="specialist-full-editor__backdrop"
+          aria-label="Close full editor"
+          disabled={saving}
+          onClick={onRequestClose}
+        />
         <div className="specialist-full-editor__panel">
           <header className="specialist-full-editor__head">
             <div className="specialist-full-editor__head-row">
@@ -1116,7 +1122,9 @@ export function SpecialistEditProfilePageClient({
                 aria-label="Close full editor"
                 disabled={saving}
               >
-                <CloseIcon className="h-4 w-4" />
+                <span className="specialist-full-editor__close-x" aria-hidden>
+                  ×
+                </span>
               </button>
             </div>
             <h2
