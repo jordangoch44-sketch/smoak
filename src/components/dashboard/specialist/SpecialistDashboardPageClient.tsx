@@ -30,7 +30,11 @@ import {
   showsProfileFirstDashboard,
 } from "@/lib/specialist-dashboard-mode";
 import { getSpecialistProPreviewAnalytics } from "@/lib/specialist-dashboard-analytics";
-import { SMOAC_FREE_PLAN_LABEL } from "@/lib/specialist-premium";
+import {
+  SMOAC_FREE_PLAN_LABEL,
+  showSpecialistFreeTrialPromo,
+  showSpecialistPaidUpgradePromo,
+} from "@/lib/specialist-premium";
 import { cn } from "@/lib/utils";
 
 type FreeDashboardTab = "plan" | "profile";
@@ -228,6 +232,8 @@ export function SpecialistDashboardPageClient() {
                       profileCompletionPercent: profileCompletion,
                       rankingPosition: data.ranking?.rank ?? null,
                     })}
+                    showTrialPromo={showSpecialistFreeTrialPromo(session)}
+                    showUpgradePromo={showSpecialistPaidUpgradePromo(session)}
                   />
                 </div>
               ) : null}

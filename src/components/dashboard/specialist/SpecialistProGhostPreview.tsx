@@ -15,6 +15,10 @@ import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 interface SpecialistProGhostPreviewProps {
   firstName: string;
   analytics: SpecialistProfileAnalytics;
+  /** Neon one-time free-trial bubble */
+  showTrialPromo?: boolean;
+  /** Purple paid Upgrade to Pro bubble */
+  showUpgradePromo?: boolean;
 }
 
 /**
@@ -24,6 +28,8 @@ interface SpecialistProGhostPreviewProps {
 export function SpecialistProGhostPreview({
   firstName,
   analytics,
+  showTrialPromo = true,
+  showUpgradePromo = true,
 }: SpecialistProGhostPreviewProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
@@ -33,16 +39,20 @@ export function SpecialistProGhostPreview({
 
   return (
     <>
-      <SitePromoSlot
-        slotId="specialist_dashboard_hero"
-        onOpenPro={() => setUpgradeOpen(true)}
-        onOpenBoost={() => setBoostOpen(true)}
-      />
-      <SitePromoSlot
-        slotId="specialist_dashboard_pro_upgrade"
-        onOpenPro={() => setUpgradeOpen(true)}
-        onOpenBoost={() => setBoostOpen(true)}
-      />
+      {showTrialPromo ? (
+        <SitePromoSlot
+          slotId="specialist_dashboard_hero"
+          onOpenPro={() => setUpgradeOpen(true)}
+          onOpenBoost={() => setBoostOpen(true)}
+        />
+      ) : null}
+      {showUpgradePromo ? (
+        <SitePromoSlot
+          slotId="specialist_dashboard_pro_upgrade"
+          onOpenPro={() => setUpgradeOpen(true)}
+          onOpenBoost={() => setBoostOpen(true)}
+        />
+      ) : null}
 
       <section
         className="specialist-pro-ghost"

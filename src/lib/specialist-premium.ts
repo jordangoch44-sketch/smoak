@@ -43,3 +43,41 @@ export function isSpecialistPremium(
 ): boolean {
   return subscription?.isPremium === true;
 }
+
+/** Neon free-trial bubble — once per specialist, gone after trial starts. */
+export function showSpecialistFreeTrialPromo(session: {
+  role?: string | null;
+  premiumIsPaid?: boolean;
+  premiumTrialUsed?: boolean;
+  premiumTrialActive?: boolean;
+  premiumTrialEndsAt?: string;
+  isPremium?: boolean;
+} | null | undefined): boolean {
+  if (!session || session.role !== "specialist") return false;
+  if (isSpecialistPayingPro(session)) return false;
+  if (session.premiumTrialUsed) return false;
+  if (session.premiumTrialActive) return false;
+  if (session.premiumTrialEndsAt) return false;
+  return true;
+}
+
+/** Purple Upgrade to Pro bubble — stays until they start paying. */
+export function showSpecialistPaidUpgradePromo(session: {
+  role?: string | null;
+  premiumIsPaid?: boolean;
+  premiumTrialActive?: boolean;
+  isPremium?: boolean;
+} | null | undefined): boolean {
+  if (!session || session.role !== "specialist") return false;
+  return !isSpecialistPayingPro(session);
+}
+
+function isSpecialistPayingPro(session: {
+  premiumIsPaid?: boolean;
+  premiumTrialActive?: boolean;
+  isPremium?: boolean;
+}): boolean {
+  if (session.premiumIsPaid) return true;
+  /* Legacy sessions without premiumIsPaid: Pro without an active free trial. */
+  return Boolean(session.isPremium && !session.premiumTrialActive);
+}

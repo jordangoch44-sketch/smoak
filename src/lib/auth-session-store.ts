@@ -53,6 +53,11 @@ function sessionSignature(session: AuthSession | null): string {
     avatarUrl: session.avatarUrl ?? "",
     profileCompletionStatus: session.profileCompletionStatus ?? "",
     passwordSetupStatus: session.passwordSetupStatus ?? "",
+    isPremium: Boolean(session.isPremium),
+    premiumIsPaid: Boolean(session.premiumIsPaid),
+    premiumTrialUsed: Boolean(session.premiumTrialUsed),
+    premiumTrialActive: Boolean(session.premiumTrialActive),
+    premiumTrialEndsAt: session.premiumTrialEndsAt ?? "",
   });
 }
 

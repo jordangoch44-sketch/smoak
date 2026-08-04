@@ -93,6 +93,8 @@ export async function buildAuthSessionFromSupabaseUser(
   if (!authRole) return null;
 
   let isPremium = roleRow.is_premium;
+  let premiumIsPaid = false;
+  let premiumTrialUsed = false;
   let premiumTrialEndsAt: string | undefined;
   let premiumTrialActive = false;
   let premiumTrialDaysRemaining: number | undefined;
@@ -107,6 +109,8 @@ export async function buildAuthSessionFromSupabaseUser(
       user.id
     );
     isPremium = access.isPremium;
+    premiumIsPaid = access.isPaid;
+    premiumTrialUsed = Boolean(access.trialStartedAt);
     premiumTrialEndsAt = access.trialEndsAt ?? undefined;
     premiumTrialActive = access.isTrialing;
     premiumTrialDaysRemaining = access.daysRemaining ?? undefined;
@@ -139,6 +143,8 @@ export async function buildAuthSessionFromSupabaseUser(
     passwordSetupStatus:
       profile?.password_setup_status?.trim() || undefined,
     isPremium,
+    premiumIsPaid,
+    premiumTrialUsed,
     premiumTrialEndsAt,
     premiumTrialActive,
     premiumTrialDaysRemaining,

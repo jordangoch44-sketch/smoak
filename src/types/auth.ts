@@ -26,6 +26,10 @@ export interface AuthSession {
   passwordSetupStatus?: "pending" | "complete" | "skipped" | string;
   displayName?: string;
   isPremium?: boolean;
+  /** True when Stripe Pro subscription is active (paying) */
+  premiumIsPaid?: boolean;
+  /** True after the one-time complimentary Pro trial has been started (even if ended) */
+  premiumTrialUsed?: boolean;
   /** ISO — complimentary Pro trial end (specialists) */
   premiumTrialEndsAt?: string;
   /** True while within signup free Pro window */

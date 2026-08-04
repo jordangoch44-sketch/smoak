@@ -1,7 +1,8 @@
 /**
- * SMOAC Pro complimentary trial — 30 days free when a specialist is activated
- * (approved + live), then free tier unless they subscribe via Stripe
- * ($9.99/mo, no second free month). Idempotent; not granted at signup.
+ * SMOAC Pro complimentary trial — 30 days free when a specialist claims the
+ * one-time Plan-tab offer (or legacy activate grant). After that, free tier
+ * unless they subscribe via Stripe ($9.99/mo, no second free month).
+ * Idempotent; not granted at signup.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
