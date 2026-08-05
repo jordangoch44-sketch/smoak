@@ -104,8 +104,8 @@ export function QuickClientAccountSignupFields({
         <p className={classes.helper}>You can complete your profile anytime.</p>
       ) : (
         <p className={classes.privacy}>
-          We share your email with the specialist so they can reply directly. You
-          can complete your profile later.
+          We share your email with the specialist so they can reply. You can
+          finish your profile later.
         </p>
       )}
     </>

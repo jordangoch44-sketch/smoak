@@ -418,10 +418,14 @@ export function SpecialistInquirySheet({
               <div className="inquiry-sheet__header">
                 <h2 id={titleId} className="inquiry-sheet__title">
                   {view === "success"
-                    ? "Message sent"
-                    : view === "signup" || view === "signin" || view === "awaiting_email"
-                      ? "Send your message"
-                      : "How can we help you?"}
+                    ? "You're all set"
+                    : view === "awaiting_email"
+                      ? "Check your email"
+                      : view === "signup"
+                        ? "One quick step"
+                        : view === "signin"
+                          ? "Sign in to send"
+                          : "How can we help you?"}
                 </h2>
                 <button
                   type="button"
@@ -538,7 +542,7 @@ export function SpecialistInquirySheet({
                   email={email}
                   onFirstNameChange={setFirstName}
                   onEmailChange={setEmail}
-                  supportText="Enter your first name and email so the specialist can respond."
+                  supportText={`Your message is ready. Enter your name and email so we can send it to ${specialistName} and they can reply.`}
                 />
               ) : null}
 
@@ -550,16 +554,58 @@ export function SpecialistInquirySheet({
                   password={password}
                   onEmailChange={setEmail}
                   onPasswordChange={setPassword}
-                  supportText={`Sign in to send your message to ${specialistName}.`}
+                  supportText={`Sign in and we’ll send your saved message to ${specialistName}.`}
                 />
               ) : null}
 
               {view === "awaiting_email" ? (
                 <div className="inquiry-sheet__state">
                   <p className="inquiry-sheet__support">
-                    Check your email for a secure sign-in link. Your message draft is
-                    saved — once you verify, we’ll send it to {specialistName}{" "}
-                    automatically.
+                    You’re almost done. Open the sign-in email we just sent — your
+                    message stays saved and sends automatically.
+                  </p>
+                  <ol className="inquiry-sheet__steps">
+                    <li className="inquiry-sheet__step">
+                      <span className="inquiry-sheet__step-num" aria-hidden>
+                        1
+                      </span>
+                      <p className="inquiry-sheet__step-copy">
+                        Open the email
+                        {email.trim() ? (
+                          <>
+                            {" "}
+                            sent to{" "}
+                            <span className="inquiry-sheet__email-chip">
+                              {email.trim()}
+                            </span>
+                          </>
+                        ) : (
+                          " we sent you"
+                        )}
+                        .
+                      </p>
+                    </li>
+                    <li className="inquiry-sheet__step">
+                      <span className="inquiry-sheet__step-num" aria-hidden>
+                        2
+                      </span>
+                      <p className="inquiry-sheet__step-copy">
+                        Tap the <strong>secure sign-in link</strong>.
+                      </p>
+                    </li>
+                    <li className="inquiry-sheet__step">
+                      <span className="inquiry-sheet__step-num" aria-hidden>
+                        3
+                      </span>
+                      <p className="inquiry-sheet__step-copy">
+                        We’ll send your message to{" "}
+                        <strong>{specialistName}</strong> automatically.
+                      </p>
+                    </li>
+                  </ol>
+                  <p className="inquiry-sheet__helper">
+                    Don’t see it? Check spam or promotions. You can close this and
+                    come back anytime — your draft is saved.
                   </p>
                 </div>
               ) : null}
@@ -567,12 +613,12 @@ export function SpecialistInquirySheet({
               {view === "success" ? (
                 <div className="inquiry-sheet__state">
                   <p className="inquiry-sheet__success">
-                    Inquiry sent to {specialistName}. They’ll follow up by email.
+                    Sent to {specialistName}. They’ll reply by email.
                   </p>
-                  <p className="inquiry-sheet__helper">
+                  <p className="inquiry-sheet__support">
                     {emailMode === "resend"
-                      ? "A confirmation was emailed to you."
-                      : "Your inquiry is saved in SMOAC. Confirmation email sends when Resend is configured (RESEND_API_KEY)."}
+                      ? "We also emailed you a confirmation."
+                      : "Your inquiry is saved in your SMOAC account."}
                   </p>
                   <Link
                     href={`${CLIENT_DASHBOARD_PATH}?tab=messages`}
@@ -581,8 +627,15 @@ export function SpecialistInquirySheet({
                   >
                     View your inquiry
                   </Link>
+                  <button
+                    type="button"
+                    className="smoac-control inquiry-sheet__text-btn"
+                    onClick={onClose}
+                  >
+                    Done
+                  </button>
                   <p className="inquiry-sheet__helper inquiry-sheet__helper--tight">
-                    After you connect, you’re welcome to leave a SMOAC review.
+                    After you connect, you’re welcome to leave a review.
                   </p>
                   <Link
                     href={buildLeaveReviewHref(specialistId)}
@@ -597,7 +650,7 @@ export function SpecialistInquirySheet({
               <QuickClientAccountAuthError variant="inquiry-sheet" message={error} />
             </div>
 
-            {view !== "success" && view !== "awaiting_email" ? (
+            {view !== "success" ? (
               <div className="inquiry-sheet__footer">
                 {view === "compose" ? (
                   <>
@@ -611,9 +664,25 @@ export function SpecialistInquirySheet({
                     </button>
                     {!isSignedIn ? (
                       <p className="inquiry-sheet__helper">
-                        You’ll create a quick account before your message is sent.
+                        Next you’ll add your name and email — then we send it.
                       </p>
                     ) : null}
+                  </>
+                ) : null}
+
+                {view === "awaiting_email" ? (
+                  <>
+                    <button
+                      type="button"
+                      className="smoac-control inquiry-sheet__submit"
+                      onClick={onClose}
+                    >
+                      Got it — I’ll check my email
+                    </button>
+                    <p className="inquiry-sheet__helper">
+                      After you tap the link, come back to SMOAC and your message
+                      sends on its own.
+                    </p>
                   </>
                 ) : null}
 
