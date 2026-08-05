@@ -5024,6 +5024,23 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   background: transparent;
 }
 
+/*
+ * profile-page--styled is for the full public profile route. On the dashboard
+ * embed it paints a solid black panel + overflow:hidden, which square-clips
+ * contact/section glows right under the hero. Keep accent tokens only.
+ */
+.specialist-live-marketplace.profile-page--styled {
+  isolation: auto;
+  overflow: visible;
+  background: transparent;
+}
+
+.specialist-live-marketplace.profile-page--styled::before,
+.specialist-live-marketplace.profile-page--styled::after {
+  content: none;
+  display: none;
+}
+
 .specialist-live-marketplace__stream {
   margin: 0 auto;
   padding: 0.75rem 1rem 1.25rem;
