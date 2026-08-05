@@ -2,6 +2,7 @@ import { getDefaultZipForMarketplaceCity } from "@/lib/marketplace-city-default-
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
+import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import type {
   SpecialistApplication,
   SpecialistOnboardingState,
@@ -143,6 +144,9 @@ export function applicationToTrainer(
       website: app.social.website,
       tiktok: app.social.tiktok,
     },
+    profileStyle: app.profileStyle
+      ? normalizeProfileStyle(app.profileStyle)
+      : undefined,
   };
 }
 
@@ -218,5 +222,8 @@ export function applicationToProfileOverrides(
     transformationNotes: app.media.transformationPhotoUrls.trim(),
     photoNotes: app.media.trainingVideoUrls.trim(),
     bookingAvailability: buildSessionExperience(app).join(", "),
+    profileStyle: app.profileStyle
+      ? normalizeProfileStyle(app.profileStyle)
+      : undefined,
   };
 }

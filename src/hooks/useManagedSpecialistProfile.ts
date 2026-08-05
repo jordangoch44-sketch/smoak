@@ -14,6 +14,11 @@ import {
   type ManagedProfileSaveResult,
 } from "@/lib/managed-specialist-profile";
 import {
+  getApprovedSpecialistProfilesServerSnapshot,
+  getApprovedSpecialistProfilesSnapshot,
+  subscribeApprovedSpecialistProfiles,
+} from "@/lib/approved-specialist-profiles-store";
+import {
   getSpecialistApplicationById,
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
@@ -49,6 +54,14 @@ export function useManagedSpecialistProfile() {
     subscribeSpecialistProfiles,
     getSpecialistProfilesSnapshot,
     getSpecialistProfilesServerSnapshot
+  );
+
+  /* Re-render when approved catalog hydrates so profileStyle from profile_data
+   * is available after reload (live memory overrides are session-only). */
+  void useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesSnapshot,
+    getApprovedSpecialistProfilesServerSnapshot
   );
 
   const trainerId = resolveManagedSpecialistId(sessionEmail, sessionUserId);

@@ -260,9 +260,10 @@ export function SpecialistEditProfilePageClient({
   }
 
   async function saveSection() {
-    if (!sectionDraft || !trainerId) return;
+    const draft = sectionDraft;
+    if (!draft || !trainerId) return;
     setSaving(true);
-    const result = await saveForm(sectionDraft);
+    const result = await saveForm(draft);
     setSaving(false);
 
     if (result.ok) {

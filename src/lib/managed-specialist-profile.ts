@@ -29,6 +29,7 @@ import {
   loadSpecialistOverridesForId,
 } from "@/lib/specialist-profile-overrides";
 import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
+import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
 import type {
   ProfileStatus,
@@ -106,7 +107,19 @@ export function resolveManagedSpecialistId(
 /** Trainer base for dashboard — includes pending applications (not public catalog). */
 export function getManagedTrainerBaseById(trainerId: string): Trainer | undefined {
   const application = getSpecialistApplicationById(trainerId);
-  if (application) return applicationToTrainer(application);
+  if (application) {
+    const fromApp = applicationToTrainer(application);
+    const approved = getApprovedSpecialistProfileById(trainerId);
+    /* Approved catalog is durable SoT for style when the application row is
+     * stale (e.g. after reload before application hydrate finishes). */
+    if (approved?.profileStyle && !fromApp.profileStyle) {
+      return {
+        ...fromApp,
+        profileStyle: normalizeProfileStyle(approved.profileStyle),
+      };
+    }
+    return fromApp;
+  }
 
   const approved = getApprovedSpecialistProfileById(trainerId);
   if (approved) return approved;
@@ -126,6 +139,10 @@ export function syncProfileOverridesFromApplication(
   saveTrainerProfileOverrides(app.id, {
     ...generated,
     coverImageUrl: existing?.coverImageUrl ?? generated.coverImageUrl,
+    profileStyle:
+      generated.profileStyle ??
+      existing?.profileStyle ??
+      undefined,
   });
 }
 
@@ -199,6 +216,11 @@ export function mergeProfileEditsIntoApplication(
       /* Legacy field name — stores header/gallery image URLs (not only videos). */
       trainingVideoUrls: form.photoNotes.trim(),
     },
+    profileStyle: normalizeProfileStyle({
+      accent: form.profileAccent,
+      avatarFrame: form.profileAvatarFrame,
+      nameFont: form.profileNameFont,
+    }),
     updatedAt: new Date().toISOString(),
   };
 }

@@ -27,7 +27,8 @@ export function SpecialistDashboardProfileHeader({
         </span>
       </div>
       <p className="specialist-dash-profile-header__hint">
-        Tap any section to edit — a sheet opens, and saving publishes instantly.
+        Same layout clients see. Empty sections stay visible here as “Needs
+        completion” — they’re hidden on your live profile until filled in.
       </p>
     </header>
   );

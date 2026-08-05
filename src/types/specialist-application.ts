@@ -1,3 +1,4 @@
+import type { SpecialistProfileStyle } from "@/lib/specialist-profile-style";
 import type { Certification, Gender, SocialLinks } from "@/types/trainer";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
 
@@ -109,6 +110,8 @@ export interface SpecialistApplication {
   social: SpecialistApplicationSocial;
   media: SpecialistApplicationMedia;
   bio: string;
+  /** Curated public profile look — set from the dashboard full editor */
+  profileStyle?: SpecialistProfileStyle;
 }
 
 export type SpecialistOnboardingState = Omit<
