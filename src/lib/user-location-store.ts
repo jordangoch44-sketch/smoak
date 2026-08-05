@@ -3,6 +3,8 @@ import { lookupLocalZipPlace } from "@/lib/geo/zip-place-names";
 import { reverseGeocodeCoordinates } from "@/lib/geo/reverse-geocode";
 import { resolveZipLocation } from "@/lib/geo/resolve-zip-location";
 import { recordRecentZipCode } from "@/lib/recent-zip-storage";
+import { getAuthSessionSnapshot, setAuthSession } from "@/lib/auth-session-store";
+import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
 import {
   isValidZipCode,
   normalizeZipCode,
@@ -15,6 +17,7 @@ import {
   saveGeolocationCoordinates,
   saveUserZipCode,
   shouldShowLocationPrompt,
+  clearUserLocation,
   USER_LOCATION_CHANGE_EVENT,
 } from "@/lib/user-location-storage";
 
@@ -30,6 +33,8 @@ export {
   saveGeolocationCoordinates,
   saveUserZipCode,
   shouldShowLocationPrompt,
+  clearUserLocation,
+  clearSavedUserZipLocation,
 } from "@/lib/user-location-storage";
 
 export function subscribeUserLocation(onStoreChange: () => void): () => void {
@@ -154,4 +159,36 @@ export async function completeZipEntryAsync(
 
 export function skipLocationPrompt(): void {
   markLocationPromptSkipped();
+}
+
+/**
+ * Clear header / Explore location. Also clears signed-in client profile ZIP
+ * so session hydrate cannot put the old ZIP back.
+ */
+export async function clearUserLocationAsync(): Promise<
+  { ok: true } | { ok: false; message: string }
+> {
+  const session = getAuthSessionSnapshot();
+  if (session?.role === "client" && session.userId) {
+    const supabase = getMarketplaceAuthClient();
+    if (supabase) {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          client_zip_code: "",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", session.userId);
+      if (error) {
+        return { ok: false, message: error.message };
+      }
+    }
+    setAuthSession({
+      ...session,
+      clientZipCode: "",
+    });
+  }
+
+  clearUserLocation();
+  return { ok: true };
 }

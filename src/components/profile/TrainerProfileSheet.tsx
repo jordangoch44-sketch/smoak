@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -32,7 +33,9 @@ const OPEN_TRANSITION = {
 };
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 /** Unified exit — entire sheet + floating chrome slide down together. */
-const DISMISS_DURATION = 0.26;
+const DISMISS_DURATION = 0.28;
+/** Extra travel so iOS visualViewport < 100dvh never leaves a stuck strip. */
+const DISMISS_OVERFLOW_PX = 96;
 
 interface TrainerProfileSheetProps {
   children: ReactNode;
@@ -41,7 +44,23 @@ interface TrainerProfileSheetProps {
 
 function viewportHeight(): number {
   if (typeof window === "undefined") return 800;
-  return window.visualViewport?.height ?? window.innerHeight ?? 800;
+  return Math.max(
+    window.visualViewport?.height ?? 0,
+    window.innerHeight ?? 0,
+    document.documentElement?.clientHeight ?? 0,
+    800
+  );
+}
+
+/** How far to slide so the sheet fully clears the screen (Safari chrome safe). */
+function dismissTravelPx(root: HTMLElement | null, yNow: number): number {
+  const sheet = root?.querySelector(".profile-sheet");
+  const sheetH =
+    sheet instanceof HTMLElement
+      ? Math.max(sheet.offsetHeight, sheet.getBoundingClientRect().height)
+      : 0;
+  const vh = viewportHeight();
+  return Math.max(sheetH, vh, yNow + 48) + DISMISS_OVERFLOW_PX;
 }
 
 /** Blocks remount re-lock while soft-nav still holds the sheet tree. */
@@ -90,8 +109,11 @@ export function TrainerProfileSheet({
   const vhRef = useRef(viewportHeight());
   const rootRef = useRef<HTMLDivElement>(null);
   const dismissingRef = useRef(false);
+  const finishOnceRef = useRef(false);
   const openAnimRef = useRef<{ stop: () => void } | null>(null);
   const programmaticNavRef = useRef(false);
+  /** Drop portal DOM after slide so soft-nav cannot leave a stuck strip. */
+  const [exited, setExited] = useState(false);
 
   const backdropOpacity = useTransform(y, (latest) => {
     const fadeRange = vhRef.current * 0.45;
@@ -108,42 +130,59 @@ export function TrainerProfileSheet({
     router.push(SITE_ROUTES.explore);
   }, [router]);
 
+  const runDismissAnimation = useCallback(
+    (options: { navigate: boolean }) => {
+      openAnimRef.current?.stop();
+      openAnimRef.current = null;
+
+      /*
+       * Restore site chrome immediately. Soft-nav can keep this tree mounted
+       * for seconds after the slide; waiting for animation/unmount left the
+       * bottom nav and header missing for 10s+.
+       */
+      unlockSheetChrome();
+      markSheetDismissing();
+      const root = rootRef.current;
+      root?.classList.add("profile-sheet-root--pass-through");
+      root?.setAttribute("inert", "");
+
+      finishOnceRef.current = false;
+      const finish = () => {
+        if (finishOnceRef.current) return;
+        finishOnceRef.current = true;
+        clearSheetDismissing();
+        root?.classList.add("profile-sheet-root--exited");
+        /* Unmount portal before/while soft-nav clears @modal — prevents
+         * a 1‑frame remnant strip under the bottom nav on iOS. */
+        setExited(true);
+        if (options.navigate) navigateAway();
+      };
+
+      const target = dismissTravelPx(root, y.get());
+
+      if (reduceMotion) {
+        y.set(target);
+        finish();
+        return;
+      }
+
+      const safety = window.setTimeout(finish, DISMISS_DURATION * 1000 + 160);
+      void animate(y, target, {
+        duration: DISMISS_DURATION,
+        ease: DISMISS_EASE,
+      }).then(() => {
+        window.clearTimeout(safety);
+        finish();
+      });
+    },
+    [navigateAway, reduceMotion, y]
+  );
+
   const dismiss = useCallback(() => {
-    if (dismissingRef.current) return;
+    if (dismissingRef.current || exited) return;
     dismissingRef.current = true;
-
-    openAnimRef.current?.stop();
-    openAnimRef.current = null;
-
-    /*
-     * Restore site chrome immediately. Soft-nav can keep this tree mounted
-     * for seconds after the slide; waiting for animation/unmount left the
-     * bottom nav and header missing for 10s+.
-     */
-    unlockSheetChrome();
-    markSheetDismissing();
-    const root = rootRef.current;
-    root?.classList.add("profile-sheet-root--pass-through");
-    root?.setAttribute("inert", "");
-
-    const finish = () => {
-      clearSheetDismissing();
-      /* Route sync after visual close — do not block the slide. */
-      navigateAway();
-    };
-
-    if (reduceMotion) {
-      y.set(vhRef.current);
-      finish();
-      return;
-    }
-
-    const target = Math.max(vhRef.current, y.get() + 48);
-    void animate(y, target, {
-      duration: DISMISS_DURATION,
-      ease: DISMISS_EASE,
-    }).then(finish);
-  }, [navigateAway, reduceMotion, y]);
+    runDismissAnimation({ navigate: true });
+  }, [exited, runDismissAnimation]);
 
   useEffect(() => {
     if (!isSheetViewport) return;
@@ -155,7 +194,7 @@ export function TrainerProfileSheet({
     window.addEventListener("resize", syncVh);
     window.visualViewport?.addEventListener("resize", syncVh);
 
-    if (dismissingRef.current) {
+    if (dismissingRef.current || exited) {
       return () => {
         window.removeEventListener("resize", syncVh);
         window.visualViewport?.removeEventListener("resize", syncVh);
@@ -165,6 +204,7 @@ export function TrainerProfileSheet({
     }
 
     dismissingRef.current = false;
+    finishOnceRef.current = false;
     sheetChromeDismissing = false;
     chromeUnlockGuardUntil = 0;
     programmaticNavRef.current = false;
@@ -193,7 +233,7 @@ export function TrainerProfileSheet({
       unlockSheetChrome();
       clearSheetDismissing();
     };
-  }, [isSheetViewport, reduceMotion, y]);
+  }, [exited, isSheetViewport, reduceMotion, y]);
 
   useEffect(() => {
     if (!isSheetViewport) return;
@@ -224,40 +264,21 @@ export function TrainerProfileSheet({
 
     function onPopState() {
       if (programmaticNavRef.current) return;
-      if (dismissingRef.current) return;
+      if (dismissingRef.current || exited) return;
       dismissingRef.current = true;
-
-      openAnimRef.current?.stop();
-      openAnimRef.current = null;
-      unlockSheetChrome();
-      markSheetDismissing();
-      const root = rootRef.current;
-      root?.classList.add("profile-sheet-root--pass-through");
-      root?.setAttribute("inert", "");
-
-      const done = () => {
-        clearSheetDismissing();
-      };
-
-      if (reduceMotion) {
-        y.set(vhRef.current);
-        done();
-        return;
-      }
-
-      const target = Math.max(vhRef.current, y.get() + 48);
-      void animate(y, target, {
-        duration: DISMISS_DURATION,
-        ease: DISMISS_EASE,
-      }).then(done);
+      runDismissAnimation({ navigate: false });
     }
 
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [isSheetViewport, reduceMotion, y]);
+  }, [exited, isSheetViewport, runDismissAnimation]);
 
   if (!isSheetViewport) {
     return <>{children}</>;
+  }
+
+  if (exited) {
+    return null;
   }
 
   if (!hydrated || typeof document === "undefined") {

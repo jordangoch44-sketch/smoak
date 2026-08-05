@@ -6,6 +6,7 @@ import {
   UNKNOWN_ZIP_AREA_LABEL,
 } from "@/lib/geo/zip-place-names";
 import {
+  clearUserLocationAsync,
   completeGeolocationAsync,
   completeZipEntryAsync,
 } from "@/lib/user-location-store";
@@ -34,6 +35,7 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
     city: savedPlace,
     zip: savedZip,
     isUnknownArea,
+    hasLocation,
   } = useUserLocation();
   const activeSummary = formatPanelLocationSummary(
     savedPlace,
@@ -46,6 +48,7 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
   const [zipTouched, setZipTouched] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [zipSubmitting, setZipSubmitting] = useState(false);
+  const [clearing, setClearing] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [zipResolveError, setZipResolveError] = useState<string | null>(null);
 
@@ -96,6 +99,21 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
     [submitZip, zip]
   );
 
+  const handleClearLocation = useCallback(async () => {
+    setGeoError(null);
+    setZipResolveError(null);
+    setClearing(true);
+    const result = await clearUserLocationAsync();
+    setClearing(false);
+    if (!result.ok) {
+      setGeoError(result.message || "Couldn’t clear location. Try again.");
+      return;
+    }
+    setZip("");
+    setZipTouched(false);
+    onUpdated();
+  }, [onUpdated]);
+
   const handleUseLocation = useCallback(() => {
     setGeoError(null);
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -140,6 +158,8 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
     );
   }, [onUpdated]);
 
+  const busy = geoLoading || zipSubmitting || clearing;
+
   return (
     <div className="location-selector-panel__body">
       <header className="location-selector-panel__header">
@@ -160,7 +180,7 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
         type="button"
         className="smoac-control location-selector-panel__btn location-selector-panel__btn--primary"
         onClick={handleUseLocation}
-        disabled={geoLoading || zipSubmitting}
+        disabled={busy}
       >
         {geoLoading
           ? "Finding your location…"
@@ -227,13 +247,28 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
         <button
           type="submit"
           className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
-          disabled={
-            !isValidZipCode(normalizeZipCode(zip)) || zipSubmitting || geoLoading
-          }
+          disabled={!isValidZipCode(normalizeZipCode(zip)) || busy}
         >
           {zipSubmitting ? "Updating…" : "Update location"}
         </button>
       </form>
+
+      {hasLocation || activeSummary ? (
+        <>
+          <div className="location-selector-panel__divider" aria-hidden />
+          <button
+            type="button"
+            className="smoac-control location-selector-panel__btn location-selector-panel__btn--clear"
+            onClick={() => void handleClearLocation()}
+            disabled={busy}
+          >
+            {clearing ? "Clearing…" : "Clear location"}
+          </button>
+          <p className="location-selector-panel__clear-hint">
+            Removes your saved ZIP so Search isn’t ranked from that area.
+          </p>
+        </>
+      ) : null}
     </div>
   );
 }

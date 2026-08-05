@@ -173,6 +173,13 @@ body.profile-sheet-dismissing {
   }
 }
 
+/* Soft-nav can keep the React tree briefly — never leave a painted remnant. */
+.profile-sheet-root--pass-through.profile-sheet-root--exited,
+.profile-sheet-root--exited {
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
 @media (max-width: 1023px) {
   body.profile-sheet-open #root.app-shell,
   body.profile-sheet-open .app-shell {

@@ -284,11 +284,22 @@ export function markLocationPromptSkipped(): void {
 
 /** Clear saved ZIP location (e.g. on client logout — profile is source of truth on next login). */
 export function clearSavedUserZipLocation(): void {
+  clearUserLocation();
+}
+
+/**
+ * Clear all personalization location (ZIP labels + device/ZIP coordinates).
+ * Header returns to “Enter ZIP”; Explore proximity has no origin until set again.
+ */
+export function clearUserLocation(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(USER_ZIP_CODE_KEY);
   window.localStorage.removeItem(USER_ZIP_PLACE_NAME_KEY);
   window.localStorage.removeItem(USER_ZIP_STATE_KEY);
   window.localStorage.removeItem(USER_ZIP_LATITUDE_KEY);
   window.localStorage.removeItem(USER_ZIP_LONGITUDE_KEY);
+  window.localStorage.removeItem(USER_LATITUDE_KEY);
+  window.localStorage.removeItem(USER_LONGITUDE_KEY);
+  window.localStorage.removeItem(HAS_LOCATION_PERMISSION_KEY);
   dispatchUserLocationChange();
 }

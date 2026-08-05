@@ -381,6 +381,25 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
+.location-selector-panel__btn--clear {
+  margin-top: 0.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: rgba(255, 210, 210, 0.88);
+}
+
+.location-selector-panel__btn--clear:disabled {
+  opacity: 0.45;
+}
+
+.location-selector-panel__clear-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+  text-align: center;
+}
+
 .location-selector-panel__divider {
   height: 1px;
   margin: 1.15rem 0;
