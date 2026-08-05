@@ -1,12 +1,12 @@
 # SMOAC — Current Status
 
-**Last updated:** July 31, 2026  
+**Last updated:** August 5, 2026  
 **Phase 2:** Complete  
-**Phase 3a (saved trainers):** Complete  
+**Phase 3a (saved trainers):** Complete — live load is Supabase-only (no local import)  
 **Phase 3b (applications):** Complete (fetch-only hydrate when Supabase active)  
 **Phase 3c (specialist profiles):** Complete in code  
 **Phase 3d (admin flags / hide):** Complete in code  
-**Phase 3e (prefer Supabase only):** In progress — live reads no longer promote localStorage
+**Phase 3e (prefer Supabase only):** Mostly done — remaining: optional backfill scripts + retire `dev-auth` when ready  
 
 ---
 
@@ -24,6 +24,18 @@ Live on `smoac.com` / branch `supabase-storage-setup`:
 | Ops: `scripts/wipe-marketplace-users.mjs` | ✅ |
 
 **Do not regress:** `overflow-x: clip` (not `hidden`) on `.app-main` / `.page-transition*`; welcome cover z-index below `--z-welcome-intro`.
+
+---
+
+## Recent polish (Aug 2026)
+
+| Area | Status |
+|------|--------|
+| Edit profile = client-faithful layout + persisted `profileStyle` | ✅ |
+| Profile sheet close remnant (iOS) | ✅ |
+| Clear location (guest + signed-in profile ZIP) | ✅ |
+| Header ZIP → Explore without re-prompt | ✅ |
+| Pro trial emails / Plan tab / Stripe placements | ✅ |
 
 ---
 
@@ -48,8 +60,9 @@ Live on `smoac.com` / branch `supabase-storage-setup`:
 |---------|--------|
 | `saved_trainers` table + RLS | ✅ |
 | Cross-device save hearts | ✅ |
-| No local mirror after successful Supabase write | ✅ (3e) |
-| Live load error does not fall back to localStorage | ✅ (3e) |
+| No local mirror after successful Supabase write | ✅ |
+| Live load error does not fall back to localStorage | ✅ |
+| One-time `importLocalSavedTrainers` retired | ✅ |
 
 **Docs:** [`docs/PHASE3A_SAVED_TRAINERS.md`](docs/PHASE3A_SAVED_TRAINERS.md)
 
@@ -61,9 +74,10 @@ Live on `smoac.com` / branch `supabase-storage-setup`:
 |---------|--------|
 | `client_applications` + `specialist_applications` | ✅ |
 | Signup/onboarding → Supabase | ✅ |
-| Admin hydrate from DB (no auto-import of browser leftovers) | ✅ (3e) |
-| Live snapshots do not seed from localStorage pre-hydrate | ✅ (3e) |
+| Admin hydrate from DB (no auto-import of browser leftovers) | ✅ |
+| Live snapshots do not seed from localStorage pre-hydrate | ✅ |
 | Onboarding draft (local until submit) | ✅ (intentional) |
+| Dead `importLocal*Applications` helpers removed | ✅ |
 
 **Docs:** [`docs/PHASE3B_APPLICATIONS.md`](docs/PHASE3B_APPLICATIONS.md)
 
@@ -77,19 +91,15 @@ Live on `smoac.com` / branch `supabase-storage-setup`:
 | Edit profile dual-write → DB | ✅ |
 | Hide / featured / sponsored / top_ranked flags | ✅ |
 | Live Explore skips browser-only hide list | ✅ |
-| Public profile page skips local overrides when live | ✅ (3e) |
-| Profile overrides memory-only when live | ✅ (3e) |
+| Public profile page skips local overrides when live | ✅ |
+| Profile overrides memory-only when live | ✅ |
+| Specialist media upload → Storage bucket when live | ✅ |
 
-**Docs:** [`docs/PHASE3C_SPECIALIST_PROFILES.md`](docs/PHASE3C_SPECIALIST_PROFILES.md)
-
-Apply migrations in Supabase if not already:
-
-- `20260716000000_specialist_profiles.sql`
-- `20260723140000_specialist_profiles_admin_flags.sql`
+**Docs:** [`docs/PHASE3C_SPECIALIST_PROFILES.md`](docs/PHASE3C_SPECIALIST_PROFILES.md), [`docs/SUPABASE_STORAGE.md`](docs/SUPABASE_STORAGE.md)
 
 ---
 
-## Phase 3e — Prefer Supabase only (in progress)
+## Phase 3e — Prefer Supabase only (mostly done)
 
 **Shipped:**
 
@@ -101,16 +111,19 @@ Apply migrations in Supabase if not already:
 - Seed + localStorage remain for `npm run dev` without Supabase env
 - Admin specialists table reads `specialist_profiles` when live
 - Admin revenue can show Stripe MRR; specialist analytics use site_visits + saves
+- Search / contact / booking click event pipeline for specialist analytics
+- Hide / admin-meta mirrors memory-only when live (ops-only fields `isProtected` / `accountKind` remain session memory until DB columns)
 
 **Still to do:**
 
-- [ ] Explicit backfill scripts for any remaining local-only data
-- [ ] Delete local bridge modules + retire `dev-auth` when demo-without-env is an explicit product mode
-- [x] Hide / admin-meta mirrors memory-only when live (ops-only fields `isProtected` / `accountKind` remain session memory until DB columns)
-- [ ] Retire saved-trainers one-time `importLocalSavedTrainers` after migration window
-- [x] Search / contact / booking click event pipeline for specialist analytics
-  - Migration: `20260727140000_specialist_engagement_events.sql` (apply in Supabase SQL Editor)
+- [ ] Explicit backfill scripts for any remaining local-only data (support/ops only)
+- [ ] Delete remaining local bridge modules + retire `dev-auth` when demo-without-env is an explicit product mode
 
-**Stripe (prod keys present):** checkout → webhook → `specialist_billing` path is live. Set `CRON_SECRET` in Vercel so daily trial expiry cron is authorized.
+**Ops (prod Vercel):**
+
+- [x] `CRON_SECRET` set — daily trial expiry + reminder cron authorized
+- [ ] Confirm `EMAIL_FROM` is a full `Name <addr@verified-domain>` (Resend). Local still uses `onboarding@resend.dev`.
+
+**Stripe (prod keys present):** checkout → webhook → `specialist_billing` path is live.
 
 **Plan:** [`docs/PHASE3_SUPABASE_MIGRATION.md`](docs/PHASE3_SUPABASE_MIGRATION.md)

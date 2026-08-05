@@ -174,6 +174,7 @@ Seed data becomes SQL seed migration or admin-import script, not bundled TS for 
 2. **Dual-write period** (optional): write both localStorage and Supabase; read Supabase first.
 3. **Cutover**: remove localStorage writes; one-time migration banner for existing users.
 4. **Dev mock cleanup**: delete `dev-auth.ts` marketplace path when Supabase required everywhere.
+5. **Saved trainers:** one-time `importLocalSavedTrainers` retired (Aug 2026) — live load is fetch-only.
 
 ---
 

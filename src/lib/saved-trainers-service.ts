@@ -80,29 +80,6 @@ export async function deleteSavedTrainer(
   return { ok: true };
 }
 
-/** One-time import from localStorage after Phase 3 cutover. */
-export async function importLocalSavedTrainers(
-  supabase: SupabaseClient,
-  userId: string,
-  localIds: readonly string[]
-): Promise<SavedTrainersFetchResult> {
-  const remote = await fetchSavedTrainerIds(supabase, userId);
-  if (!remote.ok) return remote;
-
-  const toInsert = uniqueIds(localIds).filter((id) => !remote.specialistIds.includes(id));
-  for (const specialistId of toInsert) {
-    const result = await insertSavedTrainer(supabase, userId, specialistId);
-    if (!result.ok) {
-      return { ok: false, message: result.message };
-    }
-  }
-
-  return {
-    ok: true,
-    specialistIds: uniqueIds([...remote.specialistIds, ...localIds]),
-  };
-}
-
 /** Admin utility: count saved specialists for a set of client user ids. */
 export async function fetchSavedTrainerCountsForUsers(
   supabase: SupabaseClient,

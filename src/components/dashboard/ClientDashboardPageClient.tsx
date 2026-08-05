@@ -22,13 +22,12 @@ import { CLIENT_SEARCH_RADIUS_OPTIONS } from "@/constants/client-profile-options
 import type { ClientProfileFormState } from "@/types/client-profile";
 import {
   DashboardEmptyState,
-  DashboardListItem,
   DashboardPageShell,
 } from "@/components/dashboard";
 import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOrganizer";
 import { TrainerList } from "@/components/trainers";
+import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiriesList";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
-import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
 import { cn, getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 import "@/styles/client-dashboard.css";
@@ -38,7 +37,7 @@ type ClientDashboardTab = "profile" | "saved" | "messages";
 const TABS: ReadonlyArray<{ id: ClientDashboardTab; label: string }> = [
   { id: "profile", label: "My Profile" },
   { id: "saved", label: "Saved Specialists" },
-  { id: "messages", label: "Messages" },
+  { id: "messages", label: "Inquiries" },
 ];
 
 function formatRadiusLabel(miles: number | null): string {
@@ -390,39 +389,7 @@ export function ClientDashboardPageClient() {
               aria-labelledby="client-dash-tab-messages"
               className="client-dash-panel"
             >
-              {messages.length > 0 ? (
-                <ul className="dashboard-list client-dash-messages">
-                  {messages.map((message) => (
-                    <li key={message.id}>
-                      <DashboardListItem
-                        title={message.specialist}
-                        subtitle={message.preview}
-                        meta={
-                          message.specialistId
-                            ? `${message.time} · Leave a review`
-                            : message.time
-                        }
-                        href={
-                          message.specialistId
-                            ? buildLeaveReviewHref(message.specialistId)
-                            : undefined
-                        }
-                        badge={
-                          message.unread ? (
-                            <span className="dashboard-badge">New</span>
-                          ) : undefined
-                        }
-                      />
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <DashboardEmptyState
-                  message="Conversations with specialists will appear here."
-                  actionHref="/explore"
-                  actionLabel="Find a specialist"
-                />
-              )}
+              <ClientInquiriesList inquiries={messages} />
             </section>
           ) : null}
         </div>

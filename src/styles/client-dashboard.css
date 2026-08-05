@@ -314,6 +314,36 @@
   margin: 0;
 }
 
+.client-dash-inquiries {
+  margin: 0;
+}
+
+.client-dash-inquiries__hint {
+  margin: 0.65rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.client-dash-inquiries__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  margin-top: 0.85rem;
+  align-items: center;
+}
+
+.client-dash-inquiries__secondary {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.62);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.client-dash-inquiries__secondary:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
 .dashboard-page--client .dashboard-page__subtitle {
   max-width: 22rem;
 }

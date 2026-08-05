@@ -54,7 +54,7 @@ Your inquiry was sent to ${input.specialistName}. They'll follow up with you by 
 Inquiry type: ${action}
 Topics: ${topicText}
 
-${message ? `Your message:\n${message}\n\n` : ""}Open your messages: ${input.messagesPath}
+${message ? `Your message:\n${message}\n\n` : ""}Open your inquiries: ${input.messagesPath}
 ${
   input.leaveReviewPath
     ? `\nAfter you connect, leave a SMOAC review:\n${input.leaveReviewPath}\n`
@@ -84,13 +84,14 @@ SMOAC`;
     const html = wrapTransactionalEmailHtml({
       preheader: `Inquiry sent to ${input.specialistName}`,
       eyebrow: "Inquiry confirmation",
-      title: "Message sent",
+      title: "Inquiry sent",
       bodyHtml,
       cta: {
-        label: "Open your messages",
+        label: "View your inquiry",
         href: input.messagesPath,
       },
-      footerNote: "We’ll keep your conversation history in your SMOAC dashboard.",
+      footerNote:
+        "Specialists reply by email. Your inquiry history stays in your SMOAC dashboard.",
     });
 
     return await dispatchTransactionalEmail({

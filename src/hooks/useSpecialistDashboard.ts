@@ -32,8 +32,10 @@ import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-
 import { isSpecialistPremium } from "@/lib/specialist-premium";
 import {
   loadSpecialistInquiryLeads,
+  markAllSpecialistInquiriesRead,
   markSpecialistInquiryRead,
 } from "@/lib/inquiry/inquiry-inbox";
+import { markAllSpecialistInquiryNotificationsRead } from "@/lib/inquiry/specialist-inquiry-notifications";
 import type {
   SpecialistDashboardRanking,
   SpecialistLead,
@@ -157,10 +159,20 @@ export function useSpecialistDashboard() {
     }
 
     loadLeads();
+
+    function onVisible() {
+      if (document.visibilityState === "visible") loadLeads();
+    }
+
+    window.addEventListener("focus", loadLeads);
+    document.addEventListener("visibilitychange", onVisible);
+    /* Same-browser refresh signal after a new inquiry is written. */
     window.addEventListener("smoac:specialist-inquiry-notifications", loadLeads);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", loadLeads);
+      document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener(
         "smoac:specialist-inquiry-notifications",
         loadLeads
@@ -175,6 +187,18 @@ export function useSpecialistDashboard() {
       prev.map((item) =>
         item.id === lead.id ? { ...item, unread: false } : item
       )
+    );
+  }
+
+  async function handleDismissInquiryNotifications() {
+    if (!trainerId) return;
+    const unreadIds = inquiryLeads
+      .filter((lead) => lead.unread)
+      .map((lead) => lead.id);
+    await markAllSpecialistInquiriesRead(trainerId, unreadIds);
+    markAllSpecialistInquiryNotificationsRead(trainerId);
+    setInquiryLeads((prev) =>
+      prev.map((item) => (item.unread ? { ...item, unread: false } : item))
     );
   }
 
@@ -219,20 +243,27 @@ export function useSpecialistDashboard() {
     subscription: data.subscription,
   });
 
+  /* Prefer real inquiries; demo leads only when demo mode has nothing live. */
   const mergedLeads =
     inquiryLeads.length > 0
-      ? [
-          ...inquiryLeads,
-          ...data.newLeads.filter(
-            (lead) => !inquiryLeads.some((item) => item.id === lead.id)
-          ),
-        ]
-      : data.newLeads;
+      ? inquiryLeads
+      : useDemoData
+        ? data.newLeads
+        : [];
 
   async function handleSignOut() {
     await signOut();
     afterLogoutNavigation(() => router.push("/profile"));
   }
+
+  const unreadInquiryLeads = mergedLeads.filter((lead) => lead.unread);
+  const inquiryUnreadCount = unreadInquiryLeads.length;
+  const latestInquirySummary =
+    unreadInquiryLeads[0] != null
+      ? `${unreadInquiryLeads[0].name} · ${
+          unreadInquiryLeads[0].messagePreview || unreadInquiryLeads[0].intent
+        }`
+      : null;
 
   return {
     isReady,
@@ -252,7 +283,10 @@ export function useSpecialistDashboard() {
     isPremium,
     dashboardMode,
     firstName,
+    inquiryUnreadCount,
+    latestInquirySummary,
     handleSignOut,
     handleOpenInquiryLead,
+    handleDismissInquiryNotifications,
   };
 }

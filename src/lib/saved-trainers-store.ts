@@ -15,7 +15,6 @@ import {
 import {
   deleteSavedTrainer,
   fetchSavedTrainerIds,
-  importLocalSavedTrainers,
   insertSavedTrainer,
 } from "@/lib/saved-trainers-service";
 
@@ -185,33 +184,19 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
       throw new Error("Saved specialists require Supabase.");
     }
 
-    const localIds = loadSavedTrainerIdsForUser(userId);
-    let specialistIds: string[];
-
-    if (localIds.length > 0) {
-      const imported = await withTimeout(
-        importLocalSavedTrainers(supabase, userId, localIds),
-        SAVED_TRAINERS_FETCH_TIMEOUT_MS
-      );
-      if (!imported.ok) {
-        throw new Error(imported.message);
-      }
-      specialistIds = imported.specialistIds;
-      clearLocalSavedTrainersForUser(userId);
-    } else {
-      const remote = await withTimeout(
-        fetchSavedTrainerIds(supabase, userId),
-        SAVED_TRAINERS_FETCH_TIMEOUT_MS
-      );
-      if (!remote.ok) {
-        throw new Error(remote.message);
-      }
-      specialistIds = remote.specialistIds;
+    const remote = await withTimeout(
+      fetchSavedTrainerIds(supabase, userId),
+      SAVED_TRAINERS_FETCH_TIMEOUT_MS
+    );
+    if (!remote.ok) {
+      throw new Error(remote.message);
     }
 
     if (generation !== loadGeneration) return;
 
-    applyCache(userId, specialistIds);
+    /* Discard any leftover pre-migration local shortlist — Supabase is SoT. */
+    clearLocalSavedTrainersForUser(userId);
+    applyCache(userId, remote.specialistIds);
     loadError = null;
   } catch (error) {
     if (generation !== loadGeneration) return;

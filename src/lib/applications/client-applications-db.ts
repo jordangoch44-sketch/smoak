@@ -95,22 +95,3 @@ export async function upsertClientApplication(
   }
   return { ok: true };
 }
-
-export async function importLocalClientApplications(
-  supabase: SupabaseClient,
-  localApps: readonly ClientApplication[]
-): Promise<ClientApplicationsFetchResult> {
-  const remote = await fetchClientApplications(supabase);
-  if (!remote.ok) return remote;
-
-  const remoteIds = new Set(remote.applications.map((app) => app.id));
-  for (const app of localApps) {
-    if (remoteIds.has(app.id)) continue;
-    const result = await upsertClientApplication(supabase, app);
-    if (!result.ok) {
-      return { ok: false, message: result.message };
-    }
-  }
-
-  return fetchClientApplications(supabase);
-}

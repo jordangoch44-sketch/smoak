@@ -572,25 +572,24 @@ export function SpecialistInquirySheet({
                   <p className="inquiry-sheet__helper">
                     {emailMode === "resend"
                       ? "A confirmation was emailed to you."
-                      : "Your message is saved in SMOAC. Confirmation email sends when Resend is configured (RESEND_API_KEY)."}
-                  </p>
-                  <Link
-                    href={buildLeaveReviewHref(specialistId)}
-                    className="smoac-control inquiry-sheet__submit"
-                    onClick={onClose}
-                  >
-                    Leave a SMOAC review
-                  </Link>
-                  <p className="inquiry-sheet__helper inquiry-sheet__helper--tight">
-                    After you connect, share how it went — reviews power city
-                    rankings.
+                      : "Your inquiry is saved in SMOAC. Confirmation email sends when Resend is configured (RESEND_API_KEY)."}
                   </p>
                   <Link
                     href={`${CLIENT_DASHBOARD_PATH}?tab=messages`}
+                    className="smoac-control inquiry-sheet__submit"
+                    onClick={onClose}
+                  >
+                    View your inquiry
+                  </Link>
+                  <p className="inquiry-sheet__helper inquiry-sheet__helper--tight">
+                    After you connect, you’re welcome to leave a SMOAC review.
+                  </p>
+                  <Link
+                    href={buildLeaveReviewHref(specialistId)}
                     className="smoac-control inquiry-sheet__secondary-link"
                     onClick={onClose}
                   >
-                    Open messages
+                    Leave a review later
                   </Link>
                 </div>
               ) : null}

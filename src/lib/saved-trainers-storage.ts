@@ -98,7 +98,7 @@ export function persistSavedTrainerIdsForUser(userId: string, ids: string[]): vo
   }
 }
 
-/** Clear per-user local shortlist after Supabase import */
+/** Clear leftover local shortlist keys (live mode discards these; Supabase is SoT). */
 export function clearLocalSavedTrainersForUser(userId: string): void {
   if (!userId || typeof window === "undefined") return;
   const userKey = getSavedTrainersStorageKey(userId);

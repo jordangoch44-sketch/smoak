@@ -42,19 +42,19 @@ SaveTrainerButton / NavbarSavedLink / ClientDashboard
   → useSavedTrainers() (SavedTrainersContext)
   → saved-trainers-store.ts (in-memory cache + useSyncExternalStore)
       → saved-trainers-service.ts (Supabase CRUD)
-      → saved-trainers-storage.ts (localStorage fallback + one-time import)
+      → saved-trainers-storage.ts (dev mock only when Supabase env absent)
 ```
 
 ### Load path (signed-in client + Supabase)
 
 1. `AuthSessionContext` restores session → store subscribes to auth changes.
 2. `fetchSavedTrainerIds` loads rows for `session.userId`.
-3. If legacy `localStorage` has ids for that user → `importLocalSavedTrainers` → clear local key.
-4. On fetch error → fallback to localStorage cache + `savesError` message.
+3. Clear any leftover pre-migration local shortlist keys (not imported).
+4. On fetch error → empty list + `savesError` (no localStorage invent).
 
 ### Write path
 
-`toggleSavedTrainerId` → optimistic cache update → `insertSavedTrainer` / `deleteSavedTrainer` → rollback on error.
+`toggleSavedTrainerId` → optimistic cache update → `insertSavedTrainer` / `deleteSavedTrainer` → rollback on error. No local mirror after successful Supabase write.
 
 ### Dev mock (no Supabase env)
 

@@ -145,22 +145,3 @@ export async function upsertSpecialistApplication(
   }
   return { ok: true };
 }
-
-export async function importLocalSpecialistApplications(
-  supabase: SupabaseClient,
-  localApps: readonly SpecialistApplication[]
-): Promise<SpecialistApplicationsFetchResult> {
-  const remote = await fetchSpecialistApplications(supabase);
-  if (!remote.ok) return remote;
-
-  const remoteIds = new Set(remote.applications.map((app) => app.id));
-  for (const app of localApps) {
-    if (remoteIds.has(app.id)) continue;
-    const result = await upsertSpecialistApplication(supabase, app);
-    if (!result.ok) {
-      return { ok: false, message: result.message };
-    }
-  }
-
-  return fetchSpecialistApplications(supabase);
-}

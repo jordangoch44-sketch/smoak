@@ -27,7 +27,6 @@ import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specia
 import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/SpecialistProGhostPreview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
-import { useSpecialistInquiryNotifications } from "@/hooks/useSpecialistInquiryNotifications";
 import {
   showsPremiumDashboard,
   showsProfileFirstDashboard,
@@ -93,7 +92,6 @@ export function SpecialistDashboardPageClient() {
     session,
     data,
     trainer,
-    trainerId,
     application,
     profileCompletion,
     completionChecklist,
@@ -103,15 +101,12 @@ export function SpecialistDashboardPageClient() {
     rankingRating,
     firstName,
     dashboardMode,
+    inquiryUnreadCount,
+    latestInquirySummary,
     handleSignOut,
     handleOpenInquiryLead,
+    handleDismissInquiryNotifications,
   } = useSpecialistDashboard();
-
-  const {
-    unreadCount: notificationUnread,
-    latestSummary,
-    dismissAll,
-  } = useSpecialistInquiryNotifications(trainerId);
 
   useEffect(() => {
     if (session?.premiumTrialJustEnded) {
@@ -153,11 +148,8 @@ export function SpecialistDashboardPageClient() {
   const onProTrial = Boolean(session.premiumTrialActive);
   const showLastChance = showProTrialLastChance(session);
 
-  const leadUnread = data.newLeads.filter((lead) => lead.unread).length;
-  const bannerUnread = Math.max(notificationUnread, leadUnread);
-
   function openProfileTabAndInquiries() {
-    dismissAll();
+    void handleDismissInquiryNotifications();
     setActiveTab("profile");
     window.requestAnimationFrame(() => {
       window.setTimeout(scrollToInquiries, 80);
@@ -197,17 +189,19 @@ export function SpecialistDashboardPageClient() {
 
         {showsInquiries ? (
           <InquiryNotificationBanner
-            unreadCount={bannerUnread}
-            latestSummary={latestSummary}
+            unreadCount={inquiryUnreadCount}
+            latestSummary={latestInquirySummary}
             onReview={
               isFreeLive
                 ? openProfileTabAndInquiries
                 : () => {
-                    dismissAll();
+                    void handleDismissInquiryNotifications();
                     scrollToInquiries();
                   }
             }
-            onDismiss={dismissAll}
+            onDismiss={() => {
+              void handleDismissInquiryNotifications();
+            }}
           />
         ) : null}
 
@@ -233,9 +227,9 @@ export function SpecialistDashboardPageClient() {
                   onClick={() => setActiveTab(tab.id)}
                 >
                   {tab.label}
-                  {tab.id === "profile" && bannerUnread > 0 ? (
+                  {tab.id === "profile" && inquiryUnreadCount > 0 ? (
                     <span className="specialist-dash-tabs__count">
-                      {bannerUnread}
+                      {inquiryUnreadCount}
                     </span>
                   ) : null}
                 </button>

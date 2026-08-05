@@ -21,9 +21,15 @@ export interface ClientInquiryListItem {
   id: string;
   specialist: string;
   specialistId: string;
+  /** List subtitle — message preview or topics */
   preview: string;
   time: string;
+  /** Specialist reply waiting (none yet in email-handoff model) */
   unread: boolean;
+  actionLabel: string;
+  topicLabels: string[];
+  messagePreview: string;
+  messageBody: string;
 }
 
 function relativeTime(iso: string): string {
@@ -127,6 +133,35 @@ async function fetchSpecialistConversations(
   return results;
 }
 
+function conversationToClientItem(
+  conversation: InquiryConversationRow,
+  options: { unread: boolean; latestBody?: string }
+): ClientInquiryListItem {
+  const action = isInquiryActionId(conversation.inquiry_action)
+    ? labelForInquiryAction(conversation.inquiry_action)
+    : conversation.inquiry_action;
+  const topics = labelsForInquiryTopics(conversation.inquiry_topics);
+  const body = options.latestBody?.trim() || "";
+  const messagePreview = body
+    ? previewFromBody(body)
+    : topics.length > 0
+      ? topics.slice(0, 3).join(" · ")
+      : action;
+
+  return {
+    id: conversation.id,
+    specialist: conversation.specialist_name || "Specialist",
+    specialistId: conversation.specialist_id,
+    preview: messagePreview,
+    time: relativeTime(conversation.last_message_at),
+    unread: options.unread,
+    actionLabel: action,
+    topicLabels: topics,
+    messagePreview,
+    messageBody: body,
+  };
+}
+
 async function fetchClientConversations(
   supabase: SupabaseClient,
   clientUserId: string
@@ -140,20 +175,32 @@ async function fetchClientConversations(
 
   if (error || !data) return [];
 
-  return (data as InquiryConversationRow[]).map((conversation) => {
-    const topics = labelsForInquiryTopics(conversation.inquiry_topics);
-    return {
-      id: conversation.id,
-      specialist: conversation.specialist_name || "Specialist",
-      specialistId: conversation.specialist_id,
-      preview:
-        topics.length > 0
-          ? topics.slice(0, 3).join(" · ")
-          : conversation.inquiry_action,
-      time: relativeTime(conversation.last_message_at),
-      unread: false,
-    };
-  });
+  const rows = data as InquiryConversationRow[];
+  const results: ClientInquiryListItem[] = [];
+
+  for (const conversation of rows) {
+    const { data: messages } = await supabase
+      .from("inquiry_messages")
+      .select("is_read, sender_role, body, created_at")
+      .eq("conversation_id", conversation.id)
+      .order("created_at", { ascending: false })
+      .limit(8);
+
+    const list = (messages as InquiryMessageRow[] | null) ?? [];
+    const latestClient = list.find((m) => m.sender_role === "client");
+    const unreadSpecialist = list.some(
+      (m) => m.sender_role === "specialist" && !m.is_read
+    );
+
+    results.push(
+      conversationToClientItem(conversation, {
+        unread: unreadSpecialist,
+        latestBody: latestClient?.body ?? "",
+      })
+    );
+  }
+
+  return results;
 }
 
 export async function loadSpecialistInquiryLeads(
@@ -205,6 +252,21 @@ export async function markSpecialistInquiryRead(
     .eq("is_read", false);
 }
 
+/** Mark every unread client message for this specialist as read (banner dismiss). */
+export async function markAllSpecialistInquiriesRead(
+  specialistId: string,
+  conversationIds: readonly string[]
+): Promise<void> {
+  const ids = [...new Set(conversationIds.filter(Boolean))];
+  if (!specialistId || ids.length === 0) return;
+
+  await Promise.all(
+    ids.map((conversationId) =>
+      markSpecialistInquiryRead(specialistId, conversationId)
+    )
+  );
+}
+
 export async function loadClientInquiryMessages(
   clientUserId: string | null | undefined
 ): Promise<ClientInquiryListItem[]> {
@@ -212,22 +274,15 @@ export async function loadClientInquiryMessages(
 
   if (!isMarketplaceSupabaseActive()) {
     return listLocalInquiriesForClient(clientUserId).map((record) => {
-      const topics = labelsForInquiryTopics(
-        record.conversation.inquiry_topics
-      );
-      return {
-        id: record.conversation.id,
-        specialist: record.conversation.specialist_name || "Specialist",
-        specialistId: record.conversation.specialist_id,
-        preview:
-          topics.length > 0
-            ? topics.slice(0, 3).join(" · ")
-            : record.conversation.inquiry_action,
-        time: relativeTime(record.conversation.last_message_at),
+      const latest = [...record.messages]
+        .reverse()
+        .find((m) => m.sender_role === "client");
+      return conversationToClientItem(record.conversation, {
         unread: record.messages.some(
           (m) => m.sender_role === "specialist" && !m.is_read
         ),
-      };
+        latestBody: latest?.body,
+      });
     });
   }
 
