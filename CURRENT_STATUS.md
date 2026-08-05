@@ -122,7 +122,8 @@ Live on `smoac.com` / branch `supabase-storage-setup`:
 **Ops (prod Vercel):**
 
 - [x] `CRON_SECRET` set — daily trial expiry + reminder cron authorized
-- [ ] Confirm `EMAIL_FROM` is a full `Name <addr@verified-domain>` (Resend). Local still uses `onboarding@resend.dev`.
+- [x] `EMAIL_FROM=SMOAC <noreply@smoac.com>` (Resend domain verified Aug 2026)
+- [x] Inquiry submit via authenticated `POST /api/inquiry/submit` (server write + email)
 
 **Stripe (prod keys present):** checkout → webhook → `specialist_billing` path is live.
 

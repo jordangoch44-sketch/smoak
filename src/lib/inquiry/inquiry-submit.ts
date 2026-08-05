@@ -1,4 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SubmitInquiryInput, SubmitInquiryResult } from "@/types/inquiry";
 import {
   getMarketplaceAuthClient,
@@ -9,8 +8,8 @@ import {
   sendInquirySpecialistNotificationEmail,
 } from "@/lib/email/inquiry-email-service";
 import { trackInquiryEvent } from "@/lib/inquiry/inquiry-analytics";
+import { persistSpecialistInquiry } from "@/lib/inquiry/inquiry-persist";
 import {
-  formatInquiryMessageBody,
   saveLocalInquiry,
 } from "@/lib/inquiry/inquiry-local-store";
 import {
@@ -29,83 +28,6 @@ import { CLIENT_DASHBOARD_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-rou
 import { getAuthSiteOrigin } from "@/lib/auth/site-origin";
 import { labelsForInquiryTopics, labelForInquiryAction } from "@/lib/inquiry-options";
 import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
-
-async function resolveSpecialistUserId(
-  supabase: SupabaseClient,
-  specialistId: string
-): Promise<string | null> {
-  const { data: application } = await supabase
-    .from("specialist_applications")
-    .select("user_id")
-    .eq("id", specialistId)
-    .maybeSingle();
-
-  const fromApp = application?.user_id;
-  if (typeof fromApp === "string" && fromApp.trim()) {
-    return fromApp.trim();
-  }
-
-  const { data: profile } = await supabase
-    .from("specialist_profiles")
-    .select("user_id")
-    .eq("id", specialistId)
-    .maybeSingle();
-
-  const fromProfile = profile?.user_id;
-  return typeof fromProfile === "string" && fromProfile.trim()
-    ? fromProfile.trim()
-    : null;
-}
-
-async function resolveSpecialistNotifyEmail(
-  supabase: SupabaseClient,
-  specialistId: string,
-  specialistUserId: string | null
-): Promise<string | null> {
-  if (specialistUserId) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("user_id", specialistUserId)
-      .maybeSingle();
-    if (typeof profile?.email === "string" && profile.email.trim()) {
-      return profile.email.trim().toLowerCase();
-    }
-  }
-
-  const { data: application } = await supabase
-    .from("specialist_applications")
-    .select("email")
-    .eq("id", specialistId)
-    .maybeSingle();
-
-  if (typeof application?.email === "string" && application.email.trim()) {
-    return application.email.trim().toLowerCase();
-  }
-
-  const { data: listing } = await supabase
-    .from("specialist_profiles")
-    .select("profile_data")
-    .eq("id", specialistId)
-    .maybeSingle();
-
-  const listingEmail =
-    listing &&
-    typeof listing === "object" &&
-    listing.profile_data &&
-    typeof listing.profile_data === "object" &&
-    "email" in (listing.profile_data as object)
-      ? String((listing.profile_data as { email?: string }).email ?? "").trim()
-      : "";
-
-  return listingEmail.includes("@") ? listingEmail.toLowerCase() : null;
-}
-
-function resolveLocalSpecialistNotifyEmail(specialistId: string): string | null {
-  const application = getSpecialistApplicationById(specialistId);
-  const email = application?.email?.trim().toLowerCase();
-  return email && email.includes("@") ? email : null;
-}
 
 function notifySpecialistPortal(input: {
   specialistId: string;
@@ -127,160 +49,45 @@ function notifySpecialistPortal(input: {
   });
 }
 
+function resolveLocalSpecialistNotifyEmail(specialistId: string): string | null {
+  const application = getSpecialistApplicationById(specialistId);
+  const email = application?.email?.trim().toLowerCase();
+  return email && email.includes("@") ? email : null;
+}
+
 function siteOrigin(): string {
   return getAuthSiteOrigin();
 }
 
-async function submitInquiryViaSupabase(
-  supabase: SupabaseClient,
+async function submitInquiryViaApi(
   input: SubmitInquiryInput
 ): Promise<SubmitInquiryResult> {
-  const now = new Date().toISOString();
-  const messageBody = formatInquiryMessageBody({
-    inquiryAction: input.inquiryAction,
-    inquiryTopics: input.inquiryTopics,
-    message: input.message,
-    clientFirstName: input.clientFirstName,
-  });
-  const specialistUserId = await resolveSpecialistUserId(
-    supabase,
-    input.specialistId
-  );
-
-  const { data: existing, error: existingError } = await supabase
-    .from("inquiry_conversations")
-    .select("id")
-    .eq("client_user_id", input.clientUserId)
-    .eq("specialist_id", input.specialistId)
-    .maybeSingle();
-
-  if (existingError) {
-    return { ok: false, message: existingError.message };
-  }
-
-  let conversationId = existing?.id as string | undefined;
-
-  if (!conversationId) {
-    const { data: created, error: createError } = await supabase
-      .from("inquiry_conversations")
-      .insert({
-        client_user_id: input.clientUserId,
-        specialist_id: input.specialistId,
-        specialist_user_id: specialistUserId,
-        specialist_name: input.specialistName,
-        inquiry_action: input.inquiryAction,
-        inquiry_topics: input.inquiryTopics,
-        source: "specialist_profile",
-        client_first_name: input.clientFirstName,
-        client_email: input.clientEmail,
-        last_message_at: now,
-      })
-      .select("id")
-      .single();
-
-    if (createError || !created?.id) {
-      return {
-        ok: false,
-        message: createError?.message ?? "Could not create conversation.",
-      };
-    }
-    conversationId = created.id;
-  } else {
-    const { error: updateError } = await supabase
-      .from("inquiry_conversations")
-      .update({
-        specialist_user_id: specialistUserId,
-        specialist_name: input.specialistName,
-        inquiry_action: input.inquiryAction,
-        inquiry_topics: input.inquiryTopics,
-        client_first_name: input.clientFirstName,
-        client_email: input.clientEmail,
-        last_message_at: now,
-        updated_at: now,
-      })
-      .eq("id", conversationId);
-
-    if (updateError) {
-      return { ok: false, message: updateError.message };
-    }
-  }
-
-  const { data: message, error: messageError } = await supabase
-    .from("inquiry_messages")
-    .insert({
-      conversation_id: conversationId,
-      sender_user_id: input.clientUserId,
-      sender_role: "client",
-      body: messageBody,
-      inquiry_action: input.inquiryAction,
-      inquiry_topics: input.inquiryTopics,
-      is_read: false,
-    })
-    .select("id")
-    .single();
-
-  if (messageError || !message?.id || !conversationId) {
-    return {
-      ok: false,
-      message: messageError?.message ?? "Could not send message.",
-    };
-  }
-
-  const origin = siteOrigin();
-  const sanitizedMessage = sanitizeInquiryMessage(input.message);
-
-  notifySpecialistPortal({
-    specialistId: input.specialistId,
-    conversationId,
-    clientFirstName: input.clientFirstName,
-    inquiryAction: input.inquiryAction,
-    inquiryTopics: input.inquiryTopics,
-  });
-
-  const clientEmailResult = await sendInquiryClientConfirmationEmail({
-    to: input.clientEmail,
-    clientFirstName: input.clientFirstName,
-    specialistName: input.specialistName,
-    inquiryAction: input.inquiryAction,
-    inquiryTopics: input.inquiryTopics,
-    message: sanitizedMessage,
-    messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}?tab=messages`,
-    leaveReviewPath: `${origin}${buildLeaveReviewHref(input.specialistId)}`,
-  });
-
-  const specialistEmail = await resolveSpecialistNotifyEmail(
-    supabase,
-    input.specialistId,
-    specialistUserId
-  );
-  let specialistEmailSent = false;
-  let emailMode = clientEmailResult.mode ?? "console";
-  if (specialistEmail) {
-    const specialistResult = await sendInquirySpecialistNotificationEmail({
-      to: specialistEmail,
-      clientFirstName: input.clientFirstName,
-      clientEmail: input.clientEmail,
+  const response = await fetch("/api/inquiry/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "same-origin",
+    body: JSON.stringify({
+      specialistId: input.specialistId,
       specialistName: input.specialistName,
       inquiryAction: input.inquiryAction,
       inquiryTopics: input.inquiryTopics,
-      message: sanitizedMessage,
-      dashboardPath: `${origin}${SPECIALIST_DASHBOARD_PATH}`,
-    });
-    specialistEmailSent = specialistResult.success;
-    emailMode = specialistResult.mode ?? emailMode;
-  } else {
-    console.warn(
-      "[SMOAC EMAIL] No specialist email found for inquiry notify",
-      input.specialistId
-    );
+      message: input.message,
+      clientFirstName: input.clientFirstName,
+      idempotencyKey: input.idempotencyKey,
+    }),
+  });
+
+  const data = (await response.json().catch(() => null)) as SubmitInquiryResult | null;
+  if (data && typeof data === "object" && "ok" in data) {
+    return data;
   }
 
   return {
-    ok: true,
-    conversationId,
-    messageId: message.id as string,
-    emailMode,
-    specialistEmailSent,
+    ok: false,
+    message:
+      response.status === 401
+        ? "Sign in to send your message."
+        : "Could not send your message. Try again.",
   };
 }
 
@@ -307,13 +114,37 @@ export async function submitSpecialistInquiry(
     if (last && last === input.idempotencyKey) {
       return {
         ok: false,
-        message: "This message was already sent. Check your messages.",
+        message: "This message was already sent. Check your inquiries.",
       };
     }
   }
 
   try {
     if (isMarketplaceSupabaseActive()) {
+      /* Browser: prefer authenticated API (server writes + emails). */
+      if (typeof window !== "undefined") {
+        const result = await submitInquiryViaApi(normalized);
+        if (result.ok) {
+          if (input.idempotencyKey) {
+            writeLastInquiryIdempotencyKey(input.idempotencyKey);
+          }
+          notifySpecialistPortal({
+            specialistId: normalized.specialistId,
+            conversationId: result.conversationId,
+            clientFirstName: normalized.clientFirstName,
+            inquiryAction: normalized.inquiryAction,
+            inquiryTopics: normalized.inquiryTopics,
+          });
+          trackInquiryEvent("inquiry_sent", {
+            specialistId: normalized.specialistId,
+          });
+        } else {
+          trackInquiryEvent("inquiry_failed", { reason: result.message });
+        }
+        return result;
+      }
+
+      /* Server-side callers (rare): persist directly with user client. */
       const supabase = getMarketplaceAuthClient();
       if (!supabase) {
         trackInquiryEvent("inquiry_failed", { reason: "no_client" });
@@ -331,7 +162,7 @@ export async function submitSpecialistInquiry(
         };
       }
 
-      const result = await submitInquiryViaSupabase(supabase, normalized);
+      const result = await persistSpecialistInquiry(supabase, normalized);
       if (result.ok && input.idempotencyKey) {
         writeLastInquiryIdempotencyKey(input.idempotencyKey);
       }
