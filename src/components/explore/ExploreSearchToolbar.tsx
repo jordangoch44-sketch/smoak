@@ -9,6 +9,9 @@ import {
   LocationMarkIcon,
 } from "@/components/ui/icons";
 import { ExploreActiveFilterChips } from "./ExploreActiveFilterChips";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { useUserLocation } from "@/hooks/useUserLocation";
+import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import { completeGeolocationAsync } from "@/lib/user-location-store";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +40,10 @@ export function ExploreSearchToolbar({
   onClearFilters,
   showInlineFiltersBar = true,
 }: ExploreSearchToolbarProps) {
+  const { session } = useAuthSession();
+  const { hasLocation, pillLabel, isPlaceholder } = useUserLocation();
+  const locationReady =
+    hasLocation || hasClientSearchLocation(session) || !isPlaceholder;
   const [draft, setDraft] = useState(searchQuery);
   const [appliedQuery, setAppliedQuery] = useState(searchQuery);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -86,6 +93,11 @@ export function ExploreSearchToolbar({
   function handleFocus() {
     clearBlurCloseTimer();
     setGeoError(null);
+    /* Already have a header ZIP / GPS — don’t re-prompt for location. */
+    if (locationReady) {
+      openSuggestionsFromUserRef.current = false;
+      return;
+    }
     if (openSuggestionsFromUserRef.current) {
       setSuggestionsOpen(true);
     }
@@ -174,7 +186,11 @@ export function ExploreSearchToolbar({
               onPointerDown={handlePointerDown}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              placeholder="Search trainers, coaches, nutritionists..."
+              placeholder={
+                locationReady && !isPlaceholder
+                  ? `Search near ${pillLabel}…`
+                  : "Search trainers, coaches, nutritionists..."
+              }
               aria-label="Search specialists"
               aria-expanded={suggestionsOpen}
               aria-controls="explore-search-suggestions"
@@ -193,7 +209,7 @@ export function ExploreSearchToolbar({
           </div>
         </div>
 
-        {suggestionsOpen ? (
+        {suggestionsOpen && !locationReady ? (
           <div
             id="explore-search-suggestions"
             className="explore-search-suggestions"

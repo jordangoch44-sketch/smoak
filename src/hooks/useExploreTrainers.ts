@@ -169,6 +169,35 @@ export function useExploreTrainers({
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
   }, [initialCatalog, catalogMode]);
 
+  /* After hydrate (and whenever saved location changes), surface header ZIP
+   * on Explore filter chips. Does not hard-filter results. */
+  useEffect(() => {
+    if (!hydrated) return;
+    setFiltersState((prev) => {
+      const saved = mergeExploreFiltersWithSavedLocation(
+        EMPTY_TRAINER_FILTERS,
+        session
+      );
+      const hasSaved = Boolean(
+        saved.zipCode.trim() || saved.city.trim() || saved.neighborhood.trim()
+      );
+
+      if (!hasSaved) {
+        if (!prev.zipCode.trim()) return prev;
+        const cleared = {
+          ...prev,
+          zipCode: "",
+          city: "",
+          neighborhood: "",
+        };
+        return filtersEqual(prev, cleared) ? prev : cleared;
+      }
+
+      const merged = mergeExploreFiltersWithSavedLocation(prev, session);
+      return filtersEqual(prev, merged) ? prev : merged;
+    });
+  }, [hydrated, session, coordsKey]);
+
   const initialQ = initialQuery || searchParams.get("q") || "";
   const initialBaseFilters = buildInitialFilters(
     searchParams,

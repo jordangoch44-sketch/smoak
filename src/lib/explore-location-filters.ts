@@ -6,6 +6,7 @@ import {
   type MarketplaceCity,
 } from "@/data/locations";
 import {
+  getActiveUserCoordinates,
   getZipPlaceDisplayName,
   loadSavedZipCode,
 } from "@/lib/user-location-storage";
@@ -76,14 +77,32 @@ export function getSavedZipExploreFilters(
 }
 
 /**
- * Client location ranks results by distance — it must not become a ZIP/city
- * hard filter (that hid nearby specialists across different ZIPs).
+ * Show saved header/ZIP location on Explore filter chips. Still not a hard
+ * exclude — `trainerMatchesExploreLocation` always passes.
  */
 export function mergeExploreFiltersWithSavedLocation(
   filters: TrainerFilters,
-  _session?: AuthSession | null
+  session?: AuthSession | null
 ): TrainerFilters {
-  return filters;
+  if (
+    filters.zipCode.trim() ||
+    filters.city.trim() ||
+    filters.neighborhood.trim()
+  ) {
+    return filters;
+  }
+
+  const saved = getSavedZipExploreFilters(session);
+  if (!saved.zipCode && !saved.city && !saved.neighborhood) {
+    return filters;
+  }
+
+  return {
+    ...filters,
+    zipCode: saved.zipCode,
+    city: saved.city,
+    neighborhood: saved.neighborhood,
+  };
 }
 
 export function hasExploreLocationFilters(filters: TrainerFilters): boolean {
@@ -101,11 +120,14 @@ export function trainerMatchesExploreLocation(
   return true;
 }
 
-/** True when the client can sort Explore by proximity. */
+/** True when the client can sort Explore by proximity (header ZIP or GPS). */
 export function hasClientSearchLocation(
   session?: AuthSession | null
 ): boolean {
-  return Boolean(getEffectiveClientZip(session ?? null) ?? loadSavedZipCode());
+  if (getEffectiveClientZip(session ?? null) ?? loadSavedZipCode()) {
+    return true;
+  }
+  return getActiveUserCoordinates() != null;
 }
 
 /** Extra market centers for NL search cities outside MARKETPLACE_CITIES. */
