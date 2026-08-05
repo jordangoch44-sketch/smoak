@@ -25,11 +25,10 @@ import {
 } from "./ProfileSheetToolbarHostContext";
 import type { MotionValue } from "framer-motion";
 
-const OPEN_SPRING = {
-  type: "spring" as const,
-  damping: 40,
-  stiffness: 360,
-  mass: 0.92,
+/** Soft slide-up — no spring overshoot (that reads as a zoom on open). */
+const OPEN_TRANSITION = {
+  duration: 0.34,
+  ease: [0.32, 0.72, 0, 1] as [number, number, number, number],
 };
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 /** Unified exit — entire sheet + floating chrome slide down together. */
@@ -179,7 +178,7 @@ export function TrainerProfileSheet({
     if (reduceMotion) {
       y.set(0);
     } else {
-      const controls = animate(y, 0, OPEN_SPRING);
+      const controls = animate(y, 0, OPEN_TRANSITION);
       openAnimRef.current = controls;
       void controls.then(() => {
         openAnimRef.current = null;

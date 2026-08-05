@@ -14,7 +14,7 @@ import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog"
 import {
   EMPTY_TRAINER_FILTERS,
   countActiveFilters,
-  filterExploreTrainers,
+  filterExploreTrainersWithFallback,
 } from "@/lib/explore";
 import {
   getActiveFilterChips,
@@ -29,6 +29,7 @@ import {
 } from "@/lib/explore-url";
 import {
   mergeExploreFiltersWithSavedLocation,
+  resolveExploreSortOrigin,
 } from "@/lib/explore-location-filters";
 import {
   getHiddenTrainersServerSnapshot,
@@ -334,14 +335,10 @@ export function useExploreTrainers({
       void applicationsRevision;
       void hiddenRevision;
       const hiddenSet = new Set(getHiddenTrainersSnapshot());
-      return filterExploreTrainers(
-        listPublicMarketplaceTrainers({
-          remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
-          catalogMode,
-        }),
-        candidateFilters,
-        searchQuery
-      )
+      const catalog = listPublicMarketplaceTrainers({
+        remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
+        catalogMode,
+      })
         .filter((trainer) =>
           catalogMode === "live" ? true : !hiddenSet.has(trainer.id)
         )
@@ -350,6 +347,12 @@ export function useExploreTrainers({
             ? trainer
             : (getTrainerWithOverrides(trainer.id) ?? trainer)
         );
+
+      return filterExploreTrainersWithFallback(
+        catalog,
+        candidateFilters,
+        searchQuery
+      );
     },
     [
       searchQuery,
@@ -362,18 +365,23 @@ export function useExploreTrainers({
     ]
   );
 
-  const filtered = useMemo(() => {
-    const matches = getVisibleExploreMatches(filters);
-    const coords = hydrated ? userCoords : null;
-    return sortTrainersByProximity(matches, coords, {
-      profession: filters.profession,
-      specialty: filters.specialty,
-    });
+  const { filtered, resultsBroadened } = useMemo(() => {
+    const { trainers: matches, broadened } = getVisibleExploreMatches(filters);
+    const coords = hydrated
+      ? resolveExploreSortOrigin(filters, userCoords)
+      : null;
+    return {
+      filtered: sortTrainersByProximity(matches, coords, {
+        profession: filters.profession,
+        specialty: filters.specialty,
+      }),
+      resultsBroadened: broadened,
+    };
   }, [filters, getVisibleExploreMatches, hydrated, coordsKey, userCoords]);
 
   const getExploreMatchCount = useCallback(
     (candidateFilters: TrainerFilters) =>
-      getVisibleExploreMatches(candidateFilters).length,
+      getVisibleExploreMatches(candidateFilters).trainers.length,
     [getVisibleExploreMatches]
   );
 
@@ -487,6 +495,7 @@ export function useExploreTrainers({
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
+    resultsBroadened,
     getExploreMatchCount,
     activeFilterCount,
     activeFilterChips,

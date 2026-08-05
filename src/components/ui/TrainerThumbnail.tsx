@@ -19,7 +19,7 @@ const imageObjectClass: Record<TrainerThumbnailSize, string> = {
   compact: "object-cover object-[50%_18%]",
   square: "object-cover object-[50%_20%]",
   card: "object-cover object-[50%_18%]",
-  hero: "object-cover",
+  hero: "object-cover object-[50%_18%]",
 };
 
 interface TrainerThumbnailProps {

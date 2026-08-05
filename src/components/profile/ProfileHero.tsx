@@ -17,6 +17,7 @@ import {
 } from "@/lib/specialist-profile-style";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { ShieldCheckIcon } from "@/components/ui/icons";
+import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
@@ -166,6 +167,12 @@ export function ProfileHero({
                   <p className="profile-hero__location">
                     {formatProviderLocation(trainer)}
                   </p>
+                  {isSpecialistLive ? null : (
+                    <TrainerDistanceLabel
+                      trainer={trainer}
+                      className="profile-hero__distance"
+                    />
+                  )}
                 </div>
               </div>
             </div>

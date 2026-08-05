@@ -61,7 +61,6 @@
     0 -20px 64px rgba(0, 0, 0, 0.45);
   touch-action: pan-y;
   will-change: transform;
-  transform: translateZ(0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }

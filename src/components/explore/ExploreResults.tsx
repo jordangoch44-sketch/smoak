@@ -7,6 +7,8 @@ interface ExploreResultsProps {
   trainers: Trainer[];
   activeFilterCount: number;
   hasSearch: boolean;
+  /** Filters were relaxed so nearby results still appear */
+  resultsBroadened?: boolean;
   onClearFilters: () => void;
   onClearSearch: () => void;
   onClearAll: () => void;
@@ -16,6 +18,7 @@ export const ExploreResults = memo(function ExploreResults({
   trainers,
   activeFilterCount,
   hasSearch,
+  resultsBroadened = false,
   onClearFilters,
   onClearSearch,
   onClearAll,
@@ -81,6 +84,13 @@ export const ExploreResults = memo(function ExploreResults({
   }
 
   return (
-    <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
+    <div className="explore-results-stack">
+      {resultsBroadened ? (
+        <p className="explore-results-heading__note">
+          Showing nearby specialists — closest to you first.
+        </p>
+      ) : null}
+      <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
+    </div>
   );
 });

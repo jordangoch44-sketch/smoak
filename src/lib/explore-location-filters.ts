@@ -3,15 +3,17 @@ import {
   CITY_NEIGHBORHOODS,
   isMarketplaceCity,
   MARKETPLACE_CITIES,
+  type MarketplaceCity,
 } from "@/data/locations";
 import {
   getZipPlaceDisplayName,
   loadSavedZipCode,
 } from "@/lib/user-location-storage";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
+import { MARKETPLACE_CITY_CENTERS } from "@/lib/marketplace-city-centers";
 import type { AuthSession } from "@/types/auth";
 import type { Trainer, TrainerFilters } from "@/types";
-import { providerMatchesNeighborhood } from "@/lib/provider-location";
+import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import {
   isValidZipCode,
   normalizeZipCode,
@@ -89,30 +91,14 @@ export function hasExploreLocationFilters(filters: TrainerFilters): boolean {
 }
 
 /**
- * Location match for Explore:
- * - Client ZIP never excludes — proximity sort handles “near you”
- * - Explicit city / neighborhood (search parse or filter drawer) still narrows
+ * Location never excludes specialists. City / neighborhood from search (or
+ * chips) only steer proximity sort via `resolveExploreSortOrigin`.
  */
 export function trainerMatchesExploreLocation(
-  trainer: Trainer,
-  filters: TrainerFilters
+  _trainer: Trainer,
+  _filters: TrainerFilters
 ): boolean {
-  const city = filters.city.trim();
-  const neighborhood = filters.neighborhood.trim();
-
-  if (!city && !neighborhood) {
-    return true;
-  }
-
-  if (neighborhood && providerMatchesNeighborhood(trainer, neighborhood)) {
-    return true;
-  }
-
-  if (city && trainer.city.trim() === city) {
-    return true;
-  }
-
-  return false;
+  return true;
 }
 
 /** True when the client can sort Explore by proximity. */
@@ -120,4 +106,47 @@ export function hasClientSearchLocation(
   session?: AuthSession | null
 ): boolean {
   return Boolean(getEffectiveClientZip(session ?? null) ?? loadSavedZipCode());
+}
+
+/** Extra market centers for NL search cities outside MARKETPLACE_CITIES. */
+const SEARCH_CITY_CENTERS: Record<string, UserGeoPoint> = {
+  Austin: { latitude: 30.2672, longitude: -97.7431 },
+  "San Francisco": { latitude: 37.7749, longitude: -122.4194 },
+  "New York": { latitude: 40.7128, longitude: -74.006 },
+  Miami: { latitude: 25.7617, longitude: -80.1918 },
+  Dallas: { latitude: 32.7767, longitude: -96.797 },
+  Chicago: { latitude: 41.8781, longitude: -87.6298 },
+  Phoenix: { latitude: 33.4484, longitude: -112.074 },
+  "Las Vegas": { latitude: 36.1699, longitude: -115.1398 },
+};
+
+/**
+ * Sort origin for “near you / near this place”:
+ * 1. Parsed search city (or neighborhood’s parent city)
+ * 2. Client location coordinates
+ */
+export function resolveExploreSortOrigin(
+  filters: TrainerFilters,
+  userCoords: UserGeoPoint | null
+): UserGeoPoint | null {
+  const city = filters.city.trim();
+  if (city) {
+    if (isMarketplaceCity(city)) {
+      const center = MARKETPLACE_CITY_CENTERS[city as MarketplaceCity];
+      return { latitude: center.lat, longitude: center.lng };
+    }
+    const known = SEARCH_CITY_CENTERS[city];
+    if (known) return known;
+  }
+
+  const neighborhood = filters.neighborhood.trim();
+  if (neighborhood) {
+    const parent = findParentCityForNeighborhood(neighborhood);
+    if (parent && isMarketplaceCity(parent)) {
+      const center = MARKETPLACE_CITY_CENTERS[parent];
+      return { latitude: center.lat, longitude: center.lng };
+    }
+  }
+
+  return userCoords;
 }

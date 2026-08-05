@@ -42,16 +42,25 @@ export function matchesSearchQuery(trainer: Trainer, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
 
-  return (
-    trainer.name.toLowerCase().includes(q) ||
-    trainer.profession.toLowerCase().includes(q) ||
-    trainer.title.toLowerCase().includes(q) ||
-    trainer.city.toLowerCase().includes(q) ||
-    trainer.neighborhood.toLowerCase().includes(q) ||
-    (trainer.serviceArea?.some((a) => a.toLowerCase().includes(q)) ?? false) ||
-    trainer.location.toLowerCase().includes(q) ||
-    trainer.specialty.some((s) => s.toLowerCase().includes(q))
-  );
+  const haystack = [
+    trainer.name,
+    trainer.profession,
+    trainer.title,
+    trainer.city,
+    trainer.neighborhood,
+    trainer.location,
+    ...(trainer.serviceArea ?? []),
+    ...trainer.specialty,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  /* Prefer any-token match so leftover words rarely zero out a category search */
+  const tokens = q.split(/\s+/).filter((t) => t.length > 1);
+  if (tokens.length <= 1) {
+    return haystack.includes(q);
+  }
+  return tokens.some((token) => haystack.includes(token));
 }
 
 /** Combines sidebar filters + search bar query for Explore results */
@@ -65,11 +74,73 @@ export function filterExploreTrainers(
   return filtered.filter((t) => matchesSearchQuery(t, searchQuery));
 }
 
+export interface ExploreFilterResult {
+  trainers: Trainer[];
+  /** True when we relaxed filters so the list is not empty */
+  broadened: boolean;
+}
+
+/**
+ * Progressive relaxation so nearby / category searches almost never empty out
+ * when the catalog still has specialists.
+ */
+export function filterExploreTrainersWithFallback(
+  trainers: Trainer[],
+  filters: TrainerFilters,
+  searchQuery: string
+): ExploreFilterResult {
+  if (trainers.length === 0) {
+    return { trainers: [], broadened: false };
+  }
+
+  const attempts: Array<{ filters: TrainerFilters; query: string }> = [
+    { filters, query: searchQuery },
+    { filters, query: "" },
+    {
+      filters: { ...filters, specialty: "" },
+      query: "",
+    },
+    {
+      filters: { ...filters, specialty: "", profession: "" },
+      query: "",
+    },
+    {
+      filters: {
+        ...EMPTY_TRAINER_FILTERS,
+        gender: filters.gender,
+        priceMin: filters.priceMin,
+        priceMax: filters.priceMax,
+        serviceType: filters.serviceType,
+      },
+      query: "",
+    },
+    {
+      filters: { ...EMPTY_TRAINER_FILTERS },
+      query: "",
+    },
+  ];
+
+  for (let i = 0; i < attempts.length; i += 1) {
+    const attempt = attempts[i]!;
+    const result = filterExploreTrainers(
+      trainers,
+      attempt.filters,
+      attempt.query
+    );
+    if (result.length > 0) {
+      return { trainers: result, broadened: i > 0 };
+    }
+  }
+
+  return { trainers: [...trainers], broadened: true };
+}
+
 /** Shared match count for Explore results and filter modal live preview */
 export function countExploreTrainerMatches(
   trainers: Trainer[],
   filters: TrainerFilters,
   searchQuery: string
 ): number {
-  return filterExploreTrainers(trainers, filters, searchQuery).length;
+  return filterExploreTrainersWithFallback(trainers, filters, searchQuery)
+    .trainers.length;
 }

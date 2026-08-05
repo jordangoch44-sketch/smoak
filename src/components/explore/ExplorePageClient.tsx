@@ -40,6 +40,7 @@ export function ExplorePageClient({
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
+    resultsBroadened,
     getExploreMatchCount,
     activeFilterCount,
     activeFilterChips,
@@ -172,6 +173,7 @@ export function ExplorePageClient({
               trainers={filtered}
               activeFilterCount={activeFilterCount}
               hasSearch={hasSearch}
+              resultsBroadened={resultsBroadened}
               onClearFilters={clearFilters}
               onClearSearch={clearSearch}
               onClearAll={clearAll}

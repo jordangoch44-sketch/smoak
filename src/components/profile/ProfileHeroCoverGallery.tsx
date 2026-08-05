@@ -67,7 +67,7 @@ export function ProfileHeroCoverGallery({
               alt=""
               fill
               sizes="100vw"
-              className="object-cover"
+              className="object-cover object-[50%_18%]"
               priority={slideIndex === 0}
             />
           </div>

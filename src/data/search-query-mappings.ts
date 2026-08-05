@@ -187,6 +187,17 @@ const SPECIALTY_MAPPINGS: {
   { phrases: ["senior fitness", "senior training"], specialty: "Senior Fitness", label: "Senior Fitness" },
   { phrases: ["corrective exercise"], specialty: "Corrective Exercise", label: "Corrective Exercise" },
   { phrases: ["yoga"], specialty: "Yoga", label: "Yoga" },
+  {
+    phrases: [
+      "running coach",
+      "run coach",
+      "running",
+      "marathon coach",
+      "endurance coach",
+    ],
+    specialty: "Sports Performance",
+    label: "Running Coach",
+  },
 ];
 
 function professionEntries(): SearchMappingEntry[] {
