@@ -51,7 +51,7 @@ const loadApprovedCatalogCached = unstable_cache(
 );
 
 /** Approved specialist_profiles for SSR / first paint. Empty when unset or error. */
-export async function loadApprovedCatalogForServer(): Promise<Trainer[]> {
+async function loadApprovedCatalogForServer(): Promise<Trainer[]> {
   return loadApprovedCatalogCached();
 }
 

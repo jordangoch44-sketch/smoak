@@ -45,8 +45,8 @@ export interface SitePromoCampaign {
   hideWhenBoosting?: boolean;
   /** Circulating edge glow on the CTA (Plan-tab style) */
   orbitCta?: boolean;
-  /** Visual accent — boost = neon yellow; Pro trial = neon blue */
-  accent?: "default" | "neon-blue" | "neon-yellow";
+  /** Visual accent — boost promos use neon yellow */
+  accent?: "default" | "neon-yellow";
   /** ISO dates — omit for always-on */
   startsAt?: string;
   endsAt?: string;

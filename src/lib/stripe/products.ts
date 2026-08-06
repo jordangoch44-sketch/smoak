@@ -181,15 +181,3 @@ export function entitlementsFromProducts(
     categorySpotlight,
   };
 }
-
-export const BOOST_PRODUCT_OPTIONS: readonly {
-  key: SmoacAddonProduct;
-  label: string;
-  description: string;
-  priceLabel: string;
-}[] = SMOAC_ADDON_PRODUCTS.map((key) => ({
-  key,
-  label: productLabel(key),
-  description: productDescription(key),
-  priceLabel: formatListPriceLabel(listPriceCents(key)),
-}));

@@ -1,5 +1,5 @@
 /**
- * Route barrel — `app/(site)/page.tsx` composes homepage sections from here.
+ * Route barrel — `(home)/page.tsx` / `HomeDiscoveryClient` compose sections from here.
  */
 export { Hero } from "./Hero";
 export { SponsoredSpecialists } from "./SponsoredSpecialists";

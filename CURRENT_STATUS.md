@@ -1,12 +1,30 @@
 # SMOAC — Current Status
 
-**Last updated:** August 5, 2026  
+**Last updated:** August 6, 2026  
+**Branch:** `supabase-storage-setup` (live on [smoac.com](https://smoac.com))  
 **Phase 2:** Complete  
 **Phase 3a (saved trainers):** Complete — live load is Supabase-only (no local import)  
 **Phase 3b (applications):** Complete (fetch-only hydrate when Supabase active)  
 **Phase 3c (specialist profiles):** Complete in code  
 **Phase 3d (admin flags / hide):** Complete in code  
 **Phase 3e (prefer Supabase only):** Mostly done — remaining: optional backfill scripts + retire `dev-auth` when ready  
+
+---
+
+## Checkpoint — August 6, 2026
+
+| Area | Status |
+|------|--------|
+| Bottom nav: instant highlight on phones; Marketplace/Search use session catalog (no RSC Supabase wait on soft nav) | ✅ live |
+| Route loading shells for home / explore / saved / profile | ✅ live |
+| Boost modal: full details (you get / appears / will not) + Stripe checkout | ✅ live |
+| Boost theme: neon yellow (Pro = purple, Pro trial = blue) | ✅ live |
+| Boost CTAs open modal in-place (home, explore, rankings, dashboard) | ✅ live |
+| Inquiry: server `POST /api/inquiry/submit`; SMOAC favicon | ✅ live |
+
+**Boost add-ons (catalog):** Boosted profile $49 · Category spotlight $99 · Top ranking boost $149 · Homepage spotlight $199 — separate from Pro.
+
+**Do not regress:** soft-nav catalog via `usePublicCatalog` / approved profiles store; organic ranks stay unlabeled by boosts.
 
 ---
 
