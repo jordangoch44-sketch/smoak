@@ -1,7 +1,7 @@
 /* Bottom nav stacked panel slides — transform + opacity only */
 
 :root {
-  --bottom-nav-panel-ms: 220ms;
+  --bottom-nav-panel-ms: 160ms;
   --bottom-nav-panel-ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 

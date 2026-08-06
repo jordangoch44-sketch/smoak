@@ -2,13 +2,13 @@ import type { MobileBottomNavItemId } from "@/lib/mobile-bottom-nav";
 
 export type BottomNavTransitionKind = "none" | "panel";
 
-/** Lightweight panel slide — transform + opacity only */
-export const BOTTOM_NAV_PANEL_MS = 220;
+/** Lightweight panel slide — transform + opacity only (tablet / fine pointer) */
+export const BOTTOM_NAV_PANEL_MS = 160;
 
-/** Slightly snappier on coarse-pointer devices (typical phones) */
-export const BOTTOM_NAV_PANEL_TOUCH_MS = 200;
+/** Snappier on coarse-pointer devices when panel still runs */
+export const BOTTOM_NAV_PANEL_TOUCH_MS = 120;
 
-export const BOTTOM_NAV_PANEL_REDUCED_MS = 120;
+export const BOTTOM_NAV_PANEL_REDUCED_MS = 80;
 
 const TAB_ORDER: MobileBottomNavItemId[] = [
   "home",

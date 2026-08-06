@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   memo,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type MouseEvent,
@@ -284,6 +285,9 @@ function MobileBottomNavShell() {
   const { isReady, session } = useAuthSession();
   const { trainer: managedTrainer, application } = useManagedSpecialistProfile();
   const { isReady: savesReady, isSavesReady, savedCount } = useSavedTrainers();
+  const [pendingId, setPendingId] = useState<MobileBottomNavItemId | null>(
+    null
+  );
 
   const profileAuthState = getMobileBottomNavProfileAuthState(
     clientReady,
@@ -316,13 +320,20 @@ function MobileBottomNavShell() {
     [session]
   );
 
+  useEffect(() => {
+    setPendingId(null);
+  }, [pathname, searchParams]);
+
   const activeById = useMemo(() => {
     const map = {} as Record<MobileBottomNavItemId, boolean>;
     for (const item of items) {
-      map[item.id] = isActiveNavItem(item.id, pathname, searchParams);
+      map[item.id] =
+        pendingId != null
+          ? pendingId === item.id
+          : isActiveNavItem(item.id, pathname, searchParams);
     }
     return map;
-  }, [items, pathname, searchParams]);
+  }, [items, pathname, pendingId, searchParams]);
 
   const handleNavClick = useCallback(
     (item: MobileBottomNavItem, event: MouseEvent<HTMLAnchorElement>) => {
@@ -337,6 +348,7 @@ function MobileBottomNavShell() {
         getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
 
       event.preventDefault();
+      setPendingId(item.id);
       beginBottomNavTransition(item.href, { fromId, toId: item.id });
     },
     [beginBottomNavTransition, pathname, searchParams]

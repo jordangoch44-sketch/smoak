@@ -56,8 +56,8 @@ export const bottomNavPanelReducedTransition: Transition = {
 export function buildBottomNavPanelVariants(
   direction: BottomNavPanelDirection
 ): Variants {
-  const enterY = direction === 1 ? 10 : -8;
-  const exitY = direction === 1 ? -5 : 6;
+  const enterY = direction === 1 ? 6 : -5;
+  const exitY = direction === 1 ? -3 : 4;
 
   return {
     initial: { opacity: 0, y: enterY },

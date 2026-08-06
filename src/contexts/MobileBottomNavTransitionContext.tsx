@@ -79,6 +79,7 @@ export function MobileBottomNavTransitionProvider({
   const timersRef = useRef<number[]>([]);
   const motionKeyRef = useRef(0);
   const pendingTargetScrollKeyRef = useRef<string | null>(null);
+  const pendingInstantScrollKeyRef = useRef<string | null>(null);
   const pendingPanelRef = useRef<{
     href: string;
     direction: BottomNavPanelDirection;
@@ -168,6 +169,16 @@ export function MobileBottomNavTransitionProvider({
     activatePanel(pending.href, pending.direction, pending.enterOnly);
   }, [activatePanel, pathname]);
 
+  /* Instant nav (phones): restore cached scroll once the route lands */
+  useEffect(() => {
+    const key = pendingInstantScrollKeyRef.current;
+    if (!key) return;
+    const currentKey = getBottomNavRouteKey(pathname, getClientRouteSearch());
+    if (currentKey !== key) return;
+    pendingInstantScrollKeyRef.current = null;
+    restoreBottomNavScroll(key);
+  }, [pathname]);
+
   const runPanelTransition = useCallback(
     (
       href: string,
@@ -192,7 +203,23 @@ export function MobileBottomNavTransitionProvider({
 
   const beginBottomNavTransition = useCallback(
     (href: string, options: BeginBottomNavTransitionOptions) => {
-      if (!isTabletViewport) {
+      const target = parseBottomNavHref(href);
+      const targetScrollKey = getBottomNavRouteKey(
+        target.pathname,
+        target.search
+      );
+
+      /*
+       * Phones (coarse pointer): skip the panel slide. Waiting for RSC then
+       * animating ~200ms is what makes tab taps feel laggy. Instant push
+       * matches PageTransition’s mobile “no exit layers” approach.
+       */
+      if (!isTabletViewport || fastMotion) {
+        if (lockRef.current) flushTransition();
+        saveBottomNavScroll(
+          getBottomNavRouteKey(pathname, getClientRouteSearch())
+        );
+        pendingInstantScrollKeyRef.current = targetScrollKey;
         router.push(href);
         return;
       }
@@ -208,8 +235,10 @@ export function MobileBottomNavTransitionProvider({
     },
     [
       clearTimers,
+      fastMotion,
       flushTransition,
       isTabletViewport,
+      pathname,
       router,
       runPanelTransition,
     ]
@@ -223,13 +252,14 @@ export function MobileBottomNavTransitionProvider({
 
     const runPrefetch = () => prefetchBottomNavRoutes(router.prefetch);
 
+    /* Prefetch sooner so the first tab tap isn’t cold */
     const scheduleIdle = window.requestIdleCallback;
     if (typeof scheduleIdle === "function") {
-      const id = scheduleIdle(runPrefetch, { timeout: 2500 });
+      const id = scheduleIdle(runPrefetch, { timeout: 600 });
       return () => window.cancelIdleCallback(id);
     }
 
-    const id = window.setTimeout(runPrefetch, 1200);
+    const id = window.setTimeout(runPrefetch, 200);
     return () => window.clearTimeout(id);
   }, [isTabletViewport, router]);
 

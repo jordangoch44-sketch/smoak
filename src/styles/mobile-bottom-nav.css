@@ -181,9 +181,9 @@ body.bottom-nav-panel-active .mobile-bottom-nav__pill {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   transition:
-    color 0.22s ease,
-    opacity 0.22s ease,
-    transform 0.22s ease;
+    color 0.12s ease,
+    opacity 0.12s ease,
+    transform 0.12s ease;
 }
 
 .mobile-bottom-nav__item:focus-visible {
