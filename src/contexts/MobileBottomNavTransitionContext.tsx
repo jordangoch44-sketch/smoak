@@ -255,11 +255,11 @@ export function MobileBottomNavTransitionProvider({
     /* Prefetch sooner so the first tab tap isn’t cold */
     const scheduleIdle = window.requestIdleCallback;
     if (typeof scheduleIdle === "function") {
-      const id = scheduleIdle(runPrefetch, { timeout: 600 });
+      const id = scheduleIdle(runPrefetch, { timeout: 250 });
       return () => window.cancelIdleCallback(id);
     }
 
-    const id = window.setTimeout(runPrefetch, 200);
+    const id = window.setTimeout(runPrefetch, 80);
     return () => window.clearTimeout(id);
   }, [isTabletViewport, router]);
 

@@ -289,104 +289,166 @@
     0 0 40px rgba(var(--aurora-lavender-rgb), 0.25);
 }
 
-/* Specialist boost ad — neon blue (same language as Pro free-trial slot) */
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue {
-  border-color: rgba(56, 189, 248, 0.38);
+/* Specialist boost ad — neon yellow (vs Pro purple / Pro trial blue) */
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow {
+  border-color: rgba(250, 230, 66, 0.4);
   background:
     linear-gradient(
       145deg,
-      rgba(56, 189, 248, 0.14),
-      rgba(14, 165, 233, 0.06) 45%,
+      rgba(250, 230, 66, 0.14),
+      rgba(202, 138, 4, 0.06) 45%,
       rgba(255, 255, 255, 0.02)
     ),
-    rgba(4, 12, 22, 0.78);
+    rgba(14, 12, 4, 0.82);
   box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.12) inset,
+    0 0 0 1px rgba(250, 230, 66, 0.12) inset,
     0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__glow {
   background: radial-gradient(
     circle,
-    rgba(56, 189, 248, 0.32),
+    rgba(250, 230, 66, 0.32),
     transparent 70%
   );
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__eyebrow {
-  color: rgba(125, 211, 252, 0.95);
-  text-shadow: 0 0 16px rgba(56, 189, 248, 0.55);
+  color: rgba(254, 243, 140, 0.95);
+  text-shadow: 0 0 16px rgba(250, 230, 66, 0.55);
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__stat {
-  border-left-color: rgba(56, 189, 248, 0.65);
-  color: rgba(186, 230, 253, 0.88);
+  border-left-color: rgba(250, 230, 66, 0.65);
+  color: rgba(254, 249, 195, 0.88);
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__cta-wrap--orbit {
-  box-shadow: 0 0 14px rgba(56, 189, 248, 0.28);
+  box-shadow: 0 0 14px rgba(250, 230, 66, 0.28);
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__cta-wrap--orbit::before {
   background: conic-gradient(
     from 0deg,
     transparent 0deg,
     transparent 210deg,
-    rgba(14, 165, 233, 0.1) 250deg,
-    rgba(56, 189, 248, 0.75) 290deg,
-    rgba(186, 230, 253, 1) 318deg,
-    rgba(14, 165, 233, 0.85) 342deg,
+    rgba(202, 138, 4, 0.12) 250deg,
+    rgba(250, 230, 66, 0.8) 290deg,
+    rgba(254, 243, 140, 1) 318deg,
+    rgba(234, 179, 8, 0.9) 342deg,
     transparent 360deg
   );
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__cta-wrap--orbit::after {
-  background: rgba(4, 14, 24, 0.96);
+  background: rgba(14, 12, 4, 0.96);
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__cta-wrap--orbit
   .site-promo__cta {
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: rgba(250, 230, 66, 0.4);
   background:
     linear-gradient(
       180deg,
-      rgba(56, 189, 248, 0.22),
-      rgba(14, 165, 233, 0.08)
+      rgba(250, 230, 66, 0.28),
+      rgba(202, 138, 4, 0.12)
     );
-  box-shadow: 0 0 18px rgba(56, 189, 248, 0.28);
-  text-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 18px rgba(250, 230, 66, 0.28);
+  color: rgba(255, 252, 230, 0.98);
+  text-shadow: 0 0 12px rgba(250, 230, 66, 0.35);
 }
 
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
   .site-promo__cta-wrap--orbit
   .site-promo__cta:hover {
   background:
     linear-gradient(
       180deg,
-      rgba(56, 189, 248, 0.32),
-      rgba(14, 165, 233, 0.14)
+      rgba(250, 230, 66, 0.38),
+      rgba(202, 138, 4, 0.18)
     );
-  border-color: rgba(125, 211, 252, 0.55);
+  border-color: rgba(254, 243, 140, 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-promo--slot-home_mid_promo.site-promo--accent-neon-blue
+  .site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
     .site-promo__cta-wrap--orbit::before {
     background: conic-gradient(
       from 90deg,
       transparent 0deg,
-      rgba(14, 165, 233, 0.4) 120deg,
-      rgba(186, 230, 253, 0.85) 180deg,
+      rgba(202, 138, 4, 0.4) 120deg,
+      rgba(254, 243, 140, 0.85) 180deg,
       transparent 280deg
     );
   }
+}
+
+/* Generic neon-yellow accent (explore / rankings / dashboard boost slots) */
+.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo) {
+  border-color: rgba(250, 230, 66, 0.38);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(250, 230, 66, 0.12),
+      rgba(202, 138, 4, 0.05) 45%,
+      rgba(255, 255, 255, 0.02)
+    ),
+    rgba(14, 12, 4, 0.8);
+  box-shadow:
+    0 0 0 1px rgba(250, 230, 66, 0.1) inset,
+    0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
+  .site-promo__glow {
+  background: radial-gradient(
+    circle,
+    rgba(250, 230, 66, 0.28),
+    transparent 70%
+  );
+}
+
+.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
+  .site-promo__eyebrow {
+  color: rgba(254, 243, 140, 0.95);
+  text-shadow: 0 0 14px rgba(250, 230, 66, 0.5);
+}
+
+.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
+  .site-promo__stat {
+  border-left-color: rgba(250, 230, 66, 0.6);
+  color: rgba(254, 249, 195, 0.88);
+}
+
+.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
+  .site-promo__cta {
+  border-color: rgba(250, 230, 66, 0.4);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(250, 230, 66, 0.26),
+      rgba(202, 138, 4, 0.1)
+    );
+  box-shadow: 0 0 16px rgba(250, 230, 66, 0.22);
+  color: rgba(255, 252, 230, 0.98);
+}
+
+.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
+  .site-promo__cta:hover {
+  border-color: rgba(254, 243, 140, 0.55);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(250, 230, 66, 0.36),
+      rgba(202, 138, 4, 0.16)
+    );
 }
 
 .site-promo--slot-home_client_promo {

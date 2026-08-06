@@ -2680,9 +2680,29 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     ) !important;
 }
 
+/* Boost modal — neon yellow (vs Pro purple / Pro trial blue) */
 .dashboard-modal__dialog--boost {
-  max-width: 28rem;
-  border-color: rgba(var(--accent-glow-rgb), 0.18);
+  max-width: 32rem;
+  max-height: min(92dvh, 40rem);
+  overflow: auto;
+  border-color: rgba(250, 230, 66, 0.42);
+  box-shadow:
+    0 0 0 1px rgba(250, 230, 66, 0.12) inset,
+    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 0 32px rgba(250, 204, 21, 0.16);
+}
+
+.dashboard-modal__glow--boost {
+  background: radial-gradient(
+    ellipse 80% 100% at 50% 0%,
+    rgba(250, 230, 66, 0.34) 0%,
+    transparent 70%
+  );
+}
+
+.dashboard-modal__eyebrow--boost {
+  color: rgba(254, 243, 140, 0.95);
+  text-shadow: 0 0 14px rgba(250, 230, 66, 0.45);
 }
 
 .dashboard-boost-list {
@@ -2701,8 +2721,13 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   gap: 0.75rem;
   padding: 0.75rem 0.85rem;
   border-radius: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(250, 230, 66, 0.16);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(250, 230, 66, 0.07),
+      rgba(255, 255, 255, 0.02)
+    );
 }
 
 .dashboard-boost-list__copy {
@@ -2728,14 +2753,110 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   margin: 0.35rem 0 0;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(254, 243, 140, 0.92);
+  text-shadow: 0 0 10px rgba(250, 230, 66, 0.25);
+}
+
+.dashboard-boost-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0.35rem 0 0;
+}
+
+.dashboard-boost-detail__block {
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(250, 230, 66, 0.14);
+  background: rgba(250, 230, 66, 0.04);
+}
+
+.dashboard-boost-detail__block--wont {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dashboard-boost-detail__heading {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(254, 243, 140, 0.88);
+}
+
+.dashboard-boost-detail__block--wont .dashboard-boost-detail__heading {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.dashboard-boost-detail__list {
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dashboard-boost-detail__list li {
+  position: relative;
+  padding-left: 1.05rem;
+  font-size: 0.78125rem;
+  line-height: 1.45;
+  color: rgba(255, 252, 230, 0.86);
+}
+
+.dashboard-boost-detail__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4rem;
+  width: 0.35rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: rgba(250, 230, 66, 0.95);
+  box-shadow: 0 0 8px rgba(250, 230, 66, 0.65);
+}
+
+.dashboard-boost-detail__block--wont .dashboard-boost-detail__list li {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.dashboard-boost-detail__block--wont .dashboard-boost-detail__list li::before {
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+}
+
+.dashboard-boost-select-btn {
+  border-color: rgba(250, 230, 66, 0.55) !important;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(250, 230, 66, 0.42) 0%,
+      rgba(202, 138, 4, 0.28) 100%
+    ) !important;
+  color: rgba(20, 16, 0, 0.96) !important;
+  box-shadow:
+    0 0 0 1px rgba(250, 230, 66, 0.18) inset,
+    0 0 20px rgba(250, 204, 21, 0.28);
+  text-shadow: 0 0 8px rgba(254, 243, 140, 0.35);
+}
+
+.dashboard-boost-select-btn:hover:not(:disabled) {
+  border-color: rgba(254, 243, 140, 0.8) !important;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(250, 230, 66, 0.55) 0%,
+      rgba(202, 138, 4, 0.36) 100%
+    ) !important;
 }
 
 .dashboard-boost-checkout {
   margin-top: 0.75rem;
   padding: 0.85rem 0.9rem;
   border-radius: 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(250, 230, 66, 0.14);
   background: rgba(0, 0, 0, 0.28);
 }
 
@@ -2745,7 +2866,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(254, 243, 140, 0.7);
 }
 
 .stripe-pay {

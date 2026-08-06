@@ -45,8 +45,8 @@ export interface SitePromoCampaign {
   hideWhenBoosting?: boolean;
   /** Circulating edge glow on the CTA (Plan-tab style) */
   orbitCta?: boolean;
-  /** Visual accent — home specialist boost uses neon blue */
-  accent?: "default" | "neon-blue";
+  /** Visual accent — boost = neon yellow; Pro trial = neon blue */
+  accent?: "default" | "neon-blue" | "neon-yellow";
   /** ISO dates — omit for always-on */
   startsAt?: string;
   endsAt?: string;

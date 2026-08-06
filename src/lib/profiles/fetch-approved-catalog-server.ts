@@ -1,3 +1,5 @@
+import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
   fetchApprovedSpecialistProfiles,
@@ -23,8 +25,7 @@ function getCatalogSupabaseClient(): SupabaseClient | null {
   });
 }
 
-/** Approved specialist_profiles for SSR / first paint. Empty when unset or error. */
-export async function loadApprovedCatalogForServer(): Promise<Trainer[]> {
+async function fetchApprovedCatalogUncached(): Promise<Trainer[]> {
   const supabase = getCatalogSupabaseClient();
   if (!supabase) return [];
 
@@ -40,23 +41,42 @@ export async function loadApprovedCatalogForServer(): Promise<Trainer[]> {
 }
 
 /**
+ * Cross-request cache so soft nav between Home / Explore is not a cold
+ * Supabase round-trip every tap. ~45s is enough for marketplace freshness.
+ */
+const loadApprovedCatalogCached = unstable_cache(
+  fetchApprovedCatalogUncached,
+  ["approved-specialist-catalog-v1"],
+  { revalidate: 45, tags: ["public-catalog"] }
+);
+
+/** Approved specialist_profiles for SSR / first paint. Empty when unset or error. */
+export async function loadApprovedCatalogForServer(): Promise<Trainer[]> {
+  return loadApprovedCatalogCached();
+}
+
+/**
  * Public marketplace list for SSR.
  *
  * - Supabase configured → always `live` (approved rows only; empty list is valid).
  * - Supabase not configured → `seed` demo catalog (local-only, never written to DB here).
+ *
+ * Wrapped in React `cache()` so Home + nested fetches share one result per request.
  */
-export async function loadPublicCatalogForServer(): Promise<{
-  trainers: Trainer[];
-  mode: "live" | "seed";
-}> {
-  if (!isSupabaseConfigured()) {
-    const { trainers } = await import("@/data/trainers");
-    return { trainers: trainers.slice(), mode: "seed" };
-  }
+export const loadPublicCatalogForServer = cache(
+  async (): Promise<{
+    trainers: Trainer[];
+    mode: "live" | "seed";
+  }> => {
+    if (!isSupabaseConfigured()) {
+      const { trainers } = await import("@/data/trainers");
+      return { trainers: trainers.slice(), mode: "seed" };
+    }
 
-  const approved = await loadApprovedCatalogForServer();
-  return { trainers: approved, mode: "live" };
-}
+    const approved = await loadApprovedCatalogForServer();
+    return { trainers: approved, mode: "live" };
+  }
+);
 
 /** Resolve a public profile by id for SSR. Live mode never falls back to seed. */
 export async function loadPublicTrainerByIdForServer(

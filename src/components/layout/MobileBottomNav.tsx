@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   memo,
   useCallback,
@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
   type MouseEvent,
+  type PointerEvent,
 } from "react";
 import { TapLink } from "@/components/ui/TapLink";
 import {
@@ -138,6 +139,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   showSaveBadge,
   savedCount,
   onNavigate,
+  onPrefetch,
 }: {
   item: MobileBottomNavItem;
   active: boolean;
@@ -146,6 +148,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   showSaveBadge: boolean;
   savedCount: number;
   onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void;
+  onPrefetch: (href: string) => void;
 }) {
   const isProfile = item.id === "profile";
   const signedIn = profileAuthState === "signed-in";
@@ -163,10 +166,19 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       ? `${item.label}, ${savedCount} saved`
       : item.label;
 
+  const handlePointerDown = useCallback(
+    (event: PointerEvent<HTMLAnchorElement>) => {
+      if (event.button !== 0) return;
+      onPrefetch(item.href);
+    },
+    [item.href, onPrefetch]
+  );
+
   return (
     <TapLink
       href={item.href}
       onClick={onNavigate}
+      onPointerDown={handlePointerDown}
       className={cn(
         "mobile-bottom-nav__item smoac-hit-target",
         item.isPrimary && "mobile-bottom-nav__item--primary",
@@ -239,6 +251,7 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
   showSaveBadge,
   savedCount,
   onNavClick,
+  onPrefetch,
 }: {
   items: MobileBottomNavItem[];
   activeById: Record<MobileBottomNavItemId, boolean>;
@@ -250,6 +263,7 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
     item: MobileBottomNavItem,
     event: MouseEvent<HTMLAnchorElement>
   ) => void;
+  onPrefetch: (href: string) => void;
 }) {
   return (
     <ul className="mobile-bottom-nav__list">
@@ -267,6 +281,7 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
             onNavigate={(event) => onNavClick(item, event)}
+            onPrefetch={onPrefetch}
           />
         </li>
       ))}
@@ -277,6 +292,7 @@ const MobileBottomNavItems = memo(function MobileBottomNavItems({
 function MobileBottomNavShell() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const hidden = useMobileBottomNavHidden();
   const beginBottomNavTransition = useBeginBottomNavTransition();
   /* Mobile-first SSR — avoid a blank frame where the main toolbar is missing */
@@ -349,9 +365,25 @@ function MobileBottomNavShell() {
 
       event.preventDefault();
       setPendingId(item.id);
+      try {
+        router.prefetch(item.href);
+      } catch {
+        /* best-effort */
+      }
       beginBottomNavTransition(item.href, { fromId, toId: item.id });
     },
-    [beginBottomNavTransition, pathname, searchParams]
+    [beginBottomNavTransition, pathname, router, searchParams]
+  );
+
+  const handlePrefetch = useCallback(
+    (href: string) => {
+      try {
+        router.prefetch(href);
+      } catch {
+        /* best-effort */
+      }
+    },
+    [router]
   );
 
   if (!isTabletViewport) return null;
@@ -377,6 +409,7 @@ function MobileBottomNavShell() {
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
             onNavClick={handleNavClick}
+            onPrefetch={handlePrefetch}
           />
         </div>
       </div>

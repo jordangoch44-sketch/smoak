@@ -6,15 +6,20 @@ import { CloseIcon } from "@/components/ui/icons";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
 import {
-  BOOST_PRODUCT_OPTIONS,
+  BOOST_PRODUCT_DETAILS,
+  getBoostProductDetail,
+  type BoostProductDetail,
+} from "@/lib/boost-product-details";
+import {
   productDescription,
-  productLabel,
   type SmoacAddonProduct,
 } from "@/lib/stripe/products";
 
 interface BoostVisibilityModalProps {
   open: boolean;
   onClose: () => void;
+  /** Optional: land on a specific boost detail (e.g. rankings promo) */
+  initialProduct?: SmoacAddonProduct | null;
 }
 
 type CheckoutPayload = {
@@ -25,29 +30,39 @@ type CheckoutPayload = {
   priceLabel: string;
 };
 
+type Step = "list" | "detail" | "checkout" | "paid";
+
 /**
- * Boost flow: pick placement → see what you gain → enter card in-modal (Stripe).
+ * Boost flow: pick placement → full details → card in-modal (Stripe).
+ * Neon yellow theme — distinct from Pro (purple) and Pro trial (blue).
  */
 export function BoostVisibilityModal({
   open,
   onClose,
+  initialProduct = null,
 }: BoostVisibilityModalProps) {
-  const [selected, setSelected] = useState<SmoacAddonProduct | null>(null);
+  const [step, setStep] = useState<Step>("list");
+  const [detail, setDetail] = useState<BoostProductDetail | null>(null);
   const [checkout, setCheckout] = useState<CheckoutPayload | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paid, setPaid] = useState(false);
 
   useEffect(() => {
     if (!open) return;
 
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    setSelected(null);
     setCheckout(null);
     setError(null);
     setBusy(false);
-    setPaid(false);
+
+    if (initialProduct) {
+      setDetail(getBoostProductDetail(initialProduct));
+      setStep("detail");
+    } else {
+      setDetail(null);
+      setStep("list");
+    }
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -58,14 +73,12 @@ export function BoostVisibilityModal({
       document.body.style.overflow = previousBodyOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, onClose]);
+  }, [open, onClose, initialProduct]);
 
   async function startEmbeddedCheckout(product: SmoacAddonProduct) {
-    setSelected(product);
     setBusy(true);
     setError(null);
     setCheckout(null);
-    setPaid(false);
     try {
       const res = await fetch("/api/stripe/subscription-intent", {
         method: "POST",
@@ -75,7 +88,6 @@ export function BoostVisibilityModal({
       const data = (await res.json()) as CheckoutPayload & { error?: string };
       if (!res.ok || !data.clientSecret) {
         setError(data.error ?? "Checkout is not available yet.");
-        setSelected(null);
         return;
       }
       setCheckout({
@@ -85,26 +97,38 @@ export function BoostVisibilityModal({
         description: data.description,
         priceLabel: data.priceLabel,
       });
+      setStep("checkout");
     } catch {
       setError("Could not start checkout. Try again.");
-      setSelected(null);
     } finally {
       setBusy(false);
     }
   }
 
+  function openDetail(item: BoostProductDetail) {
+    setDetail(item);
+    setError(null);
+    setStep("detail");
+  }
+
   function backToList() {
     setCheckout(null);
-    setSelected(null);
+    setDetail(null);
     setError(null);
-    setPaid(false);
+    setStep("list");
+  }
+
+  function backToDetail() {
+    setCheckout(null);
+    setError(null);
+    setStep("detail");
   }
 
   if (!open || typeof document === "undefined") return null;
 
-  const selectedMeta = selected
-    ? BOOST_PRODUCT_OPTIONS.find((o) => o.key === selected)
-    : null;
+  const activeDetail =
+    detail ??
+    (checkout ? getBoostProductDetail(checkout.product) : null);
 
   return createPortal(
     <div className="dashboard-modal" role="presentation" onClick={onClose}>
@@ -116,7 +140,7 @@ export function BoostVisibilityModal({
         aria-describedby="boost-modal-desc"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="dashboard-modal__glow" aria-hidden />
+        <div className="dashboard-modal__glow dashboard-modal__glow--boost" aria-hidden />
 
         <button
           type="button"
@@ -128,26 +152,29 @@ export function BoostVisibilityModal({
         </button>
 
         <div className="dashboard-modal__content">
-          {!checkout && !paid ? (
+          {step === "list" ? (
             <>
-              <p className="dashboard-modal__eyebrow">Paid placement</p>
+              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
+                Paid placement
+              </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
                 Boost profile & ads
               </h2>
               <p id="boost-modal-desc" className="dashboard-modal__body">
-                Choose a placement, review what you get, then subscribe with
-                your card — without leaving SMOAC.
+                Pick a placement to see exactly what you get, where it appears,
+                and what it will not change. Separate from Pro analytics —
+                billed monthly, cancel anytime.
               </p>
 
               <ul className="dashboard-boost-list">
-                {BOOST_PRODUCT_OPTIONS.map((option) => (
+                {BOOST_PRODUCT_DETAILS.map((option) => (
                   <li key={option.key} className="dashboard-boost-list__item">
                     <div className="dashboard-boost-list__copy">
                       <p className="dashboard-boost-list__label">
                         {option.label}
                       </p>
                       <p className="dashboard-boost-list__desc">
-                        {option.description}
+                        {option.tagline}
                       </p>
                       <p className="dashboard-boost-list__price">
                         {option.priceLabel}
@@ -155,12 +182,10 @@ export function BoostVisibilityModal({
                     </div>
                     <DashboardButton
                       inline
-                      onClick={() => void startEmbeddedCheckout(option.key)}
-                      disabled={busy}
+                      className="dashboard-boost-select-btn"
+                      onClick={() => openDetail(option)}
                     >
-                      {busy && selected === option.key
-                        ? "Loading…"
-                        : "Select"}
+                      Details
                     </DashboardButton>
                   </li>
                 ))}
@@ -168,7 +193,7 @@ export function BoostVisibilityModal({
             </>
           ) : null}
 
-          {checkout && !paid ? (
+          {step === "detail" && activeDetail ? (
             <>
               <button
                 type="button"
@@ -177,14 +202,83 @@ export function BoostVisibilityModal({
               >
                 ← All boosts
               </button>
-              <p className="dashboard-modal__eyebrow">You’re subscribing to</p>
+              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
+                {activeDetail.priceLabel}
+              </p>
+              <h2 id="boost-modal-title" className="dashboard-modal__title">
+                {activeDetail.label}
+              </h2>
+              <p id="boost-modal-desc" className="dashboard-modal__body">
+                {activeDetail.tagline}
+              </p>
+
+              <div className="dashboard-boost-detail">
+                <section className="dashboard-boost-detail__block">
+                  <h3 className="dashboard-boost-detail__heading">You get</h3>
+                  <ul className="dashboard-boost-detail__list">
+                    {activeDetail.youGet.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="dashboard-boost-detail__block">
+                  <h3 className="dashboard-boost-detail__heading">
+                    Where it appears
+                  </h3>
+                  <ul className="dashboard-boost-detail__list">
+                    {activeDetail.appearsOn.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="dashboard-boost-detail__block dashboard-boost-detail__block--wont">
+                  <h3 className="dashboard-boost-detail__heading">
+                    What it will not do
+                  </h3>
+                  <ul className="dashboard-boost-detail__list">
+                    {activeDetail.willNot.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+
+              <p className="dashboard-modal__note">
+                Billed monthly. Placement turns on after payment succeeds.
+                Manage billing anytime in Subscription settings.
+              </p>
+
+              <DashboardButton
+                className="dashboard-boost-select-btn"
+                onClick={() => void startEmbeddedCheckout(activeDetail.key)}
+                disabled={busy}
+              >
+                {busy
+                  ? "Loading…"
+                  : `Continue · ${activeDetail.priceLabel}`}
+              </DashboardButton>
+            </>
+          ) : null}
+
+          {step === "checkout" && checkout ? (
+            <>
+              <button
+                type="button"
+                className="dashboard-modal__secondary"
+                onClick={backToDetail}
+              >
+                ← Back to details
+              </button>
+              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
+                You’re subscribing to
+              </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
                 {checkout.label}
               </h2>
               <p id="boost-modal-desc" className="dashboard-modal__body">
                 {checkout.description ||
                   productDescription(checkout.product) ||
-                  selectedMeta?.description}
+                  activeDetail?.tagline}
               </p>
               <p className="dashboard-modal__price">{checkout.priceLabel}</p>
               <p className="dashboard-modal__note">
@@ -200,24 +294,31 @@ export function BoostVisibilityModal({
                   clientSecret={checkout.clientSecret}
                   productLabel={checkout.label}
                   priceLabel={checkout.priceLabel}
-                  onPaid={() => setPaid(true)}
+                  onPaid={() => setStep("paid")}
                   onError={(message) => setError(message || null)}
                 />
               </div>
             </>
           ) : null}
 
-          {paid ? (
+          {step === "paid" ? (
             <>
-              <p className="dashboard-modal__eyebrow">You’re live</p>
+              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
+                You’re live
+              </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
-                {checkout?.label ?? productLabel(selected!)} is active
+                {checkout?.label ?? detail?.label ?? "Boost"} is active
               </h2>
               <p id="boost-modal-desc" className="dashboard-modal__body">
                 Your placement will appear on SMOAC shortly. Track ad spend and
                 manage billing anytime in Subscription / account settings.
               </p>
-              <DashboardButton onClick={onClose}>Done</DashboardButton>
+              <DashboardButton
+                className="dashboard-boost-select-btn"
+                onClick={onClose}
+              >
+                Done
+              </DashboardButton>
             </>
           ) : null}
 

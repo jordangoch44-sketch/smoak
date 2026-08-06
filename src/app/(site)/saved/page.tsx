@@ -1,12 +1,4 @@
-import dynamic from "next/dynamic";
-
-const SavedPageClient = dynamic(
-  () =>
-    import("@/components/saved/SavedPageClient").then(
-      (mod) => mod.SavedPageClient
-    ),
-  { ssr: true }
-);
+import { SavedPageClient } from "@/components/saved/SavedPageClient";
 
 export const metadata = {
   title: "Saved Specialists",

@@ -1,15 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
+import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
+import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { usePublicCatalog } from "@/hooks/usePublicCatalog";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
-import type { Trainer } from "@/types/trainer";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import {
   ExploreSearchToolbar,
@@ -20,17 +22,13 @@ import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreResults } from "./ExploreResults";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
-export function ExplorePageClient({
-  initialCatalog,
-  catalogMode = "live",
-}: {
-  initialCatalog?: Trainer[];
-  catalogMode?: "live" | "seed";
-}) {
+export function ExplorePageClient() {
   const searchParams = useSearchParams();
   const { session } = useAuthSession();
   const { openLocationPanel } = useUserLocationEditor();
   const pendingSearchRef = useRef<string | null>(null);
+  const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
+  const [boostOpen, setBoostOpen] = useState(false);
 
   const {
     filters,
@@ -52,7 +50,7 @@ export function ExplorePageClient({
   } = useExploreTrainers({
     initialSpecialty: searchParams.get("specialty") ?? "",
     initialQuery: searchParams.get("q") ?? "",
-    initialCatalog,
+    initialCatalog: trainers,
     catalogMode,
   });
 
@@ -95,6 +93,10 @@ export function ExplorePageClient({
     clearSearch();
     clearFilters();
   }, [clearSearch, clearFilters]);
+
+  if (!catalogHydrated) {
+    return <ExploreRouteLoading />;
+  }
 
   return (
     <div className="explore-page explore-page--results">
@@ -149,6 +151,7 @@ export function ExplorePageClient({
             <SitePromoSlot
               slotId="explore_results_rail"
               variant="compact"
+              onOpenBoost={() => setBoostOpen(true)}
             />
             <div className="explore-results-heading">
               <h2 className="explore-results-heading__title">
@@ -189,6 +192,11 @@ export function ExplorePageClient({
         onApply={setFilters}
         getMatchCount={getExploreMatchCount}
         onClearFilters={clearFilters}
+      />
+
+      <BoostVisibilityModal
+        open={boostOpen}
+        onClose={() => setBoostOpen(false)}
       />
     </div>
   );

@@ -1,4 +1,4 @@
 /**
- * Route barrel — explore page uses dynamic import of `ExplorePageClient` directly.
+ * Route barrel — explore page composes `ExplorePageClient`.
  */
 export { ExplorePageClient } from "./ExplorePageClient";

@@ -3,6 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { RANKINGS_PROFESSION_OPTIONS } from "@/data/city-rankings";
+import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
@@ -34,6 +35,7 @@ export function RankingsPageClient({
   const [cityTouched, setCityTouched] = useState(false);
   const [cityOverride, setCityOverride] = useState("");
   const [profession, setProfession] = useState("");
+  const [boostOpen, setBoostOpen] = useState(false);
 
   useEffect(() => {
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
@@ -210,8 +212,15 @@ export function RankingsPageClient({
         <SitePromoSlot
           slotId="rankings_footer_promo"
           variant="banner"
+          onOpenBoost={() => setBoostOpen(true)}
         />
       </div>
+
+      <BoostVisibilityModal
+        open={boostOpen}
+        onClose={() => setBoostOpen(false)}
+        initialProduct="top_ranking_boost"
+      />
     </div>
   );
 }

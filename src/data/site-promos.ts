@@ -24,6 +24,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     ctaLabel: "Explore boosts",
     ctaKind: "open_boost",
     dismissible: true,
+    accent: "neon-yellow",
   },
   {
     id: "pro-trial-once-2026",
@@ -70,7 +71,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     reappearOnSignIn: true,
     hideWhenBoosting: true,
     orbitCta: true,
-    accent: "neon-blue",
+    accent: "neon-yellow",
   },
   {
     id: "home-specialists-grow-2026",
@@ -112,5 +113,6 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     ctaLabel: "Get a ranking boost",
     ctaKind: "open_boost",
     dismissible: true,
+    accent: "neon-yellow",
   },
 ];
