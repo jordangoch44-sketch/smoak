@@ -291,10 +291,12 @@ export async function saveManagedSpecialistProfileEdits(
   }
 }
 
+/** Launch-critical profile depth — clients need these to inquire with confidence. */
 export function buildProfileCompletionChecklist(
   form: SpecialistProfileEditForm,
-  trainer?: Trainer
+  _trainer?: Trainer
 ): ProfileCompletionChecklistItem[] {
+  void _trainer;
   return [
     {
       id: "photo",
@@ -302,40 +304,37 @@ export function buildProfileCompletionChecklist(
       done: Boolean(form.profilePhotoUrl.trim()),
     },
     {
+      id: "price",
+      label:
+        form.pricePerSession > 0
+          ? `Session price · $${form.pricePerSession}`
+          : "Set session price",
+      done: form.pricePerSession > 0,
+    },
+    {
       id: "bio",
-      label: form.bio.trim() ? "Bio" : "Add bio",
-      done: Boolean(form.bio.trim()),
-    },
-    {
-      id: "philosophy",
-      label: form.trainingStyle.trim()
-        ? "Coaching philosophy"
-        : "Add coaching philosophy",
-      done: Boolean(form.trainingStyle.trim()),
-    },
-    {
-      id: "transformations",
-      label: form.transformationNotes.trim()
-        ? "Client transformations"
-        : "Add client transformations",
-      done: Boolean(form.transformationNotes.trim()),
-    },
-    {
-      id: "reviews",
-      label: (trainer?.reviews?.length ?? 0) > 0 ? "Reviews" : "Add reviews",
-      done: (trainer?.reviews?.length ?? 0) > 0,
+      label: form.bio.trim().length >= 40 ? "Bio" : "Add bio (40+ characters)",
+      done: form.bio.trim().length >= 40,
     },
     {
       id: "booking",
       label: form.bookingAvailability.trim()
-        ? "Booking availability"
-        : "Add booking link",
+        ? "How to book / availability"
+        : "Add how clients book with you",
       done: Boolean(form.bookingAvailability.trim()),
     },
     {
       id: "specialties",
       label: form.specialty.length > 0 ? "Specialties" : "Add specialties",
       done: form.specialty.length > 0,
+    },
+    {
+      id: "location",
+      label:
+        form.zipCode.trim() || form.city.trim()
+          ? "Service area"
+          : "Add ZIP or city",
+      done: Boolean(form.zipCode.trim() || form.city.trim()),
     },
   ];
 }

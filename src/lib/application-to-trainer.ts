@@ -50,14 +50,15 @@ export function applicationToTrainer(
   id = app.id
 ): Trainer {
   const enriched = enrichSpecialistApplicationFields(app);
-  const pricePerSession = parsePrice(app.pricing.oneOnOnePrice) || 120;
+  /* Never invent a marketplace price — go-live gate requires a real session rate. */
+  const pricePerSession = parsePrice(app.pricing.oneOnOnePrice);
   const location = [app.neighborhood, app.city, app.state]
     .filter(Boolean)
     .join(", ");
   const zipCode =
     app.zipCode.trim() ||
     getDefaultZipForMarketplaceCity(app.city.trim()) ||
-    "92101";
+    "";
   const centroid =
     app.latitude != null && app.longitude != null
       ? { latitude: app.latitude, longitude: app.longitude }
@@ -74,8 +75,7 @@ export function applicationToTrainer(
         : "in-person");
   const travelRadiusMiles =
     parseTravelRadiusMiles(app.travelRadius) || (enriched.willingToTravel ? 25 : 0);
-  const photo =
-    app.media.profilePhotoUrl.trim() || "/trainers/placeholder.jpg";
+  const photo = app.media.profilePhotoUrl.trim() || "/trainers/placeholder.jpg";
   const mediaUrls = linesToUrls(app.media.trainingVideoUrls);
   const headline = app.headline.trim();
   const specialties = Array.isArray(app.specialties) ? app.specialties : [];

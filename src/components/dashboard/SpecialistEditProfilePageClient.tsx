@@ -23,6 +23,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useProfileKeyboardChrome } from "@/hooks/useProfileKeyboardChrome";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
   EMPTY_CERTIFICATION,
   cloneSpecialistProfileEditForm,
@@ -96,6 +97,10 @@ export function SpecialistEditProfilePageClient({
   );
   const [saving, setSaving] = useState(false);
   const [modalMounted, setModalMounted] = useState(false);
+  const [requestReviewBusy, setRequestReviewBusy] = useState(false);
+  const [requestReviewError, setRequestReviewError] = useState<string | null>(
+    null
+  );
   const focusPhoto = searchParams.get("focus") === "photo";
   const photoFocusOpenedRef = useRef(false);
   const isModal = presentation === "modal";
@@ -324,6 +329,34 @@ export function SpecialistEditProfilePageClient({
       {dashboardMode === "pending" || dashboardMode === "rejected" ? (
         <SpecialistPendingApprovalNotice
           variant={dashboardMode === "rejected" ? "rejected" : "pending"}
+          rejectionReason={application?.rejectionReason}
+          onRequestReview={
+            dashboardMode === "rejected"
+              ? async () => {
+                  if (!application?.id) return;
+                  setRequestReviewBusy(true);
+                  setRequestReviewError(null);
+                  try {
+                    const result =
+                      await resubmitSpecialistApplicationForReviewAsync(
+                        application.id
+                      );
+                    if (!result.ok) {
+                      setRequestReviewError(result.message);
+                      return;
+                    }
+                    showToast({
+                      type: "success",
+                      message: "Back in review — we’ll look at your updates shortly.",
+                    });
+                  } finally {
+                    setRequestReviewBusy(false);
+                  }
+                }
+              : undefined
+          }
+          requestReviewBusy={requestReviewBusy}
+          requestReviewError={requestReviewError}
         />
       ) : null}
 

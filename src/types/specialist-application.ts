@@ -63,6 +63,8 @@ export interface SpecialistApplication {
   updatedAt: string;
   /** Supabase auth user id when available */
   userId?: string | null;
+  /** Admin note when status is REJECTED — shown to specialist + reject email */
+  rejectionReason?: string;
 
   professionalType: string;
   fullName: string;

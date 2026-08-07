@@ -9,6 +9,10 @@ import {
   syncProfileOverridesFromApplication,
 } from "@/lib/managed-specialist-profile";
 import {
+  formatSpecialistGoLiveBlockMessage,
+  getSpecialistGoLiveGaps,
+} from "@/lib/specialist-go-live-gate";
+import {
   getSpecialistApplicationById,
   listSpecialistApplications,
   saveSpecialistApplicationAsync,
@@ -22,6 +26,18 @@ import type {
 export type AdminApplicationMutationResult =
   | { ok: true; application: SpecialistApplication }
   | { ok: false; message: string; application?: SpecialistApplication };
+
+function blockIfNotReadyToGoLive(
+  application: SpecialistApplication
+): AdminApplicationMutationResult | null {
+  const gaps = getSpecialistGoLiveGaps(application);
+  if (gaps.length === 0) return null;
+  return {
+    ok: false,
+    message: formatSpecialistGoLiveBlockMessage(gaps),
+    application,
+  };
+}
 
 export function applicationStatusLabel(
   status: ProfileStatus
@@ -72,18 +88,32 @@ export async function saveSpecialistApplicationEditsAsync(
 export async function approveSpecialistApplicationWithEditsAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
+  const blocked = blockIfNotReadyToGoLive(application);
+  if (blocked) return blocked;
   return saveSpecialistApplicationEditsAsync({
     ...application,
     profileStatus: "APPROVED",
+    rejectionReason: "",
   });
 }
 
 export async function rejectSpecialistApplicationWithEditsAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
+  const reason = application.rejectionReason?.trim() ?? "";
+  if (reason.length < 8) {
+    return {
+      ok: false,
+      message:
+        "Add a rejection reason (short note for the specialist, 8+ characters).",
+      application,
+    };
+  }
+
   const rejectedEdits = normalizeApplicationEdits({
     ...application,
     profileStatus: "REJECTED",
+    rejectionReason: reason,
   });
   const appResult = await saveSpecialistApplicationAsync(rejectedEdits);
   if (!appResult.ok) {
@@ -96,7 +126,56 @@ export async function rejectSpecialistApplicationWithEditsAsync(
     return { ok: false, message: removed.message, application: rejected };
   }
   hideTrainerId(rejected.id);
+
+  try {
+    const { sendSpecialistApplicationRejectedEmail } = await import(
+      "@/lib/email/confirmation-email-service"
+    );
+    void sendSpecialistApplicationRejectedEmail(rejected).then((result) => {
+      if (!result.success) {
+        console.warn("[SMOAC EMAIL] Rejection email did not send", {
+          applicationId: rejected.id,
+        });
+      }
+    });
+  } catch (err) {
+    console.warn("[SMOAC EMAIL] Rejection email dispatch skipped:", err);
+  }
+
   return { ok: true, application: rejected };
+}
+
+/** Specialist requests another review after fixing a rejected application. */
+export async function resubmitSpecialistApplicationForReviewAsync(
+  applicationId: string
+): Promise<AdminApplicationMutationResult> {
+  const existing = getSpecialistApplicationById(applicationId);
+  if (!existing) {
+    return { ok: false, message: "Application not found." };
+  }
+  if (existing.profileStatus !== "REJECTED") {
+    return {
+      ok: false,
+      message: "Only rejected applications can request another review.",
+      application: existing,
+    };
+  }
+
+  const pendingEdits = normalizeApplicationEdits({
+    ...existing,
+    profileStatus: "PENDING_APPROVAL",
+    rejectionReason: "",
+    submittedAt: existing.submittedAt ?? new Date().toISOString(),
+  });
+  const appResult = await saveSpecialistApplicationAsync(pendingEdits);
+  if (!appResult.ok) {
+    return { ok: false, message: appResult.message, application: pendingEdits };
+  }
+
+  const pending = appResult.application;
+  syncProfileOverridesFromApplication(pending);
+  hideTrainerId(pending.id);
+  return { ok: true, application: pending };
 }
 
 export async function archiveSpecialistApplicationAsync(
@@ -132,9 +211,13 @@ export async function activateSpecialistFromApplicationAsync(
     return { ok: false, message: "Application not found." };
   }
 
+  const blocked = blockIfNotReadyToGoLive(existing);
+  if (blocked) return blocked;
+
   const approvedEdits = normalizeApplicationEdits({
     ...existing,
     profileStatus: "APPROVED",
+    rejectionReason: "",
   });
 
   const appResult = await saveSpecialistApplicationAsync(approvedEdits);
@@ -184,9 +267,13 @@ export async function activateSpecialistFromApplicationAsync(
 export async function activateSpecialistApplicationWithEditsAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
+  const blocked = blockIfNotReadyToGoLive(application);
+  if (blocked) return blocked;
+
   const saved = await saveSpecialistApplicationEditsAsync({
     ...application,
     profileStatus: "APPROVED",
+    rejectionReason: "",
   });
   if (!saved.ok) return saved;
 

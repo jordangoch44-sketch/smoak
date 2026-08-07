@@ -119,6 +119,55 @@ The SMOAC team`;
   };
 }
 
+function buildSpecialistRejectionEmail(
+  application: SpecialistApplication
+): ConfirmationEmailPayload {
+  const firstName = specialistFirstName(application);
+  const reason =
+    application.rejectionReason?.trim() ||
+    "Please update your application details and request another review.";
+  const loginUrl = specialistLoginUrl();
+  const text = `Hi ${firstName},
+
+Thanks for applying to SMOAC. Your specialist application needs a few updates before it can go live.
+
+What to fix:
+${reason}
+
+Log in, edit your submitted profile, then tap Request review:
+${loginUrl}
+
+We’ll look again as soon as you resubmit.
+
+— The SMOAC team`;
+
+  const html = wrapTransactionalEmailHtml({
+    preheader: "Your SMOAC application needs a few updates",
+    eyebrow: "Needs changes",
+    title: "Update and resubmit your application",
+    bodyHtml: renderEmailParagraphs([
+      `Hi ${firstName},`,
+      "Thanks for applying to SMOAC. Your specialist application needs a few updates before it can go live.",
+      `What to fix: ${reason}`,
+      "Log in, edit your submitted profile, then tap Request review so we can look again.",
+    ]),
+    cta: {
+      label: "Log in to update your application",
+      href: loginUrl,
+    },
+    footerNote: "We’ll review again as soon as you resubmit.",
+  });
+
+  return {
+    to: application.email.trim(),
+    subject: "SMOAC application needs updates — please revise and resubmit",
+    text,
+    html,
+    applicationId: application.id,
+    kind: "specialist",
+  };
+}
+
 /** Send specialist Join Now confirmation — Resend when configured. */
 export async function sendSpecialistApplicationConfirmationEmail(
   application: SpecialistApplication
@@ -153,6 +202,25 @@ export async function sendSpecialistApplicationApprovedEmail(
     });
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist approval email failed", error);
+    return { success: false };
+  }
+}
+
+/** Notify specialist that their application was rejected and how to resubmit. */
+export async function sendSpecialistApplicationRejectedEmail(
+  application: SpecialistApplication
+): Promise<ConfirmationEmailResult> {
+  try {
+    const payload = buildSpecialistRejectionEmail(application);
+    return await dispatchTransactionalEmail({
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+      kind: "rejection_specialist",
+    });
+  } catch (error) {
+    console.warn("[SMOAC EMAIL] Specialist rejection email failed", error);
     return { success: false };
   }
 }

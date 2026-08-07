@@ -1,10 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSyncedState } from "@/hooks/useSyncedState";
 import { createPortal } from "react-dom";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
-import { applicationStatusLabel } from "@/lib/admin-applications-service";
+import {
+  applicationStatusLabel,
+  type AdminApplicationMutationResult,
+} from "@/lib/admin-applications-service";
+import {
+  getSpecialistGoLiveGaps,
+  isSpecialistReadyToGoLive,
+} from "@/lib/specialist-go-live-gate";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
@@ -38,9 +45,8 @@ function servicesSummary(app: SpecialistApplication): string {
 type SpecialistAppAction = (
   app: SpecialistApplication
 ) =>
-  | SpecialistApplication
-  | null
-  | Promise<SpecialistApplication | null>;
+  | AdminApplicationMutationResult
+  | Promise<AdminApplicationMutationResult>;
 
 interface AdminApplicationReviewPanelProps {
   application: SpecialistApplication;
@@ -72,6 +78,8 @@ export function AdminApplicationReviewPanel({
 
   const statusLabel = applicationStatusLabel(draft.profileStatus);
   const canAct = permissions.canApproveApplications;
+  const goLiveGaps = useMemo(() => getSpecialistGoLiveGaps(draft), [draft]);
+  const readyToGoLive = goLiveGaps.length === 0;
 
   useEffect(() => {
     document.body.classList.add("admin-review-open");
@@ -90,6 +98,7 @@ export function AdminApplicationReviewPanel({
   ) {
     setDraft((prev) => ({ ...prev, [key]: value }));
     setFeedback(null);
+    setErrorMessage(null);
   }
 
   function patchPricing(
@@ -101,6 +110,7 @@ export function AdminApplicationReviewPanel({
       pricing: { ...prev.pricing, [key]: value },
     }));
     setFeedback(null);
+    setErrorMessage(null);
   }
 
   function patchSocial(
@@ -112,13 +122,13 @@ export function AdminApplicationReviewPanel({
       social: { ...prev.social, [key]: value },
     }));
     setFeedback(null);
+    setErrorMessage(null);
   }
 
   function applyResult(
-    result: SpecialistApplication | null,
+    result: SpecialistApplication,
     nextFeedback: ReviewFeedback
   ) {
-    if (!result) return;
     setDraft(result);
     setFeedback(nextFeedback);
     setErrorMessage(null);
@@ -129,11 +139,11 @@ export function AdminApplicationReviewPanel({
     setErrorMessage(null);
     try {
       const result = await onSave(draft);
-      if (result) {
-        applyResult(result, "saved");
+      if (result.ok) {
+        applyResult(result.application, "saved");
       } else {
         setFeedback("error");
-        setErrorMessage("Unable to save application.");
+        setErrorMessage(result.message || "Unable to save application.");
       }
     } finally {
       setBusyAction(null);
@@ -141,18 +151,25 @@ export function AdminApplicationReviewPanel({
   }
 
   async function handleApprove() {
+    if (!isSpecialistReadyToGoLive(draft)) {
+      setFeedback("error");
+      setErrorMessage(
+        `Cannot approve yet — add: ${goLiveGaps.map((g) => g.label).join(", ")}.`
+      );
+      return;
+    }
     setBusyAction("approve");
     setErrorMessage(null);
     try {
       const result = await onApprove(draft);
-      if (result) {
-        applyResult(result, "approved");
+      if (result.ok) {
+        applyResult(result.application, "approved");
         /* Let the confirmation register, then close so the list + specialist
          * count visibly update behind the sheet. */
         window.setTimeout(() => onClose(), 1600);
       } else {
         setFeedback("error");
-        setErrorMessage("Unable to approve application.");
+        setErrorMessage(result.message || "Unable to approve application.");
       }
     } finally {
       setBusyAction(null);
@@ -164,13 +181,13 @@ export function AdminApplicationReviewPanel({
     setErrorMessage(null);
     try {
       const result = await onReject(draft);
-      if (result) {
-        setDraft(result);
+      if (result.ok) {
+        setDraft(result.application);
         setFeedback("rejected");
         window.setTimeout(() => onClose(), 400);
       } else {
         setFeedback("error");
-        setErrorMessage("Unable to reject application.");
+        setErrorMessage(result.message || "Unable to reject application.");
       }
     } finally {
       setBusyAction(null);
@@ -178,17 +195,24 @@ export function AdminApplicationReviewPanel({
   }
 
   async function handleActivate() {
+    if (!isSpecialistReadyToGoLive(draft)) {
+      setFeedback("error");
+      setErrorMessage(
+        `Cannot activate yet — add: ${goLiveGaps.map((g) => g.label).join(", ")}.`
+      );
+      return;
+    }
     setBusyAction("activate");
     setErrorMessage(null);
     try {
       const result = await onActivate(draft);
-      if (result) {
-        setDraft(result);
+      if (result.ok) {
+        setDraft(result.application);
         setFeedback("activated");
         window.setTimeout(() => onClose(), 500);
       } else {
         setFeedback("error");
-        setErrorMessage("Unable to activate specialist.");
+        setErrorMessage(result.message || "Unable to activate specialist.");
       }
     } finally {
       setBusyAction(null);
@@ -200,13 +224,13 @@ export function AdminApplicationReviewPanel({
     setErrorMessage(null);
     try {
       const result = await onArchive(draft);
-      if (result) {
-        setDraft(result);
+      if (result.ok) {
+        setDraft(result.application);
         setFeedback("archived");
         window.setTimeout(() => onClose(), 400);
       } else {
         setFeedback("error");
-        setErrorMessage("Unable to archive application.");
+        setErrorMessage(result.message || "Unable to archive application.");
       }
     } finally {
       setBusyAction(null);
@@ -291,6 +315,33 @@ export function AdminApplicationReviewPanel({
                   onChange={(e) => patch("displayName", e.target.value)}
                 />
               </label>
+              <label className="admin-field-label">
+                Profile photo URL
+                <input
+                  className="admin-field"
+                  value={draft.media.profilePhotoUrl}
+                  onChange={(e) => {
+                    setErrorMessage(null);
+                    setFeedback(null);
+                    setDraft((prev) => ({
+                      ...prev,
+                      media: {
+                        ...prev.media,
+                        profilePhotoUrl: e.target.value,
+                      },
+                    }));
+                  }}
+                  placeholder="https://…"
+                />
+              </label>
+              {draft.media.profilePhotoUrl.trim() ? (
+                // eslint-disable-next-line @next/next/no-img-element -- admin review preview of remote/storage URLs
+                <img
+                  src={draft.media.profilePhotoUrl.trim()}
+                  alt=""
+                  className="admin-review-photo-preview"
+                />
+              ) : null}
               <label className="admin-field-label">
                 Email
                 <input
@@ -590,6 +641,41 @@ export function AdminApplicationReviewPanel({
           ) : null}
           {canAct ? (
             <div className="admin-review-sheet__actions">
+              {(statusLabel === "pending" || statusLabel === "approved") &&
+              !readyToGoLive ? (
+                <div
+                  className="admin-review-sheet__feedback admin-review-sheet__feedback--error"
+                  role="status"
+                >
+                  <p className="admin-review-golive__title">
+                    Go-live checklist — fill these before approve/activate:
+                  </p>
+                  <ul className="admin-review-golive__list">
+                    {goLiveGaps.map((gap) => (
+                      <li key={gap.id}>{gap.label}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {statusLabel === "pending" || statusLabel === "rejected" ? (
+                <label className="admin-field-label admin-review-reject-reason">
+                  Rejection reason (required to reject)
+                  <textarea
+                    className="admin-field admin-field--textarea"
+                    rows={3}
+                    value={draft.rejectionReason ?? ""}
+                    onChange={(e) => {
+                      setErrorMessage(null);
+                      setFeedback(null);
+                      setDraft((prev) => ({
+                        ...prev,
+                        rejectionReason: e.target.value,
+                      }));
+                    }}
+                    placeholder="Tell the specialist what to fix before they resubmit…"
+                  />
+                </label>
+              ) : null}
               <button
                 type="button"
                 className="admin-btn admin-btn--block smoac-control"
@@ -603,7 +689,7 @@ export function AdminApplicationReviewPanel({
                   <button
                     type="button"
                     className="admin-btn admin-btn--primary admin-btn--block smoac-control"
-                    disabled={busyAction != null}
+                    disabled={busyAction != null || !readyToGoLive}
                     onClick={handleApprove}
                   >
                     {busyAction === "approve" ? "Approving…" : "Approve"}
@@ -611,7 +697,10 @@ export function AdminApplicationReviewPanel({
                   <button
                     type="button"
                     className="admin-btn admin-btn--danger admin-btn--block smoac-control"
-                    disabled={busyAction != null}
+                    disabled={
+                      busyAction != null ||
+                      (draft.rejectionReason?.trim().length ?? 0) < 8
+                    }
                     onClick={handleReject}
                   >
                     {busyAction === "reject" ? "Rejecting…" : "Reject"}
@@ -622,7 +711,7 @@ export function AdminApplicationReviewPanel({
                 <button
                   type="button"
                   className="admin-btn admin-btn--primary admin-btn--block smoac-control"
-                  disabled={busyAction != null}
+                  disabled={busyAction != null || !readyToGoLive}
                   onClick={handleActivate}
                 >
                   {busyAction === "activate"

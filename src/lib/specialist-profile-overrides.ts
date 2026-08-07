@@ -393,20 +393,13 @@ export function computeProfileCompletion(
     Boolean(form.title.trim()),
     Boolean(form.profession.trim()),
     form.specialty.length > 0,
-    form.certifications.some((c) => c.name.trim()),
-    Boolean(form.city.trim()),
-    Boolean(form.neighborhood.trim()),
-    Boolean(form.zipCode.trim()),
+    Boolean(form.city.trim() || form.zipCode.trim()),
     Boolean(form.serviceType),
-    form.serviceArea.length > 0,
     form.pricePerSession > 0,
-    Boolean(form.bio.trim()),
-    Boolean(form.photoNotes.trim() || form.profilePhotoUrl.trim()),
-    Boolean(form.transformationNotes.trim()),
+    form.bio.trim().length >= 40,
+    Boolean(form.profilePhotoUrl.trim()),
     Boolean(form.bookingAvailability.trim()),
-    Boolean(form.profilePhotoUrl.trim() || form.photoNotes.trim()),
     Boolean(form.phone.trim() || form.email.trim()),
-    Boolean(form.servicesOffered.trim() || form.trainingStyle.trim()),
   ];
   const done = checks.filter(Boolean).length;
   return Math.round((done / checks.length) * 100);

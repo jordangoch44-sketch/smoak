@@ -27,6 +27,7 @@ import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specia
 import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/SpecialistProGhostPreview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
+import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
   showsPremiumDashboard,
   showsProfileFirstDashboard,
@@ -52,7 +53,10 @@ function dashboardSubtitle(
   mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"],
   trialDaysRemaining?: number
 ): string {
-  if (mode === "pending" || mode === "rejected") {
+  if (mode === "rejected") {
+    return "Update your application, then request another review.";
+  }
+  if (mode === "pending") {
     return "Your application is under review.";
   }
   if (mode === "approved-free") {
@@ -86,6 +90,10 @@ export function SpecialistDashboardPageClient() {
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
+  const [requestReviewBusy, setRequestReviewBusy] = useState(false);
+  const [requestReviewError, setRequestReviewError] = useState<string | null>(
+    null
+  );
 
   const {
     isReady,
@@ -123,6 +131,22 @@ export function SpecialistDashboardPageClient() {
       setBoostOpen(true);
     }
   }, [searchParams]);
+
+  async function handleRequestReview() {
+    if (!application?.id) return;
+    setRequestReviewBusy(true);
+    setRequestReviewError(null);
+    try {
+      const result = await resubmitSpecialistApplicationForReviewAsync(
+        application.id
+      );
+      if (!result.ok) {
+        setRequestReviewError(result.message);
+      }
+    } finally {
+      setRequestReviewBusy(false);
+    }
+  }
 
   if (!isReady || !session) {
     return <DashboardLoadingState />;
@@ -304,6 +328,12 @@ export function SpecialistDashboardPageClient() {
                   dashboardMode === "pending" &&
                   Boolean(application)
                 }
+                rejectionReason={application?.rejectionReason}
+                onRequestReview={
+                  dashboardMode === "rejected" ? handleRequestReview : undefined
+                }
+                requestReviewBusy={requestReviewBusy}
+                requestReviewError={requestReviewError}
               />
             ) : null}
 

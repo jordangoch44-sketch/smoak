@@ -27,6 +27,7 @@ import { markAdminSectionBadgeSeen } from "@/lib/admin-section-badge-seen-store"
 import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
 import { buildInternalLoginHref } from "@/lib/internal-routes";
 import { PAGE_TRANSITION_EASE } from "@/lib/motion";
+import type { AdminApplicationMutationResult } from "@/lib/admin-applications-service";
 import type { AdminNotifiableSectionId } from "@/types/admin-notifications";
 import type { SpecialistApplication } from "@/types/specialist-application";
 import type { AdminSpecialistVisibility } from "@/types/admin";
@@ -134,44 +135,50 @@ export function AdminDashboardPageClient() {
 
   async function handleSaveApplication(
     app: SpecialistApplication
-  ): Promise<SpecialistApplication | null> {
-    if (!permissions.canApproveApplications) return null;
-    const result = await saveApplicationEdits(app);
-    return result.ok ? result.application : null;
+  ): Promise<AdminApplicationMutationResult> {
+    if (!permissions.canApproveApplications) {
+      return { ok: false, message: "Missing permission to edit applications." };
+    }
+    return saveApplicationEdits(app);
   }
 
   async function handleApprove(
     app: SpecialistApplication
-  ): Promise<SpecialistApplication | null> {
-    if (!permissions.canApproveApplications) return null;
+  ): Promise<AdminApplicationMutationResult> {
+    if (!permissions.canApproveApplications) {
+      return { ok: false, message: "Missing permission to approve applications." };
+    }
     const approved = await approveApplication(app);
-    if (!approved.ok) return null;
+    if (!approved.ok) return approved;
     const activated = await activateFromApplication(approved.application.id);
-    return activated.ok ? activated.application : approved.application;
+    return activated.ok ? activated : approved;
   }
 
   async function handleReject(
     app: SpecialistApplication
-  ): Promise<SpecialistApplication | null> {
-    if (!permissions.canApproveApplications) return null;
-    const result = await rejectApplication(app);
-    return result.ok ? result.application : null;
+  ): Promise<AdminApplicationMutationResult> {
+    if (!permissions.canApproveApplications) {
+      return { ok: false, message: "Missing permission to reject applications." };
+    }
+    return rejectApplication(app);
   }
 
   async function handleActivate(
     app: SpecialistApplication
-  ): Promise<SpecialistApplication | null> {
-    if (!permissions.canApproveApplications) return null;
-    const result = await activateApplicationWithEdits(app);
-    return result.ok ? result.application : null;
+  ): Promise<AdminApplicationMutationResult> {
+    if (!permissions.canApproveApplications) {
+      return { ok: false, message: "Missing permission to activate specialists." };
+    }
+    return activateApplicationWithEdits(app);
   }
 
   async function handleArchiveSpecialist(
     app: SpecialistApplication
-  ): Promise<SpecialistApplication | null> {
-    if (!permissions.canApproveApplications) return null;
-    const result = await archiveApplication(app);
-    return result.ok ? result.application : null;
+  ): Promise<AdminApplicationMutationResult> {
+    if (!permissions.canApproveApplications) {
+      return { ok: false, message: "Missing permission to archive applications." };
+    }
+    return archiveApplication(app);
   }
 
   return (

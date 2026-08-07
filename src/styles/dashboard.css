@@ -4138,6 +4138,54 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: rgba(255, 255, 255, 0.62);
 }
 
+.specialist-dash-notice__reason {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(248, 113, 113, 0.08);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: rgba(255, 228, 230, 0.92);
+}
+
+.specialist-dash-notice__reason-label {
+  font-weight: 600;
+  color: rgba(254, 202, 202, 0.98);
+}
+
+.specialist-dash-notice__actions {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+}
+
+.specialist-dash-notice__resubmit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.55rem 1rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.specialist-dash-notice__resubmit:disabled {
+  opacity: 0.55;
+}
+
+.specialist-dash-notice__error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: rgba(252, 165, 165, 0.95);
+}
+
 .specialist-dash-pending-preview {
   position: relative;
   border-radius: 1.25rem;

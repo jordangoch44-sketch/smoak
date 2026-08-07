@@ -6,6 +6,7 @@ import { AdminApplicationReviewPanel } from "@/components/admin/applications/Adm
 import { AdminClientApplicationReviewPanel } from "@/components/admin/applications/AdminClientApplicationReviewPanel";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
+import type { AdminApplicationMutationResult } from "@/lib/admin-applications-service";
 import { clientApplicationStatusLabel } from "@/lib/client-applications-service";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 import type { AdminPermissions } from "@/types/admin-permissions";
@@ -23,25 +24,21 @@ function formatSubmittedDate(iso: string | null): string {
   });
 }
 
+type SpecialistAppAction = (
+  app: SpecialistApplication
+) =>
+  | AdminApplicationMutationResult
+  | Promise<AdminApplicationMutationResult>;
+
 interface AdminApplicationsPanelProps {
   specialistApplications: readonly SpecialistApplication[];
   clientApplications: readonly ClientApplication[];
   permissions: AdminPermissions;
-  onSaveSpecialist: (
-    app: SpecialistApplication
-  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
-  onApproveSpecialist: (
-    app: SpecialistApplication
-  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
-  onRejectSpecialist: (
-    app: SpecialistApplication
-  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
-  onArchiveSpecialist: (
-    app: SpecialistApplication
-  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
-  onActivateSpecialist: (
-    app: SpecialistApplication
-  ) => SpecialistApplication | null | Promise<SpecialistApplication | null>;
+  onSaveSpecialist: SpecialistAppAction;
+  onApproveSpecialist: SpecialistAppAction;
+  onRejectSpecialist: SpecialistAppAction;
+  onArchiveSpecialist: SpecialistAppAction;
+  onActivateSpecialist: SpecialistAppAction;
   onSaveClient: (app: ClientApplication) => ClientApplication | null;
   onApproveClient: (app: ClientApplication) => ClientApplication | null;
   onRejectClient: (app: ClientApplication) => ClientApplication | null;
