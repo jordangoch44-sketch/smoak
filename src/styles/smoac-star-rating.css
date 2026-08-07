@@ -81,6 +81,15 @@
   color: rgba(255, 255, 255, 0.78);
 }
 
+.trainer-card-compact .smoac-star-rating--card {
+  flex-wrap: nowrap;
+}
+
+.trainer-card-compact .smoac-star-rating__count {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .trainer-card-grid__smoac-stars {
   color: rgba(255, 255, 255, 0.9);
 }

@@ -3,14 +3,9 @@
 import { TapLink } from "@/components/ui/TapLink";
 import type { Trainer } from "@/types";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
-import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
-import { LocationLabel } from "@/components/trainers/LocationLabel";
-import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
+import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
-import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
-import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { cn } from "@/lib/utils";
 
 interface Top50RankCardProps {
@@ -65,34 +60,18 @@ export function Top50RankCard({
           </div>
 
           <div className="top50-card__body">
-            <h3 className="top50-card__name">{trainer.name}</h3>
-            <TrainerProfessionLabel
+            <TrainerCardDetails
               trainer={trainer}
-              className="top50-card__profession"
+              nameClassName="top50-card__name"
+              professionClassName="top50-card__profession"
+              locationClassName="top50-card__location"
+              distanceClassName="top50-card__distance"
+              footerClassName="top50-card__footer"
+              ratingClassName="top50-card__smoac-stars"
+              priceClassName="top50-card__price"
+              avgRating={smoacRating}
+              reviewCount={smoacReviewCount}
             />
-            <LocationLabel
-              provider={trainer}
-              className="top50-card__location"
-            />
-            <TrainerDistanceLabel
-              trainer={trainer}
-              className="top50-card__distance"
-            />
-            <SpecialtyChips
-              specialties={trainer.specialty}
-              className="top50-card__chips specialty-chips--row"
-            />
-            <div className="top50-card__footer">
-              <TrainerCardSmoacRating
-                trainerId={trainer.id}
-                className="top50-card__smoac-stars"
-                avgRating={smoacRating}
-                reviewCount={smoacReviewCount}
-              />
-              <span className="top50-card__price">
-                {formatTrainerPriceLabel(trainer.pricePerSession)}
-              </span>
-            </div>
           </div>
         </article>
       </TapLink>

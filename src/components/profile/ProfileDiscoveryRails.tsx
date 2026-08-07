@@ -6,13 +6,10 @@ import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
-import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
-import { LocationLabel } from "@/components/trainers/LocationLabel";
-import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
+import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { useHydrated } from "@/hooks/useHydrated";
-import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import {
   getFeaturedSpecialistsNearTrainer,
   getSimilarSpecialists,
@@ -50,19 +47,14 @@ function SimilarSpecialistCard({
             <div className="home-portrait-card__scrim" aria-hidden />
           </div>
           <div className="home-portrait-card__body">
-            <h3 className="home-portrait-card__name">{trainer.name}</h3>
-            <TrainerProfessionLabel
+            <TrainerCardDetails
               trainer={trainer}
-              className="home-portrait-card__profession"
+              nameClassName="home-portrait-card__name"
+              professionClassName="home-portrait-card__profession"
+              locationClassName="home-portrait-card__location"
+              distanceClassName="home-portrait-card__distance"
+              footerClassName="home-portrait-card__meta"
             />
-            <LocationLabel
-              provider={trainer}
-              className="home-portrait-card__location"
-            />
-            <div className="home-portrait-card__meta">
-              <TrainerCardSmoacRating trainerId={trainer.id} />
-              <span>{formatTrainerPriceLabel(trainer.pricePerSession)}</span>
-            </div>
           </div>
         </article>
       </TapLink>

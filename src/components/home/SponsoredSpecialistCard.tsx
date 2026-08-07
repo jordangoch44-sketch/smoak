@@ -2,15 +2,9 @@
 
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
-import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
-import { LocationLabel } from "@/components/trainers/LocationLabel";
-import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
+import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
-import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
-import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { formatTrainerPriceLabel } from "@/lib/home-discovery";
-import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -62,36 +56,17 @@ export function SponsoredSpecialistCard({
 
         <div className="home-sponsored-card__body">
           <TapLink href={href} className="home-sponsored-card__identity">
-            <h3 className="home-sponsored-card__name">{trainer.name}</h3>
-            <TrainerProfessionLabel
+            <TrainerCardDetails
               trainer={trainer}
-              className="home-sponsored-card__profession"
-            />
-            <LocationLabel
-              provider={trainer}
-              className="home-sponsored-card__location"
-            />
-            <TrainerDistanceLabel
-              trainer={trainer}
-              className="home-sponsored-card__distance"
+              nameClassName="home-sponsored-card__name"
+              professionClassName="home-sponsored-card__profession"
+              locationClassName="home-sponsored-card__location"
+              distanceClassName="home-sponsored-card__distance"
+              footerClassName="home-sponsored-card__meta"
+              ratingClassName="home-sponsored-card__smoac-stars"
+              priceClassName="home-sponsored-card__price"
             />
           </TapLink>
-
-          <SpecialtyChips
-            specialties={getHomepageFeaturedSpecialties(trainer)}
-            maxVisible={2}
-            className="home-sponsored-card__chips specialty-chips--row"
-          />
-
-          <div className="home-sponsored-card__meta">
-            <TrainerCardSmoacRating
-              trainerId={trainer.id}
-              className="home-sponsored-card__smoac-stars"
-            />
-            <span className="home-sponsored-card__price">
-              {formatTrainerPriceLabel(trainer.pricePerSession)}
-            </span>
-          </div>
 
           <TapLink href={href} className="home-sponsored-card__cta">
             View Profile

@@ -4,12 +4,8 @@ import { useEffect, useMemo } from "react";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
-import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
-import { LocationLabel } from "@/components/trainers/LocationLabel";
-import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
+import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
-import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
-import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import {
   useActiveUserCoordinates,
@@ -20,7 +16,6 @@ import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
-import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
 
@@ -104,29 +99,14 @@ export function NewSpecialists({
                       <div className="home-portrait-card__scrim" aria-hidden />
                     </div>
                     <div className="home-portrait-card__body">
-                      <h3 className="home-portrait-card__name">{trainer.name}</h3>
-                      <TrainerProfessionLabel
+                      <TrainerCardDetails
                         trainer={trainer}
-                        className="home-portrait-card__profession"
+                        nameClassName="home-portrait-card__name"
+                        professionClassName="home-portrait-card__profession"
+                        locationClassName="home-portrait-card__location"
+                        distanceClassName="home-portrait-card__distance"
+                        footerClassName="home-portrait-card__meta"
                       />
-                      <LocationLabel
-                        provider={trainer}
-                        className="home-portrait-card__location"
-                      />
-                      <TrainerDistanceLabel
-                        trainer={trainer}
-                        className="home-portrait-card__distance"
-                      />
-                      <SpecialtyChips
-                        specialties={trainer.specialty}
-                        className="home-portrait-card__chips specialty-chips--row"
-                      />
-                      <div className="home-portrait-card__meta">
-                        <TrainerCardSmoacRating trainerId={trainer.id} />
-                        <span>
-                          {formatTrainerPriceLabel(trainer.pricePerSession)}
-                        </span>
-                      </div>
                     </div>
                   </article>
                 </TapLink>
