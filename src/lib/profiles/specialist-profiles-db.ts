@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SpecialistProfileRow } from "@/types/database";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
 import type { Trainer } from "@/types/trainer";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 
 export type SpecialistProfilesMutationResult =
   | { ok: true }
@@ -39,7 +40,16 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
       ...trainer,
       id: row.id,
       name: trainer.name || row.display_name || "",
-      profession: trainer.profession || row.profession || "",
+      profession: resolveTrainerProfessionCategory({
+        profession: trainer.profession || row.profession || "",
+        title: trainer.title || "",
+        specialty: trainer.specialty?.length
+          ? trainer.specialty
+          : asStringArray(row.specialty),
+      }) ||
+        trainer.profession ||
+        row.profession ||
+        "",
       city: trainer.city || row.city || "",
       state: trainer.state || row.state || "",
       neighborhood: trainer.neighborhood || row.neighborhood || "",

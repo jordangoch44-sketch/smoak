@@ -1,14 +1,6 @@
 import type { Trainer, TrainerFilters } from "@/types";
 import { trainerMatchesExploreLocation } from "@/lib/explore-location-filters";
-
-function matchesProfession(trainer: Trainer, profession: string): boolean {
-  const target = profession.trim().toLowerCase();
-  if (!target) return true;
-  if (trainer.profession.trim().toLowerCase() === target) return true;
-  /* Soft match — title / specialties often carry the category language */
-  if (trainer.title.toLowerCase().includes(target)) return true;
-  return trainer.specialty.some((s) => s.toLowerCase().includes(target));
-}
+import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 
 function matchesSpecialty(trainer: Trainer, specialty: string): boolean {
   const target = specialty.trim().toLowerCase();
@@ -32,7 +24,10 @@ export function filterTrainers(
     if (!trainerMatchesExploreLocation(trainer, filters)) {
       return false;
     }
-    if (filters.profession && !matchesProfession(trainer, filters.profession)) {
+    if (
+      filters.profession &&
+      !trainerMatchesProfessionCategory(trainer, filters.profession)
+    ) {
       return false;
     }
     if (filters.specialty && !matchesSpecialty(trainer, filters.specialty)) {

@@ -3,6 +3,7 @@ import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import type {
   SpecialistApplication,
   SpecialistOnboardingState,
@@ -76,12 +77,20 @@ export function applicationToTrainer(
   const photo =
     app.media.profilePhotoUrl.trim() || "/trainers/placeholder.jpg";
   const mediaUrls = linesToUrls(app.media.trainingVideoUrls);
+  const headline = app.headline.trim();
+  const specialties = Array.isArray(app.specialties) ? app.specialties : [];
+  const profession =
+    resolveTrainerProfessionCategory({
+      profession: app.professionalType,
+      title: headline,
+      specialty: specialties,
+    }) || app.professionalType.trim() || "Personal Trainer";
 
   return {
     id,
     name: app.displayName.trim() || app.fullName.trim() || "Specialist",
-    profession: app.professionalType || "Specialist",
-    title: app.headline.trim() || "Specialist",
+    profession,
+    title: headline || profession,
     location: location || "Your city",
     city: app.city.trim() || "City",
     state: app.state.trim() || "CA",
@@ -194,7 +203,12 @@ export function applicationToProfileOverrides(
     name: app.displayName.trim() || app.fullName.trim(),
     title: app.headline.trim(),
     gender: app.gender || "non-binary",
-    profession: app.professionalType,
+    profession:
+      resolveTrainerProfessionCategory({
+        profession: app.professionalType,
+        title: app.headline.trim(),
+        specialty: app.specialties,
+      }) || app.professionalType,
     specialty: app.specialties,
     certifications: app.certifications,
     city: app.city.trim(),

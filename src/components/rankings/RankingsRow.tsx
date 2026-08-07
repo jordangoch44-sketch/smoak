@@ -3,6 +3,7 @@ import type { SmoacRankedSpecialist } from "@/lib/smoac-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { SessionPrice } from "@/components/ui/SessionPrice";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { cn } from "@/lib/utils";
 
 interface RankingsRowProps {
@@ -38,7 +39,10 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
 
         <div className="rankings-row__identity">
           <h3 className="rankings-row__name">{trainer.name}</h3>
-          <p className="rankings-row__profession">{trainer.profession}</p>
+          <TrainerProfessionLabel
+            trainer={trainer}
+            className="rankings-row__profession"
+          />
           <p className="rankings-row__location">
             {formatProviderLocation(trainer)}
           </p>

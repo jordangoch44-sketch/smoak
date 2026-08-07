@@ -44,12 +44,15 @@ export const RANKINGS_CITY_OPTIONS = [
 export const RANKINGS_PROFESSION_OPTIONS = [
   { value: "", label: "All Professions" },
   { value: "personal-trainer", label: "Personal Trainer" },
+  { value: "strength-coach", label: "Strength Coach" },
   { value: "physical-therapist", label: "Physical Therapist" },
   { value: "chiropractor", label: "Chiropractor" },
   { value: "nutritionist", label: "Nutritionist" },
   { value: "massage-therapist", label: "Massage Therapist" },
   { value: "recovery-specialist", label: "Recovery Specialist" },
   { value: "wellness-coach", label: "Wellness Coach" },
+  { value: "yoga-instructor", label: "Yoga Instructor" },
+  { value: "running-coach", label: "Running Coach" },
 ] as const;
 
 /**

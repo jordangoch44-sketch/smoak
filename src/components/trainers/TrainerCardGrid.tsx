@@ -6,6 +6,7 @@ import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 
 interface TrainerCardGridProps {
@@ -42,7 +43,10 @@ export function TrainerCardGrid({
         <h3 className="text-lg font-medium tracking-tight text-white md:group-hover:text-accent">
           {trainer.name}
         </h3>
-        <p className="mt-1 text-sm text-silver-400">{trainer.profession}</p>
+        <TrainerProfessionLabel
+          trainer={trainer}
+          className="mt-1 text-sm text-silver-400"
+        />
         <p className="mt-0.5 text-xs text-silver-500">{trainer.title}</p>
         <LocationLabel
           provider={trainer}

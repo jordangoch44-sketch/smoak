@@ -8,6 +8,7 @@ import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { cn } from "@/lib/utils";
@@ -66,7 +67,10 @@ export function Top50RankCard({
 
           <div className="top50-card__body">
             <h3 className="top50-card__name">{trainer.name}</h3>
-            <p className="top50-card__profession">{trainer.profession}</p>
+            <TrainerProfessionLabel
+              trainer={trainer}
+              className="top50-card__profession"
+            />
             <LocationLabel
               provider={trainer}
               className="top50-card__location"

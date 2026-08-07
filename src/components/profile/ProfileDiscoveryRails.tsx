@@ -8,6 +8,7 @@ import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -50,7 +51,10 @@ function SimilarSpecialistCard({
           </div>
           <div className="home-portrait-card__body">
             <h3 className="home-portrait-card__name">{trainer.name}</h3>
-            <p className="home-portrait-card__profession">{trainer.profession}</p>
+            <TrainerProfessionLabel
+              trainer={trainer}
+              className="home-portrait-card__profession"
+            />
             <LocationLabel
               provider={trainer}
               className="home-portrait-card__location"

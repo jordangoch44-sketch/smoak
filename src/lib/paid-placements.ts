@@ -11,6 +11,7 @@ import {
   selectPlacementRailTrainers,
   type SponsoredRailResult,
 } from "@/lib/sponsored-rail";
+import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 import type { Trainer } from "@/types/trainer";
 
 function normalize(value: string): string {
@@ -43,12 +44,8 @@ export function trainerMatchesCategoryBrowse(
   const specialty = filters.specialty?.trim() ?? "";
   if (!profession && !specialty) return false;
 
-  if (profession) {
-    const p = normalize(profession);
-    const trainerProf = normalize(trainer.profession ?? "");
-    if (trainerProf && (trainerProf.includes(p) || p.includes(trainerProf))) {
-      return true;
-    }
+  if (profession && trainerMatchesProfessionCategory(trainer, profession)) {
+    return true;
   }
 
   if (specialty) {

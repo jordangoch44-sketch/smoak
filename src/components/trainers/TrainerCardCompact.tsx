@@ -6,6 +6,7 @@ import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { cn } from "@/lib/utils";
 
@@ -40,7 +41,10 @@ export function TrainerCardCompact({
       <div className="trainer-card-compact__body">
         <div className="trainer-card-compact__meta">
           <h3 className="trainer-card-compact__name">{trainer.name}</h3>
-          <p className="trainer-card-compact__profession">{trainer.profession}</p>
+          <TrainerProfessionLabel
+            trainer={trainer}
+            className="trainer-card-compact__profession"
+          />
           <LocationLabel
             provider={trainer}
             className="trainer-card-compact__location"

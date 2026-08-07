@@ -151,15 +151,34 @@ const PROFESSION_MAPPINGS: {
       "fitness coach",
       "sports performance coach",
       "performance coach",
-      "strength coach",
     ],
     profession: "Personal Trainer",
     label: "Personal Trainer",
   },
   {
+    phrases: ["strength coach", "strength coaching"],
+    profession: "Strength Coach",
+    label: "Strength Coach",
+  },
+  {
     phrases: ["wellness coach", "wellness coaching", "mobility specialist", "movement specialist"],
     profession: "Wellness Coach",
     label: "Wellness Coach",
+  },
+  {
+    phrases: ["yoga instructor", "yoga teacher", "yoga"],
+    profession: "Yoga Instructor",
+    label: "Yoga Instructor",
+  },
+  {
+    phrases: [
+      "running coach",
+      "run coach",
+      "marathon coach",
+      "endurance coach",
+    ],
+    profession: "Running Coach",
+    label: "Running Coach",
   },
 ];
 

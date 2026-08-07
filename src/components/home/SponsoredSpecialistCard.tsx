@@ -7,6 +7,7 @@ import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
@@ -62,9 +63,10 @@ export function SponsoredSpecialistCard({
         <div className="home-sponsored-card__body">
           <TapLink href={href} className="home-sponsored-card__identity">
             <h3 className="home-sponsored-card__name">{trainer.name}</h3>
-            <p className="home-sponsored-card__profession">
-              {trainer.profession}
-            </p>
+            <TrainerProfessionLabel
+              trainer={trainer}
+              className="home-sponsored-card__profession"
+            />
             <LocationLabel
               provider={trainer}
               className="home-sponsored-card__location"

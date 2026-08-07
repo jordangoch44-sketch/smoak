@@ -1,6 +1,7 @@
 import type { Trainer } from "@/types";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
 import { formatProviderLocation } from "@/lib/provider-location";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
   DashboardButton,
   DashboardMetricCard,
@@ -19,6 +20,9 @@ export function ProfileCompletionCard({
   trainer,
   checklist,
 }: ProfileCompletionCardProps) {
+  const profession = trainer
+    ? resolveTrainerProfessionCategory(trainer)
+    : "";
   return (
     <DashboardSection
       title="Profile completion"
@@ -31,7 +35,7 @@ export function ProfileCompletionCard({
           value={`${profileCompletion}%`}
           detail={
             trainer
-              ? `${trainer.profession} · ${formatProviderLocation(trainer)}`
+              ? `${profession || "Category needed"} · ${formatProviderLocation(trainer)}`
               : undefined
           }
           progress={profileCompletion}

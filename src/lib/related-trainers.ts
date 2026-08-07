@@ -2,13 +2,22 @@ import type { Trainer } from "@/types";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
 import { haversineMiles } from "@/lib/geo/haversine";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 
 /** Adjacent marketplace professions for “Similar specialists” rails */
 const RELATED_PROFESSIONS: Record<string, readonly string[]> = {
   "Personal Trainer": [
     "Personal Trainer",
+    "Strength Coach",
+    "Running Coach",
     "Wellness Coach",
     "Nutritionist",
+    "Recovery Specialist",
+  ],
+  "Strength Coach": [
+    "Strength Coach",
+    "Personal Trainer",
+    "Running Coach",
     "Recovery Specialist",
   ],
   "Physical Therapist": [
@@ -43,9 +52,22 @@ const RELATED_PROFESSIONS: Record<string, readonly string[]> = {
   ],
   "Wellness Coach": [
     "Wellness Coach",
+    "Yoga Instructor",
     "Nutritionist",
     "Personal Trainer",
     "Recovery Specialist",
+  ],
+  "Yoga Instructor": [
+    "Yoga Instructor",
+    "Wellness Coach",
+    "Personal Trainer",
+    "Recovery Specialist",
+  ],
+  "Running Coach": [
+    "Running Coach",
+    "Personal Trainer",
+    "Strength Coach",
+    "Wellness Coach",
   ],
 };
 
@@ -63,8 +85,12 @@ function specialtyOverlap(a: Trainer, b: Trainer): number {
 }
 
 function relatedProfessionRank(source: Trainer, candidate: Trainer): number {
-  const related = RELATED_PROFESSIONS[source.profession] ?? [source.profession];
-  const index = related.indexOf(candidate.profession);
+  const sourceProfession = resolveTrainerProfessionCategory(source);
+  const candidateProfession = resolveTrainerProfessionCategory(candidate);
+  const related =
+    RELATED_PROFESSIONS[sourceProfession] ??
+    (sourceProfession ? [sourceProfession] : []);
+  const index = related.indexOf(candidateProfession);
   if (index === -1) return -1;
   return related.length - index;
 }

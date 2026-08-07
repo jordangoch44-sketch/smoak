@@ -3,6 +3,7 @@
  * Does not use Google/catalog ★, Sponsored, or Pro.
  */
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import type { Trainer } from "@/types";
 
 export interface SmoacRankedSpecialist {
@@ -41,13 +42,19 @@ export function computeSmoacReviewSortScore(
 }
 
 const PROFESSION_FILTER_MATCHERS: Record<string, (profession: string) => boolean> = {
-  "personal-trainer": (p) => p === "personal trainer",
+  "personal-trainer": (p) =>
+    p === "personal trainer" ||
+    p === "strength coach" ||
+    p === "running coach",
+  "strength-coach": (p) => p === "strength coach",
   "physical-therapist": (p) => p === "physical therapist",
   chiropractor: (p) => p === "chiropractor",
   nutritionist: (p) => p === "nutritionist",
   "massage-therapist": (p) => p === "massage therapist",
   "recovery-specialist": (p) => p === "recovery specialist",
   "wellness-coach": (p) => p === "wellness coach",
+  "yoga-instructor": (p) => p === "yoga instructor",
+  "running-coach": (p) => p === "running coach",
 };
 
 function trainerMatchesCity(trainer: Trainer, cityFilter: string): boolean {
@@ -60,7 +67,7 @@ function trainerMatchesProfession(
   professionFilter: string
 ): boolean {
   if (!professionFilter.trim()) return true;
-  const profession = normalize(trainer.profession);
+  const profession = normalize(resolveTrainerProfessionCategory(trainer));
   const matcher = PROFESSION_FILTER_MATCHERS[professionFilter];
   return matcher?.(profession) ?? false;
 }

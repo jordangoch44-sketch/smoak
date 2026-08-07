@@ -18,6 +18,7 @@ import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 import { isLeaveReviewQuery } from "@/lib/reviews/leave-review-href";
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
 import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
 import {
@@ -228,7 +229,9 @@ export function TrainerProfilePageClient({
       <ProfileInquiryAction
         specialistId={trainer.id}
         specialistName={trainer.name}
-        specialistProfession={trainer.profession}
+        specialistProfession={
+          resolveTrainerProfessionCategory(trainer) || trainer.profession
+        }
         open={inquiryOpen}
         onOpenChange={setInquiryOpen}
         showButton={false}

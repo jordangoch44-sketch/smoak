@@ -18,6 +18,7 @@ import {
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { ShieldCheckIcon } from "@/components/ui/icons";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
@@ -160,7 +161,10 @@ export function ProfileHero({
                       </span>
                     ) : null}
                   </div>
-                  <p className="profile-hero__profession">{trainer.profession}</p>
+                  <TrainerProfessionLabel
+                    trainer={trainer}
+                    className="profile-hero__profession"
+                  />
                   {trainer.title ? (
                     <p className="profile-hero__specialty">{trainer.title}</p>
                   ) : null}
