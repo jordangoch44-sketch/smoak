@@ -28,6 +28,3 @@ export function TrainerDistanceLabel({
     <span className={cn("trainer-distance-label", className)}>{label}</span>
   );
 }
-
-/** @deprecated Use TrainerDistanceLabel */
-export const DevTrainerDistance = TrainerDistanceLabel;

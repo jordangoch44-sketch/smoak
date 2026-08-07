@@ -7,10 +7,6 @@
 interface CityRankingEntry {
   rank: number;
   trainerId: string;
-  smoacScore: number;
-  experienceYears: number;
-  /** Show “Top Rated” badge — default for podium ranks */
-  topRated?: boolean;
 }
 
 interface CityTop50Listing {
@@ -65,19 +61,19 @@ const SAN_DIEGO_TOP_50: CityTop50Listing = {
   displayTitle: "Top 50 in San Diego",
   subtitle: "The highest-rated health & wellness specialists near you.",
   entries: [
-    { rank: 1, trainerId: "anthony-brooks", smoacScore: 97, experienceYears: 8, topRated: true },
-    { rank: 2, trainerId: "elena-ramirez", smoacScore: 95, experienceYears: 10, topRated: true },
-    { rank: 3, trainerId: "marcus-lee", smoacScore: 94, experienceYears: 12, topRated: true },
-    { rank: 4, trainerId: "sophia-bennett", smoacScore: 93, experienceYears: 6, topRated: true },
-    { rank: 5, trainerId: "jordan-kim", smoacScore: 91, experienceYears: 7, topRated: true },
-    { rank: 6, trainerId: "elena-vasquez", smoacScore: 90, experienceYears: 9 },
-    { rank: 7, trainerId: "david-okonkwo", smoacScore: 89, experienceYears: 11 },
-    { rank: 8, trainerId: "marcus-chen", smoacScore: 88, experienceYears: 8 },
-    { rank: 9, trainerId: "sophia-laurent", smoacScore: 87, experienceYears: 10 },
-    { rank: 10, trainerId: "james-morrison", smoacScore: 86, experienceYears: 9 },
-    { rank: 11, trainerId: "amara-johnson", smoacScore: 85, experienceYears: 6 },
-    { rank: 12, trainerId: "kai-nakamura", smoacScore: 84, experienceYears: 5 },
-    { rank: 13, trainerId: "isabella-romano", smoacScore: 83, experienceYears: 7 },
+    { rank: 1, trainerId: "anthony-brooks" },
+    { rank: 2, trainerId: "elena-ramirez" },
+    { rank: 3, trainerId: "marcus-lee" },
+    { rank: 4, trainerId: "sophia-bennett" },
+    { rank: 5, trainerId: "jordan-kim" },
+    { rank: 6, trainerId: "elena-vasquez" },
+    { rank: 7, trainerId: "david-okonkwo" },
+    { rank: 8, trainerId: "marcus-chen" },
+    { rank: 9, trainerId: "sophia-laurent" },
+    { rank: 10, trainerId: "james-morrison" },
+    { rank: 11, trainerId: "amara-johnson" },
+    { rank: 12, trainerId: "kai-nakamura" },
+    { rank: 13, trainerId: "isabella-romano" },
   ],
 };
 

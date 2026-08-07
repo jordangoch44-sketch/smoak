@@ -74,12 +74,8 @@ const PERSONAL_TRAINER_FAMILY = new Set(
   ["Personal Trainer", "Strength Coach", "Running Coach"].map(normalizeKey)
 );
 
-export function isMainProfession(value: string): value is MainProfession {
-  return (MAIN_PROFESSION_CATEGORIES as readonly string[]).includes(value);
-}
-
 /** Map a raw profession / onboarding type to a main category, or null if unknown. */
-export function canonicalizeProfessionLabel(
+function canonicalizeProfessionLabel(
   raw: string | null | undefined
 ): MainProfession | null {
   const key = normalizeKey(raw ?? "");

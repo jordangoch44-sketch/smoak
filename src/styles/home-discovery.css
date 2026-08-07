@@ -452,23 +452,10 @@
   padding-top: 0.5rem;
 }
 
-.home-page--discovery .top50-card__rating {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  min-width: 0;
-  padding-top: 0;
-  color: rgba(255, 255, 255, 0.72);
-}
-
 .home-page--discovery .top50-card__price {
   flex-shrink: 0;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.48);
-}
-
-.home-page--discovery .top50-card__rating-count {
-  display: none;
 }
 
 /* Specialty browse cards */
@@ -714,12 +701,6 @@
   padding-top: 0.45rem;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.55);
-}
-
-.home-portrait-card__price {
-  margin: 0;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.38);
 }
 
 .home-portrait-card .trainer-card-save {

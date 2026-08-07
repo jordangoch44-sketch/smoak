@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 interface Top50RankCardProps {
   rank: number;
   trainer: Trainer;
-  showTopRatedBadge?: boolean;
   priority?: boolean;
   /** SMOAC review average — preferred over catalog/Google ★ */
   smoacRating?: number;

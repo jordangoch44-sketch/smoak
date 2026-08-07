@@ -14,7 +14,6 @@ export interface SmoacRankedSpecialist {
   sortScore: number;
   avgRating: number;
   reviewCount: number;
-  showTopRatedBadge: boolean;
 }
 
 export interface TrainerCityRankingLive {
@@ -152,7 +151,6 @@ export function buildSmoacRankingsBoard(
       sortScore: row.sortScore,
       avgRating: row.avgRating,
       reviewCount: row.reviewCount,
-      showTopRatedBadge: rank <= 5,
     };
   });
 }

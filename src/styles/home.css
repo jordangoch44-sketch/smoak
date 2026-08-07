@@ -1005,27 +1005,6 @@ button.smoked-glass:hover {
   color: var(--silver-400);
 }
 
-.top50-card__rating {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  min-width: 0;
-  font-size: 0.75rem;
-}
-
-.top50-card__star {
-  color: #fff;
-}
-
-.top50-card__rating-value {
-  font-weight: 500;
-  color: #fff;
-}
-
-.top50-card__rating-count {
-  color: var(--silver-400);
-}
-
 .top50-card .trainer-card-save {
   top: 0.5rem !important;
   right: 0.5rem !important;
@@ -1277,10 +1256,6 @@ button.smoked-glass:hover {
 
   .top50-card__chips.specialty-chips {
     margin-top: 0.3rem;
-  }
-
-  .top50-card__rating {
-    font-size: 0.6875rem;
   }
 }
 
