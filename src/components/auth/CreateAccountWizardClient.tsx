@@ -276,12 +276,16 @@ export function CreateAccountWizardClient({
 
   function handleContinue() {
     if (submitting) return;
-    if (step === 1 && state.accountType === "specialist") {
-      setShowSpecialistOnboarding(true);
-      setError(null);
-      return;
-    }
-    if (step === 1 && state.accountType === "client") {
+    if (step === 1) {
+      if (!state.accountType) {
+        setError("Choose Client or Health & Wellness Professional to continue.");
+        return;
+      }
+      if (state.accountType === "specialist") {
+        setShowSpecialistOnboarding(true);
+        setError(null);
+        return;
+      }
       setStep(2);
       setError(null);
       return;
@@ -293,7 +297,7 @@ export function CreateAccountWizardClient({
     }
     if (
       step === 4 &&
-      (state.accountType ?? "client") === "client" &&
+      state.accountType === "client" &&
       getClientAccountMissingFieldsForStep(4, state).length > 0
     ) {
       const labels = getClientAccountMissingFieldsForStep(4, state).map(
@@ -313,7 +317,13 @@ export function CreateAccountWizardClient({
   async function handleCreateAccount(force: boolean) {
     if (submitting) return;
 
-    const resolvedAccountType = state.accountType ?? "client";
+    if (!state.accountType) {
+      setError("Choose Client or Health & Wellness Professional to continue.");
+      setStep(1);
+      return;
+    }
+
+    const resolvedAccountType = state.accountType;
     const trimmedEmail = state.email.trim();
     const quickClient = resolvedAccountType === "client";
 
@@ -866,7 +876,9 @@ export function CreateAccountWizardClient({
                 type="button"
                 className="login-submit wizard-nav__continue"
                 onClick={handleContinue}
-                disabled={submitting}
+                disabled={
+                  submitting || (step === 1 && state.accountType == null)
+                }
               >
                 {submitting
                   ? "Creating account…"

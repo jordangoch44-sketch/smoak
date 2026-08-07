@@ -9,10 +9,6 @@ export interface OnboardingMissingField {
   label: string;
 }
 
-function hasCertificationEntry(certs: Certification[]): boolean {
-  return certs.some((cert) => cert.name.trim().length > 0);
-}
-
 function missingForStep(step: number, state: SpecialistOnboardingState): string[] {
   const missing: string[] = [];
 
@@ -29,6 +25,7 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       if (!isValidEmail(state.email)) missing.push("Valid email");
       if (state.password.trim().length < 8) missing.push("Password (8+ characters)");
       if (!state.phone.trim()) missing.push("Phone number");
+      if (!state.media.profilePhotoUrl.trim()) missing.push("Profile photo");
       break;
     case 3: {
       const zip = normalizeZipCode(state.zipCode);
@@ -44,14 +41,6 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       break;
     case 5:
       if (state.bio.trim().length < 40) missing.push("Short bio (about 40+ characters)");
-      if (
-        !state.media.profilePhotoUrl.trim() &&
-        !state.social.instagram?.trim() &&
-        !state.social.website?.trim() &&
-        !hasCertificationEntry(state.certifications)
-      ) {
-        missing.push("Photo, Instagram, website, or a certification");
-      }
       break;
     default:
       break;

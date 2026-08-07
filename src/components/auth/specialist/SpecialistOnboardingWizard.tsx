@@ -161,22 +161,31 @@ export function SpecialistOnboardingWizard({
   function handleContinue() {
     if (submitting) return;
 
-    /* Step 2 creates the login — never skip email/password. */
-    if (step === 2) {
-      if (!isValidEmail(state.email)) {
+    /* Hard-block empty required fields per step before advancing. */
+    if (step >= 1 && step <= 5) {
+      const stepGaps = getSpecialistOnboardingMissingFields(state).filter(
+        (field) => field.step === step
+      );
+      if (step === 2) {
+        if (!isValidEmail(state.email)) {
+          setPasswordFieldsError(false);
+          setError("Enter a valid email — you’ll use it to sign in.");
+          return;
+        }
+        if (state.password.trim().length < 8) {
+          flagPasswordFieldsError("Create a password with at least 8 characters.");
+          return;
+        }
+        if (state.password !== confirmPassword) {
+          flagPasswordFieldsError("Passwords do not match.");
+          return;
+        }
         setPasswordFieldsError(false);
-        setError("Enter a valid email — you’ll use it to sign in.");
+      }
+      if (stepGaps.length > 0) {
+        setError(`Complete required fields: ${stepGaps.map((g) => g.label).join(", ")}`);
         return;
       }
-      if (state.password.trim().length < 8) {
-        flagPasswordFieldsError("Create a password with at least 8 characters.");
-        return;
-      }
-      if (state.password !== confirmPassword) {
-        flagPasswordFieldsError("Passwords do not match.");
-        return;
-      }
-      setPasswordFieldsError(false);
     }
 
     if (step === 6) {

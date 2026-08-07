@@ -246,7 +246,7 @@ export function SpecialistOnboardingSteps({
             <label className="login-field">
               <span className="login-field__label">
                 Profile photo
-                <span className="login-field__label-hint">Optional</span>
+                <span className="login-field__label-hint">Required</span>
               </span>
               <input
                 type="file"
@@ -276,7 +276,7 @@ export function SpecialistOnboardingSteps({
                 </div>
               ) : (
                 <p className="wizard-field-hint">
-                  You can add or update this anytime after approval.
+                  Add a clear face or brand photo — clients see this on your card.
                 </p>
               )}
             </label>
