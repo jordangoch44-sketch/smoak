@@ -43,12 +43,14 @@ html.login-gate-open {
 
 .login-gate__close {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 0.5rem;
+  right: 0.5rem;
   z-index: 2;
   display: inline-flex;
-  height: 2rem;
-  width: 2rem;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  height: 2.75rem;
+  width: 2.75rem;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -56,6 +58,8 @@ html.login-gate-open {
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.72);
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease,

@@ -61,6 +61,7 @@ export function QuickClientAccountModal({
   const descId = useId();
   const formId = useId();
   const submittingRef = useRef(false);
+  const closingRef = useRef(false);
   const { refreshSession } = useAuthSession();
   const [view, setView] = useState<View>("signup");
   const [firstName, setFirstName] = useState("");
@@ -78,6 +79,7 @@ export function QuickClientAccountModal({
     setError(null);
     setSending(false);
     setPassword("");
+    closingRef.current = false;
   } else if (!open && syncedKey) {
     setSyncedKey("");
   }
@@ -90,7 +92,6 @@ export function QuickClientAccountModal({
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
-        console.info("[close-timing] save-modal click received", "escape", performance.now());
       document.body.classList.remove("login-gate-open");
       document.documentElement.classList.remove("login-gate-open");
       onClose();
@@ -101,7 +102,6 @@ export function QuickClientAccountModal({
       document.body.classList.remove("login-gate-open");
       document.documentElement.classList.remove("login-gate-open");
       window.removeEventListener("keydown", onKeyDown);
-        console.info("[close-timing] save-modal effect cleanup (chrome unlock)", performance.now());
     };
   }, [open, onClose]);
 
@@ -109,10 +109,10 @@ export function QuickClientAccountModal({
     const el =
       target instanceof Element ? target.closest(".login-gate") : null;
     if (el instanceof HTMLElement) {
-      el.hidden = true;
-      el.style.pointerEvents = "none";
+      /* Stay in the hit-test tree (no hidden / visibility:hidden / pointer-events:none)
+       * so the same iOS gesture cannot fall through to the heart and reopen. */
+      el.setAttribute("aria-hidden", "true");
       el.style.opacity = "0";
-      /* Drop expensive blur immediately — do not wait for React unmount. */
       el.style.backdropFilter = "none";
       el.style.setProperty("-webkit-backdrop-filter", "none");
     }
@@ -120,16 +120,16 @@ export function QuickClientAccountModal({
 
   function requestClose(
     source: "x" | "backdrop" | "link",
-    event: React.MouseEvent
+    event?: React.SyntheticEvent
   ) {
-    const t0 = performance.now();
-      console.info("[close-timing] save-modal click received", source, t0);
-    hideGateDom(event.currentTarget);
-      console.info("[close-timing] save-modal dom hidden", performance.now(), "Δms", Math.round(performance.now() - t0));
+    event?.preventDefault();
+    event?.stopPropagation();
+    if (closingRef.current) return;
+    closingRef.current = true;
+    hideGateDom(event?.currentTarget ?? null);
     document.body.classList.remove("login-gate-open");
     document.documentElement.classList.remove("login-gate-open");
     onClose();
-      console.info("[close-timing] save-modal onClose returned", performance.now(), "Δms", Math.round(performance.now() - t0));
   }
 
   async function handleQuickSignup() {
@@ -257,7 +257,14 @@ export function QuickClientAccountModal({
     <div
       className="login-gate"
       role="presentation"
-      onClick={(event) => requestClose("backdrop", event)}
+      onPointerUp={(event) => {
+        if (event.target !== event.currentTarget) return;
+        requestClose("backdrop", event);
+      }}
+      onClick={(event) => {
+        if (event.target !== event.currentTarget) return;
+        requestClose("backdrop", event);
+      }}
     >
       <div
         className={cn("login-gate__dialog", "login-gate__dialog--save")}
@@ -266,14 +273,19 @@ export function QuickClientAccountModal({
         aria-labelledby={titleId}
         aria-describedby={descId}
         onClick={(e) => e.stopPropagation()}
+        onPointerUp={(e) => e.stopPropagation()}
       >
         <div className="login-gate__glow" aria-hidden />
 
         <button
           type="button"
           className="smoac-control login-gate__close"
-          onClick={(event) => requestClose("x", event)}
           aria-label="Close"
+          onPointerUp={(event) => {
+            if (event.pointerType === "mouse" && event.button !== 0) return;
+            requestClose("x", event);
+          }}
+          onClick={(event) => requestClose("x", event)}
         >
           <CloseIcon className="h-4 w-4" />
         </button>

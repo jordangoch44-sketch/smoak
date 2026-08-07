@@ -41,7 +41,6 @@ export function SavedTrainersOverlayHost() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [successName, setSuccessName] = useState<string | undefined>();
   const lastConfirmRef = useRef<{ id: string; at: number } | null>(null);
-  const mountedAtRef = useRef<number | null>(null);
 
   const isClientWithSaves = useSyncExternalStore(
     subscribeAuthSession,
@@ -65,23 +64,6 @@ export function SavedTrainersOverlayHost() {
   );
   const isSavesReady =
     !isClientWithSaves || !isSavesLoading || savesError !== null;
-
-  useEffect(() => {
-    if (signup.open) {
-      mountedAtRef.current = performance.now();
-      console.info("[close-timing] save-modal mounted", mountedAtRef.current);
-      return;
-    }
-    if (mountedAtRef.current != null) {
-      console.info(
-        "[close-timing] save-modal unmounted",
-        performance.now(),
-        "Δms",
-        Math.round(performance.now() - mountedAtRef.current)
-      );
-      mountedAtRef.current = null;
-    }
-  }, [signup.open]);
 
   const showSavedConfirmation = useCallback((record: PendingSaveRecord) => {
     const now = Date.now();
@@ -119,7 +101,6 @@ export function SavedTrainersOverlayHost() {
   }, [isClientWithSaves, isSavesReady, showSavedConfirmation]);
 
   const handleCloseSignup = useCallback(() => {
-    console.info("[close-timing] save-modal onClose()", performance.now());
     closeSaveSignupModal();
   }, []);
 
