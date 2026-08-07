@@ -1,10 +1,10 @@
-/* Shared listing-card copy stack — name → category → location → distance → ★ · price */
+/* Shared listing-card copy stack — name → category → location → distance → reviews → price */
 
 .trainer-card-details {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: 0;
+  gap: 0.28rem;
 }
 
 .trainer-card-details__name {
@@ -18,7 +18,7 @@
 }
 
 .trainer-card-details__profession {
-  margin: 0.15rem 0 0;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -27,12 +27,34 @@
 }
 
 .trainer-card-details__location.provider-location {
-  margin-top: 0.2rem;
+  margin: 0;
 }
 
 .trainer-card-details__distance {
   display: block;
-  margin-top: 0.1rem;
+  margin: 0;
+}
+
+.trainer-card-details__rating {
+  min-width: 0;
+}
+
+.trainer-card-details__price {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+
+/* Search / list cards — reviews then price, evenly spaced under location */
+.trainer-card-details--stack {
+  justify-content: flex-start;
+}
+
+/* Portrait / sponsored — reviews · price pinned to bottom as one row */
+.trainer-card-details--inline {
+  flex: 1 1 auto;
 }
 
 .trainer-card-details__footer {
@@ -45,17 +67,12 @@
   min-width: 0;
 }
 
-.trainer-card-details__rating {
-  min-width: 0;
+.trainer-card-details__footer .trainer-card-details__rating {
   flex: 1 1 auto;
 }
 
-.trainer-card-details__price {
+.trainer-card-details__footer .trainer-card-details__price {
   flex-shrink: 0;
-  font-size: 0.75rem;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.55);
-  white-space: nowrap;
 }
 
 /* Desktop grid card */
@@ -112,7 +129,7 @@
 .trainer-card-grid__body {
   flex: 1 1 auto;
   padding: 1rem 1.125rem 1.125rem;
-  min-height: 9rem;
+  min-height: 0;
 }
 
 .trainer-card-grid__name {
@@ -134,10 +151,6 @@
 .trainer-card-grid__distance {
   color: rgba(125, 211, 252, 0.88);
   font-size: 0.75rem;
-}
-
-.trainer-card-grid__footer {
-  padding-top: 0.75rem;
 }
 
 .trainer-card-grid__price {

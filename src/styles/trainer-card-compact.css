@@ -23,12 +23,12 @@
 .trainer-card-compact {
   display: flex;
   flex-direction: row;
-  align-items: stretch;
+  align-items: flex-start;
   gap: 0.75rem;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 10.75rem;
+  min-height: 0;
   max-height: none;
   padding: 0.875rem 0.8125rem;
   overflow: hidden;
@@ -60,7 +60,8 @@
   width: 0;
   min-width: 0;
   flex-direction: column;
-  gap: 0;
+  justify-content: flex-start;
+  gap: 0.28rem;
   min-height: 0;
   overflow: visible;
   padding-right: 2.75rem;
@@ -79,7 +80,7 @@
 }
 
 .trainer-card-compact__profession {
-  margin: 0.15rem 0 0;
+  margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -89,40 +90,28 @@
 }
 
 .trainer-card-compact__location.provider-location {
-  margin-top: 0.2rem;
+  margin: 0;
 }
 
 .trainer-card-compact__distance {
   display: block;
-  margin-top: 0.1rem;
-}
-
-.trainer-card-compact__footer {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-top: auto;
-  padding-top: 0.45rem;
-  min-width: 0;
+  margin: 0;
 }
 
 .trainer-card-compact__price {
   margin: 0;
-  flex-shrink: 0;
   font-size: 0.75rem;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.55);
   white-space: nowrap;
-  text-align: right;
+  text-align: left;
 }
 
 /* Featured specialists — compact mobile cards (iPhone-first, 390–430px) */
 .trainer-card-compact--featured {
-  align-items: stretch;
+  align-items: flex-start;
   gap: 0.625rem;
-  min-height: 10.25rem;
+  min-height: 0;
   max-height: none;
   height: auto;
   padding: 0.625rem 0.75rem;
@@ -135,7 +124,7 @@
 }
 
 .trainer-card-compact--featured .trainer-card-compact__body {
-  gap: 0;
+  gap: 0.28rem;
   padding-right: 3.25rem;
 }
 
@@ -144,19 +133,16 @@
 }
 
 .trainer-card-compact--featured .trainer-card-compact__profession {
-  margin-top: 0.15rem;
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.62);
 }
 
 .trainer-card-compact--featured .trainer-card-compact__location {
-  margin-top: 0.2rem;
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.32);
 }
 
 .trainer-card-compact--featured .trainer-card-compact__distance {
-  margin-top: 0.1rem;
   line-height: 1.3;
 }
 
@@ -164,22 +150,11 @@
   color: rgba(125, 211, 252, 0.92);
 }
 
-.trainer-card-compact--featured .trainer-card-compact__footer {
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: auto;
-  padding-top: 0.45rem;
-}
-
 .home-featured .trainer-card-list {
   gap: 0.75rem;
 }
 
 @media (min-width: 390px) and (max-width: 767px) {
-  .trainer-card-compact--featured {
-    min-height: 10.5rem;
-  }
-
   .trainer-card-compact--featured .trainer-card-compact__media {
     height: 9rem;
   }

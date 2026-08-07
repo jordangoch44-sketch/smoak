@@ -993,7 +993,7 @@
 
 .explore-page .trainer-card-compact {
   gap: 0.875rem;
-  min-height: 11.5rem;
+  min-height: 0;
   max-height: none;
   padding: 0.95rem;
 }
@@ -1013,24 +1013,17 @@
 }
 
 .explore-page .trainer-card-compact__profession {
-  margin-top: 0.15rem;
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.58);
 }
 
 .explore-page .trainer-card-compact__location {
-  margin-top: 0.2rem;
   color: rgba(255, 255, 255, 0.38);
 }
 
 .explore-page .trainer-card-compact__distance,
 .explore-page .trainer-distance-label {
-  margin-top: 0.1rem;
   color: rgba(125, 211, 252, 0.88);
-}
-
-.explore-page .trainer-card-compact__footer {
-  padding-top: 0.45rem;
 }
 
 .explore-page .trainer-card-compact__price {

@@ -71,6 +71,7 @@ export function Top50RankCard({
               priceClassName="top50-card__price"
               avgRating={smoacRating}
               reviewCount={smoacReviewCount}
+              metaLayout="inline"
             />
           </div>
         </article>

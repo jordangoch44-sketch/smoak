@@ -34,9 +34,9 @@ export function TrainerCardGrid({
         professionClassName="trainer-card-grid__profession"
         locationClassName="trainer-card-grid__location"
         distanceClassName="trainer-card-grid__distance"
-        footerClassName="trainer-card-grid__footer"
         ratingClassName="trainer-card-grid__smoac-stars"
         priceClassName="trainer-card-grid__price"
+        metaLayout="stack"
       />
     </article>
   );

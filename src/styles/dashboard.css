@@ -3608,23 +3608,11 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     box-sizing: border-box;
   }
 
-  .dashboard-page .trainer-card-compact__footer {
-    min-width: 0;
-    gap: 0.375rem;
-  }
-
-  .dashboard-page .trainer-card-compact__smoac-stars,
-  .dashboard-page .trainer-card-details__rating {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-  }
-
   .dashboard-page .trainer-card-compact__price,
   .dashboard-page .trainer-card-details__price {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-width: 0;
-    max-width: 48%;
+    max-width: none;
   }
 
   .dashboard-page .session-price--compact {

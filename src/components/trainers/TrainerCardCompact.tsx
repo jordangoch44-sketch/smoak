@@ -40,9 +40,9 @@ export function TrainerCardCompact({
         professionClassName="trainer-card-compact__profession"
         locationClassName="trainer-card-compact__location"
         distanceClassName="trainer-card-compact__distance"
-        footerClassName="trainer-card-compact__footer"
         ratingClassName="trainer-card-compact__smoac-stars"
         priceClassName="trainer-card-compact__price"
+        metaLayout="stack"
       />
     </article>
   );

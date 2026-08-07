@@ -36,9 +36,11 @@ export function SaveSuccessModal({
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.classList.remove("login-gate-open");
-      document.documentElement.classList.remove("login-gate-open");
       window.removeEventListener("keydown", onKeyDown);
+      requestAnimationFrame(() => {
+        document.body.classList.remove("login-gate-open");
+        document.documentElement.classList.remove("login-gate-open");
+      });
     };
   }, [open, onClose]);
 
@@ -51,9 +53,10 @@ export function SaveSuccessModal({
     if (el instanceof HTMLElement) {
       el.setAttribute("aria-hidden", "true");
       el.classList.add("login-gate--dismissed");
+      el.style.setProperty("display", "none", "important");
+      el.style.setProperty("pointer-events", "none", "important");
+      el.style.setProperty("opacity", "0", "important");
     }
-    document.body.classList.remove("login-gate-open");
-    document.documentElement.classList.remove("login-gate-open");
     requestAnimationFrame(() => onClose());
   }
 
@@ -87,7 +90,7 @@ export function SaveSuccessModal({
           type="button"
           className="smoac-control login-gate__close"
           aria-label="Close"
-          onPointerUp={(event) => {
+          onPointerDown={(event) => {
             if (event.pointerType === "mouse" && event.button !== 0) return;
             dismissNow(event.currentTarget);
           }}

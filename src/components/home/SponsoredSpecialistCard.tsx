@@ -65,6 +65,7 @@ export function SponsoredSpecialistCard({
               footerClassName="home-sponsored-card__meta"
               ratingClassName="home-sponsored-card__smoac-stars"
               priceClassName="home-sponsored-card__price"
+              metaLayout="inline"
             />
           </TapLink>
 

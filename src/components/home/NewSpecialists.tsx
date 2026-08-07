@@ -106,6 +106,7 @@ export function NewSpecialists({
                         locationClassName="home-portrait-card__location"
                         distanceClassName="home-portrait-card__distance"
                         footerClassName="home-portrait-card__meta"
+                        metaLayout="inline"
                       />
                     </div>
                   </article>

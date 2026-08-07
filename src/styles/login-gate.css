@@ -20,9 +20,24 @@ html.login-gate-open {
   isolation: isolate;
 }
 
-/* Instant visual dismiss — do not wait for React unmount / blur teardown */
 .login-gate--dismissed {
   display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .login-gate__glow {
+    display: none;
+  }
+
+  .login-gate__dialog {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 12px 32px rgba(0, 0, 0, 0.45);
+    animation: none;
+  }
 }
 
 .login-gate__dialog {

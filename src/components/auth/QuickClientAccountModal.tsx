@@ -84,12 +84,38 @@ export function QuickClientAccountModal({
     setSyncedKey("");
   }
 
+  function hideGateDom(target: EventTarget | null) {
+    const el =
+      (target instanceof Element ? target.closest(".login-gate") : null) ??
+      document.querySelector(".login-gate");
+    if (!(el instanceof HTMLElement)) return;
+
+    el.setAttribute("aria-hidden", "true");
+    el.classList.add("login-gate--dismissed");
+    /* Inline display:none wins immediately — do not wait on class cascade / React. */
+    el.style.setProperty("display", "none", "important");
+    el.style.setProperty("pointer-events", "none", "important");
+    el.style.setProperty("opacity", "0", "important");
+    el.style.backdropFilter = "none";
+    el.style.setProperty("-webkit-backdrop-filter", "none");
+    el.querySelectorAll<HTMLElement>(".login-gate__dialog").forEach((dialog) => {
+      dialog.style.animation = "none";
+      dialog.style.setProperty("display", "none", "important");
+      dialog.style.backdropFilter = "none";
+      dialog.style.setProperty("-webkit-backdrop-filter", "none");
+    });
+  }
+
   function dismissGateNow(target: EventTarget | null = null) {
     if (closingRef.current) return;
     closingRef.current = true;
+    /*
+     * Hide in this gesture turn, then defer React/store close until after paint.
+     * Sync closeSaveSignupModal() re-renders before the browser can paint
+     * display:none; unlocking .app-main scroll then reflows Explore and the
+     * dismiss feels multi-second on Search (iPhone).
+     */
     hideGateDom(target);
-    document.body.classList.remove("login-gate-open");
-    document.documentElement.classList.remove("login-gate-open");
     requestAnimationFrame(() => {
       onClose();
     });
@@ -108,29 +134,14 @@ export function QuickClientAccountModal({
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.classList.remove("login-gate-open");
-      document.documentElement.classList.remove("login-gate-open");
       window.removeEventListener("keydown", onKeyDown);
+      /* Unlock after the closed frame paints — Explore reflow stays off the critical path. */
+      requestAnimationFrame(() => {
+        document.body.classList.remove("login-gate-open");
+        document.documentElement.classList.remove("login-gate-open");
+      });
     };
   }, [open, onClose]);
-
-  function hideGateDom(target: EventTarget | null) {
-    const el =
-      (target instanceof Element ? target.closest(".login-gate") : null) ??
-      document.querySelector(".login-gate");
-    if (!(el instanceof HTMLElement)) return;
-
-    el.setAttribute("aria-hidden", "true");
-    el.classList.add("login-gate--dismissed");
-    /* Kill filters before React unmount — iOS can stall for seconds on blur teardown. */
-    el.style.backdropFilter = "none";
-    el.style.setProperty("-webkit-backdrop-filter", "none");
-    el.querySelectorAll<HTMLElement>(".login-gate__dialog").forEach((dialog) => {
-      dialog.style.animation = "none";
-      dialog.style.backdropFilter = "none";
-      dialog.style.setProperty("-webkit-backdrop-filter", "none");
-    });
-  }
 
   function requestClose(
     _source: "x" | "backdrop" | "link",
@@ -290,8 +301,9 @@ export function QuickClientAccountModal({
           type="button"
           className="smoac-control login-gate__close"
           aria-label="Close"
-          onPointerUp={(event) => {
+          onPointerDown={(event) => {
             if (event.pointerType === "mouse" && event.button !== 0) return;
+            /* Dismiss on press — waiting for click/up feels laggy on iOS. */
             requestClose("x", event);
           }}
           onClick={(event) => requestClose("x", event)}
