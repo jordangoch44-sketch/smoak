@@ -3,12 +3,12 @@ import { cn } from "@/lib/utils";
 import type { Trainer } from "@/types";
 
 interface LocationLabelProps {
-  provider: Pick<Trainer, "city" | "neighborhood">;
+  provider: Pick<Trainer, "city" | "neighborhood" | "zipCode">;
   className?: string;
   as?: "p" | "span";
 }
 
-/** Renders neighborhood/city, or nothing when both are empty. */
+/** Renders neighborhood/city/ZIP, or nothing when all are empty. */
 export function LocationLabel({
   provider,
   className,

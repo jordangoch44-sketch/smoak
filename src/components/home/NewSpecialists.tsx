@@ -8,6 +8,7 @@ import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import {
   useActiveUserCoordinates,
@@ -18,10 +19,7 @@ import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
-import {
-  formatTrainerPriceLabel,
-  formatTrainerRatingLabel,
-} from "@/lib/home-discovery";
+import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
 
@@ -122,16 +120,7 @@ export function NewSpecialists({
                         className="home-portrait-card__chips specialty-chips--row"
                       />
                       <div className="home-portrait-card__meta">
-                        <span>
-                          {trainer.reviewCount > 0 ? (
-                            <>
-                              <span aria-hidden>★ </span>
-                              {formatTrainerRatingLabel(trainer)}
-                            </>
-                          ) : (
-                            formatTrainerRatingLabel(trainer)
-                          )}
-                        </span>
+                        <TrainerCardSmoacRating trainerId={trainer.id} />
                         <span>
                           {formatTrainerPriceLabel(trainer.pricePerSession)}
                         </span>

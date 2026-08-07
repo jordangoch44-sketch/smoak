@@ -1,16 +1,22 @@
 import type { Trainer } from "@/types";
 
 /**
- * Card / profile line: “Neighborhood, City”.
- * Omits blanks and trailing commas when either part is missing.
+ * Card / profile line: “Neighborhood, City · ZIP”.
+ * Omits blanks; never trailing commas or lone separators.
  */
 export function formatProviderLocation(
-  provider: Pick<Trainer, "city" | "neighborhood">
+  provider: Pick<Trainer, "city" | "neighborhood" | "zipCode">
 ): string {
   const neighborhood = provider.neighborhood?.trim() ?? "";
   const city = provider.city?.trim() ?? "";
-  if (neighborhood && city) return `${neighborhood}, ${city}`;
-  return neighborhood || city;
+  const zip = provider.zipCode?.trim() ?? "";
+
+  let place = "";
+  if (neighborhood && city) place = `${neighborhood}, ${city}`;
+  else place = neighborhood || city;
+
+  if (place && zip) return `${place} · ${zip}`;
+  return place || zip;
 }
 
 /**

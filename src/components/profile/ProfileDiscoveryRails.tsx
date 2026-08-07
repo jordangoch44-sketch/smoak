@@ -6,13 +6,12 @@ import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
+import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { useHydrated } from "@/hooks/useHydrated";
-import {
-  formatTrainerPriceLabel,
-  formatTrainerRatingLabel,
-} from "@/lib/home-discovery";
+import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import {
   getFeaturedSpecialistsNearTrainer,
   getSimilarSpecialists,
@@ -52,21 +51,14 @@ function SimilarSpecialistCard({
           <div className="home-portrait-card__body">
             <h3 className="home-portrait-card__name">{trainer.name}</h3>
             <p className="home-portrait-card__profession">{trainer.profession}</p>
+            <LocationLabel
+              provider={trainer}
+              className="home-portrait-card__location"
+            />
             <div className="home-portrait-card__meta">
-              <span>
-                {trainer.reviewCount > 0 ? (
-                  <>
-                    <span aria-hidden>★ </span>
-                    {formatTrainerRatingLabel(trainer)}
-                  </>
-                ) : (
-                  formatTrainerRatingLabel(trainer)
-                )}
-              </span>
+              <TrainerCardSmoacRating trainerId={trainer.id} />
+              <span>{formatTrainerPriceLabel(trainer.pricePerSession)}</span>
             </div>
-            <p className="home-portrait-card__price">
-              {formatTrainerPriceLabel(trainer.pricePerSession)}
-            </p>
           </div>
         </article>
       </TapLink>

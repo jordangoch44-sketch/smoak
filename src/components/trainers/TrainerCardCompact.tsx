@@ -5,8 +5,7 @@ import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
-import { SmoacStarRating } from "@/components/reviews/SmoacStarRating";
-import { useSmoacReviewAggregate } from "@/hooks/useSmoacReviewAggregate";
+import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { cn } from "@/lib/utils";
 
@@ -24,8 +23,6 @@ export function TrainerCardCompact({
   priority = false,
   layout = "default",
 }: TrainerCardCompactProps) {
-  const smoac = useSmoacReviewAggregate(trainer.id);
-
   return (
     <article
       className={cn(
@@ -60,10 +57,8 @@ export function TrainerCardCompact({
         />
 
         <div className="trainer-card-compact__footer">
-          <SmoacStarRating
-            size="card"
-            reviewCount={smoac.reviewCount}
-            avgRating={smoac.avgRating}
+          <TrainerCardSmoacRating
+            trainerId={trainer.id}
             className="trainer-card-compact__smoac-stars"
           />
           <SessionPrice

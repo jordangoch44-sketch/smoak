@@ -88,3 +88,16 @@
 .trainer-card-compact__smoac-stars {
   min-width: 0;
 }
+
+.home-portrait-card__meta .smoac-star-rating,
+.home-sponsored-card__meta .smoac-star-rating,
+.top50-card__footer .smoac-star-rating {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.home-portrait-card__meta > span:last-child,
+.home-sponsored-card__price,
+.top50-card__price {
+  flex-shrink: 0;
+}

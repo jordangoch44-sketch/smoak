@@ -7,11 +7,9 @@ import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import {
-  formatTrainerPriceLabel,
-  formatTrainerRatingLabel,
-} from "@/lib/home-discovery";
+import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { cn } from "@/lib/utils";
 
 interface Top50RankCardProps {
@@ -33,17 +31,6 @@ export function Top50RankCard({
 }: Top50RankCardProps) {
   const href = `/trainers/${trainer.id}`;
   const isPodium = rank <= 3;
-  const ratingLabel =
-    smoacRating != null && smoacRating > 0
-      ? `${smoacRating.toFixed(1)}${
-          smoacReviewCount != null ? ` (${smoacReviewCount})` : ""
-        }`
-      : trainer.reviewCount > 0
-        ? formatTrainerRatingLabel(trainer)
-        : "New";
-
-  const showStar =
-    (smoacRating != null && smoacRating > 0) || trainer.reviewCount > 0;
 
   return (
     <div
@@ -93,16 +80,12 @@ export function Top50RankCard({
               className="top50-card__chips specialty-chips--row"
             />
             <div className="top50-card__footer">
-              <div className="top50-card__rating">
-                {showStar ? (
-                  <span className="top50-card__star" aria-hidden>
-                    ★
-                  </span>
-                ) : null}
-                <span className="top50-card__rating-value">
-                  {ratingLabel}
-                </span>
-              </div>
+              <TrainerCardSmoacRating
+                trainerId={trainer.id}
+                className="top50-card__smoac-stars"
+                avgRating={smoacRating}
+                reviewCount={smoacReviewCount}
+              />
               <span className="top50-card__price">
                 {formatTrainerPriceLabel(trainer.pricePerSession)}
               </span>

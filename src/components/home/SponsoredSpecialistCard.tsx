@@ -6,11 +6,9 @@ import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import {
-  formatTrainerPriceLabel,
-  formatTrainerRatingLabel,
-} from "@/lib/home-discovery";
+import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
@@ -84,15 +82,10 @@ export function SponsoredSpecialistCard({
           />
 
           <div className="home-sponsored-card__meta">
-            <span className="home-sponsored-card__rating">
-              {trainer.reviewCount > 0 ? (
-                <>
-                  <span aria-hidden>★</span> {formatTrainerRatingLabel(trainer)}
-                </>
-              ) : (
-                formatTrainerRatingLabel(trainer)
-              )}
-            </span>
+            <TrainerCardSmoacRating
+              trainerId={trainer.id}
+              className="home-sponsored-card__smoac-stars"
+            />
             <span className="home-sponsored-card__price">
               {formatTrainerPriceLabel(trainer.pricePerSession)}
             </span>
