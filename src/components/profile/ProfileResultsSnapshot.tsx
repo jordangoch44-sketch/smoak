@@ -20,14 +20,6 @@ export function ProfileResultsSnapshot({
 
   const stats: string[] = [...resultItems];
 
-  if (
-    typeof trainer.reviewCount === "number" &&
-    Number.isFinite(trainer.reviewCount) &&
-    trainer.reviewCount > 0
-  ) {
-    stats.push(`${trainer.reviewCount} Reviews`);
-  }
-
   if (stats.length === 0) return null;
 
   const grid = (

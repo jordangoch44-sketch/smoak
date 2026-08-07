@@ -1,13 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { LOGO_SRC } from "@/lib/brand";
 import {
-  formatSmoacReviewCountLabel,
   type SpecialistReview,
   type SpecialistReviewAggregate,
 } from "@/lib/reviews/specialist-review-types";
-import { formatTrainerRating } from "@/lib/utils";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
 import { WriteSpecialistReviewModal } from "./WriteSpecialistReviewModal";
@@ -50,7 +46,6 @@ function StarRow({ rating }: { rating: number }) {
 export function SmoacReviewsSection({
   specialistId,
   specialistName,
-  aggregate,
   reviews,
   hasMore,
   loadingMore,
@@ -60,8 +55,6 @@ export function SmoacReviewsSection({
   onSubmitted,
   canLeaveReview = false,
 }: SmoacReviewsSectionProps) {
-  const count = aggregate.reviewCount;
-  const avg = aggregate.avgRating;
   const firstName = specialistName.trim().split(/\s+/)[0] || specialistName;
 
   return (
@@ -73,33 +66,6 @@ export function SmoacReviewsSection({
         aria-label="SMOAC Reviews"
       >
         <ProfileSectionHeader title="SMOAC Reviews" />
-
-        <div className="smoac-reviews-summary">
-          <Image
-            src={LOGO_SRC}
-            alt=""
-            width={22}
-            height={22}
-            className="smoac-reviews-summary__mark"
-          />
-          {count > 0 && avg != null ? (
-            <p className="smoac-reviews-summary__text">
-              <span className="smoac-reviews-summary__score">
-                {formatTrainerRating(avg)}
-              </span>
-              <span className="smoac-reviews-summary__dot" aria-hidden>
-                ·
-              </span>
-              <span>{formatSmoacReviewCountLabel(count)}</span>
-            </p>
-          ) : (
-            <p className="smoac-reviews-summary__text">New on SMOAK</p>
-          )}
-        </div>
-
-        <p className="smoac-reviews-summary__note">
-          SMOAC Client Reviews · Submitted by signed-in SMOAC clients
-        </p>
 
         {canLeaveReview ? (
           <button

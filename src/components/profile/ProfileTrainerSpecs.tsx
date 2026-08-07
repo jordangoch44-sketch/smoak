@@ -37,7 +37,6 @@ export function ProfileTrainerSpecs({ trainer }: ProfileTrainerSpecsProps) {
     nonEmptyStrings(trainer.specialty).length > 0 ||
     nonEmptyStrings(trainer.sessionExperience).length > 0 ||
     nonEmptyStrings(trainer.resultsSnapshot ?? []).length > 0 ||
-    (typeof trainer.reviewCount === "number" && trainer.reviewCount > 0) ||
     (Array.isArray(trainer.certifications) &&
       trainer.certifications.some(
         (cert) => cert && typeof cert.name === "string" && cert.name.trim().length > 0
