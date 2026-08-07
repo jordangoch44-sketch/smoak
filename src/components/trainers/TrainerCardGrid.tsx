@@ -1,9 +1,12 @@
+"use client";
+
 import type { Trainer } from "@/types";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
-import { formatTrainerRatingLabel } from "@/lib/home-discovery";
+import { SmoacStarRating } from "@/components/reviews/SmoacStarRating";
+import { useSmoacReviewAggregate } from "@/hooks/useSmoacReviewAggregate";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 
 interface TrainerCardGridProps {
@@ -16,7 +19,7 @@ export function TrainerCardGrid({
   trainer,
   priority = false,
 }: TrainerCardGridProps) {
-  const hasReviews = trainer.reviewCount > 0;
+  const smoac = useSmoacReviewAggregate(trainer.id);
 
   return (
     <article className="hidden flex-col overflow-hidden rounded-2xl border border-white/5 bg-graphite-900 transition-all duration-300 active:scale-[0.99] active:border-white/10 active:bg-graphite-800 md:flex md:group-hover:border-white/10 md:group-hover:bg-graphite-800">
@@ -31,19 +34,12 @@ export function TrainerCardGrid({
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
         <div className="pointer-events-none absolute right-4 bottom-4 left-4">
-          <div className="flex items-center gap-1 text-sm text-silver-200">
-            {hasReviews ? (
-              <>
-                <span className="text-white">★</span>
-                <span className="font-medium text-white">
-                  {formatTrainerRatingLabel(trainer)}
-                </span>
-                <span className="text-silver-400">({trainer.reviewCount})</span>
-              </>
-            ) : (
-              <span className="font-medium text-silver-200">New on SMOAC</span>
-            )}
-          </div>
+          <SmoacStarRating
+            size="card"
+            reviewCount={smoac.reviewCount}
+            avgRating={smoac.avgRating}
+            className="trainer-card-grid__smoac-stars"
+          />
         </div>
       </div>
 

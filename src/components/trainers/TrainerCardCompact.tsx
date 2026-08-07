@@ -1,9 +1,12 @@
+"use client";
+
 import type { Trainer } from "@/types";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { SpecialtyChips } from "@/components/trainers/SpecialtyChips";
 import { SessionPrice } from "@/components/ui/SessionPrice";
-import { formatTrainerRatingLabel } from "@/lib/home-discovery";
+import { SmoacStarRating } from "@/components/reviews/SmoacStarRating";
+import { useSmoacReviewAggregate } from "@/hooks/useSmoacReviewAggregate";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +24,7 @@ export function TrainerCardCompact({
   priority = false,
   layout = "default",
 }: TrainerCardCompactProps) {
-  const hasReviews = trainer.reviewCount > 0;
+  const smoac = useSmoacReviewAggregate(trainer.id);
 
   return (
     <article
@@ -57,21 +60,12 @@ export function TrainerCardCompact({
         />
 
         <div className="trainer-card-compact__footer">
-          <div className="trainer-card-compact__rating">
-            {hasReviews ? (
-              <>
-                <span className="trainer-card-compact__rating-star" aria-hidden>
-                  ★
-                </span>
-                <span>{formatTrainerRatingLabel(trainer)}</span>
-                <span className="trainer-card-compact__rating-count">
-                  ({trainer.reviewCount})
-                </span>
-              </>
-            ) : (
-              <span>New on SMOAC</span>
-            )}
-          </div>
+          <SmoacStarRating
+            size="card"
+            reviewCount={smoac.reviewCount}
+            avgRating={smoac.avgRating}
+            className="trainer-card-compact__smoac-stars"
+          />
           <SessionPrice
             amount={trainer.pricePerSession}
             variant="compact"
