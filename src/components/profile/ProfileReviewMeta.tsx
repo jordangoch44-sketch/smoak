@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { LOGO_SRC } from "@/lib/brand";
 import {
-  formatSmoacReviewCountLabel,
   trainerFirstName,
   type SpecialistReviewAggregate,
 } from "@/lib/reviews/specialist-review-types";
@@ -17,6 +16,77 @@ interface ProfileReviewMetaProps {
   canLeaveReview?: boolean;
   hasOwnReview?: boolean;
   onLeaveReview?: () => void;
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+/** SMOAC ★ row — dimmed at 0 reviews; yellow fill tracks live average. */
+function SmoacReviewStars({
+  reviewCount,
+  avgRating,
+  interactive,
+  onLeaveReview,
+}: {
+  reviewCount: number;
+  avgRating: number | null;
+  interactive?: boolean;
+  onLeaveReview?: () => void;
+}) {
+  const fill =
+    reviewCount > 0 && avgRating != null
+      ? Math.min(5, Math.max(0, avgRating))
+      : 0;
+  const countLabel =
+    reviewCount === 1 ? "(1) review" : `(${reviewCount}) reviews`;
+  const ratingSummary =
+    reviewCount > 0 && avgRating != null
+      ? `${formatTrainerRating(avgRating)} average from ${countLabel}`
+      : "0 reviews on SMOAC";
+
+  const stars = (
+    <>
+      <span className="profile-hero__smoac-stars-row" aria-hidden>
+        {Array.from({ length: 5 }, (_, index) => {
+          const portion = clamp01(fill - index);
+          return (
+            <span key={index} className="profile-hero__smoac-star">
+              <span className="profile-hero__smoac-star-dim">★</span>
+              {portion > 0 ? (
+                <span
+                  className="profile-hero__smoac-star-fill"
+                  style={{ width: `${portion * 100}%` }}
+                >
+                  ★
+                </span>
+              ) : null}
+            </span>
+          );
+        })}
+      </span>
+      <span className="profile-hero__smoac-stars-count">{countLabel}</span>
+    </>
+  );
+
+  if (interactive && onLeaveReview) {
+    return (
+      <button
+        type="button"
+        className="smoac-control profile-hero__smoac-stars profile-hero__smoac-stars--action"
+        onClick={onLeaveReview}
+        aria-label={`Leave a review. ${ratingSummary}`}
+      >
+        {stars}
+      </button>
+    );
+  }
+
+  return (
+    <div className="profile-hero__smoac-stars" aria-label={ratingSummary}>
+      {stars}
+    </div>
+  );
 }
 
 export function ProfileReviewMeta({
@@ -72,17 +142,12 @@ export function ProfileReviewMeta({
           height={14}
           className="profile-hero__reviews-mark"
         />
-        {smoacCount > 0 && smoacAvg != null ? (
-          <p className="profile-hero__reviews-line-text">
-            <span className="profile-hero__reviews-line-score">
-              {formatTrainerRating(smoacAvg)}
-            </span>
-            {" · "}
-            {formatSmoacReviewCountLabel(smoacCount)}
-          </p>
-        ) : (
-          <p className="profile-hero__reviews-line-text">New on SMOAC</p>
-        )}
+        <SmoacReviewStars
+          reviewCount={smoacCount}
+          avgRating={smoacAvg}
+          interactive={Boolean(onLeaveReview && !hasOwnReview)}
+          onLeaveReview={onLeaveReview}
+        />
       </div>
 
       {canLeaveReview && onLeaveReview ? (

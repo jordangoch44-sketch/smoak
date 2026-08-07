@@ -124,7 +124,7 @@ function ReviewModalForm({
       >
         <header className="review-modal__header">
           <h2 id={titleId} className="review-modal__title">
-            Review {specialistName}
+            Leave a review for {specialistName}
           </h2>
           <button
             type="button"
@@ -138,7 +138,6 @@ function ReviewModalForm({
         </header>
 
         <div className="review-modal__body">
-          <p className="review-modal__label">Your rating</p>
           <div
             className="review-modal__stars"
             role="radiogroup"
@@ -171,7 +170,7 @@ function ReviewModalForm({
           </div>
 
           <label className="review-modal__label" htmlFor="smoac-review-text">
-            Written review
+            Your review
           </label>
           <textarea
             id="smoac-review-text"
