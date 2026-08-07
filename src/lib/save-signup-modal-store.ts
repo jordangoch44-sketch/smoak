@@ -20,7 +20,7 @@ const CLOSED: SaveSignupModalState = Object.freeze({
 });
 
 /** Blocks heart ghost-clicks from reopening the gate after X / backdrop dismiss. */
-const REOPEN_GUARD_MS = 500;
+const REOPEN_GUARD_MS = 400;
 let reopenBlockedUntil = 0;
 
 let state: SaveSignupModalState = CLOSED;

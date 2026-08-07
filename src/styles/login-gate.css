@@ -15,11 +15,14 @@ html.login-gate-open {
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: rgba(0, 0, 0, 0.72);
   pointer-events: auto;
   isolation: isolate;
+}
+
+/* Instant visual dismiss — do not wait for React unmount / blur teardown */
+.login-gate--dismissed {
+  display: none !important;
 }
 
 .login-gate__dialog {
@@ -30,15 +33,28 @@ html.login-gate-open {
   overflow: auto;
   border-radius: 1.25rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(14, 14, 20, 0.42);
-  backdrop-filter: blur(32px) saturate(1.2);
-  -webkit-backdrop-filter: blur(32px) saturate(1.2);
+  background: rgba(18, 18, 26, 0.96);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 0 0 1px rgba(var(--aurora-violet-rgb), 0.12),
     0 0 40px rgba(var(--aurora-violet-rgb), 0.14),
     0 24px 64px rgba(0, 0, 0, 0.55);
-  animation: login-gate-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: login-gate-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Desktop only — iOS Safari backdrop-filter makes open/close feel multi-second */
+@media (hover: hover) and (pointer: fine) {
+  .login-gate {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  .login-gate__dialog {
+    background: rgba(14, 14, 20, 0.42);
+    backdrop-filter: blur(32px) saturate(1.2);
+    -webkit-backdrop-filter: blur(32px) saturate(1.2);
+  }
 }
 
 .login-gate__close {

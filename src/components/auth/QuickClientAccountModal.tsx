@@ -84,6 +84,17 @@ export function QuickClientAccountModal({
     setSyncedKey("");
   }
 
+  function dismissGateNow(target: EventTarget | null = null) {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    hideGateDom(target);
+    document.body.classList.remove("login-gate-open");
+    document.documentElement.classList.remove("login-gate-open");
+    requestAnimationFrame(() => {
+      onClose();
+    });
+  }
+
   useEffect(() => {
     if (!open) return;
 
@@ -92,9 +103,7 @@ export function QuickClientAccountModal({
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Escape") return;
-      document.body.classList.remove("login-gate-open");
-      document.documentElement.classList.remove("login-gate-open");
-      onClose();
+      dismissGateNow(document.querySelector(".login-gate"));
     }
 
     window.addEventListener("keydown", onKeyDown);
@@ -107,29 +116,29 @@ export function QuickClientAccountModal({
 
   function hideGateDom(target: EventTarget | null) {
     const el =
-      target instanceof Element ? target.closest(".login-gate") : null;
-    if (el instanceof HTMLElement) {
-      /* Stay in the hit-test tree (no hidden / visibility:hidden / pointer-events:none)
-       * so the same iOS gesture cannot fall through to the heart and reopen. */
-      el.setAttribute("aria-hidden", "true");
-      el.style.opacity = "0";
-      el.style.backdropFilter = "none";
-      el.style.setProperty("-webkit-backdrop-filter", "none");
-    }
+      (target instanceof Element ? target.closest(".login-gate") : null) ??
+      document.querySelector(".login-gate");
+    if (!(el instanceof HTMLElement)) return;
+
+    el.setAttribute("aria-hidden", "true");
+    el.classList.add("login-gate--dismissed");
+    /* Kill filters before React unmount — iOS can stall for seconds on blur teardown. */
+    el.style.backdropFilter = "none";
+    el.style.setProperty("-webkit-backdrop-filter", "none");
+    el.querySelectorAll<HTMLElement>(".login-gate__dialog").forEach((dialog) => {
+      dialog.style.animation = "none";
+      dialog.style.backdropFilter = "none";
+      dialog.style.setProperty("-webkit-backdrop-filter", "none");
+    });
   }
 
   function requestClose(
-    source: "x" | "backdrop" | "link",
+    _source: "x" | "backdrop" | "link",
     event?: React.SyntheticEvent
   ) {
     event?.preventDefault();
     event?.stopPropagation();
-    if (closingRef.current) return;
-    closingRef.current = true;
-    hideGateDom(event?.currentTarget ?? null);
-    document.body.classList.remove("login-gate-open");
-    document.documentElement.classList.remove("login-gate-open");
-    onClose();
+    dismissGateNow(event?.currentTarget ?? null);
   }
 
   async function handleQuickSignup() {
