@@ -19,8 +19,8 @@ const CLOSED: SaveSignupModalState = Object.freeze({
   profilePath: "",
 });
 
-/** Blocks heart ghost-clicks from reopening the gate after X / backdrop dismiss. */
-const REOPEN_GUARD_MS = 400;
+/** Blocks heart / card ghost-clicks from reopening the gate after X dismiss. */
+const REOPEN_GUARD_MS = 650;
 let reopenBlockedUntil = 0;
 
 let state: SaveSignupModalState = CLOSED;
@@ -44,6 +44,11 @@ export function getSaveSignupModalServerSnapshot(): SaveSignupModalState {
   return CLOSED;
 }
 
+/** Call on X /backdrop press before hide — covers the rest of the gesture. */
+export function blockSaveSignupReopen(ms: number = REOPEN_GUARD_MS): void {
+  reopenBlockedUntil = Math.max(reopenBlockedUntil, Date.now() + ms);
+}
+
 export function openSaveSignupModal(next: {
   specialistId: string;
   specialistName?: string;
@@ -61,7 +66,7 @@ export function openSaveSignupModal(next: {
 
 export function closeSaveSignupModal(): void {
   if (!state.open) return;
-  reopenBlockedUntil = Date.now() + REOPEN_GUARD_MS;
+  blockSaveSignupReopen();
   state = {
     ...state,
     open: false,

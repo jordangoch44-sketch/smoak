@@ -17,6 +17,7 @@ import {
   startSaveQuickAccount,
 } from "@/lib/auth/inquiry-auth";
 import { setAuthSession } from "@/lib/auth-session-store";
+import { blockSaveSignupReopen } from "@/lib/save-signup-modal-store";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +63,7 @@ export function QuickClientAccountModal({
   const formId = useId();
   const submittingRef = useRef(false);
   const closingRef = useRef(false);
+  const gestureEatCleanupRef = useRef<(() => void) | null>(null);
   const { refreshSession } = useAuthSession();
   const [view, setView] = useState<View>("signup");
   const [firstName, setFirstName] = useState("");
@@ -70,6 +72,8 @@ export function QuickClientAccountModal({
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [syncedKey, setSyncedKey] = useState("");
+  /** React-owned hide — imperative-only styles get wiped if OverlayHost re-renders. */
+  const [dismissed, setDismissed] = useState(false);
 
   const openKey = open ? `${purpose}:${returnPath}` : "";
 
@@ -80,8 +84,45 @@ export function QuickClientAccountModal({
     setSending(false);
     setPassword("");
     closingRef.current = false;
+    setDismissed(false);
   } else if (!open && syncedKey) {
     setSyncedKey("");
+  }
+
+  useEffect(() => {
+    return () => {
+      gestureEatCleanupRef.current?.();
+      gestureEatCleanupRef.current = null;
+    };
+  }, []);
+
+  function armGestureEat() {
+    gestureEatCleanupRef.current?.();
+    const eat = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") {
+        event.stopImmediatePropagation();
+      }
+    };
+    document.addEventListener("pointerup", eat, true);
+    document.addEventListener("mouseup", eat, true);
+    document.addEventListener("touchend", eat, true);
+    document.addEventListener("click", eat, true);
+    const timeoutId = window.setTimeout(() => {
+      document.removeEventListener("pointerup", eat, true);
+      document.removeEventListener("mouseup", eat, true);
+      document.removeEventListener("touchend", eat, true);
+      document.removeEventListener("click", eat, true);
+      if (gestureEatCleanupRef.current) gestureEatCleanupRef.current = null;
+    }, 650);
+    gestureEatCleanupRef.current = () => {
+      window.clearTimeout(timeoutId);
+      document.removeEventListener("pointerup", eat, true);
+      document.removeEventListener("mouseup", eat, true);
+      document.removeEventListener("touchend", eat, true);
+      document.removeEventListener("click", eat, true);
+    };
   }
 
   function hideGateDom(target: EventTarget | null) {
@@ -92,30 +133,37 @@ export function QuickClientAccountModal({
 
     el.setAttribute("aria-hidden", "true");
     el.classList.add("login-gate--dismissed");
-    /* Inline display:none wins immediately — do not wait on class cascade / React. */
-    el.style.setProperty("display", "none", "important");
-    el.style.setProperty("pointer-events", "none", "important");
+    /*
+     * Opacity hide only — keep the layer hit-testing so the rest of this
+     * gesture cannot fall through to Explore hearts / card links.
+     * Never use display:none or pointer-events:none here.
+     */
     el.style.setProperty("opacity", "0", "important");
     el.style.backdropFilter = "none";
     el.style.setProperty("-webkit-backdrop-filter", "none");
     el.querySelectorAll<HTMLElement>(".login-gate__dialog").forEach((dialog) => {
       dialog.style.animation = "none";
-      dialog.style.setProperty("display", "none", "important");
+      dialog.style.setProperty("opacity", "0", "important");
       dialog.style.backdropFilter = "none";
       dialog.style.setProperty("-webkit-backdrop-filter", "none");
     });
   }
 
   function dismissGateNow(target: EventTarget | null = null) {
-    if (closingRef.current) return;
+    if (closingRef.current || dismissed) return;
     closingRef.current = true;
     /*
-     * Hide in this gesture turn, then defer React/store close until after paint.
-     * Sync closeSaveSignupModal() re-renders before the browser can paint
-     * display:none; unlocking .app-main scroll then reflows Explore and the
-     * dismiss feels multi-second on Search (iPhone).
+     * Order matters on Search/iPhone:
+     * 1) Block heart reopen for the residual click
+     * 2) Visually hide while STILL capturing taps
+     * 3) Eat the rest of the gesture at document level
+     * 4) Close React after paint; unlock scroll later so Explore blur
+     *    reveal does not stall the dismiss frame
      */
+    blockSaveSignupReopen();
+    setDismissed(true);
     hideGateDom(target);
+    armGestureEat();
     requestAnimationFrame(() => {
       onClose();
     });
@@ -135,11 +183,12 @@ export function QuickClientAccountModal({
     window.addEventListener("keydown", onKeyDown);
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      /* Unlock after the closed frame paints — Explore reflow stays off the critical path. */
-      requestAnimationFrame(() => {
+      /* Keep scroll lock briefly so Explore GPU layers unlock off the dismiss frame. */
+      window.setTimeout(() => {
+        if (document.querySelector(".login-gate")) return;
         document.body.classList.remove("login-gate-open");
         document.documentElement.classList.remove("login-gate-open");
-      });
+      }, 180);
     };
   }, [open, onClose]);
 
@@ -275,13 +324,32 @@ export function QuickClientAccountModal({
 
   return createPortal(
     <div
-      className="login-gate"
+      className={cn("login-gate", dismissed && "login-gate--dismissed")}
       role="presentation"
+      onPointerDown={(event) => {
+        if (dismissed) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        if (event.target !== event.currentTarget) return;
+        requestClose("backdrop", event);
+      }}
       onPointerUp={(event) => {
+        if (dismissed) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         if (event.target !== event.currentTarget) return;
         requestClose("backdrop", event);
       }}
       onClick={(event) => {
+        if (dismissed) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
         if (event.target !== event.currentTarget) return;
         requestClose("backdrop", event);
       }}
@@ -306,7 +374,6 @@ export function QuickClientAccountModal({
             /* Dismiss on press — waiting for click/up feels laggy on iOS. */
             requestClose("x", event);
           }}
-          onClick={(event) => requestClose("x", event)}
         >
           <CloseIcon className="h-4 w-4" />
         </button>

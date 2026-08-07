@@ -1,9 +1,10 @@
 /* Login gate modal — portaled to document.body, above all page layers */
 
-/* Avoid touch-action:none on body — blocks iOS taps (see globals.css scroll lock) */
+/* Avoid touch-action:none on body — blocks iOS taps (see globals.css scroll lock).
+ * Do not force body/html overflow:hidden !important — that fights the iOS
+ * .app-main-only lock and makes unlock reflow Explore on dismiss. */
 body.login-gate-open,
 html.login-gate-open {
-  overflow: hidden !important;
   overscroll-behavior: none;
 }
 
@@ -20,14 +21,41 @@ html.login-gate-open {
   isolation: isolate;
 }
 
+/*
+ * Instant visual dismiss while STILL capturing the rest of the gesture.
+ * display:none / pointer-events:none lets the residual click hit Explore
+ * hearts and reopen the gate (feels like multi-second lag on Search).
+ */
 .login-gate--dismissed {
-  display: none !important;
   opacity: 0 !important;
-  pointer-events: none !important;
-  visibility: hidden !important;
+  pointer-events: auto !important;
+}
+
+/* Freeze expensive Search/home GPU layers while the gate covers them */
+body.login-gate-open .explore-page__canvas,
+body.login-gate-open .explore-page__canvas *,
+body.login-gate-open .site-page-backdrop,
+body.login-gate-open .site-page-backdrop * {
+  animation: none !important;
+  transition: none !important;
+  filter: none !important;
+}
+
+body.login-gate-open .explore-page__canvas,
+body.login-gate-open .site-page-backdrop {
+  visibility: hidden;
 }
 
 @media (hover: none), (pointer: coarse) {
+  body.login-gate-open .explore-search-shell,
+  body.login-gate-open .explore-search-shell *,
+  body.login-gate-open .aurora-glass,
+  body.login-gate-open .trainer-card-compact,
+  body.login-gate-open .trainer-card-grid {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
   .login-gate__glow {
     display: none;
   }
