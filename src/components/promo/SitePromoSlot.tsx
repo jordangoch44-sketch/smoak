@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CloseIcon } from "@/components/ui/icons";
@@ -15,9 +15,8 @@ import {
 import type { SitePromoCtaKind, SitePromoSlotId } from "@/types/site-promo";
 import { cn } from "@/lib/utils";
 
-const ENTER_MS = 900;
-const EXIT_MS = 480;
-const SETTLE_MS = 120;
+const EXIT_MS = 420;
+const SETTLE_MS = 60;
 
 interface SitePromoSlotProps {
   slotId: SitePromoSlotId;
@@ -31,13 +30,6 @@ interface SitePromoSlotProps {
   variant?: "default" | "compact" | "banner";
 }
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
-
 export function SitePromoSlot({
   slotId,
   className,
@@ -49,8 +41,6 @@ export function SitePromoSlot({
   const hydrated = useHydrated();
   const { session, isSignedIn } = useAuthSession();
   const router = useRouter();
-  const shellRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLElement>(null);
   const [dismissedLocal, setDismissedLocal] = useState(false);
   const [boosting, setBoosting] = useState<boolean | null>(null);
   const [revision, setRevision] = useState(0);
@@ -119,77 +109,37 @@ export function SitePromoSlot({
       }
       return;
     }
+
     setMounted(true);
-  }, [readyToShow, mounted]);
+    setEntered(false);
 
-  /* Measured height expand — avoids grid 0fr/1fr + blur jank on iPhone. */
-  useEffect(() => {
-    if (!mounted || !readyToShow) return;
-    const shell = shellRef.current;
-    const card = cardRef.current;
-    if (!shell || !card) return;
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (prefersReducedMotion()) {
-      shell.style.height = "auto";
-      shell.style.overflow = "visible";
-      setEntered(true);
-      return;
-    }
-
-    let cancelled = false;
-    shell.style.overflow = "hidden";
-    shell.style.height = "0px";
-    shell.style.transition = "none";
-
+    /*
+     * Space is reserved in one layout frame (no height tween).
+     * Only the card fades/lifts — tweening page height was the chop.
+     */
     const settle = window.setTimeout(() => {
-      if (cancelled) return;
-      const target = Math.ceil(card.getBoundingClientRect().height);
-      /* Force collapsed paint, then ease to measured px. */
-      void shell.offsetHeight;
-      shell.style.transition = `height ${ENTER_MS}ms cubic-bezier(0.16, 1, 0.3, 1)`;
-      shell.style.height = `${Math.max(target, 1)}px`;
-      setEntered(true);
-
-      const onEnd = (event: TransitionEvent) => {
-        if (event.propertyName !== "height" || cancelled) return;
-        shell.style.height = "auto";
-        shell.style.overflow = "visible";
-        shell.style.transition = "";
-        shell.removeEventListener("transitionend", onEnd);
-      };
-      shell.addEventListener("transitionend", onEnd);
+      if (reduceMotion) {
+        setEntered(true);
+        return;
+      }
+      requestAnimationFrame(() => setEntered(true));
     }, SETTLE_MS);
 
-    return () => {
-      cancelled = true;
-      window.clearTimeout(settle);
-    };
-  }, [mounted, readyToShow, campaign?.id]);
+    return () => window.clearTimeout(settle);
+  }, [readyToShow, mounted]);
 
   void revision;
 
   if (!mounted || !campaign) return null;
 
-  function collapseThenDismiss() {
+  function handleDismiss() {
     const token = campaign!.reappearOnSignIn ? signInToken : null;
     dismissPromo(campaign!.id, token);
-
-    const shell = shellRef.current;
-    if (!shell || prefersReducedMotion()) {
-      setEntered(false);
-      setDismissedLocal(true);
-      return;
-    }
-
-    const current = shell.getBoundingClientRect().height;
-    shell.style.overflow = "hidden";
-    shell.style.height = `${current}px`;
-    void shell.offsetHeight;
-    shell.style.transition = `height ${EXIT_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`;
     setEntered(false);
-    requestAnimationFrame(() => {
-      shell.style.height = "0px";
-    });
     window.setTimeout(() => setDismissedLocal(true), EXIT_MS);
   }
 
@@ -228,17 +178,14 @@ export function SitePromoSlot({
 
   return (
     <div
-      ref={shellRef}
       className={cn("site-promo-enter", entered && "site-promo-enter--in")}
       style={
         {
-          "--site-promo-enter-ms": `${ENTER_MS}ms`,
           "--site-promo-exit-ms": `${EXIT_MS}ms`,
         } as CSSProperties
       }
     >
       <aside
-        ref={cardRef}
         className={cn(
           "site-promo",
           `site-promo--${variant}`,
@@ -255,7 +202,7 @@ export function SitePromoSlot({
           <button
             type="button"
             className="site-promo__dismiss"
-            onClick={collapseThenDismiss}
+            onClick={handleDismiss}
             aria-label="Dismiss promo"
           >
             <CloseIcon className="h-3.5 w-3.5" />

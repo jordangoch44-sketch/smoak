@@ -1,21 +1,16 @@
 /* SMOAC house promo slots — fixed layouts, swappable campaign copy */
 
 /*
- * Promo reveal: measured height ease (JS) + GPU fade/lift on the card.
- * No grid 0fr→1fr and no blur filters — those stutter hard on iPhone,
- * especially while backdrop-filter is active on the card.
+ * Promo reveal: reserve layout space in one frame, then GPU-fade/lift the card.
+ * Do NOT tween page height — continuous reflow of Marketplace below is what
+ * felt choppy on iPhone.
  */
-.site-promo-enter {
-  overflow: hidden;
-}
-
 .site-promo-enter .site-promo {
   opacity: 0;
-  transform: translate3d(0, 16px, 0);
+  transform: translate3d(0, 14px, 0);
   transition:
-    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1) 80ms,
-    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-  /* Kill live backdrop blur while opening — Safari composites this poorly. */
+    opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -29,8 +24,8 @@
   opacity: 0;
   transform: translate3d(0, 8px, 0);
   transition:
-    opacity var(--site-promo-exit-ms, 480ms) cubic-bezier(0.4, 0, 0.2, 1),
-    transform var(--site-promo-exit-ms, 480ms) cubic-bezier(0.4, 0, 0.2, 1);
+    opacity var(--site-promo-exit-ms, 420ms) cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--site-promo-exit-ms, 420ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
