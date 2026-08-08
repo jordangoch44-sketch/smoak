@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CloseIcon } from "@/components/ui/icons";
@@ -15,9 +15,9 @@ import {
 import type { SitePromoCtaKind, SitePromoSlotId } from "@/types/site-promo";
 import { cn } from "@/lib/utils";
 
-const ENTER_MS = 1100;
-const EXIT_MS = 560;
-const SETTLE_MS = 90;
+const ENTER_MS = 900;
+const EXIT_MS = 480;
+const SETTLE_MS = 120;
 
 interface SitePromoSlotProps {
   slotId: SitePromoSlotId;
@@ -31,6 +31,13 @@ interface SitePromoSlotProps {
   variant?: "default" | "compact" | "banner";
 }
 
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 export function SitePromoSlot({
   slotId,
   className,
@@ -42,6 +49,8 @@ export function SitePromoSlot({
   const hydrated = useHydrated();
   const { session, isSignedIn } = useAuthSession();
   const router = useRouter();
+  const shellRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLElement>(null);
   const [dismissedLocal, setDismissedLocal] = useState(false);
   const [boosting, setBoosting] = useState<boolean | null>(null);
   const [revision, setRevision] = useState(0);
@@ -68,7 +77,6 @@ export function SitePromoSlot({
     !(campaign?.hideWhenBoosting && boosting !== false);
 
   useEffect(() => {
-    /* New sign-in should resurface reappearOnSignIn campaigns */
     setDismissedLocal(false);
     setRevision((n) => n + 1);
   }, [hydrated, audience, signInToken]);
@@ -111,32 +119,77 @@ export function SitePromoSlot({
       }
       return;
     }
-
     setMounted(true);
-    const reduceMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }, [readyToShow, mounted]);
 
-    if (reduceMotion) {
+  /* Measured height expand — avoids grid 0fr/1fr + blur jank on iPhone. */
+  useEffect(() => {
+    if (!mounted || !readyToShow) return;
+    const shell = shellRef.current;
+    const card = cardRef.current;
+    if (!shell || !card) return;
+
+    if (prefersReducedMotion()) {
+      shell.style.height = "auto";
+      shell.style.overflow = "visible";
       setEntered(true);
       return;
     }
 
-    /* Brief settle so Marketplace paint finishes before the cinematic open. */
+    let cancelled = false;
+    shell.style.overflow = "hidden";
+    shell.style.height = "0px";
+    shell.style.transition = "none";
+
     const settle = window.setTimeout(() => {
-      requestAnimationFrame(() => setEntered(true));
+      if (cancelled) return;
+      const target = Math.ceil(card.getBoundingClientRect().height);
+      /* Force collapsed paint, then ease to measured px. */
+      void shell.offsetHeight;
+      shell.style.transition = `height ${ENTER_MS}ms cubic-bezier(0.16, 1, 0.3, 1)`;
+      shell.style.height = `${Math.max(target, 1)}px`;
+      setEntered(true);
+
+      const onEnd = (event: TransitionEvent) => {
+        if (event.propertyName !== "height" || cancelled) return;
+        shell.style.height = "auto";
+        shell.style.overflow = "visible";
+        shell.style.transition = "";
+        shell.removeEventListener("transitionend", onEnd);
+      };
+      shell.addEventListener("transitionend", onEnd);
     }, SETTLE_MS);
-    return () => window.clearTimeout(settle);
-  }, [readyToShow, mounted]);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(settle);
+    };
+  }, [mounted, readyToShow, campaign?.id]);
 
   void revision;
 
   if (!mounted || !campaign) return null;
 
-  function handleDismiss() {
+  function collapseThenDismiss() {
     const token = campaign!.reappearOnSignIn ? signInToken : null;
     dismissPromo(campaign!.id, token);
+
+    const shell = shellRef.current;
+    if (!shell || prefersReducedMotion()) {
+      setEntered(false);
+      setDismissedLocal(true);
+      return;
+    }
+
+    const current = shell.getBoundingClientRect().height;
+    shell.style.overflow = "hidden";
+    shell.style.height = `${current}px`;
+    void shell.offsetHeight;
+    shell.style.transition = `height ${EXIT_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`;
     setEntered(false);
+    requestAnimationFrame(() => {
+      shell.style.height = "0px";
+    });
     window.setTimeout(() => setDismissedLocal(true), EXIT_MS);
   }
 
@@ -175,10 +228,8 @@ export function SitePromoSlot({
 
   return (
     <div
-      className={cn(
-        "site-promo-enter",
-        entered && "site-promo-enter--in"
-      )}
+      ref={shellRef}
+      className={cn("site-promo-enter", entered && "site-promo-enter--in")}
       style={
         {
           "--site-promo-enter-ms": `${ENTER_MS}ms`,
@@ -186,76 +237,72 @@ export function SitePromoSlot({
         } as CSSProperties
       }
     >
-      <div className="site-promo-enter__clip">
-        <aside
-          className={cn(
-            "site-promo",
-            `site-promo--${variant}`,
-            `site-promo--slot-${slotId}`,
-            accent !== "default" && `site-promo--accent-${accent}`,
-            className
-          )}
-          aria-labelledby={`site-promo-title-${slotId}`}
-          data-promo-id={campaign.id}
-          data-promo-slot={slotId}
-        >
-          <div className="site-promo__glow" aria-hidden />
-          {campaign.dismissible ? (
-            <button
-              type="button"
-              className="site-promo__dismiss"
-              onClick={handleDismiss}
-              aria-label="Dismiss promo"
-            >
-              <CloseIcon className="h-3.5 w-3.5" />
-            </button>
+      <aside
+        ref={cardRef}
+        className={cn(
+          "site-promo",
+          `site-promo--${variant}`,
+          `site-promo--slot-${slotId}`,
+          accent !== "default" && `site-promo--accent-${accent}`,
+          className
+        )}
+        aria-labelledby={`site-promo-title-${slotId}`}
+        data-promo-id={campaign.id}
+        data-promo-slot={slotId}
+      >
+        <div className="site-promo__glow" aria-hidden />
+        {campaign.dismissible ? (
+          <button
+            type="button"
+            className="site-promo__dismiss"
+            onClick={collapseThenDismiss}
+            aria-label="Dismiss promo"
+          >
+            <CloseIcon className="h-3.5 w-3.5" />
+          </button>
+        ) : null}
+
+        <div className="site-promo__copy">
+          <p className="site-promo__eyebrow">{campaign.eyebrow}</p>
+          <h2 id={`site-promo-title-${slotId}`} className="site-promo__headline">
+            {campaign.headline}
+          </h2>
+          <p className="site-promo__body">{campaign.body}</p>
+          {campaign.stat ? (
+            <p className="site-promo__stat">{campaign.stat}</p>
           ) : null}
+        </div>
 
-          <div className="site-promo__copy">
-            <p className="site-promo__eyebrow">{campaign.eyebrow}</p>
-            <h2
-              id={`site-promo-title-${slotId}`}
-              className="site-promo__headline"
+        <div className="site-promo__actions">
+          {campaign.ctaKind === "link" && campaign.ctaHref ? (
+            <span
+              className={cn(
+                "site-promo__cta-wrap",
+                useOrbit && "site-promo__cta-wrap--orbit"
+              )}
             >
-              {campaign.headline}
-            </h2>
-            <p className="site-promo__body">{campaign.body}</p>
-            {campaign.stat ? (
-              <p className="site-promo__stat">{campaign.stat}</p>
-            ) : null}
-          </div>
-
-          <div className="site-promo__actions">
-            {campaign.ctaKind === "link" && campaign.ctaHref ? (
-              <span
-                className={cn(
-                  "site-promo__cta-wrap",
-                  useOrbit && "site-promo__cta-wrap--orbit"
-                )}
+              <Link href={campaign.ctaHref} className="site-promo__cta">
+                {campaign.ctaLabel}
+              </Link>
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "site-promo__cta-wrap",
+                useOrbit && "site-promo__cta-wrap--orbit"
+              )}
+            >
+              <button
+                type="button"
+                className="site-promo__cta"
+                onClick={() => runCta(campaign.ctaKind, campaign.ctaHref)}
               >
-                <Link href={campaign.ctaHref} className="site-promo__cta">
-                  {campaign.ctaLabel}
-                </Link>
-              </span>
-            ) : (
-              <span
-                className={cn(
-                  "site-promo__cta-wrap",
-                  useOrbit && "site-promo__cta-wrap--orbit"
-                )}
-              >
-                <button
-                  type="button"
-                  className="site-promo__cta"
-                  onClick={() => runCta(campaign.ctaKind, campaign.ctaHref)}
-                >
-                  {campaign.ctaLabel}
-                </button>
-              </span>
-            )}
-          </div>
-        </aside>
-      </div>
+                {campaign.ctaLabel}
+              </button>
+            </span>
+          )}
+        </div>
+      </aside>
     </div>
   );
 }

@@ -1,64 +1,42 @@
 /* SMOAC house promo slots — fixed layouts, swappable campaign copy */
 
 /*
- * Cinematic reveal: layout eases open while the card fades, lifts, and
- * sharpens — height and opacity are split so it doesn’t feel choppy.
+ * Promo reveal: measured height ease (JS) + GPU fade/lift on the card.
+ * No grid 0fr→1fr and no blur filters — those stutter hard on iPhone,
+ * especially while backdrop-filter is active on the card.
  */
 .site-promo-enter {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows var(--site-promo-enter-ms, 1100ms)
-    cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.site-promo-enter--in {
-  grid-template-rows: 1fr;
-}
-
-.site-promo-enter:not(.site-promo-enter--in) {
-  transition: grid-template-rows var(--site-promo-exit-ms, 560ms)
-    cubic-bezier(0.4, 0, 0.2, 1) 80ms;
-}
-
-.site-promo-enter__clip {
   overflow: hidden;
-  min-height: 0;
 }
 
 .site-promo-enter .site-promo {
   opacity: 0;
-  transform: translate3d(0, 22px, 0) scale(0.978);
-  filter: blur(12px);
+  transform: translate3d(0, 16px, 0);
   transition:
-    opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1) 140ms,
-    transform 1.15s cubic-bezier(0.16, 1, 0.3, 1) 60ms,
-    filter 1.05s cubic-bezier(0.22, 1, 0.36, 1) 100ms;
-  will-change: opacity, transform, filter;
+    opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1) 80ms,
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  /* Kill live backdrop blur while opening — Safari composites this poorly. */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .site-promo-enter--in .site-promo {
   opacity: 1;
-  transform: translate3d(0, 0, 0) scale(1);
-  filter: blur(0);
+  transform: translate3d(0, 0, 0);
 }
 
 .site-promo-enter:not(.site-promo-enter--in) .site-promo {
   opacity: 0;
-  transform: translate3d(0, 10px, 0) scale(0.99);
-  filter: blur(6px);
+  transform: translate3d(0, 8px, 0);
   transition:
-    opacity var(--site-promo-exit-ms, 560ms) cubic-bezier(0.4, 0, 0.2, 1),
-    transform var(--site-promo-exit-ms, 560ms) cubic-bezier(0.4, 0, 0.2, 1),
-    filter var(--site-promo-exit-ms, 560ms) ease;
+    opacity var(--site-promo-exit-ms, 480ms) cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--site-promo-exit-ms, 480ms) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .site-promo-enter,
-  .site-promo-enter:not(.site-promo-enter--in),
   .site-promo-enter .site-promo,
   .site-promo-enter:not(.site-promo-enter--in) .site-promo {
     transition: none;
-    filter: none;
     transform: none;
   }
 
