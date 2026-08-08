@@ -1,10 +1,9 @@
-import type { Certification } from "@/types/trainer";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { isValidEmail } from "@/lib/validation/email";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import { isSpecialistTravelRadius } from "@/types/specialist-service-area";
 
-export interface OnboardingMissingField {
+interface OnboardingMissingField {
   step: number;
   label: string;
 }
@@ -49,7 +48,7 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
   return missing;
 }
 
-/** Recommended fields missing before final specialist submit (short path). */
+/** Required fields missing before final specialist submit (short path). */
 export function getSpecialistOnboardingMissingFields(
   state: SpecialistOnboardingState
 ): OnboardingMissingField[] {
@@ -76,15 +75,4 @@ export function getSpecialistOnboardingAuthGaps(
     gaps.push({ step: 2, label: "Password (8+ characters)" });
   }
   return gaps;
-}
-
-/** Profile fields that may be submitted incomplete (excludes login credentials). */
-export function getSpecialistOnboardingOptionalMissingFields(
-  state: SpecialistOnboardingState
-): OnboardingMissingField[] {
-  return getSpecialistOnboardingMissingFields(state).filter(
-    (field) =>
-      field.label !== "Valid email" &&
-      !field.label.startsWith("Password")
-  );
 }

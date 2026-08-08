@@ -38,8 +38,7 @@ import {
   type CreateAccountProfile,
   type CreateAccountWizardState,
 } from "@/types/create-account";
-import { WizardIncompleteSubmitModal } from "@/components/auth/WizardIncompleteSubmitModal";
-import { getClientAccountMissingFields, getClientAccountMissingFieldsForStep } from "@/lib/client-account-validation";
+import { getClientAccountMissingFieldsForStep } from "@/lib/client-account-validation";
 import { hydrateClientLocationFromSession } from "@/lib/client-profile-location";
 import { cn } from "@/lib/utils";
 import { SpecialistOnboardingWizard } from "@/components/auth/specialist/SpecialistOnboardingWizard";
@@ -202,7 +201,6 @@ export function CreateAccountWizardClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(
     () => initialAccountType === "specialist" && !initialJoinIntro
   );
@@ -225,15 +223,6 @@ export function CreateAccountWizardClient({
 
   const progressPercent = stepProgressPercent(step);
   const isClientQuickSignup = state.accountType === "client";
-  const missingFields = useMemo(
-    () =>
-      isClientQuickSignup ? [] : getClientAccountMissingFields(state),
-    [state, isClientQuickSignup]
-  );
-  const missingLabels = useMemo(
-    () => missingFields.map((field) => field.label),
-    [missingFields]
-  );
 
   function wantsReturnToSaved(): boolean {
     if (initialReturnToSaved) return true;
@@ -292,7 +281,7 @@ export function CreateAccountWizardClient({
     }
     /* Client path: credentials only — sign up from this screen */
     if (isClientQuickSignup && step === 2) {
-      void handleCreateAccount(true);
+      void handleCreateAccount();
       return;
     }
     if (
@@ -311,10 +300,10 @@ export function CreateAccountWizardClient({
       setError(null);
       return;
     }
-    handleCreateAccount(false);
+    void handleCreateAccount();
   }
 
-  async function handleCreateAccount(force: boolean) {
+  async function handleCreateAccount() {
     if (submitting) return;
 
     if (!state.accountType) {
@@ -340,12 +329,8 @@ export function CreateAccountWizardClient({
         setError("Passwords do not match.");
         return;
       }
-    } else if (!force && missingFields.length > 0) {
-      setShowIncompleteModal(true);
-      return;
     }
 
-    setShowIncompleteModal(false);
     setSubmitting(true);
     setError(null);
 
@@ -443,14 +428,6 @@ export function CreateAccountWizardClient({
           ? err.message
           : "Something went wrong. Please try again."
       );
-    }
-  }
-
-  function handleGoBackFromIncompleteModal() {
-    setShowIncompleteModal(false);
-    const firstStep = missingFields[0]?.step;
-    if (firstStep != null && firstStep >= 1 && firstStep <= 4) {
-      setStep(firstStep as WizardStep);
     }
   }
 
@@ -897,14 +874,6 @@ export function CreateAccountWizardClient({
           </p>
         </div>
       </div>
-
-      <WizardIncompleteSubmitModal
-        open={showIncompleteModal}
-        missingLabels={missingLabels}
-        submitting={submitting}
-        onGoBack={handleGoBackFromIncompleteModal}
-        onSubmitAnyway={() => handleCreateAccount(true)}
-      />
     </div>
   );
 }

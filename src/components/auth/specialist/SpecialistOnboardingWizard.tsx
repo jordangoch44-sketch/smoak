@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
@@ -9,7 +9,6 @@ import { useToast } from "@/components/ui/toast";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
-import { WizardIncompleteSubmitModal } from "@/components/auth/WizardIncompleteSubmitModal";
 import {
   SPECIALIST_ONBOARDING_STEP_LABELS,
   SPECIALIST_ONBOARDING_TOTAL_STEPS,
@@ -28,7 +27,6 @@ import { patchAuthSessionAvatarUrl } from "@/lib/profiles/update-profile-avatar"
 import {
   getSpecialistOnboardingAuthGaps,
   getSpecialistOnboardingMissingFields,
-  getSpecialistOnboardingOptionalMissingFields,
 } from "@/lib/specialist-onboarding-validation";
 import { isValidEmail } from "@/lib/validation/email";
 import {
@@ -62,7 +60,6 @@ export function SpecialistOnboardingWizard({
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState<string | null>(
     null
   );
@@ -83,19 +80,6 @@ export function SpecialistOnboardingWizard({
   }
 
   const progressPercent = stepProgressPercent(step);
-
-  const missingFields = useMemo(
-    () => getSpecialistOnboardingMissingFields(state),
-    [state]
-  );
-  const optionalMissingFields = useMemo(
-    () => getSpecialistOnboardingOptionalMissingFields(state),
-    [state]
-  );
-  const missingLabels = useMemo(
-    () => optionalMissingFields.map((field) => field.label),
-    [optionalMissingFields]
-  );
 
   useEffect(() => {
     persistSpecialistOnboardingDraft(state);
@@ -189,7 +173,7 @@ export function SpecialistOnboardingWizard({
     }
 
     if (step === 6) {
-      handleSubmitApplication(false);
+      void handleSubmitApplication();
       return;
     }
 
@@ -199,12 +183,11 @@ export function SpecialistOnboardingWizard({
     }
   }
 
-  async function handleSubmitApplication(force: boolean) {
+  async function handleSubmitApplication() {
     if (submitting) return;
 
     const authGaps = getSpecialistOnboardingAuthGaps(state);
     if (authGaps.length > 0 || state.password !== confirmPassword) {
-      setShowIncompleteModal(false);
       setStep(2);
       if (state.password !== confirmPassword && state.password.trim().length >= 8) {
         flagPasswordFieldsError("Passwords do not match.");
@@ -219,12 +202,6 @@ export function SpecialistOnboardingWizard({
       return;
     }
 
-    if (!force && optionalMissingFields.length > 0) {
-      setShowIncompleteModal(true);
-      return;
-    }
-
-    setShowIncompleteModal(false);
     setSubmitting(true);
     setError(null);
 
@@ -303,14 +280,6 @@ export function SpecialistOnboardingWizard({
       setError(message);
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  function handleGoBackFromIncompleteModal() {
-    setShowIncompleteModal(false);
-    const firstStep = optionalMissingFields[0]?.step ?? missingFields[0]?.step;
-    if (firstStep != null && firstStep >= 1 && firstStep <= 5) {
-      setStep(firstStep as OnboardingStep);
     }
   }
 
@@ -431,13 +400,6 @@ export function SpecialistOnboardingWizard({
         </div>
       </div>
 
-      <WizardIncompleteSubmitModal
-        open={showIncompleteModal}
-        missingLabels={missingLabels}
-        submitting={submitting}
-        onGoBack={handleGoBackFromIncompleteModal}
-        onSubmitAnyway={() => handleSubmitApplication(true)}
-      />
       {submitting
         ? createPortal(
             <div

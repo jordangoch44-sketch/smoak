@@ -1,7 +1,7 @@
 import { isValidEmail } from "@/lib/validation/email";
 import type { CreateAccountWizardState } from "@/types/create-account";
 
-export interface OnboardingMissingField {
+interface OnboardingMissingField {
   step: number;
   label: string;
 }
@@ -50,19 +50,4 @@ export function getClientAccountMissingFieldsForStep(
   state: CreateAccountWizardState
 ): OnboardingMissingField[] {
   return missingForStep(step, state).map((label) => ({ step, label }));
-}
-
-/** Recommended fields missing before final client account submit */
-export function getClientAccountMissingFields(
-  state: CreateAccountWizardState
-): OnboardingMissingField[] {
-  const results: OnboardingMissingField[] = [];
-
-  for (let step = 1; step <= 4; step += 1) {
-    for (const label of missingForStep(step, state)) {
-      results.push({ step, label });
-    }
-  }
-
-  return results;
 }
