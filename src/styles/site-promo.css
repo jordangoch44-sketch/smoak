@@ -1,29 +1,23 @@
 /* SMOAC house promo slots — fixed layouts, swappable campaign copy */
 
 /*
- * Soft reveal: page stretches open (grid 0fr → 1fr) while the card fades in.
- * Avoids the late “pop” after auth/hydrate resolves on Marketplace.
+ * Cinematic reveal: layout eases open while the card fades, lifts, and
+ * sharpens — height and opacity are split so it doesn’t feel choppy.
  */
 .site-promo-enter {
   display: grid;
   grid-template-rows: 0fr;
-  opacity: 0;
-  transition:
-    grid-template-rows var(--site-promo-enter-ms, 620ms)
-      cubic-bezier(0.22, 1, 0.36, 1),
-    opacity var(--site-promo-enter-ms, 620ms) ease;
+  transition: grid-template-rows var(--site-promo-enter-ms, 1100ms)
+    cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .site-promo-enter--in {
   grid-template-rows: 1fr;
-  opacity: 1;
 }
 
 .site-promo-enter:not(.site-promo-enter--in) {
-  transition:
-    grid-template-rows var(--site-promo-exit-ms, 420ms)
-      cubic-bezier(0.4, 0, 0.2, 1),
-    opacity var(--site-promo-exit-ms, 420ms) ease;
+  transition: grid-template-rows var(--site-promo-exit-ms, 560ms)
+    cubic-bezier(0.4, 0, 0.2, 1) 80ms;
 }
 
 .site-promo-enter__clip {
@@ -31,13 +25,44 @@
   min-height: 0;
 }
 
+.site-promo-enter .site-promo {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0) scale(0.978);
+  filter: blur(12px);
+  transition:
+    opacity 0.95s cubic-bezier(0.22, 1, 0.36, 1) 140ms,
+    transform 1.15s cubic-bezier(0.16, 1, 0.3, 1) 60ms,
+    filter 1.05s cubic-bezier(0.22, 1, 0.36, 1) 100ms;
+  will-change: opacity, transform, filter;
+}
+
+.site-promo-enter--in .site-promo {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+}
+
+.site-promo-enter:not(.site-promo-enter--in) .site-promo {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(0.99);
+  filter: blur(6px);
+  transition:
+    opacity var(--site-promo-exit-ms, 560ms) cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--site-promo-exit-ms, 560ms) cubic-bezier(0.4, 0, 0.2, 1),
+    filter var(--site-promo-exit-ms, 560ms) ease;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .site-promo-enter,
-  .site-promo-enter:not(.site-promo-enter--in) {
+  .site-promo-enter:not(.site-promo-enter--in),
+  .site-promo-enter .site-promo,
+  .site-promo-enter:not(.site-promo-enter--in) .site-promo {
     transition: none;
+    filter: none;
+    transform: none;
   }
 
-  .site-promo-enter--in {
+  .site-promo-enter--in .site-promo {
     opacity: 1;
   }
 }

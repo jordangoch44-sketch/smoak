@@ -15,8 +15,9 @@ import {
 import type { SitePromoCtaKind, SitePromoSlotId } from "@/types/site-promo";
 import { cn } from "@/lib/utils";
 
-const ENTER_MS = 620;
-const EXIT_MS = 420;
+const ENTER_MS = 1100;
+const EXIT_MS = 560;
+const SETTLE_MS = 90;
 
 interface SitePromoSlotProps {
   slotId: SitePromoSlotId;
@@ -121,15 +122,11 @@ export function SitePromoSlot({
       return;
     }
 
-    /* Double rAF so the 0-height frame paints before expanding. */
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(() => setEntered(true));
-    });
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-    };
+    /* Brief settle so Marketplace paint finishes before the cinematic open. */
+    const settle = window.setTimeout(() => {
+      requestAnimationFrame(() => setEntered(true));
+    }, SETTLE_MS);
+    return () => window.clearTimeout(settle);
   }, [readyToShow, mounted]);
 
   void revision;
