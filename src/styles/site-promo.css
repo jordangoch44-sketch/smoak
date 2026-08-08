@@ -1,5 +1,47 @@
 /* SMOAC house promo slots — fixed layouts, swappable campaign copy */
 
+/*
+ * Soft reveal: page stretches open (grid 0fr → 1fr) while the card fades in.
+ * Avoids the late “pop” after auth/hydrate resolves on Marketplace.
+ */
+.site-promo-enter {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--site-promo-enter-ms, 620ms)
+      cubic-bezier(0.22, 1, 0.36, 1),
+    opacity var(--site-promo-enter-ms, 620ms) ease;
+}
+
+.site-promo-enter--in {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.site-promo-enter:not(.site-promo-enter--in) {
+  transition:
+    grid-template-rows var(--site-promo-exit-ms, 420ms)
+      cubic-bezier(0.4, 0, 0.2, 1),
+    opacity var(--site-promo-exit-ms, 420ms) ease;
+}
+
+.site-promo-enter__clip {
+  overflow: hidden;
+  min-height: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-promo-enter,
+  .site-promo-enter:not(.site-promo-enter--in) {
+    transition: none;
+  }
+
+  .site-promo-enter--in {
+    opacity: 1;
+  }
+}
+
 .site-promo {
   position: relative;
   display: grid;
