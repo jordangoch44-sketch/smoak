@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { TrainerProfilePageClient } from "@/components/profile/TrainerProfilePageClient";
-import { TrainerProfileSheetSkeleton } from "@/components/profile/TrainerProfileSheetSkeleton";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
 import { refreshApprovedSpecialistProfilesFromRemote } from "@/lib/approved-specialist-profiles-store";
 import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
+import {
+  clearPrimedTrainer,
+  peekPrimedTrainer,
+} from "@/lib/primed-trainer-profile";
 import { specialistProfileFromRow } from "@/lib/profiles/specialist-profiles-db";
 import type { SpecialistProfileRow } from "@/types/database";
 import type { Trainer } from "@/types/trainer";
 
 /**
- * Soft-nav profile sheet — open from the in-memory marketplace catalog
- * immediately (no RSC Supabase wait). Rare cold misses fetch one row.
+ * Soft-nav profile sheet — open from primed card / in-memory catalog
+ * immediately (no skeleton flash, no RSC Supabase wait).
  */
 export function TrainerProfileInterceptClient({
   trainerId,
@@ -20,26 +23,23 @@ export function TrainerProfileInterceptClient({
   trainerId: string;
 }) {
   const fromCatalog = useTrainerWithOverrides(trainerId);
+  const [primed] = useState(() => peekPrimedTrainer(trainerId));
   const [fetched, setFetched] = useState<Trainer | null>(null);
-  const [fetchDone, setFetchDone] = useState(false);
 
   useEffect(() => {
-    if (fromCatalog) {
-      setFetchDone(true);
-      return;
-    }
+    clearPrimedTrainer(trainerId);
+  }, [trainerId]);
+
+  useEffect(() => {
+    if (fromCatalog || primed) return;
 
     let cancelled = false;
-    setFetchDone(false);
 
     void (async () => {
       refreshApprovedSpecialistProfilesFromRemote();
 
       const supabase = getMarketplaceAuthClient();
-      if (!supabase) {
-        if (!cancelled) setFetchDone(true);
-        return;
-      }
+      if (!supabase) return;
 
       const { data, error } = await supabase
         .from("specialist_profiles")
@@ -54,19 +54,14 @@ export function TrainerProfileInterceptClient({
         const mapped = specialistProfileFromRow(data as SpecialistProfileRow);
         setFetched(mapped.trainer);
       }
-      setFetchDone(true);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [fromCatalog, trainerId]);
+  }, [fromCatalog, primed, trainerId]);
 
-  const trainer = fromCatalog ?? fetched;
-
-  if (!trainer && !fetchDone) {
-    return <TrainerProfileSheetSkeleton />;
-  }
+  const trainer = fromCatalog ?? primed ?? fetched;
 
   return (
     <TrainerProfilePageClient

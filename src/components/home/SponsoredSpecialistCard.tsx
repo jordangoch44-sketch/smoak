@@ -5,6 +5,7 @@ import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
+import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -37,7 +38,11 @@ export function SponsoredSpecialistCard({
         surface={impressionSurface}
       />
       <article className="home-sponsored-card__article">
-        <TapLink href={href} className="home-sponsored-card__media-link">
+        <TapLink
+          href={href}
+          className="home-sponsored-card__media-link"
+          onClick={() => primeTrainerProfile(trainer)}
+        >
           <div className="home-sponsored-card__media">
             <TrainerThumbnail
               src={trainer.image}
@@ -55,7 +60,11 @@ export function SponsoredSpecialistCard({
         </TapLink>
 
         <div className="home-sponsored-card__body">
-          <TapLink href={href} className="home-sponsored-card__identity">
+          <TapLink
+            href={href}
+            className="home-sponsored-card__identity"
+            onClick={() => primeTrainerProfile(trainer)}
+          >
             <TrainerCardDetails
               trainer={trainer}
               nameClassName="home-sponsored-card__name"
@@ -69,7 +78,11 @@ export function SponsoredSpecialistCard({
             />
           </TapLink>
 
-          <TapLink href={href} className="home-sponsored-card__cta">
+          <TapLink
+            href={href}
+            className="home-sponsored-card__cta"
+            onClick={() => primeTrainerProfile(trainer)}
+          >
             View Profile
           </TapLink>
         </div>

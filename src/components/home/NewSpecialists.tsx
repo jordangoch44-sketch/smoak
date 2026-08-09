@@ -17,6 +17,7 @@ import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
+import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
 
@@ -103,7 +104,11 @@ export function NewSpecialists({
                   specialistId={trainer.id}
                   surface="home_new"
                 />
-                <TapLink href={href} className="home-portrait-card__link">
+                <TapLink
+                  href={href}
+                  className="home-portrait-card__link"
+                  onClick={() => primeTrainerProfile(trainer)}
+                >
                   <article className="home-portrait-card__article">
                     <div className="home-portrait-card__media">
                       <TrainerThumbnail
