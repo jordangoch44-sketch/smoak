@@ -6,7 +6,7 @@ import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { openOptimisticProfileSheet } from "@/lib/primed-trainer-profile";
+import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 import { cn } from "@/lib/utils";
 
 interface Top50RankCardProps {
@@ -44,7 +44,7 @@ export function Top50RankCard({
       <TapLink
         href={href}
         className="top50-card__link"
-        onClick={() => openOptimisticProfileSheet(trainer)}
+        onClick={() => primeTrainerProfile(trainer)}
       >
         <article className="top50-card__article">
           <div className="top50-card__rank" aria-label={`Rank ${rank}`}>

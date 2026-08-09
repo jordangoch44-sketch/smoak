@@ -14,8 +14,8 @@ import type { SpecialistProfileRow } from "@/types/database";
 import type { Trainer } from "@/types/trainer";
 
 /**
- * Soft-nav profile sheet — open from primed card / in-memory catalog
- * immediately (no skeleton flash, no RSC Supabase wait).
+ * Soft-nav profile sheet — opens from primed card / in-memory catalog
+ * immediately, then slides up with the full profile.
  */
 export function TrainerProfileInterceptClient({
   trainerId,

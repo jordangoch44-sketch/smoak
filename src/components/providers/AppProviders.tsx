@@ -9,7 +9,6 @@ import { SupabaseConfigProvider } from "@/contexts/SupabaseConfigContext";
 import { UserLocationProvider } from "@/contexts/UserLocationContext";
 import { InquiryAutoSendBridge } from "@/components/inquiry";
 import { PendingSaveResumeBridge } from "@/components/auth/PendingSaveResumeBridge";
-import { OptimisticProfileSheetHost } from "@/components/profile/OptimisticProfileSheetHost";
 
 export function AppProviders({
   children,
@@ -29,7 +28,6 @@ export function AppProviders({
                   <InquiryAutoSendBridge />
                   <PendingSaveResumeBridge />
                 </Suspense>
-                <OptimisticProfileSheetHost />
                 {children}
               </MobileBottomNavTransitionProvider>
             </SaveToastProvider>

@@ -17,7 +17,7 @@ import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
-import { openOptimisticProfileSheet } from "@/lib/primed-trainer-profile";
+import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
 
@@ -107,7 +107,7 @@ export function NewSpecialists({
                 <TapLink
                   href={href}
                   className="home-portrait-card__link"
-                  onClick={() => openOptimisticProfileSheet(trainer)}
+                  onClick={() => primeTrainerProfile(trainer)}
                 >
                   <article className="home-portrait-card__article">
                     <div className="home-portrait-card__media">

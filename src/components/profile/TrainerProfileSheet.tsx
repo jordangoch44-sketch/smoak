@@ -6,7 +6,6 @@ import {
   useLayoutEffect,
   useRef,
   useState,
-  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -20,13 +19,6 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { SITE_ROUTES } from "@/lib/navigation";
-import {
-  claimOptimisticProfileSheet,
-  getOptimisticProfileSheetServerSnapshot,
-  getOptimisticProfileSheetSnapshot,
-  peekOptimisticProfileSheet,
-  subscribeOptimisticProfileSheet,
-} from "@/lib/primed-trainer-profile";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
 import {
   ProfileSheetToolbarHostProvider,
@@ -34,10 +26,10 @@ import {
 } from "./ProfileSheetToolbarHostContext";
 import type { MotionValue } from "framer-motion";
 
-/** GPU tween — no spring overshoot (reads as zoom on phones). */
+/** GPU tween — smooth slide-up; no spring overshoot. */
 const OPEN_TRANSITION = {
   type: "tween" as const,
-  duration: 0.32,
+  duration: 0.34,
   ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
 };
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
@@ -49,7 +41,7 @@ const DISMISS_OVERFLOW_PX = 96;
 interface TrainerProfileSheetProps {
   children: ReactNode;
   label?: string;
-  /** Specialist id — used to claim the optimistic card sheet without a second enter. */
+  /** Specialist id — reserved for callers; sheet open is route-driven. */
   trainerId?: string;
 }
 
@@ -111,34 +103,15 @@ function clearSheetDismissing() {
 export function TrainerProfileSheet({
   children,
   label = "Specialist profile",
-  trainerId,
 }: TrainerProfileSheetProps) {
   const router = useRouter();
   const hydrated = useHydrated();
   const isSheetViewport = useTabletViewport(true);
   const reduceMotion = useReducedMotion();
-  const optimistic = useSyncExternalStore(
-    subscribeOptimisticProfileSheet,
-    getOptimisticProfileSheetSnapshot,
-    getOptimisticProfileSheetServerSnapshot
-  );
-  const fromOptimisticRef = useRef(
-    Boolean(
-      trainerId &&
-        typeof window !== "undefined" &&
-        peekOptimisticProfileSheet()?.trainer.id === trainerId
-    )
-  );
-  const [handoffReady, setHandoffReady] = useState(!fromOptimisticRef.current);
-  const [entering, setEntering] = useState(!fromOptimisticRef.current);
-  /* Start off-screen so the first paint never flashes the open sheet.
-   * Optimistic handoff stays at 0 (no second enter). */
+  const [entering, setEntering] = useState(true);
+  /* Start off-screen so the first paint never flashes the open sheet. */
   const y = useMotionValue(
-    fromOptimisticRef.current
-      ? 0
-      : typeof window !== "undefined"
-        ? viewportHeight()
-        : 800
+    typeof window !== "undefined" ? viewportHeight() : 800
   );
   const vhRef = useRef(viewportHeight());
   const rootRef = useRef<HTMLDivElement>(null);
@@ -214,24 +187,8 @@ export function TrainerProfileSheet({
     runDismissAnimation({ navigate: true });
   }, [exited, runDismissAnimation]);
 
-  /* Wait for optimistic slide to finish, then claim (no mid-animation swap). */
   useLayoutEffect(() => {
-    if (!trainerId || handoffReady) return;
-    if (!optimistic || optimistic.trainer.id !== trainerId) {
-      fromOptimisticRef.current = false;
-      setHandoffReady(true);
-      return;
-    }
-    if (!optimistic.enterReady) return;
-    if (claimOptimisticProfileSheet(trainerId)) {
-      y.set(0);
-      setEntering(false);
-      setHandoffReady(true);
-    }
-  }, [handoffReady, optimistic, trainerId, y]);
-
-  useLayoutEffect(() => {
-    if (!isSheetViewport || !handoffReady) return;
+    if (!isSheetViewport) return;
 
     const syncVh = () => {
       vhRef.current = viewportHeight();
@@ -260,7 +217,7 @@ export function TrainerProfileSheet({
     root?.removeAttribute("inert");
     lockSheetChrome();
 
-    if (fromOptimisticRef.current || reduceMotion) {
+    if (reduceMotion) {
       y.set(0);
       setEntering(false);
     } else {
@@ -282,10 +239,10 @@ export function TrainerProfileSheet({
       unlockSheetChrome();
       clearSheetDismissing();
     };
-  }, [exited, handoffReady, isSheetViewport, reduceMotion, y]);
+  }, [exited, isSheetViewport, reduceMotion, y]);
 
   useEffect(() => {
-    if (!isSheetViewport || !handoffReady) return;
+    if (!isSheetViewport) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
@@ -302,14 +259,14 @@ export function TrainerProfileSheet({
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [dismiss, handoffReady, isSheetViewport]);
+  }, [dismiss, isSheetViewport]);
 
   /*
    * Browser back: soft-nav keeps this tree mounted briefly. Run the same
    * slide-down; skip a second router.back() (history already moved).
    */
   useEffect(() => {
-    if (!isSheetViewport || !handoffReady) return;
+    if (!isSheetViewport) return;
 
     function onPopState() {
       if (programmaticNavRef.current) return;
@@ -320,18 +277,13 @@ export function TrainerProfileSheet({
 
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [exited, handoffReady, isSheetViewport, runDismissAnimation]);
+  }, [exited, isSheetViewport, runDismissAnimation]);
 
   if (!isSheetViewport) {
     return <>{children}</>;
   }
 
   if (exited) {
-    return null;
-  }
-
-  /* Optimistic sheet owns the enter — stay invisible until handoff. */
-  if (!handoffReady) {
     return null;
   }
 
