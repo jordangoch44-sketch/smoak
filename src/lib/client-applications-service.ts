@@ -1,13 +1,17 @@
 import {
   getClientApplicationById,
   listClientApplications,
-  saveClientApplication,
+  saveClientApplicationAsync,
 } from "@/lib/client-application-storage";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 import type {
   ClientApplication,
   ClientApplicationStatus,
 } from "@/types/client-application";
+
+export type ClientApplicationMutationResult =
+  | { ok: true; application: ClientApplication }
+  | { ok: false; message: string; application?: ClientApplication };
 
 export function clientApplicationStatusLabel(
   status: ClientApplicationStatus
@@ -18,59 +22,58 @@ export function clientApplicationStatusLabel(
   return "pending";
 }
 
-export function saveClientApplicationEdits(
+export async function saveClientApplicationEdits(
   application: ClientApplication
-): ClientApplication {
+): Promise<ClientApplicationMutationResult> {
   const updated: ClientApplication = {
     ...application,
     updatedAt: new Date().toISOString(),
   };
-  saveClientApplication(updated);
-  return updated;
+  const result = await saveClientApplicationAsync(updated);
+  if (!result.ok) {
+    return { ok: false, message: result.message, application: updated };
+  }
+  return { ok: true, application: result.application };
 }
 
-export function updateClientApplicationStatus(
+export async function updateClientApplicationStatus(
   id: string,
   status: ClientApplicationStatus
-): ClientApplication | null {
+): Promise<ClientApplicationMutationResult> {
   const existing = getClientApplicationById(id);
-  if (!existing) return null;
-  const updated: ClientApplication = {
+  if (!existing) {
+    return { ok: false, message: "Client application not found." };
+  }
+  return saveClientApplicationEdits({
     ...existing,
     status,
-    updatedAt: new Date().toISOString(),
-  };
-  saveClientApplication(updated);
-  return updated;
+  });
 }
 
-export function approveClientApplication(
+export async function approveClientApplication(
   application: ClientApplication
-): ClientApplication {
+): Promise<ClientApplicationMutationResult> {
   return saveClientApplicationEdits({
     ...application,
     status: "ACTIVE",
-    updatedAt: new Date().toISOString(),
   });
 }
 
-export function rejectClientApplication(
+export async function rejectClientApplication(
   application: ClientApplication
-): ClientApplication {
+): Promise<ClientApplicationMutationResult> {
   return saveClientApplicationEdits({
     ...application,
     status: "REJECTED",
-    updatedAt: new Date().toISOString(),
   });
 }
 
-export function archiveClientApplication(
+export async function archiveClientApplication(
   application: ClientApplication
-): ClientApplication {
+): Promise<ClientApplicationMutationResult> {
   return saveClientApplicationEdits({
     ...application,
     status: "ARCHIVED",
-    updatedAt: new Date().toISOString(),
   });
 }
 

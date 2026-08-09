@@ -159,26 +159,59 @@ export function listClientApplications(): readonly ClientApplication[] {
   return getClientApplicationsSnapshot();
 }
 
-/** Persist client application (cache + Supabase when configured). */
+/** Persist client application (cache + fire-and-forget remote). Prefer async. */
 export function saveClientApplication(application: ClientApplication): void {
-  if (typeof window === "undefined") return;
+  void saveClientApplicationAsync(application).then((result) => {
+    if (!result.ok) {
+      console.warn("[SMOAC applications] client upsert failed:", result.message);
+    }
+  });
+}
+
+export type ClientApplicationSaveResult =
+  | { ok: true; application: ClientApplication }
+  | { ok: false; message: string };
+
+/**
+ * Await remote upsert before caching — admin UI must not claim success
+ * when the database write failed.
+ */
+export async function saveClientApplicationAsync(
+  application: ClientApplication
+): Promise<ClientApplicationSaveResult> {
+  if (typeof window === "undefined") {
+    return { ok: false, message: "Unavailable on server" };
+  }
   const nextApp = withSessionUserId(application);
+
+  if (!isMarketplaceSupabaseActive()) {
+    const existing = listClientApplications();
+    const next = [
+      nextApp,
+      ...existing.filter((item) => item.id !== nextApp.id),
+    ];
+    applyCache(next);
+    writeLocalApplications(next);
+    return { ok: true, application: nextApp };
+  }
+
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) {
+    return { ok: false, message: "Authentication client unavailable" };
+  }
+
+  const result = await upsertClientApplication(supabase, nextApp);
+  if (!result.ok) {
+    return { ok: false, message: result.message };
+  }
+
   const existing = listClientApplications();
   const next = [
     nextApp,
     ...existing.filter((item) => item.id !== nextApp.id),
   ];
   applyCache(next);
-  writeLocalApplications(next);
-
-  if (!isMarketplaceSupabaseActive()) return;
-  const supabase = getMarketplaceAuthClient();
-  if (!supabase) return;
-  void upsertClientApplication(supabase, nextApp).then((result) => {
-    if (!result.ok) {
-      console.warn("[SMOAC applications] client upsert failed:", result.message);
-    }
-  });
+  return { ok: true, application: nextApp };
 }
 
 export function getClientApplicationById(

@@ -1,34 +1,55 @@
-/* Mobile Safari — supplemental tuning (stacking rules live in site-chrome.css) */
+/* Mobile Safari — zoom stability, GPU relief, no site-wide zoom lock */
 
-@media (max-width: 767px) {
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (max-width: 1023px) {
   :root {
     --mesh-blur: 52px;
     --mesh-blur-lg: 64px;
   }
 
-  /* Glass panels on page content — reduced blur, opaque fallback on iOS */
-  @supports (-webkit-touch-callout: none) {
-    .top50-card__article,
-    .explore-search-shell,
-    .explore-filter-panel,
-    .glass-panel:not(.site-header__frost),
-    .save-button,
-    .nav-profile__trigger {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-    }
+  /*
+   * Accidental double-tap zoom — keep pinch-zoom available.
+   * Do not set touch-action:none on body (blocks legitimate pans/taps).
+   */
+  a,
+  button,
+  summary,
+  label,
+  [role="button"],
+  [role="tab"],
+  [role="radio"],
+  .smoac-control,
+  .site-header__btn,
+  .mobile-bottom-nav__item,
+  .trainer-card-save,
+  .tap-link {
+    touch-action: manipulation;
+  }
 
-    .top50-card__article {
-      background: rgba(8, 8, 12, 0.92) !important;
-    }
+  /*
+   * iOS Safari auto-zooms focused fields under 16px computed size.
+   * Keep pinch-zoom; stop focus-zoom jank page-to-page.
+   */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+      [type="file"]
+    ):not([type="hidden"]):not([type="submit"]):not([type="button"]):not(
+      [type="reset"]
+    ):not([type="image"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
 
-    .explore-search-shell {
-      background: rgba(14, 14, 20, 0.92) !important;
-    }
-
-    .explore-filter-panel {
-      background: rgba(12, 12, 18, 0.94) !important;
-    }
+  /* Fixed chrome — cheaper compositing under pinch-zoom / scroll */
+  #site-header.site-header,
+  .mobile-bottom-nav,
+  .mobile-bottom-nav__pill {
+    contain: layout style;
+    backface-visibility: hidden;
   }
 
   .home-hero {
@@ -47,6 +68,56 @@
 
   .site-page-backdrop__blob {
     filter: blur(64px) !important;
+  }
+}
+
+/* True iPhone Safari — drop expensive glass that OOMs on zoom/scroll */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 1023px) {
+    .top50-card__article,
+    .explore-search-shell,
+    .explore-filter-panel,
+    .glass-panel:not(.site-header__frost),
+    .save-button,
+    .nav-profile__trigger,
+    .login-field__input,
+    .admin-nav,
+    .admin-exec-snapshot__card,
+    .dashboard-glass-premium,
+    .mobile-bottom-nav__pill {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .top50-card__article {
+      background: rgba(8, 8, 12, 0.92) !important;
+    }
+
+    .explore-search-shell {
+      background: rgba(14, 14, 20, 0.92) !important;
+    }
+
+    .explore-filter-panel {
+      background: rgba(12, 12, 18, 0.94) !important;
+    }
+
+    .mobile-bottom-nav__pill {
+      background: rgba(12, 10, 18, 0.94) !important;
+    }
+
+    /* Huge blurs under zoom = WebContent kill. Prefer soft gradients. */
+    .dashboard-page__header-glow,
+    .site-page-backdrop__blob,
+    .atmosphere-blob {
+      filter: none !important;
+    }
+
+    .aurora-atmosphere--motion .aurora-atmosphere__starfield,
+    .aurora-atmosphere--motion .aurora-atmosphere__nebula--primary,
+    .aurora-atmosphere--motion .aurora-atmosphere__nebula--secondary,
+    .aurora-atmosphere--motion .aurora-atmosphere__nebula--tertiary {
+      animation: none !important;
+    }
   }
 }
 

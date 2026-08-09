@@ -245,26 +245,42 @@ export function AdminDashboardPageClient() {
                   onRejectSpecialist={handleReject}
                   onArchiveSpecialist={handleArchiveSpecialist}
                   onActivateSpecialist={handleActivate}
-                  onSaveClient={(app) =>
-                    permissions.canApproveApplications
-                      ? saveClientApplicationEdits(app)
-                      : null
-                  }
-                  onApproveClient={(app) =>
-                    permissions.canApproveApplications
-                      ? approveClientApplication(app)
-                      : null
-                  }
-                  onRejectClient={(app) =>
-                    permissions.canApproveApplications
-                      ? rejectClientApplication(app)
-                      : null
-                  }
-                  onArchiveClient={(app) =>
-                    permissions.canApproveApplications
-                      ? archiveClientApplication(app)
-                      : null
-                  }
+                  onSaveClient={async (app) => {
+                    if (!permissions.canApproveApplications) {
+                      return {
+                        ok: false,
+                        message: "Missing permission to edit applications.",
+                      };
+                    }
+                    return saveClientApplicationEdits(app);
+                  }}
+                  onApproveClient={async (app) => {
+                    if (!permissions.canApproveApplications) {
+                      return {
+                        ok: false,
+                        message: "Missing permission to approve applications.",
+                      };
+                    }
+                    return approveClientApplication(app);
+                  }}
+                  onRejectClient={async (app) => {
+                    if (!permissions.canApproveApplications) {
+                      return {
+                        ok: false,
+                        message: "Missing permission to reject applications.",
+                      };
+                    }
+                    return rejectClientApplication(app);
+                  }}
+                  onArchiveClient={async (app) => {
+                    if (!permissions.canApproveApplications) {
+                      return {
+                        ok: false,
+                        message: "Missing permission to archive applications.",
+                      };
+                    }
+                    return archiveClientApplication(app);
+                  }}
                 />
               ) : null}
               {resolvedSection === "specialists" ? (

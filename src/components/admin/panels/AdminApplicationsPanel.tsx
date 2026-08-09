@@ -8,6 +8,7 @@ import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
 import type { AdminApplicationMutationResult } from "@/lib/admin-applications-service";
 import { clientApplicationStatusLabel } from "@/lib/client-applications-service";
+import type { ClientApplicationMutationResult } from "@/lib/client-applications-service";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { ClientApplication } from "@/types/client-application";
@@ -30,6 +31,12 @@ type SpecialistAppAction = (
   | AdminApplicationMutationResult
   | Promise<AdminApplicationMutationResult>;
 
+type ClientAppAction = (
+  app: ClientApplication
+) =>
+  | ClientApplicationMutationResult
+  | Promise<ClientApplicationMutationResult>;
+
 interface AdminApplicationsPanelProps {
   specialistApplications: readonly SpecialistApplication[];
   clientApplications: readonly ClientApplication[];
@@ -39,10 +46,10 @@ interface AdminApplicationsPanelProps {
   onRejectSpecialist: SpecialistAppAction;
   onArchiveSpecialist: SpecialistAppAction;
   onActivateSpecialist: SpecialistAppAction;
-  onSaveClient: (app: ClientApplication) => ClientApplication | null;
-  onApproveClient: (app: ClientApplication) => ClientApplication | null;
-  onRejectClient: (app: ClientApplication) => ClientApplication | null;
-  onArchiveClient: (app: ClientApplication) => ClientApplication | null;
+  onSaveClient: ClientAppAction;
+  onApproveClient: ClientAppAction;
+  onRejectClient: ClientAppAction;
+  onArchiveClient: ClientAppAction;
 }
 
 export function AdminApplicationsPanel({

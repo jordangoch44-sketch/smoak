@@ -4,20 +4,35 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useSyncedState } from "@/hooks/useSyncedState";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
-import { clientApplicationStatusLabel } from "@/lib/client-applications-service";
+import {
+  clientApplicationStatusLabel,
+  type ClientApplicationMutationResult,
+} from "@/lib/client-applications-service";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { ClientApplication } from "@/types/client-application";
 
-type ReviewFeedback = "saved" | "approved" | "rejected" | "archived" | null;
+type ReviewFeedback =
+  | "saved"
+  | "approved"
+  | "rejected"
+  | "archived"
+  | "error"
+  | null;
+
+type ClientAppAction = (
+  app: ClientApplication
+) =>
+  | ClientApplicationMutationResult
+  | Promise<ClientApplicationMutationResult>;
 
 interface AdminClientApplicationReviewPanelProps {
   application: ClientApplication;
   permissions: AdminPermissions;
   onClose: () => void;
-  onSave: (app: ClientApplication) => ClientApplication | null;
-  onApprove: (app: ClientApplication) => ClientApplication | null;
-  onReject: (app: ClientApplication) => ClientApplication | null;
-  onArchive: (app: ClientApplication) => ClientApplication | null;
+  onSave: ClientAppAction;
+  onApprove: ClientAppAction;
+  onReject: ClientAppAction;
+  onArchive: ClientAppAction;
 }
 
 function formatSubmittedDate(iso: string | null): string {
@@ -40,6 +55,7 @@ export function AdminClientApplicationReviewPanel({
 }: AdminClientApplicationReviewPanelProps) {
   const [draft, setDraft] = useSyncedState(application.id, application);
   const [feedback, setFeedback] = useState<ReviewFeedback>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<
     "save" | "approve" | "reject" | "archive" | null
   >(null);
@@ -53,7 +69,7 @@ export function AdminClientApplicationReviewPanel({
   }, []);
 
   useEffect(() => {
-    if (!feedback) return;
+    if (!feedback || feedback === "error") return;
     const timer = window.setTimeout(() => setFeedback(null), 2800);
     return () => window.clearTimeout(timer);
   }, [feedback]);
@@ -64,26 +80,52 @@ export function AdminClientApplicationReviewPanel({
   ) {
     setDraft((prev) => ({ ...prev, [key]: value }));
     setFeedback(null);
+    setErrorMessage(null);
   }
 
   async function runAction(
     action: "save" | "approve" | "reject" | "archive",
-    runner: () => ClientApplication | null
+    runner: ClientAppAction
   ) {
     setBusyAction(action);
-    const result = runner();
-    setBusyAction(null);
-    if (result) {
-      setDraft(result);
-      setFeedback(
-        action === "save"
-          ? "saved"
-          : action === "approve"
-            ? "approved"
-            : action === "reject"
-              ? "rejected"
-              : "archived"
+    setErrorMessage(null);
+    try {
+      const result = await runner(draft);
+      if (result.ok) {
+        setDraft(result.application);
+        setFeedback(
+          action === "save"
+            ? "saved"
+            : action === "approve"
+              ? "approved"
+              : action === "reject"
+                ? "rejected"
+                : "archived"
+        );
+        if (action === "approve" || action === "reject" || action === "archive") {
+          window.setTimeout(() => onClose(), action === "approve" ? 1200 : 400);
+        }
+      } else {
+        setFeedback("error");
+        setErrorMessage(
+          result.message ||
+            (action === "save"
+              ? "Unable to save client application."
+              : action === "approve"
+                ? "Unable to mark client active."
+                : action === "reject"
+                  ? "Unable to reject application."
+                  : "Unable to archive application.")
+        );
+      }
+    } catch (err) {
+      console.error("[SMOAC ADMIN] Client application action failed:", err);
+      setFeedback("error");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Unable to update client application."
       );
+    } finally {
+      setBusyAction(null);
     }
   }
 
@@ -96,7 +138,9 @@ export function AdminClientApplicationReviewPanel({
           ? "Application rejected."
           : feedback === "archived"
             ? "Application archived."
-            : null;
+            : feedback === "error"
+              ? errorMessage || "Something went wrong."
+              : null;
 
   const sheet = (
     <div className="admin-review-sheet" role="dialog" aria-modal="true">
@@ -207,7 +251,15 @@ export function AdminClientApplicationReviewPanel({
 
         <footer className="admin-review-sheet__footer" data-admin-review-actions>
           {feedbackMessage ? (
-            <p className="admin-review-sheet__feedback" role="status" aria-live="polite">
+            <p
+              className={
+                feedback === "error"
+                  ? "admin-review-sheet__feedback admin-review-sheet__feedback--error"
+                  : "admin-review-sheet__feedback"
+              }
+              role={feedback === "error" ? "alert" : "status"}
+              aria-live="polite"
+            >
               {feedbackMessage}
             </p>
           ) : null}
@@ -217,7 +269,7 @@ export function AdminClientApplicationReviewPanel({
                 type="button"
                 className="admin-btn admin-btn--block smoac-control"
                 disabled={busyAction != null}
-                onClick={() => runAction("save", () => onSave(draft))}
+                onClick={() => void runAction("save", onSave)}
               >
                 {busyAction === "save" ? "Saving…" : "Save edits"}
               </button>
@@ -227,7 +279,7 @@ export function AdminClientApplicationReviewPanel({
                     type="button"
                     className="admin-btn admin-btn--primary admin-btn--block smoac-control"
                     disabled={busyAction != null}
-                    onClick={() => runAction("approve", () => onApprove(draft))}
+                    onClick={() => void runAction("approve", onApprove)}
                   >
                     {busyAction === "approve" ? "Approving…" : "Mark active"}
                   </button>
@@ -235,7 +287,7 @@ export function AdminClientApplicationReviewPanel({
                     type="button"
                     className="admin-btn admin-btn--danger admin-btn--block smoac-control"
                     disabled={busyAction != null}
-                    onClick={() => runAction("reject", () => onReject(draft))}
+                    onClick={() => void runAction("reject", onReject)}
                   >
                     {busyAction === "reject" ? "Rejecting…" : "Reject"}
                   </button>
@@ -246,7 +298,7 @@ export function AdminClientApplicationReviewPanel({
                   type="button"
                   className="admin-btn admin-btn--block smoac-control"
                   disabled={busyAction != null}
-                  onClick={() => runAction("archive", () => onArchive(draft))}
+                  onClick={() => void runAction("archive", onArchive)}
                 >
                   {busyAction === "archive" ? "Archiving…" : "Archive"}
                 </button>

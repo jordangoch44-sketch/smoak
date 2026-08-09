@@ -40,9 +40,12 @@ export const metadata: Metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  viewportFit: "cover",
+  viewportFit: "cover" as const,
   themeColor: "#020203",
+  /* Keep pinch-zoom. Do not set maximumScale / userScalable — iOS ignores
+   * locks for a11y, and locking causes worse focus/layout bugs. */
 };
+
 
 /** Root shell — no global CSS, providers, or chrome (see (site)/layout and (diagnostics)/tap-test) */
 export default function RootLayout({
