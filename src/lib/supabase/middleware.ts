@@ -56,18 +56,24 @@ function isProtectedPath(pathname: string): boolean {
   );
 }
 
+type RoleLookup =
+  | { status: "ok"; role: AppRole }
+  | { status: "missing" }
+  | { status: "error" };
+
 async function fetchUserRole(
   supabase: ReturnType<typeof createServerClient>,
   userId: string
-): Promise<AppRole | null> {
+): Promise<RoleLookup> {
   const { data, error } = await supabase
     .from("user_roles")
     .select("role")
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (error || !data?.role) return null;
-  return data.role as AppRole;
+  if (error) return { status: "error" };
+  if (!data?.role) return { status: "missing" };
+  return { status: "ok", role: data.role as AppRole };
 }
 
 export async function updateSession(request: NextRequest) {
@@ -118,7 +124,11 @@ export async function updateSession(request: NextRequest) {
     }
     /* Admin sessions have no public-site account — let them reach /login
      * to sign in as a client/specialist instead of bouncing home. */
-    const role = await fetchUserRole(supabase, user.id);
+    const roleLookup = await fetchUserRole(supabase, user.id);
+    if (roleLookup.status === "error") {
+      return supabaseResponse;
+    }
+    const role = roleLookup.status === "ok" ? roleLookup.role : null;
     if (role && isAdminAppRole(role)) {
       return supabaseResponse;
     }
@@ -155,7 +165,14 @@ export async function updateSession(request: NextRequest) {
     return redirectToAppPath(request, LOGIN_PATH);
   }
 
-  const role = await fetchUserRole(supabase, user.id);
+  const roleLookup = await fetchUserRole(supabase, user.id);
+
+  /* Transient DB/RLS blips must not kick an authenticated session off protected routes. */
+  if (roleLookup.status === "error") {
+    return supabaseResponse;
+  }
+
+  const role = roleLookup.status === "ok" ? roleLookup.role : null;
 
   if (pathname.startsWith(CLIENT_DASHBOARD_PATH)) {
     if (role !== "client") {

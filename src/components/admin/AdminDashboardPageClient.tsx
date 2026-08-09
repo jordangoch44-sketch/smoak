@@ -150,7 +150,7 @@ export function AdminDashboardPageClient() {
     }
     const approved = await approveApplication(app);
     if (!approved.ok) return approved;
-    const activated = await activateFromApplication(approved.application.id);
+    const activated = await activateFromApplication(approved.application);
     /* Fail closed — do not claim success if catalog/email activation failed. */
     if (!activated.ok) {
       return {

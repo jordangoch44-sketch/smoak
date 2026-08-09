@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useSyncExternalStore,
 } from "react";
 import {
@@ -17,7 +18,7 @@ import {
 import type { InternalAuthSession } from "@/types/internal-auth";
 import { useSupabaseConfig } from "@/contexts/SupabaseConfigContext";
 import {
-  getCurrentMarketplaceSession,
+  lookupMarketplaceSession,
   setClientSupabaseEnabled,
   signInAdminWithPassword,
   signOutAdmin,
@@ -25,6 +26,7 @@ import {
 import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
 import type { AdminRoleType } from "@/types/admin-permissions";
 import { validateDevInternalLogin } from "@/lib/internal-auth";
+import type { AuthSession } from "@/types/auth";
 
 export interface InternalAuthSessionContextValue {
   isReady: boolean;
@@ -58,7 +60,7 @@ function getServerReadySnapshot() {
 }
 
 function toInternalSession(
-  auth: Awaited<ReturnType<typeof getCurrentMarketplaceSession>>
+  auth: AuthSession | null
 ): InternalAuthSession | null {
   if (!auth || auth.role !== "admin" || !auth.adminRole) return null;
   return {
@@ -75,6 +77,7 @@ export function InternalAuthSessionProvider({
   children: React.ReactNode;
 }) {
   const { enabled: supabaseAuth } = useSupabaseConfig();
+  const signingOutRef = useRef(false);
 
   useEffect(() => {
     setClientSupabaseEnabled(supabaseAuth);
@@ -91,9 +94,23 @@ export function InternalAuthSessionProvider({
   );
 
   const refreshInternalSession = useCallback(async () => {
-    if (!supabaseAuth) return;
-    const marketplace = await getCurrentMarketplaceSession();
-    setInternalAuthSession(toInternalSession(marketplace));
+    if (!supabaseAuth || signingOutRef.current) return;
+
+    const result = await lookupMarketplaceSession();
+    if (signingOutRef.current) return;
+
+    if (result.status === "ok") {
+      setInternalAuthSession(toInternalSession(result.session));
+      return;
+    }
+
+    if (result.status === "signed_out") {
+      setInternalAuthSession(null);
+      return;
+    }
+
+    /* Transient role/profile/network error — keep the existing admin session
+     * so Control does not bounce to login mid-scroll or mid-approve. */
   }, [supabaseAuth]);
 
   useEffect(() => {
@@ -106,8 +123,19 @@ export function InternalAuthSessionProvider({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      void refreshInternalSession();
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (signingOutRef.current) return;
+
+      if (event === "SIGNED_OUT") {
+        setInternalAuthSession(null);
+        return;
+      }
+
+      /* Defer auth API work — calling getUser inside the listener can stall. */
+      window.setTimeout(() => {
+        if (signingOutRef.current) return;
+        void refreshInternalSession();
+      }, 0);
     });
 
     return () => {
@@ -152,10 +180,15 @@ export function InternalAuthSessionProvider({
   );
 
   const signOut = useCallback(async () => {
-    if (supabaseAuth) {
-      await signOutAdmin();
+    signingOutRef.current = true;
+    try {
+      if (supabaseAuth) {
+        await signOutAdmin();
+      }
+      setInternalAuthSession(null);
+    } finally {
+      signingOutRef.current = false;
     }
-    setInternalAuthSession(null);
   }, [supabaseAuth]);
 
   const value = useMemo(

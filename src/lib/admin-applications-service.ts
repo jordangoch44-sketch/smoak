@@ -9,6 +9,10 @@ import {
   syncProfileOverridesFromApplication,
 } from "@/lib/managed-specialist-profile";
 import {
+  enrichSpecialistApplicationFields,
+  normalizeSpecialistApplicationShape,
+} from "@/lib/specialist-application-fields";
+import {
   formatSpecialistGoLiveBlockMessage,
   getSpecialistGoLiveGaps,
 } from "@/lib/specialist-go-live-gate";
@@ -64,17 +68,28 @@ function normalizeApplicationEdits(
         (cert) => cert?.name?.trim() && cert?.issuer?.trim()
       )
     : [];
-  return {
+  const shaped = normalizeSpecialistApplicationShape({
     ...application,
     updatedAt: new Date().toISOString(),
     certifications,
-    pricing: {
-      ...application.pricing,
-      oneOnOnePrice: String(application.pricing?.oneOnOnePrice ?? ""),
-      onlineCoachingPrice: String(application.pricing?.onlineCoachingPrice ?? ""),
-      packageOptions: String(application.pricing?.packageOptions ?? ""),
-    },
-  };
+  });
+  const enriched = enrichSpecialistApplicationFields(
+    shaped
+  ) as SpecialistApplication;
+
+  const oneOnOne = String(enriched.pricing.oneOnOnePrice ?? "").trim();
+  const online = String(enriched.pricing.onlineCoachingPrice ?? "").trim();
+  if (!oneOnOne && online) {
+    return {
+      ...enriched,
+      pricing: {
+        ...enriched.pricing,
+        oneOnOnePrice: online,
+      },
+    };
+  }
+
+  return enriched;
 }
 
 /** Persist application edits and await remote application (+ catalog if approved). */
@@ -219,11 +234,16 @@ export async function archiveSpecialistApplicationAsync(
 /**
  * Approve (if needed) + await catalog upsert as approved + clear hide.
  * Public Explore visibility is specialist_profiles.status = approved.
+ * Prefer passing the saved application object so a concurrent remote
+ * hydrate cannot drop fields (e.g. session price) before publish.
  */
 export async function activateSpecialistFromApplicationAsync(
-  id: string
+  applicationOrId: string | SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
-  const existing = getSpecialistApplicationById(id);
+  const existing =
+    typeof applicationOrId === "string"
+      ? getSpecialistApplicationById(applicationOrId)
+      : applicationOrId;
   if (!existing) {
     return { ok: false, message: "Application not found." };
   }
@@ -249,13 +269,13 @@ export async function activateSpecialistFromApplicationAsync(
   }
 
   /* Ensure status is approved even if row was previously hidden */
-  const restored = await restoreApprovedSpecialistProfileAsync(id);
+  const restored = await restoreApprovedSpecialistProfileAsync(approved.id);
   if (!restored.ok) {
     return { ok: false, message: restored.message, application: approved };
   }
 
-  unhideTrainerId(id);
-  patchAdminSpecialistMeta(id, { visibility: "active" });
+  unhideTrainerId(approved.id);
+  patchAdminSpecialistMeta(approved.id, { visibility: "active" });
 
   /* Pro trial is opt-in from Plan & upgrade (one-time) — not auto-granted on approve. */
 
@@ -294,7 +314,7 @@ export async function activateSpecialistApplicationWithEditsAsync(
   });
   if (!saved.ok) return saved;
 
-  return activateSpecialistFromApplicationAsync(saved.application.id);
+  return activateSpecialistFromApplicationAsync(saved.application);
 }
 
 export function listApplicationsByStatus(

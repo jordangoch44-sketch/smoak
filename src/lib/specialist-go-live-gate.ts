@@ -30,6 +30,13 @@ function parseSessionPrice(value: unknown): number {
   return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
 }
 
+function resolveSessionPrice(app: SpecialistApplication): number {
+  const fromOneOnOne = parseSessionPrice(app.pricing?.oneOnOnePrice);
+  if (fromOneOnOne > 0) return fromOneOnOne;
+  /* Older drafts sometimes only filled online coaching — still a publishable rate. */
+  return parseSessionPrice(app.pricing?.onlineCoachingPrice);
+}
+
 function isRealProfilePhoto(url: unknown): boolean {
   if (typeof url !== "string") return false;
   const trimmed = url.trim();
@@ -57,7 +64,7 @@ export function getSpecialistGoLiveGaps(
     gaps.push({ id: "photo", label: "Real profile photo" });
   }
 
-  if (parseSessionPrice(app.pricing?.oneOnOnePrice) <= 0) {
+  if (resolveSessionPrice(app) <= 0) {
     gaps.push({ id: "price", label: "Session price (e.g. $120)" });
   }
 

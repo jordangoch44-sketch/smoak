@@ -21,6 +21,14 @@ function parsePrice(value: unknown): number {
   return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
 }
 
+function resolveApplicationSessionPrice(
+  app: SpecialistOnboardingState | SpecialistApplication
+): number {
+  const oneOnOne = parsePrice(app.pricing?.oneOnOnePrice);
+  if (oneOnOne > 0) return oneOnOne;
+  return parsePrice(app.pricing?.onlineCoachingPrice);
+}
+
 function linesToUrls(raw: string): string[] {
   return raw
     .split("\n")
@@ -56,7 +64,7 @@ export function applicationToTrainer(
 ): Trainer {
   const enriched = enrichSpecialistApplicationFields(app);
   /* Never invent a marketplace price — go-live gate requires a real session rate. */
-  const pricePerSession = parsePrice(app.pricing?.oneOnOnePrice);
+  const pricePerSession = resolveApplicationSessionPrice(app);
   const city = app.city?.trim() ?? "";
   const neighborhood = app.neighborhood?.trim() ?? "";
   const location = [neighborhood, city, app.state]
@@ -202,7 +210,7 @@ export function applicationToPreviewTrainer(
 export function applicationToProfileOverrides(
   app: SpecialistApplication
 ): SpecialistProfileOverrides {
-  const pricePerSession = parsePrice(app.pricing?.oneOnOnePrice);
+  const pricePerSession = resolveApplicationSessionPrice(app);
   const zip = app.zipCode?.trim() ?? "";
   const neighborhood = app.neighborhood?.trim() ?? "";
   const coords =

@@ -42,6 +42,28 @@ function applicationsSignature(apps: readonly SpecialistApplication[]): string {
     .join("|");
 }
 
+function applicationTimestamp(app: SpecialistApplication): number {
+  const parsed = Date.parse(app.updatedAt || "");
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/** Prefer the freshest copy when remote hydrate races a just-saved edit. */
+function mergeRemoteApplications(
+  remote: readonly SpecialistApplication[],
+  local: readonly SpecialistApplication[]
+): SpecialistApplication[] {
+  if (local.length === 0) return [...remote];
+  const localById = new Map(local.map((app) => [app.id, app]));
+  const merged = remote.map((remoteApp) => {
+    const localApp = localById.get(remoteApp.id);
+    if (!localApp) return remoteApp;
+    return applicationTimestamp(localApp) > applicationTimestamp(remoteApp)
+      ? localApp
+      : remoteApp;
+  });
+  return merged;
+}
+
 function safeParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
   try {
@@ -131,8 +153,8 @@ async function hydrateFromSupabase(): Promise<void> {
       return;
     }
 
-    applyCache(result.applications);
-    writeLocalApplications(result.applications);
+    applyCache(mergeRemoteApplications(result.applications, cachedApplications));
+    writeLocalApplications(cachedApplications);
     hydrated = true;
   } finally {
     if (generation === loadGeneration) {
