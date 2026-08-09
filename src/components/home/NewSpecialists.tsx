@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
@@ -26,6 +27,7 @@ export function NewSpecialists({
   initialCatalog?: Trainer[];
   catalogMode?: PublicCatalogMode;
 }) {
+  const router = useRouter();
   const hydrated = useHydrated();
   const personalizationCity = usePersonalizationCity();
   const userCoords = useActiveUserCoordinates();
@@ -55,6 +57,18 @@ export function NewSpecialists({
     catalogMode,
   ]);
 
+  /* Warm the soft-nav intercept so the sheet can mount without a cold RSC wait. */
+  useEffect(() => {
+    if (!hydrated || newcomers.length === 0) return;
+    for (const trainer of newcomers.slice(0, 4)) {
+      try {
+        router.prefetch(`/trainers/${trainer.id}`);
+      } catch {
+        /* prefetch is best-effort */
+      }
+    }
+  }, [hydrated, newcomers, router]);
+
   if (newcomers.length === 0) return null;
 
   return (
@@ -80,7 +94,11 @@ export function NewSpecialists({
             const href = `/trainers/${trainer.id}`;
 
             return (
-              <div key={trainer.id} className="home-portrait-card relative" role="listitem">
+              <div
+                key={trainer.id}
+                className="home-portrait-card relative"
+                role="listitem"
+              >
                 <SpecialistImpressionBeacon
                   specialistId={trainer.id}
                   surface="home_new"

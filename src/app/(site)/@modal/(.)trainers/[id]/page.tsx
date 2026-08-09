@@ -1,24 +1,18 @@
-import { TrainerProfilePageClient } from "@/components/profile/TrainerProfilePageClient";
-import { loadPublicTrainerByIdForServer } from "@/lib/profiles/fetch-approved-catalog-server";
+import { TrainerProfileInterceptClient } from "@/components/profile/TrainerProfileInterceptClient";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
 /**
- * Soft navigation from Explore / Home / Saved, etc. keeps the previous page
+ * Soft navigation from Explore / Home / Saved keeps the previous page
  * mounted in `children` while this slot renders the profile sheet on top.
+ *
+ * Opens from the client catalog immediately — no server Supabase wait on tap.
  */
 export default async function InterceptedTrainerProfilePage({
   params,
 }: PageProps) {
   const { id } = await params;
-  const trainer = await loadPublicTrainerByIdForServer(id);
-
-  return (
-    <TrainerProfilePageClient
-      trainerId={id}
-      initialTrainer={trainer}
-    />
-  );
+  return <TrainerProfileInterceptClient trainerId={id} />;
 }

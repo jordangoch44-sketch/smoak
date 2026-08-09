@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -28,7 +29,7 @@ import type { MotionValue } from "framer-motion";
 
 /** Soft slide-up — no spring overshoot (that reads as a zoom on open). */
 const OPEN_TRANSITION = {
-  duration: 0.34,
+  duration: 0.28,
   ease: [0.32, 0.72, 0, 1] as [number, number, number, number],
 };
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
@@ -105,7 +106,10 @@ export function TrainerProfileSheet({
   const hydrated = useHydrated();
   const isSheetViewport = useTabletViewport(true);
   const reduceMotion = useReducedMotion();
-  const y = useMotionValue(0);
+  /* Start off-screen so the first paint never flashes the open sheet. */
+  const y = useMotionValue(
+    typeof window !== "undefined" ? viewportHeight() : 800
+  );
   const vhRef = useRef(viewportHeight());
   const rootRef = useRef<HTMLDivElement>(null);
   const dismissingRef = useRef(false);
@@ -184,7 +188,7 @@ export function TrainerProfileSheet({
     runDismissAnimation({ navigate: true });
   }, [exited, runDismissAnimation]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!isSheetViewport) return;
 
     const syncVh = () => {
