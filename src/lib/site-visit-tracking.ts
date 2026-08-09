@@ -1,11 +1,10 @@
 /**
  * Anonymous site-visit capture for admin traffic analytics.
  * No PII: a random per-device key, path, and traffic source only.
+ * Browser posts to first-party `/api/analytics/site-visit` (Safari-friendly).
  */
-import {
-  getMarketplaceAuthClient,
-  isMarketplaceSupabaseActive,
-} from "@/lib/auth/marketplace-auth";
+import { postAnalyticsBeacon } from "@/lib/analytics-beacon";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 
 const VISITOR_KEY_STORAGE = "smoac_visitor_key";
 const SESSION_SOURCE_FLAG = "smoac_visit_source_recorded";
@@ -99,27 +98,17 @@ export function recordSiteVisit(path: string): void {
   lastTrackedPath = path;
   lastTrackedAt = now;
 
-  const supabase = getMarketplaceAuthClient();
-  if (!supabase) return;
-
   const { key, isNew } = getOrCreateVisitorKey();
   const source = readSessionSource();
 
-  void supabase
-    .from("site_visits")
-    .insert({
-      path: path.slice(0, 300),
-      referrer_host: source.referrerHost,
-      utm_source: source.utmSource,
-      utm_medium: source.utmMedium,
-      utm_campaign: source.utmCampaign,
-      visitor_key: key,
-      is_new_visitor: isNew,
-      device: window.innerWidth < 768 ? "mobile" : "desktop",
-    })
-    .then(({ error }) => {
-      if (error) {
-        console.warn("[SMOAC traffic] visit insert failed:", error.message);
-      }
-    });
+  postAnalyticsBeacon("/api/analytics/site-visit", {
+    path: path.slice(0, 300),
+    referrer_host: source.referrerHost,
+    utm_source: source.utmSource,
+    utm_medium: source.utmMedium,
+    utm_campaign: source.utmCampaign,
+    visitor_key: key,
+    is_new_visitor: isNew,
+    device: window.innerWidth < 768 ? "mobile" : "desktop",
+  });
 }

@@ -1,11 +1,10 @@
 /**
  * Anonymous specialist engagement capture for specialist dashboard analytics.
  * No PII: visitor key + specialist id + event type only.
+ * Browser posts to first-party `/api/analytics/engagement` (Safari-friendly).
  */
-import {
-  getMarketplaceAuthClient,
-  isMarketplaceSupabaseActive,
-} from "@/lib/auth/marketplace-auth";
+import { postAnalyticsBeacon } from "@/lib/analytics-beacon";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { getOrCreateVisitorKey } from "@/lib/site-visit-tracking";
 
 export type SpecialistEngagementEventType =
@@ -64,25 +63,15 @@ export function recordSpecialistEngagement(input: {
     SESSION_SEEN.add(key);
   }
 
-  const supabase = getMarketplaceAuthClient();
-  if (!supabase) return;
-
   const { key: visitorKey } = getOrCreateVisitorKey();
 
-  void supabase
-    .from("specialist_engagement_events")
-    .insert({
-      specialist_id: specialistId,
-      event_type: input.event,
-      surface: clamp(input.surface ?? null, 60),
-      path: clamp(window.location.pathname, 300),
-      visitor_key: visitorKey,
-      device: window.innerWidth < 768 ? "mobile" : "desktop",
-      inquiry_action: clamp(input.inquiryAction ?? null, 60),
-    })
-    .then(({ error }) => {
-      if (error) {
-        console.warn("[SMOAC engagement] insert failed:", error.message);
-      }
-    });
+  postAnalyticsBeacon("/api/analytics/engagement", {
+    specialist_id: specialistId,
+    event_type: input.event,
+    surface: clamp(input.surface ?? null, 60),
+    path: clamp(window.location.pathname, 300),
+    visitor_key: visitorKey,
+    device: window.innerWidth < 768 ? "mobile" : "desktop",
+    inquiry_action: clamp(input.inquiryAction ?? null, 60),
+  });
 }
