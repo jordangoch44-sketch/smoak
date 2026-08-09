@@ -20,6 +20,10 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { SITE_ROUTES } from "@/lib/navigation";
+import {
+  claimOptimisticProfileSheet,
+  peekOptimisticProfileSheet,
+} from "@/lib/primed-trainer-profile";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
 import {
   ProfileSheetToolbarHostProvider,
@@ -41,6 +45,8 @@ const DISMISS_OVERFLOW_PX = 96;
 interface TrainerProfileSheetProps {
   children: ReactNode;
   label?: string;
+  /** Specialist id — used to claim the optimistic card sheet without a second enter. */
+  trainerId?: string;
 }
 
 function viewportHeight(): number {
@@ -101,14 +107,27 @@ function clearSheetDismissing() {
 export function TrainerProfileSheet({
   children,
   label = "Specialist profile",
+  trainerId,
 }: TrainerProfileSheetProps) {
   const router = useRouter();
   const hydrated = useHydrated();
   const isSheetViewport = useTabletViewport(true);
   const reduceMotion = useReducedMotion();
-  /* Start off-screen so the first paint never flashes the open sheet. */
+  const claimedOptimisticRef = useRef(
+    Boolean(
+      trainerId &&
+        typeof window !== "undefined" &&
+        peekOptimisticProfileSheet()?.trainer.id === trainerId
+    )
+  );
+  /* Start off-screen so the first paint never flashes the open sheet.
+   * If optimistic sheet already covers this id, stay at 0 (seamless handoff). */
   const y = useMotionValue(
-    typeof window !== "undefined" ? viewportHeight() : 800
+    claimedOptimisticRef.current
+      ? 0
+      : typeof window !== "undefined"
+        ? viewportHeight()
+        : 800
   );
   const vhRef = useRef(viewportHeight());
   const rootRef = useRef<HTMLDivElement>(null);
@@ -217,11 +236,16 @@ export function TrainerProfileSheet({
     root?.classList.remove("profile-sheet-root--pass-through");
     root?.removeAttribute("inert");
     lockSheetChrome();
-    y.set(vhRef.current);
 
-    if (reduceMotion) {
+    const claimed =
+      Boolean(trainerId && claimOptimisticProfileSheet(trainerId)) ||
+      claimedOptimisticRef.current;
+    claimedOptimisticRef.current = claimed;
+
+    if (claimed || reduceMotion) {
       y.set(0);
     } else {
+      y.set(vhRef.current);
       const controls = animate(y, 0, OPEN_TRANSITION);
       openAnimRef.current = controls;
       void controls.then(() => {
@@ -237,7 +261,7 @@ export function TrainerProfileSheet({
       unlockSheetChrome();
       clearSheetDismissing();
     };
-  }, [exited, isSheetViewport, reduceMotion, y]);
+  }, [exited, isSheetViewport, reduceMotion, trainerId, y]);
 
   useEffect(() => {
     if (!isSheetViewport) return;

@@ -159,7 +159,10 @@ export function TrainerProfilePageClient({
   } as CSSProperties;
 
   return (
-    <TrainerProfileSheet label={`${trainer.name} profile`}>
+    <TrainerProfileSheet
+      label={`${trainer.name} profile`}
+      trainerId={trainer.id}
+    >
       <div
         className={cn("profile-page--styled")}
         style={pageStyle}

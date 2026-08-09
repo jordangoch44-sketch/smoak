@@ -5,7 +5,7 @@ import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
+import { openOptimisticProfileSheet } from "@/lib/primed-trainer-profile";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -41,7 +41,7 @@ export function SponsoredSpecialistCard({
         <TapLink
           href={href}
           className="home-sponsored-card__media-link"
-          onClick={() => primeTrainerProfile(trainer)}
+          onClick={() => openOptimisticProfileSheet(trainer)}
         >
           <div className="home-sponsored-card__media">
             <TrainerThumbnail
@@ -63,7 +63,7 @@ export function SponsoredSpecialistCard({
           <TapLink
             href={href}
             className="home-sponsored-card__identity"
-            onClick={() => primeTrainerProfile(trainer)}
+            onClick={() => openOptimisticProfileSheet(trainer)}
           >
             <TrainerCardDetails
               trainer={trainer}
@@ -81,7 +81,7 @@ export function SponsoredSpecialistCard({
           <TapLink
             href={href}
             className="home-sponsored-card__cta"
-            onClick={() => primeTrainerProfile(trainer)}
+            onClick={() => openOptimisticProfileSheet(trainer)}
           >
             View Profile
           </TapLink>

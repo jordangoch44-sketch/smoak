@@ -197,3 +197,15 @@ body.profile-sheet-dismissing {
     overscroll-behavior: none;
   }
 }
+
+/* Instant card → sheet: real hero already shown; soft hint under it */
+.profile-sheet__optimistic-rest {
+  padding: 1.25rem 1.25rem 2.5rem;
+}
+
+.profile-sheet__optimistic-hint {
+  margin: 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.45);
+}

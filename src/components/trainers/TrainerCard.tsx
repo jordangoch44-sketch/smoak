@@ -16,7 +16,7 @@ import { TrainerCardGrid } from "./TrainerCardGrid";
 import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
 import { getTrainerPlacementBadge } from "@/lib/trainer-placement-badge";
-import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
+import { openOptimisticProfileSheet } from "@/lib/primed-trainer-profile";
 
 interface TrainerCardProps {
   trainer: Trainer;
@@ -65,7 +65,7 @@ export const TrainerCard = memo(function TrainerCard({
         <Link
           href={href}
           className="block active:opacity-95"
-          onClick={() => primeTrainerProfile(trainer)}
+          onClick={() => openOptimisticProfileSheet(trainer)}
         >
           {cardBody}
         </Link>
