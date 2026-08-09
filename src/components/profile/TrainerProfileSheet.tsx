@@ -6,6 +6,7 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -15,14 +16,16 @@ import {
   motion,
   useMotionValue,
   useReducedMotion,
-  useTransform,
 } from "framer-motion";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { SITE_ROUTES } from "@/lib/navigation";
 import {
   claimOptimisticProfileSheet,
+  getOptimisticProfileSheetServerSnapshot,
+  getOptimisticProfileSheetSnapshot,
   peekOptimisticProfileSheet,
+  subscribeOptimisticProfileSheet,
 } from "@/lib/primed-trainer-profile";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
 import {
@@ -31,14 +34,15 @@ import {
 } from "./ProfileSheetToolbarHostContext";
 import type { MotionValue } from "framer-motion";
 
-/** Soft slide-up — no spring overshoot (that reads as a zoom on open). */
+/** GPU tween — no spring overshoot (reads as zoom on phones). */
 const OPEN_TRANSITION = {
-  duration: 0.28,
-  ease: [0.32, 0.72, 0, 1] as [number, number, number, number],
+  type: "tween" as const,
+  duration: 0.32,
+  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
 };
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 /** Unified exit — entire sheet + floating chrome slide down together. */
-const DISMISS_DURATION = 0.28;
+const DISMISS_DURATION = 0.26;
 /** Extra travel so iOS visualViewport < 100dvh never leaves a stuck strip. */
 const DISMISS_OVERFLOW_PX = 96;
 
@@ -113,17 +117,24 @@ export function TrainerProfileSheet({
   const hydrated = useHydrated();
   const isSheetViewport = useTabletViewport(true);
   const reduceMotion = useReducedMotion();
-  const claimedOptimisticRef = useRef(
+  const optimistic = useSyncExternalStore(
+    subscribeOptimisticProfileSheet,
+    getOptimisticProfileSheetSnapshot,
+    getOptimisticProfileSheetServerSnapshot
+  );
+  const fromOptimisticRef = useRef(
     Boolean(
       trainerId &&
         typeof window !== "undefined" &&
         peekOptimisticProfileSheet()?.trainer.id === trainerId
     )
   );
+  const [handoffReady, setHandoffReady] = useState(!fromOptimisticRef.current);
+  const [entering, setEntering] = useState(!fromOptimisticRef.current);
   /* Start off-screen so the first paint never flashes the open sheet.
-   * If optimistic sheet already covers this id, stay at 0 (seamless handoff). */
+   * Optimistic handoff stays at 0 (no second enter). */
   const y = useMotionValue(
-    claimedOptimisticRef.current
+    fromOptimisticRef.current
       ? 0
       : typeof window !== "undefined"
         ? viewportHeight()
@@ -138,12 +149,6 @@ export function TrainerProfileSheet({
   /** Drop portal DOM after slide so soft-nav cannot leave a stuck strip. */
   const [exited, setExited] = useState(false);
 
-  const backdropOpacity = useTransform(y, (latest) => {
-    const fadeRange = vhRef.current * 0.45;
-    const progress = Math.min(1, Math.max(0, latest / fadeRange));
-    return 0.85 * (1 - progress);
-  });
-
   const navigateAway = useCallback(() => {
     programmaticNavRef.current = true;
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -157,6 +162,7 @@ export function TrainerProfileSheet({
     (options: { navigate: boolean }) => {
       openAnimRef.current?.stop();
       openAnimRef.current = null;
+      setEntering(false);
 
       /*
        * Restore site chrome immediately. Soft-nav can keep this tree mounted
@@ -191,6 +197,7 @@ export function TrainerProfileSheet({
 
       const safety = window.setTimeout(finish, DISMISS_DURATION * 1000 + 160);
       void animate(y, target, {
+        type: "tween",
         duration: DISMISS_DURATION,
         ease: DISMISS_EASE,
       }).then(() => {
@@ -207,8 +214,24 @@ export function TrainerProfileSheet({
     runDismissAnimation({ navigate: true });
   }, [exited, runDismissAnimation]);
 
+  /* Wait for optimistic slide to finish, then claim (no mid-animation swap). */
   useLayoutEffect(() => {
-    if (!isSheetViewport) return;
+    if (!trainerId || handoffReady) return;
+    if (!optimistic || optimistic.trainer.id !== trainerId) {
+      fromOptimisticRef.current = false;
+      setHandoffReady(true);
+      return;
+    }
+    if (!optimistic.enterReady) return;
+    if (claimOptimisticProfileSheet(trainerId)) {
+      y.set(0);
+      setEntering(false);
+      setHandoffReady(true);
+    }
+  }, [handoffReady, optimistic, trainerId, y]);
+
+  useLayoutEffect(() => {
+    if (!isSheetViewport || !handoffReady) return;
 
     const syncVh = () => {
       vhRef.current = viewportHeight();
@@ -237,19 +260,17 @@ export function TrainerProfileSheet({
     root?.removeAttribute("inert");
     lockSheetChrome();
 
-    const claimed =
-      Boolean(trainerId && claimOptimisticProfileSheet(trainerId)) ||
-      claimedOptimisticRef.current;
-    claimedOptimisticRef.current = claimed;
-
-    if (claimed || reduceMotion) {
+    if (fromOptimisticRef.current || reduceMotion) {
       y.set(0);
+      setEntering(false);
     } else {
       y.set(vhRef.current);
+      setEntering(true);
       const controls = animate(y, 0, OPEN_TRANSITION);
       openAnimRef.current = controls;
       void controls.then(() => {
         openAnimRef.current = null;
+        setEntering(false);
       });
     }
 
@@ -261,10 +282,10 @@ export function TrainerProfileSheet({
       unlockSheetChrome();
       clearSheetDismissing();
     };
-  }, [exited, isSheetViewport, reduceMotion, trainerId, y]);
+  }, [exited, handoffReady, isSheetViewport, reduceMotion, y]);
 
   useEffect(() => {
-    if (!isSheetViewport) return;
+    if (!isSheetViewport || !handoffReady) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
@@ -281,14 +302,14 @@ export function TrainerProfileSheet({
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [dismiss, isSheetViewport]);
+  }, [dismiss, handoffReady, isSheetViewport]);
 
   /*
    * Browser back: soft-nav keeps this tree mounted briefly. Run the same
    * slide-down; skip a second router.back() (history already moved).
    */
   useEffect(() => {
-    if (!isSheetViewport) return;
+    if (!isSheetViewport || !handoffReady) return;
 
     function onPopState() {
       if (programmaticNavRef.current) return;
@@ -299,13 +320,18 @@ export function TrainerProfileSheet({
 
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [exited, isSheetViewport, runDismissAnimation]);
+  }, [exited, handoffReady, isSheetViewport, runDismissAnimation]);
 
   if (!isSheetViewport) {
     return <>{children}</>;
   }
 
   if (exited) {
+    return null;
+  }
+
+  /* Optimistic sheet owns the enter — stay invisible until handoff. */
+  if (!handoffReady) {
     return null;
   }
 
@@ -321,18 +347,14 @@ export function TrainerProfileSheet({
     <ProfileSheetDismissProvider dismiss={dismiss}>
       <ProfileSheetToolbarHostProvider>
         <div ref={rootRef} className="profile-sheet-root" role="presentation">
-          <motion.button
+          <button
             type="button"
-            className="smoac-control profile-sheet__backdrop"
+            className="smoac-control profile-sheet__backdrop profile-sheet__backdrop--fade-in"
             aria-label="Close profile"
-            style={{ opacity: backdropOpacity }}
             onClick={dismiss}
           />
 
-          <ProfileSheetChrome
-            label={label}
-            y={y}
-          >
+          <ProfileSheetChrome label={label} y={y} entering={entering}>
             {children}
           </ProfileSheetChrome>
         </div>
@@ -346,17 +368,21 @@ export function TrainerProfileSheet({
 function ProfileSheetChrome({
   label,
   y,
+  entering,
   children,
 }: {
   label: string;
   y: MotionValue<number>;
+  entering: boolean;
   children: ReactNode;
 }) {
   const toolbarHost = useProfileSheetToolbarHost();
 
   return (
     <motion.div
-      className="profile-sheet"
+      className={
+        entering ? "profile-sheet profile-sheet--animating" : "profile-sheet"
+      }
       role="dialog"
       aria-modal="true"
       aria-label={label}

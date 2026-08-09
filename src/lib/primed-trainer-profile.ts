@@ -6,8 +6,14 @@ import type { Trainer } from "@/types/trainer";
  * while the intercept route catches up.
  */
 
+export type OptimisticProfileSheetState = {
+  trainer: Trainer;
+  /** True after the slide-up finishes — real sheet may claim then. */
+  enterReady: boolean;
+};
+
 let primed: { id: string; trainer: Trainer } | null = null;
-let optimistic: { trainer: Trainer } | null = null;
+let optimistic: OptimisticProfileSheetState | null = null;
 
 const listeners = new Set<() => void>();
 
@@ -22,9 +28,7 @@ export function subscribeOptimisticProfileSheet(
   return () => listeners.delete(onStoreChange);
 }
 
-export function getOptimisticProfileSheetSnapshot(): {
-  trainer: Trainer;
-} | null {
+export function getOptimisticProfileSheetSnapshot(): OptimisticProfileSheetState | null {
   return optimistic;
 }
 
@@ -32,7 +36,7 @@ export function getOptimisticProfileSheetServerSnapshot(): null {
   return null;
 }
 
-export function peekOptimisticProfileSheet(): { trainer: Trainer } | null {
+export function peekOptimisticProfileSheet(): OptimisticProfileSheetState | null {
   return optimistic;
 }
 
@@ -43,7 +47,14 @@ export function primeTrainerProfile(trainer: Trainer): void {
 /** Instant sheet + prime — call from card tap. */
 export function openOptimisticProfileSheet(trainer: Trainer): void {
   primed = { id: trainer.id, trainer };
-  optimistic = { trainer };
+  optimistic = { trainer, enterReady: false };
+  notify();
+}
+
+export function markOptimisticProfileSheetEnterReady(trainerId: string): void {
+  if (!optimistic || optimistic.trainer.id !== trainerId) return;
+  if (optimistic.enterReady) return;
+  optimistic = { ...optimistic, enterReady: true };
   notify();
 }
 
@@ -62,6 +73,8 @@ export function clearPrimedTrainer(trainerId?: string): void {
 /** Real intercept sheet takes over — hide optimistic without exit anim. */
 export function claimOptimisticProfileSheet(trainerId: string): boolean {
   if (optimistic?.trainer.id !== trainerId) return false;
+  /* Never rip the sheet mid-slide — wait until enter settles. */
+  if (!optimistic.enterReady) return false;
   optimistic = null;
   notify();
   return true;

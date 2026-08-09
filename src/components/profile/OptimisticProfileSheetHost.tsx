@@ -15,37 +15,28 @@ import {
   motion,
   useMotionValue,
   useReducedMotion,
-  useTransform,
 } from "framer-motion";
-import { ProfileHero } from "@/components/profile/ProfileHero";
-import { ProfileSheetDismissProvider } from "@/components/profile/ProfileSheetDismissContext";
-import {
-  ProfileSheetToolbarHostProvider,
-  useProfileSheetToolbarHost,
-} from "@/components/profile/ProfileSheetToolbarHostContext";
+import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import {
   closeOptimisticProfileSheet,
   getOptimisticProfileSheetServerSnapshot,
   getOptimisticProfileSheetSnapshot,
+  markOptimisticProfileSheetEnterReady,
   subscribeOptimisticProfileSheet,
 } from "@/lib/primed-trainer-profile";
-import {
-  getProfileAccentRgb,
-  normalizeProfileStyle,
-} from "@/lib/specialist-profile-style";
-import { cn } from "@/lib/utils";
-import type { MotionValue } from "framer-motion";
-import type { ReactNode, CSSProperties } from "react";
 import type { Trainer } from "@/types/trainer";
 
+/** GPU-friendly tween — keep short; avoid springs (overshoot reads as zoom). */
 const OPEN_TRANSITION = {
-  duration: 0.28,
-  ease: [0.32, 0.72, 0, 1] as [number, number, number, number],
+  type: "tween" as const,
+  duration: 0.32,
+  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
 };
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
-const DISMISS_DURATION = 0.28;
+const DISMISS_DURATION = 0.26;
 const DISMISS_OVERFLOW_PX = 96;
 
 function viewportHeight(): number {
@@ -59,8 +50,8 @@ function viewportHeight(): number {
 }
 
 /**
- * Instant profile sheet from the tapped card — real photo/name while the
- * soft-nav intercept mounts, then claimed (no second enter animation).
+ * Instant profile sheet from the tapped card — light preview (photo + name)
+ * slides up on the compositor; full profile claims after enter settles.
  */
 export function OptimisticProfileSheetHost() {
   const optimistic = useSyncExternalStore(
@@ -81,11 +72,7 @@ export function OptimisticProfileSheetHost() {
   );
 }
 
-function OptimisticProfileSheet({
-  trainer,
-}: {
-  trainer: Trainer;
-}) {
+function OptimisticProfileSheet({ trainer }: { trainer: Trainer }) {
   const router = useRouter();
   const pathname = usePathname();
   const reduceMotion = useReducedMotion();
@@ -96,16 +83,12 @@ function OptimisticProfileSheet({
   const rootRef = useRef<HTMLDivElement>(null);
   const dismissingRef = useRef(false);
   const [exited, setExited] = useState(false);
-
-  const backdropOpacity = useTransform(y, (latest) => {
-    const fadeRange = vhRef.current * 0.45;
-    const progress = Math.min(1, Math.max(0, latest / fadeRange));
-    return 0.85 * (1 - progress);
-  });
+  const [entering, setEntering] = useState(true);
 
   const dismiss = useCallback(() => {
     if (dismissingRef.current || exited) return;
     dismissingRef.current = true;
+    setEntering(false);
 
     const root = rootRef.current;
     root?.classList.add("profile-sheet-root--pass-through");
@@ -139,6 +122,7 @@ function OptimisticProfileSheet({
 
     const safety = window.setTimeout(finish, DISMISS_DURATION * 1000 + 160);
     void animate(y, target, {
+      type: "tween",
       duration: DISMISS_DURATION,
       ease: DISMISS_EASE,
     }).then(() => {
@@ -153,17 +137,32 @@ function OptimisticProfileSheet({
     document.body.classList.add("profile-sheet-open");
     document.documentElement.classList.add("profile-sheet-open");
     y.set(vhRef.current);
+
     if (reduceMotion) {
       y.set(0);
-    } else {
-      void animate(y, 0, OPEN_TRANSITION);
+      setEntering(false);
+      markOptimisticProfileSheetEnterReady(trainer.id);
+      return () => {
+        document.body.classList.remove("profile-sheet-open");
+        document.documentElement.classList.remove("profile-sheet-open");
+        document.body.classList.remove("profile-sheet-dismissing");
+      };
     }
+
+    setEntering(true);
+    const controls = animate(y, 0, OPEN_TRANSITION);
+    void controls.then(() => {
+      setEntering(false);
+      markOptimisticProfileSheetEnterReady(trainer.id);
+    });
+
     return () => {
+      controls.stop();
       document.body.classList.remove("profile-sheet-open");
       document.documentElement.classList.remove("profile-sheet-open");
       document.body.classList.remove("profile-sheet-dismissing");
     };
-  }, [exited, reduceMotion, y]);
+  }, [exited, reduceMotion, trainer.id, y]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -177,70 +176,55 @@ function OptimisticProfileSheet({
 
   if (exited || typeof document === "undefined") return null;
 
-  const profileStyle = normalizeProfileStyle(trainer.profileStyle);
-  const pageStyle = {
-    "--profile-accent-rgb": getProfileAccentRgb(profileStyle.accent),
-  } as CSSProperties;
-
   return createPortal(
-    <ProfileSheetDismissProvider dismiss={dismiss}>
-      <ProfileSheetToolbarHostProvider>
-        <div ref={rootRef} className="profile-sheet-root" role="presentation">
-          <motion.button
-            type="button"
-            className="smoac-control profile-sheet__backdrop"
-            aria-label="Close profile"
-            style={{ opacity: backdropOpacity }}
-            onClick={dismiss}
-          />
-          <OptimisticSheetChrome label={`${trainer.name} profile`} y={y}>
-            <div
-              className={cn("profile-page--styled")}
-              style={pageStyle}
-              data-profile-accent={profileStyle.accent}
-            >
-              <ProfileHero trainer={trainer} />
-              <div className="profile-sheet__optimistic-rest" aria-live="polite">
-                <p className="profile-sheet__optimistic-hint">Loading details…</p>
-              </div>
-            </div>
-          </OptimisticSheetChrome>
-        </div>
-      </ProfileSheetToolbarHostProvider>
-    </ProfileSheetDismissProvider>,
-    document.body
-  );
-}
-
-function OptimisticSheetChrome({
-  label,
-  y,
-  children,
-}: {
-  label: string;
-  y: MotionValue<number>;
-  children: ReactNode;
-}) {
-  const toolbarHost = useProfileSheetToolbarHost();
-
-  return (
-    <motion.div
-      className="profile-sheet"
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
-      style={{ y }}
-    >
-      <div className="profile-sheet__chrome" aria-hidden>
-        <div className="profile-sheet__handle-hit profile-sheet__handle-hit--static">
-          <span className="profile-sheet__handle" />
-        </div>
-      </div>
-      <div
-        ref={toolbarHost?.hostRef}
-        className="profile-sheet__toolbar-host"
+    <div ref={rootRef} className="profile-sheet-root" role="presentation">
+      <button
+        type="button"
+        className="smoac-control profile-sheet__backdrop profile-sheet__backdrop--fade-in"
+        aria-label="Close profile"
+        onClick={dismiss}
       />
-      <div className="profile-sheet__body">{children}</div>
-    </motion.div>
+      <motion.div
+        className={
+          entering
+            ? "profile-sheet profile-sheet--animating"
+            : "profile-sheet"
+        }
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${trainer.name} profile`}
+        style={{ y }}
+      >
+        <div className="profile-sheet__chrome" aria-hidden>
+          <div className="profile-sheet__handle-hit profile-sheet__handle-hit--static">
+            <span className="profile-sheet__handle" />
+          </div>
+        </div>
+
+        <div className="profile-sheet__body">
+          <div className="profile-sheet__optimistic-preview">
+            <TrainerThumbnail
+              src={trainer.image}
+              name={trainer.name}
+              size="card"
+              priority
+              className="profile-sheet__optimistic-thumb"
+              imageClassName="profile-sheet__optimistic-thumb-img"
+            />
+            <div className="profile-sheet__optimistic-copy">
+              <p className="profile-sheet__optimistic-name">{trainer.name}</p>
+              <TrainerProfessionLabel
+                trainer={trainer}
+                className="profile-sheet__optimistic-profession"
+              />
+              <p className="profile-sheet__optimistic-hint" aria-live="polite">
+                Loading details…
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>,
+    document.body
   );
 }
