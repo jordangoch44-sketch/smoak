@@ -1455,13 +1455,13 @@ a.profile-tag-pill--grid {
 
 /* ── Floating profile hero toolbar — Zillow-style: close left, actions right ── */
 .profile-toolbar {
-  --profile-toolbar-size: 2.625rem; /* 42px — mobile */
-  --profile-toolbar-inner: 2.125rem;
-  --profile-toolbar-icon: 1rem;
-  --profile-toolbar-close-icon: 1.0625rem;
+  --profile-toolbar-size: 2.875rem; /* 46px — clearer tap target on phone */
+  --profile-toolbar-inner: 2.375rem;
+  --profile-toolbar-icon: 1.0625rem;
+  --profile-toolbar-close-icon: 1.125rem;
   --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 3.5rem + 26px);
-  --profile-toolbar-bar-pad-x: 0.25rem;
-  --profile-toolbar-bar-gap: 0;
+  --profile-toolbar-bar-pad-x: 0.3rem;
+  --profile-toolbar-bar-gap: 0.05rem;
   position: fixed;
   inset: 0;
   /* Above site header on full-page profiles so save/share aren’t covered */
@@ -1492,22 +1492,22 @@ a.profile-tag-pill--grid {
   width: var(--profile-toolbar-size);
   height: var(--profile-toolbar-size);
   flex-shrink: 0;
-  border: 0.5px solid rgba(255, 255, 255, 0.36);
+  border: 0.5px solid rgba(255, 255, 255, 0.48);
   border-radius: 9999px;
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0.1) 100%
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.12) 100%
     ),
-    rgba(0, 0, 0, 0.42);
+    rgba(0, 0, 0, 0.52);
   backdrop-filter: blur(28px) saturate(1.45);
   -webkit-backdrop-filter: blur(28px) saturate(1.45);
   box-shadow:
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.28),
-    0 4px 16px rgba(0, 0, 0, 0.28),
-    0 0 0 0.5px rgba(0, 0, 0, 0.14);
-  color: rgba(255, 255, 255, 0.96);
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.38),
+    0 6px 20px rgba(0, 0, 0, 0.38),
+    0 0 0 0.5px rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.98);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   cursor: pointer;
@@ -1540,10 +1540,10 @@ a.profile-tag-pill--grid {
     background:
       linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.24) 0%,
-        rgba(255, 255, 255, 0.12) 100%
+        rgba(255, 255, 255, 0.34) 0%,
+        rgba(255, 255, 255, 0.16) 100%
       ),
-      rgba(0, 0, 0, 0.48);
+      rgba(0, 0, 0, 0.56);
   }
 }
 
@@ -1586,10 +1586,10 @@ a.profile-tag-pill--grid {
 
 @media (min-width: 1024px) {
   .profile-toolbar {
-    --profile-toolbar-size: 2.875rem; /* 46px — desktop */
-    --profile-toolbar-inner: 2.375rem;
-    --profile-toolbar-icon: 1.0625rem;
-    --profile-toolbar-close-icon: 1.125rem;
+    --profile-toolbar-size: 3rem; /* 48px — desktop */
+    --profile-toolbar-inner: 2.5rem;
+    --profile-toolbar-icon: 1.125rem;
+    --profile-toolbar-close-icon: 1.1875rem;
     --profile-toolbar-top: calc(
       env(safe-area-inset-top, 0px) + var(--site-header-total-height, 4.5rem) + 0.85rem
     );
@@ -1604,20 +1604,20 @@ a.profile-tag-pill--grid {
   height: var(--profile-toolbar-size);
   padding: 0 var(--profile-toolbar-bar-pad-x);
   border-radius: 9999px;
-  border: 0.5px solid rgba(255, 255, 255, 0.36);
+  border: 0.5px solid rgba(255, 255, 255, 0.48);
   background:
     linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0.1) 100%
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.12) 100%
     ),
-    rgba(0, 0, 0, 0.42);
+    rgba(0, 0, 0, 0.52);
   backdrop-filter: blur(28px) saturate(1.45);
   -webkit-backdrop-filter: blur(28px) saturate(1.45);
   box-shadow:
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.28),
-    0 4px 16px rgba(0, 0, 0, 0.28),
-    0 0 0 0.5px rgba(0, 0, 0, 0.14);
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.38),
+    0 6px 20px rgba(0, 0, 0, 0.38),
+    0 0 0 0.5px rgba(0, 0, 0, 0.22);
 }
 
 .profile-toolbar__btn,
