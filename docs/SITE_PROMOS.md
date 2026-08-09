@@ -9,7 +9,6 @@ Fixed **slots** in the UI; swappable **campaigns** in `src/data/site-promos.ts`.
 | `specialist_dashboard_hero` | Specialist Plan tab (top) |
 | `specialist_dashboard_boost` | Plan tab + Pro analytics |
 | `explore_results_rail` | Explore results (specialists) |
-| `home_mid_promo` | Homepage between Top Rated and Categories |
 | `rankings_footer_promo` | City Rankings footer |
 
 ## Rotate a deal

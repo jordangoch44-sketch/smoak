@@ -273,165 +273,8 @@
   max-width: 80rem;
 }
 
-.site-promo--slot-home_mid_promo {
-  margin: 0 auto;
-  max-width: 80rem;
-  border-color: rgba(var(--aurora-lavender-rgb), 0.32);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--aurora-lavender-rgb), 0.12),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(10, 8, 16, 0.72);
-}
-
-.site-promo--slot-home_mid_promo .site-promo__glow {
-  background: radial-gradient(
-    circle,
-    rgba(var(--aurora-lavender-rgb), 0.32),
-    transparent 70%
-  );
-}
-
-.site-promo--slot-home_mid_promo .site-promo__eyebrow {
-  color: rgba(220, 210, 255, 0.95);
-  text-shadow: 0 0 14px rgba(var(--aurora-lavender-rgb), 0.4);
-}
-
-.site-promo--slot-home_mid_promo .site-promo__cta {
-  border-color: rgba(var(--aurora-lavender-rgb), 0.6);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--aurora-lavender-rgb), 0.38) 0%,
-      rgba(48, 28, 88, 0.92) 100%
-    );
-  color: rgba(245, 240, 255, 0.98);
-  box-shadow:
-    0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.2) inset,
-    0 0 18px rgba(var(--aurora-lavender-rgb), 0.35),
-    0 0 32px rgba(var(--aurora-lavender-rgb), 0.2);
-}
-
-.site-promo--slot-home_mid_promo .site-promo__cta:hover {
-  border-color: rgba(var(--aurora-lavender-rgb), 0.8);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--aurora-lavender-rgb), 0.48) 0%,
-      rgba(72, 42, 128, 0.75) 45%,
-      rgba(40, 22, 78, 0.95) 100%
-    );
-  box-shadow:
-    0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.28) inset,
-    0 0 24px rgba(var(--aurora-lavender-rgb), 0.45),
-    0 0 40px rgba(var(--aurora-lavender-rgb), 0.25);
-}
-
-/* Specialist boost ad — neon yellow (vs Pro purple / Pro trial blue) */
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow {
-  border-color: rgba(250, 230, 66, 0.4);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(250, 230, 66, 0.14),
-      rgba(202, 138, 4, 0.06) 45%,
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(14, 12, 4, 0.82);
-  box-shadow:
-    0 0 0 1px rgba(250, 230, 66, 0.12) inset,
-    0 10px 28px rgba(0, 0, 0, 0.28);
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__glow {
-  background: radial-gradient(
-    circle,
-    rgba(250, 230, 66, 0.32),
-    transparent 70%
-  );
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__eyebrow {
-  color: rgba(254, 243, 140, 0.95);
-  text-shadow: 0 0 16px rgba(250, 230, 66, 0.55);
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__stat {
-  border-left-color: rgba(250, 230, 66, 0.65);
-  color: rgba(254, 249, 195, 0.88);
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__cta-wrap--orbit {
-  box-shadow: 0 0 14px rgba(250, 230, 66, 0.28);
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__cta-wrap--orbit::before {
-  background: conic-gradient(
-    from 0deg,
-    transparent 0deg,
-    transparent 210deg,
-    rgba(202, 138, 4, 0.12) 250deg,
-    rgba(250, 230, 66, 0.8) 290deg,
-    rgba(254, 243, 140, 1) 318deg,
-    rgba(234, 179, 8, 0.9) 342deg,
-    transparent 360deg
-  );
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__cta-wrap--orbit::after {
-  background: rgba(14, 12, 4, 0.96);
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__cta-wrap--orbit
-  .site-promo__cta {
-  border-color: rgba(250, 230, 66, 0.4);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(250, 230, 66, 0.28),
-      rgba(202, 138, 4, 0.12)
-    );
-  box-shadow: 0 0 18px rgba(250, 230, 66, 0.28);
-  color: rgba(255, 252, 230, 0.98);
-  text-shadow: 0 0 12px rgba(250, 230, 66, 0.35);
-}
-
-.site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-  .site-promo__cta-wrap--orbit
-  .site-promo__cta:hover {
-  background:
-    linear-gradient(
-      180deg,
-      rgba(250, 230, 66, 0.38),
-      rgba(202, 138, 4, 0.18)
-    );
-  border-color: rgba(254, 243, 140, 0.6);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .site-promo--slot-home_mid_promo.site-promo--accent-neon-yellow
-    .site-promo__cta-wrap--orbit::before {
-    background: conic-gradient(
-      from 90deg,
-      transparent 0deg,
-      rgba(202, 138, 4, 0.4) 120deg,
-      rgba(254, 243, 140, 0.85) 180deg,
-      transparent 280deg
-    );
-  }
-}
-
-/* Generic neon-yellow accent (explore / rankings / dashboard boost slots) */
-.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo) {
+/* Neon-yellow accent (explore / rankings / dashboard boost slots) */
+.site-promo--accent-neon-yellow {
   border-color: rgba(250, 230, 66, 0.38);
   background:
     linear-gradient(
@@ -446,8 +289,7 @@
     0 10px 28px rgba(0, 0, 0, 0.28);
 }
 
-.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
-  .site-promo__glow {
+.site-promo--accent-neon-yellow .site-promo__glow {
   background: radial-gradient(
     circle,
     rgba(250, 230, 66, 0.28),
@@ -455,20 +297,17 @@
   );
 }
 
-.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
-  .site-promo__eyebrow {
+.site-promo--accent-neon-yellow .site-promo__eyebrow {
   color: rgba(254, 243, 140, 0.95);
   text-shadow: 0 0 14px rgba(250, 230, 66, 0.5);
 }
 
-.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
-  .site-promo__stat {
+.site-promo--accent-neon-yellow .site-promo__stat {
   border-left-color: rgba(250, 230, 66, 0.6);
   color: rgba(254, 249, 195, 0.88);
 }
 
-.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
-  .site-promo__cta {
+.site-promo--accent-neon-yellow .site-promo__cta {
   border-color: rgba(250, 230, 66, 0.4);
   background:
     linear-gradient(
@@ -480,8 +319,7 @@
   color: rgba(255, 252, 230, 0.98);
 }
 
-.site-promo--accent-neon-yellow:not(.site-promo--slot-home_mid_promo)
-  .site-promo__cta:hover {
+.site-promo--accent-neon-yellow .site-promo__cta:hover {
   border-color: rgba(254, 243, 140, 0.55);
   background:
     linear-gradient(
@@ -489,67 +327,6 @@
       rgba(250, 230, 66, 0.36),
       rgba(202, 138, 4, 0.16)
     );
-}
-
-.site-promo--slot-home_client_promo {
-  margin: 0 auto;
-  max-width: 80rem;
-  border-color: rgba(var(--nebula-green-neon-rgb), 0.28);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--nebula-green-neon-rgb), 0.08),
-      rgba(255, 255, 255, 0.02)
-    ),
-    rgba(6, 12, 10, 0.72);
-}
-
-.site-promo--slot-home_client_promo .site-promo__glow {
-  inset: auto -18% -45% auto;
-  background: radial-gradient(
-    circle,
-    rgba(var(--nebula-green-neon-rgb), 0.22),
-    transparent 70%
-  );
-}
-
-.site-promo--slot-home_client_promo .site-promo__eyebrow {
-  color: rgba(190, 255, 210, 0.92);
-  text-shadow: 0 0 14px rgba(var(--nebula-green-neon-rgb), 0.35);
-}
-
-.site-promo--slot-home_client_promo .site-promo__cta {
-  border-color: rgba(var(--nebula-green-neon-rgb), 0.55);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--nebula-green-neon-rgb), 0.28) 0%,
-      rgba(var(--nebula-green-deep-rgb), 0.88) 100%
-    );
-  color: rgba(230, 255, 240, 0.98);
-  box-shadow:
-    0 0 0 1px rgba(var(--nebula-green-neon-rgb), 0.16) inset,
-    0 0 18px rgba(var(--nebula-green-neon-rgb), 0.28);
-}
-
-.site-promo--slot-home_client_promo .site-promo__cta:hover {
-  border-color: rgba(var(--nebula-green-neon-rgb), 0.75);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--nebula-green-neon-rgb), 0.36) 0%,
-      rgba(var(--nebula-green-mid-rgb), 0.55) 45%,
-      rgba(var(--nebula-green-deep-rgb), 0.92) 100%
-    );
-  box-shadow:
-    0 0 0 1px rgba(var(--nebula-green-neon-rgb), 0.22) inset,
-    0 0 24px rgba(var(--nebula-green-neon-rgb), 0.38);
-}
-
-.home-promo-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
 }
 
 .site-promo--slot-explore_results_rail {
@@ -736,17 +513,13 @@
 }
 
 @media (min-width: 768px) {
-  .site-promo--banner,
-  .site-promo--slot-home_mid_promo,
-  .site-promo--slot-home_client_promo {
+  .site-promo--banner {
     grid-template-columns: 1fr auto;
     align-items: center;
     gap: 1.25rem;
   }
 
-  .site-promo--banner .site-promo__copy,
-  .site-promo--slot-home_mid_promo .site-promo__copy,
-  .site-promo--slot-home_client_promo .site-promo__copy {
+  .site-promo--banner .site-promo__copy {
     padding-right: 2rem;
   }
 }

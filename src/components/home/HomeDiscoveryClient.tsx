@@ -9,7 +9,6 @@ import {
   NewSpecialists,
 } from "@/components/home";
 import { HomeRailsLoading } from "@/components/home/HomeRouteLoading";
-import { HomePromoStack } from "@/components/promo/HomePromoStack";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
 import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
 import { fetchSmoacReviewAggregates } from "@/lib/reviews/specialist-review-aggregates-query";
@@ -68,9 +67,6 @@ export function HomeDiscoveryClient() {
         initialCatalog={trainers}
         initialAggregates={aggregates}
       />
-      <div className="home-section__inner home-promo-stack mx-auto max-w-7xl px-4 sm:px-6">
-        <HomePromoStack />
-      </div>
       <Categories />
       <NewSpecialists initialCatalog={trainers} catalogMode={catalogMode} />
     </>
