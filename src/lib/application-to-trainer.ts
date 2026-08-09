@@ -11,7 +11,11 @@ import type {
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
 import type { Trainer } from "@/types/trainer";
 
-function parsePrice(value: string): number {
+function parsePrice(value: unknown): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
+  }
+  if (typeof value !== "string") return 0;
   const digits = value.replace(/[^\d.]/g, "");
   const parsed = Number.parseFloat(digits);
   return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
@@ -30,7 +34,8 @@ function buildSessionExperience(
   const items: string[] = [];
   if (state.inHomeAvailable) items.push("In-home sessions");
   if (state.onlineCoachingAvailable) items.push("Online coaching");
-  if (state.gymName.trim()) items.push(`Training at ${state.gymName.trim()}`);
+  const gymName = state.gymName?.trim() ?? "";
+  if (gymName) items.push(`Training at ${gymName}`);
   const days = Array.isArray(state.availability?.daysAvailable)
     ? state.availability.daysAvailable
     : [];
@@ -39,8 +44,8 @@ function buildSessionExperience(
     : [];
   items.push(...days);
   items.push(...blocks);
-  if (state.pricing.groupTrainingAvailable) items.push("Small group training");
-  if (state.pricing.freeConsultationAvailable) items.push("Free consultation");
+  if (state.pricing?.groupTrainingAvailable) items.push("Small group training");
+  if (state.pricing?.freeConsultationAvailable) items.push("Free consultation");
   return [...new Set(items)];
 }
 
@@ -51,13 +56,15 @@ export function applicationToTrainer(
 ): Trainer {
   const enriched = enrichSpecialistApplicationFields(app);
   /* Never invent a marketplace price — go-live gate requires a real session rate. */
-  const pricePerSession = parsePrice(app.pricing.oneOnOnePrice);
-  const location = [app.neighborhood, app.city, app.state]
+  const pricePerSession = parsePrice(app.pricing?.oneOnOnePrice);
+  const city = app.city?.trim() ?? "";
+  const neighborhood = app.neighborhood?.trim() ?? "";
+  const location = [neighborhood, city, app.state]
     .filter(Boolean)
     .join(", ");
   const zipCode =
-    app.zipCode.trim() ||
-    getDefaultZipForMarketplaceCity(app.city.trim()) ||
+    (app.zipCode?.trim() ?? "") ||
+    getDefaultZipForMarketplaceCity(city) ||
     "";
   const centroid =
     app.latitude != null && app.longitude != null
@@ -74,40 +81,49 @@ export function applicationToTrainer(
         ? "virtual"
         : "in-person");
   const travelRadiusMiles =
-    parseTravelRadiusMiles(app.travelRadius) || (enriched.willingToTravel ? 25 : 0);
-  const photo = app.media.profilePhotoUrl.trim() || "/trainers/placeholder.jpg";
-  const mediaUrls = linesToUrls(app.media.trainingVideoUrls);
-  const headline = app.headline.trim();
+    parseTravelRadiusMiles(app.travelRadius ?? "") ||
+    (enriched.willingToTravel ? 25 : 0);
+  const photo =
+    app.media?.profilePhotoUrl?.trim() || "/trainers/placeholder.jpg";
+  const mediaUrls = linesToUrls(app.media?.trainingVideoUrls ?? "");
+  const headline = app.headline?.trim() ?? "";
   const specialties = Array.isArray(app.specialties) ? app.specialties : [];
+  const certifications = Array.isArray(app.certifications)
+    ? app.certifications.filter((c) => c?.name?.trim())
+    : [];
   const profession =
     resolveTrainerProfessionCategory({
       profession: app.professionalType,
       title: headline,
       specialty: specialties,
-    }) || app.professionalType.trim() || "Personal Trainer";
+    }) ||
+    app.professionalType?.trim() ||
+    "Personal Trainer";
+  const coachingPhilosophy = app.coachingPhilosophy?.trim() ?? "";
+  const bestClientTypes = app.bestClientTypes ?? "";
 
   return {
     id,
-    name: app.displayName.trim() || app.fullName.trim() || "Specialist",
+    name: app.displayName?.trim() || app.fullName?.trim() || "Specialist",
     profession,
     title: headline || profession,
     location: location || "Your city",
-    city: app.city.trim() || "City",
-    state: app.state.trim() || "CA",
-    neighborhood: app.neighborhood.trim() || "",
-    serviceArea: app.neighborhood.trim() ? [app.neighborhood.trim()] : [],
+    city: city || "City",
+    state: app.state?.trim() || "CA",
+    neighborhood,
+    serviceArea: neighborhood ? [neighborhood] : [],
     serviceAreaZipCodes: enriched.serviceAreaZipCodes,
-    serviceAreaDescription: app.serviceAreaDescription.trim(),
+    serviceAreaDescription: app.serviceAreaDescription?.trim() ?? "",
     zipCode,
     latitude: centroid.latitude,
     longitude: centroid.longitude,
     willingToTravel: enriched.willingToTravel,
     serviceRadiusMiles: travelRadiusMiles,
-    travelRadius: app.travelRadius,
+    travelRadius: app.travelRadius ?? "",
     serviceType,
     sponsored: false,
     verified: app.profileStatus === "APPROVED",
-    specialty: app.specialties,
+    specialty: specialties,
     gender: app.gender || "non-binary",
     pricePerSession,
     rating: 0,
@@ -115,14 +131,14 @@ export function applicationToTrainer(
     galleryImages: mediaUrls.length > 0 ? mediaUrls : [photo],
     image: photo,
     heroImage: photo,
-    bio: app.bio.trim() || "",
-    bestFor: app.bestClientTypes
+    bio: app.bio?.trim() || "",
+    bestFor: bestClientTypes
       .split(/[,;\n]/)
       .map((item) => item.trim())
       .filter(Boolean)
       .slice(0, 8),
-    coachingStyle: app.coachingPhilosophy.trim()
-      ? app.coachingPhilosophy
+    coachingStyle: coachingPhilosophy
+      ? coachingPhilosophy
           .split(/[,;\n·]+/)
           .map((item) => item.trim())
           .filter(Boolean)
@@ -132,26 +148,28 @@ export function applicationToTrainer(
       : [],
     resultsSnapshot: [],
     sessionExperience: buildSessionExperience(app),
-    gallery: linesToUrls(app.media.trainingVideoUrls).map((src, index) => ({
-      id: `g-${index}`,
-      type: "image" as const,
-      src,
-      alt: "Training media",
-    })),
-    clientTransformations: linesToUrls(app.media.transformationPhotoUrls).map(
+    gallery: linesToUrls(app.media?.trainingVideoUrls ?? "").map(
       (src, index) => ({
-        id: `t-${index}`,
+        id: `g-${index}`,
+        type: "image" as const,
         src,
-        alt: "Client transformation",
+        alt: "Training media",
       })
     ),
+    clientTransformations: linesToUrls(
+      app.media?.transformationPhotoUrls ?? ""
+    ).map((src, index) => ({
+      id: `t-${index}`,
+      src,
+      alt: "Client transformation",
+    })),
     featured: false,
-    certifications: app.certifications.filter((c) => c.name.trim()),
+    certifications,
     reviews: [],
     social: {
-      instagram: app.social.instagram,
-      website: app.social.website,
-      tiktok: app.social.tiktok,
+      instagram: app.social?.instagram,
+      website: app.social?.website,
+      tiktok: app.social?.tiktok,
     },
     profileStyle: app.profileStyle
       ? normalizeProfileStyle(app.profileStyle)
@@ -184,57 +202,60 @@ export function applicationToPreviewTrainer(
 export function applicationToProfileOverrides(
   app: SpecialistApplication
 ): SpecialistProfileOverrides {
-  const pricePerSession = parsePrice(app.pricing.oneOnOnePrice);
-  const zip = app.zipCode.trim();
+  const pricePerSession = parsePrice(app.pricing?.oneOnOnePrice);
+  const zip = app.zipCode?.trim() ?? "";
+  const neighborhood = app.neighborhood?.trim() ?? "";
   const coords =
     app.latitude != null && app.longitude != null
       ? { latitude: app.latitude, longitude: app.longitude }
       : zipCodeToCoordinates(zip);
 
   const trainingStyle = [
-    app.coachingPhilosophy.trim(),
-    app.communicationStyle.trim(),
-    app.motivationStyle.trim(),
+    app.coachingPhilosophy?.trim() ?? "",
+    app.communicationStyle?.trim() ?? "",
+    app.motivationStyle?.trim() ?? "",
   ]
     .filter(Boolean)
     .join(" · ");
 
   return {
-    name: app.displayName.trim() || app.fullName.trim(),
-    title: app.headline.trim(),
+    name: app.displayName?.trim() || app.fullName?.trim() || "",
+    title: app.headline?.trim() ?? "",
     gender: app.gender || "non-binary",
     profession:
       resolveTrainerProfessionCategory({
         profession: app.professionalType,
-        title: app.headline.trim(),
-        specialty: app.specialties,
+        title: app.headline?.trim() ?? "",
+        specialty: Array.isArray(app.specialties) ? app.specialties : [],
       }) || app.professionalType,
-    specialty: app.specialties,
-    certifications: app.certifications,
-    city: app.city.trim(),
-    state: app.state.trim(),
-    neighborhood: app.neighborhood.trim(),
+    specialty: Array.isArray(app.specialties) ? app.specialties : [],
+    certifications: Array.isArray(app.certifications) ? app.certifications : [],
+    city: app.city?.trim() ?? "",
+    state: app.state?.trim() ?? "",
+    neighborhood,
     zipCode: zip,
     serviceType: app.serviceType || undefined,
-    travelRadius: app.travelRadius,
-    serviceRadiusMiles: parseTravelRadiusMiles(app.travelRadius) || undefined,
+    travelRadius: app.travelRadius ?? "",
+    serviceRadiusMiles:
+      parseTravelRadiusMiles(app.travelRadius ?? "") || undefined,
     latitude: coords?.latitude,
     longitude: coords?.longitude,
-    serviceArea: app.neighborhood.trim() ? [app.neighborhood.trim()] : [],
-    serviceAreaDescription: app.serviceAreaDescription.trim(),
-    pricePerSession: pricePerSession || 100,
-    bio: app.bio.trim(),
-    profilePhotoUrl: app.media.profilePhotoUrl.trim(),
-    phone: app.phone.trim(),
-    email: app.email.trim(),
-    instagram: app.social.instagram?.trim() ?? "",
-    website: app.social.website?.trim() ?? "",
-    tiktok: app.social.tiktok?.trim() ?? "",
-    experienceYears: app.yearsExperience.trim(),
+    serviceArea: neighborhood ? [neighborhood] : [],
+    serviceAreaDescription: app.serviceAreaDescription?.trim() ?? "",
+    /* Keep 0 when unset — go-live gate / dashboard checklist should stay honest. */
+    pricePerSession,
+    bio: app.bio?.trim() ?? "",
+    profilePhotoUrl: app.media?.profilePhotoUrl?.trim() ?? "",
+    phone: app.phone?.trim() ?? "",
+    email: app.email?.trim() ?? "",
+    instagram: app.social?.instagram?.trim() ?? "",
+    website: app.social?.website?.trim() ?? "",
+    tiktok: app.social?.tiktok?.trim() ?? "",
+    experienceYears: app.yearsExperience?.trim() ?? "",
     trainingStyle,
-    servicesOffered: app.bestClientTypes.trim(),
-    transformationNotes: app.media.transformationPhotoUrls.trim(),
-    photoNotes: app.media.trainingVideoUrls.trim(),
+    servicesOffered: app.bestClientTypes?.trim() ?? "",
+    transformationNotes: app.media?.transformationPhotoUrls?.trim() ?? "",
+    photoNotes: app.media?.trainingVideoUrls?.trim() ?? "",
     bookingAvailability: buildSessionExperience(app).join(", "),
     profileStyle: app.profileStyle
       ? normalizeProfileStyle(app.profileStyle)

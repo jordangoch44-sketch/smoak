@@ -51,12 +51,21 @@ export function applicationStatusLabel(
 function normalizeApplicationEdits(
   application: SpecialistApplication
 ): SpecialistApplication {
+  const certifications = Array.isArray(application.certifications)
+    ? application.certifications.filter(
+        (cert) => cert?.name?.trim() && cert?.issuer?.trim()
+      )
+    : [];
   return {
     ...application,
     updatedAt: new Date().toISOString(),
-    certifications: application.certifications.filter(
-      (cert) => cert.name.trim() && cert.issuer.trim()
-    ),
+    certifications,
+    pricing: {
+      ...application.pricing,
+      oneOnOnePrice: String(application.pricing?.oneOnOnePrice ?? ""),
+      onlineCoachingPrice: String(application.pricing?.onlineCoachingPrice ?? ""),
+      packageOptions: String(application.pricing?.packageOptions ?? ""),
+    },
   };
 }
 

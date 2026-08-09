@@ -12,7 +12,10 @@ import {
   DEV_SPECIALIST_APPLICATIONS_KEY,
   DEV_SPECIALIST_ONBOARDING_DRAFT_KEY,
 } from "@/lib/dev-storage-keys";
-import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
+import {
+  enrichSpecialistApplicationFields,
+  normalizeSpecialistApplicationShape,
+} from "@/lib/specialist-application-fields";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistApplication,
@@ -20,19 +23,8 @@ import {
 } from "@/types/specialist-application";
 
 function normalizeApplication(app: SpecialistApplication): SpecialistApplication {
-  const enriched = enrichSpecialistApplicationFields(app) as SpecialistApplication;
-  return {
-    ...enriched,
-    media: {
-      ...INITIAL_SPECIALIST_ONBOARDING_STATE.media,
-      ...enriched.media,
-      profilePhotoOriginalUrl:
-        enriched.media.profilePhotoOriginalUrl ||
-        enriched.media.profilePhotoUrl ||
-        "",
-      profilePhotoCrop: enriched.media.profilePhotoCrop ?? null,
-    },
-  };
+  const shaped = normalizeSpecialistApplicationShape(app);
+  return enrichSpecialistApplicationFields(shaped) as SpecialistApplication;
 }
 
 const applicationListeners = new Set<() => void>();

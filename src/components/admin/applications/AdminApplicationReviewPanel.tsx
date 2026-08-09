@@ -35,9 +35,9 @@ function formatSubmittedDate(iso: string | null): string {
 
 function servicesSummary(app: SpecialistApplication): string {
   const parts = [
-    app.pricing.oneOnOnePrice,
-    app.pricing.onlineCoachingPrice,
-    app.pricing.packageOptions,
+    app.pricing?.oneOnOnePrice,
+    app.pricing?.onlineCoachingPrice,
+    app.pricing?.packageOptions,
   ].filter(Boolean);
   return parts.join(" · ") || "—";
 }
@@ -105,10 +105,22 @@ export function AdminApplicationReviewPanel({
     key: keyof SpecialistApplication["pricing"],
     value: string | boolean
   ) {
-    setDraft((prev) => ({
-      ...prev,
-      pricing: { ...prev.pricing, [key]: value },
-    }));
+    setDraft((prev) => {
+      const pricing = prev.pricing ?? {
+        oneOnOnePrice: "",
+        onlineCoachingPrice: "",
+        groupTrainingAvailable: false,
+        freeConsultationAvailable: false,
+        packageOptions: "",
+        sessionDuration: "",
+        subscriptionOptions: "",
+        introOffer: "",
+      };
+      return {
+        ...prev,
+        pricing: { ...pricing, [key]: value },
+      };
+    });
     setFeedback(null);
     setErrorMessage(null);
   }
@@ -171,6 +183,12 @@ export function AdminApplicationReviewPanel({
         setFeedback("error");
         setErrorMessage(result.message || "Unable to approve application.");
       }
+    } catch (err) {
+      console.error("[SMOAC ADMIN] Approve failed:", err);
+      setFeedback("error");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Unable to approve application."
+      );
     } finally {
       setBusyAction(null);
     }
@@ -214,6 +232,12 @@ export function AdminApplicationReviewPanel({
         setFeedback("error");
         setErrorMessage(result.message || "Unable to activate specialist.");
       }
+    } catch (err) {
+      console.error("[SMOAC ADMIN] Activate failed:", err);
+      setFeedback("error");
+      setErrorMessage(
+        err instanceof Error ? err.message : "Unable to activate specialist."
+      );
     } finally {
       setBusyAction(null);
     }
@@ -560,7 +584,7 @@ export function AdminApplicationReviewPanel({
                 1:1 session price
                 <input
                   className="admin-field"
-                  value={draft.pricing.oneOnOnePrice}
+                  value={draft.pricing?.oneOnOnePrice ?? ""}
                   onChange={(e) => patchPricing("oneOnOnePrice", e.target.value)}
                 />
               </label>
@@ -568,7 +592,7 @@ export function AdminApplicationReviewPanel({
                 Online coaching
                 <input
                   className="admin-field"
-                  value={draft.pricing.onlineCoachingPrice}
+                  value={draft.pricing?.onlineCoachingPrice ?? ""}
                   onChange={(e) =>
                     patchPricing("onlineCoachingPrice", e.target.value)
                   }
@@ -579,7 +603,7 @@ export function AdminApplicationReviewPanel({
                 <textarea
                   className="admin-field admin-field--textarea"
                   rows={2}
-                  value={draft.pricing.packageOptions}
+                  value={draft.pricing?.packageOptions ?? ""}
                   onChange={(e) => patchPricing("packageOptions", e.target.value)}
                 />
               </label>

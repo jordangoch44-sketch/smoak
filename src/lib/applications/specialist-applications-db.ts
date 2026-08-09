@@ -1,5 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
+import {
+  enrichSpecialistApplicationFields,
+  normalizeSpecialistApplicationShape,
+} from "@/lib/specialist-application-fields";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistApplication,
@@ -14,19 +17,13 @@ export type SpecialistApplicationsFetchResult =
 function normalizeApplication(
   app: SpecialistApplication
 ): SpecialistApplication {
-  const enriched = enrichSpecialistApplicationFields(app) as SpecialistApplication;
+  const shaped = normalizeSpecialistApplicationShape(app);
+  const enriched = enrichSpecialistApplicationFields(
+    shaped
+  ) as SpecialistApplication;
   return {
     ...enriched,
     password: "",
-    media: {
-      ...INITIAL_SPECIALIST_ONBOARDING_STATE.media,
-      ...enriched.media,
-      profilePhotoOriginalUrl:
-        enriched.media.profilePhotoOriginalUrl ||
-        enriched.media.profilePhotoUrl ||
-        "",
-      profilePhotoCrop: enriched.media.profilePhotoCrop ?? null,
-    },
   };
 }
 
