@@ -14,6 +14,19 @@
   contain: strict;
 }
 
+/*
+ * Pin the admin sky to the viewport. Absolute+inset:0 on a tall page made the
+ * starfield as tall as the whole specialists list — iOS Safari force-quits on scroll.
+ */
+.dashboard-page--admin .dashboard-page__canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
 .dashboard-page__admin-aurora--stars {
   inset: -8% -6%;
   z-index: 1;
@@ -32,7 +45,6 @@
   pointer-events: none;
   transform: translateZ(0);
   transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: opacity;
 }
 
 .dashboard-page__admin-wash--active {
@@ -42,6 +54,30 @@
 @media (prefers-reduced-motion: reduce) {
   .dashboard-page__admin-wash {
     transition: none;
+  }
+}
+
+/* Touch / narrow: keep cosmos look, drop GPU killers that crash Safari on scroll */
+@media (max-width: 1023px) {
+  .dashboard-page--admin .dashboard-page__header-glow {
+    filter: none;
+    opacity: 0.85;
+  }
+
+  .dashboard-page--admin .atmosphere-grain {
+    display: none;
+  }
+
+  .dashboard-page__admin-wash {
+    transition: none;
+  }
+
+  .dashboard-page--admin .admin-nav,
+  .dashboard-page--admin .admin-exec-snapshot__card,
+  .dashboard-page--admin .admin-review-sheet,
+  .dashboard-page--admin .admin-review-sheet__backdrop {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 }
 

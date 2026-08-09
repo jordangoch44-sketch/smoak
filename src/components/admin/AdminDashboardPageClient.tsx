@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { DashboardLoadingState, DashboardPageShell } from "@/components/dashboard";
 import {
   AdminSectionNav,
@@ -26,7 +25,6 @@ import { getAdminOwnerRevenueDashboard } from "@/lib/admin-specialist-billing-se
 import { markAdminSectionBadgeSeen } from "@/lib/admin-section-badge-seen-store";
 import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
 import { buildInternalLoginHref } from "@/lib/internal-routes";
-import { PAGE_TRANSITION_EASE } from "@/lib/motion";
 import type { AdminApplicationMutationResult } from "@/lib/admin-applications-service";
 import type { AdminNotifiableSectionId } from "@/types/admin-notifications";
 import type { SpecialistApplication } from "@/types/specialist-application";
@@ -87,7 +85,6 @@ export function AdminDashboardPageClient() {
 
   const [activeSection, setActiveSection] = useState<AdminSectionId>("overview");
   const allApplications = applications;
-  const reduceMotion = useReducedMotion();
 
   const sectionBadgeCounts = useAdminSectionBadgeCounts({
     applications,
@@ -225,19 +222,8 @@ export function AdminDashboardPageClient() {
           id={`admin-panel-${resolvedSection}`}
           aria-labelledby={`admin-tab-${resolvedSection}`}
         >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={resolvedSection}
-              className="admin-app__panel-layer"
-              initial={reduceMotion ? false : { opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={reduceMotion ? undefined : { opacity: 0 }}
-              transition={
-                reduceMotion
-                  ? { duration: 0 }
-                  : { duration: 0.28, ease: PAGE_TRANSITION_EASE }
-              }
-            >
+          {/* No AnimatePresence exit layers on admin — they fight scroll on iOS. */}
+          <div key={resolvedSection} className="admin-app__panel-layer">
               {resolvedSection === "overview" &&
               (permissions.canViewOverview || permissions.canViewRevenue) ? (
             <AdminExecutiveRevenueSnapshot
@@ -336,8 +322,7 @@ export function AdminDashboardPageClient() {
               {resolvedSection === "settings" && permissions.canManageSettings ? (
                 <AdminSettingsPanel />
               ) : null}
-            </motion.div>
-          </AnimatePresence>
+          </div>
         </div>
       </div>
     </DashboardPageShell>
