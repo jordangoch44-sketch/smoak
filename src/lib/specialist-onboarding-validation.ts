@@ -38,9 +38,17 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
     case 4:
       if (state.specialties.length === 0) missing.push("Specialties");
       break;
-    case 5:
-      if (state.bio.trim().length < 40) missing.push("Short bio (about 40+ characters)");
+    case 5: {
+      if (state.bio.trim().length < 40) {
+        missing.push("Short bio (about 40+ characters)");
+      }
+      const priceDigits = state.pricing.oneOnOnePrice.replace(/[^\d.]/g, "");
+      const price = Number.parseFloat(priceDigits);
+      if (!Number.isFinite(price) || price <= 0) {
+        missing.push("Session price (e.g. $120)");
+      }
       break;
+    }
     default:
       break;
   }

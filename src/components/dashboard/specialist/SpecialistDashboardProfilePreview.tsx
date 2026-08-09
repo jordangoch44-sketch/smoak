@@ -320,10 +320,12 @@ export function SpecialistDashboardProfilePreview({
     formDefaults,
     saveForm,
     trainerId,
+    application,
     trainer: managedTrainer,
   } = useManagedSpecialistProfile();
 
   const trainer = managedTrainer ?? trainerProp;
+  const isLiveListing = application?.profileStatus === "APPROVED";
 
   const [editing, setEditing] = useState<SectionId | null>(null);
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
@@ -368,7 +370,12 @@ export function SpecialistDashboardProfilePreview({
     const result = await saveForm(draft);
     setSaving(false);
     if (result.ok) {
-      showToast({ type: "success", message: "Saved — changes are live." });
+      showToast({
+        type: "success",
+        message: isLiveListing
+          ? "Saved — changes are live on Marketplace."
+          : "Saved — still under review (not public yet).",
+      });
       cancelEdit();
       return;
     }

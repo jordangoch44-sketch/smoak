@@ -2,6 +2,10 @@ import { sendSpecialistApplicationConfirmationEmail } from "@/lib/email/confirma
 import { clearPendingMarketplaceSignup } from "@/lib/auth/pending-marketplace-signup";
 import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import {
+  fetchSpecialistApplicationByEmail,
+  fetchSpecialistApplicationByUserId,
+} from "@/lib/applications/specialist-applications-db";
+import {
   getMarketplaceAuthClient,
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
@@ -13,6 +17,7 @@ import {
   clearSpecialistOnboardingDraft,
   findSpecialistApplicationByEmail,
   findSpecialistApplicationByUserId,
+  saveSpecialistApplication,
   saveSpecialistApplicationAsync,
 } from "@/lib/specialist-application-storage";
 import {
@@ -76,10 +81,38 @@ export async function submitSpecialistApplication(
   assertCanSubmitSpecialistApplication(trimmedEmail, userId);
 
   const now = new Date().toISOString();
-  const existingByUser = userId
+  let existingByUser = userId
     ? findSpecialistApplicationByUserId(userId)
     : null;
-  const existingByEmail = findSpecialistApplicationByEmail(trimmedEmail);
+  let existingByEmail = findSpecialistApplicationByEmail(trimmedEmail);
+
+  /* Remote-first when local cache is empty (pre-hydrate / multi-device). */
+  if (isMarketplaceSupabaseActive() && (!existingByUser || !existingByEmail)) {
+    const supabase = getMarketplaceAuthClient();
+    if (supabase) {
+      if (!existingByUser && userId) {
+        const remoteUser = await fetchSpecialistApplicationByUserId(
+          supabase,
+          userId
+        );
+        if (remoteUser.ok && remoteUser.application) {
+          saveSpecialistApplication(remoteUser.application);
+          existingByUser = remoteUser.application;
+        }
+      }
+      if (!existingByEmail) {
+        const remoteEmail = await fetchSpecialistApplicationByEmail(
+          supabase,
+          trimmedEmail
+        );
+        if (remoteEmail.ok && remoteEmail.application) {
+          saveSpecialistApplication(remoteEmail.application);
+          existingByEmail = remoteEmail.application;
+        }
+      }
+    }
+  }
+
   const existing = existingByUser ?? existingByEmail;
 
   /* Reuse id for draft/rejected/pending updates — never create a second profile row */

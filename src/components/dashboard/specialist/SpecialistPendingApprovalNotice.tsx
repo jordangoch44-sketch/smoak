@@ -52,7 +52,7 @@ export function SpecialistPendingApprovalNotice({
             ? "Your specialist account exists, but SMOAC admin hasn’t received your application yet. Open Edit profile, save your details, then sign out and back in — or contact support if this keeps happening."
             : justSubmitted
               ? "Thanks — we have your application. Typical review is within 24 hours. You’ll get an email when you’re approved. You can edit your submitted details below anytime while you wait."
-              : "Every application is reviewed individually — typically within 24 hours. You’ll get an email at the address you signed up with when you’re approved. Then log back in and finish your full in-depth profile (pricing, availability, media, and more) from Edit profile."}
+              : "Every application is reviewed individually — typically within 24 hours. You’ll get an email at the address you signed up with when you’re approved. Once approved, your profile goes live on Marketplace — then you can deepen availability, media, and more anytime from Edit profile."}
       </p>
       {isRejected && reason ? (
         <p className="specialist-dash-notice__reason">

@@ -378,8 +378,8 @@ export function SpecialistOnboardingSteps({
       return (
         <WizardStepPanel stepKey="sp-5">
           <WizardStepHeading
-            title="A short intro"
-            subtitle="Keep it brief for now. After approval, you’ll finish your full in-depth profile from the specialist dashboard."
+            title="Intro & session rate"
+            subtitle="A short bio and your typical 1:1 rate — enough for clients once you’re approved and live."
           />
           <div className="login-fields">
             <label className="login-field">
@@ -394,6 +394,27 @@ export function SpecialistOnboardingSteps({
             </label>
             <p className="wizard-field-hint">
               About 40+ characters · {state.bio.trim().length} entered
+            </p>
+            <label className="login-field">
+              <span className="login-field__label">1:1 session price</span>
+              <input
+                className="login-field__input"
+                inputMode="decimal"
+                value={state.pricing.oneOnOnePrice}
+                onChange={(e) =>
+                  onPatch({
+                    pricing: {
+                      ...state.pricing,
+                      oneOnOnePrice: e.target.value,
+                    },
+                  })
+                }
+                placeholder="$120"
+              />
+            </label>
+            <p className="wizard-field-hint">
+              Shown on your Marketplace card after approval. You can update it
+              anytime from Edit profile.
             </p>
             <label className="login-field">
               <span className="login-field__label">
@@ -424,8 +445,8 @@ export function SpecialistOnboardingSteps({
               />
             </label>
             <p className="wizard-field-hint">
-              Pricing, availability, media, and coaching style come later — once
-              you’re approved, edit your in-depth profile anytime.
+              Availability, extra media, and coaching style can be deepened
+              anytime after you’re live.
             </p>
           </div>
         </WizardStepPanel>
@@ -436,7 +457,7 @@ export function SpecialistOnboardingSteps({
         <WizardStepPanel stepKey="sp-6">
           <WizardStepHeading
             title="Preview & submit"
-            subtitle="This is enough for review. After approval, finish your full profile from your dashboard."
+            subtitle="We’ll review this application. When approved, your profile goes live on Marketplace."
           />
           <SpecialistApplicationPreview
             state={state}
@@ -448,8 +469,8 @@ export function SpecialistOnboardingSteps({
             }
           />
           <p className="wizard-field-hint" style={{ marginTop: "1rem" }}>
-            After you’re approved, log in and open Edit profile to add pricing,
-            availability, photos, credentials, and more.
+            After approval you&apos;re discoverable — deepen availability,
+            photos, and credentials anytime from Edit profile.
           </p>
           <div className="wizard-preview-actions">
             <button

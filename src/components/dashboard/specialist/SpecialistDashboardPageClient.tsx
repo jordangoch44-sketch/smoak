@@ -60,7 +60,7 @@ function dashboardSubtitle(
     return "Your application is under review.";
   }
   if (mode === "approved-free") {
-    return "Your profile is live — finish your in-depth profile anytime.";
+    return "Your profile is live on Marketplace — deepen it anytime from Edit profile.";
   }
   if (
     (mode === "approved-premium" || mode === "demo-premium") &&

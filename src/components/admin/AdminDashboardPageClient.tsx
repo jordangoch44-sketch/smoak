@@ -151,7 +151,17 @@ export function AdminDashboardPageClient() {
     const approved = await approveApplication(app);
     if (!approved.ok) return approved;
     const activated = await activateFromApplication(approved.application.id);
-    return activated.ok ? activated : approved;
+    /* Fail closed — do not claim success if catalog/email activation failed. */
+    if (!activated.ok) {
+      return {
+        ok: false,
+        message:
+          activated.message ||
+          "Approved in queue, but could not publish to Marketplace. Try Convert to active specialist.",
+        application: approved.application,
+      };
+    }
+    return activated;
   }
 
   async function handleReject(

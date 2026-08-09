@@ -95,6 +95,6 @@ export const SPECIALIST_ONBOARDING_STEP_LABELS = [
   "Account details",
   "Service area",
   "Specialties",
-  "Short bio",
+  "Intro & rate",
   "Preview",
 ] as const;

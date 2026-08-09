@@ -30,6 +30,14 @@ export type AdminApplicationMutationResult =
 function blockIfNotReadyToGoLive(
   application: SpecialistApplication
 ): AdminApplicationMutationResult | null {
+  if (!application.userId?.trim()) {
+    return {
+      ok: false,
+      message:
+        "Cannot go live — this application has no linked auth account. Ask the specialist to sign in once, then retry.",
+      application,
+    };
+  }
   const gaps = getSpecialistGoLiveGaps(application);
   if (gaps.length === 0) return null;
   return {

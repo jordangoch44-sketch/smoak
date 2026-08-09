@@ -48,7 +48,7 @@ function buildSpecialistConfirmationEmail(
 
 Welcome to SMOAC — we received your specialist application.
 
-Every application is reviewed individually. We typically verify accounts within 24 hours. You'll receive another email when your account is approved — then you can log in and finish your full in-depth profile (pricing, availability, media, and more).
+Every application is reviewed individually. We typically verify accounts within 24 hours. You'll receive another email when your account is approved — then your profile goes live on Marketplace, and you can deepen availability, media, and more anytime from your dashboard.
 
 Thank you,
 SMOAC`;
@@ -61,7 +61,7 @@ SMOAC`;
       `Hi ${firstName},`,
       "Welcome to SMOAC — thank you for applying as a specialist.",
       "Every application is reviewed individually. We typically verify accounts within 24 hours.",
-      "You’ll receive another email when you’re approved — then you can log in and finish your in-depth profile, including pricing, availability, media, and credentials.",
+      "You’ll receive another email when you’re approved — your profile goes live on Marketplace, and you can deepen availability, media, and credentials anytime from your dashboard.",
     ]),
     footerNote: "No action needed right now — we’ll email you when you’re approved.",
   });
@@ -83,35 +83,35 @@ function buildSpecialistApprovalEmail(
   const loginUrl = specialistLoginUrl();
   const text = `Hi ${firstName},
 
-Great news — your SMOAC specialist account has been approved and your profile can go live.
+Great news — your SMOAC specialist account is approved and your profile is live on Marketplace.
 
 Log in with the email and password you used to apply:
 ${loginUrl}
 
-Choose Continue as Specialist, then open Edit profile to finish your in-depth profile — pricing, availability, photos, credentials, and coaching details. Clients discover you on SMOAC once your listing is live.
+Choose Continue as Specialist to open your dashboard. You can deepen your listing anytime from Edit profile — availability, extra photos, credentials, and coaching details.
 
 Welcome to SMOAC,
 The SMOAC team`;
 
   const html = wrapTransactionalEmailHtml({
-    preheader: "You’re approved — log in to finish your profile",
-    eyebrow: "You’re approved",
+    preheader: "You’re approved — your profile is live on SMOAC",
+    eyebrow: "You’re live",
     title: "Welcome to SMOAC",
     bodyHtml: renderEmailParagraphs([
       `Hi ${firstName},`,
-      "Your specialist account has been approved. Your profile can go live once you finish the details clients need to book with confidence.",
-      "Log in with the email and password you used to apply. Choose Continue as Specialist, then open Edit profile to add pricing, availability, photos, credentials, and coaching details.",
+      "Your specialist account is approved and your profile is live on Marketplace for clients to discover.",
+      "Log in with the email and password you used to apply. Choose Continue as Specialist, then use Edit profile anytime to deepen availability, photos, credentials, and coaching details.",
     ]),
     cta: {
-      label: "Log in to finish your profile",
+      label: "Open specialist dashboard",
       href: loginUrl,
     },
-    footerNote: "Clients discover you on SMOAC once your listing is complete and live.",
+    footerNote: "You’re discoverable now — keep strengthening your profile as you grow.",
   });
 
   return {
     to: application.email.trim(),
-    subject: "You’re approved on SMOAC — log in to finish your profile",
+    subject: "You’re live on SMOAC — your profile is approved",
     text,
     html,
     applicationId: application.id,
