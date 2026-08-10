@@ -969,8 +969,8 @@ export function SpecialistDashboardProfilePreview({
                 />
               </label>
               <p className="wizard-field-hint">
-                Shown under SMOAC Reviews. Syncing review text comes later —
-                saving a link is enough for now.
+                Shown next to SMOAC stars at the top of the profile. Tap opens
+                Google — review sync comes later.
               </p>
             </div>
           ) : null}

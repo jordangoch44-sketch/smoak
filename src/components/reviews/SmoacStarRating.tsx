@@ -9,14 +9,15 @@ function clamp01(value: number): number {
 
 function smoacStarRatingSummary(
   reviewCount: number,
-  avgRating: number | null
+  avgRating: number | null,
+  sourceName: string
 ): string {
   const countLabel =
     reviewCount === 1 ? "(1) review" : `(${reviewCount}) reviews`;
   if (reviewCount > 0 && avgRating != null) {
-    return `${formatTrainerRating(avgRating)} average from ${countLabel}`;
+    return `${formatTrainerRating(avgRating)} average from ${countLabel} on ${sourceName}`;
   }
-  return "0 reviews on SMOAC";
+  return `0 reviews on ${sourceName}`;
 }
 
 interface SmoacStarRatingProps {
@@ -27,6 +28,8 @@ interface SmoacStarRatingProps {
   className?: string;
   /** Optional leave-review action (profile sheet only — never on cards) */
   onLeaveReview?: () => void;
+  /** Aria / summary brand — defaults to SMOAC */
+  sourceName?: string;
 }
 
 /**
@@ -40,6 +43,7 @@ export function SmoacStarRating({
   size = "hero",
   className,
   onLeaveReview,
+  sourceName = "SMOAC",
 }: SmoacStarRatingProps) {
   const fill =
     reviewCount > 0 && avgRating != null
@@ -47,7 +51,7 @@ export function SmoacStarRating({
       : 0;
   const countLabel =
     reviewCount === 1 ? "(1) review" : `(${reviewCount}) reviews`;
-  const summary = smoacStarRatingSummary(reviewCount, avgRating);
+  const summary = smoacStarRatingSummary(reviewCount, avgRating, sourceName);
 
   const body = (
     <>

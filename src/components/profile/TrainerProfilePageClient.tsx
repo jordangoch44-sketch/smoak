@@ -29,7 +29,6 @@ import { ProfileContactCta } from "./ProfileContactCta";
 import { ProfilePrimaryHighlights } from "./ProfilePrimaryHighlights";
 import { ProfileTrainerSpecs } from "./ProfileTrainerSpecs";
 import { ProfileDiscoveryRails } from "./ProfileDiscoveryRails";
-import { Reviews } from "./Reviews";
 import { SmoacReviewsSection } from "./SmoacReviewsSection";
 import { TrainerProfileSheet } from "./TrainerProfileSheet";
 import { cn } from "@/lib/utils";
@@ -207,17 +206,6 @@ export function TrainerProfilePageClient({
             onReviewModalOpenChange={setReviewModalOpen}
             onSubmitted={applySubmittedReview}
             canLeaveReview={canLeaveReview}
-          />
-
-          {/* Google stays separate from SMOAC. Visual ★ — (0) until Places sync. */}
-          <Reviews
-            reviews={[]}
-            rating={0}
-            reviewCount={0}
-            className="profile-section--reviews profile-section--google-reviews"
-            sourceLabel="google"
-            googleReviewsUrl={trainer.social.googleReviewsUrl ?? ""}
-            googlePlaceId={trainer.social.googlePlaceId ?? ""}
           />
 
           <ProfileTrainerSpecs trainer={trainer} />
