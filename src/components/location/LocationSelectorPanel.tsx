@@ -215,6 +215,10 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
             setZipResolveError(null);
           }}
           onBlur={() => setZipTouched(true)}
+          enterKeyHint="done"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
           aria-invalid={zipInvalid || Boolean(zipResolveError)}
           aria-describedby={
             zipInvalid || zipResolveError ? `${zipFieldId}-feedback` : undefined

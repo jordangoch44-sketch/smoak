@@ -162,6 +162,59 @@ html {
       background: rgba(12, 12, 18, 0.94) !important;
     }
 
+    /* Filters sheet relied on blur; without it it was unreadable glass */
+    .explore-filters-drawer {
+      background: #12101a !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+    }
+
+    .explore-filters-drawer__backdrop {
+      background: rgba(4, 4, 8, 0.72) !important;
+    }
+
+    .explore-filters-drawer__footer {
+      background: #100e18 !important;
+    }
+
+    .explore-filter-location-btn,
+    .explore-filter-control,
+    .explore-filter-seg__chip {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .explore-filter-seg__chip--selected {
+      background: rgba(var(--aurora-violet-rgb), 0.5) !important;
+    }
+
+    /* Set location popup — same opaque fix as filters sheet */
+    .location-selector-dropdown,
+    .location-selector-dropdown.glass-panel {
+      background: #12101a !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+    }
+
+    .location-selector-backdrop {
+      background: rgba(4, 4, 8, 0.72) !important;
+    }
+
+    .location-selector-panel__input,
+    .location-selector-panel__city-list {
+      background: rgba(0, 0, 0, 0.45) !important;
+    }
+
+    .location-selector-panel__btn--secondary,
+    .location-selector-panel__recent-chip {
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .location-selector-dropdown__glow {
+      display: none !important;
+    }
+
+    .location-selector-panel__input {
+      font-size: 16px !important;
+    }
+
     .mobile-bottom-nav__pill {
       background: rgba(12, 10, 18, 0.94) !important;
     }

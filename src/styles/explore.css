@@ -530,6 +530,189 @@
   color: rgba(255, 255, 255, 0.48);
 }
 
+.explore-results-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.explore-view-toggle {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(14, 14, 20, 0.45);
+}
+
+.explore-view-toggle__btn {
+  min-height: 2rem;
+  padding: 0.35rem 0.9rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8125rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.explore-view-toggle__btn:hover {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.explore-view-toggle__btn--active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.explore-view-toggle__btn:focus-visible {
+  outline: 2px solid rgba(var(--aurora-lavender-rgb), 0.7);
+  outline-offset: 2px;
+}
+
+.explore-results-split {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.explore-results-split__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.explore-results-split__count {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.explore-map {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.explore-map__canvas {
+  width: 100%;
+  height: min(62vh, 28rem);
+  min-height: 16rem;
+  border-radius: 1.1rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #d8e0e8;
+  z-index: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.explore-map--split .explore-map__canvas {
+  height: min(38vh, 16.5rem);
+  min-height: 11.5rem;
+  border-radius: 1rem;
+}
+
+.explore-map__canvas .leaflet-container {
+  width: 100%;
+  height: 100%;
+  font: inherit;
+  background: #d4dde6;
+}
+
+/* Keep Voyager’s gray roads + blue water, slightly dusk so it sits in dark chrome */
+.explore-map .explore-map-tiles {
+  filter: saturate(1.08) brightness(0.92) contrast(1.04);
+}
+
+.explore-map--locked .leaflet-container {
+  cursor: default;
+}
+
+.explore-map .leaflet-control-attribution {
+  font-size: 0.625rem;
+  max-width: 72%;
+  color: rgba(40, 48, 60, 0.62);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.explore-map .leaflet-control-attribution a {
+  color: rgba(40, 48, 60, 0.78);
+}
+
+.explore-map__note,
+.explore-map__empty {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.explore-map__empty {
+  padding: 0.15rem 0.1rem 0.35rem;
+}
+
+.explore-map-pin {
+  background: transparent;
+  border: none;
+}
+
+.explore-map-pin__dot {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #4285f4;
+  border: 2px solid #fff;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(66, 133, 244, 0.25);
+}
+
+.explore-map-popup__name {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: #111;
+}
+
+.explore-map-popup__meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.55);
+}
+
+.explore-map-popup__price {
+  margin: 0.35rem 0 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: #1a1a1a;
+}
+
+.explore-map-popup__address {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: rgba(0, 0, 0, 0.58);
+}
+
+.explore-map-popup__link {
+  display: inline-block;
+  margin-top: 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #4285f4;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .explore-results-heading__view-all:focus-visible {
   outline: 2px solid rgba(var(--aurora-lavender-rgb), 0.7);
   outline-offset: 2px;
@@ -1628,7 +1811,7 @@
   position: absolute;
   inset: 0;
   border: none;
-  background: rgba(6, 6, 12, 0.28);
+  background: rgba(4, 4, 10, 0.62);
   backdrop-filter: blur(6px) saturate(1.08);
   -webkit-backdrop-filter: blur(6px) saturate(1.08);
   cursor: pointer;
@@ -1643,21 +1826,22 @@
   max-height: min(92dvh, 720px);
   flex-direction: column;
   border-radius: 1.5rem 1.5rem 0 0;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-bottom: none;
+  /* Opaque base first — blur is polish only (iOS strips backdrop-filter) */
   background:
     linear-gradient(
       165deg,
-      rgba(255, 255, 255, 0.14) 0%,
-      rgba(28, 24, 44, 0.42) 42%,
-      rgba(14, 12, 24, 0.52) 100%
+      rgba(36, 32, 52, 0.98) 0%,
+      rgba(16, 14, 26, 0.99) 45%,
+      rgba(10, 9, 16, 1) 100%
     );
   backdrop-filter: blur(28px) saturate(1.35);
   -webkit-backdrop-filter: blur(28px) saturate(1.35);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 -1px 0 rgba(255, 255, 255, 0.04),
-    0 -18px 64px rgba(0, 0, 0, 0.35),
+    0 -18px 64px rgba(0, 0, 0, 0.45),
     0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.08);
   touch-action: pan-y;
 }
@@ -1744,10 +1928,10 @@
   align-items: center;
   gap: 0.75rem;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(12, 10, 20, 0.98);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.22);
   padding: 0.875rem 1.125rem max(0.875rem, env(safe-area-inset-bottom, 0px));
 }
 

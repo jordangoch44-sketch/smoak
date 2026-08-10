@@ -12,6 +12,7 @@ import {
 } from "@/lib/user-location-storage";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
 import { MARKETPLACE_CITY_CENTERS } from "@/lib/marketplace-city-centers";
+import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import type { AuthSession } from "@/types/auth";
 import type { Trainer, TrainerFilters } from "@/types";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
@@ -171,4 +172,21 @@ export function resolveExploreSortOrigin(
   }
 
   return userCoords;
+}
+
+/**
+ * Map framing center for Explore (read-only display).
+ * Prefer filter ZIP, then city / neighborhood / client coords from sort origin.
+ */
+export function resolveExploreMapArea(
+  filters: TrainerFilters,
+  userCoords: UserGeoPoint | null
+): UserGeoPoint | null {
+  const zip = normalizeZipCode(filters.zipCode.trim());
+  if (isValidZipCode(zip)) {
+    const fromZip = zipCodeToCoordinates(zip);
+    if (fromZip) return fromZip;
+  }
+
+  return resolveExploreSortOrigin(filters, userCoords);
 }

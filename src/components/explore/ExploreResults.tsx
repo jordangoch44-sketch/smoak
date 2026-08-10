@@ -1,10 +1,17 @@
+"use client";
+
 import Link from "next/link";
-import { memo } from "react";
-import type { Trainer } from "@/types";
+import { memo, useMemo, useState } from "react";
+import type { Trainer, TrainerFilters } from "@/types";
 import { TrainerList } from "@/components/trainers";
+import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
+import { useMobileViewport } from "@/hooks/useMobileViewport";
+import { resolveExploreMapArea } from "@/lib/explore-location-filters";
+import { ExploreMap } from "./ExploreMap";
 
 interface ExploreResultsProps {
   trainers: Trainer[];
+  filters: TrainerFilters;
   activeFilterCount: number;
   hasSearch: boolean;
   /** Filters were relaxed so nearby results still appear */
@@ -14,8 +21,11 @@ interface ExploreResultsProps {
   onClearAll: () => void;
 }
 
+type ExploreViewMode = "list" | "map";
+
 export const ExploreResults = memo(function ExploreResults({
   trainers,
+  filters,
   activeFilterCount,
   hasSearch,
   resultsBroadened = false,
@@ -23,6 +33,15 @@ export const ExploreResults = memo(function ExploreResults({
   onClearSearch,
   onClearAll,
 }: ExploreResultsProps) {
+  const isMobile = useMobileViewport(true);
+  const userCoords = useActiveUserCoordinates();
+  const [viewMode, setViewMode] = useState<ExploreViewMode>("list");
+
+  const areaCenter = useMemo(
+    () => resolveExploreMapArea(filters, userCoords),
+    [filters, userCoords]
+  );
+
   if (trainers.length === 0) {
     const isUnfilteredEmpty = !hasSearch && activeFilterCount === 0;
 
@@ -83,14 +102,81 @@ export const ExploreResults = memo(function ExploreResults({
     );
   }
 
+  const broadenedNote = resultsBroadened ? (
+    <p className="explore-results-heading__note">
+      Showing nearby specialists — closest to you first.
+    </p>
+  ) : null;
+
+  if (isMobile) {
+    return (
+      <div className="explore-results-split">
+        {broadenedNote}
+        <ExploreMap
+          trainers={trainers}
+          areaCenter={areaCenter}
+          locked
+          variant="split"
+          showNotes={false}
+        />
+        <div className="explore-results-split__list">
+          <p className="explore-results-split__count">
+            {trainers.length} specialist{trainers.length === 1 ? "" : "s"} in
+            this area
+          </p>
+          <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="explore-results-stack">
-      {resultsBroadened ? (
-        <p className="explore-results-heading__note">
-          Showing nearby specialists — closest to you first.
-        </p>
-      ) : null}
-      <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
+      <div
+        className="explore-view-toggle"
+        role="tablist"
+        aria-label="Results view"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "list"}
+          className={
+            viewMode === "list"
+              ? "explore-view-toggle__btn explore-view-toggle__btn--active"
+              : "explore-view-toggle__btn"
+          }
+          onClick={() => setViewMode("list")}
+        >
+          List
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewMode === "map"}
+          className={
+            viewMode === "map"
+              ? "explore-view-toggle__btn explore-view-toggle__btn--active"
+              : "explore-view-toggle__btn"
+          }
+          onClick={() => setViewMode("map")}
+        >
+          Map
+        </button>
+      </div>
+
+      {broadenedNote}
+
+      {viewMode === "map" ? (
+        <ExploreMap
+          trainers={trainers}
+          areaCenter={areaCenter}
+          locked
+          variant="panel"
+        />
+      ) : (
+        <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
+      )}
     </div>
   );
 });

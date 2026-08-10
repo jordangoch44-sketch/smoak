@@ -185,6 +185,7 @@ export function ExplorePageClient() {
 
             <ExploreResults
               trainers={filtered}
+              filters={filters}
               activeFilterCount={activeFilterCount}
               hasSearch={hasSearch}
               resultsBroadened={resultsBroadened}

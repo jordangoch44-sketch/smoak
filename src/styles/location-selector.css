@@ -189,7 +189,7 @@
   border: 0;
   padding: 0;
   margin: 0;
-  background: rgba(0, 0, 0, 0.28);
+  background: rgba(4, 4, 10, 0.62);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   opacity: 0;
@@ -208,6 +208,14 @@
   max-height: min(78dvh, 32rem);
   overflow: hidden;
   border-radius: 1.25rem;
+  /* Opaque base — blur is polish only (iOS strips backdrop-filter) */
+  background:
+    linear-gradient(
+      165deg,
+      rgba(36, 32, 52, 0.98) 0%,
+      rgba(16, 14, 26, 0.99) 48%,
+      rgba(10, 9, 16, 1) 100%
+    ) !important;
   opacity: 0;
   transform: translateY(-10px) scale(0.96);
   pointer-events: none;
@@ -221,6 +229,7 @@
   opacity: 1;
   transform: translateY(0) scale(1);
   pointer-events: auto;
+  will-change: auto;
 }
 
 .location-selector-dropdown__glow {
@@ -312,10 +321,11 @@
   min-height: 2.75rem;
   padding: 0.65rem 0.85rem;
   border-radius: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.45);
   color: #fff;
-  font-size: 1rem;
+  /* 16px minimum — iOS Safari focus-zooms smaller inputs and can OOM */
+  font-size: 16px;
   letter-spacing: 0.04em;
   outline: none;
   transition:
@@ -376,8 +386,8 @@
 }
 
 .location-selector-panel__btn--secondary {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.1);
   color: rgba(255, 255, 255, 0.92);
 }
 
@@ -416,8 +426,8 @@
   padding: 0;
   list-style: none;
   border-radius: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.4);
   overflow: hidden;
 }
 
@@ -464,18 +474,11 @@
   min-height: 2.5rem;
   padding: 0 0.85rem;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
   font-size: 0.8125rem;
   letter-spacing: 0.05em;
   color: rgba(255, 255, 255, 0.88);
-}
-
-@supports (-webkit-touch-callout: none) {
-  .location-selector-backdrop {
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-  }
 }
 
 /* Distance-from-you label on specialist cards */

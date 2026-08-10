@@ -77,16 +77,31 @@ export function LocationSelectorDropdown({
     setAnchorRect(measureAnchor(anchorRef.current));
   }, [anchorRef]);
 
+  const isTypingInPanel = useCallback(() => {
+    if (typeof document === "undefined") return false;
+    const active = document.activeElement;
+    return Boolean(active && panelRef.current?.contains(active));
+  }, []);
+
   useLayoutEffect(() => {
     if (!open) return;
     updateAnchor();
-    /* Anchor lives in the fixed header — resize only; never scroll (avoids jank). */
-    const onLayout = () => updateAnchor();
+    /* Anchor lives in the fixed header — resize only; never scroll (avoids jank).
+     * Skip while the ZIP field is focused: iOS keyboard resize would thrash layout. */
+    const onLayout = () => {
+      if (isTypingInPanel()) return;
+      updateAnchor();
+    };
     window.addEventListener("resize", onLayout);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", onLayout);
+    vv?.addEventListener("scroll", onLayout);
     return () => {
       window.removeEventListener("resize", onLayout);
+      vv?.removeEventListener("resize", onLayout);
+      vv?.removeEventListener("scroll", onLayout);
     };
-  }, [open, updateAnchor]);
+  }, [open, updateAnchor, isTypingInPanel]);
 
   useEffect(() => {
     if (!open) {
@@ -124,13 +139,18 @@ export function LocationSelectorDropdown({
       handleDismiss();
     }
 
+    /**
+     * Do not dismiss on scroll while typing ZIP — iOS Safari scrolls/resizes
+     * the visual viewport when the keyboard opens, which was closing this
+     * panel mid-keystroke and contributing to force-quits.
+     */
     function onPageScroll() {
+      if (isTypingInPanel()) return;
       handleDismiss();
     }
 
     window.addEventListener("keydown", onKeyDown);
     document.addEventListener("click", onDocumentClick, true);
-    /* Close on page scroll so browsing never fights the dropdown */
     window.addEventListener("scroll", onPageScroll, { passive: true });
     return () => {
       document.body.classList.remove("location-selector-open");
@@ -139,7 +159,7 @@ export function LocationSelectorDropdown({
       document.removeEventListener("click", onDocumentClick, true);
       window.removeEventListener("scroll", onPageScroll);
     };
-  }, [open, handleDismiss, anchorRef]);
+  }, [open, handleDismiss, anchorRef, isTypingInPanel]);
 
   const handleUpdated = useCallback(() => {
     onClose();
