@@ -30,7 +30,7 @@
 
 .explore-page__canvas .atmosphere-blob {
   opacity: 0.95;
-  filter: blur(72px);
+  /* Soft edges via oversized gradients — avoid filter:blur (Safari zoom crash) */
 }
 
 .explore-page__canvas .atmosphere-blob--indigo {
@@ -49,7 +49,6 @@
     rgba(var(--aurora-lavender-rgb), 0.36) 42%,
     transparent 72%
   );
-  filter: blur(88px);
 }
 
 .explore-page__canvas .atmosphere-blob--magenta {
@@ -102,7 +101,7 @@
       rgba(var(--aurora-violet-rgb), 0.14) 0%,
       transparent 62%
     );
-  filter: blur(56px);
+  /* No filter:blur — iOS Safari OOMs when pinch-zooming blurred full-page layers */
   opacity: 1;
 }
 

@@ -7,8 +7,8 @@ html {
 
 @media (max-width: 1023px) {
   :root {
-    --mesh-blur: 52px;
-    --mesh-blur-lg: 64px;
+    --mesh-blur: 0px;
+    --mesh-blur-lg: 0px;
   }
 
   /*
@@ -52,28 +52,89 @@ html {
     backface-visibility: hidden;
   }
 
+  /*
+   * Cap decorative canvases to one viewport tall. Absolute+inset:0 on tall
+   * Explore/Rankings lists made blur layers document-height — Safari OOMs
+   * on pinch-zoom ("A problem repeatedly occurred").
+   * Prefer absolute (not fixed) so stacking stays under page content.
+   */
+  .explore-page__canvas,
+  .rankings-page__canvas,
+  .login-page__canvas {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: auto !important;
+    width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
   .home-hero {
     contain: none;
   }
 
   .atmosphere-blob,
-  .home-hero__canvas .atmosphere-blob {
+  .home-hero__canvas .atmosphere-blob,
+  .explore-page__canvas .atmosphere-blob {
     animation: none !important;
     will-change: auto !important;
+    filter: none !important;
   }
 
   .page-transition__layer {
     filter: none !important;
   }
 
+  .atmosphere-grain {
+    display: none !important;
+  }
+
+  .explore-page__header-glow,
+  .dashboard-page__header-glow,
   .site-page-backdrop__blob {
-    filter: blur(64px) !important;
+    filter: none !important;
   }
 }
 
-/* True iPhone Safari — drop expensive glass that OOMs on zoom/scroll */
+/*
+ * True iPhone Safari — nuclear GPU relief.
+ * Pinch-zoom re-rasters every blurred layer; that is what triggers
+ * “A problem repeatedly occurred on smoac.com”.
+ */
 @supports (-webkit-touch-callout: none) {
   @media (max-width: 1023px) {
+    *,
+    *::before,
+    *::after {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .atmosphere-blob,
+    .site-page-backdrop__blob,
+    .site-page-backdrop__mesh,
+    .explore-page__canvas .atmosphere-mesh,
+    .explore-page__cosmic,
+    .explore-page__stars,
+    .aurora-atmosphere__nebula,
+    .aurora-atmosphere__starfield,
+    .aurora-atmosphere__crosses,
+    .atmosphere-grain {
+      display: none !important;
+    }
+
+    .explore-page__header-glow,
+    .dashboard-page__header-glow,
+    .rankings-page__header-glow,
+    .home-hero__search-light,
+    .home-hero__search-mesh-blob {
+      filter: none !important;
+    }
+
     .top50-card__article,
     .explore-search-shell,
     .explore-filter-panel,
@@ -105,11 +166,10 @@ html {
       background: rgba(12, 10, 18, 0.94) !important;
     }
 
-    /* Huge blurs under zoom = WebContent kill. Prefer soft gradients. */
-    .dashboard-page__header-glow,
-    .site-page-backdrop__blob,
-    .atmosphere-blob {
-      filter: none !important;
+    .site-header__frost {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      background: rgba(8, 8, 12, 0.94) !important;
     }
 
     .aurora-atmosphere--motion .aurora-atmosphere__starfield,

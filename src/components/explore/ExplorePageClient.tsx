@@ -8,6 +8,7 @@ import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibil
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
+import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
@@ -25,6 +26,7 @@ import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
   const { session } = useAuthSession();
+  const isCompactAtmosphere = useTabletViewport(true);
   const { openLocationPanel } = useUserLocationEditor();
   const pendingSearchRef = useRef<string | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
@@ -101,24 +103,33 @@ export function ExplorePageClient() {
   return (
     <div className="explore-page explore-page--results">
       <div className="explore-page__canvas" aria-hidden>
-        <div className="atmosphere-mesh">
-          <div className="atmosphere-blob atmosphere-blob--indigo" />
-          <div className="atmosphere-blob atmosphere-blob--blue" />
-          <div className="atmosphere-blob atmosphere-blob--violet" />
-          <div className="atmosphere-blob atmosphere-blob--magenta" />
-          <div className="atmosphere-blob atmosphere-blob--core" />
-        </div>
-        <AuroraAtmosphere
-          intensity="subtle"
-          starDensity="none"
-          glowPosition="search"
-          glowColor="mixed"
-          enableMotion
-          className="explore-page__cosmic"
-        />
-        <div className="explore-page__header-glow" />
-        <div className="atmosphere-vignette atmosphere-vignette--soft" />
-        <div className="atmosphere-grain" />
+        {isCompactAtmosphere ? (
+          <>
+            <div className="explore-page__header-glow" />
+            <div className="atmosphere-vignette atmosphere-vignette--soft" />
+          </>
+        ) : (
+          <>
+            <div className="atmosphere-mesh">
+              <div className="atmosphere-blob atmosphere-blob--indigo" />
+              <div className="atmosphere-blob atmosphere-blob--blue" />
+              <div className="atmosphere-blob atmosphere-blob--violet" />
+              <div className="atmosphere-blob atmosphere-blob--magenta" />
+              <div className="atmosphere-blob atmosphere-blob--core" />
+            </div>
+            <AuroraAtmosphere
+              intensity="subtle"
+              starDensity="none"
+              glowPosition="search"
+              glowColor="mixed"
+              enableMotion
+              className="explore-page__cosmic"
+            />
+            <div className="explore-page__header-glow" />
+            <div className="atmosphere-vignette atmosphere-vignette--soft" />
+            <div className="atmosphere-grain" />
+          </>
+        )}
       </div>
 
       <div className="explore-page__content">
