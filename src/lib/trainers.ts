@@ -15,7 +15,7 @@ function matchesSpecialty(trainer: Trainer, specialty: string): boolean {
   );
 }
 
-/** Applies sidebar filter fields (specialty, gender, price). Location never excludes. */
+/** Applies sidebar filter fields (specialty, gender, price). Name-based location never excludes. */
 export function filterTrainers(
   trainers: Trainer[],
   filters: TrainerFilters

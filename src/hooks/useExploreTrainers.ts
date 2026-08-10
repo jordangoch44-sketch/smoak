@@ -12,9 +12,11 @@ import {
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import {
+  DEFAULT_EXPLORE_RADIUS_MILES,
   EMPTY_TRAINER_FILTERS,
   countActiveFilters,
-  filterExploreTrainersWithFallback,
+  filterExploreTrainersInArea,
+  getSuggestedExploreTrainers,
 } from "@/lib/explore";
 import {
   getActiveFilterChips,
@@ -29,7 +31,7 @@ import {
 } from "@/lib/explore-url";
 import {
   mergeExploreFiltersWithSavedLocation,
-  resolveExploreSortOrigin,
+  resolveExploreMapArea,
 } from "@/lib/explore-location-filters";
 import {
   getHiddenTrainersServerSnapshot,
@@ -169,8 +171,8 @@ export function useExploreTrainers({
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
   }, [initialCatalog, catalogMode]);
 
-  /* After hydrate (and whenever saved location changes), surface header ZIP
-   * on Explore filter chips. Does not hard-filter results. */
+  /* After hydrate, surface header ZIP on Explore chips.
+   * ZIP / coords also drive the default search radius (see explore.ts). */
   useEffect(() => {
     if (!hydrated) return;
     setFiltersState((prev) => {
@@ -357,62 +359,118 @@ export function useExploreTrainers({
     getHiddenTrainersServerSnapshot
   );
 
-  const getVisibleExploreMatches = useCallback(
-    (candidateFilters: TrainerFilters) => {
-      void profileOverridesRevision;
-      void approvedProfilesRevision;
-      void applicationsRevision;
-      void hiddenRevision;
-      const hiddenSet = new Set(getHiddenTrainersSnapshot());
-      const catalog = listPublicMarketplaceTrainers({
-        remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
-        catalogMode,
-      })
-        .filter((trainer) =>
-          catalogMode === "live" ? true : !hiddenSet.has(trainer.id)
-        )
-        .map((trainer) =>
-          catalogMode === "live"
-            ? trainer
-            : (getTrainerWithOverrides(trainer.id) ?? trainer)
-        );
+  const [nearbyExpanded, setNearbyExpanded] = useState(false);
 
-      return filterExploreTrainersWithFallback(
-        catalog,
-        candidateFilters,
-        searchQuery
-      );
-    },
-    [
-      searchQuery,
-      profileOverridesRevision,
-      approvedProfilesRevision,
-      applicationsRevision,
-      hiddenRevision,
-      initialCatalog,
+  const getCatalogTrainers = useCallback(() => {
+    void profileOverridesRevision;
+    void approvedProfilesRevision;
+    void applicationsRevision;
+    void hiddenRevision;
+    const hiddenSet = new Set(getHiddenTrainersSnapshot());
+    return listPublicMarketplaceTrainers({
+      remoteApproved: catalogMode === "live" ? initialCatalog : undefined,
       catalogMode,
-    ]
+    })
+      .filter((trainer) =>
+        catalogMode === "live" ? true : !hiddenSet.has(trainer.id)
+      )
+      .map((trainer) =>
+        catalogMode === "live"
+          ? trainer
+          : (getTrainerWithOverrides(trainer.id) ?? trainer)
+      );
+  }, [
+    profileOverridesRevision,
+    approvedProfilesRevision,
+    applicationsRevision,
+    hiddenRevision,
+    initialCatalog,
+    catalogMode,
+  ]);
+
+  const searchOrigin = useMemo(() => {
+    if (!hydrated) return null;
+    return resolveExploreMapArea(filters, userCoords);
+  }, [filters, userCoords, hydrated, coordsKey]);
+
+  const filterKey = useMemo(
+    () =>
+      [
+        filters.zipCode,
+        filters.city,
+        filters.neighborhood,
+        filters.profession,
+        filters.specialty,
+        filters.gender,
+        filters.priceMin,
+        filters.priceMax,
+        filters.serviceType,
+        searchQuery,
+      ].join("|"),
+    [filters, searchQuery]
   );
 
-  const { filtered, resultsBroadened } = useMemo(() => {
-    const { trainers: matches, broadened } = getVisibleExploreMatches(filters);
-    const coords = hydrated
-      ? resolveExploreSortOrigin(filters, userCoords)
-      : null;
+  useEffect(() => {
+    setNearbyExpanded(false);
+  }, [filterKey]);
+
+  const { filtered, areaEmpty, resultsBroadened } = useMemo(() => {
+    const catalog = getCatalogTrainers();
+    const origin = searchOrigin;
+    const radiusMiles = origin ? DEFAULT_EXPLORE_RADIUS_MILES : null;
+    const area = filterExploreTrainersInArea(
+      catalog,
+      filters,
+      searchQuery,
+      origin,
+      { radiusMiles, nearbyExpanded }
+    );
+    const coords = origin ?? (hydrated ? userCoords : null);
     return {
-      filtered: sortTrainersByProximity(matches, coords, {
+      filtered: sortTrainersByProximity(area.trainers, coords, {
         profession: filters.profession,
         specialty: filters.specialty,
       }),
-      resultsBroadened: broadened,
+      areaEmpty: area.areaEmpty,
+      resultsBroadened: area.nearbyExpanded,
     };
-  }, [filters, getVisibleExploreMatches, hydrated, coordsKey, userCoords]);
+  }, [
+    getCatalogTrainers,
+    filters,
+    searchQuery,
+    searchOrigin,
+    nearbyExpanded,
+    hydrated,
+    userCoords,
+    coordsKey,
+  ]);
+
+  const suggestedTrainers = useMemo(() => {
+    if (filtered.length > 0) return [];
+    const catalog = getCatalogTrainers();
+    return getSuggestedExploreTrainers(catalog, filters, searchOrigin, {
+      excludeIds: filtered.map((t) => t.id),
+    });
+  }, [filtered, getCatalogTrainers, filters, searchOrigin]);
 
   const getExploreMatchCount = useCallback(
-    (candidateFilters: TrainerFilters) =>
-      getVisibleExploreMatches(candidateFilters).trainers.length,
-    [getVisibleExploreMatches]
+    (candidateFilters: TrainerFilters) => {
+      const catalog = getCatalogTrainers();
+      const origin = resolveExploreMapArea(candidateFilters, userCoords);
+      return filterExploreTrainersInArea(
+        catalog,
+        candidateFilters,
+        searchQuery,
+        origin,
+        { radiusMiles: origin ? DEFAULT_EXPLORE_RADIUS_MILES : null }
+      ).trainers.length;
+    },
+    [getCatalogTrainers, searchQuery, userCoords]
   );
+
+  const expandNearbyResults = useCallback(() => {
+    setNearbyExpanded(true);
+  }, []);
 
   const activeFilterCount = countActiveFilters(filters);
   const activeFilterChips = useMemo(
@@ -524,7 +582,10 @@ export function useExploreTrainers({
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
+    areaEmpty,
     resultsBroadened,
+    suggestedTrainers,
+    expandNearbyResults,
     getExploreMatchCount,
     activeFilterCount,
     activeFilterChips,

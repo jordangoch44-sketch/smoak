@@ -111,8 +111,8 @@ export function hasExploreLocationFilters(filters: TrainerFilters): boolean {
 }
 
 /**
- * Location never excludes specialists. City / neighborhood from search (or
- * chips) only steer proximity sort via `resolveExploreSortOrigin`.
+ * City / neighborhood from search (or chips) do not hard-exclude by name.
+ * Radius filtering around ZIP / origin is applied in `filterExploreTrainersInArea`.
  */
 export function trainerMatchesExploreLocation(
   _trainer: Trainer,

@@ -1,5 +1,17 @@
 import type { Trainer, TrainerFilters } from "@/types";
 import { filterTrainers } from "@/lib/trainers";
+import {
+  getTrainerDistanceMiles,
+  sortTrainersByProximity,
+  type UserGeoPoint,
+} from "@/lib/trainer-proximity-sort";
+import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
+
+/** Default search radius around ZIP / search origin (miles). */
+export const DEFAULT_EXPLORE_RADIUS_MILES = 25;
+
+/** Wider pool for “Suggested specialists” when the area is empty. */
+export const SUGGESTED_EXPLORE_RADIUS_MILES = 75;
 
 /** Default filter state for Explore page */
 export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
@@ -74,73 +86,176 @@ export function filterExploreTrainers(
   return filtered.filter((t) => matchesSearchQuery(t, searchQuery));
 }
 
-export interface ExploreFilterResult {
+function matchesSpecialtyLoose(trainer: Trainer, specialty: string): boolean {
+  const target = specialty.trim().toLowerCase();
+  if (!target) return true;
+  if (trainer.specialty.some((s) => s.toLowerCase() === target)) return true;
+  if (trainer.specialty.some((s) => s.toLowerCase().includes(target))) {
+    return true;
+  }
+  return (
+    trainer.title.toLowerCase().includes(target) ||
+    trainer.profession.toLowerCase().includes(target)
+  );
+}
+
+/** Keep gender / price / service mode; drop location text filters for suggestions. */
+function suggestionBaseFilters(filters: TrainerFilters): TrainerFilters {
+  return {
+    ...EMPTY_TRAINER_FILTERS,
+    gender: filters.gender,
+    priceMin: filters.priceMin,
+    priceMax: filters.priceMax,
+    serviceType: filters.serviceType,
+  };
+}
+
+function categoryAffinityScore(
+  trainer: Trainer,
+  filters: TrainerFilters
+): number {
+  let score = 0;
+  if (
+    filters.profession &&
+    trainerMatchesProfessionCategory(trainer, filters.profession)
+  ) {
+    score += 3;
+  }
+  if (filters.specialty && matchesSpecialtyLoose(trainer, filters.specialty)) {
+    score += 2;
+  }
+  return score;
+}
+
+export function filterTrainersWithinRadius(
+  trainers: Trainer[],
+  origin: UserGeoPoint | null,
+  radiusMiles: number | null
+): Trainer[] {
+  if (!origin || radiusMiles == null) return trainers;
+  return trainers.filter((trainer) => {
+    const miles = getTrainerDistanceMiles(trainer, origin);
+    return miles != null && miles <= radiusMiles;
+  });
+}
+
+export interface ExploreAreaResult {
   trainers: Trainer[];
-  /** True when we relaxed filters so the list is not empty */
-  broadened: boolean;
+  /** True when primary list used an expanded (no hard radius) search */
+  nearbyExpanded: boolean;
+  /** True when an origin+radius search returned zero in-area matches */
+  areaEmpty: boolean;
 }
 
 /**
- * Progressive relaxation so nearby / category searches almost never empty out
- * when the catalog still has specialists.
+ * Primary Explore matches: category/text filters + optional hard ZIP radius.
+ * Does not auto-strip filters — empty area stays empty until the user broadens.
+ */
+export function filterExploreTrainersInArea(
+  trainers: Trainer[],
+  filters: TrainerFilters,
+  searchQuery: string,
+  origin: UserGeoPoint | null,
+  options: {
+    radiusMiles: number | null;
+    nearbyExpanded?: boolean;
+  }
+): ExploreAreaResult {
+  const base = filterExploreTrainers(trainers, filters, searchQuery);
+  const radiusMiles = options.nearbyExpanded ? null : options.radiusMiles;
+  const inArea = filterTrainersWithinRadius(base, origin, radiusMiles);
+  const areaEmpty = Boolean(
+    origin &&
+      options.radiusMiles != null &&
+      !options.nearbyExpanded &&
+      inArea.length === 0 &&
+      base.length > 0
+  );
+
+  return {
+    trainers: inArea,
+    nearbyExpanded: Boolean(options.nearbyExpanded),
+    areaEmpty,
+  };
+}
+
+/**
+ * Nearby suggestions when the area is empty — proximity + category affinity.
+ * Read-only ranking over the public catalog (no profile writes).
+ */
+export function getSuggestedExploreTrainers(
+  trainers: Trainer[],
+  filters: TrainerFilters,
+  origin: UserGeoPoint | null,
+  options: {
+    excludeIds?: Iterable<string>;
+    radiusMiles?: number;
+    limit?: number;
+  } = {}
+): Trainer[] {
+  const exclude = new Set(options.excludeIds ?? []);
+  const radiusMiles = options.radiusMiles ?? SUGGESTED_EXPLORE_RADIUS_MILES;
+  const limit = options.limit ?? 12;
+
+  const soft = filterTrainers(trainers, suggestionBaseFilters(filters)).filter(
+    (trainer) => !exclude.has(trainer.id)
+  );
+
+  const withDistance = soft
+    .map((trainer) => {
+      const miles = origin ? getTrainerDistanceMiles(trainer, origin) : null;
+      return {
+        trainer,
+        miles,
+        affinity: categoryAffinityScore(trainer, filters),
+      };
+    })
+    .filter((row) => {
+      if (!origin) return true;
+      if (row.miles == null) return false;
+      return row.miles <= radiusMiles;
+    })
+    .sort((a, b) => {
+      if (a.affinity !== b.affinity) return b.affinity - a.affinity;
+      if (a.miles == null && b.miles == null) return 0;
+      if (a.miles == null) return 1;
+      if (b.miles == null) return -1;
+      if (a.miles !== b.miles) return a.miles - b.miles;
+      return b.trainer.rating - a.trainer.rating;
+    });
+
+  if (withDistance.length > 0) {
+    return withDistance.slice(0, limit).map((row) => row.trainer);
+  }
+
+  /* No geo origin — still suggest closest category affinity from soft pool */
+  return sortTrainersByProximity(soft, origin, {
+    profession: filters.profession,
+    specialty: filters.specialty,
+  }).slice(0, limit);
+}
+
+/**
+ * @deprecated Prefer filterExploreTrainersInArea — kept for any residual callers.
  */
 export function filterExploreTrainersWithFallback(
   trainers: Trainer[],
   filters: TrainerFilters,
   searchQuery: string
-): ExploreFilterResult {
-  if (trainers.length === 0) {
-    return { trainers: [], broadened: false };
-  }
-
-  const attempts: Array<{ filters: TrainerFilters; query: string }> = [
-    { filters, query: searchQuery },
-    { filters, query: "" },
-    {
-      filters: { ...filters, specialty: "" },
-      query: "",
-    },
-    {
-      filters: { ...filters, specialty: "", profession: "" },
-      query: "",
-    },
-    {
-      filters: {
-        ...EMPTY_TRAINER_FILTERS,
-        gender: filters.gender,
-        priceMin: filters.priceMin,
-        priceMax: filters.priceMax,
-        serviceType: filters.serviceType,
-      },
-      query: "",
-    },
-    {
-      filters: { ...EMPTY_TRAINER_FILTERS },
-      query: "",
-    },
-  ];
-
-  for (let i = 0; i < attempts.length; i += 1) {
-    const attempt = attempts[i]!;
-    const result = filterExploreTrainers(
-      trainers,
-      attempt.filters,
-      attempt.query
-    );
-    if (result.length > 0) {
-      return { trainers: result, broadened: i > 0 };
-    }
-  }
-
-  return { trainers: [...trainers], broadened: true };
+): { trainers: Trainer[]; broadened: boolean } {
+  const strict = filterExploreTrainers(trainers, filters, searchQuery);
+  return { trainers: strict, broadened: false };
 }
 
 /** Shared match count for Explore results and filter modal live preview */
 export function countExploreTrainerMatches(
   trainers: Trainer[],
   filters: TrainerFilters,
-  searchQuery: string
+  searchQuery: string,
+  origin: UserGeoPoint | null = null,
+  radiusMiles: number | null = DEFAULT_EXPLORE_RADIUS_MILES
 ): number {
-  return filterExploreTrainersWithFallback(trainers, filters, searchQuery)
-    .trainers.length;
+  return filterExploreTrainersInArea(trainers, filters, searchQuery, origin, {
+    radiusMiles: origin ? radiusMiles : null,
+  }).trainers.length;
 }

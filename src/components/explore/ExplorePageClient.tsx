@@ -41,6 +41,9 @@ export function ExplorePageClient() {
     setMobileFiltersOpen,
     filtered,
     resultsBroadened,
+    areaEmpty,
+    suggestedTrainers,
+    expandNearbyResults,
     getExploreMatchCount,
     activeFilterCount,
     activeFilterChips,
@@ -185,13 +188,16 @@ export function ExplorePageClient() {
 
             <ExploreResults
               trainers={filtered}
+              suggestedTrainers={suggestedTrainers}
               filters={filters}
               activeFilterCount={activeFilterCount}
               hasSearch={hasSearch}
+              areaEmpty={areaEmpty}
               resultsBroadened={resultsBroadened}
               onClearFilters={clearFilters}
               onClearSearch={clearSearch}
               onClearAll={clearAll}
+              onExpandNearby={expandNearbyResults}
             />
           </main>
         </div>

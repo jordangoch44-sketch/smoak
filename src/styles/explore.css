@@ -530,6 +530,45 @@
   color: rgba(255, 255, 255, 0.48);
 }
 
+.explore-results-empty-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.explore-suggested {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.explore-suggested__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding-inline: 0.1rem;
+}
+
+.explore-suggested__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.explore-suggested__lede {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.explore-suggested__carousel {
+  margin-top: 0.15rem;
+}
+
 .explore-results-stack {
   display: flex;
   flex-direction: column;
