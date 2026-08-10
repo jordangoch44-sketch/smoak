@@ -567,6 +567,8 @@ export async function signUpWithPassword(
     clientProfile?: CreateAccountProfile;
     specialistProfile?: CreateAccountProfile;
     specialistOnboarding?: SpecialistOnboardingState;
+    /** Override confirm-email / magic-link return URL */
+    emailRedirectTo?: string;
   }
 ): Promise<AuthResult & { userId?: string }> {
   const trimmedEmail = email.trim().toLowerCase();
@@ -617,7 +619,8 @@ export async function signUpWithPassword(
     email: trimmedEmail,
     password,
     options: {
-      emailRedirectTo: marketplaceSignupRedirectTo(role),
+      emailRedirectTo:
+        options?.emailRedirectTo ?? marketplaceSignupRedirectTo(role),
       data: {
         role,
         first_name: options?.firstName?.trim() ?? "",
