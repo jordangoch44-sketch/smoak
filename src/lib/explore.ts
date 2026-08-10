@@ -8,7 +8,7 @@ import {
 import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 
 /** Default search radius around ZIP / search origin (miles). */
-export const DEFAULT_EXPLORE_RADIUS_MILES = 25;
+export const DEFAULT_EXPLORE_RADIUS_MILES = 5;
 
 /** Wider pool for “Suggested specialists” when the area is empty. */
 export const SUGGESTED_EXPLORE_RADIUS_MILES = 75;
