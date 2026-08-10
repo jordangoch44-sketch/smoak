@@ -19,7 +19,6 @@ import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-
 import { isLeaveReviewQuery } from "@/lib/reviews/leave-review-href";
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
-import { resolveTrainerReviewSources } from "@/lib/trainer-reviews";
 import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
 import {
   getProfileAccentRgb,
@@ -151,8 +150,6 @@ export function TrainerProfilePageClient({
     );
   }
 
-  const sources = resolveTrainerReviewSources(trainer);
-  const googleCount = sources?.google ?? 0;
   const profileStyle = normalizeProfileStyle(trainer.profileStyle);
   const pageStyle = {
     "--profile-accent-rgb": getProfileAccentRgb(profileStyle.accent),
@@ -212,15 +209,14 @@ export function TrainerProfilePageClient({
             canLeaveReview={canLeaveReview}
           />
 
-          {(trainer.reviews?.length ?? 0) > 0 ? (
-            <Reviews
-              reviews={trainer.reviews}
-              rating={trainer.rating}
-              reviewCount={trainer.reviewCount}
-              className="profile-section--reviews"
-              sourceLabel={googleCount > 0 ? "google" : "general"}
-            />
-          ) : null}
+          {/* Google stays separate from SMOAC. Visual only — ★ — (0) until Place ID / sync. */}
+          <Reviews
+            reviews={[]}
+            rating={0}
+            reviewCount={0}
+            className="profile-section--reviews profile-section--google-reviews"
+            sourceLabel="google"
+          />
 
           <ProfileTrainerSpecs trainer={trainer} />
 
