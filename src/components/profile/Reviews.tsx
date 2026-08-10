@@ -10,6 +10,18 @@ interface ReviewsProps {
   className?: string;
   /** When set, labels this block as Google Reviews (separate from SMOAC). */
   sourceLabel?: "google" | "general";
+  /** Optional Maps / Business URL — shown even when review count is still 0. */
+  googleReviewsUrl?: string;
+  /** Stored for future Places sync; not shown publicly. */
+  googlePlaceId?: string;
+}
+
+function normalizeExternalUrl(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[\w.-]+\.[\w.-]+/.test(trimmed)) return `https://${trimmed}`;
+  return null;
 }
 
 export function Reviews({
@@ -18,6 +30,8 @@ export function Reviews({
   reviewCount,
   className,
   sourceLabel = "general",
+  googleReviewsUrl = "",
+  googlePlaceId = "",
 }: ReviewsProps) {
   const safeReviews = Array.isArray(reviews) ? reviews : [];
   const isGoogle = sourceLabel === "google";
@@ -25,6 +39,8 @@ export function Reviews({
   const ariaLabel = isGoogle ? "Google Reviews" : "Reviews";
   const safeCount = Math.max(0, reviewCount);
   const safeRating = safeCount > 0 ? rating : 0;
+  const mapsHref = isGoogle ? normalizeExternalUrl(googleReviewsUrl) : null;
+  const hasPlaceId = Boolean(googlePlaceId.trim());
 
   const ratingSummary = (
     <div className="flex shrink-0 items-center gap-1.5 text-sm">
@@ -77,10 +93,22 @@ export function Reviews({
       ) : (
         <p className="smoac-reviews-empty profile-google-reviews-empty">
           {isGoogle
-            ? "No Google reviews connected yet."
+            ? mapsHref || hasPlaceId
+              ? "Google reviews will appear here once connected."
+              : "No Google reviews connected yet."
             : "No reviews yet."}
         </p>
       )}
+      {mapsHref ? (
+        <a
+          href={mapsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="profile-google-reviews-link"
+        >
+          View on Google
+        </a>
+      ) : null}
     </ProfileSection>
   );
 }

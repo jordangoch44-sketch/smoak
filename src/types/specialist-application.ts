@@ -51,6 +51,7 @@ export interface SpecialistApplicationSocial extends SocialLinks {
   tiktok?: string;
   website?: string;
   googleReviewsUrl?: string;
+  googlePlaceId?: string;
 }
 
 /** Full specialist onboarding payload — maps to marketplace profile after approval */
@@ -181,6 +182,7 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
     tiktok: "",
     website: "",
     googleReviewsUrl: "",
+    googlePlaceId: "",
   },
   media: {
     profilePhotoUrl: "",

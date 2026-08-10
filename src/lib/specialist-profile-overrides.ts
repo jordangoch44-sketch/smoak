@@ -147,13 +147,19 @@ export function applySpecialistProfileOverrides(
   if (
     overrides.instagram !== undefined ||
     overrides.website !== undefined ||
-    overrides.tiktok !== undefined
+    overrides.tiktok !== undefined ||
+    overrides.googleReviewsUrl !== undefined ||
+    overrides.googlePlaceId !== undefined
   ) {
     merged.social = {
       ...merged.social,
       instagram: overrides.instagram?.trim() || merged.social.instagram,
       website: overrides.website?.trim() || merged.social.website,
       tiktok: overrides.tiktok?.trim() || merged.social.tiktok,
+      googleReviewsUrl:
+        overrides.googleReviewsUrl?.trim() || merged.social.googleReviewsUrl,
+      googlePlaceId:
+        overrides.googlePlaceId?.trim() || merged.social.googlePlaceId,
     };
   }
 
@@ -321,6 +327,9 @@ export function overridesFromTrainer(
     instagram: stored?.instagram ?? trainer.social.instagram ?? "",
     website: stored?.website ?? trainer.social.website ?? "",
     tiktok: stored?.tiktok ?? trainer.social.tiktok ?? "",
+    googleReviewsUrl:
+      stored?.googleReviewsUrl ?? trainer.social.googleReviewsUrl ?? "",
+    googlePlaceId: stored?.googlePlaceId ?? trainer.social.googlePlaceId ?? "",
     experienceYears: stored?.experienceYears ?? "",
     trainingStyle:
       stored?.trainingStyle ??
@@ -374,6 +383,8 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     instagram: form.instagram.trim(),
     website: form.website.trim(),
     tiktok: form.tiktok.trim(),
+    googleReviewsUrl: form.googleReviewsUrl.trim(),
+    googlePlaceId: form.googlePlaceId.trim(),
     experienceYears: form.experienceYears.trim(),
     trainingStyle: form.trainingStyle.trim(),
     servicesOffered: form.servicesOffered.trim(),

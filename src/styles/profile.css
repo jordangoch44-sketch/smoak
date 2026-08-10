@@ -121,6 +121,20 @@
   background: rgba(12, 12, 18, 0.58);
 }
 
+.profile-google-reviews-link {
+  display: inline-flex;
+  margin-top: 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(233, 213, 255, 0.92);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.profile-google-reviews-link:hover {
+  color: #fff;
+}
+
 .profile-section-header {
   font-size: 0.8125rem;
   font-weight: 600;

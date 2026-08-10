@@ -209,13 +209,15 @@ export function TrainerProfilePageClient({
             canLeaveReview={canLeaveReview}
           />
 
-          {/* Google stays separate from SMOAC. Visual only — ★ — (0) until Place ID / sync. */}
+          {/* Google stays separate from SMOAC. Visual ★ — (0) until Places sync. */}
           <Reviews
             reviews={[]}
             rating={0}
             reviewCount={0}
             className="profile-section--reviews profile-section--google-reviews"
             sourceLabel="google"
+            googleReviewsUrl={trainer.social.googleReviewsUrl ?? ""}
+            googlePlaceId={trainer.social.googlePlaceId ?? ""}
           />
 
           <ProfileTrainerSpecs trainer={trainer} />

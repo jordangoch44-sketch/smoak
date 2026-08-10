@@ -178,6 +178,8 @@ export function applicationToTrainer(
       instagram: app.social?.instagram,
       website: app.social?.website,
       tiktok: app.social?.tiktok,
+      googleReviewsUrl: app.social?.googleReviewsUrl?.trim() || undefined,
+      googlePlaceId: app.social?.googlePlaceId?.trim() || undefined,
     },
     profileStyle: app.profileStyle
       ? normalizeProfileStyle(app.profileStyle)
@@ -259,6 +261,8 @@ export function applicationToProfileOverrides(
     instagram: app.social?.instagram?.trim() ?? "",
     website: app.social?.website?.trim() ?? "",
     tiktok: app.social?.tiktok?.trim() ?? "",
+    googleReviewsUrl: app.social?.googleReviewsUrl?.trim() ?? "",
+    googlePlaceId: app.social?.googlePlaceId?.trim() ?? "",
     experienceYears: app.yearsExperience?.trim() ?? "",
     trainingStyle,
     servicesOffered: app.bestClientTypes?.trim() ?? "",

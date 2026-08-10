@@ -208,6 +208,8 @@ export function mergeProfileEditsIntoApplication(
       instagram: form.instagram.trim() || undefined,
       website: form.website.trim() || undefined,
       tiktok: form.tiktok.trim() || undefined,
+      googleReviewsUrl: form.googleReviewsUrl.trim() || undefined,
+      googlePlaceId: form.googlePlaceId.trim() || undefined,
     },
     media: {
       ...app.media,

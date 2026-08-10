@@ -444,6 +444,51 @@ export function SpecialistOnboardingSteps({
                 placeholder="https://"
               />
             </label>
+            <label className="login-field">
+              <span className="login-field__label">
+                Google reviews link
+                <span className="login-field__label-hint">Optional</span>
+              </span>
+              <input
+                className="login-field__input"
+                value={state.social.googleReviewsUrl ?? ""}
+                onChange={(e) =>
+                  onPatch({
+                    social: {
+                      ...state.social,
+                      googleReviewsUrl: e.target.value,
+                    },
+                  })
+                }
+                placeholder="https://maps.google.com/…"
+                inputMode="url"
+                autoComplete="off"
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">
+                Google Place ID
+                <span className="login-field__label-hint">Optional</span>
+              </span>
+              <input
+                className="login-field__input"
+                value={state.social.googlePlaceId ?? ""}
+                onChange={(e) =>
+                  onPatch({
+                    social: {
+                      ...state.social,
+                      googlePlaceId: e.target.value,
+                    },
+                  })
+                }
+                placeholder="ChIJ…"
+                autoComplete="off"
+              />
+            </label>
+            <p className="wizard-field-hint">
+              Google reviews stay separate from SMOAC reviews. You can add these
+              later from Edit profile — existing profiles stay valid without them.
+            </p>
             <p className="wizard-field-hint">
               Availability, extra media, and coaching style can be deepened
               anytime after you’re live.

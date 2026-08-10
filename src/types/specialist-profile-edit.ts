@@ -44,6 +44,8 @@ export interface SpecialistProfileOverrides {
   instagram?: string;
   website?: string;
   tiktok?: string;
+  googleReviewsUrl?: string;
+  googlePlaceId?: string;
   experienceYears?: string;
   trainingStyle?: string;
   servicesOffered?: string;
@@ -81,6 +83,8 @@ export type SpecialistProfileEditForm = Required<
     | "instagram"
     | "website"
     | "tiktok"
+    | "googleReviewsUrl"
+    | "googlePlaceId"
     | "experienceYears"
     | "trainingStyle"
     | "servicesOffered"

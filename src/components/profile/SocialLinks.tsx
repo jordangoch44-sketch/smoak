@@ -6,7 +6,8 @@ interface SocialLinksProps {
   social: SocialLinksType;
 }
 
-const socialLabels: Record<keyof SocialLinksType, string> = {
+/** Public connect pills — Google review fields live in the Google Reviews section. */
+const socialLabels: Partial<Record<keyof SocialLinksType, string>> = {
   instagram: "Instagram",
   twitter: "X",
   linkedin: "LinkedIn",
@@ -15,7 +16,9 @@ const socialLabels: Record<keyof SocialLinksType, string> = {
 };
 
 export function SocialLinks({ social }: SocialLinksProps) {
-  const links = Object.entries(social).filter(([, url]) => url);
+  const links = (
+    Object.entries(social) as [keyof SocialLinksType, string | undefined][]
+  ).filter(([key, url]) => Boolean(url) && Boolean(socialLabels[key]));
 
   if (links.length === 0) return null;
 
@@ -31,7 +34,7 @@ export function SocialLinks({ social }: SocialLinksProps) {
               rel="noopener noreferrer"
               className="profile-tag-pill profile-tag-pill--grid transition-colors active:border-white/12 active:text-white/90 sm:hover:border-white/10 sm:hover:text-white/85"
             >
-              {socialLabels[key as keyof SocialLinksType]}
+              {socialLabels[key]}
             </a>
           </li>
         ))}

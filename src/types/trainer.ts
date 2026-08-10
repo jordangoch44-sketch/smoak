@@ -26,6 +26,10 @@ export interface SocialLinks {
   linkedin?: string;
   website?: string;
   tiktok?: string;
+  /** Google Maps / Business Profile URL (optional — does not affect SMOAC reviews). */
+  googleReviewsUrl?: string;
+  /** Google Places Place ID for future review sync (optional). */
+  googlePlaceId?: string;
 }
 
 export interface TrainerMediaItem {

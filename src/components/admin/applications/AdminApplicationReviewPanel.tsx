@@ -645,6 +645,26 @@ export function AdminApplicationReviewPanel({
                   onChange={(e) => patchSocial("website", e.target.value)}
                 />
               </label>
+              <label className="admin-field-label">
+                Google reviews link
+                <input
+                  className="admin-field"
+                  value={draft.social.googleReviewsUrl ?? ""}
+                  onChange={(e) =>
+                    patchSocial("googleReviewsUrl", e.target.value)
+                  }
+                  placeholder="https://maps.google.com/…"
+                />
+              </label>
+              <label className="admin-field-label">
+                Google Place ID
+                <input
+                  className="admin-field"
+                  value={draft.social.googlePlaceId ?? ""}
+                  onChange={(e) => patchSocial("googlePlaceId", e.target.value)}
+                  placeholder="ChIJ…"
+                />
+              </label>
             </div>
           </details>
         </div>

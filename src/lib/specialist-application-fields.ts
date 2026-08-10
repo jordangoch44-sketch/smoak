@@ -145,6 +145,10 @@ export function normalizeSpecialistApplicationShape(
         social?.googleReviewsUrl,
         defaults.social.googleReviewsUrl ?? ""
       ),
+      googlePlaceId: asString(
+        social?.googlePlaceId,
+        defaults.social.googlePlaceId ?? ""
+      ),
     },
     media: {
       ...defaults.media,

@@ -106,8 +106,9 @@ function hasCertifications(trainer: Trainer): boolean {
 }
 
 function hasSocialLinks(trainer: Trainer): boolean {
-  if (!trainer.social) return false;
-  return Object.values(trainer.social).some(
+  const social = trainer.social;
+  if (!social) return false;
+  return [social.instagram, social.twitter, social.linkedin, social.website, social.tiktok].some(
     (url) => typeof url === "string" && url.trim().length > 0
   );
 }
@@ -940,6 +941,37 @@ export function SpecialistDashboardProfilePreview({
                   placeholder="https://"
                 />
               </label>
+              <label className="login-field">
+                <span className="login-field__label">
+                  Google reviews link
+                  <span className="login-field__label-hint">Optional</span>
+                </span>
+                <input
+                  className="login-field__input profile-edit-input"
+                  value={form.googleReviewsUrl}
+                  onChange={(e) => patch("googleReviewsUrl", e.target.value)}
+                  placeholder="https://maps.google.com/…"
+                  inputMode="url"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">
+                  Google Place ID
+                  <span className="login-field__label-hint">Optional</span>
+                </span>
+                <input
+                  className="login-field__input profile-edit-input"
+                  value={form.googlePlaceId}
+                  onChange={(e) => patch("googlePlaceId", e.target.value)}
+                  placeholder="ChIJ…"
+                  autoComplete="off"
+                />
+              </label>
+              <p className="wizard-field-hint">
+                Shown under SMOAC Reviews. Syncing review text comes later —
+                saving a link is enough for now.
+              </p>
             </div>
           ) : null}
         </LiveEditSheet>
