@@ -405,6 +405,76 @@ export async function deleteSpecialistApplicationAsync(
   return { ok: true };
 }
 
+/**
+ * Reject / archive deny: remove application(s), catalog profile, and Auth user
+ * so the email can be reused on a fresh specialist signup.
+ */
+export async function purgeSpecialistApplicationAccountAsync(
+  application: Pick<SpecialistApplication, "id" | "email" | "userId">
+): Promise<
+  | { ok: true; authDeleted: boolean; deletedIds: string[] }
+  | { ok: false; message: string }
+> {
+  if (typeof window === "undefined") {
+    return { ok: false, message: "Unavailable on server" };
+  }
+  const trimmed = application.id.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Application id is required." };
+  }
+
+  if (!isMarketplaceSupabaseActive()) {
+    const email = application.email.trim().toLowerCase();
+    const userId = application.userId?.trim() || "";
+    const deletedIds: string[] = [];
+    for (const app of listSpecialistApplications()) {
+      const sameId = app.id === trimmed;
+      const sameEmail = email && app.email.trim().toLowerCase() === email;
+      const sameUser = userId && app.userId?.trim() === userId;
+      if (sameId || sameEmail || sameUser) {
+        removeSpecialistApplicationLocal(app.id);
+        deletedIds.push(app.id);
+      }
+    }
+    return { ok: true, authDeleted: true, deletedIds };
+  }
+
+  try {
+    const response = await fetch("/api/admin/specialist-applications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        applicationId: trimmed,
+        purgeAccount: true,
+        deleteAuthUser: true,
+      }),
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      message?: string;
+      deletedIds?: string[];
+      authDeleted?: boolean;
+    } | null;
+    if (!response.ok || !payload?.ok) {
+      return {
+        ok: false,
+        message: payload?.message || "Could not remove specialist account.",
+      };
+    }
+    for (const id of payload.deletedIds ?? [trimmed]) {
+      removeSpecialistApplicationLocal(id);
+    }
+    return {
+      ok: true,
+      authDeleted: Boolean(payload.authDeleted),
+      deletedIds: payload.deletedIds ?? [trimmed],
+    };
+  } catch {
+    return { ok: false, message: "Network error removing specialist account." };
+  }
+}
+
 /** After approve: hard-delete other applications for same email/user. */
 export async function deleteSiblingSpecialistApplicationsAsync(
   keeper: Pick<SpecialistApplication, "id" | "email" | "userId">

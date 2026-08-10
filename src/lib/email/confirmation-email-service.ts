@@ -3,6 +3,7 @@ import {
   renderEmailParagraphs,
   wrapTransactionalEmailHtml,
 } from "@/lib/email/email-html-shell";
+import { buildJoinFlowHref } from "@/lib/join-flow";
 import { getSiteUrlForStripe } from "@/lib/stripe/config";
 import { LOGIN_PATH } from "@/lib/auth-routes";
 import type { SpecialistApplication } from "@/types/specialist-application";
@@ -125,42 +126,42 @@ function buildSpecialistRejectionEmail(
   const firstName = specialistFirstName(application);
   const reason =
     application.rejectionReason?.trim() ||
-    "Please update your application details and request another review.";
-  const loginUrl = specialistLoginUrl();
+    "Your application did not meet SMOAC listing requirements at this time.";
+  const joinUrl = `${getSiteUrlForStripe()}${buildJoinFlowHref({
+    role: "specialist",
+  })}`;
   const text = `Hi ${firstName},
 
-Thanks for applying to SMOAC. Your specialist application needs a few updates before it can go live.
+Thanks for applying to SMOAC. After review, we are not moving this application forward.
 
-What to fix:
+Why:
 ${reason}
 
-Log in, edit your submitted profile, then tap Request review:
-${loginUrl}
-
-We’ll look again as soon as you resubmit.
+Your application and specialist login for this email have been removed. If you want to try again later, you can start a new specialist application with the same email:
+${joinUrl}
 
 — The SMOAC team`;
 
   const html = wrapTransactionalEmailHtml({
-    preheader: "Your SMOAC application needs a few updates",
-    eyebrow: "Needs changes",
-    title: "Update and resubmit your application",
+    preheader: "Your SMOAC specialist application was not approved",
+    eyebrow: "Application closed",
+    title: "We’re not moving this application forward",
     bodyHtml: renderEmailParagraphs([
       `Hi ${firstName},`,
-      "Thanks for applying to SMOAC. Your specialist application needs a few updates before it can go live.",
-      `What to fix: ${reason}`,
-      "Log in, edit your submitted profile, then tap Request review so we can look again.",
+      "Thanks for applying to SMOAC. After review, we are not moving this application forward.",
+      `Why: ${reason}`,
+      "Your application and specialist login for this email have been removed. You can start a fresh application with the same email whenever you’re ready.",
     ]),
     cta: {
-      label: "Log in to update your application",
-      href: loginUrl,
+      label: "Start a new application",
+      href: joinUrl,
     },
-    footerNote: "We’ll review again as soon as you resubmit.",
+    footerNote: "This decision closes the current application completely.",
   });
 
   return {
     to: application.email.trim(),
-    subject: "SMOAC application needs updates — please revise and resubmit",
+    subject: "SMOAC application update — application closed",
     text,
     html,
     applicationId: application.id,
@@ -206,7 +207,7 @@ export async function sendSpecialistApplicationApprovedEmail(
   }
 }
 
-/** Notify specialist that their application was rejected and how to resubmit. */
+/** Notify specialist that their application was closed and the account removed. */
 export async function sendSpecialistApplicationRejectedEmail(
   application: SpecialistApplication
 ): Promise<ConfirmationEmailResult> {

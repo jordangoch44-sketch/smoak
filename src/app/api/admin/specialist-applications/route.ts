@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { purgeSpecialistAccount } from "@/lib/admin/purge-specialist-account";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getSupabasePublicConfig,
@@ -9,7 +10,8 @@ import { isAdminAppRole } from "@/types/auth-roles";
 
 /**
  * Hard-delete specialist application row(s). Service-role backed.
- * Requires signed-in admin/owner.
+ * With purgeAccount: also removes catalog profile + Auth user so the email
+ * can be reused. Requires signed-in admin/owner.
  */
 
 function serviceClient() {
@@ -42,6 +44,12 @@ async function requireAdminCaller() {
 
 interface DeleteBody {
   applicationId?: string;
+  /**
+   * Full deny: remove application(s), catalog profile, and Auth user
+   * so the email can be reused on a fresh signup.
+   */
+  purgeAccount?: boolean;
+  deleteAuthUser?: boolean;
   /** After approve: remove other apps for same email/user, keep this id. */
   deleteSiblingsOf?: {
     id?: string;
@@ -78,6 +86,30 @@ export async function DELETE(request: Request) {
 
   const applicationId = body.applicationId?.trim();
   const siblings = body.deleteSiblingsOf;
+
+  if (applicationId && body.purgeAccount) {
+    const result = await purgeSpecialistAccount(service, {
+      specialistId: applicationId,
+      callerUserId: caller.userId,
+      deleteAuthUser: body.deleteAuthUser !== false,
+    });
+    if (!result.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: result.message,
+          cleanupErrors: result.cleanupErrors,
+        },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json({
+      ok: true,
+      deletedIds: result.deletedApplicationIds,
+      authDeleted: result.authDeleted,
+      cleanupErrors: result.cleanupErrors,
+    });
+  }
 
   if (applicationId) {
     const { error } = await service

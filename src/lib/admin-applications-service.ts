@@ -1,6 +1,7 @@
 import { patchAdminSpecialistMeta } from "@/lib/admin-specialist-meta-store";
+import { refreshAdminSpecialistDirectoryFromRemote } from "@/lib/admin-specialists-service";
 import {
-  removeApprovedSpecialistProfileAsync,
+  purgeApprovedSpecialistProfileLocal,
   restoreApprovedSpecialistProfileAsync,
 } from "@/lib/approved-specialist-profiles-store";
 import { unhideTrainerId, hideTrainerId } from "@/lib/hidden-trainers-store";
@@ -18,9 +19,10 @@ import {
 } from "@/lib/specialist-go-live-gate";
 import {
   deleteSiblingSpecialistApplicationsAsync,
-  deleteSpecialistApplicationAsync,
   getSpecialistApplicationById,
   listSpecialistApplications,
+  purgeSpecialistApplicationAccountAsync,
+  refreshSpecialistApplicationsFromRemote,
   saveSpecialistApplicationAsync,
 } from "@/lib/specialist-application-storage";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
@@ -144,23 +146,20 @@ export async function rejectSpecialistApplicationWithEditsAsync(
     };
   }
 
-  /* Reject removes the application completely so Applications + Specialists stay parallel. */
-  const removedProfile = await removeApprovedSpecialistProfileAsync(
-    application.id
-  );
-  if (!removedProfile.ok) {
-    return {
-      ok: false,
-      message: removedProfile.message,
-      application,
-    };
+  /*
+   * Full deny: hard-delete application(s), catalog profile, and Auth user
+   * so the email is free for a new signup.
+   */
+  const purged = await purgeSpecialistApplicationAccountAsync(application);
+  if (!purged.ok) {
+    return { ok: false, message: purged.message, application };
   }
-  hideTrainerId(application.id);
-
-  const deleted = await deleteSpecialistApplicationAsync(application.id);
-  if (!deleted.ok) {
-    return { ok: false, message: deleted.message, application };
+  for (const id of purged.deletedIds) {
+    purgeApprovedSpecialistProfileLocal(id);
+    hideTrainerId(id);
   }
+  void refreshAdminSpecialistDirectoryFromRemote();
+  refreshSpecialistApplicationsFromRemote();
 
   try {
     const { sendSpecialistApplicationRejectedEmail } = await import(
@@ -227,16 +226,16 @@ export async function resubmitSpecialistApplicationForReviewAsync(
 export async function archiveSpecialistApplicationAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
-  const removed = await removeApprovedSpecialistProfileAsync(application.id);
-  if (!removed.ok) {
-    return { ok: false, message: removed.message, application };
+  const purged = await purgeSpecialistApplicationAccountAsync(application);
+  if (!purged.ok) {
+    return { ok: false, message: purged.message, application };
   }
-  hideTrainerId(application.id);
-
-  const deleted = await deleteSpecialistApplicationAsync(application.id);
-  if (!deleted.ok) {
-    return { ok: false, message: deleted.message, application };
+  for (const id of purged.deletedIds) {
+    purgeApprovedSpecialistProfileLocal(id);
+    hideTrainerId(id);
   }
+  void refreshAdminSpecialistDirectoryFromRemote();
+  refreshSpecialistApplicationsFromRemote();
 
   return {
     ok: true,

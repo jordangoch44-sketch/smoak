@@ -267,11 +267,11 @@ export function AdminApplicationReviewPanel({
       : feedback === "approved"
         ? `✓ Approved — ${draft.displayName || draft.fullName} is now a live specialist.`
         : feedback === "rejected"
-          ? "Application rejected — removed from public catalog."
+          ? "Application rejected — account and email fully removed."
           : feedback === "activated"
             ? "Specialist is active on the public catalog."
             : feedback === "archived"
-              ? "Application archived — removed from public catalog."
+              ? "Application archived — account and email fully removed."
               : feedback === "error"
                 ? errorMessage ?? "Something went wrong. Try again."
                 : null;
@@ -703,7 +703,7 @@ export function AdminApplicationReviewPanel({
               ) : null}
               {statusLabel === "pending" || statusLabel === "rejected" ? (
                 <label className="admin-field-label admin-review-reject-reason">
-                  Rejection reason (required to reject)
+                  Rejection reason (required — closes account)
                   <textarea
                     className="admin-field admin-field--textarea"
                     rows={3}
@@ -716,7 +716,7 @@ export function AdminApplicationReviewPanel({
                         rejectionReason: e.target.value,
                       }));
                     }}
-                    placeholder="Tell the specialist what to fix before they resubmit…"
+                    placeholder="Short note explaining why this application is closed…"
                   />
                 </label>
               ) : null}
@@ -747,7 +747,7 @@ export function AdminApplicationReviewPanel({
                     }
                     onClick={handleReject}
                   >
-                    {busyAction === "reject" ? "Rejecting…" : "Reject"}
+                    {busyAction === "reject" ? "Closing…" : "Reject & remove"}
                   </button>
                 </>
               ) : null}
@@ -770,7 +770,7 @@ export function AdminApplicationReviewPanel({
                   disabled={busyAction != null}
                   onClick={handleArchive}
                 >
-                  {busyAction === "archive" ? "Archiving…" : "Archive"}
+                  {busyAction === "archive" ? "Removing…" : "Archive & remove"}
                 </button>
               ) : null}
             </div>
