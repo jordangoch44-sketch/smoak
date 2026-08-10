@@ -1,5 +1,8 @@
 import type { Trainer, TrainerFilters } from "@/types";
-import { filterTrainers } from "@/lib/trainers";
+import {
+  filterTrainers,
+  trainerMatchesSpecialty,
+} from "@/lib/trainers";
 import {
   getTrainerDistanceMiles,
   sortTrainersByProximity,
@@ -11,7 +14,7 @@ import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 export const DEFAULT_EXPLORE_RADIUS_MILES = 5;
 
 /** Wider pool for “Suggested specialists” when the area is empty. */
-export const SUGGESTED_EXPLORE_RADIUS_MILES = 75;
+const SUGGESTED_EXPLORE_RADIUS_MILES = 75;
 
 /** Default filter state for Explore page */
 export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
@@ -26,23 +29,6 @@ export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
   serviceType: "",
 };
 
-/**
- * Whether Explore should leave the browse-categories default and show result cards.
- * Saved ZIP alone does not count — only intentional search / category / mode filters.
- */
-export function hasExploreResultsIntent(
-  filters: TrainerFilters,
-  displayQuery: string,
-  nearMeActive = false
-): boolean {
-  if (displayQuery.trim()) return true;
-  if (nearMeActive) return true;
-  if (filters.profession || filters.specialty || filters.gender) return true;
-  if (filters.priceMin || filters.priceMax) return true;
-  if (filters.serviceType) return true;
-  return false;
-}
-
 export function countActiveFilters(filters: TrainerFilters): number {
   const { priceMin, priceMax, ...rest } = filters;
   let count = Object.values(rest).filter(Boolean).length;
@@ -50,7 +36,7 @@ export function countActiveFilters(filters: TrainerFilters): number {
   return count;
 }
 
-export function matchesSearchQuery(trainer: Trainer, query: string): boolean {
+function matchesSearchQuery(trainer: Trainer, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
 
@@ -76,7 +62,7 @@ export function matchesSearchQuery(trainer: Trainer, query: string): boolean {
 }
 
 /** Combines sidebar filters + search bar query for Explore results */
-export function filterExploreTrainers(
+function filterExploreTrainers(
   trainers: Trainer[],
   filters: TrainerFilters,
   searchQuery: string
@@ -84,19 +70,6 @@ export function filterExploreTrainers(
   const filtered = filterTrainers(trainers, filters);
   if (!searchQuery.trim()) return filtered;
   return filtered.filter((t) => matchesSearchQuery(t, searchQuery));
-}
-
-function matchesSpecialtyLoose(trainer: Trainer, specialty: string): boolean {
-  const target = specialty.trim().toLowerCase();
-  if (!target) return true;
-  if (trainer.specialty.some((s) => s.toLowerCase() === target)) return true;
-  if (trainer.specialty.some((s) => s.toLowerCase().includes(target))) {
-    return true;
-  }
-  return (
-    trainer.title.toLowerCase().includes(target) ||
-    trainer.profession.toLowerCase().includes(target)
-  );
 }
 
 /** Keep gender / price / service mode; drop location text filters for suggestions. */
@@ -121,13 +94,13 @@ function categoryAffinityScore(
   ) {
     score += 3;
   }
-  if (filters.specialty && matchesSpecialtyLoose(trainer, filters.specialty)) {
+  if (filters.specialty && trainerMatchesSpecialty(trainer, filters.specialty)) {
     score += 2;
   }
   return score;
 }
 
-export function filterTrainersWithinRadius(
+function filterTrainersWithinRadius(
   trainers: Trainer[],
   origin: UserGeoPoint | null,
   radiusMiles: number | null
@@ -233,29 +206,4 @@ export function getSuggestedExploreTrainers(
     profession: filters.profession,
     specialty: filters.specialty,
   }).slice(0, limit);
-}
-
-/**
- * @deprecated Prefer filterExploreTrainersInArea — kept for any residual callers.
- */
-export function filterExploreTrainersWithFallback(
-  trainers: Trainer[],
-  filters: TrainerFilters,
-  searchQuery: string
-): { trainers: Trainer[]; broadened: boolean } {
-  const strict = filterExploreTrainers(trainers, filters, searchQuery);
-  return { trainers: strict, broadened: false };
-}
-
-/** Shared match count for Explore results and filter modal live preview */
-export function countExploreTrainerMatches(
-  trainers: Trainer[],
-  filters: TrainerFilters,
-  searchQuery: string,
-  origin: UserGeoPoint | null = null,
-  radiusMiles: number | null = DEFAULT_EXPLORE_RADIUS_MILES
-): number {
-  return filterExploreTrainersInArea(trainers, filters, searchQuery, origin, {
-    radiusMiles: origin ? radiusMiles : null,
-  }).trainers.length;
 }

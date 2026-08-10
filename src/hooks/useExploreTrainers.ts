@@ -64,10 +64,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
 import { recordRecentSearch } from "@/lib/recent-searches-store";
-import type { AuthSession } from "@/types/auth";
-
-import type { TrainerFilters } from "@/types";
-import type { Trainer } from "@/types/trainer";
+import type { Trainer, TrainerFilters } from "@/types";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 
 interface UseExploreTrainersOptions {
@@ -129,8 +126,7 @@ function filtersEqual(a: TrainerFilters, b: TrainerFilters): boolean {
 
 function buildInitialFilters(
   searchParams: URLSearchParams,
-  initialSpecialty: string,
-  _session: AuthSession | null
+  initialSpecialty: string
 ): TrainerFilters {
   const fromUrl = filtersFromSearchParams(searchParams);
   return {
@@ -138,14 +134,6 @@ function buildInitialFilters(
     ...fromUrl,
     specialty: initialSpecialty || fromUrl.specialty,
   };
-}
-
-function filtersFromUrlOrSaved(
-  fromUrl: TrainerFilters,
-  _hasExplicit: boolean,
-  _session: AuthSession | null
-): TrainerFilters {
-  return { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
 }
 
 /** Apply URL-driven state updates outside the effect body (satisfies react-hooks/set-state-in-effect) */
@@ -203,8 +191,7 @@ export function useExploreTrainers({
   const initialQ = initialQuery || searchParams.get("q") || "";
   const initialBaseFilters = buildInitialFilters(
     searchParams,
-    initialSpecialty,
-    null
+    initialSpecialty
   );
   const initialParsed = applySearchQueryToExploreState(initialQ, {
     ...EMPTY_TRAINER_FILTERS,
@@ -317,7 +304,7 @@ export function useExploreTrainers({
       setDisplayQuery("");
       setSearchQuery("");
       setFiltersState((prev) => {
-        const next = filtersFromUrlOrSaved(fromUrl, explicit, session);
+        const next = { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
         return filtersEqual(prev, next) ? prev : next;
       });
     });
@@ -414,7 +401,7 @@ export function useExploreTrainers({
     setNearbyExpanded(false);
   }, [filterKey]);
 
-  const { filtered, areaEmpty, resultsBroadened } = useMemo(() => {
+  const { filtered, areaEmpty } = useMemo(() => {
     const catalog = getCatalogTrainers();
     const origin = searchOrigin;
     const radiusMiles = origin ? DEFAULT_EXPLORE_RADIUS_MILES : null;
@@ -432,7 +419,6 @@ export function useExploreTrainers({
         specialty: filters.specialty,
       }),
       areaEmpty: area.areaEmpty,
-      resultsBroadened: area.nearbyExpanded,
     };
   }, [
     getCatalogTrainers,
@@ -448,9 +434,7 @@ export function useExploreTrainers({
   const suggestedTrainers = useMemo(() => {
     if (filtered.length > 0) return [];
     const catalog = getCatalogTrainers();
-    return getSuggestedExploreTrainers(catalog, filters, searchOrigin, {
-      excludeIds: filtered.map((t) => t.id),
-    });
+    return getSuggestedExploreTrainers(catalog, filters, searchOrigin);
   }, [filtered, getCatalogTrainers, filters, searchOrigin]);
 
   const getExploreMatchCount = useCallback(
@@ -478,8 +462,6 @@ export function useExploreTrainers({
     [filters]
   );
   const hasSearch = Boolean(displayQuery.trim());
-  const hasActiveFiltersOrSearch =
-    activeFilterCount > 0 || hasSearch;
 
   const clearFilters = useCallback(() => {
     let nextFilters: TrainerFilters | null = null;
@@ -576,21 +558,19 @@ export function useExploreTrainers({
     filters,
     setFilters,
     displayQuery,
-    searchQuery,
-    setSearchQuery,
     submitSearch,
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
     areaEmpty,
-    resultsBroadened,
+    nearbyExpanded,
     suggestedTrainers,
+    searchOrigin,
     expandNearbyResults,
     getExploreMatchCount,
     activeFilterCount,
     activeFilterChips,
     hasSearch,
-    hasActiveFiltersOrSearch,
     clearFilters,
     clearSearch,
     clearAll,

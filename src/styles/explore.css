@@ -20,10 +20,6 @@
   z-index: 1;
 }
 
-.explore-page__stars {
-  z-index: 3;
-}
-
 .explore-page__canvas .atmosphere-mesh {
   inset: -36% -24% -55%;
 }
@@ -758,11 +754,6 @@
   border-radius: 0.25rem;
 }
 
-/* Quick-filter pills — kept for optional reuse; hidden in current mockup layout */
-.explore-quick-filters {
-  display: none;
-}
-
 /* Browse Categories — frosted purple default, neon green selected */
 .explore-browse {
   margin-top: 0.35rem;
@@ -972,12 +963,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.625rem 0.75rem;
-}
-
-@media (max-width: 767px) {
-  .explore-filter-pill--desktop {
-    display: none;
-  }
 }
 
 .explore-filter-pill {

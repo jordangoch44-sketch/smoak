@@ -14,7 +14,7 @@ import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
 import { MARKETPLACE_CITY_CENTERS } from "@/lib/marketplace-city-centers";
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import type { AuthSession } from "@/types/auth";
-import type { Trainer, TrainerFilters } from "@/types";
+import type { TrainerFilters } from "@/types";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import {
   isValidZipCode,
@@ -33,7 +33,7 @@ function findParentCityForNeighborhood(placeName: string): string {
 
 /**
  * Display helpers for ZIP → place labels (filter chips / drawer).
- * Client ZIP is proximity sort context — not a hard include/exclude filter.
+ * ZIP also feeds the default Explore radius via resolveExploreMapArea.
  */
 export function exploreFiltersFromZipCode(rawZip: string): TrainerFilters {
   const zip = normalizeZipCode(rawZip.trim());
@@ -67,7 +67,7 @@ export function exploreFiltersFromZipCode(rawZip: string): TrainerFilters {
   };
 }
 
-export function getSavedZipExploreFilters(
+function getSavedZipExploreFilters(
   session?: AuthSession | null
 ): TrainerFilters {
   const zip = getEffectiveClientZip(session ?? null) ?? loadSavedZipCode();
@@ -77,10 +77,7 @@ export function getSavedZipExploreFilters(
   return exploreFiltersFromZipCode(zip);
 }
 
-/**
- * Show saved header/ZIP location on Explore filter chips. Still not a hard
- * exclude — `trainerMatchesExploreLocation` always passes.
- */
+/** Surface saved header/ZIP location on Explore filter chips when unset. */
 export function mergeExploreFiltersWithSavedLocation(
   filters: TrainerFilters,
   session?: AuthSession | null
@@ -104,21 +101,6 @@ export function mergeExploreFiltersWithSavedLocation(
     city: saved.city,
     neighborhood: saved.neighborhood,
   };
-}
-
-export function hasExploreLocationFilters(filters: TrainerFilters): boolean {
-  return Boolean(filters.city || filters.neighborhood);
-}
-
-/**
- * City / neighborhood from search (or chips) do not hard-exclude by name.
- * Radius filtering around ZIP / origin is applied in `filterExploreTrainersInArea`.
- */
-export function trainerMatchesExploreLocation(
-  _trainer: Trainer,
-  _filters: TrainerFilters
-): boolean {
-  return true;
 }
 
 /** True when the client can sort Explore by proximity (header ZIP or GPS). */
@@ -148,7 +130,7 @@ const SEARCH_CITY_CENTERS: Record<string, UserGeoPoint> = {
  * 1. Parsed search city (or neighborhood’s parent city)
  * 2. Client location coordinates
  */
-export function resolveExploreSortOrigin(
+function resolveExploreSortOrigin(
   filters: TrainerFilters,
   userCoords: UserGeoPoint | null
 ): UserGeoPoint | null {
@@ -175,8 +157,8 @@ export function resolveExploreSortOrigin(
 }
 
 /**
- * Map framing center for Explore (read-only display).
- * Prefer filter ZIP, then city / neighborhood / client coords from sort origin.
+ * Map / radius center for Explore (read-only display + 5-mile filter).
+ * Prefer filter ZIP, then city / neighborhood / client coords.
  */
 export function resolveExploreMapArea(
   filters: TrainerFilters,

@@ -1,8 +1,10 @@
 import type { Trainer, TrainerFilters } from "@/types";
-import { trainerMatchesExploreLocation } from "@/lib/explore-location-filters";
 import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 
-function matchesSpecialty(trainer: Trainer, specialty: string): boolean {
+export function trainerMatchesSpecialty(
+  trainer: Trainer,
+  specialty: string
+): boolean {
   const target = specialty.trim().toLowerCase();
   if (!target) return true;
   if (trainer.specialty.some((s) => s.toLowerCase() === target)) return true;
@@ -15,22 +17,22 @@ function matchesSpecialty(trainer: Trainer, specialty: string): boolean {
   );
 }
 
-/** Applies sidebar filter fields (specialty, gender, price). Name-based location never excludes. */
+/** Applies sidebar filter fields (specialty, gender, price). */
 export function filterTrainers(
   trainers: Trainer[],
   filters: TrainerFilters
 ): Trainer[] {
   return trainers.filter((trainer) => {
-    if (!trainerMatchesExploreLocation(trainer, filters)) {
-      return false;
-    }
     if (
       filters.profession &&
       !trainerMatchesProfessionCategory(trainer, filters.profession)
     ) {
       return false;
     }
-    if (filters.specialty && !matchesSpecialty(trainer, filters.specialty)) {
+    if (
+      filters.specialty &&
+      !trainerMatchesSpecialty(trainer, filters.specialty)
+    ) {
       return false;
     }
     if (filters.gender && trainer.gender !== filters.gender) {

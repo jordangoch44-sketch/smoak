@@ -1,28 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useMemo, useState } from "react";
-import type { Trainer, TrainerFilters } from "@/types";
+import { memo, useState } from "react";
+import type { Trainer } from "@/types";
 import { TrainerList } from "@/components/trainers";
-import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
-import {
-  DEFAULT_EXPLORE_RADIUS_MILES,
-} from "@/lib/explore";
-import { resolveExploreMapArea } from "@/lib/explore-location-filters";
+import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
+import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 import { ExploreMap } from "./ExploreMap";
 import { ExploreSuggestedSpecialists } from "./ExploreSuggestedSpecialists";
 
 interface ExploreResultsProps {
   trainers: Trainer[];
   suggestedTrainers?: Trainer[];
-  filters: TrainerFilters;
+  areaCenter?: UserGeoPoint | null;
   activeFilterCount: number;
   hasSearch: boolean;
   /** Primary list is empty because nothing is inside the ZIP radius */
   areaEmpty?: boolean;
   /** User expanded beyond the default ZIP radius */
-  resultsBroadened?: boolean;
+  nearbyExpanded?: boolean;
   onClearFilters: () => void;
   onClearSearch: () => void;
   onClearAll: () => void;
@@ -34,24 +31,18 @@ type ExploreViewMode = "list" | "map";
 export const ExploreResults = memo(function ExploreResults({
   trainers,
   suggestedTrainers = [],
-  filters,
+  areaCenter = null,
   activeFilterCount,
   hasSearch,
   areaEmpty = false,
-  resultsBroadened = false,
+  nearbyExpanded = false,
   onClearFilters,
   onClearSearch,
   onClearAll,
   onExpandNearby,
 }: ExploreResultsProps) {
   const isMobile = useMobileViewport(true);
-  const userCoords = useActiveUserCoordinates();
   const [viewMode, setViewMode] = useState<ExploreViewMode>("list");
-
-  const areaCenter = useMemo(
-    () => resolveExploreMapArea(filters, userCoords),
-    [filters, userCoords]
-  );
 
   if (trainers.length === 0) {
     const isUnfilteredEmpty =
@@ -131,7 +122,7 @@ export const ExploreResults = memo(function ExploreResults({
     );
   }
 
-  const broadenedNote = resultsBroadened ? (
+  const expandedNote = nearbyExpanded ? (
     <p className="explore-results-heading__note">
       Showing nearby specialists beyond the default{" "}
       {DEFAULT_EXPLORE_RADIUS_MILES}-mile area — closest first.
@@ -141,7 +132,7 @@ export const ExploreResults = memo(function ExploreResults({
   if (isMobile) {
     return (
       <div className="explore-results-split">
-        {broadenedNote}
+        {expandedNote}
         <ExploreMap
           trainers={trainers}
           areaCenter={areaCenter}
@@ -195,7 +186,7 @@ export const ExploreResults = memo(function ExploreResults({
         </button>
       </div>
 
-      {broadenedNote}
+      {expandedNote}
 
       {viewMode === "map" ? (
         <ExploreMap
