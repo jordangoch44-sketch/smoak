@@ -44,6 +44,8 @@ import type { Trainer } from "@/types/trainer";
 export interface AdminSpecialistRow {
   id: string;
   name: string;
+  /** Login / application email when known. */
+  email: string;
   profession: string;
   specialty: string[];
   city: string;
@@ -76,9 +78,21 @@ function directorySignature(
     .sort()
     .map(
       (id) =>
-        `${id}:${map[id]?.status}:${map[id]?.trainer.name}:${map[id]?.trainer.featured}`
+        `${id}:${map[id]?.status}:${map[id]?.trainer.name}:${map[id]?.trainer.featured}:${map[id]?.email ?? ""}`
     )
     .join("|");
+}
+
+function resolveSpecialistEmail(
+  id: string,
+  directoryEmail?: string | null
+): string {
+  const fromDirectory = directoryEmail?.trim().toLowerCase();
+  if (fromDirectory) return fromDirectory;
+  const app =
+    getSpecialistApplicationById(id) ??
+    listSpecialistApplications().find((item) => item.id === id);
+  return app?.email?.trim().toLowerCase() ?? "";
 }
 
 function emitDirectory(
@@ -163,6 +177,7 @@ function applicationAsTrainerRow(
   return {
     id,
     name: app.displayName.trim() || app.fullName.trim() || id,
+    email: resolveSpecialistEmail(id, directoryById[id]?.email ?? app.email),
     profession: app.professionalType || "Specialist",
     specialty: app.specialties,
     city: app.city,
@@ -189,12 +204,14 @@ function applicationAsTrainerRow(
 function rowFromTrainer(
   trainer: Trainer,
   visibility: AdminSpecialistVisibility,
-  inSeedCatalog: boolean
+  inSeedCatalog: boolean,
+  directoryEmail?: string | null
 ): AdminSpecialistRow {
   const meta = getAdminSpecialistMeta(trainer.id);
   return {
     id: trainer.id,
     name: trainer.name,
+    email: resolveSpecialistEmail(trainer.id, directoryEmail),
     profession: meta.profession ?? trainer.profession,
     specialty: meta.specialty ?? trainer.specialty,
     city: meta.city ?? trainer.city,
@@ -249,7 +266,14 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
       seen.add(id);
       const visibility = resolveVisibility(id, hiddenIds);
       const approved = getApprovedSpecialistProfileById(id);
-      rows.push(rowFromTrainer(approved ?? entry.trainer, visibility, false));
+      rows.push(
+        rowFromTrainer(
+          approved ?? entry.trainer,
+          visibility,
+          false,
+          entry.email
+        )
+      );
     }
 
     /* Approved cache may be ahead of directory briefly after approve */
@@ -258,7 +282,14 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
     )) {
       if (seen.has(id)) continue;
       seen.add(id);
-      rows.push(rowFromTrainer(trainer, resolveVisibility(id, hiddenIds), false));
+      rows.push(
+        rowFromTrainer(
+          trainer,
+          resolveVisibility(id, hiddenIds),
+          false,
+          directoryById[id]?.email
+        )
+      );
     }
 
     for (const app of listSpecialistApplications()) {
@@ -305,7 +336,8 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
             isPremium: approved?.isPremium ?? false,
           },
           visibility,
-          true
+          true,
+          directoryById[id]?.email
         )
       );
     } else {

@@ -352,7 +352,53 @@ export async function fetchSpecialistModerationSnapshot(
 export type AdminSpecialistDirectoryEntry = {
   trainer: Trainer;
   status: SpecialistProfileRow["status"];
+  /** Account / application email when resolvable (admin roster). */
+  email: string | null;
 };
+
+async function fetchEmailsByUserIds(
+  supabase: SupabaseClient,
+  userIds: string[]
+): Promise<Map<string, string>> {
+  const unique = [...new Set(userIds.map((id) => id.trim()).filter(Boolean))];
+  const map = new Map<string, string>();
+  if (unique.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("user_id, email")
+    .in("user_id", unique);
+
+  if (error || !data) return map;
+  for (const row of data as Array<{ user_id: string; email: string | null }>) {
+    const email = String(row.email ?? "").trim().toLowerCase();
+    if (email) map.set(row.user_id, email);
+  }
+  return map;
+}
+
+async function fetchEmailsByApplicationIds(
+  supabase: SupabaseClient,
+  applicationIds: string[]
+): Promise<Map<string, string>> {
+  const unique = [
+    ...new Set(applicationIds.map((id) => id.trim()).filter(Boolean)),
+  ];
+  const map = new Map<string, string>();
+  if (unique.length === 0) return map;
+
+  const { data, error } = await supabase
+    .from("specialist_applications")
+    .select("id, email")
+    .in("id", unique);
+
+  if (error || !data) return map;
+  for (const row of data as Array<{ id: string; email: string | null }>) {
+    const email = String(row.email ?? "").trim().toLowerCase();
+    if (email) map.set(row.id, email);
+  }
+  return map;
+}
 
 /**
  * Full specialist_profiles directory for admin roster (all statuses).
@@ -373,10 +419,32 @@ export async function fetchAdminSpecialistDirectory(
     return { ok: false, message: error.message };
   }
 
+  const rows = (data ?? []) as SpecialistProfileRow[];
+  const userIds = rows
+    .map((row) => row.user_id)
+    .filter((id): id is string => Boolean(id));
+  const applicationIds = rows
+    .map((row) => row.application_id)
+    .filter((id): id is string => Boolean(id));
+
+  const [emailsByUserId, emailsByApplicationId] = await Promise.all([
+    fetchEmailsByUserIds(supabase, userIds),
+    fetchEmailsByApplicationIds(supabase, applicationIds),
+  ]);
+
   const entries: AdminSpecialistDirectoryEntry[] = [];
-  for (const row of (data ?? []) as SpecialistProfileRow[]) {
+  for (const row of rows) {
     const parsed = specialistProfileFromRow(row);
-    entries.push({ trainer: parsed.trainer, status: row.status });
+    const fromProfile =
+      (row.user_id && emailsByUserId.get(row.user_id)) || null;
+    const fromApplication =
+      (row.application_id && emailsByApplicationId.get(row.application_id)) ||
+      null;
+    entries.push({
+      trainer: parsed.trainer,
+      status: row.status,
+      email: fromProfile || fromApplication || null,
+    });
   }
   return { ok: true, entries };
 }

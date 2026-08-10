@@ -105,74 +105,87 @@ function SpecialistCard({
     }
   }
 
+  const locationLine = [
+    row.neighborhood,
+    row.city,
+    row.state ? row.state : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <li className="admin-entity-card admin-entity-card--specialist">
       <div className="admin-entity-card__head">
-        <div>
+        <div className="admin-entity-card__identity">
           <h3 className="admin-entity-card__title">{row.name}</h3>
-          <p className="admin-entity-card__sub">{row.profession}</p>
+          <p className="admin-entity-card__sub">
+            {[row.profession || null, row.email || null]
+              .filter(Boolean)
+              .join(" · ") || "—"}
+          </p>
+          {showBilling && billing ? (
+            <p className="admin-entity-card__sub admin-entity-card__sub--billing">
+              {billing.tierLabel} ·{" "}
+              {formatBillingCents(billing.totalMonthlyCents, { decimals: 0 })}
+              /mo
+              {billing.activeAddOns.length > 0
+                ? ` · ${billing.activeAddOns.length} add-on${
+                    billing.activeAddOns.length === 1 ? "" : "s"
+                  }`
+                : ""}
+            </p>
+          ) : locationLine ? (
+            <p className="admin-entity-card__sub">{locationLine}</p>
+          ) : null}
         </div>
         <AdminStatusBadge label={row.visibility} />
       </div>
 
-      {showBilling && billing ? (
-        <SpecialistBillingBlock billing={billing} />
-      ) : (
-        <dl className="admin-entity-card__meta">
-          <div>
-            <dt>Category</dt>
-            <dd>{row.profession || "—"}</dd>
-          </div>
-          <div>
-            <dt>Location</dt>
-            <dd>
-              {row.neighborhood ? `${row.neighborhood}, ` : ""}
-              {row.city || "—"}
-            </dd>
-          </div>
-        </dl>
-      )}
-
-      {!showBilling ? (
-        <div className="admin-entity-card__chips">
-          {row.featured ? <span className="admin-chip">Featured</span> : null}
-          {row.sponsored ? <span className="admin-chip">Sponsored</span> : null}
-          {row.topRanked ? <span className="admin-chip">Top ranked</span> : null}
-          {row.isPremium ? <span className="admin-chip">Pro</span> : null}
-          {row.isProtected || row.accountKind === "real" ? (
-            <span className="admin-chip">Real / protected</span>
-          ) : null}
-        </div>
-      ) : null}
-
       <div className="admin-entity-card__actions admin-entity-card__actions--row">
-        <Link href={row.profileHref} className="admin-btn smoac-control">
-          View profile
+        <Link
+          href={row.profileHref}
+          className="admin-btn admin-btn--compact smoac-control"
+        >
+          Profile
         </Link>
         {permissions.canEditSpecialists ? (
           <button
             type="button"
-            className="admin-btn smoac-control"
+            className="admin-btn admin-btn--compact smoac-control"
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
           >
-            {expanded ? "Hide details" : "Edit"}
+            {expanded ? "Close" : "Edit"}
           </button>
         ) : null}
         {canDelete ? (
           <button
             type="button"
-            className="admin-btn smoac-control admin-btn--danger"
+            className="admin-btn admin-btn--compact smoac-control admin-btn--danger"
             disabled={deleting}
             onClick={() => void handleDelete()}
           >
-            {deleting ? "Deleting…" : "Delete permanently"}
+            {deleting ? "Deleting…" : "Delete"}
           </button>
         ) : null}
       </div>
 
       {expanded && permissions.canEditSpecialists ? (
         <div className="admin-entity-card__expand">
+          {showBilling && billing ? (
+            <SpecialistBillingBlock billing={billing} />
+          ) : null}
+          <div className="admin-entity-card__chips">
+            {row.featured ? <span className="admin-chip">Featured</span> : null}
+            {row.sponsored ? <span className="admin-chip">Sponsored</span> : null}
+            {row.topRanked ? (
+              <span className="admin-chip">Top ranked</span>
+            ) : null}
+            {row.isPremium ? <span className="admin-chip">Pro</span> : null}
+            {row.isProtected || row.accountKind === "real" ? (
+              <span className="admin-chip">Real / protected</span>
+            ) : null}
+          </div>
           <label className="admin-field-label">
             Visibility
             <select
@@ -370,7 +383,9 @@ export function AdminSpecialistsPanel({
 }: AdminSpecialistsPanelProps) {
   const showTierBilling = isOwnerAdmin && billingById != null;
   const canDelete = isOwnerAdmin;
-  const [activeCategory, setActiveCategory] = useState<SpecialistTierCategory>("free");
+  const [activeCategory, setActiveCategory] =
+    useState<SpecialistTierCategory>("free");
+  const [search, setSearch] = useState("");
 
   const tierCounts = useMemo(() => {
     if (!billingById) return null;
@@ -378,15 +393,39 @@ export function AdminSpecialistsPanel({
   }, [specialists, billingById]);
 
   const filteredSpecialists = useMemo(() => {
-    if (!showTierBilling || !billingById) return specialists;
-    return filterSpecialistsByTierCategory(
-      specialists,
-      billingById,
-      activeCategory
-    );
-  }, [specialists, billingById, showTierBilling, activeCategory]);
+    const byTier =
+      showTierBilling && billingById
+        ? filterSpecialistsByTierCategory(
+            specialists,
+            billingById,
+            activeCategory
+          )
+        : specialists;
 
-  const activeMeta = SPECIALIST_TIER_CATEGORIES.find((c) => c.id === activeCategory);
+    const query = search.trim().toLowerCase();
+    if (!query) return byTier;
+
+    return byTier.filter((row) => {
+      const name = row.name.toLowerCase();
+      const email = row.email.toLowerCase();
+      const profession = row.profession.toLowerCase();
+      return (
+        name.includes(query) ||
+        email.includes(query) ||
+        profession.includes(query)
+      );
+    });
+  }, [
+    specialists,
+    billingById,
+    showTierBilling,
+    activeCategory,
+    search,
+  ]);
+
+  const activeMeta = SPECIALIST_TIER_CATEGORIES.find(
+    (c) => c.id === activeCategory
+  );
 
   return (
     <DashboardSection
@@ -413,16 +452,30 @@ export function AdminSpecialistsPanel({
             <span className="admin-tier-section__summary-meta">
               {filteredSpecialists.length} specialist
               {filteredSpecialists.length === 1 ? "" : "s"}
+              {search.trim() ? " matching" : ""}
             </span>
           </p>
         </>
       ) : null}
 
+      <div className="admin-specialists-search">
+        <input
+          className="admin-field"
+          type="search"
+          placeholder="Search specialists by name…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search specialists by name"
+        />
+      </div>
+
       {filteredSpecialists.length === 0 ? (
         <p className="admin-empty">
-          {showTierBilling
-            ? `No specialists in ${activeMeta?.label ?? "this category"}.`
-            : "No specialists to manage."}
+          {search.trim()
+            ? "No specialists match that search."
+            : showTierBilling
+              ? `No specialists in ${activeMeta?.label ?? "this category"}.`
+              : "No specialists to manage."}
         </p>
       ) : (
         <ul className="admin-card-list admin-specialists-by-tier">
@@ -508,6 +561,7 @@ export function AdminSpecialistsPanel({
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Email</th>
                   <th>Visibility</th>
                   <th>Featured</th>
                   <th>Sponsored</th>
@@ -519,9 +573,16 @@ export function AdminSpecialistsPanel({
                 </tr>
               </thead>
               <tbody>
-                {specialists.map((row) => (
+                {filteredSpecialists.map((row) => (
                   <tr key={row.id}>
                     <td>{row.name}</td>
+                    <td>
+                      {row.email ? (
+                        <a href={`mailto:${row.email}`}>{row.email}</a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td>
                       {permissions.canEditSpecialists ? (
                         <select
