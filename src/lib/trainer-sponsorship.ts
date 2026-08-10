@@ -11,8 +11,11 @@ export function isTrainerSponsored(trainer: Trainer): boolean {
   return meta.sponsored === true;
 }
 
-/** Vetted / high-trust organic specialists sort ahead of non-verified at equal distance */
+/**
+ * Public “Verified” badge + organic sort boost.
+ * Tied only to SMOAC Pro / paid entitlement (`isPremium`) — not approval,
+ * review counts, or stored `verified` flags. Free → no badge; cancel Pro → badge off.
+ */
 export function isTrainerVerified(trainer: Trainer): boolean {
-  if (trainer.verified) return true;
-  return trainer.reviewCount >= 60 && trainer.rating >= 4.7;
+  return Boolean(trainer.isPremium);
 }

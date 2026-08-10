@@ -15,6 +15,7 @@ import {
   getProfileAccentRgb,
   normalizeProfileStyle,
 } from "@/lib/specialist-profile-style";
+import { isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { ShieldCheckIcon } from "@/components/ui/icons";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
@@ -151,10 +152,10 @@ export function ProfileHero({
                     >
                       {trainer.name}
                     </h1>
-                    {trainer.verified ? (
+                    {isTrainerVerified(trainer) ? (
                       <span
                         className="profile-verified-badge"
-                        title="Verified specialist"
+                        title="Verified Pro specialist"
                       >
                         <ShieldCheckIcon className="h-3.5 w-3.5" />
                         Verified
