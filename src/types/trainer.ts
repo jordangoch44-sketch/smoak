@@ -26,10 +26,16 @@ export interface SocialLinks {
   linkedin?: string;
   website?: string;
   tiktok?: string;
-  /** Google Maps / Business Profile URL (optional — does not affect SMOAC reviews). */
+  /** Google Maps / Business Profile URL (Pro connect — optional). */
   googleReviewsUrl?: string;
-  /** Google Places Place ID for future review sync (optional). */
+  /** Google Places Place ID for review sync (Pro connect — optional). */
   googlePlaceId?: string;
+  /** Cached Place Details rating (Pro). */
+  googleRating?: number;
+  /** Cached Place Details review count (Pro). */
+  googleReviewCount?: number;
+  /** ISO timestamp of last Places fetch. */
+  googleFetchedAt?: string;
 }
 
 export interface TrainerMediaItem {

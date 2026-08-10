@@ -180,6 +180,15 @@ export function applicationToTrainer(
       tiktok: app.social?.tiktok,
       googleReviewsUrl: app.social?.googleReviewsUrl?.trim() || undefined,
       googlePlaceId: app.social?.googlePlaceId?.trim() || undefined,
+      googleRating:
+        typeof app.social?.googleRating === "number"
+          ? app.social.googleRating
+          : undefined,
+      googleReviewCount:
+        typeof app.social?.googleReviewCount === "number"
+          ? app.social.googleReviewCount
+          : undefined,
+      googleFetchedAt: app.social?.googleFetchedAt?.trim() || undefined,
     },
     profileStyle: app.profileStyle
       ? normalizeProfileStyle(app.profileStyle)

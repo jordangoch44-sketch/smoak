@@ -2505,9 +2505,22 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   }
 }
 
-/* Dashboard coming-soon modal */
+.dashboard-connect-google-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
 
-.dashboard-modal {
+.dashboard-connect-google-form__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: #fecaca;
+}
+
+.dashboard-reputation__google-cta {
+  margin: 0.75rem 0 0.35rem;
+}
   position: fixed;
   inset: 0;
   z-index: 99999;

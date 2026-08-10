@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { SmoacStarRating } from "@/components/reviews/SmoacStarRating";
 import { LOGO_SRC } from "@/lib/brand";
+import { resolvePublicGoogleReviewsDisplay } from "@/lib/google-reviews-display";
 import {
   trainerFirstName,
   type SpecialistReviewAggregate,
@@ -17,14 +18,6 @@ interface ProfileReviewMetaProps {
   canLeaveReview?: boolean;
   hasOwnReview?: boolean;
   onLeaveReview?: () => void;
-}
-
-function normalizeExternalUrl(raw: string | undefined): string | null {
-  const trimmed = raw?.trim() ?? "";
-  if (!trimmed) return null;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  if (/^[\w.-]+\.[\w.-]+/.test(trimmed)) return `https://${trimmed}`;
-  return null;
 }
 
 /** Compact Google “G” mark — separate from SMOAC logo line. */
@@ -69,18 +62,14 @@ export function ProfileReviewMeta({
   const smoacAvg = smoacAggregate?.avgRating ?? null;
   const firstName = trainerFirstName(trainer.name);
   const hasClassicReviews = total > 0;
-
-  /* Google stays separate from SMOAC — count/rating stay 0 until Places sync. */
-  const googleHref = normalizeExternalUrl(trainer.social?.googleReviewsUrl);
-  const googleCount = 0;
-  const googleAvg: number | null = null;
+  const google = resolvePublicGoogleReviewsDisplay(trainer);
 
   const googleRow = (
     <>
       <GoogleMark className="profile-hero__reviews-mark profile-hero__reviews-mark--google" />
       <SmoacStarRating
-        reviewCount={googleCount}
-        avgRating={googleAvg}
+        reviewCount={google.reviewCount}
+        avgRating={google.rating}
         sourceName="Google"
         className="profile-hero__google-stars"
       />
@@ -136,9 +125,17 @@ export function ProfileReviewMeta({
         />
       </div>
 
-      {googleHref ? (
+      {google.locked ? (
+        <div
+          className="profile-hero__reviews-google profile-hero__reviews-google--locked"
+          aria-label="Google Reviews — unlock with SMOAC Pro"
+          title="Google Reviews — unlock with SMOAC Pro"
+        >
+          {googleRow}
+        </div>
+      ) : google.mapsHref && google.connected ? (
         <a
-          href={googleHref}
+          href={google.mapsHref}
           target="_blank"
           rel="noopener noreferrer"
           className="profile-hero__reviews-google"
@@ -150,7 +147,7 @@ export function ProfileReviewMeta({
       ) : (
         <div
           className="profile-hero__reviews-google profile-hero__reviews-google--muted"
-          aria-label="No Google reviews connected yet"
+          aria-label="Google Reviews not connected yet"
         >
           {googleRow}
         </div>

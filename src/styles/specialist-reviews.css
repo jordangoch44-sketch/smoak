@@ -429,6 +429,12 @@ a.profile-hero__reviews-google:focus-visible {
   pointer-events: none;
 }
 
+.profile-hero__reviews-google--locked {
+  pointer-events: none;
+  opacity: 0.42;
+  filter: grayscale(1);
+}
+
 .profile-hero__reviews-mark {
   flex-shrink: 0;
   width: 0.875rem;

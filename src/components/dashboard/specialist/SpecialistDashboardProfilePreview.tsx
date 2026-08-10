@@ -941,36 +941,8 @@ export function SpecialistDashboardProfilePreview({
                   placeholder="https://"
                 />
               </label>
-              <label className="login-field">
-                <span className="login-field__label">
-                  Google reviews link
-                  <span className="login-field__label-hint">Optional</span>
-                </span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.googleReviewsUrl}
-                  onChange={(e) => patch("googleReviewsUrl", e.target.value)}
-                  placeholder="https://maps.google.com/…"
-                  inputMode="url"
-                  autoComplete="off"
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">
-                  Google Place ID
-                  <span className="login-field__label-hint">Optional</span>
-                </span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.googlePlaceId}
-                  onChange={(e) => patch("googlePlaceId", e.target.value)}
-                  placeholder="ChIJ…"
-                  autoComplete="off"
-                />
-              </label>
               <p className="wizard-field-hint">
-                Shown next to SMOAC stars at the top of the profile. Tap opens
-                Google — review sync comes later.
+                Google Reviews connect lives on your Pro Reviews card — not here.
               </p>
             </div>
           ) : null}

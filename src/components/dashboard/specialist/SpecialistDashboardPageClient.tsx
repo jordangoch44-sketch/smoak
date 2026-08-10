@@ -413,7 +413,11 @@ export function SpecialistDashboardPageClient() {
               smoacRating={rankingRating.rating}
               smoacReviewCount={rankingRating.reviewCount}
             />
-            <ReviewsCard trainer={trainer} isPremium={isPremium} />
+            <ReviewsCard
+              trainer={trainer}
+              isPremium={isPremium}
+              onUpgrade={() => setUpgradeOpen(true)}
+            />
             <SubscriptionCard subscription={data.subscription} />
           </DashboardGrid>
         ) : null}

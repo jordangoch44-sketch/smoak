@@ -6,24 +6,39 @@ import {
   DashboardComingSoonModal,
   PremiumLockedValues,
 } from "@/components/dashboard/shared";
+import { ConnectGoogleReviewsModal } from "@/components/dashboard/specialist/ConnectGoogleReviewsModal";
 import {
   buildSpecialistReputationHub,
   formatReputationRating,
 } from "@/lib/specialist-reputation";
+import { readGooglePlaceSnapshotFromTrainer } from "@/lib/google-reviews-display";
+import { refreshApprovedSpecialistProfilesFromRemote } from "@/lib/approved-specialist-profiles-store";
 import {
   ReputationReviewFeedItem,
   ReputationSourceRow,
 } from "@/components/dashboard/specialist/reviews";
 import { cn } from "@/lib/utils";
+import type { GooglePlaceSnapshot } from "@/lib/google-places";
 
 interface ReviewsCardProps {
   trainer: Trainer | undefined;
   isPremium: boolean;
+  onUpgrade?: () => void;
+  onTrainerGoogleConnected?: (snapshot: GooglePlaceSnapshot) => void;
 }
 
-export function ReviewsCard({ trainer, isPremium }: ReviewsCardProps) {
+export function ReviewsCard({
+  trainer,
+  isPremium,
+  onUpgrade,
+  onTrainerGoogleConnected,
+}: ReviewsCardProps) {
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [connectSourceLabel, setConnectSourceLabel] = useState("Reviews");
+  const [googleModalOpen, setGoogleModalOpen] = useState(false);
+  const [localSnapshot, setLocalSnapshot] = useState<GooglePlaceSnapshot | null>(
+    null
+  );
 
   const profileId = trainer?.id ?? "";
   const hub = useMemo(
@@ -31,18 +46,46 @@ export function ReviewsCard({ trainer, isPremium }: ReviewsCardProps) {
     [profileId, trainer]
   );
 
-  const hasReputation = hub.totalReviewCount > 0 || hub.latestReviews.length > 0;
+  const googleFromTrainer = readGooglePlaceSnapshotFromTrainer(trainer);
+  const googleConnected = Boolean(
+    localSnapshot?.placeId || googleFromTrainer.connected
+  );
+  const googleRating =
+    localSnapshot?.rating ?? googleFromTrainer.rating ?? null;
+  const googleCount =
+    localSnapshot?.reviewCount ?? googleFromTrainer.reviewCount ?? 0;
+
+  const hasReputation =
+    hub.totalReviewCount > 0 ||
+    hub.latestReviews.length > 0 ||
+    googleConnected;
   const connectedSources = hub.sources.filter(
-    (source) => source.connectedStatus === "connected"
+    (source) =>
+      source.sourceId !== "google" && source.connectedStatus === "connected"
   );
   const disconnectedSources = hub.sources.filter(
-    (source) => source.connectedStatus !== "connected"
+    (source) =>
+      source.sourceId !== "google" && source.connectedStatus !== "connected"
   );
 
   function handleConnect(sourceId: string) {
+    if (sourceId === "google") {
+      if (!isPremium) {
+        onUpgrade?.();
+        return;
+      }
+      setGoogleModalOpen(true);
+      return;
+    }
     const source = hub.sources.find((entry) => entry.sourceId === sourceId);
     setConnectSourceLabel(source?.sourceName ?? "Reviews");
     setConnectModalOpen(true);
+  }
+
+  function handleGoogleConnected(snapshot: GooglePlaceSnapshot) {
+    setLocalSnapshot(snapshot);
+    onTrainerGoogleConnected?.(snapshot);
+    refreshApprovedSpecialistProfilesFromRemote();
   }
 
   return (
@@ -61,36 +104,62 @@ export function ReviewsCard({ trainer, isPremium }: ReviewsCardProps) {
               Reviews
             </h2>
             <p className="dashboard-reputation__subtitle">
-              Aggregated client feedback across connected platforms.
+              SMOAC client reviews stay free. Google rating sync is a Pro feature.
             </p>
           </div>
         </header>
 
+        <div className="dashboard-reputation__google-cta">
+          {googleConnected && isPremium ? (
+            <div className="dashboard-reputation-source dashboard-reputation-source--connected">
+              <div className="dashboard-reputation-source__lead">
+                <span className="dashboard-reputation-source__name">Google</span>
+                <span className="dashboard-reputation-source__count">
+                  {googleCount} review{googleCount === 1 ? "" : "s"}
+                </span>
+              </div>
+              {googleRating != null ? (
+                <span className="dashboard-reputation-source__rating">
+                  ★ {formatReputationRating(googleRating)}
+                </span>
+              ) : (
+                <span className="dashboard-reputation-source__rating">Connected</span>
+              )}
+              <button
+                type="button"
+                className="dashboard-reputation-connect"
+                onClick={() => setGoogleModalOpen(true)}
+              >
+                Update
+              </button>
+            </div>
+          ) : (
+            <div className="dashboard-reputation-source dashboard-reputation-source--disconnected">
+              <div className="dashboard-reputation-source__lead">
+                <span className="dashboard-reputation-source__name">Google Reviews</span>
+              </div>
+              <button
+                type="button"
+                className="dashboard-reputation-connect"
+                onClick={() => handleConnect("google")}
+              >
+                {isPremium
+                  ? "Connect Google Reviews"
+                  : "Unlock with Pro"}
+              </button>
+            </div>
+          )}
+        </div>
+
         {!hasReputation ? (
           <p className="dashboard-section__desc">
-            Connect review sources to build your reputation hub.
+            Connect Google on Pro to show live stars on your public profile.
           </p>
         ) : (
           <div className="dashboard-reputation__body">
-            <div className="dashboard-reputation__hero">
-              <div className="dashboard-reputation__stat dashboard-reputation__stat--rating">
-                <span className="dashboard-reputation__stat-label">Overall rating</span>
-                <p className="dashboard-reputation__stat-value">
-                  {formatReputationRating(hub.overallRating)}
-                </p>
-                <span className="dashboard-reputation__stat-glyph" aria-hidden>
-                  ★
-                </span>
-              </div>
-              <div className="dashboard-reputation__stat dashboard-reputation__stat--count">
-                <span className="dashboard-reputation__stat-label">Total reviews</span>
-                <p className="dashboard-reputation__stat-value">{hub.totalReviewCount}</p>
-              </div>
-            </div>
-
             <PremiumLockedValues locked={!isPremium}>
               <div className="dashboard-reputation__sources">
-                <p className="dashboard-reputation__sources-label">By source</p>
+                <p className="dashboard-reputation__sources-label">Other sources</p>
                 <ul className="dashboard-reputation__sources-list">
                   {connectedSources.map((source) => (
                     <li key={source.sourceId}>
@@ -130,11 +199,17 @@ export function ReviewsCard({ trainer, isPremium }: ReviewsCardProps) {
         )}
       </section>
 
+      <ConnectGoogleReviewsModal
+        open={googleModalOpen}
+        onClose={() => setGoogleModalOpen(false)}
+        onConnected={handleGoogleConnected}
+      />
+
       <DashboardComingSoonModal
         open={connectModalOpen}
         onClose={() => setConnectModalOpen(false)}
         title={`Connect ${connectSourceLabel}`}
-        description="Review source connections are coming soon. You'll be able to link Google, Yelp, and other platforms so all feedback appears in one reputation hub."
+        description="Other review source connections are coming soon. Google Reviews connect is available now on Pro."
       />
     </>
   );
