@@ -293,6 +293,8 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
     }
 
     for (const app of listSpecialistApplications()) {
+      /* Only pending apps appear here — approved live as profiles; rejected/archived are gone. */
+      if (app.profileStatus !== "PENDING_APPROVAL") continue;
       if (seen.has(app.id)) continue;
       seen.add(app.id);
       const visibility = resolveVisibility(app.id, hiddenIds);

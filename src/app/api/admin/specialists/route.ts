@@ -154,16 +154,14 @@ export async function DELETE(request: Request) {
     console.warn("[SMOAC admin] reviews purge:", reviewsRes.error.message);
   }
 
-  /* Soft-archive application rows that share this id */
+  /* Hard-delete application rows that share this id */
   const appRes = await service
     .from("specialist_applications")
-    .update({
-      profile_status: "ARCHIVED",
-      updated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq("id", specialistId);
   if (appRes.error) {
-    console.warn("[SMOAC admin] application archive:", appRes.error.message);
+    console.warn("[SMOAC admin] application delete:", appRes.error.message);
+    cleanupErrors.push(`specialist_applications: ${appRes.error.message}`);
   }
 
   const profileDel = await service

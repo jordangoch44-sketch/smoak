@@ -17,6 +17,8 @@ import {
   getSpecialistGoLiveGaps,
 } from "@/lib/specialist-go-live-gate";
 import {
+  deleteSiblingSpecialistApplicationsAsync,
+  deleteSpecialistApplicationAsync,
   getSpecialistApplicationById,
   listSpecialistApplications,
   saveSpecialistApplicationAsync,
@@ -142,31 +144,36 @@ export async function rejectSpecialistApplicationWithEditsAsync(
     };
   }
 
-  const rejectedEdits = normalizeApplicationEdits({
-    ...application,
-    profileStatus: "REJECTED",
-    rejectionReason: reason,
-  });
-  const appResult = await saveSpecialistApplicationAsync(rejectedEdits);
-  if (!appResult.ok) {
-    return { ok: false, message: appResult.message, application: rejectedEdits };
+  /* Reject removes the application completely so Applications + Specialists stay parallel. */
+  const removedProfile = await removeApprovedSpecialistProfileAsync(
+    application.id
+  );
+  if (!removedProfile.ok) {
+    return {
+      ok: false,
+      message: removedProfile.message,
+      application,
+    };
   }
-  const rejected = appResult.application;
-  syncProfileOverridesFromApplication(rejected);
-  const removed = await removeApprovedSpecialistProfileAsync(rejected.id);
-  if (!removed.ok) {
-    return { ok: false, message: removed.message, application: rejected };
+  hideTrainerId(application.id);
+
+  const deleted = await deleteSpecialistApplicationAsync(application.id);
+  if (!deleted.ok) {
+    return { ok: false, message: deleted.message, application };
   }
-  hideTrainerId(rejected.id);
 
   try {
     const { sendSpecialistApplicationRejectedEmail } = await import(
       "@/lib/email/confirmation-email-service"
     );
-    void sendSpecialistApplicationRejectedEmail(rejected).then((result) => {
+    void sendSpecialistApplicationRejectedEmail({
+      ...application,
+      profileStatus: "REJECTED",
+      rejectionReason: reason,
+    }).then((result) => {
       if (!result.success) {
         console.warn("[SMOAC EMAIL] Rejection email did not send", {
-          applicationId: rejected.id,
+          applicationId: application.id,
         });
       }
     });
@@ -174,7 +181,14 @@ export async function rejectSpecialistApplicationWithEditsAsync(
     console.warn("[SMOAC EMAIL] Rejection email dispatch skipped:", err);
   }
 
-  return { ok: true, application: rejected };
+  return {
+    ok: true,
+    application: {
+      ...application,
+      profileStatus: "REJECTED",
+      rejectionReason: reason,
+    },
+  };
 }
 
 /** Specialist requests another review after fixing a rejected application. */
@@ -213,22 +227,24 @@ export async function resubmitSpecialistApplicationForReviewAsync(
 export async function archiveSpecialistApplicationAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
-  const archivedEdits = normalizeApplicationEdits({
-    ...application,
-    profileStatus: "ARCHIVED",
-  });
-  const appResult = await saveSpecialistApplicationAsync(archivedEdits);
-  if (!appResult.ok) {
-    return { ok: false, message: appResult.message, application: archivedEdits };
-  }
-  const archived = appResult.application;
-  syncProfileOverridesFromApplication(archived);
-  const removed = await removeApprovedSpecialistProfileAsync(archived.id);
+  const removed = await removeApprovedSpecialistProfileAsync(application.id);
   if (!removed.ok) {
-    return { ok: false, message: removed.message, application: archived };
+    return { ok: false, message: removed.message, application };
   }
-  hideTrainerId(archived.id);
-  return { ok: true, application: archived };
+  hideTrainerId(application.id);
+
+  const deleted = await deleteSpecialistApplicationAsync(application.id);
+  if (!deleted.ok) {
+    return { ok: false, message: deleted.message, application };
+  }
+
+  return {
+    ok: true,
+    application: {
+      ...application,
+      profileStatus: "ARCHIVED",
+    },
+  };
 }
 
 /**
@@ -276,6 +292,15 @@ export async function activateSpecialistFromApplicationAsync(
 
   unhideTrainerId(approved.id);
   patchAdminSpecialistMeta(approved.id, { visibility: "active" });
+
+  /* Drop duplicate applications for the same email/user so Specialists stays 1:1. */
+  const siblings = await deleteSiblingSpecialistApplicationsAsync(approved);
+  if (!siblings.ok) {
+    console.warn(
+      "[SMOAC admin] sibling application cleanup failed:",
+      siblings.message
+    );
+  }
 
   /* Pro trial is opt-in from Plan & upgrade (one-time) — not auto-granted on approve. */
 

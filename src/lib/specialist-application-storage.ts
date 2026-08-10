@@ -1,6 +1,7 @@
 import { uploadApplicationMediaToStorage } from "@/lib/applications/application-media-upload";
 import {
   fetchSpecialistApplications,
+  pickPreferredSpecialistApplication,
   upsertSpecialistApplication,
 } from "@/lib/applications/specialist-applications-db";
 import {
@@ -337,11 +338,10 @@ export function findSpecialistApplicationByEmail(
   email: string
 ): SpecialistApplication | null {
   const normalized = email.trim().toLowerCase();
-  return (
-    listSpecialistApplications().find(
-      (item) => item.email.trim().toLowerCase() === normalized
-    ) ?? null
+  const matches = listSpecialistApplications().filter(
+    (item) => item.email.trim().toLowerCase() === normalized
   );
+  return pickPreferredSpecialistApplication(matches);
 }
 
 export function findSpecialistApplicationByUserId(
@@ -349,11 +349,116 @@ export function findSpecialistApplicationByUserId(
 ): SpecialistApplication | null {
   const normalized = userId.trim();
   if (!normalized) return null;
-  return (
-    listSpecialistApplications().find(
-      (item) => item.userId?.trim() === normalized
-    ) ?? null
+  const matches = listSpecialistApplications().filter(
+    (item) => item.userId?.trim() === normalized
   );
+  return pickPreferredSpecialistApplication(matches);
+}
+
+/** Drop an application from the in-memory snapshot (and local mirror). */
+export function removeSpecialistApplicationLocal(id: string): void {
+  const trimmed = id.trim();
+  if (!trimmed) return;
+  const next = listSpecialistApplications().filter((item) => item.id !== trimmed);
+  applyCache(next);
+  writeLocalApplications(next);
+}
+
+export async function deleteSpecialistApplicationAsync(
+  id: string
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  if (typeof window === "undefined") {
+    return { ok: false, message: "Unavailable on server" };
+  }
+  const trimmed = id.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Application id is required." };
+  }
+
+  if (!isMarketplaceSupabaseActive()) {
+    removeSpecialistApplicationLocal(trimmed);
+    return { ok: true };
+  }
+
+  try {
+    const response = await fetch("/api/admin/specialist-applications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ applicationId: trimmed }),
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      message?: string;
+    } | null;
+    if (!response.ok || !payload?.ok) {
+      return {
+        ok: false,
+        message: payload?.message || "Could not delete application.",
+      };
+    }
+  } catch {
+    return { ok: false, message: "Network error deleting application." };
+  }
+
+  removeSpecialistApplicationLocal(trimmed);
+  return { ok: true };
+}
+
+/** After approve: hard-delete other applications for same email/user. */
+export async function deleteSiblingSpecialistApplicationsAsync(
+  keeper: Pick<SpecialistApplication, "id" | "email" | "userId">
+): Promise<{ ok: true; deletedIds: string[] } | { ok: false; message: string }> {
+  if (typeof window === "undefined") {
+    return { ok: false, message: "Unavailable on server" };
+  }
+  if (!isMarketplaceSupabaseActive()) {
+    const email = keeper.email.trim().toLowerCase();
+    const userId = keeper.userId?.trim() || "";
+    const deletedIds: string[] = [];
+    for (const app of listSpecialistApplications()) {
+      if (app.id === keeper.id) continue;
+      const sameEmail = email && app.email.trim().toLowerCase() === email;
+      const sameUser = userId && app.userId?.trim() === userId;
+      if (sameEmail || sameUser) {
+        removeSpecialistApplicationLocal(app.id);
+        deletedIds.push(app.id);
+      }
+    }
+    return { ok: true, deletedIds };
+  }
+
+  try {
+    const response = await fetch("/api/admin/specialist-applications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        deleteSiblingsOf: {
+          id: keeper.id,
+          email: keeper.email,
+          userId: keeper.userId,
+        },
+      }),
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      message?: string;
+      deletedIds?: string[];
+    } | null;
+    if (!response.ok || !payload?.ok) {
+      return {
+        ok: false,
+        message: payload?.message || "Could not clear duplicate applications.",
+      };
+    }
+    for (const siblingId of payload.deletedIds ?? []) {
+      removeSpecialistApplicationLocal(siblingId);
+    }
+    return { ok: true, deletedIds: payload.deletedIds ?? [] };
+  } catch {
+    return { ok: false, message: "Network error clearing duplicate applications." };
+  }
 }
 
 export function refreshSpecialistApplicationsFromRemote(): void {

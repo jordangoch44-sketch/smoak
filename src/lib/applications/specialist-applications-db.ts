@@ -99,6 +99,26 @@ export async function fetchSpecialistApplications(
   };
 }
 
+function statusPreference(status: string): number {
+  if (status === "APPROVED") return 0;
+  if (status === "PENDING_APPROVAL") return 1;
+  if (status === "REJECTED") return 2;
+  return 3;
+}
+
+/** Prefer live/pending rows when an email or user has duplicate applications. */
+export function pickPreferredSpecialistApplication(
+  apps: readonly SpecialistApplication[]
+): SpecialistApplication | null {
+  if (apps.length === 0) return null;
+  return [...apps].sort((a, b) => {
+    const byStatus =
+      statusPreference(a.profileStatus) - statusPreference(b.profileStatus);
+    if (byStatus !== 0) return byStatus;
+    return Date.parse(b.updatedAt || "") - Date.parse(a.updatedAt || "");
+  })[0];
+}
+
 export async function fetchSpecialistApplicationByUserId(
   supabase: SupabaseClient,
   userId: string
@@ -113,18 +133,18 @@ export async function fetchSpecialistApplicationByUserId(
     .from("specialist_applications")
     .select("*")
     .eq("user_id", trimmed)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("updated_at", { ascending: false });
 
   if (error) {
     return { ok: false, message: error.message };
   }
 
-  if (!data) return { ok: true, application: null };
+  const apps = ((data ?? []) as SpecialistApplicationRow[]).map(
+    specialistApplicationFromRow
+  );
   return {
     ok: true,
-    application: specialistApplicationFromRow(data as SpecialistApplicationRow),
+    application: pickPreferredSpecialistApplication(apps),
   };
 }
 
@@ -142,18 +162,18 @@ export async function fetchSpecialistApplicationByEmail(
     .from("specialist_applications")
     .select("*")
     .eq("email", trimmed)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("updated_at", { ascending: false });
 
   if (error) {
     return { ok: false, message: error.message };
   }
 
-  if (!data) return { ok: true, application: null };
+  const apps = ((data ?? []) as SpecialistApplicationRow[]).map(
+    specialistApplicationFromRow
+  );
   return {
     ok: true,
-    application: specialistApplicationFromRow(data as SpecialistApplicationRow),
+    application: pickPreferredSpecialistApplication(apps),
   };
 }
 
@@ -170,4 +190,71 @@ export async function upsertSpecialistApplication(
     return { ok: false, message: error.message };
   }
   return { ok: true };
+}
+
+export async function deleteSpecialistApplicationById(
+  supabase: SupabaseClient,
+  id: string
+): Promise<ApplicationsMutationResult> {
+  const trimmed = id.trim();
+  if (!trimmed) return { ok: false, message: "Application id is required." };
+
+  const { error } = await supabase
+    .from("specialist_applications")
+    .delete()
+    .eq("id", trimmed);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: true };
+}
+
+/** Delete other application rows for the same email/user after one is approved. */
+export async function deleteSiblingSpecialistApplications(
+  supabase: SupabaseClient,
+  keeper: Pick<SpecialistApplication, "id" | "email" | "userId">
+): Promise<ApplicationsMutationResult & { deletedIds?: string[] }> {
+  const keeperId = keeper.id.trim();
+  if (!keeperId) return { ok: false, message: "Keeper application id required." };
+
+  const email = keeper.email.trim().toLowerCase();
+  const userId = keeper.userId?.trim() || "";
+
+  const ids = new Set<string>();
+
+  if (email) {
+    const { data, error } = await supabase
+      .from("specialist_applications")
+      .select("id")
+      .eq("email", email);
+    if (error) return { ok: false, message: error.message };
+    for (const row of data ?? []) {
+      if (row.id !== keeperId) ids.add(String(row.id));
+    }
+  }
+
+  if (userId) {
+    const { data, error } = await supabase
+      .from("specialist_applications")
+      .select("id")
+      .eq("user_id", userId);
+    if (error) return { ok: false, message: error.message };
+    for (const row of data ?? []) {
+      if (row.id !== keeperId) ids.add(String(row.id));
+    }
+  }
+
+  const deletedIds = [...ids];
+  if (deletedIds.length === 0) return { ok: true, deletedIds };
+
+  const { error: deleteError } = await supabase
+    .from("specialist_applications")
+    .delete()
+    .in("id", deletedIds);
+
+  if (deleteError) {
+    return { ok: false, message: deleteError.message };
+  }
+  return { ok: true, deletedIds };
 }

@@ -58,6 +58,15 @@ async function resolveSubmitUserId(
   return user?.id?.trim() || null;
 }
 
+const submitInFlightByKey = new Map<
+  string,
+  Promise<SubmitSpecialistApplicationResult>
+>();
+
+function submitDedupeKey(email: string, userId: string | null): string {
+  return `${userId || ""}|${email.trim().toLowerCase()}`;
+}
+
 export type SubmitSpecialistApplicationResult = {
   application: SpecialistApplication;
   emailSent: boolean;
@@ -71,6 +80,27 @@ export async function submitSpecialistApplication(
 ): Promise<SubmitSpecialistApplicationResult> {
   const trimmedEmail = state.email.trim();
   const userId = await resolveSubmitUserId(options?.userId);
+  const key = submitDedupeKey(trimmedEmail, userId);
+  const existingFlight = submitInFlightByKey.get(key);
+  if (existingFlight) return existingFlight;
+
+  const flight = submitSpecialistApplicationOnce(state, {
+    userId,
+    trimmedEmail,
+  }).finally(() => {
+    if (submitInFlightByKey.get(key) === flight) {
+      submitInFlightByKey.delete(key);
+    }
+  });
+  submitInFlightByKey.set(key, flight);
+  return flight;
+}
+
+async function submitSpecialistApplicationOnce(
+  state: SpecialistOnboardingState,
+  resolved: { userId: string | null; trimmedEmail: string }
+): Promise<SubmitSpecialistApplicationResult> {
+  const { trimmedEmail, userId } = resolved;
 
   if (isMarketplaceSupabaseActive() && !userId) {
     throw new ApplicationSubmitError(
