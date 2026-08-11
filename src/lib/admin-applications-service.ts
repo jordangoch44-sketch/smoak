@@ -301,7 +301,37 @@ export async function activateSpecialistFromApplicationAsync(
     );
   }
 
-  /* Pro trial is opt-in from Plan & upgrade (one-time) — not auto-granted on approve. */
+  /* Go live → one-time 30-day Pro trial (idempotent; skips if already used). */
+  const userId = approved.userId?.trim() || "";
+  if (userId && typeof window !== "undefined") {
+    try {
+      const trialRes = await fetch(
+        "/api/admin/specialists/grant-premium-trial",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            userId,
+            specialistId: approved.id,
+          }),
+        }
+      );
+      const trialPayload = (await trialRes.json().catch(() => null)) as {
+        ok?: boolean;
+        granted?: boolean;
+        message?: string;
+      } | null;
+      if (!trialRes.ok || !trialPayload?.ok) {
+        console.warn(
+          "[SMOAC admin] Pro trial grant on activate failed:",
+          trialPayload?.message || trialRes.status
+        );
+      }
+    } catch (err) {
+      console.warn("[SMOAC admin] Pro trial grant on activate skipped:", err);
+    }
+  }
 
   try {
     const { sendSpecialistApplicationApprovedEmail } = await import(

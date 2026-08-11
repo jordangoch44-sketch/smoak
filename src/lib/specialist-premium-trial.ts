@@ -1,8 +1,8 @@
 /**
- * SMOAC Pro complimentary trial — 30 days free when a specialist claims the
- * one-time Plan-tab offer (or legacy activate grant). After that, free tier
- * unless they subscribe via Stripe ($9.99/mo, no second free month).
- * Idempotent; not granted at signup.
+ * SMOAC Pro complimentary trial — 30 days free when a specialist goes live
+ * (admin activate / approve). After that, free tier unless they subscribe via
+ * Stripe ($9.99/mo, no second free month). Idempotent; safe to call on every
+ * activate. Manual Plan-tab claim remains for older accounts that never got one.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -48,7 +48,7 @@ async function hasActiveStripeSubscription(
 
 /**
  * Start the one-time 30-day Pro trial if this specialist has never had one.
- * Idempotent — safe to call on every activate.
+ * Idempotent — safe to call on every go-live activate.
  */
 export async function grantSpecialistPremiumTrialIfNeeded(
   supabase: SupabaseClient,

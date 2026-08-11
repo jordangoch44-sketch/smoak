@@ -1,6 +1,6 @@
 /**
  * SMOAC Pro — pricing + upgrade copy.
- * Signup includes a complimentary 30-day Pro trial; after that, $9.99/mo via Stripe.
+ * Going live includes a complimentary 30-day Pro trial; after that, $9.99/mo via Stripe.
  */
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 
