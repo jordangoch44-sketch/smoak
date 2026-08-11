@@ -36,8 +36,7 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
         )}
         aria-labelledby="dashboard-analytics-title"
       >
-        <div className="dashboard-analytics__card dashboard-glass-premium dashboard-glow-border">
-          <div className="dashboard-analytics__ambient" aria-hidden />
+        <div className="dashboard-analytics__card">
           <header className="dashboard-analytics__header">
             <div>
               <div className="dashboard-analytics__title-row">
