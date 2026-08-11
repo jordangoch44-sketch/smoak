@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/components/ui/toast";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
@@ -35,8 +35,8 @@ import {
 } from "@/types/specialist-application";
 import { SpecialistOnboardingSteps } from "@/components/auth/specialist/SpecialistOnboardingSteps";
 import {
-  resendSpecialistSignupEmail,
-  specialistOnboardingEmailRedirectTo,
+  sendSpecialistEmailVerificationCode,
+  verifySpecialistEmailVerificationCode,
 } from "@/lib/auth/specialist-email-verify";
 import {
   getMarketplaceAuthClient,
@@ -58,8 +58,7 @@ export function SpecialistOnboardingWizard({
   onBackToRole,
 }: SpecialistOnboardingWizardProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { signUp, signInWithPassword, refreshSession } = useAuthSession();
+  const { signInWithPassword, refreshSession } = useAuthSession();
   const { showToast } = useToast();
   const [step, setStep] = useState<OnboardingStep>(1);
   const [state, setState] = useState<SpecialistOnboardingState>(() => {
@@ -73,6 +72,7 @@ export function SpecialistOnboardingWizard({
   const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState<string | null>(
     null
   );
+  const [emailOtpCode, setEmailOtpCode] = useState("");
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const [resendingConfirm, setResendingConfirm] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -96,24 +96,6 @@ export function SpecialistOnboardingWizard({
   useEffect(() => {
     persistSpecialistOnboardingDraft(state);
   }, [state]);
-
-  /* Resume after confirm-email link → /create-account?role=specialist&verified=1 */
-  useEffect(() => {
-    if (searchParams.get("verified") !== "1") return;
-    const session = getAuthSessionSnapshot();
-    const draftEmail = state.email.trim().toLowerCase();
-    const sessionEmail = session?.email?.trim().toLowerCase() ?? "";
-    if (!session || session.role !== "specialist") return;
-    if (draftEmail && sessionEmail && draftEmail !== sessionEmail) return;
-
-    setVerifiedEmail(sessionEmail || draftEmail);
-    setAwaitingEmailConfirm(null);
-    setStep((prev) => (prev < 3 ? 3 : prev));
-    showToast({
-      type: "success",
-      message: "Email confirmed — continue your application.",
-    });
-  }, [searchParams, state.email, showToast]);
 
   /* Each Continue / Back question should land the user at the top of the step. */
   useEffect(() => {
@@ -154,6 +136,7 @@ export function SpecialistOnboardingWizard({
       ) {
         setVerifiedEmail(null);
         setAwaitingEmailConfirm(null);
+        setEmailOtpCode("");
       }
       return {
         ...prev,
@@ -197,56 +180,57 @@ export function SpecialistOnboardingWizard({
     setError(null);
 
     try {
-      let result = await signUp("specialist", trimmedEmail, state.password, {
+      if (!isMarketplaceSupabaseActive()) {
+        /* Local/dev without Supabase — allow continue after password checks. */
+        setVerifiedEmail(trimmedEmail);
+        setAwaitingEmailConfirm(null);
+        return true;
+      }
+
+      const result = await sendSpecialistEmailVerificationCode({
+        email: trimmedEmail,
+        password: state.password,
         firstName,
-        emailRedirectTo: specialistOnboardingEmailRedirectTo(),
       });
 
-      if (
-        result.ok === false &&
-        /already exists|already registered/i.test(result.message)
-      ) {
+      if (!result.ok) {
+        setError(result.message);
+        return false;
+      }
+
+      if (result.alreadyVerified) {
         const signInResult = await signInWithPassword(
           "specialist",
           trimmedEmail,
           state.password
         );
         if (signInResult.ok === false) {
-          setError(
-            "An account with this email already exists. Sign in with your password, or reset it from the login page."
-          );
+          setError(signInResult.message);
           return false;
         }
         if (signInResult.ok === "confirm_email") {
-          persistSpecialistOnboardingDraft(state);
           setAwaitingEmailConfirm(trimmedEmail);
+          setEmailOtpCode("");
           showToast({
             type: "info",
-            message: `Confirm ${trimmedEmail} to continue — check your inbox (and spam).`,
+            message: `Enter the code we emailed to ${trimmedEmail}.`,
           });
           return false;
         }
-        result = { ok: true, session: signInResult.session };
+        setVerifiedEmail(trimmedEmail);
+        setAwaitingEmailConfirm(null);
+        setEmailOtpCode("");
+        return true;
       }
 
-      if (result.ok === false) {
-        setError(result.message);
-        return false;
-      }
-
-      if (result.ok === "confirm_email") {
-        persistSpecialistOnboardingDraft(state);
-        setAwaitingEmailConfirm(trimmedEmail);
-        showToast({
-          type: "info",
-          message: `We sent a confirmation link to ${trimmedEmail}. Open it to continue signup.`,
-        });
-        return false;
-      }
-
-      setVerifiedEmail(trimmedEmail);
-      setAwaitingEmailConfirm(null);
-      return true;
+      persistSpecialistOnboardingDraft(state);
+      setAwaitingEmailConfirm(trimmedEmail);
+      setEmailOtpCode("");
+      showToast({
+        type: "info",
+        message: `We sent a 6-digit code to ${trimmedEmail}. Paste it below to continue.`,
+      });
+      return false;
     } finally {
       setSubmitting(false);
     }
@@ -300,34 +284,50 @@ export function SpecialistOnboardingWizard({
     }
   }
 
-  async function handleConfirmEmailContinue() {
+  async function handleVerifyEmailCode() {
     if (!awaitingEmailConfirm) return;
+    const code = emailOtpCode.replace(/\s+/g, "").trim();
+    if (!/^\d{6}$/.test(code)) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
     try {
+      const verified = await verifySpecialistEmailVerificationCode({
+        email: awaitingEmailConfirm,
+        password: state.password,
+        code,
+      });
+      if (!verified.ok) {
+        setError(verified.message);
+        return;
+      }
+
       const signInResult = await signInWithPassword(
         "specialist",
         awaitingEmailConfirm,
         state.password
       );
       if (signInResult.ok === false) {
-        setError(
-          "Still waiting on confirmation. Open the link in your email, then try again. Wrong inbox? Change the email on this step and continue."
-        );
+        setError(signInResult.message);
         return;
       }
       if (signInResult.ok === "confirm_email") {
         setError(
-          "Email isn’t confirmed yet. Open the link we sent, then tap I’ve confirmed."
+          "Email still isn’t verified. Check the code and try again, or resend a new one."
         );
         return;
       }
+
       setVerifiedEmail(awaitingEmailConfirm.toLowerCase());
       setAwaitingEmailConfirm(null);
+      setEmailOtpCode("");
       setStep(3);
       showToast({
         type: "success",
-        message: "Email confirmed — continue your application.",
+        message: "Email verified — continue your application.",
       });
     } finally {
       setSubmitting(false);
@@ -339,14 +339,37 @@ export function SpecialistOnboardingWizard({
     setResendingConfirm(true);
     setError(null);
     try {
-      const result = await resendSpecialistSignupEmail(awaitingEmailConfirm);
+      const firstName = state.fullName.trim().split(/\s+/)[0] ?? "";
+      const result = await sendSpecialistEmailVerificationCode({
+        email: awaitingEmailConfirm,
+        password: state.password,
+        firstName,
+      });
       if (!result.ok) {
         setError(result.message);
         return;
       }
+      if (result.alreadyVerified) {
+        const signInResult = await signInWithPassword(
+          "specialist",
+          awaitingEmailConfirm,
+          state.password
+        );
+        if (signInResult.ok === true) {
+          setVerifiedEmail(awaitingEmailConfirm.toLowerCase());
+          setAwaitingEmailConfirm(null);
+          setEmailOtpCode("");
+          setStep(3);
+          showToast({
+            type: "success",
+            message: "Email already verified — continue your application.",
+          });
+          return;
+        }
+      }
       showToast({
         type: "info",
-        message: `Confirmation link resent to ${awaitingEmailConfirm}.`,
+        message: `New code sent to ${awaitingEmailConfirm}.`,
       });
     } finally {
       setResendingConfirm(false);
@@ -377,6 +400,19 @@ export function SpecialistOnboardingWizard({
 
     try {
       const trimmedEmail = state.email.trim().toLowerCase();
+      if (
+        !verifiedEmail ||
+        verifiedEmail !== trimmedEmail ||
+        getAuthSessionSnapshot()?.email?.toLowerCase() !== trimmedEmail
+      ) {
+        setSubmitting(false);
+        setStep(2);
+        setError("Verify your email with the code we sent before submitting.");
+        const gated = await verifyEmailBeforeContinue();
+        if (!gated) return;
+        setSubmitting(true);
+      }
+
       const existing = getAuthSessionSnapshot();
       let userId = existing?.userId ?? "";
 
@@ -386,52 +422,25 @@ export function SpecialistOnboardingWizard({
         existing!.email.trim().toLowerCase() === trimmedEmail;
 
       if (!alreadyAuthed) {
-        let signUpResult = await signUp("specialist", trimmedEmail, state.password, {
-          firstName: state.fullName.trim().split(/\s+/)[0] ?? "",
-          specialistOnboarding: state,
-          emailRedirectTo: specialistOnboardingEmailRedirectTo(),
-        });
-
-        if (
-          signUpResult.ok === false &&
-          /already exists|already registered/i.test(signUpResult.message)
-        ) {
-          const signInResult = await signInWithPassword(
-            "specialist",
-            trimmedEmail,
-            state.password
-          );
-          if (signInResult.ok === false) {
-            setError(
-              "An account with this email already exists. Sign in with your password, or reset it from the login page."
-            );
-            return;
-          }
-          if (signInResult.ok === "confirm_email") {
-            setAwaitingEmailConfirm(trimmedEmail);
-            setError("Confirm your email, then continue to finish your application.");
-            return;
-          }
-          signUpResult = { ok: true, session: signInResult.session };
-        }
-
-        if (signUpResult.ok === false) {
-          setError(signUpResult.message);
+        const signInResult = await signInWithPassword(
+          "specialist",
+          trimmedEmail,
+          state.password
+        );
+        if (signInResult.ok === false) {
+          setError(signInResult.message);
           return;
         }
-
-        if (signUpResult.ok === "confirm_email") {
-          persistSpecialistOnboardingDraft(state);
+        if (signInResult.ok === "confirm_email") {
           setAwaitingEmailConfirm(trimmedEmail);
-          showToast({
-            type: "info",
-            message: `Confirm ${trimmedEmail} — then continue your application.`,
-          });
+          setEmailOtpCode("");
+          setError("Verify your email with the code we sent, then submit again.");
           return;
         }
+        userId = signInResult.session.userId;
+      }
 
-        userId = signUpResult.session.userId;
-      } else if (isMarketplaceSupabaseActive()) {
+      if (isMarketplaceSupabaseActive()) {
         const supabase = getMarketplaceAuthClient();
         if (supabase && userId) {
           const profileResult = await saveSpecialistSignupProfile(
@@ -633,18 +642,37 @@ export function SpecialistOnboardingWizard({
                   id="wizard-confirm-email-title"
                   className="wizard-incomplete-modal__title"
                 >
-                  Confirm your email to continue
+                  Enter your verification code
                 </h2>
                 <p className="wizard-incomplete-modal__lead">
-                  We sent a confirmation link to{" "}
-                  <strong>{awaitingEmailConfirm}</strong>. Open it from a real
-                  inbox to unlock the next steps. If that address doesn&apos;t
-                  exist, you won&apos;t get the email — go back and use a working
-                  address.
+                  We emailed a 6-digit code from SMOAC to{" "}
+                  <strong>{awaitingEmailConfirm}</strong>. Paste it below to
+                  unlock the rest of your application.
                 </p>
               </header>
+              <label className="wizard-email-otp-label">
+                Verification code
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  name="specialist-email-otp"
+                  className="login-input wizard-email-otp-input"
+                  value={emailOtpCode}
+                  onChange={(e) => {
+                    setEmailOtpCode(
+                      e.target.value.replace(/[^\d]/g, "").slice(0, 6)
+                    );
+                    setError(null);
+                  }}
+                  placeholder="6-digit code"
+                  maxLength={6}
+                  disabled={submitting}
+                  autoFocus
+                />
+              </label>
               <p className="wizard-submitted-modal__note">
-                Tip: check spam/junk. Use one email for the whole signup.
+                Tip: check spam/junk. Wrong inbox? Change email and continue again.
               </p>
               {error ? (
                 <p
@@ -658,10 +686,12 @@ export function SpecialistOnboardingWizard({
                 <button
                   type="button"
                   className="login-submit wizard-nav__continue wizard-incomplete-modal__btn"
-                  onClick={() => void handleConfirmEmailContinue()}
-                  disabled={submitting}
+                  onClick={() => void handleVerifyEmailCode()}
+                  disabled={
+                    submitting || emailOtpCode.replace(/\s+/g, "").length !== 6
+                  }
                 >
-                  I&apos;ve confirmed — continue
+                  {submitting ? "Verifying…" : "Verify & continue"}
                 </button>
                 <button
                   type="button"
@@ -669,13 +699,14 @@ export function SpecialistOnboardingWizard({
                   onClick={() => void handleResendConfirmEmail()}
                   disabled={resendingConfirm || submitting}
                 >
-                  {resendingConfirm ? "Sending…" : "Resend link"}
+                  {resendingConfirm ? "Sending…" : "Resend code"}
                 </button>
                 <button
                   type="button"
                   className="wizard-nav__back wizard-incomplete-modal__btn"
                   onClick={() => {
                     setAwaitingEmailConfirm(null);
+                    setEmailOtpCode("");
                     setStep(2);
                     setError(null);
                   }}

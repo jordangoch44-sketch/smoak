@@ -1342,6 +1342,24 @@ body:has(.login-page--wizard) main {
   width: 100%;
 }
 
+.wizard-email-otp-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.wizard-email-otp-input {
+  letter-spacing: 0.35em;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 .wizard-submitted-modal__note {
   margin: 0;
   font-size: 0.875rem;
