@@ -56,8 +56,7 @@ const PREMIUM_TABS: ReadonlyArray<{ id: PremiumDashboardTab; label: string }> = 
 ];
 
 function dashboardSubtitle(
-  mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"],
-  trialDaysRemaining?: number
+  mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"]
 ): string {
   if (mode === "rejected") {
     return "Update your application, then request another review.";
@@ -67,12 +66,6 @@ function dashboardSubtitle(
   }
   if (mode === "approved-free") {
     return "Your profile is live on Marketplace — deepen it anytime from Edit profile.";
-  }
-  if (
-    (mode === "approved-premium" || mode === "demo-premium") &&
-    typeof trialDaysRemaining === "number"
-  ) {
-    return `Pro trial · ${trialDaysRemaining} day${trialDaysRemaining === 1 ? "" : "s"} left`;
   }
   return "Manage your profile, leads, and marketplace visibility.";
 }
@@ -211,12 +204,11 @@ export function SpecialistDashboardPageClient() {
       variant="specialist"
       eyebrow="Specialist dashboard"
       title={`Good to see you, ${firstName}`}
-      subtitle={dashboardSubtitle(
-        dashboardMode,
-        onProTrial ? session.premiumTrialDaysRemaining : undefined
-      )}
+      subtitle={dashboardSubtitle(dashboardMode)}
       roleLabel={roleLabel}
-      roleLabelTone={onProTrial ? "pro-trial" : "default"}
+      roleLabelTone={
+        onProTrial || isPremium ? "pro-trial" : "default"
+      }
       statusLabel={profileFirst ? null : profileStatusLabel}
       statusTone={statusTone}
       utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}

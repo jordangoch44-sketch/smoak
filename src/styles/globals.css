@@ -25,6 +25,7 @@
 @import "./footer.css";
 @import "./login-gate.css";
 @import "./location-selector.css";
+@import "./site-location-gate.css";
 @import "./mobile-bottom-nav.css";
 @import "./modal-open.css";
 @import "./bottom-nav-panel-transition.css";
@@ -163,6 +164,7 @@ body.inquiry-sheet-open,
 body.review-modal-open,
 body.saved-panel-open,
 body.login-gate-open,
+body.site-location-gate-open,
 body.complete-account-lock,
 body.client-profile-sheet-open,
 body.admin-review-open {
@@ -179,6 +181,7 @@ body.admin-review-open {
   body.review-modal-open,
   body.saved-panel-open,
   body.login-gate-open,
+  body.site-location-gate-open,
   body.complete-account-lock,
   body.client-profile-sheet-open,
   body.admin-review-open {
@@ -193,6 +196,7 @@ body.admin-review-open {
   body.review-modal-open .app-main,
   body.saved-panel-open .app-main,
   body.login-gate-open .app-main,
+  body.site-location-gate-open .app-main,
   body.complete-account-lock .app-main,
   body.client-profile-sheet-open .app-main,
   body.admin-review-open .app-main {
@@ -202,6 +206,7 @@ body.admin-review-open {
   }
 
   html.login-gate-open,
+  html.site-location-gate-open,
   html.complete-account-lock,
   html.client-profile-sheet-open {
     overflow: visible;

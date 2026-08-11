@@ -17,6 +17,8 @@ import { cn } from "@/lib/utils";
 
 interface LocationSelectorPanelProps {
   onUpdated: () => void;
+  /** Full-screen first-visit gate — required location, no clear. */
+  mode?: "dropdown" | "gate";
 }
 
 function formatPanelLocationSummary(
@@ -30,7 +32,11 @@ function formatPanelLocationSummary(
   return placeName;
 }
 
-export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps) {
+export function LocationSelectorPanel({
+  onUpdated,
+  mode = "dropdown",
+}: LocationSelectorPanelProps) {
+  const isGate = mode === "gate";
   const {
     city: savedPlace,
     zip: savedZip,
@@ -161,18 +167,28 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
   const busy = geoLoading || zipSubmitting || clearing;
 
   return (
-    <div className="location-selector-panel__body">
+    <div
+      className={cn(
+        "location-selector-panel__body",
+        isGate && "location-selector-panel__body--gate"
+      )}
+    >
       <header className="location-selector-panel__header">
-        <p className="location-selector-panel__eyebrow">Your market</p>
-        {activeSummary ? (
+        <p className="location-selector-panel__eyebrow">
+          {isGate ? "Welcome to SMOAC" : "Your market"}
+        </p>
+        {!isGate && activeSummary ? (
           <p className="location-selector-panel__active-location">
             {activeSummary}
           </p>
         ) : null}
-        <h2 className="location-selector-panel__title">Set your location</h2>
+        <h2 className="location-selector-panel__title">
+          {isGate ? "Find specialists near you" : "Set your location"}
+        </h2>
         <p className="location-selector-panel__lede">
-          Search ranks specialists by how close they are to you. Use your current
-          location or enter a ZIP to continue.
+          {isGate
+            ? "Marketplace search ranks by distance. Share your location or enter a ZIP so we can show the closest specialists."
+            : "Search ranks specialists by how close they are to you. Use your current location or enter a ZIP to continue."}
         </p>
       </header>
 
@@ -184,7 +200,9 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
       >
         {geoLoading
           ? "Finding your location…"
-          : "Allow SMOAC to use your location"}
+          : isGate
+            ? "Use my location"
+            : "Allow SMOAC to use your location"}
       </button>
       {geoError ? (
         <p className="location-selector-panel__error" role="status">
@@ -196,7 +214,7 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
 
       <form className="location-selector-panel__form" onSubmit={handleUpdateZip}>
         <label className="location-selector-panel__label" htmlFor={zipFieldId}>
-          Or enter ZIP code
+          {isGate ? "Enter ZIP code" : "Or enter ZIP code"}
         </label>
         <input
           id={zipFieldId}
@@ -253,11 +271,17 @@ export function LocationSelectorPanel({ onUpdated }: LocationSelectorPanelProps)
           className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
           disabled={!isValidZipCode(normalizeZipCode(zip)) || busy}
         >
-          {zipSubmitting ? "Updating…" : "Update location"}
+          {zipSubmitting
+            ? isGate
+              ? "Continuing…"
+              : "Updating…"
+            : isGate
+              ? "Continue with ZIP"
+              : "Update location"}
         </button>
       </form>
 
-      {hasLocation || activeSummary ? (
+      {!isGate && (hasLocation || activeSummary) ? (
         <>
           <div className="location-selector-panel__divider" aria-hidden />
           <button

@@ -105,6 +105,17 @@ export function shouldShowLocationPrompt(): boolean {
   return true;
 }
 
+/**
+ * Full-screen site gate — location is required for marketplace proximity.
+ * Ignores prior “skip” so guests who dismissed the old prompt still choose.
+ */
+export function needsSiteLocationGate(): boolean {
+  if (typeof window === "undefined") return false;
+  if (loadSavedZipCode()) return false;
+  if (hasSavedGeolocation()) return false;
+  return true;
+}
+
 export function hasPersonalizationLocation(): boolean {
   return getPersonalizationCity() !== null;
 }

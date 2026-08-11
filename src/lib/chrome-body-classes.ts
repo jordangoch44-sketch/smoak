@@ -12,6 +12,7 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "profile-sheet-open",
   "inquiry-sheet-open",
   "login-gate-open",
+  "site-location-gate-open",
   "complete-account-lock",
   "site-intro-open",
   "gallery-modal-open",
