@@ -3,9 +3,14 @@
 import type { ReactNode } from "react";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import {
+  profileStyleAccentLabel,
+  profileStyleFontLabel,
+  profileStyleFrameLabel,
+} from "@/lib/specialist-profile-style";
 import { cn } from "@/lib/utils";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
-import type { Trainer } from "@/types/trainer";
+import type { Gender, Trainer } from "@/types/trainer";
 
 export type IgEditRowId =
   | "hero"
@@ -21,12 +26,24 @@ export type IgEditRowId =
   | "credentials"
   | "transformations"
   | "social"
-  | "full-editor";
+  | "pricing"
+  | "contact"
+  | "gender"
+  | "experience"
+  | "profile-style"
+  | "featured-specialties";
 
 function previewOrAdd(value: string, empty = "Add"): string {
   const trimmed = value.trim();
   if (!trimmed) return empty;
   return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
+}
+
+function genderLabel(value: Gender): string {
+  if (value === "male") return "Male";
+  if (value === "female") return "Female";
+  if (value === "non-binary") return "Non-binary";
+  return value;
 }
 
 function IgEditRow({
@@ -113,7 +130,22 @@ export function SpecialistIgStyleProfileEditor({
   const price =
     formDefaults.pricePerSession > 0
       ? `From $${formDefaults.pricePerSession}`
-      : "Add pricing & more";
+      : "Add";
+  const contactBits = [
+    formDefaults.phone.trim() && "Phone",
+    formDefaults.email.trim() && "Email",
+  ].filter(Boolean);
+  const featuredPreview =
+    formDefaults.homepageSpecialties.length > 0
+      ? formDefaults.homepageSpecialties.join(", ")
+      : formDefaults.specialty.length > 0
+        ? "Using first specialties"
+        : "Add";
+  const stylePreview = [
+    profileStyleAccentLabel(formDefaults.profileAccent),
+    profileStyleFrameLabel(formDefaults.profileAvatarFrame),
+    profileStyleFontLabel(formDefaults.profileNameFont),
+  ].join(" · ");
 
   return (
     <div className="ig-profile-edit" aria-label="Edit profile">
@@ -200,9 +232,7 @@ export function SpecialistIgStyleProfileEditor({
         <IgEditRow
           label="Transformations"
           value={
-            formDefaults.transformationNotes.trim()
-              ? "Photos added"
-              : "Add"
+            formDefaults.transformationNotes.trim() ? "Photos added" : "Add"
           }
           incomplete={!formDefaults.transformationNotes.trim()}
           onClick={() => onEditSection("transformations")}
@@ -217,12 +247,48 @@ export function SpecialistIgStyleProfileEditor({
         />
       </div>
 
-      <div className="ig-profile-edit__section-label">More</div>
+      <div className="ig-profile-edit__section-label">
+        More details / settings
+      </div>
       <div className="ig-profile-edit__list" role="list">
         <IgEditRow
-          label="Pricing & extras"
+          label="Pricing"
           value={price}
-          onClick={() => onEditSection("full-editor")}
+          incomplete={formDefaults.pricePerSession <= 0}
+          onClick={() => onEditSection("pricing")}
+        />
+        <IgEditRow
+          label="Contact"
+          value={
+            contactBits.length > 0 ? contactBits.join(" · ") : "Add phone or email"
+          }
+          incomplete={contactBits.length === 0}
+          onClick={() => onEditSection("contact")}
+        />
+        <IgEditRow
+          label="Gender"
+          value={genderLabel(formDefaults.gender)}
+          onClick={() => onEditSection("gender")}
+        />
+        <IgEditRow
+          label="Experience"
+          value={previewOrAdd(formDefaults.experienceYears)}
+          incomplete={!formDefaults.experienceYears.trim()}
+          onClick={() => onEditSection("experience")}
+        />
+        <IgEditRow
+          label="Profile style"
+          value={stylePreview}
+          onClick={() => onEditSection("profile-style")}
+        />
+        <IgEditRow
+          label="Featured specialties"
+          value={featuredPreview}
+          incomplete={
+            formDefaults.specialty.length === 0 &&
+            formDefaults.homepageSpecialties.length === 0
+          }
+          onClick={() => onEditSection("featured-specialties")}
         />
       </div>
 

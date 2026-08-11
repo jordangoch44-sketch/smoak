@@ -7,6 +7,7 @@ import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
+import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -45,6 +46,10 @@ function SimilarSpecialistCard({
               imageClassName="home-portrait-card__thumb-img"
             />
             <div className="home-portrait-card__scrim" aria-hidden />
+            <TrainerVerifiedCheck
+              trainer={trainer}
+              className="home-portrait-card__verified"
+            />
           </div>
           <div className="home-portrait-card__body">
             <TrainerCardDetails

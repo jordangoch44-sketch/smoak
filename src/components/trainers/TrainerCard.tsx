@@ -14,8 +14,10 @@ import {
 } from "./TrainerCardCompact";
 import { TrainerCardGrid } from "./TrainerCardGrid";
 import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
+import { TrainerVerifiedCheck } from "./TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
 import { getTrainerPlacementBadge } from "@/lib/trainer-placement-badge";
+import { isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 
 interface TrainerCardProps {
@@ -37,6 +39,7 @@ export const TrainerCard = memo(function TrainerCard({
 }: TrainerCardProps) {
   const href = `/trainers/${trainer.id}`;
   const placementBadge = getTrainerPlacementBadge(trainer);
+  const verified = isTrainerVerified(trainer);
   const cardBody = (
     <>
       <TrainerCardCompact
@@ -54,8 +57,13 @@ export const TrainerCard = memo(function TrainerCard({
         specialistId={trainer.id}
         surface={impressionSurface}
       />
-      {placementBadge ? (
-        <span className="trainer-card__placement-badge">{placementBadge}</span>
+      {verified || placementBadge ? (
+        <div className="trainer-card__top-left">
+          <TrainerVerifiedCheck trainer={trainer} />
+          {placementBadge ? (
+            <span className="trainer-card__placement-badge">{placementBadge}</span>
+          ) : null}
+        </div>
       ) : null}
       {linkDisabled ? (
         <div className="block" aria-hidden={false}>

@@ -6,6 +6,7 @@ import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 import type { Trainer } from "@/types";
@@ -78,6 +79,10 @@ export function ExploreSuggestedSpecialists({
                       imageClassName="home-portrait-card__thumb-img"
                     />
                     <div className="home-portrait-card__scrim" aria-hidden />
+                    <TrainerVerifiedCheck
+                      trainer={trainer}
+                      className="home-portrait-card__verified"
+                    />
                   </div>
                   <div className="home-portrait-card__body">
                     <TrainerCardDetails

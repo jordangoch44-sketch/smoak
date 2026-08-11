@@ -4,6 +4,7 @@ import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
@@ -53,9 +54,12 @@ export function SponsoredSpecialistCard({
               imageClassName="home-sponsored-card__thumb-img"
             />
             <div className="home-sponsored-card__media-scrim" aria-hidden />
-            {chip ? (
-              <span className="home-sponsored-card__sponsored">{chip}</span>
-            ) : null}
+            <div className="home-sponsored-card__top-left">
+              <TrainerVerifiedCheck trainer={trainer} />
+              {chip ? (
+                <span className="home-sponsored-card__sponsored">{chip}</span>
+              ) : null}
+            </div>
           </div>
         </TapLink>
 

@@ -7,12 +7,10 @@ import {
   type CSSProperties,
   type MouseEvent,
   type ReactNode,
-  Suspense,
 } from "react";
 import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
-import { SpecialistEditProfilePageClient } from "@/components/dashboard/SpecialistEditProfilePageClient";
 import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { Bio } from "@/components/profile/Bio";
@@ -34,6 +32,12 @@ import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
+  PROFILE_ACCENT_OPTIONS,
+  PROFILE_AVATAR_FRAME_OPTIONS,
+  PROFILE_NAME_FONT_OPTIONS,
+  type ProfileAccentId,
+  type ProfileAvatarFrameId,
+  type ProfileNameFontId,
 } from "@/lib/specialist-profile-style";
 import {
   EMPTY_CERTIFICATION,
@@ -46,10 +50,16 @@ import {
   SPECIALIST_SERVICE_TYPE_OPTIONS,
   SPECIALIST_TRAVEL_RADIUS_OPTIONS,
 } from "@/types/specialist-service-area";
-import type { Trainer } from "@/types/trainer";
+import type { Gender, Trainer } from "@/types/trainer";
 
 const LOCK_CLASS = "specialist-live-edit-open";
 const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
+
+const GENDER_OPTIONS: { value: Gender; label: string }[] = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "non-binary", label: "Non-binary" },
+];
 
 type SectionId =
   | "hero"
@@ -64,7 +74,13 @@ type SectionId =
   | "service-area"
   | "session-experience"
   | "credentials"
-  | "social";
+  | "social"
+  | "pricing"
+  | "contact"
+  | "gender"
+  | "experience"
+  | "profile-style"
+  | "featured-specialties";
 
 const SECTION_TITLES: Record<SectionId, string> = {
   hero: "Photos",
@@ -80,6 +96,12 @@ const SECTION_TITLES: Record<SectionId, string> = {
   "session-experience": "Session experience",
   credentials: "Credentials",
   social: "Connect",
+  pricing: "Pricing",
+  contact: "Contact",
+  gender: "Gender",
+  experience: "Experience",
+  "profile-style": "Profile style",
+  "featured-specialties": "Featured specialties",
 };
 
 interface SpecialistDashboardProfilePreviewProps {
@@ -337,21 +359,8 @@ export function SpecialistDashboardProfilePreview({
   const [editing, setEditing] = useState<SectionId | null>(null);
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
   const [saving, setSaving] = useState(false);
-  const [fullEditorOpen, setFullEditorOpen] = useState(false);
 
   const canEdit = editable && Boolean(formDefaults && trainerId);
-
-  function closeFullEditor() {
-    setFullEditorOpen(false);
-    window.requestAnimationFrame(() => {
-      const anchor = document.getElementById(LIVE_PROFILE_ANCHOR_ID);
-      if (anchor) {
-        anchor.scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    });
-  }
 
   function startEdit(section: SectionId) {
     if (!canEdit || !formDefaults) return;
@@ -744,17 +753,231 @@ export function SpecialistDashboardProfilePreview({
             </p>
           </div>
         ) : null}
+
+        {editing === "pricing" ? (
+          <label className="login-field">
+            <span className="login-field__label">Price per session (USD)</span>
+            <input
+              className="login-field__input profile-edit-input"
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={form.pricePerSession || ""}
+              onChange={(e) =>
+                patch("pricePerSession", Number(e.target.value) || 0)
+              }
+              placeholder="e.g. 120"
+            />
+          </label>
+        ) : null}
+
+        {editing === "contact" ? (
+          <div className="specialist-dash-profile__fields">
+            <label className="login-field">
+              <span className="login-field__label">Phone</span>
+              <input
+                className="login-field__input profile-edit-input"
+                type="tel"
+                autoComplete="tel"
+                value={form.phone}
+                onChange={(e) => patch("phone", e.target.value)}
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Email</span>
+              <input
+                className="login-field__input profile-edit-input"
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={(e) => patch("email", e.target.value)}
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {editing === "gender" ? (
+          <label className="login-field">
+            <span className="login-field__label">Gender</span>
+            <select
+              className="login-field__input dashboard-edit-select profile-edit-input"
+              value={form.gender}
+              onChange={(e) => patch("gender", e.target.value as Gender)}
+            >
+              {GENDER_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+
+        {editing === "experience" ? (
+          <label className="login-field">
+            <span className="login-field__label">Years of experience</span>
+            <input
+              className="login-field__input profile-edit-input"
+              value={form.experienceYears}
+              onChange={(e) => patch("experienceYears", e.target.value)}
+              placeholder="e.g. 8"
+            />
+          </label>
+        ) : null}
+
+        {editing === "profile-style" ? (
+          <div className="specialist-dash-profile__fields">
+            <div>
+              <p className="login-field__label">Accent color</p>
+              <div
+                className="profile-style-swatches"
+                role="radiogroup"
+                aria-label="Accent color"
+              >
+                {PROFILE_ACCENT_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.profileAccent === option.id}
+                    aria-label={option.label}
+                    className={cn(
+                      "smoac-control profile-style-swatch",
+                      form.profileAccent === option.id &&
+                        "profile-style-swatch--active"
+                    )}
+                    onClick={() =>
+                      patch("profileAccent", option.id as ProfileAccentId)
+                    }
+                  >
+                    <span
+                      className="profile-style-swatch__dot"
+                      style={{ background: option.swatch }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="login-field__label">Avatar frame</p>
+              <div
+                className="profile-style-options"
+                role="radiogroup"
+                aria-label="Avatar frame"
+              >
+                {PROFILE_AVATAR_FRAME_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.profileAvatarFrame === option.id}
+                    className={cn(
+                      "smoac-control profile-style-option",
+                      form.profileAvatarFrame === option.id &&
+                        "profile-style-option--active"
+                    )}
+                    onClick={() =>
+                      patch(
+                        "profileAvatarFrame",
+                        option.id as ProfileAvatarFrameId
+                      )
+                    }
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="login-field__label">Name font</p>
+              <div
+                className="profile-style-options"
+                role="radiogroup"
+                aria-label="Name font"
+              >
+                {PROFILE_NAME_FONT_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={form.profileNameFont === option.id}
+                    className={cn(
+                      "smoac-control profile-style-option",
+                      `profile-style-option--font-${option.id}`,
+                      form.profileNameFont === option.id &&
+                        "profile-style-option--active"
+                    )}
+                    onClick={() =>
+                      patch("profileNameFont", option.id as ProfileNameFontId)
+                    }
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {editing === "featured-specialties" ? (
+          <div className="specialist-dash-profile__fields">
+            <p className="wizard-field-hint">
+              Pick up to two specialties for your homepage card. They must
+              already be in your specialties list.
+            </p>
+            {form.specialty.length === 0 ? (
+              <p className="wizard-field-hint">
+                Add specialties first, then choose which ones to feature.
+              </p>
+            ) : (
+              <div className="dashboard-edit-chip-grid">
+                {form.specialty.map((specialty) => {
+                  const active = form.homepageSpecialties.includes(specialty);
+                  return (
+                    <button
+                      key={specialty}
+                      type="button"
+                      className={
+                        active
+                          ? "dashboard-edit-chip dashboard-edit-chip--active"
+                          : "dashboard-edit-chip"
+                      }
+                      onClick={() => {
+                        setDraft((prev) => {
+                          if (!prev) return prev;
+                          const has = prev.homepageSpecialties.includes(specialty);
+                          if (has) {
+                            return {
+                              ...prev,
+                              homepageSpecialties:
+                                prev.homepageSpecialties.filter(
+                                  (item) => item !== specialty
+                                ),
+                            };
+                          }
+                          if (prev.homepageSpecialties.length >= 2) return prev;
+                          return {
+                            ...prev,
+                            homepageSpecialties: [
+                              ...prev.homepageSpecialties,
+                              specialty,
+                            ],
+                          };
+                        });
+                      }}
+                      aria-pressed={active}
+                    >
+                      {specialty}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : null}
       </LiveEditSheet>
     ) : null;
-
-  const fullEditorModal = fullEditorOpen ? (
-    <Suspense fallback={null}>
-      <SpecialistEditProfilePageClient
-        presentation="modal"
-        onRequestClose={closeFullEditor}
-      />
-    </Suspense>
-  ) : null;
 
   /* Owner edit tab — Instagram-style list (does not change public profile layout). */
   if (canEdit && formDefaults) {
@@ -763,13 +986,7 @@ export function SpecialistDashboardProfilePreview({
         <SpecialistIgStyleProfileEditor
           trainer={trainer}
           formDefaults={formDefaults}
-          onEditSection={(id) => {
-            if (id === "full-editor") {
-              setFullEditorOpen(true);
-              return;
-            }
-            startEdit(id);
-          }}
+          onEditSection={(id) => startEdit(id)}
           footer={
             <p className="ig-profile-edit__hint">
               Changes go live on Marketplace when you save. Clients still see
@@ -778,7 +995,6 @@ export function SpecialistDashboardProfilePreview({
           }
         />
         {editSheet}
-        {fullEditorModal}
       </div>
     );
   }
@@ -948,7 +1164,6 @@ export function SpecialistDashboardProfilePreview({
       </div>
 
       {editSheet}
-      {fullEditorModal}
     </article>
   );
 }

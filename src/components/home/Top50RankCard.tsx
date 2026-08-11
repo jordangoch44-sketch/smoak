@@ -5,6 +5,7 @@ import type { Trainer } from "@/types";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
+import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,10 @@ export function Top50RankCard({
               imageClassName="top50-card__thumb-img"
             />
             <div className="top50-card__media-scrim" aria-hidden />
+            <TrainerVerifiedCheck
+              trainer={trainer}
+              className="top50-card__verified"
+            />
           </div>
 
           <div className="top50-card__body">
