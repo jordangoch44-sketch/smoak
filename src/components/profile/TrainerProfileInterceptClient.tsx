@@ -9,7 +9,7 @@ import {
   clearPrimedTrainer,
   peekPrimedTrainer,
 } from "@/lib/primed-trainer-profile";
-import { specialistProfileFromRow } from "@/lib/profiles/specialist-profiles-db";
+import { specialistProfileFromRow, enrichTrainersWithSpecialistFirstNames } from "@/lib/profiles/specialist-profiles-db";
 import type { SpecialistProfileRow } from "@/types/database";
 import type { Trainer } from "@/types/trainer";
 
@@ -52,7 +52,12 @@ export function TrainerProfileInterceptClient({
 
       if (!error && data) {
         const mapped = specialistProfileFromRow(data as SpecialistProfileRow);
-        setFetched(mapped.trainer);
+        const [enriched] = await enrichTrainersWithSpecialistFirstNames(
+          supabase,
+          [data as SpecialistProfileRow],
+          [mapped.trainer]
+        );
+        setFetched(enriched);
       }
     })();
 

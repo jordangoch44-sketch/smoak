@@ -19,7 +19,7 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       break;
     case 2:
       if (!state.fullName.trim()) missing.push("Full name");
-      if (!state.displayName.trim()) missing.push("Display / business name");
+      if (!state.displayName.trim()) missing.push("Business name");
       if (!state.headline.trim()) missing.push("Headline");
       if (!isValidEmail(state.email)) missing.push("Valid email");
       if (state.password.trim().length < 8) missing.push("Password (8+ characters)");

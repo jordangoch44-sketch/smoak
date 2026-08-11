@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
+  enrichTrainersWithSpecialistFirstNames,
   fetchApprovedSpecialistProfiles,
   specialistProfileFromRow,
 } from "@/lib/profiles/specialist-profiles-db";
@@ -46,7 +47,7 @@ async function fetchApprovedCatalogUncached(): Promise<Trainer[]> {
  */
 const loadApprovedCatalogCached = unstable_cache(
   fetchApprovedCatalogUncached,
-  ["approved-specialist-catalog-v1"],
+  ["approved-specialist-catalog-v2"],
   { revalidate: 45, tags: ["public-catalog"] }
 );
 
@@ -103,5 +104,11 @@ export async function loadPublicTrainerByIdForServer(
     .maybeSingle();
 
   if (error || !data) return null;
-  return specialistProfileFromRow(data as SpecialistProfileRow).trainer;
+  const mapped = specialistProfileFromRow(data as SpecialistProfileRow).trainer;
+  const [enriched] = await enrichTrainersWithSpecialistFirstNames(
+    supabase,
+    [data as SpecialistProfileRow],
+    [mapped]
+  );
+  return enriched;
 }

@@ -5,6 +5,7 @@ import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { firstSentence } from "@/lib/related-trainers";
+import { resolveSpecialistByline } from "@/lib/specialist-display-name";
 import {
   buildTrainerGalleryImages,
   getProfileGalleryMedia,
@@ -71,6 +72,7 @@ export function ProfileHero({
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const heroLine = firstSentence(trainer.bio);
+  const specialistByline = resolveSpecialistByline(trainer);
 
   const openGallery = useCallback(
     (event: MouseEvent<HTMLButtonElement>, startUrl?: string) => {
@@ -162,6 +164,11 @@ export function ProfileHero({
                       </span>
                     ) : null}
                   </div>
+                  {specialistByline ? (
+                    <p className="profile-hero__specialist-byline">
+                      {specialistByline}
+                    </p>
+                  ) : null}
                   <TrainerProfessionLabel
                     trainer={trainer}
                     className="profile-hero__profession"

@@ -1,6 +1,7 @@
 import { getDefaultZipForMarketplaceCity } from "@/lib/marketplace-city-default-zip";
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
+import { firstNameFromPersonName } from "@/lib/specialist-display-name";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
@@ -113,6 +114,8 @@ export function applicationToTrainer(
   return {
     id,
     name: app.displayName?.trim() || app.fullName?.trim() || "Specialist",
+    specialistFirstName:
+      firstNameFromPersonName(app.fullName ?? "") || undefined,
     profession,
     title: headline || profession,
     location: location || "Your city",

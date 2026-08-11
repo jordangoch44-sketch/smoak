@@ -57,7 +57,7 @@ export function getSpecialistGoLiveGaps(
   const profession = app.professionalType?.trim() ?? "";
 
   if (!(displayName || fullName)) {
-    gaps.push({ id: "displayName", label: "Display name" });
+    gaps.push({ id: "displayName", label: "Business name" });
   }
 
   if (!isRealProfilePhoto(app.media?.profilePhotoUrl)) {

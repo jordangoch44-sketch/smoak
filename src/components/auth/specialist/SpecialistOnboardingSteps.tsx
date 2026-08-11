@@ -167,7 +167,7 @@ export function SpecialistOnboardingSteps({
               />
             </label>
             <label className="login-field">
-              <span className="login-field__label">Display name</span>
+              <span className="login-field__label">Business name</span>
               <input
                 className="login-field__input"
                 value={state.displayName}

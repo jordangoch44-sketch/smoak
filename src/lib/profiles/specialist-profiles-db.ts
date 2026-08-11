@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SpecialistProfileRow } from "@/types/database";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
 import type { Trainer } from "@/types/trainer";
+import { firstNameFromPersonName } from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 
 export type SpecialistProfilesMutationResult =
@@ -25,6 +26,63 @@ function trainerFromProfileData(
     ...(profileData as unknown as Trainer),
     id,
   };
+}
+
+/** Attach personal first name from profiles when catalog JSON omits it. */
+export async function enrichTrainersWithSpecialistFirstNames(
+  supabase: SupabaseClient,
+  rows: readonly Pick<SpecialistProfileRow, "id" | "user_id">[],
+  trainers: Trainer[]
+): Promise<Trainer[]> {
+  const byId = new Map(trainers.map((t) => [t.id, t]));
+  const needUserIds = [
+    ...new Set(
+      rows
+        .filter((row) => {
+          const trainer = byId.get(row.id);
+          return (
+            Boolean(row.user_id) &&
+            !firstNameFromPersonName(trainer?.specialistFirstName ?? "")
+          );
+        })
+        .map((row) => String(row.user_id))
+    ),
+  ];
+
+  if (needUserIds.length === 0) return trainers;
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("user_id, first_name")
+    .in("user_id", needUserIds);
+
+  if (error || !data?.length) {
+    if (error) {
+      console.warn(
+        "[SMOAC profiles] specialist first-name enrich skipped:",
+        error.message
+      );
+    }
+    return trainers;
+  }
+
+  const firstByUser = new Map<string, string>();
+  for (const row of data) {
+    const first = firstNameFromPersonName(String(row.first_name ?? ""));
+    if (first) firstByUser.set(String(row.user_id), first);
+  }
+
+  return trainers.map((trainer) => {
+    if (firstNameFromPersonName(trainer.specialistFirstName ?? "")) {
+      return trainer;
+    }
+    const row = rows.find((r) => r.id === trainer.id);
+    const fromProfile = row?.user_id
+      ? firstByUser.get(String(row.user_id))
+      : undefined;
+    if (!fromProfile) return trainer;
+    return { ...trainer, specialistFirstName: fromProfile };
+  });
 }
 
 export function specialistProfileFromRow(row: SpecialistProfileRow): {
@@ -152,7 +210,13 @@ export async function fetchApprovedSpecialistProfiles(
     }
   }
 
-  return { ok: true, profiles, overridesById };
+  const enriched = await enrichTrainersWithSpecialistFirstNames(
+    supabase,
+    rows,
+    profiles
+  );
+
+  return { ok: true, profiles: enriched, overridesById };
 }
 
 export async function upsertSpecialistProfile(

@@ -67,6 +67,12 @@ export interface TrainerReviewSources {
 export interface Trainer {
   id: string;
   name: string;
+  /**
+   * Personal first name (from onboarding full name / profiles.first_name).
+   * Display-only — used for the “SPECIALIST - FirstName” byline under the
+   * business name. Optional so seed/demo rows stay unchanged.
+   */
+  specialistFirstName?: string;
   /** Main profession category on cards — one of MAIN_PROFESSION_CATEGORIES */
   profession: string;
   /** Short positioning line on profile */
