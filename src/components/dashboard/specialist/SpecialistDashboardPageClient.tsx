@@ -43,9 +43,15 @@ import {
 import { cn } from "@/lib/utils";
 
 type FreeDashboardTab = "plan" | "profile";
+type PremiumDashboardTab = "overview" | "profile";
 
 const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
   { id: "plan", label: "Plan & upgrade" },
+  { id: "profile", label: "Edit profile" },
+];
+
+const PREMIUM_TABS: ReadonlyArray<{ id: PremiumDashboardTab; label: string }> = [
+  { id: "overview", label: "Overview" },
   { id: "profile", label: "Edit profile" },
 ];
 
@@ -81,11 +87,18 @@ function parseFreeTab(value: string | null): FreeDashboardTab {
   return value === "profile" ? "profile" : "plan";
 }
 
+function parsePremiumTab(value: string | null): PremiumDashboardTab {
+  return value === "profile" ? "profile" : "overview";
+}
+
 export function SpecialistDashboardPageClient() {
   const searchParams = useSearchParams();
   const justSubmitted = searchParams.get("submitted") === "1";
-  const [activeTab, setActiveTab] = useState<FreeDashboardTab>(() =>
+  const [freeTab, setFreeTab] = useState<FreeDashboardTab>(() =>
     parseFreeTab(searchParams.get("tab"))
+  );
+  const [premiumTab, setPremiumTab] = useState<PremiumDashboardTab>(() =>
+    parsePremiumTab(searchParams.get("tab"))
   );
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -174,7 +187,11 @@ export function SpecialistDashboardPageClient() {
 
   function openProfileTabAndInquiries() {
     void handleDismissInquiryNotifications();
-    setActiveTab("profile");
+    if (isFreeLive) {
+      setFreeTab("profile");
+    } else if (premiumDashboard) {
+      setPremiumTab("profile");
+    }
     window.requestAnimationFrame(() => {
       window.setTimeout(scrollToInquiries, 80);
     });
@@ -215,14 +232,7 @@ export function SpecialistDashboardPageClient() {
           <InquiryNotificationBanner
             unreadCount={inquiryUnreadCount}
             latestSummary={latestInquirySummary}
-            onReview={
-              isFreeLive
-                ? openProfileTabAndInquiries
-                : () => {
-                    void handleDismissInquiryNotifications();
-                    scrollToInquiries();
-                  }
-            }
+            onReview={openProfileTabAndInquiries}
             onDismiss={() => {
               void handleDismissInquiryNotifications();
             }}
@@ -242,13 +252,13 @@ export function SpecialistDashboardPageClient() {
                   type="button"
                   role="tab"
                   id={`specialist-dash-tab-${tab.id}`}
-                  aria-selected={activeTab === tab.id}
+                  aria-selected={freeTab === tab.id}
                   aria-controls={`specialist-dash-panel-${tab.id}`}
                   className={cn(
                     "specialist-dash-tabs__btn",
-                    activeTab === tab.id && "specialist-dash-tabs__btn--active"
+                    freeTab === tab.id && "specialist-dash-tabs__btn--active"
                   )}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => setFreeTab(tab.id)}
                 >
                   {tab.label}
                   {tab.id === "profile" && inquiryUnreadCount > 0 ? (
@@ -261,7 +271,7 @@ export function SpecialistDashboardPageClient() {
             </div>
 
             <div className="specialist-dash-panels">
-              {activeTab === "plan" ? (
+              {freeTab === "plan" ? (
                 <div
                   id="specialist-dash-panel-plan"
                   role="tabpanel"
@@ -280,7 +290,7 @@ export function SpecialistDashboardPageClient() {
                 </div>
               ) : null}
 
-              {activeTab === "profile" ? (
+              {freeTab === "profile" ? (
                 <div
                   id="specialist-dash-panel-profile"
                   role="tabpanel"
@@ -396,30 +406,101 @@ export function SpecialistDashboardPageClient() {
         ) : null}
 
         {premiumDashboard ? (
-          <DashboardGrid>
-            <AnalyticsCard analytics={analytics} isPremium={isPremium} />
-            <ProfileCompletionCard
-              profileCompletion={profileCompletion}
-              trainer={trainer}
-              checklist={completionChecklist}
-            />
-            <LeadsCard
-              leads={data.newLeads}
-              onOpenLead={handleOpenInquiryLead}
-            />
-            <VisibilityRankingCard
-              ranking={data.ranking ?? null}
-              isPremium={isPremium}
-              smoacRating={rankingRating.rating}
-              smoacReviewCount={rankingRating.reviewCount}
-            />
-            <ReviewsCard
-              trainer={trainer}
-              isPremium={isPremium}
-              onUpgrade={() => setUpgradeOpen(true)}
-            />
-            <SubscriptionCard subscription={data.subscription} />
-          </DashboardGrid>
+          <>
+            <div
+              className="specialist-dash-tabs"
+              role="tablist"
+              aria-label="Specialist dashboard sections"
+            >
+              {PREMIUM_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`specialist-dash-tab-premium-${tab.id}`}
+                  aria-selected={premiumTab === tab.id}
+                  aria-controls={`specialist-dash-panel-premium-${tab.id}`}
+                  className={cn(
+                    "specialist-dash-tabs__btn",
+                    premiumTab === tab.id && "specialist-dash-tabs__btn--active"
+                  )}
+                  onClick={() => setPremiumTab(tab.id)}
+                >
+                  {tab.label}
+                  {tab.id === "profile" && inquiryUnreadCount > 0 ? (
+                    <span className="specialist-dash-tabs__count">
+                      {inquiryUnreadCount}
+                    </span>
+                  ) : null}
+                </button>
+              ))}
+            </div>
+
+            <div className="specialist-dash-panels">
+              {premiumTab === "overview" ? (
+                <div
+                  id="specialist-dash-panel-premium-overview"
+                  role="tabpanel"
+                  aria-labelledby="specialist-dash-tab-premium-overview"
+                  className="specialist-dash-panel"
+                >
+                  <DashboardGrid>
+                    <AnalyticsCard analytics={analytics} isPremium={isPremium} />
+                    <ProfileCompletionCard
+                      profileCompletion={profileCompletion}
+                      trainer={trainer}
+                      checklist={completionChecklist}
+                    />
+                    <LeadsCard
+                      leads={data.newLeads}
+                      onOpenLead={handleOpenInquiryLead}
+                    />
+                    <VisibilityRankingCard
+                      ranking={data.ranking ?? null}
+                      isPremium={isPremium}
+                      smoacRating={rankingRating.rating}
+                      smoacReviewCount={rankingRating.reviewCount}
+                    />
+                    <ReviewsCard
+                      trainer={trainer}
+                      isPremium={isPremium}
+                      onUpgrade={() => setUpgradeOpen(true)}
+                    />
+                    <SubscriptionCard subscription={data.subscription} />
+                  </DashboardGrid>
+                </div>
+              ) : null}
+
+              {premiumTab === "profile" ? (
+                <div
+                  id="specialist-dash-panel-premium-profile"
+                  role="tabpanel"
+                  aria-labelledby="specialist-dash-tab-premium-profile"
+                  className="specialist-dash-panel"
+                >
+                  <SpecialistDashboardProfileHeader variant="live-free" />
+
+                  {hasProfilePreview ? (
+                    <SpecialistDashboardProfilePreview
+                      trainer={trainer!}
+                      editable
+                      isPremium={isPremium}
+                    />
+                  ) : (
+                    <p className="specialist-dash-notice__text">
+                      Your profile preview will appear here once it finishes
+                      loading. Pull to refresh, or open the full editor.
+                    </p>
+                  )}
+
+                  <LeadsCard
+                    leads={data.newLeads}
+                    onOpenLead={handleOpenInquiryLead}
+                  />
+                </div>
+              ) : null}
+            </div>
+          </>
         ) : null}
       </div>
     </DashboardPageShell>
