@@ -30,7 +30,9 @@ export function AnalyticsMetricTile({
     metric.value,
     isPremium && metric.isCoreKpi === true
   );
-  const displayValue = isPremium ? formatAnalyticsMetricValue(animatedValue) : formatAnalyticsMetricValue(metric.value);
+  const displayValue = isPremium
+    ? formatAnalyticsMetricValue(animatedValue)
+    : formatAnalyticsMetricValue(metric.value);
   const trendParts = formatTrendParts(metric.trend);
   const trendUp = metric.trend.direction === "up";
   const trendDown = metric.trend.direction === "down";
@@ -51,36 +53,38 @@ export function AnalyticsMetricTile({
       onPointerCancel={() => setPressed(false)}
     >
       <div className="dashboard-metric-tile__shimmer" aria-hidden />
-      <div className="dashboard-metric-tile__top">
-        <span className="dashboard-metric-tile__icon-wrap">
-          <AnalyticsMetricIcon id={metric.icon} />
-        </span>
-        {showTrend ? (
-          <span
-            className={cn(
-              "dashboard-metric-tile__trend",
-              trendUp && "dashboard-metric-tile__trend--up",
-              trendDown && "dashboard-metric-tile__trend--down"
-            )}
-          >
-            <span className="dashboard-metric-tile__trend-change">
-              {trendParts.change}
-            </span>
-            <span className="dashboard-metric-tile__trend-period">
-              {trendParts.period}
-            </span>
-          </span>
-        ) : (
-          <span className="dashboard-metric-tile__trend dashboard-metric-tile__trend--locked">
-            Pro
-          </span>
-        )}
+      <span className="dashboard-metric-tile__icon-wrap">
+        <AnalyticsMetricIcon id={metric.icon} />
+      </span>
+      <div className="dashboard-metric-tile__body">
+        <p className="dashboard-metric-tile__label">{metric.label}</p>
+        <PremiumLockedValues locked={locked}>
+          <p className="dashboard-metric-tile__value">{displayValue}</p>
+        </PremiumLockedValues>
       </div>
-      <p className="dashboard-metric-tile__label">{metric.label}</p>
-      <PremiumLockedValues locked={locked}>
-        <p className="dashboard-metric-tile__value">{displayValue}</p>
-      </PremiumLockedValues>
-      {fullLock ? <div className="dashboard-metric-tile__lock-veil" aria-hidden /> : null}
+      {showTrend ? (
+        <span
+          className={cn(
+            "dashboard-metric-tile__trend",
+            trendUp && "dashboard-metric-tile__trend--up",
+            trendDown && "dashboard-metric-tile__trend--down"
+          )}
+        >
+          <span className="dashboard-metric-tile__trend-change">
+            {trendParts.change}
+          </span>
+          <span className="dashboard-metric-tile__trend-period">
+            {trendParts.period}
+          </span>
+        </span>
+      ) : (
+        <span className="dashboard-metric-tile__trend dashboard-metric-tile__trend--locked">
+          Pro
+        </span>
+      )}
+      {fullLock ? (
+        <div className="dashboard-metric-tile__lock-veil" aria-hidden />
+      ) : null}
     </article>
   );
 }

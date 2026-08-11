@@ -53,6 +53,9 @@ const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
 
 type SectionId =
   | "hero"
+  | "name"
+  | "headline"
+  | "profession"
   | "transformations"
   | "specialties"
   | "bio"
@@ -64,10 +67,13 @@ type SectionId =
   | "social";
 
 const SECTION_TITLES: Record<SectionId, string> = {
-  hero: "Photos & identity",
+  hero: "Photos",
+  name: "Business name",
+  headline: "Headline",
+  profession: "Category",
   transformations: "Client transformations",
   specialties: "Specialties",
-  bio: "About",
+  bio: "Bio",
   philosophy: "Coaching style",
   "ideal-clients": "Best for",
   "service-area": "Service area & location",
@@ -414,37 +420,46 @@ export function SpecialistDashboardProfilePreview({
                 setDraft((prev) => (prev ? { ...prev, ...next } : prev));
               }}
             />
-            <label className="login-field">
-              <span className="login-field__label">Business name</span>
-              <input
-                className="login-field__input profile-edit-input"
-                value={form.name}
-                onChange={(e) => patch("name", e.target.value)}
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">Headline</span>
-              <input
-                className="login-field__input profile-edit-input"
-                value={form.title}
-                onChange={(e) => patch("title", e.target.value)}
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">Category</span>
-              <select
-                className="login-field__input dashboard-edit-select profile-edit-input"
-                value={form.profession}
-                onChange={(e) => patch("profession", e.target.value)}
-              >
-                {MAIN_PROFESSION_CATEGORIES.map((profession) => (
-                  <option key={profession} value={profession}>
-                    {profession}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
+        ) : null}
+
+        {editing === "name" ? (
+          <label className="login-field">
+            <span className="login-field__label">Business name</span>
+            <input
+              className="login-field__input profile-edit-input"
+              value={form.name}
+              onChange={(e) => patch("name", e.target.value)}
+            />
+          </label>
+        ) : null}
+
+        {editing === "headline" ? (
+          <label className="login-field">
+            <span className="login-field__label">Headline</span>
+            <input
+              className="login-field__input profile-edit-input"
+              value={form.title}
+              onChange={(e) => patch("title", e.target.value)}
+            />
+          </label>
+        ) : null}
+
+        {editing === "profession" ? (
+          <label className="login-field">
+            <span className="login-field__label">Category</span>
+            <select
+              className="login-field__input dashboard-edit-select profile-edit-input"
+              value={form.profession}
+              onChange={(e) => patch("profession", e.target.value)}
+            >
+              {MAIN_PROFESSION_CATEGORIES.map((profession) => (
+                <option key={profession} value={profession}>
+                  {profession}
+                </option>
+              ))}
+            </select>
+          </label>
         ) : null}
 
         {editing === "transformations" ? (
@@ -462,56 +477,57 @@ export function SpecialistDashboardProfilePreview({
           </label>
         ) : null}
 
-        {editing === "bio" || editing === "specialties" ? (
-          <div className="specialist-dash-profile__fields">
-            <label className="login-field">
-              <span className="login-field__label">Bio</span>
-              <textarea
-                className="login-field__input dashboard-edit-textarea profile-edit-input"
-                rows={6}
-                value={form.bio}
-                onChange={(e) => patch("bio", e.target.value)}
-                placeholder="Your story and approach"
-              />
-            </label>
-            <div>
-              <p className="login-field__label">Specialties</p>
-              <div className="dashboard-edit-chip-grid">
-                {marketplaceSpecialtyOptions.map((specialty) => {
-                  const active = form.specialty.includes(specialty);
-                  return (
-                    <button
-                      key={specialty}
-                      type="button"
-                      className={
-                        active
-                          ? "dashboard-edit-chip dashboard-edit-chip--active"
-                          : "dashboard-edit-chip"
-                      }
-                      onClick={() => {
-                        const next = active
-                          ? form.specialty.filter((item) => item !== specialty)
-                          : [...form.specialty, specialty];
-                        setDraft((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                specialty: next,
-                                homepageSpecialties:
-                                  prev.homepageSpecialties.filter((item) =>
-                                    next.includes(item)
-                                  ),
-                              }
-                            : prev
-                        );
-                      }}
-                      aria-pressed={active}
-                    >
-                      {specialty}
-                    </button>
-                  );
-                })}
-              </div>
+        {editing === "bio" ? (
+          <label className="login-field">
+            <span className="login-field__label">Bio</span>
+            <textarea
+              className="login-field__input dashboard-edit-textarea profile-edit-input"
+              rows={6}
+              value={form.bio}
+              onChange={(e) => patch("bio", e.target.value)}
+              placeholder="Your story and approach"
+            />
+          </label>
+        ) : null}
+
+        {editing === "specialties" ? (
+          <div>
+            <p className="login-field__label">Specialties</p>
+            <div className="dashboard-edit-chip-grid">
+              {marketplaceSpecialtyOptions.map((specialty) => {
+                const active = form.specialty.includes(specialty);
+                return (
+                  <button
+                    key={specialty}
+                    type="button"
+                    className={
+                      active
+                        ? "dashboard-edit-chip dashboard-edit-chip--active"
+                        : "dashboard-edit-chip"
+                    }
+                    onClick={() => {
+                      const next = active
+                        ? form.specialty.filter((item) => item !== specialty)
+                        : [...form.specialty, specialty];
+                      setDraft((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              specialty: next,
+                              homepageSpecialties:
+                                prev.homepageSpecialties.filter((item) =>
+                                  next.includes(item)
+                                ),
+                            }
+                          : prev
+                      );
+                    }}
+                    aria-pressed={active}
+                  >
+                    {specialty}
+                  </button>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -750,10 +766,6 @@ export function SpecialistDashboardProfilePreview({
           onEditSection={(id) => {
             if (id === "full-editor") {
               setFullEditorOpen(true);
-              return;
-            }
-            if (id === "name" || id === "headline" || id === "profession") {
-              startEdit("hero");
               return;
             }
             startEdit(id);
