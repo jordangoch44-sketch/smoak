@@ -13,6 +13,7 @@ import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { SpecialistEditProfilePageClient } from "@/components/dashboard/SpecialistEditProfilePageClient";
+import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { Bio } from "@/components/profile/Bio";
 import { Certifications } from "@/components/profile/Certifications";
@@ -307,9 +308,8 @@ function LiveEditSheet({
 }
 
 /**
- * Edit profile tab — same structure clients see, with Edit on each section.
- * Incomplete sections stay visible for the owner (“Needs completion”) and stay
- * hidden on the public client profile.
+ * Edit profile tab — Instagram-style list for owners; live preview for
+ * read-only / pending views. Saves use the same managed profile path.
  */
 export function SpecialistDashboardProfilePreview({
   trainer: trainerProp,
@@ -392,6 +392,385 @@ export function SpecialistDashboardProfilePreview({
     "--profile-accent-rgb": getProfileAccentRgb(profileStyle.accent),
   } as CSSProperties;
 
+  const editSheet =
+    editing && form ? (
+      <LiveEditSheet
+        title={SECTION_TITLES[editing]}
+        saving={saving}
+        onClose={cancelEdit}
+        onSave={() => void publish()}
+      >
+        {editing === "hero" ? (
+          <div className="specialist-dash-profile__fields">
+            <SpecialistProfileMediaEditor
+              profilePhotoUrl={form.profilePhotoUrl}
+              coverImageUrl={form.coverImageUrl}
+              photoNotes={form.photoNotes}
+              videoNotes={form.videoNotes}
+              pinnedPhotos={form.pinnedPhotos}
+              isPremium={isPremium}
+              specialistId={trainerId}
+              onChange={(next) => {
+                setDraft((prev) => (prev ? { ...prev, ...next } : prev));
+              }}
+            />
+            <label className="login-field">
+              <span className="login-field__label">Business name</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.name}
+                onChange={(e) => patch("name", e.target.value)}
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Headline</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.title}
+                onChange={(e) => patch("title", e.target.value)}
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Category</span>
+              <select
+                className="login-field__input dashboard-edit-select profile-edit-input"
+                value={form.profession}
+                onChange={(e) => patch("profession", e.target.value)}
+              >
+                {MAIN_PROFESSION_CATEGORIES.map((profession) => (
+                  <option key={profession} value={profession}>
+                    {profession}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        ) : null}
+
+        {editing === "transformations" ? (
+          <label className="login-field">
+            <span className="login-field__label">
+              Transformation photo URLs (one per line)
+            </span>
+            <textarea
+              className="login-field__input dashboard-edit-textarea profile-edit-input"
+              rows={6}
+              value={form.transformationNotes}
+              onChange={(e) => patch("transformationNotes", e.target.value)}
+              placeholder="https://…"
+            />
+          </label>
+        ) : null}
+
+        {editing === "bio" || editing === "specialties" ? (
+          <div className="specialist-dash-profile__fields">
+            <label className="login-field">
+              <span className="login-field__label">Bio</span>
+              <textarea
+                className="login-field__input dashboard-edit-textarea profile-edit-input"
+                rows={6}
+                value={form.bio}
+                onChange={(e) => patch("bio", e.target.value)}
+                placeholder="Your story and approach"
+              />
+            </label>
+            <div>
+              <p className="login-field__label">Specialties</p>
+              <div className="dashboard-edit-chip-grid">
+                {marketplaceSpecialtyOptions.map((specialty) => {
+                  const active = form.specialty.includes(specialty);
+                  return (
+                    <button
+                      key={specialty}
+                      type="button"
+                      className={
+                        active
+                          ? "dashboard-edit-chip dashboard-edit-chip--active"
+                          : "dashboard-edit-chip"
+                      }
+                      onClick={() => {
+                        const next = active
+                          ? form.specialty.filter((item) => item !== specialty)
+                          : [...form.specialty, specialty];
+                        setDraft((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                specialty: next,
+                                homepageSpecialties:
+                                  prev.homepageSpecialties.filter((item) =>
+                                    next.includes(item)
+                                  ),
+                              }
+                            : prev
+                        );
+                      }}
+                      aria-pressed={active}
+                    >
+                      {specialty}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {editing === "philosophy" ? (
+          <textarea
+            className="login-field__input dashboard-edit-textarea profile-edit-input"
+            rows={4}
+            value={form.trainingStyle}
+            onChange={(e) => patch("trainingStyle", e.target.value)}
+            placeholder="How you coach and what drives results"
+          />
+        ) : null}
+
+        {editing === "ideal-clients" ? (
+          <textarea
+            className="login-field__input dashboard-edit-textarea profile-edit-input"
+            rows={4}
+            value={form.servicesOffered}
+            onChange={(e) => patch("servicesOffered", e.target.value)}
+            placeholder="Who you help best and the services you offer"
+          />
+        ) : null}
+
+        {editing === "service-area" ? (
+          <div className="specialist-dash-profile__fields">
+            <label className="login-field">
+              <span className="login-field__label">City</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.city}
+                onChange={(e) => patch("city", e.target.value)}
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Neighborhood</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.neighborhood}
+                onChange={(e) => patch("neighborhood", e.target.value)}
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">ZIP code</span>
+              <input
+                className="login-field__input profile-edit-input"
+                inputMode="numeric"
+                autoComplete="postal-code"
+                value={form.zipCode}
+                onChange={(e) => patch("zipCode", e.target.value)}
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Session format</span>
+              <select
+                className="login-field__input dashboard-edit-select profile-edit-input"
+                value={form.serviceType}
+                onChange={(e) =>
+                  patch("serviceType", e.target.value as SpecialistServiceType)
+                }
+              >
+                {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Travel radius</span>
+              <select
+                className="login-field__input dashboard-edit-select profile-edit-input"
+                value={form.travelRadius}
+                onChange={(e) => patch("travelRadius", e.target.value)}
+              >
+                <option value="">Select radius</option>
+                {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">
+                Additional areas (comma-separated)
+              </span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.serviceArea.join(", ")}
+                onChange={(e) =>
+                  patch(
+                    "serviceArea",
+                    e.target.value
+                      .split(",")
+                      .map((item) => item.trim())
+                      .filter(Boolean)
+                  )
+                }
+              />
+            </label>
+          </div>
+        ) : null}
+
+        {editing === "session-experience" ? (
+          <label className="login-field">
+            <span className="login-field__label">
+              Session experience (comma-separated)
+            </span>
+            <textarea
+              className="login-field__input dashboard-edit-textarea profile-edit-input"
+              rows={4}
+              value={form.bookingAvailability}
+              onChange={(e) => patch("bookingAvailability", e.target.value)}
+              placeholder="In-home sessions, Online coaching, Free consultation"
+            />
+          </label>
+        ) : null}
+
+        {editing === "credentials" ? (
+          <div className="specialist-dash-profile__fields">
+            {form.certifications.map((cert, index) => (
+              <div
+                key={`cert-${index}`}
+                className="specialist-dash-profile__cert-row"
+              >
+                <input
+                  className="login-field__input profile-edit-input"
+                  placeholder="Credential"
+                  value={cert.name}
+                  onChange={(e) =>
+                    patch(
+                      "certifications",
+                      form.certifications.map((c, i) =>
+                        i === index ? { ...c, name: e.target.value } : c
+                      )
+                    )
+                  }
+                />
+                <input
+                  className="login-field__input profile-edit-input"
+                  placeholder="Issuer"
+                  value={cert.issuer}
+                  onChange={(e) =>
+                    patch(
+                      "certifications",
+                      form.certifications.map((c, i) =>
+                        i === index ? { ...c, issuer: e.target.value } : c
+                      )
+                    )
+                  }
+                />
+                {form.certifications.length > 1 ? (
+                  <button
+                    type="button"
+                    className="dashboard-edit-remove"
+                    onClick={() =>
+                      patch(
+                        "certifications",
+                        form.certifications.filter((_, i) => i !== index)
+                      )
+                    }
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            <button
+              type="button"
+              className="dashboard-edit-add"
+              onClick={() =>
+                patch("certifications", [
+                  ...form.certifications,
+                  { ...EMPTY_CERTIFICATION },
+                ])
+              }
+            >
+              + Add credential
+            </button>
+          </div>
+        ) : null}
+
+        {editing === "social" ? (
+          <div className="specialist-dash-profile__fields">
+            <label className="login-field">
+              <span className="login-field__label">Instagram</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.instagram}
+                onChange={(e) => patch("instagram", e.target.value)}
+                placeholder="@yourhandle"
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">TikTok</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.tiktok}
+                onChange={(e) => patch("tiktok", e.target.value)}
+              />
+            </label>
+            <label className="login-field">
+              <span className="login-field__label">Website</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={form.website}
+                onChange={(e) => patch("website", e.target.value)}
+                placeholder="https://"
+              />
+            </label>
+            <p className="wizard-field-hint">
+              Google Reviews connect lives on your Pro Reviews card — not here.
+            </p>
+          </div>
+        ) : null}
+      </LiveEditSheet>
+    ) : null;
+
+  const fullEditorModal = fullEditorOpen ? (
+    <Suspense fallback={null}>
+      <SpecialistEditProfilePageClient
+        presentation="modal"
+        onRequestClose={closeFullEditor}
+      />
+    </Suspense>
+  ) : null;
+
+  /* Owner edit tab — Instagram-style list (does not change public profile layout). */
+  if (canEdit && formDefaults) {
+    return (
+      <div id={LIVE_PROFILE_ANCHOR_ID} className="ig-profile-edit-wrap">
+        <SpecialistIgStyleProfileEditor
+          trainer={trainer}
+          formDefaults={formDefaults}
+          onEditSection={(id) => {
+            if (id === "full-editor") {
+              setFullEditorOpen(true);
+              return;
+            }
+            if (id === "name" || id === "headline" || id === "profession") {
+              startEdit("hero");
+              return;
+            }
+            startEdit(id);
+          }}
+          footer={
+            <p className="ig-profile-edit__hint">
+              Changes go live on Marketplace when you save. Clients still see
+              your normal SMOAC profile layout.
+            </p>
+          }
+        />
+        {editSheet}
+        {fullEditorModal}
+      </div>
+    );
+  }
+
   const whyItems = nonEmptyStrings(trainer.whyClientsChoose);
   const bestForItems = nonEmptyStrings(trainer.bestFor);
   const coachingStyleItems = nonEmptyStrings(trainer.coachingStyle);
@@ -443,37 +822,9 @@ export function SpecialistDashboardProfilePreview({
               });
             }}
           />
-          {canEdit ? (
-            <p className="specialist-live-contact-preview__note">
-              Preview only — clients see this contact button on your live profile.
-            </p>
-          ) : null}
         </div>
 
-        {/* Why clients choose me — public highlight; deeper edit in full editor */}
-        {canEdit ? (
-          <LiveEditZone
-            label="Why clients choose me"
-            canEdit
-            incomplete={!hasWhy}
-            onEdit={() => setFullEditorOpen(true)}
-          >
-            {hasWhy ? (
-              <ProfileSection
-                variant="panel"
-                className="profile-section--featured"
-                aria-label="Why clients choose me"
-              >
-                <ProfileSectionHeader title="Why clients choose me" />
-                <div className="profile-section-body">
-                  <ProfileTrustGrid items={whyItems} />
-                </div>
-              </ProfileSection>
-            ) : (
-              <NeedsCompletionPanel title="Why clients choose me" />
-            )}
-          </LiveEditZone>
-        ) : hasWhy ? (
+        {hasWhy ? (
           <ProfileSection
             variant="panel"
             className="profile-section--featured"
@@ -487,7 +838,7 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         <OwnerOrClientSection
-          canEdit={canEdit}
+          canEdit={false}
           complete={hasTransformations}
           title="Client transformations"
           onEdit={() => startEdit("transformations")}
@@ -507,12 +858,8 @@ export function SpecialistDashboardProfilePreview({
         </OwnerOrClientSection>
 
         <div className="specialist-live-details" aria-label="Full specialist profile">
-          {canEdit ? (
-            <p className="specialist-live-details__eyebrow">Profile details</p>
-          ) : null}
-
           <OwnerOrClientSection
-            canEdit={canEdit}
+            canEdit={false}
             complete={hasServiceArea}
             title="Service area"
             onEdit={() => startEdit("service-area")}
@@ -521,7 +868,7 @@ export function SpecialistDashboardProfilePreview({
           </OwnerOrClientSection>
 
           <OwnerOrClientSection
-            canEdit={canEdit}
+            canEdit={false}
             complete={hasBestFor}
             title="Best for"
             onEdit={() => startEdit("ideal-clients")}
@@ -535,7 +882,7 @@ export function SpecialistDashboardProfilePreview({
           </OwnerOrClientSection>
 
           <OwnerOrClientSection
-            canEdit={canEdit}
+            canEdit={false}
             complete={hasCoachingStyle}
             title="Coaching style"
             onEdit={() => startEdit("philosophy")}
@@ -549,7 +896,7 @@ export function SpecialistDashboardProfilePreview({
           </OwnerOrClientSection>
 
           <OwnerOrClientSection
-            canEdit={canEdit}
+            canEdit={false}
             complete={hasSessionExperience}
             title="Session experience"
             onEdit={() => startEdit("session-experience")}
@@ -557,12 +904,10 @@ export function SpecialistDashboardProfilePreview({
             <ProfileSessionExperience trainer={trainer} />
           </OwnerOrClientSection>
 
-          {!canEdit && hasResults ? (
-            <ProfileResultsSnapshot trainer={trainer} />
-          ) : null}
+          {hasResults ? <ProfileResultsSnapshot trainer={trainer} /> : null}
 
           <OwnerOrClientSection
-            canEdit={canEdit}
+            canEdit={false}
             complete={hasCreds}
             title="Credentials"
             onEdit={() => startEdit("credentials")}
@@ -571,7 +916,7 @@ export function SpecialistDashboardProfilePreview({
           </OwnerOrClientSection>
 
           <OwnerOrClientSection
-            canEdit={canEdit}
+            canEdit={false}
             complete={hasBio}
             title="About"
             onEdit={() => startEdit("bio")}
@@ -580,7 +925,7 @@ export function SpecialistDashboardProfilePreview({
           </OwnerOrClientSection>
 
           <OwnerOrClientSection
-            canEdit={canEdit}
+            canEdit={false}
             complete={hasSocial}
             title="Connect"
             onEdit={() => startEdit("social")}
@@ -590,364 +935,8 @@ export function SpecialistDashboardProfilePreview({
         </div>
       </div>
 
-      {canEdit ? (
-        <div className="specialist-live-marketplace__footer">
-          <button
-            type="button"
-            className="smoac-control specialist-dash-profile__full-editor-link"
-            onClick={() => setFullEditorOpen(true)}
-          >
-            Open full editor (pricing, style & more)
-          </button>
-        </div>
-      ) : null}
-
-      {fullEditorOpen ? (
-        <Suspense fallback={null}>
-          <SpecialistEditProfilePageClient
-            presentation="modal"
-            onRequestClose={closeFullEditor}
-          />
-        </Suspense>
-      ) : null}
-
-      {editing && form ? (
-        <LiveEditSheet
-          title={SECTION_TITLES[editing]}
-          saving={saving}
-          onClose={cancelEdit}
-          onSave={() => void publish()}
-        >
-          {editing === "hero" ? (
-            <div className="specialist-dash-profile__fields">
-              <SpecialistProfileMediaEditor
-                profilePhotoUrl={form.profilePhotoUrl}
-                coverImageUrl={form.coverImageUrl}
-                photoNotes={form.photoNotes}
-                videoNotes={form.videoNotes}
-                pinnedPhotos={form.pinnedPhotos}
-                isPremium={isPremium}
-                specialistId={trainerId}
-                onChange={(next) => {
-                  setDraft((prev) => (prev ? { ...prev, ...next } : prev));
-                }}
-              />
-              <label className="login-field">
-                <span className="login-field__label">Name</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.name}
-                  onChange={(e) => patch("name", e.target.value)}
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Headline</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.title}
-                  onChange={(e) => patch("title", e.target.value)}
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Profession</span>
-                <select
-                  className="login-field__input dashboard-edit-select profile-edit-input"
-                  value={form.profession}
-                  onChange={(e) => patch("profession", e.target.value)}
-                >
-                  {MAIN_PROFESSION_CATEGORIES.map((profession) => (
-                    <option key={profession} value={profession}>
-                      {profession}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          ) : null}
-
-          {editing === "transformations" ? (
-            <label className="login-field">
-              <span className="login-field__label">
-                Transformation photo URLs (one per line)
-              </span>
-              <textarea
-                className="login-field__input dashboard-edit-textarea profile-edit-input"
-                rows={6}
-                value={form.transformationNotes}
-                onChange={(e) => patch("transformationNotes", e.target.value)}
-                placeholder="https://…"
-              />
-            </label>
-          ) : null}
-
-          {editing === "bio" || editing === "specialties" ? (
-            <div className="specialist-dash-profile__fields">
-              <label className="login-field">
-                <span className="login-field__label">Bio</span>
-                <textarea
-                  className="login-field__input dashboard-edit-textarea profile-edit-input"
-                  rows={6}
-                  value={form.bio}
-                  onChange={(e) => patch("bio", e.target.value)}
-                  placeholder="Your story and approach"
-                />
-              </label>
-              <div>
-                <p className="login-field__label">Specialties</p>
-                <div className="dashboard-edit-chip-grid">
-                  {marketplaceSpecialtyOptions.map((specialty) => {
-                    const active = form.specialty.includes(specialty);
-                    return (
-                      <button
-                        key={specialty}
-                        type="button"
-                        className={
-                          active
-                            ? "dashboard-edit-chip dashboard-edit-chip--active"
-                            : "dashboard-edit-chip"
-                        }
-                        onClick={() => {
-                          const next = active
-                            ? form.specialty.filter((item) => item !== specialty)
-                            : [...form.specialty, specialty];
-                          setDraft((prev) =>
-                            prev
-                              ? {
-                                  ...prev,
-                                  specialty: next,
-                                  homepageSpecialties:
-                                    prev.homepageSpecialties.filter((item) =>
-                                      next.includes(item)
-                                    ),
-                                }
-                              : prev
-                          );
-                        }}
-                        aria-pressed={active}
-                      >
-                        {specialty}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          ) : null}
-
-          {editing === "philosophy" ? (
-            <textarea
-              className="login-field__input dashboard-edit-textarea profile-edit-input"
-              rows={4}
-              value={form.trainingStyle}
-              onChange={(e) => patch("trainingStyle", e.target.value)}
-              placeholder="How you coach and what drives results"
-            />
-          ) : null}
-
-          {editing === "ideal-clients" ? (
-            <textarea
-              className="login-field__input dashboard-edit-textarea profile-edit-input"
-              rows={4}
-              value={form.servicesOffered}
-              onChange={(e) => patch("servicesOffered", e.target.value)}
-              placeholder="Who you help best and the services you offer"
-            />
-          ) : null}
-
-          {editing === "service-area" ? (
-            <div className="specialist-dash-profile__fields">
-              <label className="login-field">
-                <span className="login-field__label">City</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.city}
-                  onChange={(e) => patch("city", e.target.value)}
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Neighborhood</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.neighborhood}
-                  onChange={(e) => patch("neighborhood", e.target.value)}
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">ZIP code</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  inputMode="numeric"
-                  autoComplete="postal-code"
-                  value={form.zipCode}
-                  onChange={(e) => patch("zipCode", e.target.value)}
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Session format</span>
-                <select
-                  className="login-field__input dashboard-edit-select profile-edit-input"
-                  value={form.serviceType}
-                  onChange={(e) =>
-                    patch("serviceType", e.target.value as SpecialistServiceType)
-                  }
-                >
-                  {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Travel radius</span>
-                <select
-                  className="login-field__input dashboard-edit-select profile-edit-input"
-                  value={form.travelRadius}
-                  onChange={(e) => patch("travelRadius", e.target.value)}
-                >
-                  <option value="">Select radius</option>
-                  {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">
-                  Additional areas (comma-separated)
-                </span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.serviceArea.join(", ")}
-                  onChange={(e) =>
-                    patch(
-                      "serviceArea",
-                      e.target.value
-                        .split(",")
-                        .map((item) => item.trim())
-                        .filter(Boolean)
-                    )
-                  }
-                />
-              </label>
-            </div>
-          ) : null}
-
-          {editing === "session-experience" ? (
-            <label className="login-field">
-              <span className="login-field__label">
-                Session experience (comma-separated)
-              </span>
-              <textarea
-                className="login-field__input dashboard-edit-textarea profile-edit-input"
-                rows={4}
-                value={form.bookingAvailability}
-                onChange={(e) => patch("bookingAvailability", e.target.value)}
-                placeholder="In-home sessions, Online coaching, Free consultation"
-              />
-            </label>
-          ) : null}
-
-          {editing === "credentials" ? (
-            <div className="specialist-dash-profile__fields">
-              {form.certifications.map((cert, index) => (
-                <div
-                  key={`cert-${index}`}
-                  className="specialist-dash-profile__cert-row"
-                >
-                  <input
-                    className="login-field__input profile-edit-input"
-                    placeholder="Credential"
-                    value={cert.name}
-                    onChange={(e) =>
-                      patch(
-                        "certifications",
-                        form.certifications.map((c, i) =>
-                          i === index ? { ...c, name: e.target.value } : c
-                        )
-                      )
-                    }
-                  />
-                  <input
-                    className="login-field__input profile-edit-input"
-                    placeholder="Issuer"
-                    value={cert.issuer}
-                    onChange={(e) =>
-                      patch(
-                        "certifications",
-                        form.certifications.map((c, i) =>
-                          i === index ? { ...c, issuer: e.target.value } : c
-                        )
-                      )
-                    }
-                  />
-                  {form.certifications.length > 1 ? (
-                    <button
-                      type="button"
-                      className="dashboard-edit-remove"
-                      onClick={() =>
-                        patch(
-                          "certifications",
-                          form.certifications.filter((_, i) => i !== index)
-                        )
-                      }
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-              ))}
-              <button
-                type="button"
-                className="dashboard-edit-add"
-                onClick={() =>
-                  patch("certifications", [
-                    ...form.certifications,
-                    { ...EMPTY_CERTIFICATION },
-                  ])
-                }
-              >
-                + Add credential
-              </button>
-            </div>
-          ) : null}
-
-          {editing === "social" ? (
-            <div className="specialist-dash-profile__fields">
-              <label className="login-field">
-                <span className="login-field__label">Instagram</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.instagram}
-                  onChange={(e) => patch("instagram", e.target.value)}
-                  placeholder="@yourhandle"
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">TikTok</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.tiktok}
-                  onChange={(e) => patch("tiktok", e.target.value)}
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">Website</span>
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={form.website}
-                  onChange={(e) => patch("website", e.target.value)}
-                  placeholder="https://"
-                />
-              </label>
-              <p className="wizard-field-hint">
-                Google Reviews connect lives on your Pro Reviews card — not here.
-              </p>
-            </div>
-          ) : null}
-        </LiveEditSheet>
-      ) : null}
+      {editSheet}
+      {fullEditorModal}
     </article>
   );
 }

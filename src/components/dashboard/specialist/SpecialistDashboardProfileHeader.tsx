@@ -18,17 +18,10 @@ export function SpecialistDashboardProfileHeader({
 
   return (
     <header className="specialist-dash-profile-header">
-      <div className="specialist-dash-profile-header__badges">
-        <span className="dashboard-profile-status dashboard-profile-status--active">
-          Live profile
-        </span>
-        <span className="specialist-dash-profile-header__plan">
-          This is what clients see
-        </span>
-      </div>
+      <p className="specialist-dash-profile-header__eyebrow">Edit profile</p>
       <p className="specialist-dash-profile-header__hint">
-        Same layout clients see. Empty sections stay visible here as “Needs
-        completion” — they’re hidden on your live profile until filled in.
+        Tap a row to update. Saves go live on Marketplace — your public profile
+        layout stays the same for clients.
       </p>
     </header>
   );
