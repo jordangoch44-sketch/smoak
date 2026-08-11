@@ -258,22 +258,6 @@
   gap: 0.5rem 0.625rem;
 }
 
-.profile-hero__specialist-byline {
-  margin: 0.2rem 0 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  line-height: 1.35;
-  color: rgba(245, 245, 247, 0.72);
-}
-
-@media (min-width: 640px) {
-  .profile-hero__specialist-byline {
-    font-size: 0.75rem;
-  }
-}
-
 .profile-hero__name {
   margin: 0;
   font-size: 1.5rem;
@@ -2416,6 +2400,25 @@ body.profile-image-preview-open .profile-toolbar {
 
 /* Streamlined mobile profile — CTA, specs accordion, discovery */
 
+.profile-hero__intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin: 0 0 0.85rem;
+  max-width: 36rem;
+}
+
+.profile-hero__specialist-byline {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.48);
+}
+
 .profile-hero__tagline {
   margin: 0;
   max-width: 36rem;
@@ -2427,6 +2430,10 @@ body.profile-image-preview-open .profile-toolbar {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   overflow: hidden;
+}
+
+.profile-hero__intro .profile-hero__tagline {
+  max-width: none;
 }
 
 .profile-verified-badge {

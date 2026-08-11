@@ -164,11 +164,6 @@ export function ProfileHero({
                       </span>
                     ) : null}
                   </div>
-                  {specialistByline ? (
-                    <p className="profile-hero__specialist-byline">
-                      {specialistByline}
-                    </p>
-                  ) : null}
                   <TrainerProfessionLabel
                     trainer={trainer}
                     className="profile-hero__profession"
@@ -193,8 +188,17 @@ export function ProfileHero({
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
-            {heroLine ? (
-              <p className="profile-hero__tagline">{heroLine}</p>
+            {specialistByline || heroLine ? (
+              <div className="profile-hero__intro">
+                {specialistByline ? (
+                  <p className="profile-hero__specialist-byline">
+                    {specialistByline}
+                  </p>
+                ) : null}
+                {heroLine ? (
+                  <p className="profile-hero__tagline">{heroLine}</p>
+                ) : null}
+              </div>
             ) : null}
 
             {isSpecialistLive ? (
