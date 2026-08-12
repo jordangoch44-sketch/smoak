@@ -8,7 +8,7 @@ import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
+import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import type { Trainer } from "@/types";
 
 interface ExploreSuggestedSpecialistsProps {
@@ -59,14 +59,10 @@ export function ExploreSuggestedSpecialists({
               <TapLink
                 href={href}
                 className="home-portrait-card__link"
-                onClick={() => {
-                  primeTrainerProfile(trainer);
-                  try {
-                    router.prefetch(href);
-                  } catch {
-                    /* best-effort */
-                  }
-                }}
+                onPointerDown={() =>
+                  warmTrainerProfileNavigation(trainer, router)
+                }
+                onClick={() => warmTrainerProfileNavigation(trainer, router)}
               >
                 <article className="home-portrait-card__article">
                   <div className="home-portrait-card__media">

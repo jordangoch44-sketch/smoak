@@ -1,12 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
+import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -27,10 +28,15 @@ export function SponsoredSpecialistCard({
   badgeLabel,
   impressionSurface = "home_sponsored",
 }: SponsoredSpecialistCardProps) {
+  const router = useRouter();
   const href = `/trainers/${trainer.id}`;
   const chip =
     badgeLabel ??
     (showSponsoredBadge && trainer.sponsored === true ? "Sponsored" : null);
+
+  function warm() {
+    warmTrainerProfileNavigation(trainer, router);
+  }
 
   return (
     <div className="home-sponsored-card relative" role="listitem">
@@ -42,7 +48,8 @@ export function SponsoredSpecialistCard({
         <TapLink
           href={href}
           className="home-sponsored-card__media-link"
-          onClick={() => primeTrainerProfile(trainer)}
+          onPointerDown={warm}
+          onClick={warm}
         >
           <div className="home-sponsored-card__media">
             <TrainerThumbnail
@@ -67,7 +74,8 @@ export function SponsoredSpecialistCard({
           <TapLink
             href={href}
             className="home-sponsored-card__identity"
-            onClick={() => primeTrainerProfile(trainer)}
+            onPointerDown={warm}
+            onClick={warm}
           >
             <TrainerCardDetails
               trainer={trainer}
@@ -85,7 +93,8 @@ export function SponsoredSpecialistCard({
           <TapLink
             href={href}
             className="home-sponsored-card__cta"
-            onClick={() => primeTrainerProfile(trainer)}
+            onPointerDown={warm}
+            onClick={warm}
           >
             View Profile
           </TapLink>

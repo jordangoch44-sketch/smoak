@@ -814,6 +814,13 @@ body.explore-map-shell-open .app-main {
   padding-bottom: 0;
 }
 
+/* Soft-nav keeps Search mounted — freeze map paint under the profile sheet */
+body.profile-sheet-open .explore-page--map-shell .explore-map-hero,
+body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .explore-map-hero .explore-map--hero {
   position: absolute;
   inset: 0;

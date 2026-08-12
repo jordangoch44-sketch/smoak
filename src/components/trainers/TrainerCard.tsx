@@ -6,7 +6,8 @@
  * Save heart lives outside the card link (valid HTML + reliable stacking).
  */
 import Link from "next/link";
-import { memo } from "react";
+import { memo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { Trainer } from "@/types";
 import {
   TrainerCardCompact,
@@ -18,7 +19,7 @@ import { TrainerVerifiedCheck } from "./TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
 import { getTrainerPlacementBadge } from "@/lib/trainer-placement-badge";
 import { isTrainerVerified } from "@/lib/trainer-sponsorship";
-import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
+import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 
 interface TrainerCardProps {
   trainer: Trainer;
@@ -37,9 +38,24 @@ export const TrainerCard = memo(function TrainerCard({
   impressionSurface = "explore",
   linkDisabled = false,
 }: TrainerCardProps) {
+  const router = useRouter();
   const href = `/trainers/${trainer.id}`;
   const placementBadge = getTrainerPlacementBadge(trainer);
   const verified = isTrainerVerified(trainer);
+
+  useEffect(() => {
+    if (!priority) return;
+    try {
+      router.prefetch(href);
+    } catch {
+      /* prefetch is best-effort */
+    }
+  }, [priority, href, router]);
+
+  function warm() {
+    warmTrainerProfileNavigation(trainer, router);
+  }
+
   const cardBody = (
     <>
       <TrainerCardCompact
@@ -73,7 +89,8 @@ export const TrainerCard = memo(function TrainerCard({
         <Link
           href={href}
           className="block active:opacity-95"
-          onClick={() => primeTrainerProfile(trainer)}
+          onPointerDown={warm}
+          onClick={warm}
         >
           {cardBody}
         </Link>

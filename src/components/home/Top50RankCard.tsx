@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { TapLink } from "@/components/ui/TapLink";
 import type { Trainer } from "@/types";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
@@ -7,7 +8,7 @@ import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
+import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import { cn } from "@/lib/utils";
 
 interface Top50RankCardProps {
@@ -26,8 +27,13 @@ export function Top50RankCard({
   smoacRating,
   smoacReviewCount,
 }: Top50RankCardProps) {
+  const router = useRouter();
   const href = `/trainers/${trainer.id}`;
   const isPodium = rank <= 3;
+
+  function warm() {
+    warmTrainerProfileNavigation(trainer, router);
+  }
 
   return (
     <div
@@ -45,7 +51,8 @@ export function Top50RankCard({
       <TapLink
         href={href}
         className="top50-card__link"
-        onClick={() => primeTrainerProfile(trainer)}
+        onPointerDown={warm}
+        onClick={warm}
       >
         <article className="top50-card__article">
           <div className="top50-card__rank" aria-label={`Rank ${rank}`}>

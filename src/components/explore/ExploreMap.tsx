@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import "leaflet/dist/leaflet.css";
 import type { Trainer } from "@/types";
+import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
 import { getTrainerCoordinates } from "@/lib/trainer-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatProviderLocation } from "@/lib/provider-location";
@@ -48,6 +49,9 @@ export function ExploreMap({
 }: ExploreMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
+  /* Soft-nav keeps Search mounted under the profile sheet — tear the map down
+   * so Leaflet tiles/gestures don’t fight the sheet open on iOS. */
+  const profileSheetOpen = useProfileSheetOpen();
 
   const mapped = useMemo(() => {
     const pins: MappedTrainer[] = [];
@@ -72,11 +76,13 @@ export function ExploreMap({
     let map: import("leaflet").Map | null = null;
 
     async function mountMap() {
+      if (profileSheetOpen) return;
+
       const el = containerRef.current;
       if (!el) return;
 
       const L = (await import("leaflet")).default;
-      if (cancelled || !containerRef.current) return;
+      if (cancelled || profileSheetOpen || !containerRef.current) return;
 
       if (mapRef.current) {
         mapRef.current.remove();
@@ -205,7 +211,7 @@ export function ExploreMap({
         map.remove();
       }
     };
-  }, [mapped, areaKey, areaCenter, locked]);
+  }, [mapped, areaKey, areaCenter, locked, profileSheetOpen]);
 
   const missing = trainers.length - mapped.length;
   const rootClass = [
