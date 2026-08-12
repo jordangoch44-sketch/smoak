@@ -21,6 +21,17 @@ interface LocationSelectorPanelProps {
   mode?: "dropdown" | "gate";
 }
 
+const GATE_CATEGORY_CHIPS = [
+  { id: "trainer", label: "Trainer", tone: "blue" },
+  { id: "pt", label: "Physical Therapy", tone: "mint" },
+  { id: "boxing", label: "Boxing Coach", tone: "amber" },
+  { id: "dance", label: "Dance Instructor", tone: "magenta" },
+  { id: "nutrition", label: "Nutritionist", tone: "green" },
+  { id: "yoga", label: "Yoga", tone: "lavender" },
+  { id: "strength", label: "Strength Coach", tone: "violet" },
+  { id: "massage", label: "Massage", tone: "cyan" },
+] as const;
+
 function formatPanelLocationSummary(
   placeName: string | null,
   zip: string | null,
@@ -185,11 +196,26 @@ export function LocationSelectorPanel({
         <h2 className="location-selector-panel__title">
           {isGate ? "Find specialists near you" : "Set your location"}
         </h2>
-        <p className="location-selector-panel__lede">
-          {isGate
-            ? "Marketplace search ranks by distance. Share your location or enter a ZIP so we can show the closest specialists."
-            : "Search ranks specialists by how close they are to you. Use your current location or enter a ZIP to continue."}
-        </p>
+        {isGate ? (
+          <ul
+            className="site-location-gate__categories"
+            aria-label="Specialists you can find on SMOAC"
+          >
+            {GATE_CATEGORY_CHIPS.map((chip) => (
+              <li
+                key={chip.id}
+                className={`site-location-gate__chip site-location-gate__chip--${chip.tone}`}
+              >
+                {chip.label}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="location-selector-panel__lede">
+            Search ranks specialists by how close they are to you. Use your
+            current location or enter a ZIP to continue.
+          </p>
+        )}
       </header>
 
       <button
