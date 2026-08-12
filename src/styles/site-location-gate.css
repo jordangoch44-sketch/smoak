@@ -128,111 +128,78 @@ body.site-location-gate-open {
 }
 
 .site-location-gate__categories {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.4375rem;
-  margin: 0.25rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4375rem 0.5rem;
+  margin: 0.35rem 0 0;
   padding: 0;
   list-style: none;
+  pointer-events: none;
+  user-select: none;
 }
 
 .site-location-gate__chip {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  min-height: 2.375rem;
-  padding: 0.375rem 0.5rem;
-  border-radius: 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  gap: 0.375rem;
+  padding: 0.125rem 0.125rem 0.125rem 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   line-height: 1.2;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.94);
-  box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-    0 6px 16px rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.72);
 }
 
-.site-location-gate__chip--blue {
-  border-color: rgba(56, 189, 248, 0.45);
-  background: linear-gradient(
-    145deg,
-    rgba(56, 189, 248, 0.32) 0%,
-    rgba(14, 165, 233, 0.12) 100%
-  );
-  box-shadow: 0 0 16px rgba(14, 165, 233, 0.22);
+.site-location-gate__chip-dot {
+  flex-shrink: 0;
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 9999px;
+  background: currentColor;
 }
 
-.site-location-gate__chip--mint {
-  border-color: rgba(52, 211, 153, 0.45);
-  background: linear-gradient(
-    145deg,
-    rgba(52, 211, 153, 0.3) 0%,
-    rgba(16, 185, 129, 0.1) 100%
-  );
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+.site-location-gate__chip--blue .site-location-gate__chip-dot {
+  background: rgb(56, 189, 248);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.7);
 }
 
-.site-location-gate__chip--amber {
-  border-color: rgba(251, 191, 36, 0.45);
-  background: linear-gradient(
-    145deg,
-    rgba(251, 146, 60, 0.34) 0%,
-    rgba(245, 158, 11, 0.12) 100%
-  );
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.22);
+.site-location-gate__chip--mint .site-location-gate__chip-dot {
+  background: rgb(52, 211, 153);
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.65);
 }
 
-.site-location-gate__chip--magenta {
-  border-color: rgba(244, 114, 182, 0.45);
-  background: linear-gradient(
-    145deg,
-    rgba(236, 72, 153, 0.34) 0%,
-    rgba(219, 39, 119, 0.12) 100%
-  );
-  box-shadow: 0 0 16px rgba(236, 72, 153, 0.22);
+.site-location-gate__chip--amber .site-location-gate__chip-dot {
+  background: rgb(251, 191, 36);
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.65);
 }
 
-.site-location-gate__chip--green {
-  border-color: rgba(134, 239, 172, 0.4);
-  background: linear-gradient(
-    145deg,
-    rgba(74, 222, 128, 0.28) 0%,
-    rgba(34, 197, 94, 0.1) 100%
-  );
-  box-shadow: 0 0 16px rgba(34, 197, 94, 0.18);
+.site-location-gate__chip--magenta .site-location-gate__chip-dot {
+  background: rgb(244, 114, 182);
+  box-shadow: 0 0 8px rgba(244, 114, 182, 0.65);
 }
 
-.site-location-gate__chip--lavender {
-  border-color: rgba(196, 181, 253, 0.5);
-  background: linear-gradient(
-    145deg,
-    rgba(168, 85, 247, 0.32) 0%,
-    rgba(139, 92, 246, 0.12) 100%
-  );
-  box-shadow: 0 0 16px rgba(168, 85, 247, 0.24);
+.site-location-gate__chip--green .site-location-gate__chip-dot {
+  background: rgb(74, 222, 128);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
 }
 
-.site-location-gate__chip--violet {
-  border-color: rgba(139, 92, 246, 0.5);
-  background: linear-gradient(
-    145deg,
-    rgba(124, 58, 237, 0.34) 0%,
-    rgba(76, 29, 149, 0.16) 100%
-  );
-  box-shadow: 0 0 16px rgba(124, 58, 237, 0.26);
+.site-location-gate__chip--lavender .site-location-gate__chip-dot {
+  background: rgb(196, 181, 253);
+  box-shadow: 0 0 8px rgba(196, 181, 253, 0.7);
 }
 
-.site-location-gate__chip--cyan {
-  border-color: rgba(103, 232, 249, 0.45);
-  background: linear-gradient(
-    145deg,
-    rgba(34, 211, 238, 0.3) 0%,
-    rgba(6, 182, 212, 0.1) 100%
-  );
-  box-shadow: 0 0 16px rgba(6, 182, 212, 0.22);
+.site-location-gate__chip--violet .site-location-gate__chip-dot {
+  background: rgb(167, 139, 250);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.7);
+}
+
+.site-location-gate__chip--cyan .site-location-gate__chip-dot {
+  background: rgb(34, 211, 238);
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.65);
 }
 
 .site-location-gate .location-selector-panel__btn--primary {

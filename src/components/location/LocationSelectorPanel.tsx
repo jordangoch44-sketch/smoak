@@ -206,6 +206,7 @@ export function LocationSelectorPanel({
                 key={chip.id}
                 className={`site-location-gate__chip site-location-gate__chip--${chip.tone}`}
               >
+                <span className="site-location-gate__chip-dot" aria-hidden />
                 {chip.label}
               </li>
             ))}
