@@ -1183,17 +1183,29 @@
 .explore-filter-chips {
   display: flex;
   flex: 1 1 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.5rem;
   min-width: 0;
-  padding: 0;
+  max-width: 100%;
+  padding: 0.1rem 0;
   border-top: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.explore-filter-chips::-webkit-scrollbar {
+  display: none;
 }
 
 .explore-filter-chip {
   display: inline-flex;
-  max-width: 100%;
+  flex-shrink: 0;
+  max-width: 14rem;
   align-items: center;
   gap: 0.25rem;
   border-radius: 9999px;
@@ -1255,9 +1267,11 @@
 }
 
 .explore-filter-chips__clear-all {
+  flex-shrink: 0;
   min-height: 2rem;
   padding: 0 0.625rem;
   font-size: 0.75rem;
+  white-space: nowrap;
   color: rgba(255, 255, 255, 0.42);
   cursor: pointer;
   touch-action: manipulation;
