@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type { Trainer } from "@/types";
 import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
@@ -36,9 +36,31 @@ const FALLBACK_CENTER: ExploreMapArea = {
   longitude: -117.1611,
 };
 
+/** Default camera: ~12-mile radius around the search origin */
+export const DEFAULT_EXPLORE_MAP_RADIUS_MILES = 12;
+const METERS_PER_MILE = 1609.344;
+
+function frameRadiusMiles(
+  map: import("leaflet").Map,
+  L: typeof import("leaflet"),
+  center: ExploreMapArea,
+  radiusMiles: number
+) {
+  const circle = L.circle([center.latitude, center.longitude], {
+    radius: radiusMiles * METERS_PER_MILE,
+    interactive: false,
+  });
+  map.fitBounds(circle.getBounds(), {
+    animate: false,
+    padding: [28, 28],
+  });
+  circle.remove();
+}
+
 /**
- * Read-only map of current Explore results + search area.
- * Does not write specialist data — only plots existing lat/lng / ZIP / city coords.
+ * Explore map — pins current results around the search origin.
+ * Fresh visits reset to a ~12-mile radius frame; user zoom is kept while
+ * staying on Search (filters only refresh pins).
  */
 export function ExploreMap({
   trainers,
@@ -49,8 +71,13 @@ export function ExploreMap({
 }: ExploreMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
-  /* Soft-nav keeps Search mounted under the profile sheet — tear the map down
-   * so Leaflet tiles/gestures don’t fight the sheet open on iOS. */
+  const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const areaDotRef = useRef<import("leaflet").CircleMarker | null>(null);
+  const leafletRef = useRef<typeof import("leaflet") | null>(null);
+  const framedOriginRef = useRef<string>("");
+  const areaCenterRef = useRef(areaCenter);
+  areaCenterRef.current = areaCenter;
+  const [mapEpoch, setMapEpoch] = useState(0);
   const profileSheetOpen = useProfileSheetOpen();
 
   const mapped = useMemo(() => {
@@ -88,8 +115,12 @@ export function ExploreMap({
         mapRef.current.remove();
         mapRef.current = null;
       }
+      markersLayerRef.current = null;
+      areaDotRef.current = null;
+      framedOriginRef.current = "";
 
-      const center = areaCenter ?? FALLBACK_CENTER;
+      const center = areaCenterRef.current ?? FALLBACK_CENTER;
+      leafletRef.current = L;
 
       map = L.map(el, {
         center: [center.latitude, center.longitude],
@@ -108,7 +139,6 @@ export function ExploreMap({
         L.control.zoom({ position: "topright" }).addTo(map);
       }
 
-      /* Dark basemap — Apple Maps–like greys / parks / water (CARTO Dark Matter) */
       L.tileLayer(
         "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
         {
@@ -120,90 +150,44 @@ export function ExploreMap({
         }
       ).addTo(map);
 
-      if (areaCenter) {
-        L.circleMarker([areaCenter.latitude, areaCenter.longitude], {
-          radius: 8,
-          className: "explore-map-area",
-          color: "rgba(10, 132, 255, 0.95)",
-          weight: 2,
-          fillColor: "rgba(10, 132, 255, 0.32)",
-          fillOpacity: 1,
-          interactive: false,
-        }).addTo(map);
-      }
+      markersLayerRef.current = L.layerGroup().addTo(map);
+      mapRef.current = map;
 
-      const pinIcon = L.divIcon({
-        className: "explore-map-pin",
-        html: '<span class="explore-map-pin__dot" aria-hidden="true"></span>',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
-        popupAnchor: [0, -10],
-      });
+      frameRadiusMiles(map, L, center, DEFAULT_EXPLORE_MAP_RADIUS_MILES);
+      framedOriginRef.current = areaCenterRef.current
+        ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
+        : "fallback";
 
-      const bounds = L.latLngBounds([]);
-      if (areaCenter) {
-        bounds.extend([areaCenter.latitude, areaCenter.longitude]);
-      }
-
-      for (const pin of mapped) {
-        const marker = L.marker([pin.latitude, pin.longitude], {
-          icon: pinIcon,
-          title: pin.trainer.name,
-        }).addTo(map);
-
-        const profession =
-          resolveTrainerProfessionCategory(pin.trainer) ||
-          pin.trainer.profession ||
-          "Specialist";
-        const price = formatTrainerPriceLabel(pin.trainer.pricePerSession);
-        const address =
-          formatProviderLocation(pin.trainer) ||
-          pin.trainer.location?.trim() ||
-          "";
-        const href = `/trainers/${encodeURIComponent(pin.trainer.id)}`;
-        marker.bindPopup(
-          `<div class="explore-map-popup">
-            <p class="explore-map-popup__name">${escapeHtml(pin.trainer.name)}</p>
-            <p class="explore-map-popup__meta">${escapeHtml(profession)}</p>
-            <p class="explore-map-popup__price">${escapeHtml(price)}</p>
-            ${
-              address
-                ? `<p class="explore-map-popup__address">${escapeHtml(address)}</p>`
-                : ""
-            }
-            <a class="explore-map-popup__link" href="${href}">View profile</a>
-          </div>`,
-          { maxWidth: 260 }
-        );
-        bounds.extend([pin.latitude, pin.longitude]);
-      }
-
-      if (mapped.length === 0 && areaCenter) {
-        map.setView([areaCenter.latitude, areaCenter.longitude], 11);
-      } else if (mapped.length === 1 && !areaCenter) {
-        map.setView([mapped[0].latitude, mapped[0].longitude], 12);
-      } else if (bounds.isValid()) {
-        map.fitBounds(bounds.pad(mapped.length <= 1 ? 0.35 : 0.22), {
-          maxZoom: 13,
-        });
-      } else {
-        map.setView([center.latitude, center.longitude], 11);
-      }
+      setMapEpoch((value) => value + 1);
 
       window.setTimeout(() => {
         map?.invalidateSize();
+        if (map && leafletRef.current) {
+          const liveCenter = areaCenterRef.current ?? FALLBACK_CENTER;
+          frameRadiusMiles(
+            map,
+            leafletRef.current,
+            liveCenter,
+            DEFAULT_EXPLORE_MAP_RADIUS_MILES
+          );
+          framedOriginRef.current = areaCenterRef.current
+            ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
+            : "fallback";
+        }
       }, 80);
       window.setTimeout(() => {
         map?.invalidateSize();
       }, 320);
-
-      mapRef.current = map;
     }
 
     void mountMap();
 
     return () => {
       cancelled = true;
+      framedOriginRef.current = "";
+      markersLayerRef.current = null;
+      areaDotRef.current = null;
+      leafletRef.current = null;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -211,7 +195,89 @@ export function ExploreMap({
         map.remove();
       }
     };
-  }, [mapped, areaKey, areaCenter, locked, profileSheetOpen]);
+  }, [locked, profileSheetOpen, variant]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    if (!map || !L || profileSheetOpen) return;
+
+    const center = areaCenter ?? FALLBACK_CENTER;
+    const key = areaKey || "fallback";
+    if (framedOriginRef.current === key) return;
+
+    frameRadiusMiles(map, L, center, DEFAULT_EXPLORE_MAP_RADIUS_MILES);
+    framedOriginRef.current = key;
+  }, [areaCenter, areaKey, profileSheetOpen, mapEpoch]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    const layer = markersLayerRef.current;
+    if (!map || !L || !layer || profileSheetOpen) return;
+
+    layer.clearLayers();
+    if (areaDotRef.current) {
+      areaDotRef.current.remove();
+      areaDotRef.current = null;
+    }
+
+    if (areaCenter) {
+      areaDotRef.current = L.circleMarker(
+        [areaCenter.latitude, areaCenter.longitude],
+        {
+          radius: 8,
+          className: "explore-map-area",
+          color: "rgba(10, 132, 255, 0.95)",
+          weight: 2,
+          fillColor: "rgba(10, 132, 255, 0.32)",
+          fillOpacity: 1,
+          interactive: false,
+        }
+      ).addTo(map);
+    }
+
+    const pinIcon = L.divIcon({
+      className: "explore-map-pin",
+      html: '<span class="explore-map-pin__dot" aria-hidden="true"></span>',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+      popupAnchor: [0, -10],
+    });
+
+    for (const pin of mapped) {
+      const marker = L.marker([pin.latitude, pin.longitude], {
+        icon: pinIcon,
+        title: pin.trainer.name,
+      });
+
+      const profession =
+        resolveTrainerProfessionCategory(pin.trainer) ||
+        pin.trainer.profession ||
+        "Specialist";
+      const price = formatTrainerPriceLabel(pin.trainer.pricePerSession);
+      const address =
+        formatProviderLocation(pin.trainer) ||
+        pin.trainer.location?.trim() ||
+        "";
+      const href = `/trainers/${encodeURIComponent(pin.trainer.id)}`;
+      marker.bindPopup(
+        `<div class="explore-map-popup">
+          <p class="explore-map-popup__name">${escapeHtml(pin.trainer.name)}</p>
+          <p class="explore-map-popup__meta">${escapeHtml(profession)}</p>
+          <p class="explore-map-popup__price">${escapeHtml(price)}</p>
+          ${
+            address
+              ? `<p class="explore-map-popup__address">${escapeHtml(address)}</p>`
+              : ""
+          }
+          <a class="explore-map-popup__link" href="${href}">View profile</a>
+        </div>`,
+        { maxWidth: 260 }
+      );
+      layer.addLayer(marker);
+    }
+  }, [mapped, areaCenter, profileSheetOpen, mapEpoch]);
 
   const missing = trainers.length - mapped.length;
   const rootClass = [
