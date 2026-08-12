@@ -837,6 +837,12 @@
 .explore-split__chrome {
   flex-shrink: 0;
   padding: 0.15rem 1.25rem 0.35rem;
+  touch-action: none;
+  cursor: grab;
+}
+
+.explore-split__chrome:active {
+  cursor: grabbing;
 }
 
 .explore-split__handle-hit {
@@ -846,14 +852,7 @@
   justify-content: center;
   min-height: 1.5rem;
   padding: 0.4rem 0 0.15rem;
-  border: none;
-  background: transparent;
-  cursor: grab;
-  touch-action: none;
-}
-
-.explore-split__handle-hit:active {
-  cursor: grabbing;
+  pointer-events: none;
 }
 
 .explore-split__handle {
@@ -872,12 +871,26 @@
   padding: 0.15rem 0 0.55rem;
 }
 
+.explore-split__toolbar-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
 .explore-split__title {
   margin: 0;
   font-size: 1.0625rem;
   font-weight: 650;
   letter-spacing: -0.02em;
   color: #fff;
+}
+
+.explore-split__hint {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .explore-split__map-btn {
@@ -891,6 +904,8 @@
   color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   touch-action: manipulation;
+  position: relative;
+  z-index: 1;
 }
 
 .explore-split__map-btn:active {
