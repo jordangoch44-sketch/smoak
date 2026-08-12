@@ -2,6 +2,8 @@
 
 import {
   useCallback,
+  useEffect,
+  useId,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -9,132 +11,176 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 
-type SheetSnap = "peek" | "mid" | "full";
-
-/** Sheet height as % of the map shell (leaves map visible above) */
-const SNAP_HEIGHT: Record<SheetSnap, number> = {
-  peek: 32,
-  mid: 48,
-  full: 78,
-};
-
-const SNAP_ORDER: SheetSnap[] = ["peek", "mid", "full"];
-
-function nearestSnap(heightPct: number): SheetSnap {
-  let best: SheetSnap = "mid";
-  let bestDist = Infinity;
-  for (const snap of SNAP_ORDER) {
-    const dist = Math.abs(SNAP_HEIGHT[snap] - heightPct);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = snap;
-    }
-  }
-  return best;
-}
+/** Results panel height as % of the map shell */
+const RESULTS_HEIGHT_PCT = 88;
+/** Drag down this far (px) from open to return to map */
+const DISMISS_DRAG_PX = 96;
 
 interface ExploreResultsSheetProps {
   children: ReactNode;
+  resultCount: number;
   className?: string;
 }
 
+function seeResultsLabel(count: number): string {
+  if (count <= 0) return "See results";
+  if (count === 1) return "See 1 result";
+  return `See ${count} results`;
+}
+
 /**
- * Zillow-style results sheet over the Search map.
- * Handle drag changes snap height; list scrolls inside the sheet only.
+ * Split Search views: map-first + compact “See results” CTA,
+ * then a fly-up list panel (majority of the screen).
  */
 export function ExploreResultsSheet({
   children,
+  resultCount,
   className,
 }: ExploreResultsSheetProps) {
-  const [snap, setSnap] = useState<SheetSnap>("mid");
-  const [dragHeight, setDragHeight] = useState<number | null>(null);
-  const sheetRef = useRef<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const titleId = useId();
+  const panelRef = useRef<HTMLElement | null>(null);
+  const bodyRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     pointerId: number;
     startY: number;
-    startHeightPct: number;
   } | null>(null);
 
-  const heightPct = dragHeight ?? SNAP_HEIGHT[snap];
+  const closeToMap = useCallback(() => {
+    setOpen(false);
+    setDragOffset(0);
+  }, []);
+
+  const openResults = useCallback(() => {
+    setOpen(true);
+    setDragOffset(0);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const body = bodyRef.current;
+    if (body) body.scrollTop = 0;
+  }, [open]);
 
   const onHandlePointerDown = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>) => {
-      if (event.button !== 0) return;
+      if (!open || event.button !== 0) return;
       event.preventDefault();
-      const el = sheetRef.current;
-      const parent = el?.parentElement;
-      if (!el || !parent) return;
-
-      const parentH = parent.getBoundingClientRect().height || 1;
-      const currentPct = (el.getBoundingClientRect().height / parentH) * 100;
       dragRef.current = {
         pointerId: event.pointerId,
         startY: event.clientY,
-        startHeightPct: currentPct,
       };
-      setDragHeight(currentPct);
       event.currentTarget.setPointerCapture(event.pointerId);
     },
-    []
+    [open]
   );
 
   const onHandlePointerMove = useCallback(
     (event: ReactPointerEvent<HTMLButtonElement>) => {
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
-      const deltaY = drag.startY - event.clientY;
-      const parent = sheetRef.current?.parentElement;
-      if (!parent) return;
-      const parentH = parent.getBoundingClientRect().height || 1;
-      const deltaPct = (deltaY / parentH) * 100;
-      const next = Math.min(
-        SNAP_HEIGHT.full + 4,
-        Math.max(SNAP_HEIGHT.peek - 4, drag.startHeightPct + deltaPct)
-      );
-      setDragHeight(next);
+      const delta = Math.max(0, event.clientY - drag.startY);
+      setDragOffset(delta);
     },
     []
   );
 
-  const endDrag = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    dragRef.current = null;
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      /* already released */
-    }
-    setDragHeight((current) => {
-      const pct = current ?? SNAP_HEIGHT.mid;
-      setSnap(nearestSnap(pct));
-      return null;
-    });
-  }, []);
+  const endDrag = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      dragRef.current = null;
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        /* already released */
+      }
+      const delta = Math.max(0, event.clientY - drag.startY);
+      if (delta >= DISMISS_DRAG_PX) {
+        closeToMap();
+        return;
+      }
+      setDragOffset(0);
+    },
+    [closeToMap]
+  );
 
   return (
-    <section
-      ref={sheetRef}
+    <div
       className={cn(
-        "explore-results-sheet",
-        dragHeight != null && "explore-results-sheet--dragging",
+        "explore-split",
+        open && "explore-split--results-open",
         className
       )}
-      style={{ height: `${heightPct}%` }}
-      aria-label="Search results"
     >
-      <button
-        type="button"
-        className="smoac-control explore-results-sheet__handle-hit"
-        aria-label="Drag to resize results"
-        onPointerDown={onHandlePointerDown}
-        onPointerMove={onHandlePointerMove}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+      {!open ? (
+        <div className="explore-split__cta-dock">
+          <button
+            type="button"
+            className="smoac-control explore-split__cta"
+            onClick={openResults}
+          >
+            <span className="explore-split__cta-label">
+              {seeResultsLabel(resultCount)}
+            </span>
+            <span className="explore-split__cta-chevron" aria-hidden>
+              ⌃
+            </span>
+          </button>
+        </div>
+      ) : null}
+
+      <section
+        ref={panelRef}
+        className={cn(
+          "explore-split__panel",
+          open && "explore-split__panel--open",
+          dragOffset > 0 && "explore-split__panel--dragging"
+        )}
+        style={
+          open
+            ? {
+                height: `${RESULTS_HEIGHT_PCT}%`,
+                transform: dragOffset
+                  ? `translateY(${dragOffset}px)`
+                  : undefined,
+              }
+            : undefined
+        }
+        aria-labelledby={titleId}
+        aria-hidden={!open}
+        inert={!open ? true : undefined}
       >
-        <span className="explore-results-sheet__handle" aria-hidden />
-      </button>
-      <div className="explore-results-sheet__body">{children}</div>
-    </section>
+        <div className="explore-split__chrome">
+          <button
+            type="button"
+            className="smoac-control explore-split__handle-hit"
+            aria-label="Drag down to show map"
+            onPointerDown={onHandlePointerDown}
+            onPointerMove={onHandlePointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+          >
+            <span className="explore-split__handle" aria-hidden />
+          </button>
+          <div className="explore-split__toolbar">
+            <h2 id={titleId} className="explore-split__title">
+              Results
+            </h2>
+            <button
+              type="button"
+              className="smoac-control explore-split__map-btn"
+              onClick={closeToMap}
+            >
+              Map
+            </button>
+          </div>
+        </div>
+        <div ref={bodyRef} className="explore-split__body">
+          {children}
+        </div>
+      </section>
+    </div>
   );
 }

@@ -247,7 +247,9 @@ export function ExplorePageClient() {
         )}
 
         {isMobile ? (
-          <ExploreResultsSheet>{resultsMain}</ExploreResultsSheet>
+          <ExploreResultsSheet resultCount={filtered.length}>
+            {resultsMain}
+          </ExploreResultsSheet>
         ) : (
           <div className="explore-page__layout">
             {filtersBar}
