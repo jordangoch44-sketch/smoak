@@ -8,23 +8,27 @@ import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibil
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
+import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
+import { cn } from "@/lib/utils";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import {
   ExploreSearchToolbar,
   ExploreFiltersBar,
 } from "./ExploreSearchToolbar";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
+import { ExploreMap } from "./ExploreMap";
 import { ExploreResults } from "./ExploreResults";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
   const { session } = useAuthSession();
+  const isMobile = useMobileViewport(true);
   const isCompactAtmosphere = useTabletViewport(true);
   const { openLocationPanel } = useUserLocationEditor();
   const pendingSearchRef = useRef<string | null>(null);
@@ -103,8 +107,34 @@ export function ExplorePageClient() {
     return <ExploreRouteLoading />;
   }
 
+  const searchToolbar = (
+    <ExploreSearchToolbar
+      searchQuery={displayQuery}
+      onSearchSubmit={runSearchOrAskLocation}
+      onClearSearch={clearSearch}
+      activeFilterChips={activeFilterChips}
+      onRemoveFilter={removeFilter}
+      activeFilterCount={activeFilterCount}
+      onOpenFilters={() => setMobileFiltersOpen(true)}
+      onClearFilters={clearFilters}
+      showInlineFiltersBar={false}
+    />
+  );
+
+  const filtersBar = (
+    <ExploreFiltersBar
+      activeFilterCount={activeFilterCount}
+      onOpenFilters={() => setMobileFiltersOpen(true)}
+    />
+  );
+
   return (
-    <div className="explore-page explore-page--results">
+    <div
+      className={cn(
+        "explore-page explore-page--results",
+        isMobile && "explore-page--map-hero"
+      )}
+    >
       <div className="explore-page__canvas" aria-hidden>
         {isCompactAtmosphere ? (
           <>
@@ -135,26 +165,34 @@ export function ExplorePageClient() {
         )}
       </div>
 
-      <div className="explore-page__content">
-        <ExplorePageHeader />
+      <div
+        className={cn(
+          "explore-page__content",
+          isMobile && "explore-page__content--map-hero"
+        )}
+      >
+        {!isMobile ? <ExplorePageHeader /> : null}
 
-        <ExploreSearchToolbar
-          searchQuery={displayQuery}
-          onSearchSubmit={runSearchOrAskLocation}
-          onClearSearch={clearSearch}
-          activeFilterChips={activeFilterChips}
-          onRemoveFilter={removeFilter}
-          activeFilterCount={activeFilterCount}
-          onOpenFilters={() => setMobileFiltersOpen(true)}
-          onClearFilters={clearFilters}
-          showInlineFiltersBar={false}
-        />
+        {isMobile ? (
+          <section className="explore-map-hero" aria-label="Search map">
+            <ExploreMap
+              trainers={filtered}
+              areaCenter={searchOrigin}
+              locked
+              variant="hero"
+              showNotes={false}
+            />
+            <div className="explore-map-hero__controls">
+              {searchToolbar}
+              {filtersBar}
+            </div>
+          </section>
+        ) : (
+          searchToolbar
+        )}
 
         <div className="explore-page__layout">
-          <ExploreFiltersBar
-            activeFilterCount={activeFilterCount}
-            onOpenFilters={() => setMobileFiltersOpen(true)}
-          />
+          {!isMobile ? filtersBar : null}
 
           <main className="explore-page__results" id="explore-results">
             <SitePromoSlot
@@ -189,6 +227,7 @@ export function ExplorePageClient() {
               hasSearch={hasSearch}
               areaEmpty={areaEmpty}
               nearbyExpanded={nearbyExpanded}
+              showMap={!isMobile}
               onClearFilters={clearFilters}
               onClearSearch={clearSearch}
               onClearAll={clearAll}

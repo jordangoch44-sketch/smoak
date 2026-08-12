@@ -19,8 +19,8 @@ interface ExploreMapProps {
   areaCenter?: ExploreMapArea | null;
   /** Display-only: no drag / zoom (default true) */
   locked?: boolean;
-  /** `split` = compact height for map-over-list; `panel` = full map view */
-  variant?: "panel" | "split";
+  /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header */
+  variant?: "panel" | "split" | "hero";
   showNotes?: boolean;
 }
 
@@ -203,7 +203,11 @@ export function ExploreMap({
   const missing = trainers.length - mapped.length;
   const rootClass = [
     "explore-map",
-    variant === "split" ? "explore-map--split" : "explore-map--panel",
+    variant === "hero"
+      ? "explore-map--hero"
+      : variant === "split"
+        ? "explore-map--split"
+        : "explore-map--panel",
     locked ? "explore-map--locked" : "",
   ]
     .filter(Boolean)

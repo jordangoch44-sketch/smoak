@@ -20,6 +20,8 @@ interface ExploreResultsProps {
   areaEmpty?: boolean;
   /** User expanded beyond the default ZIP radius */
   nearbyExpanded?: boolean;
+  /** When false, map is rendered by the page (mobile map-hero layout) */
+  showMap?: boolean;
   onClearFilters: () => void;
   onClearSearch: () => void;
   onClearAll: () => void;
@@ -36,6 +38,7 @@ export const ExploreResults = memo(function ExploreResults({
   hasSearch,
   areaEmpty = false,
   nearbyExpanded = false,
+  showMap = true,
   onClearFilters,
   onClearSearch,
   onClearAll,
@@ -133,13 +136,15 @@ export const ExploreResults = memo(function ExploreResults({
     return (
       <div className="explore-results-split">
         {expandedNote}
-        <ExploreMap
-          trainers={trainers}
-          areaCenter={areaCenter}
-          locked
-          variant="split"
-          showNotes={false}
-        />
+        {showMap ? (
+          <ExploreMap
+            trainers={trainers}
+            areaCenter={areaCenter}
+            locked
+            variant="split"
+            showNotes={false}
+          />
+        ) : null}
         <div className="explore-results-split__list">
           <p className="explore-results-split__count">
             {trainers.length} specialist{trainers.length === 1 ? "" : "s"} in
