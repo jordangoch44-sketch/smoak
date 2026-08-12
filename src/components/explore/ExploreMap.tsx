@@ -98,9 +98,9 @@ export function ExploreMap({
         keyboard: !locked,
       });
 
-      /* Soft gray land/roads + blue water (Google Maps–like), free CARTO Voyager */
+      /* Dark basemap — Apple Maps–like greys / parks / water (CARTO Dark Matter) */
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
         {
           maxZoom: 18,
           subdomains: "abcd",
@@ -114,9 +114,9 @@ export function ExploreMap({
         L.circleMarker([areaCenter.latitude, areaCenter.longitude], {
           radius: 8,
           className: "explore-map-area",
-          color: "rgba(66, 133, 244, 0.95)",
+          color: "rgba(10, 132, 255, 0.95)",
           weight: 2,
-          fillColor: "rgba(66, 133, 244, 0.28)",
+          fillColor: "rgba(10, 132, 255, 0.32)",
           fillOpacity: 1,
           interactive: false,
         }).addTo(map);
