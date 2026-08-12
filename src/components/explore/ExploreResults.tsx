@@ -18,6 +18,8 @@ interface ExploreResultsProps {
   hasSearch: boolean;
   /** Primary list is empty because nothing is inside the ZIP radius */
   areaEmpty?: boolean;
+  /** Map “Search here” returned no specialists in the visible area */
+  mapSearchEmpty?: boolean;
   /** User expanded beyond the default ZIP radius */
   nearbyExpanded?: boolean;
   /** When false, map is rendered by the page (mobile map-hero layout) */
@@ -37,6 +39,7 @@ export const ExploreResults = memo(function ExploreResults({
   activeFilterCount,
   hasSearch,
   areaEmpty = false,
+  mapSearchEmpty = false,
   nearbyExpanded = false,
   showMap = true,
   onClearFilters,
@@ -49,27 +52,31 @@ export const ExploreResults = memo(function ExploreResults({
 
   if (trainers.length === 0) {
     const isUnfilteredEmpty =
-      !hasSearch && activeFilterCount === 0 && !areaEmpty;
+      !hasSearch && activeFilterCount === 0 && !areaEmpty && !mapSearchEmpty;
 
     return (
       <div className="explore-results-empty-stack">
         <div className="explore-empty">
           <p className="explore-empty__title">
-            {areaEmpty
-              ? "No specialists in that area"
-              : isUnfilteredEmpty
-                ? "Specialists are joining SMOAC"
-                : "No specialists found"}
+            {mapSearchEmpty
+              ? "0 results in this map area"
+              : areaEmpty
+                ? "No specialists in that area"
+                : isUnfilteredEmpty
+                  ? "Specialists are joining SMOAC"
+                  : "No specialists found"}
           </p>
           <p className="explore-empty__text">
-            {areaEmpty
-              ? `Nothing matched within about ${DEFAULT_EXPLORE_RADIUS_MILES} miles of your search location. Broaden to find nearby specialists, or browse suggestions below.`
-              : isUnfilteredEmpty
-                ? "We’re building the roster carefully. Check back soon — or create an account to get notified as specialists go live near you."
-                : "Try adjusting your filters or search query."}
+            {mapSearchEmpty
+              ? "No specialists match this part of the map. Pan or zoom to another area and tap Search here, or Recenter to your default 12-mile search."
+              : areaEmpty
+                ? `Nothing matched within about ${DEFAULT_EXPLORE_RADIUS_MILES} miles of your search location. Broaden to find nearby specialists, or browse suggestions below.`
+                : isUnfilteredEmpty
+                  ? "We’re building the roster carefully. Check back soon — or create an account to get notified as specialists go live near you."
+                  : "Try adjusting your filters or search query."}
           </p>
           <div className="explore-empty__actions">
-            {areaEmpty && onExpandNearby ? (
+            {areaEmpty && !mapSearchEmpty && onExpandNearby ? (
               <button
                 type="button"
                 onClick={onExpandNearby}
@@ -103,7 +110,7 @@ export const ExploreResults = memo(function ExploreResults({
               >
                 Create client account
               </Link>
-            ) : !areaEmpty ? (
+            ) : !areaEmpty && !mapSearchEmpty ? (
               <Link
                 href="/explore"
                 onClick={(e) => {
@@ -120,7 +127,9 @@ export const ExploreResults = memo(function ExploreResults({
           </div>
         </div>
 
-        <ExploreSuggestedSpecialists trainers={suggestedTrainers} />
+        {mapSearchEmpty ? null : (
+          <ExploreSuggestedSpecialists trainers={suggestedTrainers} />
+        )}
       </div>
     );
   }

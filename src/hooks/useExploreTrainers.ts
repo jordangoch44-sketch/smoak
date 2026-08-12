@@ -454,9 +454,13 @@ export function useExploreTrainers({
 
   const suggestedTrainers = useMemo(() => {
     if (filtered.length > 0) return [];
+    /* Map “Search here” is intentional — empty area stays empty (no filler rail). */
+    if (mapSearchArea) return [];
     const catalog = getCatalogTrainers();
     return getSuggestedExploreTrainers(catalog, filters, searchOrigin);
-  }, [filtered, getCatalogTrainers, filters, searchOrigin]);
+  }, [filtered, mapSearchArea, getCatalogTrainers, filters, searchOrigin]);
+
+  const mapSearchActive = Boolean(mapSearchArea);
 
   const getExploreMatchCount = useCallback(
     (candidateFilters: TrainerFilters) => {
@@ -625,6 +629,7 @@ export function useExploreTrainers({
     suggestedTrainers,
     searchOrigin,
     activeSearchArea,
+    mapSearchActive,
     applyMapSearchArea,
     resetMapSearchArea,
     expandNearbyResults,

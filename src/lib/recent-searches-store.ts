@@ -2,9 +2,9 @@
  * Recent Explore search queries (localStorage).
  *
  * Write path: `useExploreTrainers` → `recordRecentSearch()` on successful search.
- * Read UI: not built yet — data is persisted for a future Explore “recent searches” row.
+ * Read UI: Explore search overlay (last 3).
  *
- * To add read UI later, use `useSyncExternalStore` with:
+ * Use `useSyncExternalStore` with:
  * `subscribeRecentSearches`, `getRecentSearchesSnapshot`, `getRecentSearchesServerSnapshot`.
  */
 import {

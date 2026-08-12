@@ -159,6 +159,7 @@ body {
 /* Scroll lock — avoid touch-action:none (blocks taps on iOS Safari) */
 body.menu-open,
 body.drawer-open,
+body.explore-search-open,
 body.profile-sheet-open,
 body.inquiry-sheet-open,
 body.review-modal-open,
@@ -176,6 +177,7 @@ body.admin-review-open {
 @supports (-webkit-touch-callout: none) {
   body.menu-open,
   body.drawer-open,
+  body.explore-search-open,
   body.profile-sheet-open,
   body.inquiry-sheet-open,
   body.review-modal-open,
@@ -191,6 +193,7 @@ body.admin-review-open {
 
   body.menu-open .app-main,
   body.drawer-open .app-main,
+  body.explore-search-open .app-main,
   body.profile-sheet-open .app-main,
   body.inquiry-sheet-open .app-main,
   body.review-modal-open .app-main,

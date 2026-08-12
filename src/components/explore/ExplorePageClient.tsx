@@ -53,6 +53,7 @@ export function ExplorePageClient() {
     suggestedTrainers,
     searchOrigin,
     activeSearchArea,
+    mapSearchActive,
     applyMapSearchArea,
     resetMapSearchArea,
     expandNearbyResults,
@@ -192,6 +193,7 @@ export function ExplorePageClient() {
         activeFilterCount={activeFilterCount}
         hasSearch={hasSearch}
         areaEmpty={areaEmpty}
+        mapSearchEmpty={mapSearchActive && filtered.length === 0}
         nearbyExpanded={nearbyExpanded}
         showMap={!isMobile}
         onClearFilters={clearFilters}

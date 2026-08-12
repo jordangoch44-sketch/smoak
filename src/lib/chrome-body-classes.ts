@@ -9,6 +9,7 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "menu-open",
   "saved-panel-open",
   "drawer-open",
+  "explore-search-open",
   "profile-sheet-open",
   "inquiry-sheet-open",
   "login-gate-open",

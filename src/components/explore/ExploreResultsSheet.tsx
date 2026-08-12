@@ -25,7 +25,7 @@ interface ExploreResultsSheetProps {
 }
 
 function seeResultsLabel(count: number): string {
-  if (count <= 0) return "See results";
+  if (count <= 0) return "0 results";
   if (count === 1) return "See 1 result";
   return `See ${count} results`;
 }
