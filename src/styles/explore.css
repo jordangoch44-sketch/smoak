@@ -2706,113 +2706,55 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   }
 }
 
-/* Full-screen Search overlay */
+/* Full-screen Search overlay — nebula fill under the in-place search bar */
 .explore-search-overlay {
   position: fixed;
   inset: 0;
   z-index: calc(var(--z-header-overlay, 9000) + 40);
-  display: flex;
-  flex-direction: column;
-  background:
-    radial-gradient(
-      ellipse 90% 55% at 50% -10%,
-      rgba(var(--aurora-violet-rgb), 0.28) 0%,
-      transparent 58%
-    ),
-    #0a0910;
-  color: rgba(255, 255, 255, 0.92);
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  pointer-events: auto;
-}
-
-.explore-search-overlay__chrome {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.75rem 1rem 0.55rem;
-}
-
-.explore-search-overlay__close {
-  display: inline-flex;
-  width: 2.65rem;
-  height: 2.65rem;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.88);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.explore-search-overlay__close-icon {
-  width: 1.15rem;
-  height: 1.15rem;
-}
-
-.explore-search-overlay__form {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.explore-search-overlay__field {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.explore-search-overlay__search-icon {
-  position: absolute;
-  left: 0.95rem;
-  width: 1.1rem;
-  height: 1.1rem;
-  color: rgba(255, 255, 255, 0.45);
   pointer-events: none;
 }
 
-.explore-search-overlay__input {
-  width: 100%;
-  min-height: 2.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 9999px;
-  background: rgba(18, 16, 28, 0.88);
-  padding: 0.7rem 2.6rem 0.7rem 2.75rem;
-  color: #fff;
-  font-size: 1rem;
-  line-height: 1.35;
-}
-
-.explore-search-overlay__input::placeholder {
-  color: rgba(255, 255, 255, 0.38);
-}
-
-.explore-search-overlay__clear {
+.explore-search-overlay__backdrop {
   position: absolute;
-  right: 0.45rem;
-  top: 50%;
-  display: inline-flex;
-  width: 1.85rem;
-  height: 1.85rem;
-  align-items: center;
-  justify-content: center;
-  transform: translateY(-50%);
+  inset: 0;
   border: none;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 1.15rem;
-  line-height: 1;
+  padding: 0;
+  margin: 0;
   cursor: pointer;
+  pointer-events: auto;
+  background:
+    radial-gradient(
+      ellipse 100% 70% at 50% 18%,
+      rgba(var(--aurora-violet-rgb), 0.34) 0%,
+      rgba(var(--aurora-indigo-rgb), 0.18) 38%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 80% 70%,
+      rgba(var(--aurora-magenta-rgb), 0.14) 0%,
+      transparent 55%
+    ),
+    #0a0910;
+}
+
+.explore-search-overlay__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 .explore-search-overlay__body {
   flex: 1 1 auto;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  padding: 0.35rem 0 1.5rem;
+  padding: 0.25rem 0 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
@@ -2934,7 +2876,38 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   background: rgba(var(--aurora-violet-rgb), 0.16);
 }
 
+/* Keep the real Search row above the nebula fill */
+body.explore-search-open .explore-toolbar--search-open,
+body.explore-search-open .explore-map-hero__controls {
+  position: relative;
+  z-index: calc(var(--z-header-overlay, 9000) + 55);
+}
+
 body.explore-search-open .mobile-bottom-nav {
   visibility: hidden;
   pointer-events: none;
+}
+
+.explore-search-cancel {
+  flex-shrink: 0;
+  min-height: 3.25rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  padding: 0 0.55rem;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.explore-search-cancel:active {
+  color: #fff;
+}
+
+.explore-map-hero .explore-search-cancel {
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
 }

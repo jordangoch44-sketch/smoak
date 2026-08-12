@@ -3,14 +3,12 @@
 import {
   useEffect,
   useId,
-  useRef,
   useState,
   useSyncExternalStore,
-  type FormEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { CloseIcon, LocationMarkIcon, SearchIcon } from "@/components/ui/icons";
+import { LocationMarkIcon } from "@/components/ui/icons";
 import {
   EXPLORE_RECENT_SEARCH_OVERLAY_LIMIT,
   EXPLORE_SEARCH_GOAL_PROMPTS,
@@ -25,28 +23,24 @@ import { completeGeolocationAsync } from "@/lib/user-location-store";
 
 interface ExploreSearchOverlayProps {
   open: boolean;
-  draft: string;
-  onDraftChange: (value: string) => void;
+  /** Bottom edge of the in-place search row (viewport px) — prompts start below this */
+  contentTop: number;
   onClose: () => void;
   onSubmit: (query: string) => void;
   showLocationPrompt: boolean;
-  locationLabel?: string;
 }
 
 /**
- * Full-screen Search focus surface: location (if needed), recent, specialists, goals.
+ * Nebula fill + prompts under the existing Search bar (bar stays in place).
  */
 export function ExploreSearchOverlay({
   open,
-  draft,
-  onDraftChange,
+  contentTop,
   onClose,
   onSubmit,
   showLocationPrompt,
-  locationLabel,
 }: ExploreSearchOverlayProps) {
   const titleId = useId();
-  const inputRef = useRef<HTMLInputElement | null>(null);
   const [portalReady, setPortalReady] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -73,13 +67,7 @@ export function ExploreSearchOverlay({
     if (!open) {
       setGeoError(null);
       setGeoLoading(false);
-      return;
     }
-    const frame = window.requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    });
-    return () => window.cancelAnimationFrame(frame);
   }, [open]);
 
   useEffect(() => {
@@ -94,13 +82,7 @@ export function ExploreSearchOverlay({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    onSubmit(draft);
-  }
-
   function handlePrompt(query: string) {
-    onDraftChange(query);
     onSubmit(query);
   }
 
@@ -157,6 +139,8 @@ export function ExploreSearchOverlay({
 
   if (!portalReady || !open) return null;
 
+  const top = Math.max(0, contentTop);
+
   return createPortal(
     <div
       className="explore-search-overlay"
@@ -164,126 +148,100 @@ export function ExploreSearchOverlay({
       aria-modal="true"
       aria-labelledby={titleId}
     >
-      <div className="explore-search-overlay__chrome">
-        <button
-          type="button"
-          className="smoac-control explore-search-overlay__close"
-          aria-label="Close search"
-          onClick={onClose}
-        >
-          <CloseIcon className="explore-search-overlay__close-icon" />
-        </button>
-        <form
-          className="explore-search-overlay__form"
-          onSubmit={handleSubmit}
-        >
-          <div className="explore-search-overlay__field">
-            <SearchIcon className="explore-search-overlay__search-icon" />
-            <input
-              ref={inputRef}
-              id="explore-search-overlay-input"
-              type="search"
-              enterKeyHint="search"
-              autoComplete="off"
-              value={draft}
-              onChange={(event) => onDraftChange(event.target.value)}
-              placeholder={
-                locationLabel
-                  ? `Name or keyword near ${locationLabel}…`
-                  : "Name or keyword…"
-              }
-              aria-label="Search specialists"
-              className="smoac-control explore-search-overlay__input"
-            />
-            {draft.trim() ? (
+      <button
+        type="button"
+        className="explore-search-overlay__backdrop"
+        aria-label="Dismiss search"
+        onClick={onClose}
+      />
+
+      <div
+        id="explore-search-overlay-panel"
+        className="explore-search-overlay__panel"
+        style={{ top: `${top}px` }}
+      >
+        <div className="explore-search-overlay__body">
+          <h2 id={titleId} className="sr-only">
+            Search specialists
+          </h2>
+
+          {showLocationPrompt ? (
+            <div className="explore-search-overlay__location">
               <button
                 type="button"
-                className="smoac-control explore-search-overlay__clear"
-                aria-label="Clear search"
-                onClick={() => onDraftChange("")}
+                className="smoac-control explore-search-overlay__location-btn"
+                onClick={handleUseCurrentLocation}
+                disabled={geoLoading}
               >
-                ×
+                <span
+                  className="explore-search-overlay__location-icon"
+                  aria-hidden
+                >
+                  <LocationMarkIcon className="h-4 w-4" />
+                </span>
+                <span className="explore-search-overlay__location-copy">
+                  <span className="explore-search-overlay__location-label">
+                    {geoLoading
+                      ? "Finding your location…"
+                      : "Use your current location"}
+                  </span>
+                  <span className="explore-search-overlay__location-hint">
+                    Show specialists near you
+                  </span>
+                </span>
               </button>
-            ) : null}
-          </div>
-        </form>
-      </div>
+              {geoError ? (
+                <p
+                  className="explore-search-overlay__location-error"
+                  role="status"
+                >
+                  {geoError}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
 
-      <div className="explore-search-overlay__body">
-        <h2 id={titleId} className="sr-only">
-          Search specialists
-        </h2>
+          {recent.length > 0 ? (
+            <PromptRow title="Recent">
+              {recent.map((entry) => (
+                <button
+                  key={entry.id}
+                  type="button"
+                  className="smoac-control explore-search-overlay__chip"
+                  onClick={() => handlePrompt(entry.query)}
+                >
+                  {entry.query}
+                </button>
+              ))}
+            </PromptRow>
+          ) : null}
 
-        {showLocationPrompt ? (
-          <div className="explore-search-overlay__location">
-            <button
-              type="button"
-              className="smoac-control explore-search-overlay__location-btn"
-              onClick={handleUseCurrentLocation}
-              disabled={geoLoading}
-            >
-              <span className="explore-search-overlay__location-icon" aria-hidden>
-                <LocationMarkIcon className="h-4 w-4" />
-              </span>
-              <span className="explore-search-overlay__location-copy">
-                <span className="explore-search-overlay__location-label">
-                  {geoLoading
-                    ? "Finding your location…"
-                    : "Use your current location"}
-                </span>
-                <span className="explore-search-overlay__location-hint">
-                  Show specialists near you
-                </span>
-              </span>
-            </button>
-            {geoError ? (
-              <p className="explore-search-overlay__location-error" role="status">
-                {geoError}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
-        {recent.length > 0 ? (
-          <PromptRow title="Recent">
-            {recent.map((entry) => (
+          <PromptRow title="Specialists">
+            {EXPLORE_SEARCH_SPECIALIST_PROMPTS.map((prompt) => (
               <button
-                key={entry.id}
+                key={prompt.id}
                 type="button"
                 className="smoac-control explore-search-overlay__chip"
-                onClick={() => handlePrompt(entry.query)}
+                onClick={() => handlePrompt(prompt.searchQuery)}
               >
-                {entry.query}
+                {prompt.label}
               </button>
             ))}
           </PromptRow>
-        ) : null}
 
-        <PromptRow title="Specialists">
-          {EXPLORE_SEARCH_SPECIALIST_PROMPTS.map((prompt) => (
-            <button
-              key={prompt.id}
-              type="button"
-              className="smoac-control explore-search-overlay__chip"
-              onClick={() => handlePrompt(prompt.searchQuery)}
-            >
-              {prompt.label}
-            </button>
-          ))}
-        </PromptRow>
-
-        <PromptRow title="Goals">
-          {EXPLORE_SEARCH_GOAL_PROMPTS.map((prompt) => (
-            <button
-              key={prompt.id}
-              type="button"
-              className="smoac-control explore-search-overlay__chip explore-search-overlay__chip--goal"
-              onClick={() => handlePrompt(prompt.searchQuery)}
-            >
-              {prompt.label}
-            </button>
-          ))}
-        </PromptRow>
+          <PromptRow title="Goals">
+            {EXPLORE_SEARCH_GOAL_PROMPTS.map((prompt) => (
+              <button
+                key={prompt.id}
+                type="button"
+                className="smoac-control explore-search-overlay__chip explore-search-overlay__chip--goal"
+                onClick={() => handlePrompt(prompt.searchQuery)}
+              >
+                {prompt.label}
+              </button>
+            ))}
+          </PromptRow>
+        </div>
       </div>
     </div>,
     document.body

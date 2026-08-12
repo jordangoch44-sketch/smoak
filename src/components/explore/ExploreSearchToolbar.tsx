@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import type { ActiveFilterChip, ActiveFilterKey } from "@/lib/explore-active-filters";
 import { SearchIcon, FilterIcon } from "@/components/ui/icons";
 import { ExploreActiveFilterChips } from "./ExploreActiveFilterChips";
@@ -39,7 +39,10 @@ export function ExploreSearchToolbar({
   const [draft, setDraft] = useState(searchQuery);
   const [appliedQuery, setAppliedQuery] = useState(searchQuery);
   const [overlayOpen, setOverlayOpen] = useState(false);
+  const [overlayTop, setOverlayTop] = useState(0);
   const openFromUserRef = useRef(false);
+  const searchRowRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const hasChips = activeFilterChips.length > 0;
   const hasDraft = Boolean(draft.trim());
 
@@ -55,12 +58,14 @@ export function ExploreSearchToolbar({
   function closeOverlay() {
     setOverlayOpen(false);
     openFromUserRef.current = false;
+    inputRef.current?.blur();
   }
 
   function handleSubmitFromOverlay(query: string) {
     setDraft(query);
     setOverlayOpen(false);
     onSearchSubmit(query);
+    inputRef.current?.blur();
   }
 
   function handleClear() {
@@ -79,6 +84,44 @@ export function ExploreSearchToolbar({
     openFromUserRef.current = false;
   }
 
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    handleSubmitFromOverlay(draft);
+  }
+
+  useLayoutEffect(() => {
+    if (!overlayOpen) return;
+
+    function measure() {
+      const el = searchRowRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      setOverlayTop(rect.bottom + 10);
+    }
+
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    const visualViewport = window.visualViewport;
+    visualViewport?.addEventListener("resize", measure);
+    visualViewport?.addEventListener("scroll", measure);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+      visualViewport?.removeEventListener("resize", measure);
+      visualViewport?.removeEventListener("scroll", measure);
+    };
+  }, [overlayOpen, hasChips, draft]);
+
+  useEffect(() => {
+    if (!overlayOpen) return;
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [overlayOpen]);
+
   useEffect(() => {
     if (!overlayOpen) return;
     function onVisibility() {
@@ -91,9 +134,15 @@ export function ExploreSearchToolbar({
   }, [overlayOpen]);
 
   return (
-    <div className="explore-toolbar">
-      <div className="explore-search-row">
-        <div
+    <div
+      className={cn(
+        "explore-toolbar",
+        overlayOpen && "explore-toolbar--search-open"
+      )}
+    >
+      <div className="explore-search-row" ref={searchRowRef}>
+        <form
+          onSubmit={handleSubmit}
           className={cn(
             "explore-search-shell",
             overlayOpen && "explore-search-shell--overlay-open"
@@ -103,15 +152,15 @@ export function ExploreSearchToolbar({
             <div className="explore-search-shell__field">
               <SearchIcon className="explore-search-shell__icon" />
               <input
+                ref={inputRef}
                 id="explore-search-input"
                 type="search"
                 enterKeyHint="search"
                 autoComplete="off"
-                readOnly
                 value={draft}
+                onChange={(event) => setDraft(event.target.value)}
                 onPointerDown={handlePointerDown}
                 onFocus={handleFocus}
-                onClick={openOverlay}
                 placeholder={
                   locationReady && !isPlaceholder
                     ? `Search near ${pillLabel}…`
@@ -119,7 +168,7 @@ export function ExploreSearchToolbar({
                 }
                 aria-label="Search specialists"
                 aria-expanded={overlayOpen}
-                aria-controls="explore-search-overlay-input"
+                aria-controls="explore-search-overlay-panel"
                 className="smoac-control explore-search-shell__input"
               />
               {hasDraft ? (
@@ -137,31 +186,41 @@ export function ExploreSearchToolbar({
               ) : null}
             </div>
           </div>
-        </div>
+        </form>
 
-        <button
-          type="button"
-          onClick={onOpenFilters}
-          className={cn(
-            "smoac-control explore-filters-icon-btn",
-            activeFilterCount > 0 && "explore-filters-icon-btn--active"
-          )}
-          aria-label={
-            activeFilterCount > 0
-              ? `Filters, ${activeFilterCount} active`
-              : "Open filters"
-          }
-        >
-          <FilterIcon className="explore-filters-icon-btn__icon" />
-          {activeFilterCount > 0 ? (
-            <span className="explore-filters-icon-btn__badge" aria-hidden>
-              {activeFilterCount}
-            </span>
-          ) : null}
-        </button>
+        {overlayOpen ? (
+          <button
+            type="button"
+            onClick={closeOverlay}
+            className="smoac-control explore-search-cancel"
+          >
+            Cancel
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpenFilters}
+            className={cn(
+              "smoac-control explore-filters-icon-btn",
+              activeFilterCount > 0 && "explore-filters-icon-btn--active"
+            )}
+            aria-label={
+              activeFilterCount > 0
+                ? `Filters, ${activeFilterCount} active`
+                : "Open filters"
+            }
+          >
+            <FilterIcon className="explore-filters-icon-btn__icon" />
+            {activeFilterCount > 0 ? (
+              <span className="explore-filters-icon-btn__badge" aria-hidden>
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </button>
+        )}
       </div>
 
-      {hasChips ? (
+      {hasChips && !overlayOpen ? (
         <ExploreActiveFilterChips
           chips={activeFilterChips}
           onRemove={onRemoveFilter}
@@ -171,14 +230,10 @@ export function ExploreSearchToolbar({
 
       <ExploreSearchOverlay
         open={overlayOpen}
-        draft={draft}
-        onDraftChange={setDraft}
+        contentTop={overlayTop}
         onClose={closeOverlay}
         onSubmit={handleSubmitFromOverlay}
         showLocationPrompt={!locationReady}
-        locationLabel={
-          locationReady && !isPlaceholder ? pillLabel : undefined
-        }
       />
     </div>
   );
