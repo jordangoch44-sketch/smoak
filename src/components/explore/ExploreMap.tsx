@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type { Trainer } from "@/types";
+import { LocationMarkIcon } from "@/components/ui/icons";
 import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
 import { getTrainerCoordinates } from "@/lib/trainer-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { formatTrainerPriceLabel } from "@/lib/home-discovery";
+import { cn } from "@/lib/utils";
 
 export type ExploreMapArea = {
   latitude: number;
@@ -230,11 +232,11 @@ export function ExploreMap({
       areaDotRef.current = L.circleMarker(
         [areaCenter.latitude, areaCenter.longitude],
         {
-          radius: 8,
+          radius: 9,
           className: "explore-map-area",
-          color: "rgba(10, 132, 255, 0.95)",
-          weight: 2,
-          fillColor: "rgba(10, 132, 255, 0.32)",
+          color: "#ffffff",
+          weight: 2.5,
+          fillColor: "#9b5cff",
           fillOpacity: 1,
           interactive: false,
         }
@@ -283,7 +285,20 @@ export function ExploreMap({
     }
   }, [mapped, areaCenter, profileSheetOpen, mapEpoch]);
 
+  const handleRecenter = useCallback(() => {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    if (!map || !L || profileSheetOpen) return;
+    const center = areaCenterRef.current ?? FALLBACK_CENTER;
+    frameRadiusMiles(map, L, center, DEFAULT_EXPLORE_MAP_RADIUS_MILES);
+    const key = areaCenterRef.current
+      ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
+      : "fallback";
+    framedOriginRef.current = key;
+  }, [profileSheetOpen]);
+
   const missing = trainers.length - mapped.length;
+  const showRecenter = !locked && !profileSheetOpen;
   const rootClass = [
     "explore-map",
     variant === "hero"
@@ -304,6 +319,20 @@ export function ExploreMap({
         role="img"
         aria-label="Map of specialists in this search area"
       />
+      {showRecenter ? (
+        <button
+          type="button"
+          className={cn(
+            "smoac-control explore-map__recenter",
+            variant === "hero" && "explore-map__recenter--hero"
+          )}
+          onClick={handleRecenter}
+          aria-label="Recenter map to your 12-mile search area"
+        >
+          <LocationMarkIcon className="explore-map__recenter-icon" />
+          <span className="explore-map__recenter-label">Recenter</span>
+        </button>
+      ) : null}
       {showNotes ? (
         mapped.length === 0 ? (
           <p className="explore-map__empty">
