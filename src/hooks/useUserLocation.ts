@@ -74,14 +74,21 @@ export function useUserLocation() {
     return getZipPlaceDisplayName(zip);
   }, [zip, geoCity]);
 
-  const { label: pillLabel, isPlaceholder, isUnknownArea } = useMemo(
-    () => buildDisplayLabel(zip, zip ? placeName : null),
-    [zip, placeName]
-  );
+  const { label: pillLabel, isPlaceholder, isUnknownArea } = useMemo(() => {
+    if (zip) return buildDisplayLabel(zip, placeName);
+    if (geoCity) {
+      return {
+        label: geoCity,
+        isPlaceholder: false,
+        isUnknownArea: false,
+      };
+    }
+    return buildDisplayLabel(null, null);
+  }, [zip, placeName, geoCity]);
 
   return {
     zip,
-    city: placeName,
+    city: placeName ?? geoCity,
     hasLocation: Boolean(zip || geoCity),
     pillLabel,
     isPlaceholder,

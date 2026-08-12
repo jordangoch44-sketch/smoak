@@ -141,16 +141,23 @@ export function LocationSelectorPanel({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         void (async () => {
-          const result = await completeGeolocationAsync(
-            position.coords.latitude,
-            position.coords.longitude
-          );
-          setGeoLoading(false);
-          if (!result.ok) {
-            setGeoError(result.message);
-            return;
+          try {
+            const result = await completeGeolocationAsync(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+            if (!result.ok) {
+              setGeoError(result.message);
+              return;
+            }
+            onUpdated();
+          } catch {
+            setGeoError(
+              "Couldn’t finish locating you. Enter your ZIP code instead."
+            );
+          } finally {
+            setGeoLoading(false);
           }
-          onUpdated();
         })();
       },
       (error) => {

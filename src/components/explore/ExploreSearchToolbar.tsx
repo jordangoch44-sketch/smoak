@@ -127,18 +127,24 @@ export function ExploreSearchToolbar({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         void (async () => {
-          const result = await completeGeolocationAsync(
-            position.coords.latitude,
-            position.coords.longitude
-          );
-          setGeoLoading(false);
-          if (!result.ok) {
-            setGeoError(result.message);
+          try {
+            const result = await completeGeolocationAsync(
+              position.coords.latitude,
+              position.coords.longitude
+            );
+            if (!result.ok) {
+              setGeoError(result.message);
+              setSuggestionsOpen(true);
+              return;
+            }
+            setSuggestionsOpen(false);
+            document.getElementById("explore-search-input")?.blur();
+          } catch {
+            setGeoError("Couldn’t finish locating you. Try again.");
             setSuggestionsOpen(true);
-            return;
+          } finally {
+            setGeoLoading(false);
           }
-          setSuggestionsOpen(false);
-          document.getElementById("explore-search-input")?.blur();
         })();
       },
       (error) => {

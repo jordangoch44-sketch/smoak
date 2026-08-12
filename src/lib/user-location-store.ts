@@ -92,8 +92,9 @@ export type CompleteGeolocationResult =
   | { ok: false; message: string };
 
 /**
- * High-accuracy GPS → reverse geocode → persist device coords + ZIP/place.
- * Device coordinates remain the proximity sort source of truth.
+ * High-accuracy GPS → persist device coords immediately, then reverse-geocode
+ * for ZIP/place labels. Coords are always saved so the gate can dismiss even
+ * when reverse-geocode is slow or fails.
  */
 export async function completeGeolocationAsync(
   latitude: number,
@@ -103,12 +104,23 @@ export async function completeGeolocationAsync(
     return { ok: false, message: "Location is unavailable on this device." };
   }
 
-  const resolved = await reverseGeocodeCoordinates(latitude, longitude);
-  saveGeolocationCoordinates(latitude, longitude, {
-    zip: resolved?.zip ?? null,
-    placeName: resolved?.placeName ?? null,
-    state: resolved?.state ?? null,
-  });
+  /* Persist first so proximity + gate unlock don’t wait on network. */
+  saveGeolocationCoordinates(latitude, longitude);
+
+  let resolved: Awaited<ReturnType<typeof reverseGeocodeCoordinates>> = null;
+  try {
+    resolved = await reverseGeocodeCoordinates(latitude, longitude);
+  } catch {
+    resolved = null;
+  }
+
+  if (resolved?.zip || resolved?.placeName) {
+    saveGeolocationCoordinates(latitude, longitude, {
+      zip: resolved.zip ?? null,
+      placeName: resolved.placeName ?? null,
+      state: resolved.state ?? null,
+    });
+  }
 
   if (resolved?.zip) {
     recordRecentZipCode(resolved.zip);

@@ -122,22 +122,29 @@ export function TrainerFilters({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         void (async () => {
-          const result = await completeGeolocationAsync(
-            position.coords.latitude,
-            position.coords.longitude
-          );
-          setGeoLoading(false);
-          if (!result.ok) {
-            setGeoError(result.message);
-            return;
-          }
-          if (!result.zip) {
-            setGeoError(
-              "Couldn’t find a ZIP for your location. Enter one below."
+          try {
+            const result = await completeGeolocationAsync(
+              position.coords.latitude,
+              position.coords.longitude
             );
-            return;
+            if (!result.ok) {
+              setGeoError(result.message);
+              return;
+            }
+            if (!result.zip) {
+              setGeoError(
+                "Couldn’t find a ZIP for your location. Enter one below."
+              );
+              return;
+            }
+            onChange(applyLocationFilters(filtersRef.current, result.zip));
+          } catch {
+            setGeoError(
+              "Couldn’t finish locating you. Enter a ZIP instead."
+            );
+          } finally {
+            setGeoLoading(false);
           }
-          onChange(applyLocationFilters(filtersRef.current, result.zip));
         })();
       },
       (error) => {

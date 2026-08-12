@@ -46,15 +46,19 @@ function frameRadiusMiles(
   center: ExploreMapArea,
   radiusMiles: number
 ) {
-  const circle = L.circle([center.latitude, center.longitude], {
-    radius: radiusMiles * METERS_PER_MILE,
-    interactive: false,
-  });
-  map.fitBounds(circle.getBounds(), {
-    animate: false,
-    padding: [28, 28],
-  });
-  circle.remove();
+  try {
+    const circle = L.circle([center.latitude, center.longitude], {
+      radius: radiusMiles * METERS_PER_MILE,
+      interactive: false,
+    });
+    map.fitBounds(circle.getBounds(), {
+      animate: false,
+      padding: [28, 28],
+    });
+    circle.remove();
+  } catch {
+    map.setView([center.latitude, center.longitude], 11, { animate: false });
+  }
 }
 
 /**
