@@ -157,7 +157,7 @@ function resolveExploreSortOrigin(
 }
 
 /**
- * Map / radius center for Explore (read-only display + 5-mile filter).
+ * Map / radius center for Explore (read-only display + default-mile filter).
  * Prefer filter ZIP, then city / neighborhood / client coords.
  */
 export function resolveExploreMapArea(

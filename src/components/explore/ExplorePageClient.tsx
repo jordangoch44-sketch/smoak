@@ -12,6 +12,7 @@ import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
+import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import { cn } from "@/lib/utils";
@@ -35,8 +36,12 @@ export function ExplorePageClient() {
   const isCompactAtmosphere = useTabletViewport(true);
   const { openLocationPanel } = useUserLocationEditor();
   const pendingSearchRef = useRef<string | null>(null);
+  const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
   const [boostOpen, setBoostOpen] = useState(false);
+  const [pendingMapArea, setPendingMapArea] =
+    useState<ExploreSearchArea | null>(null);
+  const [mapSearchLoading, setMapSearchLoading] = useState(false);
 
   const {
     filters,
@@ -50,6 +55,9 @@ export function ExplorePageClient() {
     areaEmpty,
     suggestedTrainers,
     searchOrigin,
+    activeSearchArea,
+    applyMapSearchArea,
+    resetMapSearchArea,
     expandNearbyResults,
     getExploreMatchCount,
     activeFilterCount,
@@ -65,6 +73,30 @@ export function ExplorePageClient() {
     initialCatalog: trainers,
     catalogMode,
   });
+
+  pendingMapAreaRef.current = pendingMapArea;
+
+  const handlePendingSearchAreaChange = useCallback(
+    (area: ExploreSearchArea | null) => {
+      setPendingMapArea(area);
+    },
+    []
+  );
+
+  const handleSearchHere = useCallback(() => {
+    const area = pendingMapAreaRef.current;
+    if (!area) return;
+    setMapSearchLoading(true);
+    applyMapSearchArea(area);
+    setPendingMapArea(null);
+    window.setTimeout(() => setMapSearchLoading(false), 420);
+  }, [applyMapSearchArea]);
+
+  const handleRecenterSearch = useCallback(() => {
+    setPendingMapArea(null);
+    setMapSearchLoading(false);
+    resetMapSearchArea();
+  }, [resetMapSearchArea]);
 
   const runSearchOrAskLocation = useCallback(
     (query: string) => {
@@ -233,6 +265,12 @@ export function ExplorePageClient() {
             <ExploreMap
               trainers={filtered}
               areaCenter={searchOrigin}
+              activeSearchArea={activeSearchArea}
+              onPendingSearchAreaChange={handlePendingSearchAreaChange}
+              onSearchHere={handleSearchHere}
+              onRecenterSearch={handleRecenterSearch}
+              showSearchHere={Boolean(pendingMapArea)}
+              searchHereLoading={mapSearchLoading}
               locked={false}
               variant="hero"
               showNotes={false}

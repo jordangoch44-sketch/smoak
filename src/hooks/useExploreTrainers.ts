@@ -19,6 +19,10 @@ import {
   getSuggestedExploreTrainers,
 } from "@/lib/explore";
 import {
+  defaultExploreSearchArea,
+  type ExploreSearchArea,
+} from "@/lib/explore-map-area";
+import {
   getActiveFilterChips,
   removeFilterFromState,
   buildDisplayQueryFromSearchFilters,
@@ -337,6 +341,10 @@ export function useExploreTrainers({
   );
 
   const [nearbyExpanded, setNearbyExpanded] = useState(false);
+  /** Custom map frame from “Search here”; null = default origin + 12 mi */
+  const [mapSearchArea, setMapSearchArea] = useState<ExploreSearchArea | null>(
+    null
+  );
 
   const getCatalogTrainers = useCallback(() => {
     void profileOverridesRevision;
@@ -370,6 +378,19 @@ export function useExploreTrainers({
     return resolveExploreMapArea(filters, userCoords);
   }, [filters, userCoords, hydrated, coordsKey]);
 
+  const originKey = searchOrigin
+    ? `${searchOrigin.latitude.toFixed(4)},${searchOrigin.longitude.toFixed(4)}`
+    : "";
+
+  useEffect(() => {
+    setMapSearchArea(null);
+  }, [originKey]);
+
+  const activeSearchArea = useMemo(() => {
+    if (mapSearchArea) return mapSearchArea;
+    return defaultExploreSearchArea(searchOrigin);
+  }, [mapSearchArea, searchOrigin]);
+
   const filterKey = useMemo(
     () =>
       [
@@ -393,8 +414,17 @@ export function useExploreTrainers({
 
   const { filtered, areaEmpty } = useMemo(() => {
     const catalog = getCatalogTrainers();
-    const origin = searchOrigin;
-    const radiusMiles = origin ? DEFAULT_EXPLORE_RADIUS_MILES : null;
+    const origin = activeSearchArea
+      ? {
+          latitude: activeSearchArea.latitude,
+          longitude: activeSearchArea.longitude,
+        }
+      : searchOrigin;
+    const radiusMiles = activeSearchArea
+      ? activeSearchArea.radiusMiles
+      : origin
+        ? DEFAULT_EXPLORE_RADIUS_MILES
+        : null;
     const area = filterExploreTrainersInArea(
       catalog,
       filters,
@@ -415,6 +445,7 @@ export function useExploreTrainers({
     filters,
     searchQuery,
     searchOrigin,
+    activeSearchArea,
     nearbyExpanded,
     hydrated,
     userCoords,
@@ -444,6 +475,16 @@ export function useExploreTrainers({
 
   const expandNearbyResults = useCallback(() => {
     setNearbyExpanded(true);
+  }, []);
+
+  const applyMapSearchArea = useCallback((area: ExploreSearchArea) => {
+    setNearbyExpanded(false);
+    setMapSearchArea(area);
+  }, []);
+
+  const resetMapSearchArea = useCallback(() => {
+    setNearbyExpanded(false);
+    setMapSearchArea(null);
   }, []);
 
   const activeFilterCount = countActiveFilters(filters);
@@ -583,6 +624,9 @@ export function useExploreTrainers({
     nearbyExpanded,
     suggestedTrainers,
     searchOrigin,
+    activeSearchArea,
+    applyMapSearchArea,
+    resetMapSearchArea,
     expandNearbyResults,
     getExploreMatchCount,
     activeFilterCount,

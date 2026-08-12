@@ -5,6 +5,13 @@ import "leaflet/dist/leaflet.css";
 import type { Trainer } from "@/types";
 import { LocationMarkIcon } from "@/components/ui/icons";
 import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
+import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
+import {
+  EXPLORE_MAP_RADIUS_PRESETS_MILES,
+  exploreSearchAreasDiffer,
+  searchAreaFromMapViewport,
+  type ExploreSearchArea,
+} from "@/lib/explore-map-area";
 import { getTrainerCoordinates } from "@/lib/trainer-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatProviderLocation } from "@/lib/provider-location";
@@ -20,6 +27,16 @@ interface ExploreMapProps {
   trainers: Trainer[];
   /** Search / personalization area — frames the map even when pins are sparse */
   areaCenter?: ExploreMapArea | null;
+  /** Active area used for pins + list (default 12 mi around origin) */
+  activeSearchArea?: ExploreSearchArea | null;
+  /** User moved the map / changed radius — pending area ready for Search here */
+  onPendingSearchAreaChange?: (area: ExploreSearchArea | null) => void;
+  /** Apply pending map area to results */
+  onSearchHere?: () => void;
+  /** Recenter camera + reset results to default 12-mile frame */
+  onRecenterSearch?: () => void;
+  showSearchHere?: boolean;
+  searchHereLoading?: boolean;
   /** Display-only: no drag / zoom (default true) */
   locked?: boolean;
   /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header */
@@ -38,8 +55,8 @@ const FALLBACK_CENTER: ExploreMapArea = {
   longitude: -117.1611,
 };
 
-/** Default camera: ~12-mile radius around the search origin */
-export const DEFAULT_EXPLORE_MAP_RADIUS_MILES = 12;
+/** @deprecated Prefer DEFAULT_EXPLORE_RADIUS_MILES — kept for existing imports */
+export const DEFAULT_EXPLORE_MAP_RADIUS_MILES = DEFAULT_EXPLORE_RADIUS_MILES;
 const METERS_PER_MILE = 1609.344;
 
 function frameRadiusMiles(
@@ -65,12 +82,18 @@ function frameRadiusMiles(
 
 /**
  * Explore map — pins current results around the search origin.
- * Fresh visits reset to a ~12-mile radius frame; user zoom is kept while
- * staying on Search (filters only refresh pins).
+ * Fresh visits / recenter use the default radius frame; pan/zoom or radius
+ * presets surface “Search here” before updating results.
  */
 export function ExploreMap({
   trainers,
   areaCenter = null,
+  activeSearchArea = null,
+  onPendingSearchAreaChange,
+  onSearchHere,
+  onRecenterSearch,
+  showSearchHere = false,
+  searchHereLoading = false,
   locked = true,
   variant = "panel",
   showNotes = true,
@@ -83,6 +106,12 @@ export function ExploreMap({
   const framedOriginRef = useRef<string>("");
   const areaCenterRef = useRef(areaCenter);
   areaCenterRef.current = areaCenter;
+  const activeSearchAreaRef = useRef(activeSearchArea);
+  activeSearchAreaRef.current = activeSearchArea;
+  const onPendingRef = useRef(onPendingSearchAreaChange);
+  onPendingRef.current = onPendingSearchAreaChange;
+  /** Ignore moveend while we programmatically frame the camera */
+  const suppressMoveRef = useRef(0);
   const [mapEpoch, setMapEpoch] = useState(0);
   const profileSheetOpen = useProfileSheetOpen();
 
@@ -103,6 +132,21 @@ export function ExploreMap({
   const areaKey = areaCenter
     ? `${areaCenter.latitude.toFixed(4)},${areaCenter.longitude.toFixed(4)}`
     : "";
+
+  const runProgrammaticFrame = useCallback(
+    (center: ExploreMapArea, radiusMiles: number) => {
+      const map = mapRef.current;
+      const L = leafletRef.current;
+      if (!map || !L) return;
+      suppressMoveRef.current += 1;
+      frameRadiusMiles(map, L, center, radiusMiles);
+      window.setTimeout(() => {
+        suppressMoveRef.current = Math.max(0, suppressMoveRef.current - 1);
+        onPendingRef.current?.(null);
+      }, 180);
+    },
+    []
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +170,8 @@ export function ExploreMap({
       framedOriginRef.current = "";
 
       const center = areaCenterRef.current ?? FALLBACK_CENTER;
+      const radius =
+        activeSearchAreaRef.current?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
       leafletRef.current = L;
 
       map = L.map(el, {
@@ -159,30 +205,59 @@ export function ExploreMap({
       markersLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
 
-      frameRadiusMiles(map, L, center, DEFAULT_EXPLORE_MAP_RADIUS_MILES);
+      suppressMoveRef.current += 1;
+      frameRadiusMiles(map, L, center, radius);
       framedOriginRef.current = areaCenterRef.current
         ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
         : "fallback";
 
       setMapEpoch((value) => value + 1);
 
+      const onMoveEnd = () => {
+        if (suppressMoveRef.current > 0) return;
+        const viewport = searchAreaFromMapViewport(
+          map!.getCenter().lat,
+          map!.getCenter().lng,
+          map!.getBounds().getNorthEast().lat,
+          map!.getBounds().getNorthEast().lng
+        );
+        const active = activeSearchAreaRef.current;
+        const notify = onPendingRef.current;
+        if (!notify) return;
+        if (active && !exploreSearchAreasDiffer(viewport, active)) {
+          notify(null);
+          return;
+        }
+        notify(viewport);
+      };
+
+      map.on("moveend", onMoveEnd);
+
       window.setTimeout(() => {
         map?.invalidateSize();
         if (map && leafletRef.current) {
           const liveCenter = areaCenterRef.current ?? FALLBACK_CENTER;
+          const liveRadius =
+            activeSearchAreaRef.current?.radiusMiles ??
+            DEFAULT_EXPLORE_RADIUS_MILES;
+          suppressMoveRef.current += 1;
           frameRadiusMiles(
             map,
             leafletRef.current,
             liveCenter,
-            DEFAULT_EXPLORE_MAP_RADIUS_MILES
+            liveRadius
           );
           framedOriginRef.current = areaCenterRef.current
             ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
             : "fallback";
+          window.setTimeout(() => {
+            suppressMoveRef.current = Math.max(0, suppressMoveRef.current - 1);
+          }, 120);
         }
       }, 80);
       window.setTimeout(() => {
         map?.invalidateSize();
+        suppressMoveRef.current = Math.max(0, suppressMoveRef.current - 1);
       }, 320);
     }
 
@@ -212,9 +287,18 @@ export function ExploreMap({
     const key = areaKey || "fallback";
     if (framedOriginRef.current === key) return;
 
-    frameRadiusMiles(map, L, center, DEFAULT_EXPLORE_MAP_RADIUS_MILES);
+    const radius =
+      activeSearchArea?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
+    runProgrammaticFrame(center, radius);
     framedOriginRef.current = key;
-  }, [areaCenter, areaKey, profileSheetOpen, mapEpoch]);
+  }, [
+    areaCenter,
+    areaKey,
+    activeSearchArea?.radiusMiles,
+    profileSheetOpen,
+    mapEpoch,
+    runProgrammaticFrame,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -286,19 +370,39 @@ export function ExploreMap({
   }, [mapped, areaCenter, profileSheetOpen, mapEpoch]);
 
   const handleRecenter = useCallback(() => {
-    const map = mapRef.current;
-    const L = leafletRef.current;
-    if (!map || !L || profileSheetOpen) return;
+    if (profileSheetOpen) return;
     const center = areaCenterRef.current ?? FALLBACK_CENTER;
-    frameRadiusMiles(map, L, center, DEFAULT_EXPLORE_MAP_RADIUS_MILES);
+    runProgrammaticFrame(center, DEFAULT_EXPLORE_RADIUS_MILES);
     const key = areaCenterRef.current
       ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
       : "fallback";
     framedOriginRef.current = key;
-  }, [profileSheetOpen]);
+    onRecenterSearch?.();
+  }, [onRecenterSearch, profileSheetOpen, runProgrammaticFrame]);
+
+  const handleRadiusPreset = useCallback(
+    (radiusMiles: number) => {
+      if (profileSheetOpen || locked) return;
+      const map = mapRef.current;
+      const center = map
+        ? { latitude: map.getCenter().lat, longitude: map.getCenter().lng }
+        : (areaCenterRef.current ?? FALLBACK_CENTER);
+      runProgrammaticFrame(center, radiusMiles);
+      /* Intentional radius — don’t wait for padded bounds */
+      window.setTimeout(() => {
+        onPendingRef.current?.({
+          latitude: center.latitude,
+          longitude: center.longitude,
+          radiusMiles,
+        });
+      }, 200);
+    },
+    [locked, profileSheetOpen, runProgrammaticFrame]
+  );
 
   const missing = trainers.length - mapped.length;
-  const showRecenter = !locked && !profileSheetOpen;
+  const showChrome = !locked && !profileSheetOpen;
+  const activeRadius = activeSearchArea?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
   const rootClass = [
     "explore-map",
     variant === "hero"
@@ -319,19 +423,59 @@ export function ExploreMap({
         role="img"
         aria-label="Map of specialists in this search area"
       />
-      {showRecenter ? (
+      {showChrome && showSearchHere ? (
         <button
           type="button"
           className={cn(
-            "smoac-control explore-map__recenter",
-            variant === "hero" && "explore-map__recenter--hero"
+            "smoac-control explore-map__search-here",
+            variant === "hero" && "explore-map__search-here--hero"
           )}
-          onClick={handleRecenter}
-          aria-label="Recenter map to your 12-mile search area"
+          onClick={onSearchHere}
+          disabled={searchHereLoading || !onSearchHere}
         >
-          <LocationMarkIcon className="explore-map__recenter-icon" />
-          <span className="explore-map__recenter-label">Recenter</span>
+          {searchHereLoading ? "Searching…" : "Search here"}
         </button>
+      ) : null}
+      {showChrome ? (
+        <div
+          className={cn(
+            "explore-map__map-tools",
+            variant === "hero" && "explore-map__map-tools--hero"
+          )}
+        >
+          <div
+            className="explore-map__radius"
+            role="group"
+            aria-label="Search radius"
+          >
+            {EXPLORE_MAP_RADIUS_PRESETS_MILES.map((miles) => {
+              const isActive = Math.abs(activeRadius - miles) < 0.5 && !showSearchHere;
+              return (
+                <button
+                  key={miles}
+                  type="button"
+                  className={cn(
+                    "smoac-control explore-map__radius-btn",
+                    isActive && "explore-map__radius-btn--active"
+                  )}
+                  aria-pressed={isActive}
+                  onClick={() => handleRadiusPreset(miles)}
+                >
+                  {miles} mi
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            className="smoac-control explore-map__recenter"
+            onClick={handleRecenter}
+            aria-label="Recenter map to your 12-mile search area"
+          >
+            <LocationMarkIcon className="explore-map__recenter-icon" />
+            <span className="explore-map__recenter-label">Recenter</span>
+          </button>
+        </div>
       ) : null}
       {showNotes ? (
         mapped.length === 0 ? (
