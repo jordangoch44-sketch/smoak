@@ -5,7 +5,6 @@ import type { ActiveFilterChip, ActiveFilterKey } from "@/lib/explore-active-fil
 import {
   SearchIcon,
   FilterIcon,
-  ChevronDownIcon,
   LocationMarkIcon,
 } from "@/components/ui/icons";
 import { ExploreActiveFilterChips } from "./ExploreActiveFilterChips";
@@ -25,8 +24,6 @@ interface ExploreSearchToolbarProps {
   activeFilterCount: number;
   onOpenFilters: () => void;
   onClearFilters: () => void;
-  /** When false, only the search field is shown (filters bar lives elsewhere) */
-  showInlineFiltersBar?: boolean;
 }
 
 export function ExploreSearchToolbar({
@@ -38,7 +35,6 @@ export function ExploreSearchToolbar({
   activeFilterCount,
   onOpenFilters,
   onClearFilters,
-  showInlineFiltersBar = true,
 }: ExploreSearchToolbarProps) {
   const { session } = useAuthSession();
   const { hasLocation, pillLabel, isPlaceholder } = useUserLocation();
@@ -172,125 +168,112 @@ export function ExploreSearchToolbar({
 
   return (
     <div className="explore-toolbar">
-      <form
-        onSubmit={handleSubmit}
-        className={cn(
-          "explore-search-shell",
-          suggestionsOpen && "explore-search-shell--suggestions-open"
-        )}
-      >
-        <div className="explore-search-shell__row">
-          <div className="explore-search-shell__field">
-            <SearchIcon className="explore-search-shell__icon" />
-            <input
-              id="explore-search-input"
-              type="search"
-              enterKeyHint="search"
-              autoComplete="off"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onPointerDown={handlePointerDown}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              placeholder={
-                locationReady && !isPlaceholder
-                  ? `Search near ${pillLabel}…`
-                  : "Search trainers, coaches, nutritionists..."
-              }
-              aria-label="Search specialists"
-              aria-expanded={suggestionsOpen}
-              aria-controls="explore-search-suggestions"
-              className="smoac-control explore-search-shell__input"
-            />
-            {hasDraft ? (
+      <div className="explore-search-row">
+        <form
+          onSubmit={handleSubmit}
+          className={cn(
+            "explore-search-shell",
+            suggestionsOpen && "explore-search-shell--suggestions-open"
+          )}
+        >
+          <div className="explore-search-shell__row">
+            <div className="explore-search-shell__field">
+              <SearchIcon className="explore-search-shell__icon" />
+              <input
+                id="explore-search-input"
+                type="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onPointerDown={handlePointerDown}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                placeholder={
+                  locationReady && !isPlaceholder
+                    ? `Search near ${pillLabel}…`
+                    : "Search trainers, coaches, nutritionists..."
+                }
+                aria-label="Search specialists"
+                aria-expanded={suggestionsOpen}
+                aria-controls="explore-search-suggestions"
+                className="smoac-control explore-search-shell__input"
+              />
+              {hasDraft ? (
+                <button
+                  type="button"
+                  className="smoac-control explore-search-shell__clear"
+                  aria-label="Clear search"
+                  onClick={handleClear}
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {suggestionsOpen && !locationReady ? (
+            <div
+              id="explore-search-suggestions"
+              className="explore-search-suggestions"
+              role="listbox"
+              aria-label="Search suggestions"
+            >
               <button
                 type="button"
-                className="smoac-control explore-search-shell__clear"
-                aria-label="Clear search"
-                onClick={handleClear}
+                role="option"
+                aria-selected={false}
+                className="smoac-control explore-search-suggestions__item"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={handleUseCurrentLocation}
+                disabled={geoLoading}
               >
-                ×
+                <span className="explore-search-suggestions__icon" aria-hidden>
+                  <LocationMarkIcon className="h-4 w-4" />
+                </span>
+                <span className="explore-search-suggestions__copy">
+                  <span className="explore-search-suggestions__label">
+                    {geoLoading
+                      ? "Finding your location…"
+                      : "Use your current location"}
+                  </span>
+                  <span className="explore-search-suggestions__hint">
+                    Show specialists near you
+                  </span>
+                </span>
               </button>
-            ) : null}
-          </div>
-        </div>
-
-        {suggestionsOpen && !locationReady ? (
-          <div
-            id="explore-search-suggestions"
-            className="explore-search-suggestions"
-            role="listbox"
-            aria-label="Search suggestions"
-          >
-            <button
-              type="button"
-              role="option"
-              aria-selected={false}
-              className="smoac-control explore-search-suggestions__item"
-              onMouseDown={(event) => event.preventDefault()}
-              onClick={handleUseCurrentLocation}
-              disabled={geoLoading}
-            >
-              <span className="explore-search-suggestions__icon" aria-hidden>
-                <LocationMarkIcon className="h-4 w-4" />
-              </span>
-              <span className="explore-search-suggestions__copy">
-                <span className="explore-search-suggestions__label">
-                  {geoLoading
-                    ? "Finding your location…"
-                    : "Use your current location"}
-                </span>
-                <span className="explore-search-suggestions__hint">
-                  Show specialists near you
-                </span>
-              </span>
-            </button>
-            {geoError ? (
-              <p className="explore-search-suggestions__error" role="status">
-                {geoError}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-      </form>
-
-      {showInlineFiltersBar ? (
-        <div className="explore-toolbar__controls">
-          <button
-            type="button"
-            onClick={onOpenFilters}
-            className={cn(
-              "smoac-control explore-filter-pill",
-              activeFilterCount > 0 && "explore-filter-pill--active"
-            )}
-            aria-label={
-              activeFilterCount > 0
-                ? `Filters, ${activeFilterCount} active`
-                : "Filters"
-            }
-          >
-            <FilterIcon className="explore-filter-pill__icon" />
-            <span className="explore-filter-pill__label">Filters</span>
-            {activeFilterCount > 0 ? (
-              <span
-                key={activeFilterCount}
-                className="explore-filter-pill__badge"
-                aria-hidden
-              >
-                {activeFilterCount}
-              </span>
-            ) : null}
-          </button>
-
-          {hasChips ? (
-            <ExploreActiveFilterChips
-              chips={activeFilterChips}
-              onRemove={onRemoveFilter}
-              onClearAll={onClearFilters}
-            />
+              {geoError ? (
+                <p className="explore-search-suggestions__error" role="status">
+                  {geoError}
+                </p>
+              ) : null}
+            </div>
           ) : null}
-        </div>
-      ) : hasChips ? (
+        </form>
+
+        <button
+          type="button"
+          onClick={onOpenFilters}
+          className={cn(
+            "smoac-control explore-filters-icon-btn",
+            activeFilterCount > 0 && "explore-filters-icon-btn--active"
+          )}
+          aria-label={
+            activeFilterCount > 0
+              ? `Filters, ${activeFilterCount} active`
+              : "Open filters"
+          }
+        >
+          <FilterIcon className="explore-filters-icon-btn__icon" />
+          {activeFilterCount > 0 ? (
+            <span className="explore-filters-icon-btn__badge" aria-hidden>
+              {activeFilterCount}
+            </span>
+          ) : null}
+        </button>
+      </div>
+
+      {hasChips ? (
         <ExploreActiveFilterChips
           chips={activeFilterChips}
           onRemove={onRemoveFilter}
@@ -298,43 +281,5 @@ export function ExploreSearchToolbar({
         />
       ) : null}
     </div>
-  );
-}
-
-interface ExploreFiltersBarProps {
-  activeFilterCount: number;
-  onOpenFilters: () => void;
-}
-
-/** Full-width Filters control matching the Search mockup. */
-export function ExploreFiltersBar({
-  activeFilterCount,
-  onOpenFilters,
-}: ExploreFiltersBarProps) {
-  return (
-    <button
-      type="button"
-      onClick={onOpenFilters}
-      className={cn(
-        "smoac-control explore-filters-bar",
-        activeFilterCount > 0 && "explore-filters-bar--active"
-      )}
-      aria-label={
-        activeFilterCount > 0
-          ? `Filters, ${activeFilterCount} active`
-          : "Open filters"
-      }
-    >
-      <span className="explore-filters-bar__leading">
-        <FilterIcon className="explore-filters-bar__icon" />
-        <span className="explore-filters-bar__label">Filters</span>
-        {activeFilterCount > 0 ? (
-          <span className="explore-filters-bar__badge" aria-hidden>
-            {activeFilterCount}
-          </span>
-        ) : null}
-      </span>
-      <ChevronDownIcon className="explore-filters-bar__chevron" />
-    </button>
   );
 }

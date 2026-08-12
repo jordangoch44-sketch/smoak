@@ -17,10 +17,7 @@ import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import { cn } from "@/lib/utils";
 import { ExplorePageHeader } from "./ExplorePageHeader";
-import {
-  ExploreSearchToolbar,
-  ExploreFiltersBar,
-} from "./ExploreSearchToolbar";
+import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreMap } from "./ExploreMap";
 import { ExploreResults } from "./ExploreResults";
@@ -161,14 +158,6 @@ export function ExplorePageClient() {
       activeFilterCount={activeFilterCount}
       onOpenFilters={() => setMobileFiltersOpen(true)}
       onClearFilters={clearFilters}
-      showInlineFiltersBar={false}
-    />
-  );
-
-  const filtersBar = (
-    <ExploreFiltersBar
-      activeFilterCount={activeFilterCount}
-      onOpenFilters={() => setMobileFiltersOpen(true)}
     />
   );
 
@@ -277,7 +266,6 @@ export function ExplorePageClient() {
             />
             <div className="explore-map-hero__controls">
               {searchToolbar}
-              {filtersBar}
             </div>
           </section>
         ) : (
@@ -289,10 +277,7 @@ export function ExplorePageClient() {
             {resultsMain}
           </ExploreResultsSheet>
         ) : (
-          <div className="explore-page__layout">
-            {filtersBar}
-            {resultsMain}
-          </div>
+          <div className="explore-page__layout">{resultsMain}</div>
         )}
       </div>
 

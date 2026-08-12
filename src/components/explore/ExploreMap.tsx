@@ -7,7 +7,6 @@ import { LocationMarkIcon } from "@/components/ui/icons";
 import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import {
-  EXPLORE_MAP_RADIUS_PRESETS_MILES,
   exploreSearchAreasDiffer,
   searchAreaFromMapViewport,
   type ExploreSearchArea,
@@ -351,19 +350,28 @@ export function ExploreMap({
         pin.trainer.location?.trim() ||
         "";
       const href = `/trainers/${encodeURIComponent(pin.trainer.id)}`;
+      const photoSrc = safeImageSrc(pin.trainer.image);
+      const photoHtml = photoSrc
+        ? `<img class="explore-map-popup__photo" src="${escapeHtml(photoSrc)}" alt="" width="56" height="56" loading="lazy" decoding="async" />`
+        : `<span class="explore-map-popup__photo explore-map-popup__photo--empty" aria-hidden="true"></span>`;
       marker.bindPopup(
         `<div class="explore-map-popup">
-          <p class="explore-map-popup__name">${escapeHtml(pin.trainer.name)}</p>
-          <p class="explore-map-popup__meta">${escapeHtml(profession)}</p>
-          <p class="explore-map-popup__price">${escapeHtml(price)}</p>
-          ${
-            address
-              ? `<p class="explore-map-popup__address">${escapeHtml(address)}</p>`
-              : ""
-          }
+          <div class="explore-map-popup__main">
+            ${photoHtml}
+            <div class="explore-map-popup__copy">
+              <p class="explore-map-popup__name">${escapeHtml(pin.trainer.name)}</p>
+              <p class="explore-map-popup__meta">${escapeHtml(profession)}</p>
+              <p class="explore-map-popup__price">${escapeHtml(price)}</p>
+              ${
+                address
+                  ? `<p class="explore-map-popup__address">${escapeHtml(address)}</p>`
+                  : ""
+              }
+            </div>
+          </div>
           <a class="explore-map-popup__link" href="${href}">View profile</a>
         </div>`,
-        { maxWidth: 260 }
+        { maxWidth: 280, className: "explore-map-popup-wrap" }
       );
       layer.addLayer(marker);
     }
@@ -380,29 +388,8 @@ export function ExploreMap({
     onRecenterSearch?.();
   }, [onRecenterSearch, profileSheetOpen, runProgrammaticFrame]);
 
-  const handleRadiusPreset = useCallback(
-    (radiusMiles: number) => {
-      if (profileSheetOpen || locked) return;
-      const map = mapRef.current;
-      const center = map
-        ? { latitude: map.getCenter().lat, longitude: map.getCenter().lng }
-        : (areaCenterRef.current ?? FALLBACK_CENTER);
-      runProgrammaticFrame(center, radiusMiles);
-      /* Intentional radius — don’t wait for padded bounds */
-      window.setTimeout(() => {
-        onPendingRef.current?.({
-          latitude: center.latitude,
-          longitude: center.longitude,
-          radiusMiles,
-        });
-      }, 200);
-    },
-    [locked, profileSheetOpen, runProgrammaticFrame]
-  );
-
   const missing = trainers.length - mapped.length;
   const showChrome = !locked && !profileSheetOpen;
-  const activeRadius = activeSearchArea?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
   const rootClass = [
     "explore-map",
     variant === "hero"
@@ -437,45 +424,18 @@ export function ExploreMap({
         </button>
       ) : null}
       {showChrome ? (
-        <div
+        <button
+          type="button"
           className={cn(
-            "explore-map__map-tools",
-            variant === "hero" && "explore-map__map-tools--hero"
+            "smoac-control explore-map__recenter",
+            variant === "hero" && "explore-map__recenter--hero"
           )}
+          onClick={handleRecenter}
+          aria-label="Recenter map to your 12-mile search area"
         >
-          <div
-            className="explore-map__radius"
-            role="group"
-            aria-label="Search radius"
-          >
-            {EXPLORE_MAP_RADIUS_PRESETS_MILES.map((miles) => {
-              const isActive = Math.abs(activeRadius - miles) < 0.5 && !showSearchHere;
-              return (
-                <button
-                  key={miles}
-                  type="button"
-                  className={cn(
-                    "smoac-control explore-map__radius-btn",
-                    isActive && "explore-map__radius-btn--active"
-                  )}
-                  aria-pressed={isActive}
-                  onClick={() => handleRadiusPreset(miles)}
-                >
-                  {miles} mi
-                </button>
-              );
-            })}
-          </div>
-          <button
-            type="button"
-            className="smoac-control explore-map__recenter"
-            onClick={handleRecenter}
-            aria-label="Recenter map to your 12-mile search area"
-          >
-            <LocationMarkIcon className="explore-map__recenter-icon" />
-            <span className="explore-map__recenter-label">Recenter</span>
-          </button>
-        </div>
+          <LocationMarkIcon className="explore-map__recenter-icon" />
+          <span className="explore-map__recenter-label">Recenter</span>
+        </button>
       ) : null}
       {showNotes ? (
         mapped.length === 0 ? (
@@ -509,4 +469,12 @@ function escapeHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function safeImageSrc(url: string | undefined | null): string | null {
+  const value = url?.trim() ?? "";
+  if (!value) return null;
+  if (/^(javascript|data|vbscript):/i.test(value)) return null;
+  if (/^(https?:\/\/|\/)/i.test(value)) return value;
+  return null;
 }

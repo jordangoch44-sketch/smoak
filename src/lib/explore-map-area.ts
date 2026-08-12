@@ -9,9 +9,6 @@ export type ExploreSearchArea = {
   radiusMiles: number;
 };
 
-/** Quick radius control on the Search map */
-export const EXPLORE_MAP_RADIUS_PRESETS_MILES = [5, 12, 25] as const;
-
 export function defaultExploreSearchArea(
   origin: UserGeoPoint | null
 ): ExploreSearchArea | null {
