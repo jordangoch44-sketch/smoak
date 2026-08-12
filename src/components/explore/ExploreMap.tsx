@@ -88,15 +88,19 @@ export function ExploreMap({
       map = L.map(el, {
         center: [center.latitude, center.longitude],
         zoom: 11,
-        zoomControl: !locked,
+        zoomControl: false,
         attributionControl: true,
         dragging: !locked,
         touchZoom: !locked,
         doubleClickZoom: !locked,
-        scrollWheelZoom: false,
+        scrollWheelZoom: !locked,
         boxZoom: !locked,
         keyboard: !locked,
       });
+
+      if (!locked) {
+        L.control.zoom({ position: "topright" }).addTo(map);
+      }
 
       /* Dark basemap — Apple Maps–like greys / parks / water (CARTO Dark Matter) */
       L.tileLayer(
@@ -183,6 +187,9 @@ export function ExploreMap({
       window.setTimeout(() => {
         map?.invalidateSize();
       }, 80);
+      window.setTimeout(() => {
+        map?.invalidateSize();
+      }, 320);
 
       mapRef.current = map;
     }

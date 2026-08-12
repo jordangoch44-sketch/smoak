@@ -23,7 +23,10 @@ import {
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreMap } from "./ExploreMap";
 import { ExploreResults } from "./ExploreResults";
+import { ExploreResultsSheet } from "./ExploreResultsSheet";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
+
+const MAP_SHELL_BODY_CLASS = "explore-map-shell-open";
 
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
@@ -91,6 +94,15 @@ export function ExplorePageClient() {
     };
   }, [session, submitSearch]);
 
+  /* Lock page scroll + hide footer while the mobile map shell is active */
+  useEffect(() => {
+    if (!isMobile || !catalogHydrated) return;
+    document.body.classList.add(MAP_SHELL_BODY_CLASS);
+    return () => {
+      document.body.classList.remove(MAP_SHELL_BODY_CLASS);
+    };
+  }, [isMobile, catalogHydrated]);
+
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
       runSearchOrAskLocation(category.searchQuery);
@@ -128,42 +140,85 @@ export function ExplorePageClient() {
     />
   );
 
+  const resultsMain = (
+    <main className="explore-page__results" id="explore-results">
+      <SitePromoSlot
+        slotId="explore_results_rail"
+        variant="compact"
+        onOpenBoost={() => setBoostOpen(true)}
+      />
+      <div className="explore-results-heading">
+        <h2 className="explore-results-heading__title">Top experts near you</h2>
+        <button
+          type="button"
+          className="smoac-control explore-results-heading__view-all"
+          onClick={handleViewAll}
+        >
+          View all
+        </button>
+      </div>
+      {(filters.profession || filters.specialty) &&
+      filtered.some((t) => t.categorySpotlight) ? (
+        <p className="explore-results-heading__note">
+          Category spotlight specialists appear first in these results.
+        </p>
+      ) : null}
+
+      <ExploreResults
+        trainers={filtered}
+        suggestedTrainers={suggestedTrainers}
+        areaCenter={searchOrigin}
+        activeFilterCount={activeFilterCount}
+        hasSearch={hasSearch}
+        areaEmpty={areaEmpty}
+        nearbyExpanded={nearbyExpanded}
+        showMap={!isMobile}
+        onClearFilters={clearFilters}
+        onClearSearch={clearSearch}
+        onClearAll={clearAll}
+        onExpandNearby={expandNearbyResults}
+      />
+    </main>
+  );
+
   return (
     <div
       className={cn(
         "explore-page explore-page--results",
-        isMobile && "explore-page--map-hero"
+        isMobile && "explore-page--map-hero explore-page--map-shell"
       )}
     >
-      <div className="explore-page__canvas" aria-hidden>
-        {isCompactAtmosphere ? (
-          <>
-            <div className="explore-page__header-glow" />
-            <div className="atmosphere-vignette atmosphere-vignette--soft" />
-          </>
-        ) : (
-          <>
-            <div className="atmosphere-mesh">
-              <div className="atmosphere-blob atmosphere-blob--indigo" />
-              <div className="atmosphere-blob atmosphere-blob--blue" />
-              <div className="atmosphere-blob atmosphere-blob--violet" />
-              <div className="atmosphere-blob atmosphere-blob--magenta" />
-              <div className="atmosphere-blob atmosphere-blob--core" />
-            </div>
-            <AuroraAtmosphere
-              intensity="subtle"
-              starDensity="none"
-              glowPosition="search"
-              glowColor="mixed"
-              enableMotion
-              className="explore-page__cosmic"
-            />
-            <div className="explore-page__header-glow" />
-            <div className="atmosphere-vignette atmosphere-vignette--soft" />
-            <div className="atmosphere-grain" />
-          </>
-        )}
-      </div>
+      {!isMobile ? (
+        <div className="explore-page__canvas" aria-hidden>
+          {isCompactAtmosphere ? (
+            <>
+              <div className="explore-page__header-glow" />
+              <div className="atmosphere-vignette atmosphere-vignette--soft" />
+            </>
+          ) : (
+            <>
+              <div className="atmosphere-mesh">
+                <div className="atmosphere-blob atmosphere-blob--indigo" />
+                <div className="atmosphere-blob atmosphere-blob--blue" />
+                <div className="atmosphere-blob atmosphere-blob--violet" />
+                <div className="atmosphere-blob atmosphere-blob--magenta" />
+                <div className="atmosphere-blob atmosphere-blob--core" />
+              </div>
+              <AuroraAtmosphere
+                intensity="subtle"
+                starDensity="none"
+                glowPosition="search"
+                glowColor="mixed"
+                enableMotion
+                className="explore-page__cosmic"
+              />
+              <div className="explore-page__header-glow" />
+              <div className="atmosphere-vignette atmosphere-vignette--soft" />
+              <div className="atmosphere-grain" />
+            </>
+          )}
+        </div>
+      ) : null}
 
       <div
         className={cn(
@@ -178,7 +233,7 @@ export function ExplorePageClient() {
             <ExploreMap
               trainers={filtered}
               areaCenter={searchOrigin}
-              locked
+              locked={false}
               variant="hero"
               showNotes={false}
             />
@@ -191,50 +246,14 @@ export function ExplorePageClient() {
           searchToolbar
         )}
 
-        <div className="explore-page__layout">
-          {!isMobile ? filtersBar : null}
-
-          <main className="explore-page__results" id="explore-results">
-            <SitePromoSlot
-              slotId="explore_results_rail"
-              variant="compact"
-              onOpenBoost={() => setBoostOpen(true)}
-            />
-            <div className="explore-results-heading">
-              <h2 className="explore-results-heading__title">
-                Top experts near you
-              </h2>
-              <button
-                type="button"
-                className="smoac-control explore-results-heading__view-all"
-                onClick={handleViewAll}
-              >
-                View all
-              </button>
-            </div>
-            {(filters.profession || filters.specialty) &&
-            filtered.some((t) => t.categorySpotlight) ? (
-              <p className="explore-results-heading__note">
-                Category spotlight specialists appear first in these results.
-              </p>
-            ) : null}
-
-            <ExploreResults
-              trainers={filtered}
-              suggestedTrainers={suggestedTrainers}
-              areaCenter={searchOrigin}
-              activeFilterCount={activeFilterCount}
-              hasSearch={hasSearch}
-              areaEmpty={areaEmpty}
-              nearbyExpanded={nearbyExpanded}
-              showMap={!isMobile}
-              onClearFilters={clearFilters}
-              onClearSearch={clearSearch}
-              onClearAll={clearAll}
-              onExpandNearby={expandNearbyResults}
-            />
-          </main>
-        </div>
+        {isMobile ? (
+          <ExploreResultsSheet>{resultsMain}</ExploreResultsSheet>
+        ) : (
+          <div className="explore-page__layout">
+            {filtersBar}
+            {resultsMain}
+          </div>
+        )}
       </div>
 
       <ExploreFiltersDrawer
