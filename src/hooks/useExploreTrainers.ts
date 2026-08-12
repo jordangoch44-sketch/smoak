@@ -21,6 +21,11 @@ import {
 import {
   getActiveFilterChips,
   removeFilterFromState,
+  buildDisplayQueryFromSearchFilters,
+  residualDisplayQueryAfterSearchFilters,
+  isSearchBarFilterKey,
+  getFilterChipLabel,
+  stripChipLabelFromDisplayQuery,
   type ActiveFilterKey,
 } from "@/lib/explore-active-filters";
 import {
@@ -29,10 +34,7 @@ import {
   filtersFromSearchParams,
   hasExplicitFilterParams,
 } from "@/lib/explore-url";
-import {
-  mergeExploreFiltersWithSavedLocation,
-  resolveExploreMapArea,
-} from "@/lib/explore-location-filters";
+import { resolveExploreMapArea } from "@/lib/explore-location-filters";
 import {
   getHiddenTrainersServerSnapshot,
   getHiddenTrainersSnapshot,
@@ -61,7 +63,6 @@ import {
   useActiveUserCoordinatesKey,
 } from "@/hooks/useActiveUserCoordinates";
 import { useHydrated } from "@/hooks/useHydrated";
-import { useAuthSession } from "@/hooks/useAuthSession";
 import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
 import { recordRecentSearch } from "@/lib/recent-searches-store";
 import type { Trainer, TrainerFilters } from "@/types";
@@ -151,42 +152,12 @@ export function useExploreTrainers({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hydrated = useHydrated();
-  const { session } = useAuthSession();
   const userCoords = useActiveUserCoordinates();
   const coordsKey = useActiveUserCoordinatesKey();
 
   useEffect(() => {
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
   }, [initialCatalog, catalogMode]);
-
-  /* After hydrate, surface header ZIP on Explore chips.
-   * ZIP / coords also drive the default search radius (see explore.ts). */
-  useEffect(() => {
-    if (!hydrated) return;
-    setFiltersState((prev) => {
-      const saved = mergeExploreFiltersWithSavedLocation(
-        EMPTY_TRAINER_FILTERS,
-        session
-      );
-      const hasSaved = Boolean(
-        saved.zipCode.trim() || saved.city.trim() || saved.neighborhood.trim()
-      );
-
-      if (!hasSaved) {
-        if (!prev.zipCode.trim()) return prev;
-        const cleared = {
-          ...prev,
-          zipCode: "",
-          city: "",
-          neighborhood: "",
-        };
-        return filtersEqual(prev, cleared) ? prev : cleared;
-      }
-
-      const merged = mergeExploreFiltersWithSavedLocation(prev, session);
-      return filtersEqual(prev, merged) ? prev : merged;
-    });
-  }, [hydrated, session, coordsKey]);
 
   const initialQ = initialQuery || searchParams.get("q") || "";
   const initialBaseFilters = buildInitialFilters(
@@ -199,8 +170,12 @@ export function useExploreTrainers({
     priceMin: initialBaseFilters.priceMin,
     priceMax: initialBaseFilters.priceMax,
   });
+  const initialSyncedDisplay = buildDisplayQueryFromSearchFilters(
+    initialParsed.filters,
+    initialParsed.residualQuery
+  );
   const initialApplied = {
-    displayQuery: initialParsed.displayQuery,
+    displayQuery: initialSyncedDisplay || initialParsed.displayQuery,
     residualQuery: initialParsed.residualQuery,
     filters: mergeParsedWithUrlFilters(initialBaseFilters, initialParsed.filters),
   };
@@ -274,7 +249,6 @@ export function useExploreTrainers({
 
     applyUrlSearchSync(() => {
       if (nextQ) {
-        setDisplayQuery(nextQ);
         const parsed = applySearchQueryToExploreState(nextQ, {
           ...EMPTY_TRAINER_FILTERS,
           gender: fromUrl.gender,
@@ -282,14 +256,20 @@ export function useExploreTrainers({
           priceMax: fromUrl.priceMax,
           serviceType: fromUrl.serviceType,
         });
+        const syncedFilters = mergeParsedWithUrlFilters(fromUrl, parsed.filters);
+        const syncedDisplay =
+          buildDisplayQueryFromSearchFilters(
+            syncedFilters,
+            parsed.residualQuery
+          ) || nextQ;
+
+        setDisplayQuery(syncedDisplay);
+        setSearchQuery(parsed.residualQuery);
 
         if (qChanged) {
-          setSearchQuery(parsed.residualQuery);
-          setFiltersState(mergeParsedWithUrlFilters(fromUrl, parsed.filters));
+          setFiltersState(syncedFilters);
           return;
         }
-
-        setSearchQuery(parsed.residualQuery);
 
         if (explicit) {
           setFiltersState((prev) => {
@@ -308,7 +288,7 @@ export function useExploreTrainers({
         return filtersEqual(prev, next) ? prev : next;
       });
     });
-  }, [searchParams, session]);
+  }, [searchParams]);
 
   const setFilters = useCallback(
     (action: SetStateAction<TrainerFilters>) => {
@@ -318,10 +298,20 @@ export function useExploreTrainers({
         return nextFilters;
       });
       if (nextFilters) {
-        scheduleUrlSync(nextFilters, displayQuery);
+        const residual = residualDisplayQueryAfterSearchFilters(
+          displayQuery,
+          filters
+        );
+        const nextDisplay = buildDisplayQueryFromSearchFilters(
+          nextFilters,
+          residual
+        );
+        setDisplayQuery(nextDisplay);
+        setSearchQuery(residual);
+        scheduleUrlSync(nextFilters, nextDisplay);
       }
     },
-    [scheduleUrlSync, displayQuery]
+    [scheduleUrlSync, displayQuery, filters]
   );
 
   const profileOverridesRevision = useSyncExternalStore(
@@ -475,9 +465,15 @@ export function useExploreTrainers({
       return nextFilters;
     });
     if (nextFilters) {
-      scheduleUrlSync(nextFilters, displayQuery);
+      const residual = residualDisplayQueryAfterSearchFilters(
+        displayQuery,
+        filters
+      );
+      setDisplayQuery(residual);
+      setSearchQuery(residual);
+      scheduleUrlSync(nextFilters, residual);
     }
-  }, [scheduleUrlSync, displayQuery]);
+  }, [scheduleUrlSync, displayQuery, filters]);
 
   const submitSearch = useCallback(
     (rawQuery: string) => {
@@ -489,27 +485,29 @@ export function useExploreTrainers({
         profession: "",
         specialty: "",
       });
-      /* Keep any explicit city/neighborhood parsed from the query; never
-       * inject the client's ZIP as a hard location filter. */
-      const nextFilters = mergeExploreFiltersWithSavedLocation(
-        {
-          ...applied.filters,
-          gender: filters.gender,
-          priceMin: filters.priceMin,
-          priceMax: filters.priceMax,
-          serviceType: filters.serviceType,
-        },
-        session
-      );
-      setDisplayQuery(applied.displayQuery);
+      /* Keep gender / price / service from the drawer. Map radius uses the
+       * header location via user coordinates — do not inject ZIP into chips. */
+      const nextFilters = {
+        ...applied.filters,
+        gender: filters.gender,
+        priceMin: filters.priceMin,
+        priceMax: filters.priceMax,
+        serviceType: filters.serviceType,
+      };
+      const nextDisplay =
+        buildDisplayQueryFromSearchFilters(
+          nextFilters,
+          applied.residualQuery
+        ) || applied.displayQuery;
+      setDisplayQuery(nextDisplay);
       setSearchQuery(applied.residualQuery);
       setFiltersState(nextFilters);
-      if (applied.displayQuery.trim()) {
-        recordRecentSearch(applied.displayQuery);
+      if (nextDisplay.trim()) {
+        recordRecentSearch(nextDisplay);
       }
-      scheduleUrlSync(nextFilters, applied.displayQuery);
+      scheduleUrlSync(nextFilters, nextDisplay);
     },
-    [filters, scheduleUrlSync, session]
+    [filters, scheduleUrlSync]
   );
 
   const clearSearch = useCallback(() => {
@@ -542,16 +540,35 @@ export function useExploreTrainers({
 
   const removeFilter = useCallback(
     (key: ActiveFilterKey) => {
+      const label = getFilterChipLabel(filters, key);
       let nextFilters: TrainerFilters | null = null;
       setFiltersState((prev) => {
         nextFilters = removeFilterFromState(prev, key);
         return nextFilters;
       });
-      if (nextFilters) {
-        scheduleUrlSync(nextFilters, displayQuery);
+      if (!nextFilters) return;
+
+      if (isSearchBarFilterKey(key)) {
+        const nextDisplay = label
+          ? stripChipLabelFromDisplayQuery(displayQuery, label)
+          : residualDisplayQueryAfterSearchFilters(displayQuery, filters);
+        const residual = residualDisplayQueryAfterSearchFilters(
+          nextDisplay,
+          nextFilters
+        );
+        const syncedDisplay = buildDisplayQueryFromSearchFilters(
+          nextFilters,
+          residual
+        );
+        setDisplayQuery(syncedDisplay);
+        setSearchQuery(residual);
+        scheduleUrlSync(nextFilters, syncedDisplay);
+        return;
       }
+
+      scheduleUrlSync(nextFilters, displayQuery);
     },
-    [scheduleUrlSync, displayQuery]
+    [scheduleUrlSync, displayQuery, filters]
   );
 
   return {
