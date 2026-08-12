@@ -759,6 +759,35 @@
   margin-top: 0.35rem;
 }
 
+.explore-browse--drawer {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.explore-browse--drawer .explore-browse__header {
+  margin-bottom: 0.65rem;
+}
+
+.explore-browse--drawer .explore-browse__title {
+  font-size: 0.9375rem;
+}
+
+.explore-browse--drawer .explore-browse__subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+}
+
+.explore-browse--drawer .explore-browse__grid {
+  gap: 0.5rem;
+}
+
+.explore-browse--drawer .explore-browse__card {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.625rem;
+}
+
 .explore-browse__header {
   margin-bottom: 0.85rem;
 }

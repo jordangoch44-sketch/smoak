@@ -32,27 +32,41 @@ interface ExploreBrowseCategoriesProps {
   onSelect: (category: ExploreBrowseCategory) => void;
   activeSearchQuery?: string;
   className?: string;
+  /** Compact block for Filters sheet (vs homepage-style section). */
+  variant?: "page" | "drawer";
 }
 
 export function ExploreBrowseCategories({
   onSelect,
   activeSearchQuery = "",
   className,
+  variant = "page",
 }: ExploreBrowseCategoriesProps) {
   const active = activeSearchQuery.trim().toLowerCase();
+  const isDrawer = variant === "drawer";
 
   return (
     <section
-      className={cn("explore-browse", className)}
+      className={cn(
+        "explore-browse",
+        isDrawer && "explore-browse--drawer",
+        className
+      )}
       aria-labelledby="explore-browse-heading"
     >
       <header className="explore-browse__header">
         <h2 id="explore-browse-heading" className="explore-browse__title">
-          What are you looking for?
+          {isDrawer ? "Categories" : "What are you looking for?"}
         </h2>
-        <p className="explore-browse__subtitle">
-          Tap a category to get started
-        </p>
+        {!isDrawer ? (
+          <p className="explore-browse__subtitle">
+            Tap a category to get started
+          </p>
+        ) : (
+          <p className="explore-browse__subtitle">
+            Jump into a specialty search
+          </p>
+        )}
       </header>
 
       <div className="explore-browse__grid">

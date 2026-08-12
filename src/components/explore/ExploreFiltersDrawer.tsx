@@ -18,8 +18,10 @@ import {
 } from "framer-motion";
 import type { TrainerFilters } from "@/types";
 import { countActiveFilters } from "@/lib/explore";
+import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import { cn } from "@/lib/utils";
 import { CloseIcon } from "@/components/ui/icons";
+import { ExploreBrowseCategories } from "./ExploreBrowseCategories";
 import { TrainerFilters as FiltersPanel } from "./TrainerFilters";
 
 interface ExploreFiltersDrawerProps {
@@ -29,6 +31,8 @@ interface ExploreFiltersDrawerProps {
   onApply: (filters: TrainerFilters) => void;
   getMatchCount: (filters: TrainerFilters) => number;
   onClearFilters: () => void;
+  onSelectCategory?: (category: ExploreBrowseCategory) => void;
+  activeSearchQuery?: string;
 }
 
 const DISMISS_OFFSET_PX = 110;
@@ -51,6 +55,8 @@ export function ExploreFiltersDrawer({
   onApply,
   getMatchCount,
   onClearFilters,
+  onSelectCategory,
+  activeSearchQuery = "",
 }: ExploreFiltersDrawerProps) {
   const titleId = useId();
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -140,6 +146,14 @@ export function ExploreFiltersDrawer({
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
+
+  const handleCategorySelect = useCallback(
+    (category: ExploreBrowseCategory) => {
+      onSelectCategory?.(category);
+      onClose();
+    },
+    [onSelectCategory, onClose]
+  );
 
   const handleApply = useCallback(() => {
     onApply(draft);
@@ -245,6 +259,13 @@ export function ExploreFiltersDrawer({
             </div>
 
             <div className="explore-filters-drawer__body">
+              {onSelectCategory ? (
+                <ExploreBrowseCategories
+                  variant="drawer"
+                  onSelect={handleCategorySelect}
+                  activeSearchQuery={activeSearchQuery}
+                />
+              ) : null}
               <FiltersPanel
                 filters={draft}
                 onChange={setDraft}

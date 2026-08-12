@@ -18,7 +18,6 @@ import {
   ExploreSearchToolbar,
   ExploreFiltersBar,
 } from "./ExploreSearchToolbar";
-import { ExploreBrowseCategories } from "./ExploreBrowseCategories";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreResults } from "./ExploreResults";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
@@ -152,11 +151,6 @@ export function ExplorePageClient() {
         />
 
         <div className="explore-page__layout">
-          <ExploreBrowseCategories
-            onSelect={handleCategorySelect}
-            activeSearchQuery={displayQuery}
-          />
-
           <ExploreFiltersBar
             activeFilterCount={activeFilterCount}
             onOpenFilters={() => setMobileFiltersOpen(true)}
@@ -211,6 +205,8 @@ export function ExplorePageClient() {
         onApply={setFilters}
         getMatchCount={getExploreMatchCount}
         onClearFilters={clearFilters}
+        onSelectCategory={handleCategorySelect}
+        activeSearchQuery={displayQuery}
       />
 
       <BoostVisibilityModal
