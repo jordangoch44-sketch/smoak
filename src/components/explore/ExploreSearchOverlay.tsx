@@ -3,12 +3,17 @@
 import {
   useEffect,
   useId,
+  useRef,
   useState,
   useSyncExternalStore,
+  type FormEvent,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { LocationMarkIcon } from "@/components/ui/icons";
+import {
+  LocationMarkIcon,
+  SearchIcon,
+} from "@/components/ui/icons";
 import {
   EXPLORE_RECENT_SEARCH_OVERLAY_LIMIT,
   EXPLORE_SEARCH_GOAL_PROMPTS,
@@ -21,26 +26,41 @@ import {
 } from "@/lib/recent-searches-store";
 import { completeGeolocationAsync } from "@/lib/user-location-store";
 
+export type ExploreSearchOverlayAnchor = {
+  /** Viewport Y where the search chrome should sit */
+  top: number;
+  /** Matching horizontal inset of the in-page search row */
+  insetInline: number;
+};
+
 interface ExploreSearchOverlayProps {
   open: boolean;
-  /** Bottom edge of the in-place search row (viewport px) — prompts start below this */
-  contentTop: number;
+  anchor: ExploreSearchOverlayAnchor | null;
+  draft: string;
+  onDraftChange: (value: string) => void;
   onClose: () => void;
   onSubmit: (query: string) => void;
   showLocationPrompt: boolean;
+  locationLabel?: string;
 }
 
 /**
- * Nebula fill + prompts under the existing Search bar (bar stays in place).
+ * Portaled Search layer: nebula + search bar + prompts.
+ * The bar is drawn here (above the backdrop) at the measured on-page position
+ * so page stacking contexts cannot hide it.
  */
 export function ExploreSearchOverlay({
   open,
-  contentTop,
+  anchor,
+  draft,
+  onDraftChange,
   onClose,
   onSubmit,
   showLocationPrompt,
+  locationLabel,
 }: ExploreSearchOverlayProps) {
   const titleId = useId();
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [portalReady, setPortalReady] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -67,8 +87,17 @@ export function ExploreSearchOverlay({
     if (!open) {
       setGeoError(null);
       setGeoLoading(false);
+      return;
     }
-  }, [open]);
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      const value = inputRef.current?.value ?? "";
+      if (value) {
+        inputRef.current?.setSelectionRange(value.length, value.length);
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, anchor?.top]);
 
   useEffect(() => {
     if (!open) return;
@@ -82,7 +111,13 @@ export function ExploreSearchOverlay({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    onSubmit(draft);
+  }
+
   function handlePrompt(query: string) {
+    onDraftChange(query);
     onSubmit(query);
   }
 
@@ -137,9 +172,7 @@ export function ExploreSearchOverlay({
     );
   }
 
-  if (!portalReady || !open) return null;
-
-  const top = Math.max(0, contentTop);
+  if (!portalReady || !open || !anchor) return null;
 
   return createPortal(
     <div
@@ -157,9 +190,57 @@ export function ExploreSearchOverlay({
 
       <div
         id="explore-search-overlay-panel"
-        className="explore-search-overlay__panel"
-        style={{ top: `${top}px` }}
+        className="explore-search-overlay__sheet"
+        style={{
+          paddingTop: `${Math.max(0, anchor.top)}px`,
+          paddingLeft: `${anchor.insetInline}px`,
+          paddingRight: `${anchor.insetInline}px`,
+        }}
       >
+        <div className="explore-search-overlay__chrome">
+          <form
+            className="explore-search-overlay__form"
+            onSubmit={handleSubmit}
+          >
+            <div className="explore-search-overlay__field">
+              <SearchIcon className="explore-search-overlay__search-icon" />
+              <input
+                ref={inputRef}
+                id="explore-search-overlay-input"
+                type="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                value={draft}
+                onChange={(event) => onDraftChange(event.target.value)}
+                placeholder={
+                  locationLabel
+                    ? `Name or keyword near ${locationLabel}…`
+                    : "Name or keyword…"
+                }
+                aria-label="Search specialists"
+                className="smoac-control explore-search-overlay__input"
+              />
+              {draft.trim() ? (
+                <button
+                  type="button"
+                  className="smoac-control explore-search-overlay__clear"
+                  aria-label="Clear search"
+                  onClick={() => onDraftChange("")}
+                >
+                  ×
+                </button>
+              ) : null}
+            </div>
+          </form>
+          <button
+            type="button"
+            className="smoac-control explore-search-cancel"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+        </div>
+
         <div className="explore-search-overlay__body">
           <h2 id={titleId} className="sr-only">
             Search specialists
