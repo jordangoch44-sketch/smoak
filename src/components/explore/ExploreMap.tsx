@@ -99,7 +99,7 @@ export function ExploreMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
-  const areaDotRef = useRef<import("leaflet").CircleMarker | null>(null);
+  const areaDotRef = useRef<import("leaflet").Marker | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const framedOriginRef = useRef<string>("");
   const areaCenterRef = useRef(areaCenter);
@@ -316,16 +316,19 @@ export function ExploreMap({
     }
 
     if (userLocationDot) {
-      areaDotRef.current = L.circleMarker(
+      const meIcon = L.divIcon({
+        className: "explore-map-me",
+        html: '<span class="explore-map-me__dot" aria-hidden="true">ME</span>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+      areaDotRef.current = L.marker(
         [userLocationDot.latitude, userLocationDot.longitude],
         {
-          radius: 9,
-          className: "explore-map-area",
-          color: "#ffffff",
-          weight: 2.5,
-          fillColor: "#9b5cff",
-          fillOpacity: 1,
+          icon: meIcon,
           interactive: false,
+          keyboard: false,
+          zIndexOffset: 600,
         }
       ).addTo(map);
     }
@@ -356,7 +359,7 @@ export function ExploreMap({
       const href = `/trainers/${encodeURIComponent(pin.trainer.id)}`;
       const photoSrc = safeImageSrc(pin.trainer.image);
       const photoHtml = photoSrc
-        ? `<img class="explore-map-popup__photo" src="${escapeHtml(photoSrc)}" alt="" width="56" height="56" loading="lazy" decoding="async" />`
+        ? `<img class="explore-map-popup__photo" src="${escapeHtml(photoSrc)}" alt="" width="44" height="44" loading="lazy" decoding="async" />`
         : `<span class="explore-map-popup__photo explore-map-popup__photo--empty" aria-hidden="true"></span>`;
       marker.bindPopup(
         `<div class="explore-map-popup">
@@ -375,7 +378,7 @@ export function ExploreMap({
           </div>
           <a class="explore-map-popup__link" href="${href}">View profile</a>
         </div>`,
-        { maxWidth: 280, className: "explore-map-popup-wrap" }
+        { maxWidth: 220, className: "explore-map-popup-wrap" }
       );
       layer.addLayer(marker);
     }
