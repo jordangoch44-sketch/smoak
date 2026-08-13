@@ -22,11 +22,15 @@
 }
 
 .trainer-card__verified {
+  --profile-verified-rgb: 52, 255, 136;
   display: inline-flex;
   flex-shrink: 0;
-  width: 1.5rem;
-  height: 1.5rem;
-  filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.45));
+  width: 1.15rem;
+  height: 1.15rem;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--profile-verified-rgb));
+  filter: drop-shadow(0 0 7px rgba(var(--profile-verified-rgb), 0.55));
 }
 
 .trainer-card__verified-icon {

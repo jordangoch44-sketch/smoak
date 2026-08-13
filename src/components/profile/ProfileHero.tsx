@@ -168,9 +168,6 @@ export function ProfileHero({
                     trainer={trainer}
                     className="profile-hero__profession"
                   />
-                  {trainer.title ? (
-                    <p className="profile-hero__specialty">{trainer.title}</p>
-                  ) : null}
                   <p className="profile-hero__location">
                     {formatProviderLocation(trainer)}
                   </p>
