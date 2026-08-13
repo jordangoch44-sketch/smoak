@@ -130,6 +130,11 @@ export function ExplorePageClient() {
   useEffect(() => {
     if (!isMobile || !catalogHydrated) return;
     document.body.classList.add(MAP_SHELL_BODY_CLASS);
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    const main = document.querySelector(".app-main");
+    if (main instanceof HTMLElement) main.scrollTop = 0;
     return () => {
       document.body.classList.remove(MAP_SHELL_BODY_CLASS);
     };

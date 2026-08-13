@@ -49,6 +49,11 @@ function isExplorePath(pathname: string): boolean {
   );
 }
 
+/** Search tab — map shell must open at scroll 0 */
+export function isExploreNavPath(pathname: string): boolean {
+  return isExplorePath(pathname);
+}
+
 export function getMobileBottomNavItems(
   session: AuthSession | null
 ): MobileBottomNavItem[] {
