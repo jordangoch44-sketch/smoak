@@ -6,7 +6,6 @@ import {
   UNKNOWN_ZIP_AREA_LABEL,
 } from "@/lib/geo/zip-place-names";
 import {
-  clearUserLocationAsync,
   completeGeolocationAsync,
   completeZipEntryAsync,
 } from "@/lib/user-location-store";
@@ -41,7 +40,6 @@ export function LocationSelectorPanel({
     city: savedPlace,
     zip: savedZip,
     isUnknownArea,
-    hasLocation,
   } = useUserLocation();
   const activeSummary = formatPanelLocationSummary(
     savedPlace,
@@ -54,7 +52,6 @@ export function LocationSelectorPanel({
   const [zipTouched, setZipTouched] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
   const [zipSubmitting, setZipSubmitting] = useState(false);
-  const [clearing, setClearing] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [zipResolveError, setZipResolveError] = useState<string | null>(null);
 
@@ -104,21 +101,6 @@ export function LocationSelectorPanel({
     },
     [submitZip, zip]
   );
-
-  const handleClearLocation = useCallback(async () => {
-    setGeoError(null);
-    setZipResolveError(null);
-    setClearing(true);
-    const result = await clearUserLocationAsync();
-    setClearing(false);
-    if (!result.ok) {
-      setGeoError(result.message || "Couldn’t clear location. Try again.");
-      return;
-    }
-    setZip("");
-    setZipTouched(false);
-    onUpdated();
-  }, [onUpdated]);
 
   const handleUseLocation = useCallback(() => {
     setGeoError(null);
@@ -171,7 +153,7 @@ export function LocationSelectorPanel({
     );
   }, [onUpdated]);
 
-  const busy = geoLoading || zipSubmitting || clearing;
+  const busy = geoLoading || zipSubmitting;
   const showZipFallback = !isGate || Boolean(geoError);
 
   return (
@@ -192,17 +174,14 @@ export function LocationSelectorPanel({
           </>
         ) : (
           <>
-            <p className="location-selector-panel__eyebrow">Your market</p>
             {activeSummary ? (
               <p className="location-selector-panel__active-location">
                 {activeSummary}
               </p>
             ) : null}
-            <h2 className="location-selector-panel__title">Set your location</h2>
-            <p className="location-selector-panel__lede">
-              Search ranks specialists by how close they are to you. Use your
-              current location or enter a ZIP to continue.
-            </p>
+            <h2 className="location-selector-panel__title">
+              Set your location for precise search
+            </h2>
           </>
         )}
       </header>
@@ -305,23 +284,6 @@ export function LocationSelectorPanel({
                   : "Update location"}
             </button>
           </form>
-        </>
-      ) : null}
-
-      {!isGate && (hasLocation || activeSummary) ? (
-        <>
-          <div className="location-selector-panel__divider" aria-hidden />
-          <button
-            type="button"
-            className="smoac-control location-selector-panel__btn location-selector-panel__btn--clear"
-            onClick={() => void handleClearLocation()}
-            disabled={busy}
-          >
-            {clearing ? "Clearing…" : "Clear location"}
-          </button>
-          <p className="location-selector-panel__clear-hint">
-            Removes your saved ZIP so Search isn’t ranked from that area.
-          </p>
         </>
       ) : null}
     </div>
