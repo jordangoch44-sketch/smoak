@@ -87,7 +87,7 @@ export function ExplorePageClient() {
     setMapSearchLoading(true);
     applyMapSearchArea(area);
     setPendingMapArea(null);
-    window.setTimeout(() => setMapSearchLoading(false), 420);
+    window.setTimeout(() => setMapSearchLoading(false), 280);
   }, [applyMapSearchArea]);
 
   const handleRecenterSearch = useCallback(() => {
@@ -258,10 +258,7 @@ export function ExplorePageClient() {
               areaCenter={searchOrigin}
               activeSearchArea={activeSearchArea}
               onPendingSearchAreaChange={handlePendingSearchAreaChange}
-              onSearchHere={handleSearchHere}
               onRecenterSearch={handleRecenterSearch}
-              showSearchHere={Boolean(pendingMapArea)}
-              searchHereLoading={mapSearchLoading}
               locked={false}
               variant="hero"
               showNotes={false}
@@ -275,7 +272,12 @@ export function ExplorePageClient() {
         )}
 
         {isMobile ? (
-          <ExploreResultsSheet resultCount={filtered.length}>
+          <ExploreResultsSheet
+            resultCount={filtered.length}
+            showSearchHere={Boolean(pendingMapArea)}
+            searchHereLoading={mapSearchLoading}
+            onSearchHere={handleSearchHere}
+          >
             {resultsMain}
           </ExploreResultsSheet>
         ) : (

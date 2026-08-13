@@ -22,6 +22,9 @@ interface ExploreResultsSheetProps {
   children: ReactNode;
   resultCount: number;
   className?: string;
+  showSearchHere?: boolean;
+  searchHereLoading?: boolean;
+  onSearchHere?: () => void;
 }
 
 function seeResultsLabel(count: number): string {
@@ -38,6 +41,9 @@ export function ExploreResultsSheet({
   children,
   resultCount,
   className,
+  showSearchHere = false,
+  searchHereLoading = false,
+  onSearchHere,
 }: ExploreResultsSheetProps) {
   const [open, setOpen] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -169,6 +175,16 @@ export function ExploreResultsSheet({
     >
       {!open ? (
         <div className="explore-split__cta-dock">
+          {showSearchHere ? (
+            <button
+              type="button"
+              className="smoac-control explore-split__search-here"
+              onClick={onSearchHere}
+              disabled={searchHereLoading || !onSearchHere}
+            >
+              {searchHereLoading ? "Searching…" : "Search here"}
+            </button>
+          ) : null}
           <button
             type="button"
             className="smoac-control explore-split__cta"

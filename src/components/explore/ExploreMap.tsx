@@ -28,14 +28,10 @@ interface ExploreMapProps {
   areaCenter?: ExploreMapArea | null;
   /** Active area used for pins + list (default 12 mi around origin) */
   activeSearchArea?: ExploreSearchArea | null;
-  /** User moved the map / changed radius — pending area ready for Search here */
+  /** User moved the map — pending area ready for Search here */
   onPendingSearchAreaChange?: (area: ExploreSearchArea | null) => void;
-  /** Apply pending map area to results */
-  onSearchHere?: () => void;
   /** Recenter camera + reset results to default 12-mile frame */
   onRecenterSearch?: () => void;
-  showSearchHere?: boolean;
-  searchHereLoading?: boolean;
   /** Display-only: no drag / zoom (default true) */
   locked?: boolean;
   /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header */
@@ -89,10 +85,7 @@ export function ExploreMap({
   areaCenter = null,
   activeSearchArea = null,
   onPendingSearchAreaChange,
-  onSearchHere,
   onRecenterSearch,
-  showSearchHere = false,
-  searchHereLoading = false,
   locked = true,
   variant = "panel",
   showNotes = true,
@@ -109,8 +102,8 @@ export function ExploreMap({
   activeSearchAreaRef.current = activeSearchArea;
   const onPendingRef = useRef(onPendingSearchAreaChange);
   onPendingRef.current = onPendingSearchAreaChange;
-  /** Ignore moveend while we programmatically frame the camera */
-  const suppressMoveRef = useRef(0);
+  /** Ignore moveend until this timestamp (programmatic camera moves) */
+  const suppressUntilRef = useRef(0);
   const [mapEpoch, setMapEpoch] = useState(0);
   const profileSheetOpen = useProfileSheetOpen();
 
@@ -132,19 +125,42 @@ export function ExploreMap({
     ? `${areaCenter.latitude.toFixed(4)},${areaCenter.longitude.toFixed(4)}`
     : "";
 
+  const suppressMoves = useCallback((ms = 220) => {
+    suppressUntilRef.current = Date.now() + ms;
+  }, []);
+
+  const emitPendingFromMap = useCallback((map: import("leaflet").Map) => {
+    if (Date.now() < suppressUntilRef.current) return;
+    const center = map.getCenter();
+    const ne = map.getBounds().getNorthEast();
+    const viewport = searchAreaFromMapViewport(
+      center.lat,
+      center.lng,
+      ne.lat,
+      ne.lng
+    );
+    const active = activeSearchAreaRef.current;
+    const notify = onPendingRef.current;
+    if (!notify) return;
+    if (active && !exploreSearchAreasDiffer(viewport, active)) {
+      notify(null);
+      return;
+    }
+    notify(viewport);
+  }, []);
+
   const runProgrammaticFrame = useCallback(
     (center: ExploreMapArea, radiusMiles: number) => {
       const map = mapRef.current;
       const L = leafletRef.current;
       if (!map || !L) return;
-      suppressMoveRef.current += 1;
+      suppressMoves(280);
       frameRadiusMiles(map, L, center, radiusMiles);
       window.setTimeout(() => {
-        suppressMoveRef.current = Math.max(0, suppressMoveRef.current - 1);
         onPendingRef.current?.(null);
-      }, 180);
+      }, 200);
     },
-    []
+    [suppressMoves]
   );
 
   useEffect(() => {
@@ -204,7 +220,7 @@ export function ExploreMap({
       markersLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
 
-      suppressMoveRef.current += 1;
+      suppressUntilRef.current = Date.now() + 400;
       frameRadiusMiles(map, L, center, radius);
       framedOriginRef.current = areaCenterRef.current
         ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
@@ -213,21 +229,7 @@ export function ExploreMap({
       setMapEpoch((value) => value + 1);
 
       const onMoveEnd = () => {
-        if (suppressMoveRef.current > 0) return;
-        const viewport = searchAreaFromMapViewport(
-          map!.getCenter().lat,
-          map!.getCenter().lng,
-          map!.getBounds().getNorthEast().lat,
-          map!.getBounds().getNorthEast().lng
-        );
-        const active = activeSearchAreaRef.current;
-        const notify = onPendingRef.current;
-        if (!notify) return;
-        if (active && !exploreSearchAreasDiffer(viewport, active)) {
-          notify(null);
-          return;
-        }
-        notify(viewport);
+        emitPendingFromMap(map!);
       };
 
       map.on("moveend", onMoveEnd);
@@ -239,7 +241,7 @@ export function ExploreMap({
           const liveRadius =
             activeSearchAreaRef.current?.radiusMiles ??
             DEFAULT_EXPLORE_RADIUS_MILES;
-          suppressMoveRef.current += 1;
+          suppressUntilRef.current = Date.now() + 320;
           frameRadiusMiles(
             map,
             leafletRef.current,
@@ -249,14 +251,10 @@ export function ExploreMap({
           framedOriginRef.current = areaCenterRef.current
             ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
             : "fallback";
-          window.setTimeout(() => {
-            suppressMoveRef.current = Math.max(0, suppressMoveRef.current - 1);
-          }, 120);
         }
       }, 80);
       window.setTimeout(() => {
         map?.invalidateSize();
-        suppressMoveRef.current = Math.max(0, suppressMoveRef.current - 1);
       }, 320);
     }
 
@@ -275,7 +273,7 @@ export function ExploreMap({
         map.remove();
       }
     };
-  }, [locked, profileSheetOpen, variant]);
+  }, [emitPendingFromMap, locked, profileSheetOpen, variant]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -410,19 +408,6 @@ export function ExploreMap({
         role="img"
         aria-label="Map of specialists in this search area"
       />
-      {showChrome && showSearchHere ? (
-        <button
-          type="button"
-          className={cn(
-            "smoac-control explore-map__search-here",
-            variant === "hero" && "explore-map__search-here--hero"
-          )}
-          onClick={onSearchHere}
-          disabled={searchHereLoading || !onSearchHere}
-        >
-          {searchHereLoading ? "Searching…" : "Search here"}
-        </button>
-      ) : null}
       {showChrome ? (
         <button
           type="button"

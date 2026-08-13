@@ -685,9 +685,42 @@
   bottom: calc(var(--mobile-bottom-nav-offset, 6.5rem) + 0.35rem);
   z-index: 2;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
   padding-inline: 1.25rem;
   pointer-events: none;
+}
+
+.explore-split__search-here {
+  pointer-events: auto;
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 0.55rem 1.15rem;
+  color: #16131f;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.explore-split__search-here:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.explore-split__search-here:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .explore-split__cta {
@@ -1050,46 +1083,6 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
     drop-shadow(0 1px 4px rgba(0, 0, 0, 0.45));
 }
 
-.explore-map__search-here {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  top: 0.85rem;
-  display: inline-flex;
-  min-height: 2.55rem;
-  align-items: center;
-  justify-content: center;
-  transform: translateX(-50%);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.94);
-  padding: 0.55rem 1.15rem;
-  color: #16131f;
-  font-size: 0.8125rem;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.65);
-  cursor: pointer;
-  touch-action: manipulation;
-  white-space: nowrap;
-}
-
-.explore-map__search-here--hero {
-  top: 4.35rem;
-  bottom: auto;
-}
-
-.explore-map__search-here:disabled {
-  opacity: 0.72;
-  cursor: wait;
-}
-
-.explore-map__search-here:active:not(:disabled) {
-  transform: translateX(-50%) scale(0.98);
-}
-
 .explore-map__recenter {
   position: absolute;
   z-index: 2;
@@ -1118,8 +1111,7 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   bottom: calc(var(--mobile-bottom-nav-offset, 6.5rem) + 4.35rem);
 }
 
-.explore-page--map-shell:has(.explore-split--results-open) .explore-map__recenter,
-.explore-page--map-shell:has(.explore-split--results-open) .explore-map__search-here {
+.explore-page--map-shell:has(.explore-split--results-open) .explore-map__recenter {
   display: none;
 }
 
