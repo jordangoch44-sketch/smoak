@@ -29,10 +29,9 @@ function redirectToAppPath(request: NextRequest, pathname: string) {
     host === "::" ||
     host === "::1"
   ) {
-    try {
-      return NextResponse.redirect(getAuthAppUrl(pathname));
-    } catch {
-      /* SITE_URL missing — fall through to relative redirect */
+    const absolute = getAuthAppUrl(pathname);
+    if (absolute) {
+      return NextResponse.redirect(absolute);
     }
   }
   const url = request.nextUrl.clone();

@@ -56,7 +56,7 @@ function resolveLocalSpecialistNotifyEmail(specialistId: string): string | null 
 }
 
 function siteOrigin(): string {
-  return getAuthSiteOrigin();
+  return getAuthSiteOrigin() ?? "https://smoac.com";
 }
 
 async function submitInquiryViaApi(

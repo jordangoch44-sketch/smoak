@@ -86,19 +86,27 @@ export function readPendingInquiryDraft(): PendingInquiryDraft | null {
 
 export function writePendingInquiryDraft(draft: PendingInquiryDraft): void {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    PENDING_INQUIRY_STORAGE_KEY,
-    JSON.stringify({
-      ...draft,
-      message: sanitizeInquiryMessage(draft.message),
-      inquiryTopics: draft.inquiryTopics.filter(isInquiryTopicId),
-    })
-  );
+  try {
+    window.localStorage.setItem(
+      PENDING_INQUIRY_STORAGE_KEY,
+      JSON.stringify({
+        ...draft,
+        message: sanitizeInquiryMessage(draft.message),
+        inquiryTopics: draft.inquiryTopics.filter(isInquiryTopicId),
+      })
+    );
+  } catch {
+    /* Quota / private mode — keep in-memory draft only */
+  }
 }
 
 export function clearPendingInquiryDraft(): void {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(PENDING_INQUIRY_STORAGE_KEY);
+  try {
+    window.localStorage.removeItem(PENDING_INQUIRY_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
 }
 
 export function peekPendingInquiryDraft(): PendingInquiryDraft | null {

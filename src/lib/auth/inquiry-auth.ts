@@ -19,7 +19,10 @@ import {
   type QuickAccountSource,
 } from "@/lib/inquiry/inquiry-session-flags";
 import type { AuthSession } from "@/types/auth";
-import { getAuthCallbackUrl } from "@/lib/auth/site-origin";
+import {
+  AUTH_SITE_ORIGIN_ERROR,
+  getAuthCallbackUrl,
+} from "@/lib/auth/site-origin";
 import { buildCompleteAccountNextPath } from "@/lib/auth/account-setup";
 
 export type QuickClientAuthResult =
@@ -108,6 +111,9 @@ export async function startQuickClientAccount(params: {
 
   const nextPath = buildCompleteAccountNextPath(params.resumeQuery);
   const redirectTo = getAuthCallbackUrl(nextPath);
+  if (!redirectTo) {
+    return { ok: false, message: AUTH_SITE_ORIGIN_ERROR };
+  }
 
   logAuth("quick_otp.start", {
     email,

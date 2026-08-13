@@ -84,7 +84,7 @@ async function resolveSpecialistNotifyEmail(
 }
 
 function siteOrigin(): string {
-  return getAuthSiteOrigin();
+  return getAuthSiteOrigin() ?? "https://smoac.com";
 }
 
 /**

@@ -20,6 +20,15 @@ function withBudget<T>(promise: Promise<T>, ms: number): Promise<T | null> {
   ]);
 }
 
+function redirectToApp(request: Request, pathAndQuery: string) {
+  const absolute = getAuthAppUrl(pathAndQuery);
+  if (absolute) {
+    return NextResponse.redirect(absolute);
+  }
+  /* SITE_URL missing — stay on request origin so callback never 500s. */
+  return NextResponse.redirect(new URL(pathAndQuery, request.url));
+}
+
 /**
  * Magic-link / email-confirm callback.
  * Exchanges code for session cookies, then redirects via NEXT_PUBLIC_SITE_URL.
@@ -83,13 +92,13 @@ export async function GET(request: Request) {
                 : "/complete-account";
           }
 
-          return NextResponse.redirect(getAuthAppUrl(destination));
+          return redirectToApp(request, destination);
         }
 
-        return NextResponse.redirect(getAuthAppUrl(next));
+        return redirectToApp(request, next);
       }
     }
   }
 
-  return NextResponse.redirect(getAuthAppUrl("/login?error=auth_callback"));
+  return redirectToApp(request, "/login?error=auth_callback");
 }

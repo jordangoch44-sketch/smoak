@@ -268,14 +268,16 @@ export function overridesFromTrainer(
     title: stored?.title ?? trainer.title,
     gender: stored?.gender ?? trainer.gender,
     profession: stored?.profession ?? trainer.profession,
-    specialty: [...(stored?.specialty ?? trainer.specialty)],
+    specialty: [...(stored?.specialty ?? trainer.specialty ?? [])],
     homepageSpecialties: sanitizeHomepageSpecialties(
-      stored?.specialty ?? trainer.specialty,
+      stored?.specialty ?? trainer.specialty ?? [],
       stored?.homepageSpecialties ?? trainer.homepageSpecialties
     ),
-    certifications: (stored?.certifications ?? trainer.certifications).map(
-      (cert) => ({ ...cert })
-    ),
+    certifications: (
+      stored?.certifications ??
+      trainer.certifications ??
+      []
+    ).map((cert) => ({ ...cert })),
     city: stored?.city ?? trainer.city,
     neighborhood: stored?.neighborhood ?? trainer.neighborhood,
     zipCode: stored?.zipCode ?? trainer.zipCode ?? "",
@@ -287,22 +289,29 @@ export function overridesFromTrainer(
         : trainer.serviceRadiusMiles != null
           ? String(trainer.serviceRadiusMiles)
           : ""),
-    serviceArea: [...(stored?.serviceArea ?? trainer.serviceArea)],
+    serviceArea: [...(stored?.serviceArea ?? trainer.serviceArea ?? [])],
     pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
     bio: stored?.bio ?? trainer.bio,
     photoNotes:
       stored?.photoNotes ??
-      (trainer.galleryImages.filter(Boolean).join("\n") || ""),
+      ((Array.isArray(trainer.galleryImages) ? trainer.galleryImages : [])
+        .filter(Boolean)
+        .join("\n") || ""),
     videoNotes:
       stored?.videoNotes ??
-      trainer.gallery
+      (Array.isArray(trainer.gallery) ? trainer.gallery : [])
         .filter((item) => item.type === "video")
         .map((item) => item.src)
         .join("\n"),
     transformationNotes: stored?.transformationNotes ?? "",
     bookingAvailability:
       stored?.bookingAvailability ??
-      trainer.sessionExperience.slice(0, 3).join(", "),
+      (Array.isArray(trainer.sessionExperience)
+        ? trainer.sessionExperience
+        : []
+      )
+        .slice(0, 3)
+        .join(", "),
     profilePhotoUrl:
       stored?.profilePhotoUrl?.trim() ||
       trainer.image?.trim() ||
@@ -319,24 +328,30 @@ export function overridesFromTrainer(
               .split("\n")
               .map((line) => line.trim())
               .filter(Boolean)
-          : trainer.galleryImages
+          : Array.isArray(trainer.galleryImages)
+            ? trainer.galleryImages
+            : []
       ).filter(Boolean)
     ),
     phone: stored?.phone ?? "",
     email: stored?.email ?? "",
-    instagram: stored?.instagram ?? trainer.social.instagram ?? "",
-    website: stored?.website ?? trainer.social.website ?? "",
-    tiktok: stored?.tiktok ?? trainer.social.tiktok ?? "",
+    instagram: stored?.instagram ?? trainer.social?.instagram ?? "",
+    website: stored?.website ?? trainer.social?.website ?? "",
+    tiktok: stored?.tiktok ?? trainer.social?.tiktok ?? "",
     googleReviewsUrl:
-      stored?.googleReviewsUrl ?? trainer.social.googleReviewsUrl ?? "",
-    googlePlaceId: stored?.googlePlaceId ?? trainer.social.googlePlaceId ?? "",
+      stored?.googleReviewsUrl ?? trainer.social?.googleReviewsUrl ?? "",
+    googlePlaceId: stored?.googlePlaceId ?? trainer.social?.googlePlaceId ?? "",
     experienceYears: stored?.experienceYears ?? "",
     trainingStyle:
       stored?.trainingStyle ??
-      (trainer.coachingStyle.filter(Boolean).join(" · ") || ""),
+      ((Array.isArray(trainer.coachingStyle) ? trainer.coachingStyle : [])
+        .filter(Boolean)
+        .join(" · ") || ""),
     servicesOffered:
       stored?.servicesOffered ??
-      (trainer.bestFor.filter(Boolean).join(", ") || ""),
+      ((Array.isArray(trainer.bestFor) ? trainer.bestFor : [])
+        .filter(Boolean)
+        .join(", ") || ""),
     profileAccent: style.accent,
     profileAvatarFrame: style.avatarFrame,
     profileNameFont: style.nameFont,

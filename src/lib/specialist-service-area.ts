@@ -73,14 +73,20 @@ export interface SpecialistServiceAreaDisplay {
 }
 
 export function buildServiceAreaDisplay(trainer: Trainer): SpecialistServiceAreaDisplay | null {
+  const sessionExperience = Array.isArray(trainer.sessionExperience)
+    ? trainer.sessionExperience
+    : [];
+  const serviceArea = Array.isArray(trainer.serviceArea)
+    ? trainer.serviceArea
+    : [];
   const serviceType =
     trainer.serviceType ??
     inferServiceTypeFromFlags(
-      trainer.sessionExperience.some((s) => /in-home/i.test(s)),
-      trainer.sessionExperience.some((s) => /online/i.test(s))
+      sessionExperience.some((s) => /in-home/i.test(s)),
+      sessionExperience.some((s) => /online/i.test(s))
     );
 
-  const city = trainer.city.trim();
+  const city = (trainer.city ?? "").trim();
   const state = trainer.state?.trim() ?? "";
   const zip = trainer.zipCode?.trim() ?? "";
 
@@ -119,9 +125,7 @@ export function buildServiceAreaDisplay(trainer: Trainer): SpecialistServiceArea
 
   const description =
     trainer.serviceAreaDescription?.trim() ||
-    (trainer.serviceArea.length > 0
-      ? trainer.serviceArea.join(", ")
-      : null);
+    (serviceArea.length > 0 ? serviceArea.join(", ") : null);
 
   return {
     basedInLine,

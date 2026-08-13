@@ -5,14 +5,15 @@ export type { ProfileGalleryMedia };
 
 /** Image URLs for the profile hero slideshow */
 export function buildTrainerGalleryImages(
-  gallery: TrainerMediaItem[],
+  gallery: TrainerMediaItem[] | null | undefined,
   heroImage: string,
-  explicit?: string[]
+  explicit?: string[] | null
 ): string[] {
   if (explicit && explicit.length > 0) return explicit;
 
-  const fromGallery = gallery
-    .filter((item) => item.type === "image")
+  const list = Array.isArray(gallery) ? gallery : [];
+  const fromGallery = list
+    .filter((item) => item?.type === "image")
     .map((item) => item.src)
     .filter(Boolean);
 
@@ -21,13 +22,14 @@ export function buildTrainerGalleryImages(
 }
 
 export function getProfileGalleryMedia(
-  gallery: TrainerMediaItem[],
-  galleryImages: string[],
+  gallery: TrainerMediaItem[] | null | undefined,
+  galleryImages: string[] | null | undefined,
   heroImage: string
 ): ProfileGalleryMedia[] {
-  if (gallery.length > 0) {
-    return gallery
-      .filter((item) => typeof item.src === "string" && item.src.trim().length > 0)
+  const list = Array.isArray(gallery) ? gallery : [];
+  if (list.length > 0) {
+    return list
+      .filter((item) => typeof item?.src === "string" && item.src.trim().length > 0)
       .map((item) => ({
         id: item.id,
         type: item.type,
@@ -40,8 +42,9 @@ export function getProfileGalleryMedia(
       }));
   }
 
+  const explicitImages = Array.isArray(galleryImages) ? galleryImages : [];
   const images = (
-    galleryImages.length > 0 ? galleryImages : heroImage ? [heroImage] : []
+    explicitImages.length > 0 ? explicitImages : heroImage ? [heroImage] : []
   ).filter((url) => typeof url === "string" && url.trim().length > 0);
 
   return images.map((url, index) => ({

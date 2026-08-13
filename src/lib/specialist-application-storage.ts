@@ -203,6 +203,17 @@ export function getSpecialistApplicationsServerSnapshot(): readonly SpecialistAp
   return EMPTY_APPLICATIONS;
 }
 
+/** True after first local or Supabase applications hydrate finishes (client). */
+export function getSpecialistApplicationsHydratedSnapshot(): boolean {
+  if (typeof window === "undefined") return false;
+  ensureHydrated();
+  return hydrated;
+}
+
+export function getSpecialistApplicationsHydratedServerSnapshot(): boolean {
+  return false;
+}
+
 /** DEV ONLY — autosave draft between onboarding steps (stays local until submit) */
 export function persistSpecialistOnboardingDraft(
   state: SpecialistOnboardingState

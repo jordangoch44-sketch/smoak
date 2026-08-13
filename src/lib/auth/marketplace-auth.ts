@@ -28,11 +28,15 @@ import {
 } from "@/lib/auth/pending-marketplace-signup";
 import type { CreateAccountProfile } from "@/types/create-account";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
-import { getAuthCallbackUrl, getAuthSiteOrigin } from "@/lib/auth/site-origin";
+import {
+  AUTH_SITE_ORIGIN_ERROR,
+  getAuthCallbackUrl,
+  getAuthSiteOrigin,
+} from "@/lib/auth/site-origin";
 import { updatePasswordSetupStatus } from "@/lib/auth/password-setup-status";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
 
-function marketplaceSignupRedirectTo(role: PublicAuthRole): string {
+function marketplaceSignupRedirectTo(role: PublicAuthRole): string | null {
   const next =
     role === "specialist" ? "/specialist-dashboard" : "/client-dashboard";
   return getAuthCallbackUrl(next);
@@ -515,6 +519,9 @@ export async function sendMagicLinkForLogin(params: {
     params.returnToSaved ?? false
   );
   const emailRedirectTo = getAuthCallbackUrl(nextPath);
+  if (!emailRedirectTo) {
+    return { ok: false, message: AUTH_SITE_ORIGIN_ERROR };
+  }
 
   logAuth("magic_link_login.start", {
     email: trimmedEmail,
@@ -613,14 +620,19 @@ export async function signUpWithPassword(
     };
   }
 
+  const emailRedirectTo =
+    options?.emailRedirectTo ?? marketplaceSignupRedirectTo(role);
+  if (!emailRedirectTo) {
+    return { ok: false, message: AUTH_SITE_ORIGIN_ERROR };
+  }
+
   logAuth("signup.start", { role, email: trimmedEmail });
 
   const { data, error } = await supabase.auth.signUp({
     email: trimmedEmail,
     password,
     options: {
-      emailRedirectTo:
-        options?.emailRedirectTo ?? marketplaceSignupRedirectTo(role),
+      emailRedirectTo,
       data: {
         role,
         first_name: options?.firstName?.trim() ?? "",
@@ -739,6 +751,9 @@ export async function resetPasswordForEmail(email: string): Promise<{
   }
 
   const siteUrl = getAuthSiteOrigin();
+  if (!siteUrl) {
+    return { ok: false, message: AUTH_SITE_ORIGIN_ERROR };
+  }
   const redirectTo = `${siteUrl}/login/reset-password`;
 
   const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {

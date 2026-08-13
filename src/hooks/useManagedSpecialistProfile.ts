@@ -16,10 +16,14 @@ import {
 import {
   getApprovedSpecialistProfilesServerSnapshot,
   getApprovedSpecialistProfilesSnapshot,
+  getApprovedSpecialistProfilesHydratedServerSnapshot,
+  getApprovedSpecialistProfilesHydratedSnapshot,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import {
   getSpecialistApplicationById,
+  getSpecialistApplicationsHydratedServerSnapshot,
+  getSpecialistApplicationsHydratedSnapshot,
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
@@ -50,6 +54,12 @@ export function useManagedSpecialistProfile() {
     () => ""
   );
 
+  const applicationsHydrated = useSyncExternalStore(
+    subscribeSpecialistApplications,
+    getSpecialistApplicationsHydratedSnapshot,
+    getSpecialistApplicationsHydratedServerSnapshot
+  );
+
   const overridesMap = useSyncExternalStore(
     subscribeSpecialistProfiles,
     getSpecialistProfilesSnapshot,
@@ -62,6 +72,12 @@ export function useManagedSpecialistProfile() {
     subscribeApprovedSpecialistProfiles,
     getApprovedSpecialistProfilesSnapshot,
     getApprovedSpecialistProfilesServerSnapshot
+  );
+
+  const catalogHydrated = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesHydratedSnapshot,
+    getApprovedSpecialistProfilesHydratedServerSnapshot
   );
 
   const trainerId = resolveManagedSpecialistId(sessionEmail, sessionUserId);
@@ -97,5 +113,7 @@ export function useManagedSpecialistProfile() {
     formDefaults,
     profileCompletion,
     saveForm,
+    /** False until applications + approved catalog finish first hydrate. */
+    isHydrated: applicationsHydrated && catalogHydrated,
   };
 }

@@ -23,6 +23,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useProfileKeyboardChrome } from "@/hooks/useProfileKeyboardChrome";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
+import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
   EMPTY_CERTIFICATION,
@@ -88,7 +89,7 @@ export function SpecialistEditProfilePageClient({
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
   const { showToast } = useToast();
-  const { formDefaults, saveForm, application, trainerId } =
+  const { formDefaults, saveForm, application, trainerId, isHydrated } =
     useManagedSpecialistProfile();
 
   const [editingSection, setEditingSection] = useState<SectionId | null>(null);
@@ -294,7 +295,7 @@ export function SpecialistEditProfilePageClient({
     };
   }
 
-  if (!isReady || !session || !savedForm || !form) {
+  if (!isReady || !session || !isHydrated) {
     if (isModal) {
       if (!modalMounted || typeof document === "undefined") return null;
       return createPortal(
@@ -313,6 +314,61 @@ export function SpecialistEditProfilePageClient({
         <div className="dashboard-page__content">
           <p className="dashboard-page__subtitle">Loading profile editor…</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!savedForm || !form) {
+    const emptyBody = (
+      <div className="dashboard-page__content" style={{ padding: "2rem 1.25rem" }}>
+        <p className="dashboard-page__subtitle" style={{ marginBottom: "0.75rem" }}>
+          Profile editor unavailable
+        </p>
+        <p style={{ opacity: 0.75, marginBottom: "1.25rem", maxWidth: 420 }}>
+          We couldn’t load your specialist profile yet. Refresh, or return to
+          your dashboard and try again.
+        </p>
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="dashboard-edit__btn dashboard-edit__btn--secondary"
+            onClick={() => window.location.reload()}
+          >
+            Refresh
+          </button>
+          {isModal && onRequestClose ? (
+            <button
+              type="button"
+              className="dashboard-edit__btn dashboard-edit__btn--secondary"
+              onClick={onRequestClose}
+            >
+              Close
+            </button>
+          ) : (
+            <Link
+              href={SPECIALIST_DASHBOARD_PATH}
+              className="dashboard-edit__btn dashboard-edit__btn--secondary"
+            >
+              Back to dashboard
+            </Link>
+          )}
+        </div>
+      </div>
+    );
+
+    if (isModal) {
+      if (!modalMounted || typeof document === "undefined") return null;
+      return createPortal(
+        <div className="specialist-full-editor" role="presentation">
+          <div className="specialist-full-editor__panel">{emptyBody}</div>
+        </div>,
+        document.body
+      );
+    }
+
+    return (
+      <div className="dashboard-page">
+        {emptyBody}
       </div>
     );
   }

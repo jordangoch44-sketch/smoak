@@ -6,7 +6,13 @@
  *
  * LAN: NEXT_PUBLIC_SITE_URL=http://192.168.1.77:3000 then `npm run build`.
  * Allowlist the same origin in Supabase Auth → Redirect URLs.
+ *
+ * Soft-fails (returns null / result) so auth UI can show an error instead of
+ * throwing into a white screen.
  */
+
+export const AUTH_SITE_ORIGIN_ERROR =
+  "Sign-in links are temporarily unavailable. Please try again later.";
 
 function normalizeOrigin(value: string): string {
   return value.trim().replace(/\/$/, "");
@@ -30,35 +36,52 @@ function isUnusableAuthOrigin(origin: string): boolean {
   }
 }
 
-export function getAuthSiteOrigin(): string {
+export type AuthSiteOriginResult =
+  | { ok: true; origin: string }
+  | { ok: false; message: string };
+
+export function resolveAuthSiteOrigin(): AuthSiteOriginResult {
   const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim() ?? "";
   if (!raw) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_SITE_URL. Set it to your public origin (e.g. http://192.168.1.77:3000) before building."
-    );
+    return {
+      ok: false,
+      message:
+        "Missing NEXT_PUBLIC_SITE_URL. Set it to your public origin before building.",
+    };
   }
 
   const configured = normalizeOrigin(raw);
   if (isUnusableAuthOrigin(configured)) {
-    throw new Error(
-      `NEXT_PUBLIC_SITE_URL must be a reachable public origin, not a bind/loopback host (got "${configured}"). Use e.g. http://192.168.1.77:3000.`
-    );
+    return {
+      ok: false,
+      message: `NEXT_PUBLIC_SITE_URL must be a reachable public origin, not a bind/loopback host (got "${configured}").`,
+    };
   }
 
-  return configured;
+  return { ok: true, origin: configured };
+}
+
+/** Public origin, or null when misconfigured (never throws). */
+export function getAuthSiteOrigin(): string | null {
+  const result = resolveAuthSiteOrigin();
+  return result.ok ? result.origin : null;
 }
 
 /** Absolute auth callback URL with optional next path (must start with /). */
-export function getAuthCallbackUrl(nextPath: string): string {
+export function getAuthCallbackUrl(nextPath: string): string | null {
+  const origin = getAuthSiteOrigin();
+  if (!origin) return null;
   const next = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
-  return `${getAuthSiteOrigin()}/auth/callback?next=${encodeURIComponent(next)}`;
+  return `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
 }
 
 /**
  * Absolute in-app URL after auth (success or failure).
  * Path may include a query string (e.g. `/login?error=auth_callback`).
  */
-export function getAuthAppUrl(pathAndQuery: string): string {
+export function getAuthAppUrl(pathAndQuery: string): string | null {
+  const origin = getAuthSiteOrigin();
+  if (!origin) return null;
   const path = pathAndQuery.startsWith("/") ? pathAndQuery : `/${pathAndQuery}`;
-  return `${getAuthSiteOrigin()}${path}`;
+  return `${origin}${path}`;
 }

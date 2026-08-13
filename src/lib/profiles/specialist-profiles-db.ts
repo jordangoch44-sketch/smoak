@@ -1,7 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SpecialistProfileRow } from "@/types/database";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
-import type { Trainer } from "@/types/trainer";
+import type {
+  Certification,
+  ClientTransformationPhoto,
+  Gender,
+  Review,
+  SocialLinks,
+  Trainer,
+  TrainerMediaItem,
+  TrainerReviewSources,
+} from "@/types/trainer";
 import { firstNameFromPersonName } from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 
@@ -13,18 +22,240 @@ export type SpecialistProfilesFetchResult =
   | { ok: true; profiles: Trainer[]; overridesById: Record<string, SpecialistProfileOverrides> }
   | { ok: false; message: string };
 
+function asString(value: unknown, fallback = ""): string {
+  return typeof value === "string" ? value : fallback;
+}
+
+function asNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string");
 }
 
+function asGender(value: unknown): Gender {
+  return value === "male" || value === "female" || value === "non-binary"
+    ? value
+    : "non-binary";
+}
+
+function asGallery(value: unknown): TrainerMediaItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index): TrainerMediaItem | null => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const src = asString(row.src).trim();
+      if (!src) return null;
+      return {
+        id: asString(row.id, `gallery-${index}`),
+        type: row.type === "video" ? "video" : "image",
+        src,
+        poster:
+          typeof row.poster === "string" && row.poster.trim()
+            ? row.poster.trim()
+            : undefined,
+        alt: asString(row.alt),
+      };
+    })
+    .filter((item): item is TrainerMediaItem => item != null);
+}
+
+function asClientTransformations(
+  value: unknown
+): ClientTransformationPhoto[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index): ClientTransformationPhoto | null => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const src = asString(row.src).trim();
+      if (!src) return null;
+      return {
+        id: asString(row.id, `transform-${index}`),
+        src,
+        alt: asString(row.alt),
+      };
+    })
+    .filter((item): item is ClientTransformationPhoto => item != null);
+}
+
+function asCertifications(value: unknown): Certification[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item): Certification | null => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      const name = asString(row.name).trim();
+      if (!name) return null;
+      return {
+        name,
+        issuer: asString(row.issuer),
+        year: asNumber(row.year, 0),
+      };
+    })
+    .filter((item): item is Certification => item != null);
+}
+
+function asReviews(value: unknown): Review[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, index): Review | null => {
+      if (!item || typeof item !== "object") return null;
+      const row = item as Record<string, unknown>;
+      return {
+        id: asString(row.id, `review-${index}`),
+        author: asString(row.author),
+        rating: asNumber(row.rating, 0),
+        text: asString(row.text),
+        date: asString(row.date),
+      };
+    })
+    .filter((item): item is Review => item != null);
+}
+
+function asSocial(value: unknown): SocialLinks {
+  if (!value || typeof value !== "object") return {};
+  const row = value as Record<string, unknown>;
+  const social: SocialLinks = {};
+  if (typeof row.instagram === "string") social.instagram = row.instagram;
+  if (typeof row.twitter === "string") social.twitter = row.twitter;
+  if (typeof row.linkedin === "string") social.linkedin = row.linkedin;
+  if (typeof row.website === "string") social.website = row.website;
+  if (typeof row.tiktok === "string") social.tiktok = row.tiktok;
+  if (typeof row.googleReviewsUrl === "string") {
+    social.googleReviewsUrl = row.googleReviewsUrl;
+  }
+  if (typeof row.googlePlaceId === "string") {
+    social.googlePlaceId = row.googlePlaceId;
+  }
+  if (typeof row.googleRating === "number") {
+    social.googleRating = row.googleRating;
+  }
+  if (typeof row.googleReviewCount === "number") {
+    social.googleReviewCount = row.googleReviewCount;
+  }
+  if (typeof row.googleFetchedAt === "string") {
+    social.googleFetchedAt = row.googleFetchedAt;
+  }
+  return social;
+}
+
+function asReviewSources(value: unknown): TrainerReviewSources | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const row = value as Record<string, unknown>;
+  const sources: TrainerReviewSources = {};
+  if (typeof row.smoac === "number") sources.smoac = row.smoac;
+  if (typeof row.google === "number") sources.google = row.google;
+  if (typeof row.yelp === "number") sources.yelp = row.yelp;
+  if (typeof row.other === "number") sources.other = row.other;
+  return Object.keys(sources).length > 0 ? sources : undefined;
+}
+
+/** Normalize incomplete `profile_data` JSON so profile UI never crashes on `.map` / `.some`. */
 function trainerFromProfileData(
   id: string,
   profileData: Record<string, unknown>
 ): Trainer {
+  const gallery = asGallery(profileData.gallery);
+  const galleryImages = asStringArray(profileData.galleryImages);
+  const heroImage =
+    asString(profileData.heroImage) ||
+    galleryImages[0] ||
+    gallery[0]?.src ||
+    asString(profileData.image);
+  const image = asString(profileData.image) || heroImage;
+
   return {
-    ...(profileData as unknown as Trainer),
     id,
+    name: asString(profileData.name),
+    specialistFirstName:
+      typeof profileData.specialistFirstName === "string"
+        ? profileData.specialistFirstName
+        : undefined,
+    profession: asString(profileData.profession),
+    title: asString(profileData.title),
+    location: asString(profileData.location),
+    city: asString(profileData.city),
+    state:
+      typeof profileData.state === "string" ? profileData.state : undefined,
+    neighborhood: asString(profileData.neighborhood),
+    serviceArea: asStringArray(profileData.serviceArea),
+    serviceAreaZipCodes: asStringArray(profileData.serviceAreaZipCodes),
+    serviceAreaDescription:
+      typeof profileData.serviceAreaDescription === "string"
+        ? profileData.serviceAreaDescription
+        : undefined,
+    zipCode: asString(profileData.zipCode),
+    latitude: asNumber(profileData.latitude, 0),
+    longitude: asNumber(profileData.longitude, 0),
+    willingToTravel:
+      typeof profileData.willingToTravel === "boolean"
+        ? profileData.willingToTravel
+        : undefined,
+    serviceRadiusMiles:
+      typeof profileData.serviceRadiusMiles === "number"
+        ? profileData.serviceRadiusMiles
+        : undefined,
+    travelRadius:
+      typeof profileData.travelRadius === "string"
+        ? profileData.travelRadius
+        : undefined,
+    serviceType:
+      profileData.serviceType === "in-person" ||
+      profileData.serviceType === "virtual" ||
+      profileData.serviceType === "both"
+        ? profileData.serviceType
+        : undefined,
+    sponsored: Boolean(profileData.sponsored),
+    categorySpotlight: Boolean(profileData.categorySpotlight),
+    verified:
+      typeof profileData.verified === "boolean"
+        ? profileData.verified
+        : undefined,
+    specialty: asStringArray(profileData.specialty),
+    homepageSpecialties: asStringArray(profileData.homepageSpecialties),
+    gender: asGender(profileData.gender),
+    pricePerSession: asNumber(profileData.pricePerSession, 0),
+    rating: asNumber(profileData.rating, 0),
+    reviewCount: asNumber(profileData.reviewCount, 0),
+    reviewSources: asReviewSources(profileData.reviewSources),
+    galleryImages,
+    pinnedPhotos: asStringArray(profileData.pinnedPhotos),
+    image,
+    heroImage,
+    bio: asString(profileData.bio),
+    bestFor: asStringArray(profileData.bestFor),
+    coachingStyle: asStringArray(profileData.coachingStyle),
+    whyClientsChoose: asStringArray(profileData.whyClientsChoose),
+    resultsSnapshot: Array.isArray(profileData.resultsSnapshot)
+      ? asStringArray(profileData.resultsSnapshot)
+      : profileData.resultsSnapshot === null
+        ? null
+        : undefined,
+    sessionExperience: asStringArray(profileData.sessionExperience),
+    gallery,
+    clientTransformations: asClientTransformations(
+      profileData.clientTransformations
+    ),
+    featured: Boolean(profileData.featured),
+    topRanked: Boolean(profileData.topRanked),
+    isPremium: Boolean(profileData.isPremium),
+    profileStyle:
+      profileData.profileStyle &&
+      typeof profileData.profileStyle === "object"
+        ? (profileData.profileStyle as Trainer["profileStyle"])
+        : undefined,
+    certifications: asCertifications(profileData.certifications),
+    reviews: asReviews(profileData.reviews),
+    social: asSocial(profileData.social),
   };
 }
 

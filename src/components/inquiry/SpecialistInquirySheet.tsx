@@ -138,7 +138,6 @@ export function SpecialistInquirySheet({
       initialAction
     );
     setDraft(next);
-    writePendingInquiryDraft(next);
     setView("compose");
     setError(null);
     setSending(false);
@@ -151,6 +150,12 @@ export function SpecialistInquirySheet({
     writePendingInquiryDraft(next);
     setDraft(next);
   }, []);
+
+  /* Persist outside render — localStorage can throw (quota / private mode). */
+  useEffect(() => {
+    if (!open || !syncedOpenKey) return;
+    writePendingInquiryDraft(draft);
+  }, [open, syncedOpenKey, draft]);
 
   useEffect(() => {
     document.body.classList.toggle("inquiry-sheet-open", open);
