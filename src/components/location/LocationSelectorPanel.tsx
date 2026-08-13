@@ -21,17 +21,6 @@ interface LocationSelectorPanelProps {
   mode?: "dropdown" | "gate";
 }
 
-const GATE_CATEGORY_CHIPS = [
-  { id: "trainer", label: "Trainer", tone: "blue" },
-  { id: "pt", label: "Physical Therapy", tone: "mint" },
-  { id: "boxing", label: "Boxing Coach", tone: "amber" },
-  { id: "dance", label: "Dance Instructor", tone: "magenta" },
-  { id: "nutrition", label: "Nutritionist", tone: "green" },
-  { id: "yoga", label: "Yoga", tone: "lavender" },
-  { id: "strength", label: "Strength Coach", tone: "violet" },
-  { id: "massage", label: "Massage", tone: "cyan" },
-] as const;
-
 function formatPanelLocationSummary(
   placeName: string | null,
   zip: string | null,
@@ -183,6 +172,7 @@ export function LocationSelectorPanel({
   }, [onUpdated]);
 
   const busy = geoLoading || zipSubmitting || clearing;
+  const showZipFallback = !isGate || Boolean(geoError);
 
   return (
     <div
@@ -192,37 +182,28 @@ export function LocationSelectorPanel({
       )}
     >
       <header className="location-selector-panel__header">
-        <p className="location-selector-panel__eyebrow">
-          {isGate ? "Welcome to SMOAC" : "Your market"}
-        </p>
-        {!isGate && activeSummary ? (
-          <p className="location-selector-panel__active-location">
-            {activeSummary}
-          </p>
-        ) : null}
-        <h2 className="location-selector-panel__title">
-          {isGate ? "Find specialists near you" : "Set your location"}
-        </h2>
         {isGate ? (
-          <ul
-            className="site-location-gate__categories"
-            aria-label="Specialists you can find on SMOAC"
-          >
-            {GATE_CATEGORY_CHIPS.map((chip) => (
-              <li
-                key={chip.id}
-                className={`site-location-gate__chip site-location-gate__chip--${chip.tone}`}
-              >
-                <span className="site-location-gate__chip-dot" aria-hidden />
-                {chip.label}
-              </li>
-            ))}
-          </ul>
+          <>
+            <h2 className="location-selector-panel__title">Welcome to SMOAC</h2>
+            <p className="location-selector-panel__lede">
+              Allow location so Search can show the closest specialists to you —
+              ranked by how near they are.
+            </p>
+          </>
         ) : (
-          <p className="location-selector-panel__lede">
-            Search ranks specialists by how close they are to you. Use your
-            current location or enter a ZIP to continue.
-          </p>
+          <>
+            <p className="location-selector-panel__eyebrow">Your market</p>
+            {activeSummary ? (
+              <p className="location-selector-panel__active-location">
+                {activeSummary}
+              </p>
+            ) : null}
+            <h2 className="location-selector-panel__title">Set your location</h2>
+            <p className="location-selector-panel__lede">
+              Search ranks specialists by how close they are to you. Use your
+              current location or enter a ZIP to continue.
+            </p>
+          </>
         )}
       </header>
 
@@ -244,76 +225,88 @@ export function LocationSelectorPanel({
         </p>
       ) : null}
 
-      <div className="location-selector-panel__divider" aria-hidden />
+      {showZipFallback ? (
+        <>
+          <div className="location-selector-panel__divider" aria-hidden />
 
-      <form className="location-selector-panel__form" onSubmit={handleUpdateZip}>
-        <label className="location-selector-panel__label" htmlFor={zipFieldId}>
-          {isGate ? "Enter ZIP code" : "Or enter ZIP code"}
-        </label>
-        <input
-          id={zipFieldId}
-          className={cn(
-            "location-selector-panel__input",
-            zipInvalid && "location-selector-panel__input--invalid"
-          )}
-          type="text"
-          inputMode="numeric"
-          autoComplete="postal-code"
-          placeholder="92101"
-          maxLength={5}
-          value={zip}
-          onChange={(event) => {
-            setZip(normalizeZipCode(event.target.value));
-            setZipResolveError(null);
-          }}
-          onBlur={() => setZipTouched(true)}
-          enterKeyHint="done"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          aria-invalid={zipInvalid || Boolean(zipResolveError)}
-          aria-describedby={
-            zipInvalid || zipResolveError ? `${zipFieldId}-feedback` : undefined
-          }
-        />
-        {zipPreviewPlace ? (
-          <p className="location-selector-panel__hint">
-            Resolves to <span>{zipPreviewPlace}</span>
-          </p>
-        ) : null}
-        {zipInvalid ? (
-          <p
-            id={`${zipFieldId}-feedback`}
-            className="location-selector-panel__error"
-            role="alert"
+          <form
+            className="location-selector-panel__form"
+            onSubmit={handleUpdateZip}
           >
-            Enter a valid 5-digit US ZIP code.
-          </p>
-        ) : null}
-        {!zipInvalid && zipResolveError ? (
-          <p
-            id={`${zipFieldId}-feedback`}
-            className="location-selector-panel__error"
-            role="alert"
-          >
-            {zipResolveError}
-          </p>
-        ) : null}
+            <label
+              className="location-selector-panel__label"
+              htmlFor={zipFieldId}
+            >
+              Or enter ZIP code
+            </label>
+            <input
+              id={zipFieldId}
+              className={cn(
+                "location-selector-panel__input",
+                zipInvalid && "location-selector-panel__input--invalid"
+              )}
+              type="text"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              placeholder="92101"
+              maxLength={5}
+              value={zip}
+              onChange={(event) => {
+                setZip(normalizeZipCode(event.target.value));
+                setZipResolveError(null);
+              }}
+              onBlur={() => setZipTouched(true)}
+              enterKeyHint="done"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              aria-invalid={zipInvalid || Boolean(zipResolveError)}
+              aria-describedby={
+                zipInvalid || zipResolveError
+                  ? `${zipFieldId}-feedback`
+                  : undefined
+              }
+            />
+            {zipPreviewPlace ? (
+              <p className="location-selector-panel__hint">
+                Resolves to <span>{zipPreviewPlace}</span>
+              </p>
+            ) : null}
+            {zipInvalid ? (
+              <p
+                id={`${zipFieldId}-feedback`}
+                className="location-selector-panel__error"
+                role="alert"
+              >
+                Enter a valid 5-digit US ZIP code.
+              </p>
+            ) : null}
+            {!zipInvalid && zipResolveError ? (
+              <p
+                id={`${zipFieldId}-feedback`}
+                className="location-selector-panel__error"
+                role="alert"
+              >
+                {zipResolveError}
+              </p>
+            ) : null}
 
-        <button
-          type="submit"
-          className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
-          disabled={!isValidZipCode(normalizeZipCode(zip)) || busy}
-        >
-          {zipSubmitting
-            ? isGate
-              ? "Continuing…"
-              : "Updating…"
-            : isGate
-              ? "Continue with ZIP"
-              : "Update location"}
-        </button>
-      </form>
+            <button
+              type="submit"
+              className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
+              disabled={!isValidZipCode(normalizeZipCode(zip)) || busy}
+            >
+              {zipSubmitting
+                ? isGate
+                  ? "Continuing…"
+                  : "Updating…"
+                : isGate
+                  ? "Continue with ZIP"
+                  : "Update location"}
+            </button>
+          </form>
+        </>
+      ) : null}
 
       {!isGate && (hasLocation || activeSummary) ? (
         <>

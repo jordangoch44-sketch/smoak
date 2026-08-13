@@ -116,7 +116,7 @@ export function SiteLocationGate() {
         <div className="site-location-gate__brand">
           <Logo href={null} size="lg" className="site-location-gate__logo" />
           <p id={titleId} className="sr-only">
-            Set your location to continue
+            Welcome to SMOAC — set your location to continue
           </p>
         </div>
         <LocationSelectorPanel mode="gate" onUpdated={handleUpdated} />
