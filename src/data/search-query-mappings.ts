@@ -52,11 +52,18 @@ export interface SearchMappingEntry {
 
 function neighborhoodEntries(): SearchMappingEntry[] {
   const entries: SearchMappingEntry[] = [];
+  const seen = new Set<string>();
   for (const city of MARKETPLACE_CITIES) {
     const neighborhoods = CITY_NEIGHBORHOODS[city] ?? [];
     for (const neighborhood of neighborhoods) {
+      const phrase = neighborhood
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "");
+      if (seen.has(phrase)) continue;
+      seen.add(phrase);
       entries.push({
-        phrase: neighborhood.toLowerCase(),
+        phrase,
         kind: "neighborhood",
         label: neighborhood,
         city,
@@ -94,10 +101,14 @@ function cityEntries(): SearchMappingEntry[] {
   const entries: SearchMappingEntry[] = [];
 
   for (const city of SEARCH_MARKET_CITIES) {
-    if (seen.has(city)) continue;
-    seen.add(city);
+    const phrase = city
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "");
+    if (seen.has(phrase)) continue;
+    seen.add(phrase);
     entries.push({
-      phrase: city.toLowerCase(),
+      phrase,
       kind: "city",
       label: city,
       city,

@@ -30,9 +30,13 @@ export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
 };
 
 export function countActiveFilters(filters: TrainerFilters): number {
-  const { priceMin, priceMax, ...rest } = filters;
-  let count = Object.values(rest).filter(Boolean).length;
-  if (priceMin || priceMax) count += 1;
+  /* Location is personalization (header), not an Explore filter chip. */
+  let count = 0;
+  if (filters.profession) count += 1;
+  if (filters.specialty) count += 1;
+  if (filters.gender) count += 1;
+  if (filters.serviceType) count += 1;
+  if (filters.priceMin || filters.priceMax) count += 1;
   return count;
 }
 

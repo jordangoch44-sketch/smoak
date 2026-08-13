@@ -27,6 +27,7 @@ import {
   removeFilterFromState,
   buildDisplayQueryFromSearchFilters,
   residualDisplayQueryAfterSearchFilters,
+  stripLocationLabelsFromQuery,
   isSearchBarFilterKey,
   getFilterChipLabel,
   stripChipLabelFromDisplayQuery,
@@ -170,7 +171,19 @@ export function useExploreTrainers({
     searchParams,
     initialSpecialty
   );
-  const initialParsed = applySearchQueryToExploreState(initialQ, {
+  const initialSavedZip =
+    typeof window !== "undefined" ? loadSavedZipCode() : null;
+  const initialSavedLocation = initialSavedZip
+    ? exploreFiltersFromZipCode(initialSavedZip)
+    : null;
+  const initialKeywordQ = initialSavedLocation
+    ? stripLocationLabelsFromQuery(initialQ, initialSavedLocation)
+    : stripLocationLabelsFromQuery(initialQ, {
+        zipCode: initialBaseFilters.zipCode,
+        city: initialBaseFilters.city,
+        neighborhood: initialBaseFilters.neighborhood,
+      });
+  const initialParsed = applySearchQueryToExploreState(initialKeywordQ, {
     ...EMPTY_TRAINER_FILTERS,
     gender: initialBaseFilters.gender,
     priceMin: initialBaseFilters.priceMin,
@@ -183,7 +196,12 @@ export function useExploreTrainers({
   const initialApplied = {
     displayQuery: initialSyncedDisplay || initialParsed.displayQuery,
     residualQuery: initialParsed.residualQuery,
-    filters: mergeParsedWithUrlFilters(initialBaseFilters, initialParsed.filters),
+    filters: {
+      ...mergeParsedWithUrlFilters(initialBaseFilters, initialParsed.filters),
+      zipCode: "",
+      city: initialParsed.filters.city,
+      neighborhood: initialParsed.filters.neighborhood,
+    },
   };
 
   const [filters, setFiltersState] = useState<TrainerFilters>(
@@ -257,19 +275,60 @@ export function useExploreTrainers({
 
     applyUrlSearchSync(() => {
       if (nextQ) {
-        const parsed = applySearchQueryToExploreState(nextQ, {
+        const savedZip = loadSavedZipCode();
+        const savedLocation = savedZip
+          ? exploreFiltersFromZipCode(savedZip)
+          : null;
+        const locationForStrip = {
+          zipCode: fromUrl.zipCode || savedLocation?.zipCode || "",
+          city: fromUrl.city || savedLocation?.city || "",
+          neighborhood:
+            fromUrl.neighborhood || savedLocation?.neighborhood || "",
+        };
+        const keywordOnly = stripLocationLabelsFromQuery(
+          nextQ,
+          locationForStrip
+        );
+
+        /* Header location alone must not become q= / text filter. */
+        if (!keywordOnly.trim()) {
+          const nextFilters: TrainerFilters = {
+            ...EMPTY_TRAINER_FILTERS,
+            gender: fromUrl.gender,
+            priceMin: fromUrl.priceMin,
+            priceMax: fromUrl.priceMax,
+            serviceType: fromUrl.serviceType,
+            profession: fromUrl.profession,
+            specialty: fromUrl.specialty,
+          };
+          setDisplayQuery("");
+          setSearchQuery("");
+          setFiltersState((prev) =>
+            filtersEqual(prev, nextFilters) ? prev : nextFilters
+          );
+          scheduleUrlSync(nextFilters, "");
+          return;
+        }
+
+        const parsed = applySearchQueryToExploreState(keywordOnly, {
           ...EMPTY_TRAINER_FILTERS,
           gender: fromUrl.gender,
           priceMin: fromUrl.priceMin,
           priceMax: fromUrl.priceMax,
           serviceType: fromUrl.serviceType,
         });
-        const syncedFilters = mergeParsedWithUrlFilters(fromUrl, parsed.filters);
+        const syncedFilters: TrainerFilters = {
+          ...mergeParsedWithUrlFilters(fromUrl, parsed.filters),
+          /* Keep map radius on header coords — not mirrored location filters. */
+          zipCode: "",
+          city: parsed.filters.city,
+          neighborhood: parsed.filters.neighborhood,
+        };
         const syncedDisplay =
           buildDisplayQueryFromSearchFilters(
             syncedFilters,
             parsed.residualQuery
-          ) || nextQ;
+          ) || keywordOnly;
 
         setDisplayQuery(syncedDisplay);
         setSearchQuery(parsed.residualQuery);
@@ -281,7 +340,15 @@ export function useExploreTrainers({
 
         if (explicit) {
           setFiltersState((prev) => {
-            const next = applyExplicitUrlFilters(fromUrl, prev);
+            const next = applyExplicitUrlFilters(
+              {
+                ...fromUrl,
+                zipCode: syncedFilters.zipCode,
+                city: syncedFilters.city,
+                neighborhood: syncedFilters.neighborhood,
+              },
+              prev
+            );
             return filtersEqual(prev, next) ? prev : next;
           });
         }
@@ -292,11 +359,17 @@ export function useExploreTrainers({
       setDisplayQuery("");
       setSearchQuery("");
       setFiltersState((prev) => {
-        const next = { ...EMPTY_TRAINER_FILTERS, ...fromUrl };
+        const next = {
+          ...EMPTY_TRAINER_FILTERS,
+          ...fromUrl,
+          zipCode: "",
+          city: "",
+          neighborhood: "",
+        };
         return filtersEqual(prev, next) ? prev : next;
       });
     });
-  }, [searchParams]);
+  }, [searchParams, scheduleUrlSync]);
 
   const setFilters = useCallback(
     (action: SetStateAction<TrainerFilters>) => {
@@ -322,44 +395,63 @@ export function useExploreTrainers({
     [scheduleUrlSync, displayQuery, filters]
   );
 
-  /* Header / gate ZIP → Explore search area (keep precise GPS for the map dot). */
+  /* Header / gate ZIP frames the map via user coordinates — never mirror
+   * place names into the search bar or text filters. */
   useEffect(() => {
     if (!hydrated) return;
 
-    function syncFiltersFromSavedLocation() {
+    function clearMirroredLocationSearch() {
       const zip = loadSavedZipCode();
+      const savedLocation = zip ? exploreFiltersFromZipCode(zip) : null;
+
       setFiltersState((prev) => {
-        const locationOnly = zip
-          ? exploreFiltersFromZipCode(zip)
-          : {
-              zipCode: "",
-              city: "",
-              neighborhood: "",
-            };
+        const mirroredNeighborhood =
+          Boolean(savedLocation?.neighborhood) &&
+          prev.neighborhood === savedLocation?.neighborhood;
+        const mirroredCityOnly =
+          Boolean(savedLocation) &&
+          !prev.neighborhood &&
+          prev.city === savedLocation?.city &&
+          (!prev.zipCode || prev.zipCode === savedLocation?.zipCode);
+
         const next: TrainerFilters = {
           ...prev,
-          zipCode: locationOnly.zipCode,
-          city: locationOnly.city,
-          neighborhood: locationOnly.neighborhood,
+          zipCode: "",
+          city: mirroredNeighborhood || mirroredCityOnly ? "" : prev.city,
+          neighborhood: mirroredNeighborhood ? "" : prev.neighborhood,
         };
-        if (filtersEqual(prev, next)) return prev;
 
-        const residual = residualDisplayQueryAfterSearchFilters(
-          displayQueryRef.current,
-          prev
-        );
-        const nextDisplay = buildDisplayQueryFromSearchFilters(next, residual);
+        const stripped = savedLocation
+          ? stripLocationLabelsFromQuery(
+              displayQueryRef.current,
+              savedLocation
+            )
+          : stripLocationLabelsFromQuery(displayQueryRef.current, {
+              zipCode: prev.zipCode,
+              city: prev.city,
+              neighborhood: prev.neighborhood,
+            });
+        const nextDisplay = buildDisplayQueryFromSearchFilters(next, stripped);
+
+        if (
+          filtersEqual(prev, next) &&
+          nextDisplay === displayQueryRef.current &&
+          stripped === displayQueryRef.current
+        ) {
+          return prev;
+        }
+
         queueMicrotask(() => {
           setDisplayQuery(nextDisplay);
-          setSearchQuery(residual);
+          setSearchQuery(stripped);
           scheduleUrlSync(next, nextDisplay);
         });
         return next;
       });
     }
 
-    syncFiltersFromSavedLocation();
-    return subscribeUserLocation(syncFiltersFromSavedLocation);
+    clearMirroredLocationSearch();
+    return subscribeUserLocation(clearMirroredLocationSearch);
   }, [hydrated, scheduleUrlSync]);
 
   const profileOverridesRevision = useSyncExternalStore(

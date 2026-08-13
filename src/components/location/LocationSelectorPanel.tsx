@@ -154,7 +154,6 @@ export function LocationSelectorPanel({
   }, [onUpdated]);
 
   const busy = geoLoading || zipSubmitting;
-  const showZipFallback = !isGate || Boolean(geoError);
 
   return (
     <div
@@ -204,88 +203,84 @@ export function LocationSelectorPanel({
         </p>
       ) : null}
 
-      {showZipFallback ? (
-        <>
-          <div className="location-selector-panel__divider" aria-hidden />
+      <div className="location-selector-panel__divider" aria-hidden />
 
-          <form
-            className="location-selector-panel__form"
-            onSubmit={handleUpdateZip}
+      <form
+        className="location-selector-panel__form"
+        onSubmit={handleUpdateZip}
+      >
+        <label
+          className="location-selector-panel__label"
+          htmlFor={zipFieldId}
+        >
+          Or enter ZIP code
+        </label>
+        <input
+          id={zipFieldId}
+          className={cn(
+            "location-selector-panel__input",
+            zipInvalid && "location-selector-panel__input--invalid"
+          )}
+          type="text"
+          inputMode="numeric"
+          autoComplete="postal-code"
+          placeholder="92101"
+          maxLength={5}
+          value={zip}
+          onChange={(event) => {
+            setZip(normalizeZipCode(event.target.value));
+            setZipResolveError(null);
+          }}
+          onBlur={() => setZipTouched(true)}
+          enterKeyHint="done"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          aria-invalid={zipInvalid || Boolean(zipResolveError)}
+          aria-describedby={
+            zipInvalid || zipResolveError
+              ? `${zipFieldId}-feedback`
+              : undefined
+          }
+        />
+        {zipPreviewPlace ? (
+          <p className="location-selector-panel__hint">
+            Resolves to <span>{zipPreviewPlace}</span>
+          </p>
+        ) : null}
+        {zipInvalid ? (
+          <p
+            id={`${zipFieldId}-feedback`}
+            className="location-selector-panel__error"
+            role="alert"
           >
-            <label
-              className="location-selector-panel__label"
-              htmlFor={zipFieldId}
-            >
-              Or enter ZIP code
-            </label>
-            <input
-              id={zipFieldId}
-              className={cn(
-                "location-selector-panel__input",
-                zipInvalid && "location-selector-panel__input--invalid"
-              )}
-              type="text"
-              inputMode="numeric"
-              autoComplete="postal-code"
-              placeholder="92101"
-              maxLength={5}
-              value={zip}
-              onChange={(event) => {
-                setZip(normalizeZipCode(event.target.value));
-                setZipResolveError(null);
-              }}
-              onBlur={() => setZipTouched(true)}
-              enterKeyHint="done"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              aria-invalid={zipInvalid || Boolean(zipResolveError)}
-              aria-describedby={
-                zipInvalid || zipResolveError
-                  ? `${zipFieldId}-feedback`
-                  : undefined
-              }
-            />
-            {zipPreviewPlace ? (
-              <p className="location-selector-panel__hint">
-                Resolves to <span>{zipPreviewPlace}</span>
-              </p>
-            ) : null}
-            {zipInvalid ? (
-              <p
-                id={`${zipFieldId}-feedback`}
-                className="location-selector-panel__error"
-                role="alert"
-              >
-                Enter a valid 5-digit US ZIP code.
-              </p>
-            ) : null}
-            {!zipInvalid && zipResolveError ? (
-              <p
-                id={`${zipFieldId}-feedback`}
-                className="location-selector-panel__error"
-                role="alert"
-              >
-                {zipResolveError}
-              </p>
-            ) : null}
+            Enter a valid 5-digit US ZIP code.
+          </p>
+        ) : null}
+        {!zipInvalid && zipResolveError ? (
+          <p
+            id={`${zipFieldId}-feedback`}
+            className="location-selector-panel__error"
+            role="alert"
+          >
+            {zipResolveError}
+          </p>
+        ) : null}
 
-            <button
-              type="submit"
-              className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
-              disabled={!isValidZipCode(normalizeZipCode(zip)) || busy}
-            >
-              {zipSubmitting
-                ? isGate
-                  ? "Continuing…"
-                  : "Updating…"
-                : isGate
-                  ? "Continue with ZIP"
-                  : "Update location"}
-            </button>
-          </form>
-        </>
-      ) : null}
+        <button
+          type="submit"
+          className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
+          disabled={!isValidZipCode(normalizeZipCode(zip)) || busy}
+        >
+          {zipSubmitting
+            ? isGate
+              ? "Continuing…"
+              : "Updating…"
+            : isGate
+              ? "Continue with ZIP"
+              : "Update location"}
+        </button>
+      </form>
     </div>
   );
 }

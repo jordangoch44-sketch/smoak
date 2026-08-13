@@ -42,7 +42,6 @@ export const CITY_NEIGHBORHOODS: Record<MarketplaceCity, readonly string[]> = {
     "University City",
     "Rancho Bernardo",
     "Rancho Peñasquitos",
-    "Rancho Penasquitos",
     "Poway",
     "4S Ranch",
     "Scripps Ranch",

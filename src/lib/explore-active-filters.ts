@@ -72,16 +72,7 @@ export function getFilterChipLabel(
 export function getActiveFilterChips(filters: TrainerFilters): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
 
-  if (filters.zipCode) {
-    chips.push({ key: "zipCode", label: getFilterChipLabel(filters, "zipCode") });
-  } else {
-    if (filters.city) {
-      chips.push({ key: "city", label: filters.city });
-    }
-    if (filters.neighborhood) {
-      chips.push({ key: "neighborhood", label: filters.neighborhood });
-    }
-  }
+  /* Location lives in the header pill — not as Explore search chips. */
   if (filters.profession) {
     chips.push({
       key: "profession",
@@ -112,6 +103,14 @@ export function getActiveFilterChips(filters: TrainerFilters): ActiveFilterChip[
   return chips;
 }
 
+function foldSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** Remove a chip label phrase from the search bar text */
 export function stripChipLabelFromDisplayQuery(
   displayQuery: string,
@@ -120,15 +119,27 @@ export function stripChipLabelFromDisplayQuery(
   const trimmed = label.trim();
   if (!trimmed || !displayQuery.trim()) return displayQuery.trim();
 
-  return displayQuery
+  /* Prefer exact (accented) strip first */
+  let remaining = displayQuery
     .replace(new RegExp(escapeRegExp(trimmed), "ig"), " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  const foldedLabel = foldSearchText(trimmed);
+  if (!foldedLabel) return remaining;
+
+  /* Also strip diacritic-folded forms (e.g. Penasquitos vs Peñasquitos) */
+  remaining = foldSearchText(remaining)
+    .replace(new RegExp(escapeRegExp(foldedLabel), "ig"), " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return remaining;
 }
 
 /**
  * Search bar text that matches the clearable search chips (+ residual free text).
- * Keeps the input aligned with profession / specialty / place chips.
+ * Profession / specialty only — place comes from the header location pill, not the bar.
  */
 export function buildDisplayQueryFromSearchFilters(
   filters: TrainerFilters,
@@ -137,13 +148,6 @@ export function buildDisplayQueryFromSearchFilters(
   const parts: string[] = [];
   if (filters.profession.trim()) parts.push(filters.profession.trim());
   if (filters.specialty.trim()) parts.push(filters.specialty.trim());
-  if (filters.neighborhood.trim()) {
-    parts.push(filters.neighborhood.trim());
-  } else if (filters.city.trim()) {
-    parts.push(filters.city.trim());
-  } else if (filters.zipCode.trim()) {
-    parts.push(filters.zipCode.trim());
-  }
   const residual = residualQuery.trim();
   if (residual) parts.push(residual);
   return parts.join(" ").trim();
@@ -176,6 +180,27 @@ export function residualDisplayQueryAfterSearchFilters(
     }
   }
   return remaining;
+}
+
+/**
+ * Strip personalization place labels (header ZIP / neighborhood) from a query.
+ * Used so location alone never becomes a text filter in Explore.
+ */
+export function stripLocationLabelsFromQuery(
+  query: string,
+  location: Pick<TrainerFilters, "zipCode" | "city" | "neighborhood">
+): string {
+  return residualDisplayQueryAfterSearchFilters(query, {
+    zipCode: location.zipCode,
+    city: location.city,
+    neighborhood: location.neighborhood,
+    profession: "",
+    specialty: "",
+    gender: "",
+    priceMin: "",
+    priceMax: "",
+    serviceType: "",
+  });
 }
 
 /** Remove one filter; clearing city also clears neighborhood */

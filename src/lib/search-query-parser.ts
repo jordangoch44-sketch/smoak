@@ -19,6 +19,8 @@ export interface ParsedSearchResult {
 function normalizeQuery(query: string): string {
   return query
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
     .replace(/['']/g, "'")
     .replace(/[^a-z0-9'\s]/g, " ")
     .replace(/\s+/g, " ")
