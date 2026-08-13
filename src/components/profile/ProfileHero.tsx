@@ -146,6 +146,15 @@ export function ProfileHero({
                 />
                 <div className="profile-hero__identity-copy min-w-0 flex-1">
                   <div className="profile-hero__name-row">
+                    {isTrainerVerified(trainer) ? (
+                      <span
+                        className="profile-verified-mark"
+                        title="Verified Pro specialist"
+                        aria-label="Verified Pro specialist"
+                      >
+                        <ShieldCheckIcon className="profile-verified-mark__icon" />
+                      </span>
+                    ) : null}
                     <h1
                       className={cn(
                         "profile-hero__name",
@@ -154,15 +163,6 @@ export function ProfileHero({
                     >
                       {trainer.name}
                     </h1>
-                    {isTrainerVerified(trainer) ? (
-                      <span
-                        className="profile-verified-badge"
-                        title="Verified Pro specialist"
-                      >
-                        <ShieldCheckIcon className="h-3.5 w-3.5" />
-                        Verified
-                      </span>
-                    ) : null}
                   </div>
                   <TrainerProfessionLabel
                     trainer={trainer}
@@ -274,6 +274,7 @@ export function ProfileHero({
         <ProfileHeroToolbar
           trainerId={trainer.id}
           trainerName={trainer.name}
+          instagram={trainer.social?.instagram}
         />
       )}
     </>

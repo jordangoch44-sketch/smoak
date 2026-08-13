@@ -253,13 +253,15 @@
 
 .profile-hero__name-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.5rem 0.625rem;
+  gap: 0.4rem;
+  min-width: 0;
 }
 
 .profile-hero__name {
   margin: 0;
+  min-width: 0;
   font-size: 1.5rem;
   font-weight: 300;
   line-height: 1.15;
@@ -300,20 +302,10 @@
   color: rgba(var(--profile-accent-rgb), 0.92);
 }
 
-.profile-hero .profile-verified-badge {
+.profile-hero .profile-verified-mark {
   /* Verified stays neon green — not tied to profile accent */
-  border-color: rgba(var(--profile-verified-rgb), 0.48);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--profile-verified-rgb), 0.28) 0%,
-      rgba(var(--profile-verified-rgb), 0.1) 55%,
-      rgba(6, 18, 12, 0.45) 100%
-    );
-  color: rgba(210, 255, 225, 0.98);
-  box-shadow:
-    0 0 22px rgba(var(--profile-verified-rgb), 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  color: rgb(var(--profile-verified-rgb));
+  filter: drop-shadow(0 0 8px rgba(var(--profile-verified-rgb), 0.55));
 }
 
 .profile-page--styled {
@@ -2436,46 +2428,21 @@ body.profile-image-preview-open .profile-toolbar {
   max-width: none;
 }
 
-.profile-verified-badge {
+.profile-verified-mark {
   --profile-verified-rgb: 52, 255, 136;
   display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  min-height: 1.5rem;
-  padding: 0.15rem 0.55rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(var(--profile-verified-rgb), 0.5);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(var(--profile-verified-rgb), 0.26) 0%,
-      rgba(var(--profile-verified-rgb), 0.1) 55%,
-      rgba(6, 18, 12, 0.5) 100%
-    );
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(210, 255, 225, 0.98);
-  box-shadow:
-    0 0 20px rgba(var(--profile-verified-rgb), 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-.profile-verified-badge__mark {
-  display: inline-flex;
-  width: 0.9rem;
-  height: 0.9rem;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  background: rgba(var(--profile-verified-rgb), 0.9);
-  color: #04140c;
-  font-size: 0.625rem;
-  line-height: 1;
-  box-shadow: 0 0 10px rgba(var(--profile-verified-rgb), 0.45);
+  width: 1.05rem;
+  height: 1.05rem;
+  color: rgb(var(--profile-verified-rgb));
+  filter: drop-shadow(0 0 7px rgba(var(--profile-verified-rgb), 0.5));
+}
+
+.profile-verified-mark__icon {
+  width: 100%;
+  height: 100%;
 }
 
 .profile-contact-cta {
