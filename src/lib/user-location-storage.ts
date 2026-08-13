@@ -222,9 +222,10 @@ export function saveUserZipCode(
       : (options ?? {});
 
   window.localStorage.setItem(USER_ZIP_CODE_KEY, normalized);
-  window.localStorage.removeItem(USER_LATITUDE_KEY);
-  window.localStorage.removeItem(USER_LONGITUDE_KEY);
-  window.localStorage.removeItem(HAS_LOCATION_PERMISSION_KEY);
+  /*
+   * ZIP updates search framing / labels only. Never clear device GPS —
+   * the purple map dot stays when the user already allowed precise location.
+   */
 
   const placeName = opts.placeName?.trim() ?? "";
   if (placeName) {
@@ -264,6 +265,18 @@ export function saveUserZipCode(
   }
   window.localStorage.removeItem(HAS_SKIPPED_LOCATION_PROMPT_KEY);
   dispatchUserLocationChange();
+}
+
+/** ZIP search-area centroid (not device GPS). */
+export function getSavedZipCoordinates(): GeoCoordinates | null {
+  const zipLat = readNumber(USER_ZIP_LATITUDE_KEY);
+  const zipLng = readNumber(USER_ZIP_LONGITUDE_KEY);
+  if (zipLat !== null && zipLng !== null) {
+    return { latitude: zipLat, longitude: zipLng };
+  }
+  const zip = loadSavedZipCode();
+  if (!zip) return null;
+  return coordinatesForSavedZip(zip);
 }
 
 /** Active coordinates for proximity sorting — device geo or ZIP centroid */

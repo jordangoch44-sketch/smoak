@@ -38,7 +38,9 @@ import {
   filtersFromSearchParams,
   hasExplicitFilterParams,
 } from "@/lib/explore-url";
-import { resolveExploreMapArea } from "@/lib/explore-location-filters";
+import { resolveExploreMapArea, exploreFiltersFromZipCode } from "@/lib/explore-location-filters";
+import { loadSavedZipCode } from "@/lib/user-location-storage";
+import { subscribeUserLocation } from "@/lib/user-location-store";
 import {
   getHiddenTrainersServerSnapshot,
   getHiddenTrainersSnapshot,
@@ -196,6 +198,8 @@ export function useExploreTrainers({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const lastSyncedQ = useRef<string | null>(null);
   const lastPushedParams = useRef<string | null>(null);
+  const displayQueryRef = useRef(displayQuery);
+  displayQueryRef.current = displayQuery;
 
   const pendingUrlSyncRef = useRef<{
     filters: TrainerFilters;
@@ -317,6 +321,46 @@ export function useExploreTrainers({
     },
     [scheduleUrlSync, displayQuery, filters]
   );
+
+  /* Header / gate ZIP → Explore search area (keep precise GPS for the map dot). */
+  useEffect(() => {
+    if (!hydrated) return;
+
+    function syncFiltersFromSavedLocation() {
+      const zip = loadSavedZipCode();
+      setFiltersState((prev) => {
+        const locationOnly = zip
+          ? exploreFiltersFromZipCode(zip)
+          : {
+              zipCode: "",
+              city: "",
+              neighborhood: "",
+            };
+        const next: TrainerFilters = {
+          ...prev,
+          zipCode: locationOnly.zipCode,
+          city: locationOnly.city,
+          neighborhood: locationOnly.neighborhood,
+        };
+        if (filtersEqual(prev, next)) return prev;
+
+        const residual = residualDisplayQueryAfterSearchFilters(
+          displayQueryRef.current,
+          prev
+        );
+        const nextDisplay = buildDisplayQueryFromSearchFilters(next, residual);
+        queueMicrotask(() => {
+          setDisplayQuery(nextDisplay);
+          setSearchQuery(residual);
+          scheduleUrlSync(next, nextDisplay);
+        });
+        return next;
+      });
+    }
+
+    syncFiltersFromSavedLocation();
+    return subscribeUserLocation(syncFiltersFromSavedLocation);
+  }, [hydrated, scheduleUrlSync]);
 
   const profileOverridesRevision = useSyncExternalStore(
     subscribeSpecialistProfiles,

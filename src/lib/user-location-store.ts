@@ -32,6 +32,7 @@ export {
   markLocationPromptSkipped,
   saveGeolocationCoordinates,
   saveUserZipCode,
+  getSavedZipCoordinates,
   shouldShowLocationPrompt,
   clearUserLocation,
   clearSavedUserZipLocation,

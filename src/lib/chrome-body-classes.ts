@@ -10,6 +10,7 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "saved-panel-open",
   "drawer-open",
   "explore-search-open",
+  "location-selector-open",
   "profile-sheet-open",
   "inquiry-sheet-open",
   "login-gate-open",

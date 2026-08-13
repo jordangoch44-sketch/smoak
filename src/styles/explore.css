@@ -605,7 +605,12 @@
 
 /* Map + sheet shell — fixed viewport, no page scroll (Zillow-style) */
 .explore-page--map-shell {
+  /*
+   * Prefer the small viewport so iOS URL-bar show/hide during map pans
+   * does not constantly resize this shell (and float map chrome).
+   */
   height: calc(100dvh - var(--site-header-total-height));
+  height: calc(100svh - var(--site-header-total-height));
   min-height: 0;
   overflow: hidden;
   isolation: isolate;
@@ -637,13 +642,28 @@
 }
 
 .explore-page--map-shell .explore-map-hero .leaflet-top.leaflet-right {
+  /* Match See results / bottom nav — not the dvh-shifting map shell */
+  position: fixed;
   top: auto;
   bottom: calc(var(--mobile-bottom-nav-offset, 6.5rem) + 4.75rem);
   right: 0.65rem;
   margin-top: 0;
+  z-index: 28;
 }
 
 .explore-page--map-shell:has(.explore-split--results-open)
+  .explore-map-hero
+  .leaflet-top.leaflet-right,
+body.explore-search-open
+  .explore-page--map-shell
+  .explore-map-hero
+  .leaflet-top.leaflet-right,
+body.drawer-open
+  .explore-page--map-shell
+  .explore-map-hero
+  .leaflet-top.leaflet-right,
+body.location-selector-open
+  .explore-page--map-shell
   .explore-map-hero
   .leaflet-top.leaflet-right {
   display: none;
@@ -679,16 +699,27 @@
 }
 
 .explore-split__cta-dock {
-  position: absolute;
+  /*
+   * Fixed to the same bottom inset as MobileBottomNav. Absolute-inside-shell
+   * jumped whenever iOS changed 100dvh (URL bar) during map interaction.
+   */
+  position: fixed;
   left: 0;
   right: 0;
   bottom: calc(var(--mobile-bottom-nav-offset, 6.5rem) + 0.35rem);
-  z-index: 2;
+  z-index: 30;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.55rem;
   padding-inline: 1.25rem;
+  pointer-events: none;
+}
+
+body.explore-search-open .explore-split__cta-dock,
+body.drawer-open .explore-split__cta-dock,
+body.location-selector-open .explore-split__cta-dock {
+  visibility: hidden;
   pointer-events: none;
 }
 
@@ -1107,11 +1138,16 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
 }
 
 .explore-map__recenter--hero {
+  position: fixed;
   left: 1rem;
   bottom: calc(var(--mobile-bottom-nav-offset, 6.5rem) + 4.35rem);
+  z-index: 28;
 }
 
-.explore-page--map-shell:has(.explore-split--results-open) .explore-map__recenter {
+.explore-page--map-shell:has(.explore-split--results-open) .explore-map__recenter,
+body.explore-search-open .explore-map__recenter--hero,
+body.drawer-open .explore-map__recenter--hero,
+body.location-selector-open .explore-map__recenter--hero {
   display: none;
 }
 

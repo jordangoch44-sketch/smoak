@@ -158,6 +158,10 @@ export function LocationSelectorDropdown({
       window.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("click", onDocumentClick, true);
       window.removeEventListener("scroll", onPageScroll);
+      /* iOS keyboard can leave the page scrolled — snap map shell back */
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     };
   }, [open, handleDismiss, anchorRef, isTypingInPanel]);
 

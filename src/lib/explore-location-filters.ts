@@ -7,12 +7,17 @@ import {
 } from "@/data/locations";
 import {
   getActiveUserCoordinates,
+  getSavedZipCoordinates,
   getZipPlaceDisplayName,
   loadSavedZipCode,
 } from "@/lib/user-location-storage";
 import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
 import { MARKETPLACE_CITY_CENTERS } from "@/lib/marketplace-city-centers";
-import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
+import {
+  lookupLocalZipCoordinates,
+  zipCodeToCoordinates,
+} from "@/lib/geo/zip-centroids";
+import { getCachedGeocodedZip } from "@/lib/geo/geocoded-zip-cache";
 import type { AuthSession } from "@/types/auth";
 import type { TrainerFilters } from "@/types";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
@@ -158,7 +163,8 @@ function resolveExploreSortOrigin(
 
 /**
  * Map / radius center for Explore (read-only display + default-mile filter).
- * Prefer filter ZIP, then city / neighborhood / client coords.
+ * Prefer filter ZIP centroid (requested area), then city / neighborhood /
+ * device coords. Precise GPS is for the purple dot only — not required here.
  */
 export function resolveExploreMapArea(
   filters: TrainerFilters,
@@ -166,8 +172,19 @@ export function resolveExploreMapArea(
 ): UserGeoPoint | null {
   const zip = normalizeZipCode(filters.zipCode.trim());
   if (isValidZipCode(zip)) {
-    const fromZip = zipCodeToCoordinates(zip);
-    if (fromZip) return fromZip;
+    if (loadSavedZipCode() === zip) {
+      const saved = getSavedZipCoordinates();
+      if (saved) {
+        return { latitude: saved.latitude, longitude: saved.longitude };
+      }
+    }
+    const fromZip =
+      zipCodeToCoordinates(zip) ??
+      lookupLocalZipCoordinates(zip) ??
+      getCachedGeocodedZip(zip);
+    if (fromZip) {
+      return { latitude: fromZip.latitude, longitude: fromZip.longitude };
+    }
   }
 
   return resolveExploreSortOrigin(filters, userCoords);
