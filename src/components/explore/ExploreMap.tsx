@@ -26,6 +26,11 @@ interface ExploreMapProps {
   trainers: Trainer[];
   /** Search / personalization area — frames the map even when pins are sparse */
   areaCenter?: ExploreMapArea | null;
+  /**
+   * Precise device GPS only. Never ZIP/city centroids, never Search-here center.
+   * Null → no purple “you are here” dot.
+   */
+  userLocationDot?: ExploreMapArea | null;
   /** Active area used for pins + list (default 12 mi around origin) */
   activeSearchArea?: ExploreSearchArea | null;
   /** User moved the map — pending area ready for Search here */
@@ -83,6 +88,7 @@ function frameRadiusMiles(
 export function ExploreMap({
   trainers,
   areaCenter = null,
+  userLocationDot = null,
   activeSearchArea = null,
   onPendingSearchAreaChange,
   onRecenterSearch,
@@ -309,9 +315,9 @@ export function ExploreMap({
       areaDotRef.current = null;
     }
 
-    if (areaCenter) {
+    if (userLocationDot) {
       areaDotRef.current = L.circleMarker(
-        [areaCenter.latitude, areaCenter.longitude],
+        [userLocationDot.latitude, userLocationDot.longitude],
         {
           radius: 9,
           className: "explore-map-area",
@@ -373,7 +379,7 @@ export function ExploreMap({
       );
       layer.addLayer(marker);
     }
-  }, [mapped, areaCenter, profileSheetOpen, mapEpoch]);
+  }, [mapped, userLocationDot, profileSheetOpen, mapEpoch]);
 
   const handleRecenter = useCallback(() => {
     if (profileSheetOpen) return;

@@ -15,6 +15,7 @@ import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
+import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
 import { cn } from "@/lib/utils";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
@@ -32,6 +33,7 @@ export function ExplorePageClient() {
   const isMobile = useMobileViewport(true);
   const isCompactAtmosphere = useTabletViewport(true);
   const { openLocationPanel } = useUserLocationEditor();
+  const preciseUserLocation = usePreciseUserCoordinates();
   const pendingSearchRef = useRef<string | null>(null);
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
@@ -190,6 +192,7 @@ export function ExplorePageClient() {
         trainers={filtered}
         suggestedTrainers={suggestedTrainers}
         areaCenter={searchOrigin}
+        userLocationDot={preciseUserLocation}
         activeFilterCount={activeFilterCount}
         hasSearch={hasSearch}
         areaEmpty={areaEmpty}
@@ -256,6 +259,7 @@ export function ExplorePageClient() {
             <ExploreMap
               trainers={filtered}
               areaCenter={searchOrigin}
+              userLocationDot={preciseUserLocation}
               activeSearchArea={activeSearchArea}
               onPendingSearchAreaChange={handlePendingSearchAreaChange}
               onRecenterSearch={handleRecenterSearch}

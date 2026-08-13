@@ -14,6 +14,8 @@ interface ExploreResultsProps {
   trainers: Trainer[];
   suggestedTrainers?: Trainer[];
   areaCenter?: UserGeoPoint | null;
+  /** Precise GPS only — purple map dot; null when ZIP-only / no device location */
+  userLocationDot?: UserGeoPoint | null;
   activeFilterCount: number;
   hasSearch: boolean;
   /** Primary list is empty because nothing is inside the ZIP radius */
@@ -36,6 +38,7 @@ export const ExploreResults = memo(function ExploreResults({
   trainers,
   suggestedTrainers = [],
   areaCenter = null,
+  userLocationDot = null,
   activeFilterCount,
   hasSearch,
   areaEmpty = false,
@@ -149,6 +152,7 @@ export const ExploreResults = memo(function ExploreResults({
           <ExploreMap
             trainers={trainers}
             areaCenter={areaCenter}
+            userLocationDot={userLocationDot}
             locked
             variant="split"
             showNotes={false}
@@ -206,6 +210,7 @@ export const ExploreResults = memo(function ExploreResults({
         <ExploreMap
           trainers={trainers}
           areaCenter={areaCenter}
+          userLocationDot={userLocationDot}
           locked
           variant="panel"
         />

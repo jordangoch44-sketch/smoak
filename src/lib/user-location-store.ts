@@ -77,6 +77,10 @@ export {
   getActiveUserCoordinatesServerSnapshot,
   getActiveUserCoordinatesKeySnapshot,
   getActiveUserCoordinatesKeyServerSnapshot,
+  getPreciseUserCoordinatesSnapshot,
+  getPreciseUserCoordinatesServerSnapshot,
+  getPreciseUserCoordinatesKeySnapshot,
+  getPreciseUserCoordinatesKeyServerSnapshot,
 } from "@/lib/user-location-snapshots";
 
 export function getShouldShowLocationPromptServerSnapshot(): boolean {
