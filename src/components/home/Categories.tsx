@@ -56,18 +56,17 @@ export function Categories() {
           </h2>
         </header>
 
-        <div className="home-specialty__grid">
+        <div className="home-specialty__row">
           {CATEGORIES.map((category) => (
             <TapLink
               key={category.id}
               href={category.href}
-              className="home-specialty-card"
+              className="home-specialty-chip"
             >
-              <span className="home-specialty-card__stars" aria-hidden />
-              <span className="home-specialty-card__emoji" aria-hidden>
+              <span className="home-specialty-chip__emoji" aria-hidden>
                 {category.emoji}
               </span>
-              <span className="home-specialty-card__name">{category.name}</span>
+              <span className="home-specialty-chip__name">{category.name}</span>
             </TapLink>
           ))}
         </div>
