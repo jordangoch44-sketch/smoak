@@ -46,11 +46,7 @@ export function SiteHeader() {
         )}
       >
         <div className="site-header--mobile md:hidden">
-          <SiteHeaderMobile
-            menuOpen={panels.menuOpen}
-            onLogoClick={panels.onLogoClick}
-            onMenuClick={panels.onMenuClick}
-          />
+          <SiteHeaderMobile onLogoClick={panels.onLogoClick} />
         </div>
 
         <nav

@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import { LocationMarkIcon } from "@/components/ui/icons";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
-import { UNKNOWN_ZIP_AREA_LABEL } from "@/lib/geo/zip-place-names";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { cn } from "@/lib/utils";
 
@@ -17,24 +16,13 @@ interface SiteLocationPillProps {
 
 const PLACEHOLDER_LABEL = "Enter ZIP";
 
-function getAriaLocationLabel(
-  city: string | null,
-  zip: string | null,
-  isPlaceholder: boolean
-): string {
-  if (isPlaceholder) return PLACEHOLDER_LABEL;
-  if (city && zip) return `${city}, ${zip}`;
-  return city ?? zip ?? PLACEHOLDER_LABEL;
-}
-
 export function SiteLocationPill({
   className,
   compact = false,
   primary = false,
 }: SiteLocationPillProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const { zip, city, isPlaceholder, isUnknownArea, isPanelOpen } =
-    useUserLocation();
+  const { zip, isPlaceholder, isPanelOpen } = useUserLocation();
   const { toggleLocationPanel, panelAnchorRef } = useUserLocationEditor();
 
   const handleClick = () => {
@@ -44,9 +32,7 @@ export function SiteLocationPill({
     toggleLocationPanel(buttonRef.current);
   };
 
-  const hasCity = Boolean(city?.trim());
-  const hasZip = Boolean(zip?.trim());
-  const showFull = hasCity && hasZip;
+  const zipLabel = zip?.trim() || PLACEHOLDER_LABEL;
 
   return (
     <button
@@ -67,35 +53,17 @@ export function SiteLocationPill({
       aria-label={
         isPlaceholder
           ? "Set your location for local results"
-          : `Location: ${getAriaLocationLabel(city, zip, isPlaceholder)}. Tap to change`
+          : `Location ZIP ${zipLabel}. Tap to change`
       }
     >
       <LocationMarkIcon className="site-location-text__icon" aria-hidden />
       <span className="site-location-text__copy">
         {isPlaceholder ? (
-          <span className="site-location-text__placeholder">{PLACEHOLDER_LABEL}</span>
-        ) : showFull ? (
-          <>
-            <span className="site-location-text__city">{city}</span>
-            <span className="site-location-text__sep" aria-hidden>
-              {" · "}
-            </span>
-            <span className="site-location-text__zip">{zip}</span>
-          </>
-        ) : isUnknownArea && hasZip ? (
-          <>
-            <span className="site-location-text__city site-location-text__city--muted">
-              {UNKNOWN_ZIP_AREA_LABEL}
-            </span>
-            <span className="site-location-text__sep" aria-hidden>
-              {" · "}
-            </span>
-            <span className="site-location-text__zip">{zip}</span>
-          </>
-        ) : hasCity ? (
-          <span className="site-location-text__city">{city}</span>
+          <span className="site-location-text__placeholder">
+            {PLACEHOLDER_LABEL}
+          </span>
         ) : (
-          <span className="site-location-text__zip">{zip}</span>
+          <span className="site-location-text__zip">{zipLabel}</span>
         )}
       </span>
     </button>

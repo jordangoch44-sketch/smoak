@@ -349,6 +349,30 @@
     padding-inline: 1rem;
   }
 
+  .site-header__signup {
+    display: inline-flex;
+    min-height: 2.35rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.35rem 0.85rem;
+    color: rgba(255, 255, 255, 0.96);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    touch-action: manipulation;
+  }
+
+  .site-header__signup:active {
+    transform: scale(0.98);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
   .site-header__btn--utility-menu {
     min-width: 2.75rem;
     min-height: 2.75rem;
