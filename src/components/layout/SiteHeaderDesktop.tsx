@@ -8,6 +8,7 @@ import { primaryNavLinks } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 import { NavbarSavedLink } from "./NavbarSavedLink";
 import { NavbarProfileLink } from "./NavbarProfileLink";
+import { SiteHeaderProBadge } from "./SiteHeaderProBadge";
 
 interface SiteHeaderDesktopProps {
   savedPanelOpen: boolean;
@@ -28,13 +29,16 @@ export function SiteHeaderDesktop({
     <>
       <div className="site-navbar__frost site-header__frost" aria-hidden />
       <div className="site-navbar__inner site-header__toolbar mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-4 sm:h-16 sm:px-6 lg:h-[72px]">
-        <Link
-          href="/"
-          className="smoac-hit-target group inline-flex shrink-0 items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[rgba(139,124,168,0.45)]"
-          aria-label="SMOAC home"
-        >
-          <Logo href={null} size="md" priority className="navbar-brand" />
-        </Link>
+        <div className="site-header__brand">
+          <Link
+            href="/"
+            className="smoac-hit-target group inline-flex shrink-0 items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[rgba(139,124,168,0.45)]"
+            aria-label="SMOAC home"
+          >
+            <Logo href={null} size="md" priority className="navbar-brand" />
+          </Link>
+          <SiteHeaderProBadge />
+        </div>
 
         <div className="flex min-w-0 shrink-0 items-center gap-6 lg:gap-8">
           {primaryNavLinks.map((link) => (

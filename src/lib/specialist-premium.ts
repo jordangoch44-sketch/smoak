@@ -117,3 +117,16 @@ function isSpecialistPayingPro(session: {
   /* Legacy sessions without premiumIsPaid: Pro without an active free trial. */
   return Boolean(session.isPremium && !session.premiumTrialActive);
 }
+
+/**
+ * Site header “Pro” chip next to SMOAC — specialists on paid Pro or active
+ * trial only. Hidden for clients and logged-out visitors.
+ */
+export function showSpecialistHeaderProBadge(session: {
+  role?: string | null;
+  isPremium?: boolean;
+  premiumTrialActive?: boolean;
+} | null | undefined): boolean {
+  if (!session || session.role !== "specialist") return false;
+  return Boolean(session.isPremium || session.premiumTrialActive);
+}

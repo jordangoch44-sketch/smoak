@@ -5,6 +5,7 @@ import { SiteLocationPill } from "@/components/location/SiteLocationPill";
 import { Logo } from "@/components/ui/Logo";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { SITE_ROUTES } from "@/lib/navigation";
+import { SiteHeaderProBadge } from "./SiteHeaderProBadge";
 
 export interface SiteHeaderMobileProps {
   onLogoClick: () => void;
@@ -22,15 +23,18 @@ export function SiteHeaderMobile({ onLogoClick }: SiteHeaderMobileProps) {
       <div className="site-header__edge-light" aria-hidden />
 
       <div className="site-header__toolbar site-header__toolbar--utility">
-        <Link
-          href="/"
-          data-header-btn="logo"
-          className="smoac-control site-header__btn site-header__btn--logo site-header__logo-slot"
-          aria-label="SMOAC home"
-          onClick={onLogoClick}
-        >
-          <Logo href={null} size="md" priority className="navbar-brand" />
-        </Link>
+        <div className="site-header__brand">
+          <Link
+            href="/"
+            data-header-btn="logo"
+            className="smoac-control site-header__btn site-header__btn--logo site-header__logo-slot"
+            aria-label="SMOAC home"
+            onClick={onLogoClick}
+          >
+            <Logo href={null} size="md" priority className="navbar-brand" />
+          </Link>
+          <SiteHeaderProBadge />
+        </div>
 
         <div className="site-header__utility-end">
           <SiteLocationPill className="site-header__location" compact primary />
