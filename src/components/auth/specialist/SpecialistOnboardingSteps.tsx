@@ -289,7 +289,7 @@ export function SpecialistOnboardingSteps({
         <WizardStepPanel stepKey="sp-3">
           <WizardStepHeading
             title="Where do you work with clients?"
-            subtitle="ZIP and service type help us match you nearby. Gym details and neighborhoods can be added later."
+            subtitle="ZIP matches you nearby. Add an exact address for better distance — or skip it. Virtual coaches can continue without a street address."
           />
           <SpecialistServiceAreaFields state={state} onPatch={onPatch} />
         </WizardStepPanel>

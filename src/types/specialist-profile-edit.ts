@@ -26,6 +26,9 @@ export interface SpecialistProfileOverrides {
   serviceRadiusMiles?: number;
   serviceArea?: string[];
   serviceAreaDescription?: string;
+  /** Optional precise work address — private; drives lat/lng when pinned */
+  workAddress?: string;
+  locationPrecision?: "zip" | "address";
   latitude?: number;
   longitude?: number;
   pricePerSession?: number;
@@ -69,6 +72,8 @@ export type SpecialistProfileEditForm = Required<
     | "serviceType"
     | "travelRadius"
     | "serviceArea"
+    | "workAddress"
+    | "locationPrecision"
     | "pricePerSession"
     | "bio"
     | "photoNotes"
@@ -93,4 +98,7 @@ export type SpecialistProfileEditForm = Required<
   profileAccent: ProfileAccentId;
   profileAvatarFrame: ProfileAvatarFrameId;
   profileNameFont: ProfileNameFontId;
+  /** Set when pinning an exact address; ZIP centroid when precision is zip */
+  latitude: number | null;
+  longitude: number | null;
 };

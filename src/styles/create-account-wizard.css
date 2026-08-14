@@ -1199,6 +1199,33 @@ body:has(.login-page--wizard) main {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.specialist-precise-location__hint {
+  margin: 0 0 0.65rem;
+}
+
+.specialist-precise-location__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.specialist-precise-location__pin {
+  min-height: 2.75rem;
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+}
+
+.specialist-precise-location__clear {
+  min-height: 2.75rem;
+  padding-inline: 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8125rem;
+}
+
 .wizard-step-subsection-title {
   margin: 0 0 0.75rem;
   font-size: 0.6875rem;

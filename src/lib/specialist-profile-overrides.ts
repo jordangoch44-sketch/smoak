@@ -117,14 +117,23 @@ export function applySpecialistProfileOverrides(
   if (overrides.zipCode?.trim()) {
     merged.zipCode = overrides.zipCode.trim();
   }
+  if (overrides.workAddress !== undefined) {
+    const address = overrides.workAddress.trim();
+    if (address) merged.workAddress = address;
+    else delete merged.workAddress;
+  }
+  if (overrides.locationPrecision === "address" || overrides.locationPrecision === "zip") {
+    merged.locationPrecision = overrides.locationPrecision;
+  }
   if (overrides.latitude != null && overrides.longitude != null) {
     merged.latitude = overrides.latitude;
     merged.longitude = overrides.longitude;
-  } else if (merged.zipCode) {
+  } else if (merged.locationPrecision !== "address" && merged.zipCode) {
     const fromZip = zipCodeToCoordinates(merged.zipCode);
     if (fromZip) {
       merged.latitude = fromZip.latitude;
       merged.longitude = fromZip.longitude;
+      merged.locationPrecision = "zip";
     }
   }
 
@@ -290,6 +299,14 @@ export function overridesFromTrainer(
           ? String(trainer.serviceRadiusMiles)
           : ""),
     serviceArea: [...(stored?.serviceArea ?? trainer.serviceArea ?? [])],
+    workAddress: stored?.workAddress ?? trainer.workAddress ?? "",
+    locationPrecision:
+      stored?.locationPrecision === "address" ||
+      trainer.locationPrecision === "address"
+        ? "address"
+        : "zip",
+    latitude: stored?.latitude ?? trainer.latitude ?? null,
+    longitude: stored?.longitude ?? trainer.longitude ?? null,
     pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
     bio: stored?.bio ?? trainer.bio,
     photoNotes:
@@ -381,6 +398,11 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     travelRadius: travel || undefined,
     serviceRadiusMiles: radiusMiles,
     serviceArea: form.serviceArea.map((s) => s.trim()).filter(Boolean),
+    workAddress: form.workAddress.trim(),
+    locationPrecision: form.locationPrecision,
+    ...(form.latitude != null && form.longitude != null
+      ? { latitude: form.latitude, longitude: form.longitude }
+      : {}),
     pricePerSession: form.pricePerSession,
     bio: form.bio.trim(),
     photoNotes: form.photoNotes.trim(),

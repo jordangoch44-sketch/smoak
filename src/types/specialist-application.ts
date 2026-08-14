@@ -92,7 +92,13 @@ export interface SpecialistApplication {
   inHomeAvailable: boolean;
   onlineCoachingAvailable: boolean;
   gymName: string;
+  /**
+   * Optional street / studio address for precise distance.
+   * Not shown on public marketplace cards — lat/lng only.
+   */
   facilityAddress: string;
+  /** How marketplace distance is resolved — defaults to zip for live profiles */
+  locationPrecision?: "zip" | "address";
 
   specialties: string[];
 
@@ -150,6 +156,7 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   onlineCoachingAvailable: false,
   gymName: "",
   facilityAddress: "",
+  locationPrecision: "zip",
   specialties: [],
   certifications: [{ name: "", issuer: "", year: new Date().getFullYear() }],
   collegeAttended: "",

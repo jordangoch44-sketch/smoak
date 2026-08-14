@@ -5,6 +5,7 @@ import {
   SPECIALIST_SERVICE_TYPE_OPTIONS,
   SPECIALIST_TRAVEL_RADIUS_OPTIONS,
 } from "@/types/specialist-service-area";
+import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
 import { serviceTypeToDeliveryFlags } from "@/lib/specialist-service-area";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
@@ -27,6 +28,11 @@ export function SpecialistServiceAreaFields({
 
   const normalizedZip = normalizeZipCode(state.zipCode);
   const zipValid = isValidZipCode(normalizedZip);
+  const wantsPreciseLocation =
+    state.serviceType === "in-person" || state.serviceType === "both";
+  const pinnedAddress =
+    state.locationPrecision === "address" &&
+    Boolean(state.facilityAddress.trim());
 
   useEffect(() => {
     if (!zipValid || normalizedZip === lastResolvedZip.current) return;
@@ -45,19 +51,25 @@ export function SpecialistServiceAreaFields({
         return;
       }
       lastResolvedZip.current = normalizedZip;
+      /* Keep pinned street coords — ZIP only fills city/state (+ coords when not pinned). */
       onPatch({
         zipCode: result.zip,
         city: result.city,
         state: result.state,
-        latitude: result.latitude ?? null,
-        longitude: result.longitude ?? null,
+        ...(pinnedAddress
+          ? {}
+          : {
+              latitude: result.latitude ?? null,
+              longitude: result.longitude ?? null,
+              locationPrecision: "zip" as const,
+            }),
       });
     });
 
     return () => {
       cancelled = true;
     };
-  }, [normalizedZip, zipValid, onPatch]);
+  }, [normalizedZip, zipValid, onPatch, pinnedAddress]);
 
   function handleZipChange(raw: string) {
     const digits = raw.replace(/\D/g, "").slice(0, 5);
@@ -70,7 +82,41 @@ export function SpecialistServiceAreaFields({
 
   function selectServiceType(serviceType: SpecialistServiceType) {
     const flags = serviceTypeToDeliveryFlags(serviceType);
+    if (serviceType === "virtual") {
+      onPatch({
+        serviceType,
+        ...flags,
+        facilityAddress: "",
+        locationPrecision: "zip",
+      });
+      /* Re-resolve ZIP coords on next zip effect if needed */
+      lastResolvedZip.current = "";
+      return;
+    }
     onPatch({ serviceType, ...flags });
+  }
+
+  async function clearPreciseLocation() {
+    onPatch({
+      facilityAddress: "",
+      locationPrecision: "zip",
+    });
+    if (!zipValid) {
+      onPatch({ latitude: null, longitude: null });
+      return;
+    }
+    lastResolvedZip.current = "";
+    const result = await lookupZipPlace(normalizedZip);
+    if (!result) return;
+    lastResolvedZip.current = normalizedZip;
+    onPatch({
+      facilityAddress: "",
+      locationPrecision: "zip",
+      city: result.city || state.city,
+      state: result.state || state.state,
+      latitude: result.latitude ?? null,
+      longitude: result.longitude ?? null,
+    });
   }
 
   return (
@@ -127,34 +173,63 @@ export function SpecialistServiceAreaFields({
         </div>
       </fieldset>
 
-      <fieldset className="login-field specialist-service-area-fields__section">
-        <legend className="login-field__label">
-          Travel radius
-          <span className="login-field__label-hint">
-            How far are you willing to travel for clients?
-          </span>
-        </legend>
-        <div className="wizard-pill-grid wizard-pill-grid--wide" role="radiogroup">
-          {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => {
-            const active = state.travelRadius === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => onPatch({ travelRadius: option.value })}
-                className={cn(
-                  "wizard-pill wizard-pill--touch",
-                  active && "wizard-pill--active"
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
+      {wantsPreciseLocation ? (
+        <SpecialistPreciseLocationField
+          workAddress={state.facilityAddress}
+          locationPrecision={state.locationPrecision === "address" ? "address" : "zip"}
+          onDraftChange={(workAddress) => onPatch({ facilityAddress: workAddress })}
+          onResolved={(value) =>
+            onPatch({
+              facilityAddress: value.workAddress,
+              locationPrecision: "address",
+              latitude: value.latitude,
+              longitude: value.longitude,
+              ...(value.zipCode ? { zipCode: value.zipCode } : {}),
+              ...(value.city ? { city: value.city } : {}),
+              ...(value.state ? { state: value.state } : {}),
+            })
+          }
+          onCleared={() => {
+            void clearPreciseLocation();
+          }}
+        />
+      ) : state.serviceType === "virtual" ? (
+        <p className="wizard-field-hint">
+          Virtual coaches don’t need a street address — clients find you by
+          specialty. ZIP is optional for “based in” context.
+        </p>
+      ) : null}
+
+      {state.serviceType !== "virtual" ? (
+        <fieldset className="login-field specialist-service-area-fields__section">
+          <legend className="login-field__label">
+            Travel radius
+            <span className="login-field__label-hint">
+              How far are you willing to travel for clients?
+            </span>
+          </legend>
+          <div className="wizard-pill-grid wizard-pill-grid--wide" role="radiogroup">
+            {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => {
+              const active = state.travelRadius === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => onPatch({ travelRadius: option.value })}
+                  className={cn(
+                    "wizard-pill wizard-pill--touch",
+                    active && "wizard-pill--active"
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      ) : null}
 
       <label className="login-field">
         <span className="login-field__label">

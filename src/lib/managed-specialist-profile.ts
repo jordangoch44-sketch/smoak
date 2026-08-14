@@ -186,6 +186,22 @@ export function mergeProfileEditsIntoApplication(
     zipCode: form.zipCode.trim() || app.zipCode,
     serviceType: form.serviceType || app.serviceType || "",
     travelRadius: form.travelRadius.trim() || app.travelRadius,
+    facilityAddress:
+      form.serviceType === "virtual" ? "" : form.workAddress.trim(),
+    locationPrecision:
+      form.serviceType === "virtual"
+        ? "zip"
+        : form.locationPrecision === "address" && form.workAddress.trim()
+          ? "address"
+          : "zip",
+    latitude:
+      form.latitude != null && Number.isFinite(form.latitude)
+        ? form.latitude
+        : app.latitude,
+    longitude:
+      form.longitude != null && Number.isFinite(form.longitude)
+        ? form.longitude
+        : app.longitude,
     phone: form.phone.trim(),
     email: form.email.trim() || app.email,
     bio: form.bio.trim(),

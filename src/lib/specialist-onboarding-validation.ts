@@ -27,9 +27,10 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       if (!state.media.profilePhotoUrl.trim()) missing.push("Profile photo");
       break;
     case 3: {
+      if (!state.serviceType) missing.push("Service type");
+      if (state.serviceType === "virtual") break;
       const zip = normalizeZipCode(state.zipCode);
       if (!isValidZipCode(zip)) missing.push("Primary ZIP code");
-      if (!state.serviceType) missing.push("Service type");
       if (!isSpecialistTravelRadius(state.travelRadius)) {
         missing.push("Travel radius");
       }

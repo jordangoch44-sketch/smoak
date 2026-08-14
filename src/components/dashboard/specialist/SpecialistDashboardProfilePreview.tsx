@@ -26,9 +26,12 @@ import { ProfileSessionExperience } from "@/components/profile/ProfileSessionExp
 import { ProfileTransformationSlider } from "@/components/profile/ProfileTransformationSlider";
 import { ProfileTrustGrid } from "@/components/profile/ProfileTrustGrid";
 import { SocialLinks } from "@/components/profile/SocialLinks";
+import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
+import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
 import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
+import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
@@ -594,9 +597,16 @@ export function SpecialistDashboardProfilePreview({
               <select
                 className="login-field__input dashboard-edit-select profile-edit-input"
                 value={form.serviceType}
-                onChange={(e) =>
-                  patch("serviceType", e.target.value as SpecialistServiceType)
-                }
+                onChange={(e) => {
+                  const next = e.target.value as SpecialistServiceType;
+                  if (next === "virtual") {
+                    patch("serviceType", next);
+                    patch("workAddress", "");
+                    patch("locationPrecision", "zip");
+                    return;
+                  }
+                  patch("serviceType", next);
+                }}
               >
                 {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -605,21 +615,65 @@ export function SpecialistDashboardProfilePreview({
                 ))}
               </select>
             </label>
-            <label className="login-field">
-              <span className="login-field__label">Travel radius</span>
-              <select
-                className="login-field__input dashboard-edit-select profile-edit-input"
-                value={form.travelRadius}
-                onChange={(e) => patch("travelRadius", e.target.value)}
-              >
-                <option value="">Select radius</option>
-                {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {form.serviceType === "in-person" || form.serviceType === "both" ? (
+              <SpecialistPreciseLocationField
+                workAddress={form.workAddress}
+                locationPrecision={form.locationPrecision}
+                onDraftChange={(workAddress) => patch("workAddress", workAddress)}
+                onResolved={(value) => {
+                  setDraft((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          workAddress: value.workAddress,
+                          locationPrecision: "address",
+                          latitude: value.latitude,
+                          longitude: value.longitude,
+                          ...(value.zipCode ? { zipCode: value.zipCode } : {}),
+                          ...(value.city ? { city: value.city } : {}),
+                        }
+                      : prev
+                  );
+                }}
+                onCleared={() => {
+                  void (async () => {
+                    const zip = normalizeZipCode(form.zipCode);
+                    const result = isValidZipCode(zip)
+                      ? await lookupZipPlace(zip)
+                      : null;
+                    setDraft((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            workAddress: "",
+                            locationPrecision: "zip",
+                            latitude: result?.latitude ?? null,
+                            longitude: result?.longitude ?? null,
+                            ...(result?.city ? { city: result.city } : {}),
+                          }
+                        : prev
+                    );
+                  })();
+                }}
+              />
+            ) : null}
+            {form.serviceType !== "virtual" ? (
+              <label className="login-field">
+                <span className="login-field__label">Travel radius</span>
+                <select
+                  className="login-field__input dashboard-edit-select profile-edit-input"
+                  value={form.travelRadius}
+                  onChange={(e) => patch("travelRadius", e.target.value)}
+                >
+                  <option value="">Select radius</option>
+                  {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="login-field">
               <span className="login-field__label">
                 Additional areas (comma-separated)

@@ -5,6 +5,12 @@ import type { GeoCoordinates } from "@/lib/geo/zip-centroids";
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import type { Trainer } from "@/types";
 
+/**
+ * Resolve specialist map / distance point.
+ * Prefer stored lat/lng (precise address pin or ZIP centroid already written
+ * onto the profile). Fall back to ZIP table, then city center.
+ * Existing live specialists without a pin keep ZIP-based coords.
+ */
 export function getTrainerCoordinates(trainer: Trainer): GeoCoordinates | null {
   if (
     Number.isFinite(trainer.latitude) &&

@@ -18,6 +18,7 @@ import {
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
+import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
@@ -25,6 +26,8 @@ import { useProfileKeyboardChrome } from "@/hooks/useProfileKeyboardChrome";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
+import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
+import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
   EMPTY_CERTIFICATION,
   cloneSpecialistProfileEditForm,
@@ -871,6 +874,15 @@ export function SpecialistEditProfilePageClient({
                   emptyLabel="Add ZIP code"
                 />
                 <ProfileEditViewField
+                  label="Exact location"
+                  value={
+                    savedForm.locationPrecision === "address" &&
+                    savedForm.workAddress.trim()
+                      ? "Pinned for precise distance"
+                      : "Using ZIP only"
+                  }
+                />
+                <ProfileEditViewField
                   label="Session format"
                   value={
                     SPECIALIST_SERVICE_TYPE_OPTIONS.find(
@@ -941,12 +953,24 @@ export function SpecialistEditProfilePageClient({
                   <select
                     className="login-field__input profile-edit-input"
                     value={form.serviceType}
-                    onChange={(event) =>
-                      updateField(
-                        "serviceType",
-                        event.target.value as SpecialistServiceType
-                      )
-                    }
+                    onChange={(event) => {
+                      const next = event.target
+                        .value as SpecialistServiceType;
+                      if (next === "virtual") {
+                        setSectionDraft((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                serviceType: next,
+                                workAddress: "",
+                                locationPrecision: "zip",
+                              }
+                            : prev
+                        );
+                        return;
+                      }
+                      updateField("serviceType", next);
+                    }}
                   >
                     {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -955,22 +979,81 @@ export function SpecialistEditProfilePageClient({
                     ))}
                   </select>
                 </ProfileEditInputField>
-                <ProfileEditInputField label="Service radius">
-                  <select
-                    className="login-field__input profile-edit-input"
-                    value={form.travelRadius}
-                    onChange={(event) =>
-                      updateField("travelRadius", event.target.value)
+                {form.serviceType === "in-person" ||
+                form.serviceType === "both" ? (
+                  <SpecialistPreciseLocationField
+                    workAddress={form.workAddress}
+                    locationPrecision={form.locationPrecision}
+                    onDraftChange={(workAddress) =>
+                      setSectionDraft((prev) =>
+                        prev ? { ...prev, workAddress } : prev
+                      )
                     }
-                  >
-                    <option value="">Select radius</option>
-                    {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </ProfileEditInputField>
+                    onResolved={(value) =>
+                      setSectionDraft((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              workAddress: value.workAddress,
+                              locationPrecision: "address",
+                              latitude: value.latitude,
+                              longitude: value.longitude,
+                              ...(value.zipCode
+                                ? { zipCode: value.zipCode }
+                                : {}),
+                              ...(value.city ? { city: value.city } : {}),
+                            }
+                          : prev
+                      )
+                    }
+                    onCleared={() => {
+                      void (async () => {
+                        const zip = normalizeZipCode(form.zipCode);
+                        const result = isValidZipCode(zip)
+                          ? await lookupZipPlace(zip)
+                          : null;
+                        setSectionDraft((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                workAddress: "",
+                                locationPrecision: "zip",
+                                latitude: result?.latitude ?? null,
+                                longitude: result?.longitude ?? null,
+                                ...(result?.city
+                                  ? { city: result.city }
+                                  : {}),
+                              }
+                            : prev
+                        );
+                      })();
+                    }}
+                  />
+                ) : (
+                  <p className="wizard-field-hint">
+                    Virtual coaches use specialty matching — no street address
+                    needed. Existing profiles keep ZIP-based distance until
+                    updated.
+                  </p>
+                )}
+                {form.serviceType !== "virtual" ? (
+                  <ProfileEditInputField label="Service radius">
+                    <select
+                      className="login-field__input profile-edit-input"
+                      value={form.travelRadius}
+                      onChange={(event) =>
+                        updateField("travelRadius", event.target.value)
+                      }
+                    >
+                      <option value="">Select radius</option>
+                      {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </ProfileEditInputField>
+                ) : null}
                 <ProfileEditInputField
                   label="Additional areas served"
                   hint="Separate neighborhoods with commas."

@@ -95,6 +95,13 @@ export interface Trainer {
   zipCode: string;
   latitude: number;
   longitude: number;
+  /**
+   * Optional work / studio address used to set precise lat/lng.
+   * Private to the specialist account — not rendered on public cards.
+   */
+  workAddress?: string;
+  /** zip = ZIP centroid (default for existing profiles); address = pinned street */
+  locationPrecision?: "zip" | "address";
   /** When true, user ZIP within serviceRadiusMiles can match in Explore */
   willingToTravel?: boolean;
   /** How far the specialist typically travels for sessions */

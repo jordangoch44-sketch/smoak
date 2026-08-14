@@ -128,6 +128,11 @@ export function applicationToTrainer(
     zipCode,
     latitude: centroid.latitude,
     longitude: centroid.longitude,
+    workAddress: app.facilityAddress?.trim() || undefined,
+    locationPrecision:
+      app.locationPrecision === "address" && app.facilityAddress?.trim()
+        ? "address"
+        : "zip",
     willingToTravel: enriched.willingToTravel,
     serviceRadiusMiles: travelRadiusMiles,
     travelRadius: app.travelRadius ?? "",
@@ -262,6 +267,11 @@ export function applicationToProfileOverrides(
       parseTravelRadiusMiles(app.travelRadius ?? "") || undefined,
     latitude: coords?.latitude,
     longitude: coords?.longitude,
+    workAddress: app.facilityAddress?.trim() || undefined,
+    locationPrecision:
+      app.locationPrecision === "address" && app.facilityAddress?.trim()
+        ? "address"
+        : "zip",
     serviceArea: neighborhood ? [neighborhood] : [],
     serviceAreaDescription: app.serviceAreaDescription?.trim() ?? "",
     /* Keep 0 when unset — go-live gate / dashboard checklist should stay honest. */
