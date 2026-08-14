@@ -128,19 +128,35 @@ export function ExplorePageClient() {
   }, [session, submitSearch]);
 
   /* Lock page scroll + hide footer while the mobile map shell is active.
-   * Do this on enter (including loading) — waiting for catalog hydrate lets
-   * inherited window scroll offset the map/search chrome. */
+   * Pin scroll BEFORE overflow:hidden — iOS freezes the visual offset if we
+   * lock while still mid-page from the previous tab. */
   useEffect(() => {
     if (!isMobile) return;
 
-    pinDocumentScrollTop();
-    document.body.classList.add(MAP_SHELL_BODY_CLASS);
-    document.documentElement.classList.add(MAP_SHELL_BODY_CLASS);
+    const pin = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const main = document.querySelector(".app-main");
+      if (main instanceof HTMLElement) main.scrollTop = 0;
+    };
 
-    const onViewport = () => pinDocumentScrollTop();
+    pin();
+    pinDocumentScrollTop();
+
+    const lockId = window.setTimeout(() => {
+      pin();
+      document.body.classList.add(MAP_SHELL_BODY_CLASS);
+      document.documentElement.classList.add(MAP_SHELL_BODY_CLASS);
+      pin();
+      pinDocumentScrollTop();
+    }, 0);
+
+    const onViewport = () => pin();
     window.visualViewport?.addEventListener("resize", onViewport);
 
     return () => {
+      window.clearTimeout(lockId);
       window.visualViewport?.removeEventListener("resize", onViewport);
       document.body.classList.remove(MAP_SHELL_BODY_CLASS);
       document.documentElement.classList.remove(MAP_SHELL_BODY_CLASS);

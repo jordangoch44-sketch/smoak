@@ -606,20 +606,16 @@
 /* Map + sheet shell — fixed viewport, no page scroll (Zillow-style) */
 .explore-page--map-shell {
   /*
-   * Fixed to the layout viewport so inherited window.scrollY from the previous
-   * tab cannot float the map / search chrome upward.
+   * Prefer the small viewport so iOS URL-bar show/hide during map pans
+   * does not constantly resize this shell (and float map chrome).
+   * Do NOT use position:fixed here — page-transition transforms make
+   * fixed descendants size against a collapsed containing block.
    */
-  position: fixed;
-  top: var(--site-header-total-height);
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: auto;
+  height: calc(100dvh - var(--site-header-total-height));
+  height: calc(100svh - var(--site-header-total-height));
   min-height: 0;
   overflow: hidden;
   isolation: isolate;
-  z-index: var(--z-page-content);
 }
 
 .explore-page--map-shell .explore-page__content--map-hero {
@@ -951,8 +947,6 @@ body.explore-map-shell-open .site-footer {
 body.explore-map-shell-open .app-main {
   overflow: hidden;
   padding-bottom: 0;
-  /* Fixed map shell is out of flow — keep main from inheriting prior scroll height */
-  min-height: 0;
 }
 
 /* Soft-nav keeps Search mounted — freeze map paint under the profile sheet */
