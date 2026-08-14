@@ -33,7 +33,6 @@ export function ProfileTrainerSpecs({ trainer }: ProfileTrainerSpecsProps) {
   const hasAnySpecsContent =
     showBestFor ||
     showCoachingStyle ||
-    Boolean(trainer.bio?.trim()) ||
     nonEmptyStrings(trainer.specialty).length > 0 ||
     nonEmptyStrings(trainer.sessionExperience).length > 0 ||
     nonEmptyStrings(trainer.resultsSnapshot ?? []).length > 0 ||

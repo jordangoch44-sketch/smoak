@@ -176,7 +176,8 @@ export function mergeProfileEditsIntoApplication(
   return {
     ...app,
     displayName: form.name.trim(),
-    fullName: form.name.trim(),
+    /* Keep legal / personal full name — never overwrite with business listing name. */
+    fullName: app.fullName.trim() || form.name.trim(),
     headline: form.title.trim(),
     gender: form.gender,
     professionalType: form.profession.trim(),

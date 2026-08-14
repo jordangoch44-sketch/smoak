@@ -11,7 +11,10 @@ import type {
   TrainerMediaItem,
   TrainerReviewSources,
 } from "@/types/trainer";
-import { firstNameFromPersonName } from "@/lib/specialist-display-name";
+import {
+  firstNameFromPersonName,
+  isBusinessDerivedFirstName,
+} from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 
 export type SpecialistProfilesMutationResult =
@@ -268,23 +271,16 @@ function trainerFromProfileData(
   };
 }
 
-/** Attach personal first name from profiles when catalog JSON omits it. */
+/** Attach personal first name from profiles (source of truth over business name). */
 export async function enrichTrainersWithSpecialistFirstNames(
   supabase: SupabaseClient,
   rows: readonly Pick<SpecialistProfileRow, "id" | "user_id">[],
   trainers: Trainer[]
 ): Promise<Trainer[]> {
-  const byId = new Map(trainers.map((t) => [t.id, t]));
   const needUserIds = [
     ...new Set(
       rows
-        .filter((row) => {
-          const trainer = byId.get(row.id);
-          return (
-            Boolean(row.user_id) &&
-            !firstNameFromPersonName(trainer?.specialistFirstName ?? "")
-          );
-        })
+        .filter((row) => Boolean(row.user_id))
         .map((row) => String(row.user_id))
     ),
   ];
@@ -303,7 +299,13 @@ export async function enrichTrainersWithSpecialistFirstNames(
         error.message
       );
     }
-    return trainers;
+    return trainers.map((trainer) => {
+      const first = firstNameFromPersonName(trainer.specialistFirstName ?? "");
+      if (!first || isBusinessDerivedFirstName(first, trainer.name ?? "")) {
+        return { ...trainer, specialistFirstName: undefined };
+      }
+      return trainer;
+    });
   }
 
   const firstByUser = new Map<string, string>();
@@ -313,15 +315,18 @@ export async function enrichTrainersWithSpecialistFirstNames(
   }
 
   return trainers.map((trainer) => {
-    if (firstNameFromPersonName(trainer.specialistFirstName ?? "")) {
-      return trainer;
-    }
     const row = rows.find((r) => r.id === trainer.id);
     const fromProfile = row?.user_id
       ? firstByUser.get(String(row.user_id))
       : undefined;
-    if (!fromProfile) return trainer;
-    return { ...trainer, specialistFirstName: fromProfile };
+    if (fromProfile) {
+      return { ...trainer, specialistFirstName: fromProfile };
+    }
+    const existing = firstNameFromPersonName(trainer.specialistFirstName ?? "");
+    if (!existing || isBusinessDerivedFirstName(existing, trainer.name ?? "")) {
+      return { ...trainer, specialistFirstName: undefined };
+    }
+    return trainer;
   });
 }
 

@@ -114,8 +114,24 @@ export function applicationToTrainer(
   return {
     id,
     name: app.displayName?.trim() || app.fullName?.trim() || "Specialist",
-    specialistFirstName:
-      firstNameFromPersonName(app.fullName ?? "") || undefined,
+    specialistFirstName: (() => {
+      const full = app.fullName?.trim() ?? "";
+      const display = app.displayName?.trim() ?? "";
+      /* Business name often leaked into fullName — only trust a distinct person name. */
+      if (!full || full.toLowerCase() === display.toLowerCase()) {
+        return undefined;
+      }
+      const first = firstNameFromPersonName(full);
+      if (!first) return undefined;
+      if (
+        display &&
+        first.toLowerCase() === firstNameFromPersonName(display).toLowerCase() &&
+        display.split(/\s+/).length > 1
+      ) {
+        return undefined;
+      }
+      return first;
+    })(),
     profession,
     title: headline || profession,
     location: location || "Your city",

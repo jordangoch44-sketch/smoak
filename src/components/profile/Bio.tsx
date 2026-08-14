@@ -6,30 +6,27 @@ interface BioProps {
   trainer: Trainer;
 }
 
+/** Specialties under View full profile — bio lives in the hero with expand. */
 export function Bio({ trainer }: BioProps) {
   const specialties = Array.isArray(trainer.specialty)
     ? trainer.specialty.filter(
         (item) => typeof item === "string" && item.trim().length > 0
       )
     : [];
-  const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
 
-  if (!bio && specialties.length === 0) return null;
+  if (specialties.length === 0) return null;
 
   return (
-    <ProfileSection variant="panel" aria-label="About">
-      <ProfileSectionHeader title="About" />
+    <ProfileSection variant="panel" aria-label="Specialties">
+      <ProfileSectionHeader title="Specialties" />
       <div className="profile-section-body profile-section-body--loose">
-        {bio ? <p className="profile-body-text">{bio}</p> : null}
-        {specialties.length > 0 ? (
-          <ul className="profile-pill-grid mt-5 sm:mt-6">
-            {specialties.map((s) => (
-              <li key={s}>
-                <span className="profile-tag-pill profile-tag-pill--grid">{s}</span>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <ul className="profile-pill-grid">
+          {specialties.map((s) => (
+            <li key={s}>
+              <span className="profile-tag-pill profile-tag-pill--grid">{s}</span>
+            </li>
+          ))}
+        </ul>
       </div>
     </ProfileSection>
   );

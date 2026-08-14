@@ -4,7 +4,6 @@ import { useCallback, useState, type CSSProperties, type MouseEvent } from "reac
 import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
-import { firstSentence } from "@/lib/related-trainers";
 import { resolveSpecialistByline } from "@/lib/specialist-display-name";
 import {
   buildTrainerGalleryImages,
@@ -23,6 +22,7 @@ import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
+import { ProfileHeroBio } from "./ProfileHeroBio";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
@@ -71,7 +71,7 @@ export function ProfileHero({
       : [];
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const heroLine = firstSentence(trainer.bio);
+  const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
   const specialistByline = resolveSpecialistByline(trainer);
 
   const openGallery = useCallback(
@@ -185,16 +185,14 @@ export function ProfileHero({
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
-            {specialistByline || heroLine ? (
+            {specialistByline || bio ? (
               <div className="profile-hero__intro">
                 {specialistByline ? (
                   <p className="profile-hero__specialist-byline">
                     {specialistByline}
                   </p>
                 ) : null}
-                {heroLine ? (
-                  <p className="profile-hero__tagline">{heroLine}</p>
-                ) : null}
+                {bio ? <ProfileHeroBio bio={bio} /> : null}
               </div>
             ) : null}
 

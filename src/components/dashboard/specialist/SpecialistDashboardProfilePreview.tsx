@@ -1069,8 +1069,7 @@ export function SpecialistDashboardProfilePreview({
   const hasSessionExperience =
     nonEmptyStrings(trainer.sessionExperience).length > 0;
   const hasResults = nonEmptyStrings(trainer.resultsSnapshot ?? []).length > 0;
-  const hasBio =
-    Boolean(trainer.bio?.trim()) || nonEmptyStrings(trainer.specialty).length > 0;
+  const hasSpecialties = nonEmptyStrings(trainer.specialty).length > 0;
   const hasCreds = hasCertifications(trainer);
   const hasSocial = hasSocialLinks(trainer);
 
@@ -1204,9 +1203,9 @@ export function SpecialistDashboardProfilePreview({
 
           <OwnerOrClientSection
             canEdit={false}
-            complete={hasBio}
-            title="About"
-            onEdit={() => startEdit("bio")}
+            complete={hasSpecialties}
+            title="Specialties"
+            onEdit={() => startEdit("specialties")}
           >
             <Bio trainer={trainer} />
           </OwnerOrClientSection>
