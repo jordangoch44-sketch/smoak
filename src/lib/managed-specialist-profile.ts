@@ -28,6 +28,7 @@ import {
   formToOverrides,
   loadSpecialistOverridesForId,
 } from "@/lib/specialist-profile-overrides";
+import { resolveSpecialistFormLocation } from "@/lib/specialist-form-location";
 import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
@@ -268,10 +269,11 @@ export async function saveManagedSpecialistProfileEdits(
 
   try {
     const application = getSpecialistApplicationById(trainerId);
-    const overrides = formToOverrides(form);
+    const resolvedForm = await resolveSpecialistFormLocation(form);
+    const overrides = formToOverrides(resolvedForm);
 
     if (application) {
-      const updated = mergeProfileEditsIntoApplication(application, form);
+      const updated = mergeProfileEditsIntoApplication(application, resolvedForm);
       const saveResult = await saveSpecialistApplicationAsync(updated);
       if (!saveResult.ok) {
         return {
@@ -292,12 +294,16 @@ export async function saveManagedSpecialistProfileEdits(
         if (!remote.ok) {
           return { ok: false, error: remote.message || "Unable to save changes" };
         }
+        /* Bust SSR catalog so Explore / cards / sheets pick up new distance. */
+        void fetch("/api/catalog/revalidate", { method: "POST" }).catch(
+          () => undefined
+        );
       }
     } else {
       saveTrainerProfileOverrides(trainerId, overrides);
     }
 
-    const photoUrl = form.profilePhotoUrl.trim();
+    const photoUrl = resolvedForm.profilePhotoUrl.trim();
     if (photoUrl && !photoUrl.startsWith("blob:")) {
       await updateOwnProfileAvatarUrl(photoUrl);
     }

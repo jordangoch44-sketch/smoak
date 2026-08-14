@@ -5,6 +5,14 @@ import type { GeoCoordinates } from "@/lib/geo/zip-centroids";
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import type { Trainer } from "@/types";
 
+function isUsableCoordinate(latitude: number, longitude: number): boolean {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    !(latitude === 0 && longitude === 0)
+  );
+}
+
 /**
  * Resolve specialist map / distance point.
  * Prefer stored lat/lng (precise address pin or ZIP centroid already written
@@ -12,10 +20,7 @@ import type { Trainer } from "@/types";
  * Existing live specialists without a pin keep ZIP-based coords.
  */
 export function getTrainerCoordinates(trainer: Trainer): GeoCoordinates | null {
-  if (
-    Number.isFinite(trainer.latitude) &&
-    Number.isFinite(trainer.longitude)
-  ) {
+  if (isUsableCoordinate(trainer.latitude, trainer.longitude)) {
     return { latitude: trainer.latitude, longitude: trainer.longitude };
   }
 

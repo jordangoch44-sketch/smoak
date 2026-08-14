@@ -863,6 +863,15 @@ export function SpecialistEditProfilePageClient({
             description="Where you train and neighborhoods you serve"
             viewContent={
               <>
+                <ProfileEditViewField
+                  label="Exact location"
+                  value={
+                    savedForm.locationPrecision === "address" &&
+                    savedForm.workAddress.trim()
+                      ? "Pinned for precise distance"
+                      : "Using ZIP only"
+                  }
+                />
                 <ProfileEditViewField label="City" value={savedForm.city} />
                 <ProfileEditViewField
                   label="Primary neighborhood"
@@ -872,15 +881,6 @@ export function SpecialistEditProfilePageClient({
                   label="ZIP code"
                   value={savedForm.zipCode}
                   emptyLabel="Add ZIP code"
-                />
-                <ProfileEditViewField
-                  label="Exact location"
-                  value={
-                    savedForm.locationPrecision === "address" &&
-                    savedForm.workAddress.trim()
-                      ? "Pinned for precise distance"
-                      : "Using ZIP only"
-                  }
                 />
                 <ProfileEditViewField
                   label="Session format"
@@ -922,63 +922,6 @@ export function SpecialistEditProfilePageClient({
             }
             editContent={
               <div className="dashboard-edit-fields">
-                <ProfileEditInputField label="City">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    value={form.city}
-                    onChange={(event) => updateField("city", event.target.value)}
-                  />
-                </ProfileEditInputField>
-                <ProfileEditInputField label="Primary neighborhood">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    value={form.neighborhood}
-                    onChange={(event) =>
-                      updateField("neighborhood", event.target.value)
-                    }
-                  />
-                </ProfileEditInputField>
-                <ProfileEditInputField label="ZIP code">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    value={form.zipCode}
-                    onChange={(event) =>
-                      updateField("zipCode", event.target.value)
-                    }
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                  />
-                </ProfileEditInputField>
-                <ProfileEditInputField label="Session format">
-                  <select
-                    className="login-field__input profile-edit-input"
-                    value={form.serviceType}
-                    onChange={(event) => {
-                      const next = event.target
-                        .value as SpecialistServiceType;
-                      if (next === "virtual") {
-                        setSectionDraft((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                serviceType: next,
-                                workAddress: "",
-                                locationPrecision: "zip",
-                              }
-                            : prev
-                        );
-                        return;
-                      }
-                      updateField("serviceType", next);
-                    }}
-                  >
-                    {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </ProfileEditInputField>
                 {form.serviceType === "in-person" ||
                 form.serviceType === "both" ? (
                   <SpecialistPreciseLocationField
@@ -1036,6 +979,63 @@ export function SpecialistEditProfilePageClient({
                     updated.
                   </p>
                 )}
+                <ProfileEditInputField label="City">
+                  <input
+                    className="login-field__input profile-edit-input"
+                    value={form.city}
+                    onChange={(event) => updateField("city", event.target.value)}
+                  />
+                </ProfileEditInputField>
+                <ProfileEditInputField label="Primary neighborhood">
+                  <input
+                    className="login-field__input profile-edit-input"
+                    value={form.neighborhood}
+                    onChange={(event) =>
+                      updateField("neighborhood", event.target.value)
+                    }
+                  />
+                </ProfileEditInputField>
+                <ProfileEditInputField label="ZIP code">
+                  <input
+                    className="login-field__input profile-edit-input"
+                    value={form.zipCode}
+                    onChange={(event) =>
+                      updateField("zipCode", event.target.value)
+                    }
+                    inputMode="numeric"
+                    autoComplete="postal-code"
+                  />
+                </ProfileEditInputField>
+                <ProfileEditInputField label="Session format">
+                  <select
+                    className="login-field__input profile-edit-input"
+                    value={form.serviceType}
+                    onChange={(event) => {
+                      const next = event.target
+                        .value as SpecialistServiceType;
+                      if (next === "virtual") {
+                        setSectionDraft((prev) =>
+                          prev
+                            ? {
+                                ...prev,
+                                serviceType: next,
+                                workAddress: "",
+                                locationPrecision: "zip",
+                              }
+                            : prev
+                        );
+                        return;
+                      }
+                      updateField("serviceType", next);
+                    }}
+                  >
+                    {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </ProfileEditInputField>
                 {form.serviceType !== "virtual" ? (
                   <ProfileEditInputField label="Service radius">
                     <select

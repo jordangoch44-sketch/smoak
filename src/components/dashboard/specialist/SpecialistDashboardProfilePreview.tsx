@@ -566,6 +566,53 @@ export function SpecialistDashboardProfilePreview({
 
         {editing === "service-area" ? (
           <div className="specialist-dash-profile__fields">
+            {form.serviceType === "in-person" || form.serviceType === "both" ? (
+              <SpecialistPreciseLocationField
+                workAddress={form.workAddress}
+                locationPrecision={form.locationPrecision}
+                onDraftChange={(workAddress) => patch("workAddress", workAddress)}
+                onResolved={(value) => {
+                  setDraft((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          workAddress: value.workAddress,
+                          locationPrecision: "address",
+                          latitude: value.latitude,
+                          longitude: value.longitude,
+                          ...(value.zipCode ? { zipCode: value.zipCode } : {}),
+                          ...(value.city ? { city: value.city } : {}),
+                        }
+                      : prev
+                  );
+                }}
+                onCleared={() => {
+                  void (async () => {
+                    const zip = normalizeZipCode(form.zipCode);
+                    const result = isValidZipCode(zip)
+                      ? await lookupZipPlace(zip)
+                      : null;
+                    setDraft((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            workAddress: "",
+                            locationPrecision: "zip",
+                            latitude: result?.latitude ?? null,
+                            longitude: result?.longitude ?? null,
+                            ...(result?.city ? { city: result.city } : {}),
+                          }
+                        : prev
+                    );
+                  })();
+                }}
+              />
+            ) : (
+              <p className="wizard-field-hint">
+                Virtual coaches don’t need a street address. Switch session
+                format below if you also train in person.
+              </p>
+            )}
             <label className="login-field">
               <span className="login-field__label">City</span>
               <input
@@ -615,48 +662,6 @@ export function SpecialistDashboardProfilePreview({
                 ))}
               </select>
             </label>
-            {form.serviceType === "in-person" || form.serviceType === "both" ? (
-              <SpecialistPreciseLocationField
-                workAddress={form.workAddress}
-                locationPrecision={form.locationPrecision}
-                onDraftChange={(workAddress) => patch("workAddress", workAddress)}
-                onResolved={(value) => {
-                  setDraft((prev) =>
-                    prev
-                      ? {
-                          ...prev,
-                          workAddress: value.workAddress,
-                          locationPrecision: "address",
-                          latitude: value.latitude,
-                          longitude: value.longitude,
-                          ...(value.zipCode ? { zipCode: value.zipCode } : {}),
-                          ...(value.city ? { city: value.city } : {}),
-                        }
-                      : prev
-                  );
-                }}
-                onCleared={() => {
-                  void (async () => {
-                    const zip = normalizeZipCode(form.zipCode);
-                    const result = isValidZipCode(zip)
-                      ? await lookupZipPlace(zip)
-                      : null;
-                    setDraft((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            workAddress: "",
-                            locationPrecision: "zip",
-                            latitude: result?.latitude ?? null,
-                            longitude: result?.longitude ?? null,
-                            ...(result?.city ? { city: result.city } : {}),
-                          }
-                        : prev
-                    );
-                  })();
-                }}
-              />
-            ) : null}
             {form.serviceType !== "virtual" ? (
               <label className="login-field">
                 <span className="login-field__label">Travel radius</span>

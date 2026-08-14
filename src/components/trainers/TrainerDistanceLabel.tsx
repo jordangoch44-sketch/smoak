@@ -22,7 +22,9 @@ export function TrainerDistanceLabel({
   if (miles === null) return null;
 
   const label =
-    miles < 10 ? `${miles.toFixed(1)} mi away` : `${Math.round(miles)} mi away`;
+    miles < 20
+      ? `${miles.toFixed(1)} mi away`
+      : `${Math.round(miles)} mi away`;
 
   return (
     <span className={cn("trainer-distance-label", className)}>{label}</span>
