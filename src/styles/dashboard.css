@@ -3755,6 +3755,12 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   min-width: 0;
 }
 
+.specialist-dash-panel__footer-card {
+  margin-top: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .specialist-dash-layout__edit-btn {
   width: 100%;
   max-width: 100%;

@@ -4,7 +4,6 @@ import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type RefObject,
@@ -19,47 +18,10 @@ import {
   hasSkippedLocationPrompt,
 } from "@/lib/user-location-storage";
 
-export interface AnchorRect {
-  top: number;
-  left: number;
-  width: number;
-  bottom: number;
-}
-
 interface LocationSelectorDropdownProps {
   open: boolean;
   anchorRef: RefObject<HTMLElement | null>;
   onClose: () => void;
-}
-
-function measureAnchor(el: HTMLElement | null): AnchorRect | null {
-  if (!el) return null;
-  const rect = el.getBoundingClientRect();
-  return {
-    top: rect.top,
-    left: rect.left,
-    width: rect.width,
-    bottom: rect.bottom,
-  };
-}
-
-function computePanelStyle(
-  anchor: AnchorRect,
-  panelWidth: number
-): { top: number; left: number; width: number } {
-  const margin = 16;
-  const gap = 10;
-  const maxWidth = Math.min(360, window.innerWidth - margin * 2);
-  const width = Math.min(panelWidth, maxWidth);
-  const anchorRight = anchor.left + anchor.width;
-  const preferRightAlign =
-    anchor.left + anchor.width / 2 > window.innerWidth * 0.52;
-  let left = preferRightAlign
-    ? anchorRight - width
-    : anchor.left + anchor.width / 2 - width / 2;
-  left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
-  const top = anchor.bottom + gap;
-  return { top, left, width };
 }
 
 export function LocationSelectorDropdown({
@@ -70,38 +32,13 @@ export function LocationSelectorDropdown({
   const panelId = useId();
   const titleId = `${panelId}-title`;
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const [anchorRect, setAnchorRect] = useState<AnchorRect | null>(null);
   const [visible, setVisible] = useState(false);
-
-  const updateAnchor = useCallback(() => {
-    setAnchorRect(measureAnchor(anchorRef.current));
-  }, [anchorRef]);
 
   const isTypingInPanel = useCallback(() => {
     if (typeof document === "undefined") return false;
     const active = document.activeElement;
     return Boolean(active && panelRef.current?.contains(active));
   }, []);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    updateAnchor();
-    /* Anchor lives in the fixed header — resize only; never scroll (avoids jank).
-     * Skip while the ZIP field is focused: iOS keyboard resize would thrash layout. */
-    const onLayout = () => {
-      if (isTypingInPanel()) return;
-      updateAnchor();
-    };
-    window.addEventListener("resize", onLayout);
-    const vv = window.visualViewport;
-    vv?.addEventListener("resize", onLayout);
-    vv?.addEventListener("scroll", onLayout);
-    return () => {
-      window.removeEventListener("resize", onLayout);
-      vv?.removeEventListener("resize", onLayout);
-      vv?.removeEventListener("scroll", onLayout);
-    };
-  }, [open, updateAnchor, isTypingInPanel]);
 
   useEffect(() => {
     if (!open) {
@@ -172,15 +109,6 @@ export function LocationSelectorDropdown({
   if (!open && !visible) return null;
   if (typeof document === "undefined") return null;
 
-  const panelStyle =
-    anchorRect && typeof window !== "undefined"
-      ? computePanelStyle(anchorRect, Math.max(anchorRect.width, 300))
-      : {
-          top: 72,
-          left: 16,
-          width: Math.min(360, window.innerWidth - 32),
-        };
-
   return createPortal(
     <div className="location-selector-root" role="presentation">
       <div
@@ -202,9 +130,6 @@ export function LocationSelectorDropdown({
           visible && open && "location-selector-dropdown--visible"
         )}
         style={{
-          top: panelStyle.top,
-          left: panelStyle.left,
-          width: panelStyle.width,
           transitionTimingFunction: MENU_EASE,
         }}
       >

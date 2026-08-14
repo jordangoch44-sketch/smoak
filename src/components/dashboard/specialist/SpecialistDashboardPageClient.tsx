@@ -178,12 +178,13 @@ export function SpecialistDashboardPageClient() {
   const onProTrial = Boolean(session.premiumTrialActive);
   const showLastChance = showProTrialLastChance(session);
 
-  function openProfileTabAndInquiries() {
+  function openOverviewAndInquiries() {
     void handleDismissInquiryNotifications();
     if (isFreeLive) {
+      /* Free plan has no Overview — inquiries live on Edit profile. */
       setFreeTab("profile");
     } else if (premiumDashboard) {
-      setPremiumTab("profile");
+      setPremiumTab("overview");
     }
     window.requestAnimationFrame(() => {
       window.setTimeout(scrollToInquiries, 80);
@@ -224,7 +225,7 @@ export function SpecialistDashboardPageClient() {
           <InquiryNotificationBanner
             unreadCount={inquiryUnreadCount}
             latestSummary={latestInquirySummary}
-            onReview={openProfileTabAndInquiries}
+            onReview={openOverviewAndInquiries}
             onDismiss={() => {
               void handleDismissInquiryNotifications();
             }}
@@ -419,7 +420,7 @@ export function SpecialistDashboardPageClient() {
                   onClick={() => setPremiumTab(tab.id)}
                 >
                   {tab.label}
-                  {tab.id === "profile" && inquiryUnreadCount > 0 ? (
+                  {tab.id === "overview" && inquiryUnreadCount > 0 ? (
                     <span className="specialist-dash-tabs__count">
                       {inquiryUnreadCount}
                     </span>
@@ -458,7 +459,6 @@ export function SpecialistDashboardPageClient() {
                       isPremium={isPremium}
                       onUpgrade={() => setUpgradeOpen(true)}
                     />
-                    <SubscriptionCard subscription={data.subscription} />
                   </DashboardGrid>
                 </div>
               ) : null}
@@ -485,10 +485,9 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
-                  <LeadsCard
-                    leads={data.newLeads}
-                    onOpenLead={handleOpenInquiryLead}
-                  />
+                  <div className="specialist-dash-panel__footer-card">
+                    <SubscriptionCard subscription={data.subscription} />
+                  </div>
                 </div>
               ) : null}
             </div>
