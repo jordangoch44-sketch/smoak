@@ -934,10 +934,12 @@ body.location-selector-open .explore-split__cta-dock {
 
 body.explore-map-shell-open {
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 html.explore-map-shell-open {
   overflow: hidden;
+  overscroll-behavior: none;
 }
 
 body.explore-map-shell-open .site-footer {
@@ -947,6 +949,17 @@ body.explore-map-shell-open .site-footer {
 body.explore-map-shell-open .app-main {
   overflow: hidden;
   padding-bottom: 0;
+  overscroll-behavior: none;
+}
+
+/* Loading skeleton — match map shell height on phones so scroll can't inherit */
+@media (max-width: 767px) {
+  .explore-page--loading {
+    height: calc(100dvh - var(--site-header-total-height));
+    height: calc(100svh - var(--site-header-total-height));
+    min-height: 0;
+    overflow: hidden;
+  }
 }
 
 /* Soft-nav keeps Search mounted — freeze map paint under the profile sheet */

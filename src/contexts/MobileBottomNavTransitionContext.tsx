@@ -17,6 +17,7 @@ import { prefetchBottomNavRoutes } from "@/lib/bottom-nav-prefetch";
 import type { MobileBottomNavItemId } from "@/lib/mobile-bottom-nav";
 import {
   getClientRouteSearch,
+  prepareNavScrollReset,
   restoreBottomNavScroll,
   saveBottomNavScroll,
   setBottomNavPanelBodyActive,
@@ -192,9 +193,10 @@ export function MobileBottomNavTransitionProvider({
       saveBottomNavScroll(
         getBottomNavRouteKey(pathname, getClientRouteSearch())
       );
+      prepareNavScrollReset(parseBottomNavHref(href).pathname);
 
       pendingPanelRef.current = { href, direction, enterOnly };
-      router.push(href);
+      router.push(href, { scroll: true });
 
       schedule(completePanelTransition, panelMs + 32);
     },
@@ -219,8 +221,10 @@ export function MobileBottomNavTransitionProvider({
         saveBottomNavScroll(
           getBottomNavRouteKey(pathname, getClientRouteSearch())
         );
+        /* Reset before push so Search/Profile don't paint mid-scroll on iOS. */
+        prepareNavScrollReset(target.pathname);
         pendingInstantScrollKeyRef.current = targetScrollKey;
-        router.push(href);
+        router.push(href, { scroll: true });
         return;
       }
 

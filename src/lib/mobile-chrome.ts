@@ -9,6 +9,8 @@ import {
 
 const scrollPositions = new Map<string, number>();
 
+let pinGeneration = 0;
+
 function pathnameFromRouteKey(key: string): string {
   const q = key.indexOf("?");
   return q === -1 ? key : key.slice(0, q);
@@ -18,7 +20,9 @@ function shouldResetScrollOnEnter(pathname: string): boolean {
   return isProfileNavPath(pathname) || isExploreNavPath(pathname);
 }
 
-function forceScrollTop(): void {
+/** Immediate scroll-to-top across window + common scrollports. */
+export function forceDocumentScrollTop(): void {
+  if (typeof window === "undefined") return;
   window.scrollTo(0, 0);
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
@@ -31,16 +35,43 @@ function forceScrollTop(): void {
  * Needed when entering Search after a scrolled page — iOS can re-apply the
  * previous offset after the first scrollTo, which floats the map shell.
  */
-export function pinDocumentScrollTop(): void {
+export function pinDocumentScrollTop(durationMs = 600): void {
   if (typeof window === "undefined") return;
-  forceScrollTop();
+  const token = ++pinGeneration;
+  forceDocumentScrollTop();
+
   requestAnimationFrame(() => {
-    forceScrollTop();
-    requestAnimationFrame(forceScrollTop);
+    if (token !== pinGeneration) return;
+    forceDocumentScrollTop();
+    requestAnimationFrame(() => {
+      if (token !== pinGeneration) return;
+      forceDocumentScrollTop();
+    });
   });
-  window.setTimeout(forceScrollTop, 50);
-  window.setTimeout(forceScrollTop, 200);
-  window.setTimeout(forceScrollTop, 400);
+
+  for (const delay of [50, 100, 200, 400, 600, 800]) {
+    if (delay > durationMs) break;
+    window.setTimeout(() => {
+      if (token !== pinGeneration) return;
+      forceDocumentScrollTop();
+    }, delay);
+  }
+}
+
+/**
+ * Call before router.push to Search/Profile so the next route paints at y=0
+ * (SSR/loading HTML can inherit the previous page's scroll before hydration).
+ */
+export function prepareNavScrollReset(pathname: string): void {
+  if (typeof window === "undefined") return;
+  if (!shouldResetScrollOnEnter(pathname)) return;
+  try {
+    history.scrollRestoration = "manual";
+  } catch {
+    /* ignore */
+  }
+  forceDocumentScrollTop();
+  pinDocumentScrollTop(400);
 }
 
 export function getClientRouteSearch(): string {

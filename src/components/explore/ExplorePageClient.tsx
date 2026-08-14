@@ -16,7 +16,6 @@ import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
-import { pinDocumentScrollTop } from "@/lib/mobile-chrome";
 import { cn } from "@/lib/utils";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
@@ -25,8 +24,6 @@ import { ExploreMap } from "./ExploreMap";
 import { ExploreResults } from "./ExploreResults";
 import { ExploreResultsSheet } from "./ExploreResultsSheet";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
-
-const MAP_SHELL_BODY_CLASS = "explore-map-shell-open";
 
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
@@ -126,42 +123,6 @@ export function ExplorePageClient() {
       window.removeEventListener(USER_LOCATION_CHANGE_EVENT, flushPendingSearch);
     };
   }, [session, submitSearch]);
-
-  /* Lock page scroll + hide footer while the mobile map shell is active.
-   * Pin scroll BEFORE overflow:hidden — iOS freezes the visual offset if we
-   * lock while still mid-page from the previous tab. */
-  useEffect(() => {
-    if (!isMobile) return;
-
-    const pin = () => {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      const main = document.querySelector(".app-main");
-      if (main instanceof HTMLElement) main.scrollTop = 0;
-    };
-
-    pin();
-    pinDocumentScrollTop();
-
-    const lockId = window.setTimeout(() => {
-      pin();
-      document.body.classList.add(MAP_SHELL_BODY_CLASS);
-      document.documentElement.classList.add(MAP_SHELL_BODY_CLASS);
-      pin();
-      pinDocumentScrollTop();
-    }, 0);
-
-    const onViewport = () => pin();
-    window.visualViewport?.addEventListener("resize", onViewport);
-
-    return () => {
-      window.clearTimeout(lockId);
-      window.visualViewport?.removeEventListener("resize", onViewport);
-      document.body.classList.remove(MAP_SHELL_BODY_CLASS);
-      document.documentElement.classList.remove(MAP_SHELL_BODY_CLASS);
-    };
-  }, [isMobile]);
 
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
