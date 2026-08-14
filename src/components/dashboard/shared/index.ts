@@ -1,6 +1,8 @@
 export { DashboardHeader } from "./DashboardHeader";
 export { DashboardPageShell } from "./DashboardPageShell";
 export { DashboardSection } from "./DashboardSection";
+export { DashboardCollapsibleSection } from "./DashboardCollapsibleSection";
+export type { DashboardCollapsibleSectionProps } from "./DashboardCollapsibleSection";
 export { DashboardButton } from "./DashboardButton";
 export type { DashboardButtonProps } from "./DashboardButton";
 export { StatTile } from "./StatTile";

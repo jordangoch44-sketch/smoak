@@ -10,8 +10,14 @@ import {
 } from "@/lib/trainer-proximity-sort";
 import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 
-/** Default search radius around ZIP / search origin (miles). */
+/** Default search radius around ZIP / device GPS (miles). */
 export const DEFAULT_EXPLORE_RADIUS_MILES = 12;
+
+/**
+ * Fallback metro radius when a marketplace city has no per-city override.
+ * Prefer `marketplaceMetroRadiusMiles` for named marketplace cities.
+ */
+export const DEFAULT_METRO_EXPLORE_RADIUS_MILES = 20;
 
 /** Wider pool for “Suggested specialists” when the area is empty. */
 const SUGGESTED_EXPLORE_RADIUS_MILES = 75;

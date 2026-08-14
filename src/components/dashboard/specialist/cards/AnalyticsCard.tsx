@@ -9,6 +9,7 @@ import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthI
 import {
   BoostVisibilityModal,
   DashboardButton,
+  DashboardCollapsibleSection,
   PremiumLockedValues,
   PremiumUnlockCta,
   SmoacProUpgradeModal,
@@ -20,46 +21,54 @@ import { cn } from "@/lib/utils";
 interface AnalyticsCardProps {
   analytics: SpecialistProfileAnalytics;
   isPremium: boolean;
+  /** When false, Growth Insights is rendered by the parent accordion stack */
+  includeGrowthInsights?: boolean;
+  defaultOpen?: boolean;
 }
 
-export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
+export function AnalyticsCard({
+  analytics,
+  isPremium,
+  includeGrowthInsights = true,
+  defaultOpen = false,
+}: AnalyticsCardProps) {
   const [boostModalOpen, setBoostModalOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const secondaryTiles = buildSecondaryStatTiles(analytics);
+  const viewsMetric = analytics.coreMetrics.find((m) => m.id === "profile_views");
+  const summary = viewsMetric
+    ? `${viewsMetric.value.toLocaleString("en-US")} profile views`
+    : analytics.periodLabel;
 
   return (
     <>
-      <section
+      <DashboardCollapsibleSection
+        title="Profile Analytics"
+        description={
+          isPremium
+            ? "Business intelligence for your marketplace visibility and client demand."
+            : "See how clients discover you — unlock full performance data with Pro."
+        }
+        summary={summary}
+        defaultOpen={defaultOpen}
+        span="full"
         className={cn(
-          "dashboard-analytics dashboard-grid__span-2",
+          "dashboard-analytics",
           isPremium ? "dashboard-analytics--premium" : "dashboard-analytics--free"
         )}
-        aria-labelledby="dashboard-analytics-title"
       >
-        <div className="dashboard-analytics__card">
-          <header className="dashboard-analytics__header">
-            <div>
-              <div className="dashboard-analytics__title-row">
-                <h2 id="dashboard-analytics-title" className="dashboard-analytics__title">
-                  Profile Analytics
-                </h2>
-                <span
-                  className={cn(
-                    "dashboard-analytics__badge",
-                    !isPremium && "dashboard-analytics__badge--pro"
-                  )}
-                >
-                  Pro
-                </span>
-              </div>
-              <p className="dashboard-analytics__subtitle">
-                {isPremium
-                  ? "Business intelligence for your marketplace visibility and client demand."
-                  : "See how clients discover you — unlock full performance data with Pro."}
-              </p>
-            </div>
+        <div className="dashboard-analytics__card dashboard-analytics__card--accordion">
+          <div className="dashboard-analytics__title-row dashboard-analytics__title-row--inline">
             <p className="dashboard-analytics__period">{analytics.periodLabel}</p>
-          </header>
+            <span
+              className={cn(
+                "dashboard-analytics__badge",
+                !isPremium && "dashboard-analytics__badge--pro"
+              )}
+            >
+              Pro
+            </span>
+          </div>
 
           <div className="dashboard-analytics__stats dashboard-stat-grid dashboard-analytics__stats--core">
             {analytics.coreMetrics.map((metric, index) => (
@@ -88,10 +97,12 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
             ))}
           </div>
 
-          <GrowthInsightsSection
-            insights={analytics.growthInsights}
-            isPremium={isPremium}
-          />
+          {includeGrowthInsights ? (
+            <GrowthInsightsSection
+              insights={analytics.growthInsights}
+              isPremium={isPremium}
+            />
+          ) : null}
 
           {isPremium && analytics.discoveryBreakdown ? (
             <div className="dashboard-analytics__discovery">
@@ -153,7 +164,10 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
                 {SMOAC_PRO_UNLOCK.cta}
               </DashboardButton>
             ) : null}
-            <DashboardButton variant="secondary" href="/specialist-dashboard/edit-profile">
+            <DashboardButton
+              variant="secondary"
+              href="/specialist-dashboard/edit-profile"
+            >
               Improve Profile
             </DashboardButton>
           </div>
@@ -168,7 +182,7 @@ export function AnalyticsCard({ analytics, isPremium }: AnalyticsCardProps) {
             />
           ) : null}
         </div>
-      </section>
+      </DashboardCollapsibleSection>
 
       <BoostVisibilityModal
         open={boostModalOpen}

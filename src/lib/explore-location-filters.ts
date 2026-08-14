@@ -11,8 +11,16 @@ import {
   getZipPlaceDisplayName,
   loadSavedZipCode,
 } from "@/lib/user-location-storage";
-import { EMPTY_TRAINER_FILTERS } from "@/lib/explore";
-import { MARKETPLACE_CITY_CENTERS } from "@/lib/marketplace-city-centers";
+import {
+  DEFAULT_EXPLORE_RADIUS_MILES,
+  DEFAULT_METRO_EXPLORE_RADIUS_MILES,
+  EMPTY_TRAINER_FILTERS,
+} from "@/lib/explore";
+import type { ExploreSearchArea } from "@/lib/explore-map-area";
+import {
+  MARKETPLACE_CITY_CENTERS,
+  marketplaceMetroRadiusMiles,
+} from "@/lib/marketplace-city-centers";
 import {
   lookupLocalZipCoordinates,
   zipCodeToCoordinates,
@@ -38,7 +46,7 @@ function findParentCityForNeighborhood(placeName: string): string {
 
 /**
  * Display helpers for ZIP → place labels (filter chips / drawer).
- * ZIP also feeds the default Explore radius via resolveExploreMapArea.
+ * ZIP also feeds the default Explore radius via resolveDefaultExploreSearchArea.
  */
 export function exploreFiltersFromZipCode(rawZip: string): TrainerFilters {
   const zip = normalizeZipCode(rawZip.trim());
@@ -130,35 +138,83 @@ const SEARCH_CITY_CENTERS: Record<string, UserGeoPoint> = {
   "Las Vegas": { latitude: 36.1699, longitude: -115.1398 },
 };
 
+function zipExploreOrigin(zip: string): UserGeoPoint | null {
+  if (loadSavedZipCode() === zip) {
+    const saved = getSavedZipCoordinates();
+    if (saved) {
+      return { latitude: saved.latitude, longitude: saved.longitude };
+    }
+  }
+  const fromZip =
+    zipCodeToCoordinates(zip) ??
+    lookupLocalZipCoordinates(zip) ??
+    getCachedGeocodedZip(zip);
+  if (fromZip) {
+    return { latitude: fromZip.latitude, longitude: fromZip.longitude };
+  }
+  return null;
+}
+
+function metroSearchAreaForCity(city: MarketplaceCity): ExploreSearchArea {
+  const center = MARKETPLACE_CITY_CENTERS[city];
+  return {
+    latitude: center.lat,
+    longitude: center.lng,
+    radiusMiles: marketplaceMetroRadiusMiles(city),
+  };
+}
+
 /**
- * Sort origin for “near you / near this place”:
- * 1. Parsed search city (or neighborhood’s parent city)
- * 2. Client location coordinates
+ * Default Explore map frame: ZIP / GPS stay local (~12 mi); marketplace city
+ * or neighborhood searches use a metro radius so northern / outer areas
+ * (e.g. Mira Mesa vs downtown San Diego) stay on the map.
  */
-function resolveExploreSortOrigin(
+export function resolveDefaultExploreSearchArea(
   filters: TrainerFilters,
   userCoords: UserGeoPoint | null
-): UserGeoPoint | null {
-  const city = filters.city.trim();
-  if (city) {
-    if (isMarketplaceCity(city)) {
-      const center = MARKETPLACE_CITY_CENTERS[city as MarketplaceCity];
-      return { latitude: center.lat, longitude: center.lng };
+): ExploreSearchArea | null {
+  const zip = normalizeZipCode(filters.zipCode.trim());
+  if (isValidZipCode(zip)) {
+    const origin = zipExploreOrigin(zip);
+    if (origin) {
+      return {
+        ...origin,
+        radiusMiles: DEFAULT_EXPLORE_RADIUS_MILES,
+      };
     }
-    const known = SEARCH_CITY_CENTERS[city];
-    if (known) return known;
+  }
+
+  const city = filters.city.trim();
+  if (city && isMarketplaceCity(city)) {
+    return metroSearchAreaForCity(city as MarketplaceCity);
   }
 
   const neighborhood = filters.neighborhood.trim();
   if (neighborhood) {
     const parent = findParentCityForNeighborhood(neighborhood);
     if (parent && isMarketplaceCity(parent)) {
-      const center = MARKETPLACE_CITY_CENTERS[parent];
-      return { latitude: center.lat, longitude: center.lng };
+      return metroSearchAreaForCity(parent);
     }
   }
 
-  return userCoords;
+  if (city) {
+    const known = SEARCH_CITY_CENTERS[city];
+    if (known) {
+      return {
+        ...known,
+        radiusMiles: DEFAULT_METRO_EXPLORE_RADIUS_MILES,
+      };
+    }
+  }
+
+  if (userCoords) {
+    return {
+      ...userCoords,
+      radiusMiles: DEFAULT_EXPLORE_RADIUS_MILES,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -170,22 +226,7 @@ export function resolveExploreMapArea(
   filters: TrainerFilters,
   userCoords: UserGeoPoint | null
 ): UserGeoPoint | null {
-  const zip = normalizeZipCode(filters.zipCode.trim());
-  if (isValidZipCode(zip)) {
-    if (loadSavedZipCode() === zip) {
-      const saved = getSavedZipCoordinates();
-      if (saved) {
-        return { latitude: saved.latitude, longitude: saved.longitude };
-      }
-    }
-    const fromZip =
-      zipCodeToCoordinates(zip) ??
-      lookupLocalZipCoordinates(zip) ??
-      getCachedGeocodedZip(zip);
-    if (fromZip) {
-      return { latitude: fromZip.latitude, longitude: fromZip.longitude };
-    }
-  }
-
-  return resolveExploreSortOrigin(filters, userCoords);
+  const area = resolveDefaultExploreSearchArea(filters, userCoords);
+  if (!area) return null;
+  return { latitude: area.latitude, longitude: area.longitude };
 }

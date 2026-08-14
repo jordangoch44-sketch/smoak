@@ -1,32 +1,44 @@
-import type { Trainer } from "@/types";
-import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
-import { formatProviderLocation } from "@/lib/provider-location";
-import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+"use client";
+
 import {
   DashboardButton,
+  DashboardCollapsibleSection,
   DashboardMetricCard,
-  DashboardSection,
 } from "@/components/dashboard/shared";
+import { formatProviderLocation } from "@/lib/provider-location";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
+import type { Trainer } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface ProfileCompletionCardProps {
   profileCompletion: number;
   trainer: Trainer | undefined;
   checklist: ProfileCompletionChecklistItem[];
+  defaultOpen?: boolean;
 }
 
 export function ProfileCompletionCard({
   profileCompletion,
   trainer,
   checklist,
+  defaultOpen = false,
 }: ProfileCompletionCardProps) {
   const profession = trainer
     ? resolveTrainerProfessionCategory(trainer)
     : "";
+  const remaining = checklist.filter((item) => !item.done).length;
+
   return (
-    <DashboardSection
+    <DashboardCollapsibleSection
       title="Profile completion"
       description="Finish your in-depth profile to improve discovery — pricing, availability, media, and more."
+      summary={
+        remaining > 0
+          ? `${profileCompletion}% · ${remaining} left`
+          : `${profileCompletion}% complete`
+      }
+      defaultOpen={defaultOpen}
       span="full"
     >
       <div className="dashboard-profile-completion">
@@ -47,7 +59,7 @@ export function ProfileCompletionCard({
           </DashboardButton>
         </aside>
       </div>
-    </DashboardSection>
+    </DashboardCollapsibleSection>
   );
 }
 

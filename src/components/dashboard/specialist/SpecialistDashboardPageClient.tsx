@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   DashboardButton,
-  DashboardGrid,
   DashboardLoadingState,
   DashboardPageShell,
   BoostVisibilityModal,
@@ -19,6 +18,7 @@ import {
   SubscriptionCard,
   VisibilityRankingCard,
 } from "@/components/dashboard/specialist/cards";
+import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
@@ -33,6 +33,7 @@ import {
   showsProfileFirstDashboard,
 } from "@/lib/specialist-dashboard-mode";
 import { getSpecialistProPreviewAnalytics } from "@/lib/specialist-dashboard-analytics";
+import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
   SMOAC_FREE_PLAN_LABEL,
   formatProTrialBadgeLabel,
@@ -158,8 +159,9 @@ export function SpecialistDashboardPageClient() {
     return <DashboardLoadingState />;
   }
 
+  const isLivePublished = profileStatusLabel === "Published";
   const statusTone =
-    profileStatusLabel === "Published"
+    isLivePublished
       ? "active"
       : profileStatusLabel === "Needs changes"
         ? "rejected"
@@ -204,13 +206,28 @@ export function SpecialistDashboardPageClient() {
     <DashboardPageShell
       variant="specialist"
       eyebrow="Specialist dashboard"
-      title={`Good to see you, ${firstName}`}
+      title={
+        <>
+          Good to see you, {firstName}
+          {isLivePublished ? (
+            <span
+              className="dashboard-live-indicator"
+              title="Live on Marketplace"
+              aria-label="Live on Marketplace"
+            >
+              <span className="dashboard-live-indicator__dot" aria-hidden />
+            </span>
+          ) : null}
+        </>
+      }
       subtitle={dashboardSubtitle(dashboardMode)}
       roleLabel={roleLabel}
       roleLabelTone={
         onProTrial || isPremium ? "pro-trial" : "default"
       }
-      statusLabel={profileFirst ? null : profileStatusLabel}
+      statusLabel={
+        profileFirst || isLivePublished ? null : profileStatusLabel
+      }
       statusTone={statusTone}
       utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
     >
@@ -437,29 +454,44 @@ export function SpecialistDashboardPageClient() {
                   aria-labelledby="specialist-dash-tab-premium-overview"
                   className="specialist-dash-panel"
                 >
-                  <DashboardGrid>
-                    <AnalyticsCard analytics={analytics} isPremium={isPremium} />
+                  <div className="dashboard-overview-accordions">
+                    <LeadsCard
+                      leads={data.newLeads}
+                      onOpenLead={handleOpenInquiryLead}
+                      defaultOpen
+                    />
+                    <AnalyticsCard
+                      analytics={analytics}
+                      isPremium={isPremium}
+                      includeGrowthInsights={false}
+                    />
+                    <GrowthInsightsSection
+                      insights={analytics.growthInsights}
+                      isPremium={isPremium}
+                      collapsible
+                    />
                     <ProfileCompletionCard
                       profileCompletion={profileCompletion}
                       trainer={trainer}
                       checklist={completionChecklist}
-                    />
-                    <LeadsCard
-                      leads={data.newLeads}
-                      onOpenLead={handleOpenInquiryLead}
                     />
                     <VisibilityRankingCard
                       ranking={data.ranking ?? null}
                       isPremium={isPremium}
                       smoacRating={rankingRating.rating}
                       smoacReviewCount={rankingRating.reviewCount}
+                      categoryLabel={
+                        trainer
+                          ? resolveTrainerProfessionCategory(trainer)
+                          : undefined
+                      }
                     />
                     <ReviewsCard
                       trainer={trainer}
                       isPremium={isPremium}
                       onUpgrade={() => setUpgradeOpen(true)}
                     />
-                  </DashboardGrid>
+                  </div>
                 </div>
               ) : null}
 

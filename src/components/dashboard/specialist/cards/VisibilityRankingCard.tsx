@@ -1,7 +1,7 @@
 import type { SpecialistDashboardRanking } from "@/types/specialist-dashboard";
 import {
+  DashboardCollapsibleSection,
   DashboardMetricCard,
-  DashboardSection,
 } from "@/components/dashboard/shared";
 
 interface VisibilityRankingCardProps {
@@ -10,6 +10,9 @@ interface VisibilityRankingCardProps {
   /** SMOAC client review average (not Google/catalog ★) */
   smoacRating?: number | null;
   smoacReviewCount?: number;
+  /** Profession / category label for secondary rank context */
+  categoryLabel?: string;
+  defaultOpen?: boolean;
 }
 
 export function VisibilityRankingCard({
@@ -17,17 +20,27 @@ export function VisibilityRankingCard({
   isPremium,
   smoacRating = null,
   smoacReviewCount = 0,
+  categoryLabel,
+  defaultOpen = false,
 }: VisibilityRankingCardProps) {
-  const hasSmoacReviews = smoacReviewCount > 0 && smoacRating != null && smoacRating > 0;
+  const hasSmoacReviews =
+    smoacReviewCount > 0 && smoacRating != null && smoacRating > 0;
+  const citySummary = ranking ? `#${ranking.rank}` : "Unranked";
+  const smoacSummary = hasSmoacReviews
+    ? `★ ${smoacRating.toFixed(1)}`
+    : "No ★ yet";
 
   return (
-    <DashboardSection
-      title="Ranking"
-      description="How you appear in SMOAC city rankings"
+    <DashboardCollapsibleSection
+      title="Rankings"
+      description="How you appear across SMOAC city and category boards"
+      summary={`${citySummary} · ${smoacSummary}`}
       href="/rankings"
       linkLabel="View rankings"
+      defaultOpen={defaultOpen}
+      span="full"
     >
-      <div className="dashboard-metrics-row">
+      <div className="dashboard-metrics-row dashboard-metrics-row--rankings">
         <DashboardMetricCard
           label="City rank"
           value={ranking ? `#${ranking.rank}` : "Unranked"}
@@ -35,6 +48,16 @@ export function VisibilityRankingCard({
             ranking
               ? ranking.listingTitle
               : "Earn SMOAC client reviews to enter city rankings"
+          }
+          lockValues={!isPremium}
+        />
+        <DashboardMetricCard
+          label="Category"
+          value={categoryLabel?.trim() || "—"}
+          detail={
+            ranking
+              ? `Board: ${ranking.listingTitle}`
+              : "Your profession category on Rankings"
           }
           lockValues={!isPremium}
         />
@@ -49,6 +72,6 @@ export function VisibilityRankingCard({
           lockValues={!isPremium}
         />
       </div>
-    </DashboardSection>
+    </DashboardCollapsibleSection>
   );
 }

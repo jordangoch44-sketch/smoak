@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Trainer } from "@/types";
 import {
+  DashboardCollapsibleSection,
   DashboardComingSoonModal,
   PremiumLockedValues,
 } from "@/components/dashboard/shared";
@@ -25,6 +26,7 @@ interface ReviewsCardProps {
   isPremium: boolean;
   onUpgrade?: () => void;
   onTrainerGoogleConnected?: (snapshot: GooglePlaceSnapshot) => void;
+  defaultOpen?: boolean;
 }
 
 export function ReviewsCard({
@@ -32,6 +34,7 @@ export function ReviewsCard({
   isPremium,
   onUpgrade,
   onTrainerGoogleConnected,
+  defaultOpen = false,
 }: ReviewsCardProps) {
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [connectSourceLabel, setConnectSourceLabel] = useState("Reviews");
@@ -90,24 +93,24 @@ export function ReviewsCard({
 
   return (
     <>
-      <section
+      <DashboardCollapsibleSection
+        title="Reviews"
+        description="SMOAC client reviews stay free. Google rating sync is a Pro feature."
+        summary={
+          googleConnected
+            ? `Google ★ ${googleRating != null ? formatReputationRating(googleRating) : "connected"}`
+            : hub.totalReviewCount > 0
+              ? `${hub.totalReviewCount} reviews`
+              : "Connect sources"
+        }
+        defaultOpen={defaultOpen}
+        span="full"
         className={cn(
-          "dashboard-reputation dashboard-section dashboard-glass-premium dashboard-glow-border",
+          "dashboard-reputation dashboard-glass-premium dashboard-glow-border",
           isPremium && "dashboard-reputation--premium"
         )}
-        aria-labelledby="dashboard-reputation-title"
       >
         <div className="dashboard-reputation__ambient" aria-hidden />
-        <header className="dashboard-reputation__header">
-          <div>
-            <h2 id="dashboard-reputation-title" className="dashboard-reputation__title">
-              Reviews
-            </h2>
-            <p className="dashboard-reputation__subtitle">
-              SMOAC client reviews stay free. Google rating sync is a Pro feature.
-            </p>
-          </div>
-        </header>
 
         <div className="dashboard-reputation__google-cta">
           {googleConnected && isPremium ? (
@@ -136,16 +139,16 @@ export function ReviewsCard({
           ) : (
             <div className="dashboard-reputation-source dashboard-reputation-source--disconnected">
               <div className="dashboard-reputation-source__lead">
-                <span className="dashboard-reputation-source__name">Google Reviews</span>
+                <span className="dashboard-reputation-source__name">
+                  Google Reviews
+                </span>
               </div>
               <button
                 type="button"
                 className="dashboard-reputation-connect"
                 onClick={() => handleConnect("google")}
               >
-                {isPremium
-                  ? "Connect Google Reviews"
-                  : "Unlock with Pro"}
+                {isPremium ? "Connect Google Reviews" : "Unlock with Pro"}
               </button>
             </div>
           )}
@@ -189,7 +192,10 @@ export function ReviewsCard({
                 <PremiumLockedValues locked={!isPremium}>
                   <div className="dashboard-reputation__feed-list">
                     {hub.latestReviews.map((review) => (
-                      <ReputationReviewFeedItem key={review.id} review={review} />
+                      <ReputationReviewFeedItem
+                        key={review.id}
+                        review={review}
+                      />
                     ))}
                   </div>
                 </PremiumLockedValues>
@@ -197,7 +203,7 @@ export function ReviewsCard({
             ) : null}
           </div>
         )}
-      </section>
+      </DashboardCollapsibleSection>
 
       <ConnectGoogleReviewsModal
         open={googleModalOpen}

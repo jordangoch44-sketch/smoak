@@ -16,6 +16,8 @@ interface ExploreResultsProps {
   areaCenter?: UserGeoPoint | null;
   /** Precise GPS only — purple map dot; null when ZIP-only / no device location */
   userLocationDot?: UserGeoPoint | null;
+  /** Active default / map search radius for empty-state + expanded copy */
+  searchRadiusMiles?: number;
   activeFilterCount: number;
   hasSearch: boolean;
   /** Primary list is empty because nothing is inside the ZIP radius */
@@ -39,6 +41,7 @@ export const ExploreResults = memo(function ExploreResults({
   suggestedTrainers = [],
   areaCenter = null,
   userLocationDot = null,
+  searchRadiusMiles = DEFAULT_EXPLORE_RADIUS_MILES,
   activeFilterCount,
   hasSearch,
   areaEmpty = false,
@@ -52,6 +55,7 @@ export const ExploreResults = memo(function ExploreResults({
 }: ExploreResultsProps) {
   const isMobile = useMobileViewport(true);
   const [viewMode, setViewMode] = useState<ExploreViewMode>("list");
+  const radiusLabel = Math.round(searchRadiusMiles);
 
   if (trainers.length === 0) {
     const isUnfilteredEmpty =
@@ -71,9 +75,9 @@ export const ExploreResults = memo(function ExploreResults({
           </p>
           <p className="explore-empty__text">
             {mapSearchEmpty
-              ? "No specialists match this part of the map. Pan or zoom to another area and tap Search here, or Recenter to your default 12-mile search."
+              ? "No specialists match this part of the map. Pan or zoom to another area and tap Search here, or Recenter to your default search area."
               : areaEmpty
-                ? `Nothing matched within about ${DEFAULT_EXPLORE_RADIUS_MILES} miles of your search location. Broaden to find nearby specialists, or browse suggestions below.`
+                ? `Nothing matched within about ${radiusLabel} miles of your search location. Broaden to find nearby specialists, or browse suggestions below.`
                 : isUnfilteredEmpty
                   ? "We’re building the roster carefully. Check back soon — or create an account to get notified as specialists go live near you."
                   : "Try adjusting your filters or search query."}
@@ -139,8 +143,8 @@ export const ExploreResults = memo(function ExploreResults({
 
   const expandedNote = nearbyExpanded ? (
     <p className="explore-results-heading__note">
-      Showing nearby specialists beyond the default{" "}
-      {DEFAULT_EXPLORE_RADIUS_MILES}-mile area — closest first.
+      Showing nearby specialists beyond the default {radiusLabel}-mile area —
+      closest first.
     </p>
   ) : null;
 

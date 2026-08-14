@@ -1,7 +1,10 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { PremiumLockedValues } from "@/components/dashboard/shared";
+import {
+  DashboardCollapsibleSection,
+  PremiumLockedValues,
+} from "@/components/dashboard/shared";
 import { AnalyticsMetricIcon } from "@/components/dashboard/specialist/AnalyticsMetricIcon";
 import type { SpecialistGrowthInsight } from "@/types/specialist-analytics";
 import { cn } from "@/lib/utils";
@@ -9,34 +12,44 @@ import { cn } from "@/lib/utils";
 interface GrowthInsightsSectionProps {
   insights: SpecialistGrowthInsight[];
   isPremium: boolean;
+  /** Wrap in overview accordion (dashboard Overview tab) */
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }
 
 export function GrowthInsightsSection({
   insights,
   isPremium,
+  collapsible = false,
+  defaultOpen = false,
 }: GrowthInsightsSectionProps) {
-  return (
-    <section
+  const body = (
+    <div
       className={cn(
         "dashboard-growth-insights dashboard-glass-premium",
-        !isPremium && "dashboard-growth-insights--locked"
+        !isPremium && "dashboard-growth-insights--locked",
+        collapsible && "dashboard-growth-insights--embedded"
       )}
-      aria-labelledby="dashboard-growth-insights-title"
     >
       <div className="dashboard-growth-insights__shimmer" aria-hidden />
-      <header className="dashboard-growth-insights__header">
-        <span className="dashboard-growth-insights__icon" aria-hidden>
-          <AnalyticsMetricIcon id="crown" />
-        </span>
-        <div>
-          <h3 id="dashboard-growth-insights-title" className="dashboard-growth-insights__title">
-            Growth Insights
-          </h3>
-          <p className="dashboard-growth-insights__subtitle">
-            Marketplace intelligence tailored to your profile
-          </p>
-        </div>
-      </header>
+      {!collapsible ? (
+        <header className="dashboard-growth-insights__header">
+          <span className="dashboard-growth-insights__icon" aria-hidden>
+            <AnalyticsMetricIcon id="crown" />
+          </span>
+          <div>
+            <h3
+              id="dashboard-growth-insights-title"
+              className="dashboard-growth-insights__title"
+            >
+              Growth Insights
+            </h3>
+            <p className="dashboard-growth-insights__subtitle">
+              Marketplace intelligence tailored to your profile
+            </p>
+          </div>
+        </header>
+      ) : null}
       <PremiumLockedValues locked={!isPremium}>
         <ul className="dashboard-growth-insights__list">
           {insights.map((insight, index) => (
@@ -56,6 +69,24 @@ export function GrowthInsightsSection({
           <p className="dashboard-growth-insights__frost-label">Unlock Pro Insights</p>
         </div>
       ) : null}
-    </section>
+    </div>
+  );
+
+  if (!collapsible) return body;
+
+  return (
+    <DashboardCollapsibleSection
+      title="Growth Insights"
+      description="Marketplace intelligence tailored to your profile"
+      summary={
+        insights.length > 0
+          ? `${insights.length} insight${insights.length === 1 ? "" : "s"}`
+          : "No insights yet"
+      }
+      defaultOpen={defaultOpen}
+      span="full"
+    >
+      {body}
+    </DashboardCollapsibleSection>
   );
 }

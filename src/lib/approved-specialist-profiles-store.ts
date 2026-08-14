@@ -68,10 +68,26 @@ function writeLocalProfiles(profiles: Record<string, Trainer>): void {
   }
 }
 
+/**
+ * Identity for cache short-circuit. Must include geo fields — precise address
+ * publishes change lat/lng without renaming or repricing, and Explore pins /
+ * 12-mile radius depend on those coords.
+ */
 function profilesSignature(profiles: Record<string, Trainer>): string {
   return Object.keys(profiles)
     .sort()
-    .map((id) => `${id}:${profiles[id]?.name ?? ""}:${profiles[id]?.pricePerSession ?? 0}`)
+    .map((id) => {
+      const t = profiles[id];
+      return [
+        id,
+        t?.name ?? "",
+        t?.pricePerSession ?? 0,
+        t?.latitude ?? "",
+        t?.longitude ?? "",
+        t?.zipCode ?? "",
+        t?.locationPrecision ?? "",
+      ].join(":");
+    })
     .join("|");
 }
 
@@ -361,6 +377,14 @@ export function primeApprovedSpecialistProfilesCache(
   if (hydrated) return;
 
   if (mode === "seed") {
+    return;
+  }
+
+  /* Explore cold-loads with no SSR catalog; avoid wiping a Home/rankings prime. */
+  if (
+    trainers.length === 0 &&
+    Object.keys(cachedProfiles).length > 0
+  ) {
     return;
   }
 

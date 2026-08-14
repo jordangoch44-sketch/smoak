@@ -11,6 +11,7 @@ import { usePublicCatalog } from "@/hooks/usePublicCatalog";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
+import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
@@ -182,6 +183,9 @@ export function ExplorePageClient() {
         suggestedTrainers={suggestedTrainers}
         areaCenter={searchOrigin}
         userLocationDot={preciseUserLocation}
+        searchRadiusMiles={
+          activeSearchArea?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES
+        }
         activeFilterCount={activeFilterCount}
         hasSearch={hasSearch}
         areaEmpty={areaEmpty}

@@ -19,6 +19,31 @@ export const MARKETPLACE_CITY_CENTERS: Record<
   Escondido: { lat: 33.1192, lng: -117.0864 },
 };
 
+/**
+ * Explore radius when the search origin is a marketplace city / neighborhood
+ * (metro frame), not a ZIP centroid. Sized so listed neighborhoods stay inside
+ * the city search — e.g. Mira Mesa / Rancho Bernardo vs downtown San Diego.
+ */
+export const MARKETPLACE_CITY_METRO_RADIUS_MILES: Record<
+  MarketplaceCity,
+  number
+> = {
+  "San Diego": 25,
+  "Los Angeles": 25,
+  "Orange County": 22,
+  Riverside: 18,
+  Temecula: 15,
+  "Chula Vista": 15,
+  Oceanside: 15,
+  Carlsbad: 15,
+  Encinitas: 15,
+  Escondido: 15,
+};
+
+export function marketplaceMetroRadiusMiles(city: MarketplaceCity): number {
+  return MARKETPLACE_CITY_METRO_RADIUS_MILES[city];
+}
+
 /** Resolve coordinates to the closest configured marketplace city. */
 export function findNearestMarketplaceCity(
   latitude: number,

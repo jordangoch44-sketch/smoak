@@ -39,7 +39,11 @@ import {
   filtersFromSearchParams,
   hasExplicitFilterParams,
 } from "@/lib/explore-url";
-import { resolveExploreMapArea, exploreFiltersFromZipCode } from "@/lib/explore-location-filters";
+import {
+  resolveDefaultExploreSearchArea,
+  resolveExploreMapArea,
+  exploreFiltersFromZipCode,
+} from "@/lib/explore-location-filters";
 import { loadSavedZipCode } from "@/lib/user-location-storage";
 import { subscribeUserLocation } from "@/lib/user-location-store";
 import {
@@ -512,13 +516,21 @@ export function useExploreTrainers({
     catalogMode,
   ]);
 
-  const searchOrigin = useMemo(() => {
+  const defaultSearchArea = useMemo(() => {
     if (!hydrated) return null;
-    return resolveExploreMapArea(filters, userCoords);
+    return resolveDefaultExploreSearchArea(filters, userCoords);
   }, [filters, userCoords, hydrated, coordsKey]);
 
-  const originKey = searchOrigin
-    ? `${searchOrigin.latitude.toFixed(4)},${searchOrigin.longitude.toFixed(4)}`
+  const searchOrigin = useMemo(() => {
+    if (!defaultSearchArea) return null;
+    return {
+      latitude: defaultSearchArea.latitude,
+      longitude: defaultSearchArea.longitude,
+    };
+  }, [defaultSearchArea]);
+
+  const originKey = defaultSearchArea
+    ? `${defaultSearchArea.latitude.toFixed(4)},${defaultSearchArea.longitude.toFixed(4)},${defaultSearchArea.radiusMiles}`
     : "";
 
   useEffect(() => {
@@ -527,8 +539,8 @@ export function useExploreTrainers({
 
   const activeSearchArea = useMemo(() => {
     if (mapSearchArea) return mapSearchArea;
-    return defaultExploreSearchArea(searchOrigin);
-  }, [mapSearchArea, searchOrigin]);
+    return defaultSearchArea ?? defaultExploreSearchArea(searchOrigin);
+  }, [mapSearchArea, defaultSearchArea, searchOrigin]);
 
   const filterKey = useMemo(
     () =>
@@ -604,13 +616,21 @@ export function useExploreTrainers({
   const getExploreMatchCount = useCallback(
     (candidateFilters: TrainerFilters) => {
       const catalog = getCatalogTrainers();
-      const origin = resolveExploreMapArea(candidateFilters, userCoords);
+      const area = resolveDefaultExploreSearchArea(
+        candidateFilters,
+        userCoords
+      );
+      const origin = area
+        ? { latitude: area.latitude, longitude: area.longitude }
+        : resolveExploreMapArea(candidateFilters, userCoords);
       return filterExploreTrainersInArea(
         catalog,
         candidateFilters,
         searchQuery,
         origin,
-        { radiusMiles: origin ? DEFAULT_EXPLORE_RADIUS_MILES : null }
+        {
+          radiusMiles: area?.radiusMiles ?? (origin ? DEFAULT_EXPLORE_RADIUS_MILES : null),
+        }
       ).trainers.length;
     },
     [getCatalogTrainers, searchQuery, userCoords]
