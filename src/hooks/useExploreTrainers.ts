@@ -255,6 +255,8 @@ export function useExploreTrainers({
     },
     [flushUrlSync]
   );
+  const scheduleUrlSyncRef = useRef(scheduleUrlSync);
+  scheduleUrlSyncRef.current = scheduleUrlSync;
 
   /* Sync when URL changes externally (homepage, back/forward) — not our own replace */
   useEffect(() => {
@@ -306,7 +308,7 @@ export function useExploreTrainers({
           setFiltersState((prev) =>
             filtersEqual(prev, nextFilters) ? prev : nextFilters
           );
-          scheduleUrlSync(nextFilters, "");
+          scheduleUrlSyncRef.current(nextFilters, "");
           return;
         }
 
@@ -369,7 +371,7 @@ export function useExploreTrainers({
         return filtersEqual(prev, next) ? prev : next;
       });
     });
-  }, [searchParams, scheduleUrlSync]);
+  }, [searchParams]);
 
   const setFilters = useCallback(
     (action: SetStateAction<TrainerFilters>) => {
@@ -421,30 +423,31 @@ export function useExploreTrainers({
           neighborhood: mirroredNeighborhood ? "" : prev.neighborhood,
         };
 
-        const stripped = savedLocation
-          ? stripLocationLabelsFromQuery(
-              displayQueryRef.current,
-              savedLocation
-            )
-          : stripLocationLabelsFromQuery(displayQueryRef.current, {
-              zipCode: prev.zipCode,
-              city: prev.city,
-              neighborhood: prev.neighborhood,
-            });
-        const nextDisplay = buildDisplayQueryFromSearchFilters(next, stripped);
+        const currentDisplay = displayQueryRef.current;
+        const locationStripped = savedLocation
+          ? stripLocationLabelsFromQuery(currentDisplay, savedLocation)
+          : currentDisplay;
+        const filtersChanged = !filtersEqual(prev, next);
+        const locationTextRemoved = locationStripped !== currentDisplay;
 
-        if (
-          filtersEqual(prev, next) &&
-          nextDisplay === displayQueryRef.current &&
-          stripped === displayQueryRef.current
-        ) {
+        if (!filtersChanged && !locationTextRemoved) {
+          return prev;
+        }
+
+        const residual = residualDisplayQueryAfterSearchFilters(
+          locationStripped,
+          next
+        );
+        const nextDisplay = buildDisplayQueryFromSearchFilters(next, residual);
+
+        if (!filtersChanged && nextDisplay === currentDisplay) {
           return prev;
         }
 
         queueMicrotask(() => {
           setDisplayQuery(nextDisplay);
-          setSearchQuery(stripped);
-          scheduleUrlSync(next, nextDisplay);
+          setSearchQuery(residual);
+          scheduleUrlSyncRef.current(next, nextDisplay);
         });
         return next;
       });
@@ -452,7 +455,7 @@ export function useExploreTrainers({
 
     clearMirroredLocationSearch();
     return subscribeUserLocation(clearMirroredLocationSearch);
-  }, [hydrated, scheduleUrlSync]);
+  }, [hydrated]);
 
   const profileOverridesRevision = useSyncExternalStore(
     subscribeSpecialistProfiles,

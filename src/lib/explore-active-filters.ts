@@ -148,7 +148,14 @@ export function buildDisplayQueryFromSearchFilters(
   const parts: string[] = [];
   if (filters.profession.trim()) parts.push(filters.profession.trim());
   if (filters.specialty.trim()) parts.push(filters.specialty.trim());
-  const residual = residualQuery.trim();
+
+  let residual = residualQuery.trim();
+  if (filters.profession.trim()) {
+    residual = stripChipLabelFromDisplayQuery(residual, filters.profession);
+  }
+  if (filters.specialty.trim()) {
+    residual = stripChipLabelFromDisplayQuery(residual, filters.specialty);
+  }
   if (residual) parts.push(residual);
   return parts.join(" ").trim();
 }
