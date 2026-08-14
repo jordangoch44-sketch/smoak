@@ -5,6 +5,7 @@ import type { SpecialistLead } from "@/types/specialist-dashboard";
 import {
   DashboardCollapsibleSection,
   DashboardEmptyState,
+  DashboardSectionIcon,
 } from "@/components/dashboard/shared";
 
 interface LeadsCardProps {
@@ -35,6 +36,7 @@ export function LeadsCard({
     <div id="specialist-inquiries">
       <DashboardCollapsibleSection
         title="Inquiries"
+        icon={<DashboardSectionIcon id="inquiries" />}
         description={
           unreadCount > 0
             ? `${unreadCount} waiting for your email reply`

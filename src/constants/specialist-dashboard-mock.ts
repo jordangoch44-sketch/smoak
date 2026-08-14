@@ -81,7 +81,7 @@ export const DEMO_SPECIALIST_CORE_METRICS: SpecialistAnalyticsMetric[] = [
     icon: "visibility",
     isCoreKpi: true,
     lockOnFree: false,
-    trend: { direction: "up", percentChange: 18, comparisonLabel: "this month" },
+    trend: { direction: "up", percentChange: 18, comparisonLabel: "vs last week" },
   },
   {
     id: "search-appearances",
@@ -90,7 +90,7 @@ export const DEMO_SPECIALIST_CORE_METRICS: SpecialistAnalyticsMetric[] = [
     icon: "pulse",
     isCoreKpi: true,
     lockOnFree: false,
-    trend: { direction: "up", percentChange: 42, comparisonLabel: "this month" },
+    trend: { direction: "up", percentChange: 42, comparisonLabel: "vs last week" },
   },
   {
     id: "saved-by-clients",
@@ -99,7 +99,7 @@ export const DEMO_SPECIALIST_CORE_METRICS: SpecialistAnalyticsMetric[] = [
     icon: "diamond",
     isCoreKpi: true,
     lockOnFree: true,
-    trend: { direction: "up", percentChange: 12, comparisonLabel: "this month" },
+    trend: { direction: "up", percentChange: 12, comparisonLabel: "vs last week" },
   },
   {
     id: "contact-clicks",
@@ -108,7 +108,7 @@ export const DEMO_SPECIALIST_CORE_METRICS: SpecialistAnalyticsMetric[] = [
     icon: "lightning",
     isCoreKpi: true,
     lockOnFree: true,
-    trend: { direction: "down", percentChange: 6, comparisonLabel: "this month" },
+    trend: { direction: "down", percentChange: 6, comparisonLabel: "vs last week" },
   },
   {
     id: "booking-clicks",
@@ -117,7 +117,7 @@ export const DEMO_SPECIALIST_CORE_METRICS: SpecialistAnalyticsMetric[] = [
     icon: "calendar",
     isCoreKpi: true,
     lockOnFree: true,
-    trend: { direction: "up", percentChange: 24, comparisonLabel: "this month" },
+    trend: { direction: "up", percentChange: 24, comparisonLabel: "vs last week" },
   },
 ];
 

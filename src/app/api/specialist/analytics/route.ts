@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { buildWeekOverWeekTrend } from "@/lib/specialist-live-analytics";
 
 const ANALYTICS_WINDOW_DAYS = 30;
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const SURFACE_LABELS: Record<string, string> = {
   explore: "Explore",
@@ -24,24 +26,81 @@ function surfaceLabel(raw: string | null | undefined): string {
   return SURFACE_LABELS[key] ?? key;
 }
 
+type ServiceClient = NonNullable<ReturnType<typeof createSupabaseServiceClient>>;
+
 async function countEngagement(
-  service: NonNullable<ReturnType<typeof createSupabaseServiceClient>>,
+  service: ServiceClient,
   specialistId: string,
   eventType: string,
-  sinceIso: string
+  sinceIso: string,
+  untilIso?: string
 ): Promise<number> {
-  const { count, error } = await service
+  let query = service
     .from("specialist_engagement_events")
     .select("*", { count: "exact", head: true })
     .eq("specialist_id", specialistId)
     .eq("event_type", eventType)
     .gte("occurred_at", sinceIso);
 
+  if (untilIso) {
+    query = query.lt("occurred_at", untilIso);
+  }
+
+  const { count, error } = await query;
+
   if (error) {
     console.warn(
       `[SMOAC analytics] ${eventType} count failed:`,
       error.message
     );
+    return 0;
+  }
+  return count ?? 0;
+}
+
+async function countProfileVisits(
+  service: ServiceClient,
+  profilePath: string,
+  sinceIso: string,
+  untilIso?: string
+): Promise<number> {
+  let query = service
+    .from("site_visits")
+    .select("*", { count: "exact", head: true })
+    .eq("path", profilePath)
+    .gte("occurred_at", sinceIso);
+
+  if (untilIso) {
+    query = query.lt("occurred_at", untilIso);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    console.warn("[SMOAC analytics] site_visits count failed:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+async function countSavesInRange(
+  service: ServiceClient,
+  profileId: string,
+  sinceIso: string,
+  untilIso?: string
+): Promise<number> {
+  let query = service
+    .from("saved_trainers")
+    .select("*", { count: "exact", head: true })
+    .eq("specialist_id", profileId)
+    .gte("created_at", sinceIso);
+
+  if (untilIso) {
+    query = query.lt("created_at", untilIso);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    console.warn("[SMOAC analytics] saved_trainers count failed:", error.message);
     return 0;
   }
   return count ?? 0;
@@ -112,6 +171,13 @@ export async function GET() {
       desktopViews: 0,
       mobilePercent: null as number | null,
     },
+    weeklyTrends: {
+      profileViews: buildWeekOverWeekTrend(0, 0),
+      searchAppearances: buildWeekOverWeekTrend(0, 0),
+      savedByClients: buildWeekOverWeekTrend(0, 0),
+      contactClicks: buildWeekOverWeekTrend(0, 0),
+      bookingClicks: buildWeekOverWeekTrend(0, 0),
+    },
   };
 
   const profileId = profile?.id as string | undefined;
@@ -119,9 +185,12 @@ export async function GET() {
     return NextResponse.json({ ok: true, counts: empty });
   }
 
+  const now = Date.now();
   const sinceIso = new Date(
-    Date.now() - ANALYTICS_WINDOW_DAYS * 24 * 60 * 60 * 1000
+    now - ANALYTICS_WINDOW_DAYS * 24 * 60 * 60 * 1000
   ).toISOString();
+  const thisWeekSince = new Date(now - WEEK_MS).toISOString();
+  const prevWeekSince = new Date(now - 2 * WEEK_MS).toISOString();
   const profilePath = `/trainers/${profileId}`;
 
   const [
@@ -131,6 +200,16 @@ export async function GET() {
     contactClicks,
     bookingClicks,
     engagementRows,
+    viewsThisWeek,
+    viewsPrevWeek,
+    searchThisWeek,
+    searchPrevWeek,
+    contactThisWeek,
+    contactPrevWeek,
+    bookingThisWeek,
+    bookingPrevWeek,
+    savesThisWeek,
+    savesPrevWeek,
   ] = await Promise.all([
     service
       .from("site_visits")
@@ -150,6 +229,34 @@ export async function GET() {
       .eq("specialist_id", profileId)
       .gte("occurred_at", sinceIso)
       .limit(5000),
+    countProfileVisits(service, profilePath, thisWeekSince),
+    countProfileVisits(service, profilePath, prevWeekSince, thisWeekSince),
+    countEngagement(service, profileId, "search_appearance", thisWeekSince),
+    countEngagement(
+      service,
+      profileId,
+      "search_appearance",
+      prevWeekSince,
+      thisWeekSince
+    ),
+    countEngagement(service, profileId, "contact_click", thisWeekSince),
+    countEngagement(
+      service,
+      profileId,
+      "contact_click",
+      prevWeekSince,
+      thisWeekSince
+    ),
+    countEngagement(service, profileId, "booking_click", thisWeekSince),
+    countEngagement(
+      service,
+      profileId,
+      "booking_click",
+      prevWeekSince,
+      thisWeekSince
+    ),
+    countSavesInRange(service, profileId, thisWeekSince),
+    countSavesInRange(service, profileId, prevWeekSince, thisWeekSince),
   ]);
 
   if (visitsRes.error) {
@@ -206,6 +313,16 @@ export async function GET() {
           deviceTotal > 0
             ? Math.round((mobileViews / deviceTotal) * 100)
             : null,
+      },
+      weeklyTrends: {
+        profileViews: buildWeekOverWeekTrend(viewsThisWeek, viewsPrevWeek),
+        searchAppearances: buildWeekOverWeekTrend(
+          searchThisWeek,
+          searchPrevWeek
+        ),
+        savedByClients: buildWeekOverWeekTrend(savesThisWeek, savesPrevWeek),
+        contactClicks: buildWeekOverWeekTrend(contactThisWeek, contactPrevWeek),
+        bookingClicks: buildWeekOverWeekTrend(bookingThisWeek, bookingPrevWeek),
       },
     },
   });

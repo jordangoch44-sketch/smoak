@@ -4,6 +4,7 @@ import {
   DashboardButton,
   DashboardCollapsibleSection,
   DashboardMetricCard,
+  DashboardSectionIcon,
 } from "@/components/dashboard/shared";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
@@ -32,6 +33,7 @@ export function ProfileCompletionCard({
   return (
     <DashboardCollapsibleSection
       title="Profile completion"
+      icon={<DashboardSectionIcon id="completion" />}
       description="Finish your in-depth profile to improve discovery — pricing, availability, media, and more."
       summary={
         remaining > 0

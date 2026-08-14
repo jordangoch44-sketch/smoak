@@ -2,6 +2,7 @@ import type { SpecialistDashboardRanking } from "@/types/specialist-dashboard";
 import {
   DashboardCollapsibleSection,
   DashboardMetricCard,
+  DashboardSectionIcon,
 } from "@/components/dashboard/shared";
 
 interface VisibilityRankingCardProps {
@@ -33,6 +34,7 @@ export function VisibilityRankingCard({
   return (
     <DashboardCollapsibleSection
       title="Rankings"
+      icon={<DashboardSectionIcon id="rankings" />}
       description="How you appear across SMOAC city and category boards"
       summary={`${citySummary} · ${smoacSummary}`}
       href="/rankings"

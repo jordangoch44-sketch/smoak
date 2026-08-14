@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import {
   DashboardCollapsibleSection,
+  DashboardSectionIcon,
   PremiumLockedValues,
 } from "@/components/dashboard/shared";
 import { AnalyticsMetricIcon } from "@/components/dashboard/specialist/AnalyticsMetricIcon";
@@ -77,6 +78,7 @@ export function GrowthInsightsSection({
   return (
     <DashboardCollapsibleSection
       title="Growth Insights"
+      icon={<DashboardSectionIcon id="growth" />}
       description="Marketplace intelligence tailored to your profile"
       summary={
         insights.length > 0

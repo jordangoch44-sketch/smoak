@@ -14,6 +14,7 @@ import {
   PremiumUnlockCta,
   SmoacProUpgradeModal,
   StatTile,
+  DashboardSectionIcon,
 } from "@/components/dashboard/shared";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ export function AnalyticsCard({
     <>
       <DashboardCollapsibleSection
         title="Profile Analytics"
+        icon={<DashboardSectionIcon id="analytics" />}
         description={
           isPremium
             ? "Business intelligence for your marketplace visibility and client demand."

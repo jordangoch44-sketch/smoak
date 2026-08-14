@@ -5,6 +5,7 @@ import type { Trainer } from "@/types";
 import {
   DashboardCollapsibleSection,
   DashboardComingSoonModal,
+  DashboardSectionIcon,
   PremiumLockedValues,
 } from "@/components/dashboard/shared";
 import { ConnectGoogleReviewsModal } from "@/components/dashboard/specialist/ConnectGoogleReviewsModal";
@@ -95,6 +96,7 @@ export function ReviewsCard({
     <>
       <DashboardCollapsibleSection
         title="Reviews"
+        icon={<DashboardSectionIcon id="reviews" />}
         description="SMOAC client reviews stay free. Google rating sync is a Pro feature."
         summary={
           googleConnected

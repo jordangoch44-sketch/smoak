@@ -1,4 +1,5 @@
 import type {
+  AnalyticsMetricTrend,
   SpecialistGrowthInsight,
   SpecialistProfileAnalytics,
 } from "@/types/specialist-analytics";
@@ -10,6 +11,14 @@ export interface SpecialistLiveAnalyticsBreakdown {
   mobilePercent: number | null;
 }
 
+export interface SpecialistLiveWeeklyTrends {
+  profileViews: AnalyticsMetricTrend;
+  searchAppearances: AnalyticsMetricTrend;
+  savedByClients: AnalyticsMetricTrend;
+  contactClicks: AnalyticsMetricTrend;
+  bookingClicks: AnalyticsMetricTrend;
+}
+
 export interface SpecialistLiveAnalyticsCounts {
   profileViews: number;
   savedByClients: number;
@@ -17,11 +26,41 @@ export interface SpecialistLiveAnalyticsCounts {
   contactClicks: number;
   bookingClicks: number;
   breakdown: SpecialistLiveAnalyticsBreakdown;
+  /** Week-over-week deltas for Pro metric tiles (this week vs prior week). */
+  weeklyTrends?: SpecialistLiveWeeklyTrends;
 }
 
 export interface SpecialistLiveAnalyticsResponse {
   ok: boolean;
   counts?: SpecialistLiveAnalyticsCounts;
+}
+
+const WEEKLY_COMPARISON_LABEL = "vs last week";
+
+export function buildWeekOverWeekTrend(
+  current: number,
+  previous: number
+): AnalyticsMetricTrend {
+  if (current === previous) {
+    return {
+      direction: "flat",
+      percentChange: 0,
+      comparisonLabel: WEEKLY_COMPARISON_LABEL,
+    };
+  }
+  if (previous <= 0) {
+    return {
+      direction: current > 0 ? "up" : "flat",
+      percentChange: current > 0 ? 100 : 0,
+      comparisonLabel: WEEKLY_COMPARISON_LABEL,
+    };
+  }
+  const raw = Math.round(((current - previous) / previous) * 100);
+  return {
+    direction: raw > 0 ? "up" : raw < 0 ? "down" : "flat",
+    percentChange: Math.abs(raw),
+    comparisonLabel: WEEKLY_COMPARISON_LABEL,
+  };
 }
 
 function buildLiveGrowthInsights(
@@ -86,6 +125,23 @@ function buildLiveGrowthInsights(
     });
   }
 
+  const viewsTrend = live.weeklyTrends?.profileViews;
+  if (viewsTrend && viewsTrend.direction === "up" && viewsTrend.percentChange > 0) {
+    insights.unshift({
+      id: "weekly-views",
+      message: `Profile views are up ${viewsTrend.percentChange}% vs last week — keep momentum with fresh photos and fast replies.`,
+    });
+  } else if (
+    viewsTrend &&
+    viewsTrend.direction === "down" &&
+    viewsTrend.percentChange > 0
+  ) {
+    insights.unshift({
+      id: "weekly-views-down",
+      message: `Profile views dipped ${viewsTrend.percentChange}% vs last week — boost visibility or refresh your card photo.`,
+    });
+  }
+
   return insights.slice(0, 5);
 }
 
@@ -101,6 +157,16 @@ export function mergeLiveSpecialistAnalytics(
     "contact-clicks": live.contactClicks,
     "booking-clicks": live.bookingClicks,
   };
+
+  const byTrendId: Partial<Record<string, AnalyticsMetricTrend>> = live.weeklyTrends
+    ? {
+        "profile-views": live.weeklyTrends.profileViews,
+        "search-appearances": live.weeklyTrends.searchAppearances,
+        "saved-by-clients": live.weeklyTrends.savedByClients,
+        "contact-clicks": live.weeklyTrends.contactClicks,
+        "booking-clicks": live.weeklyTrends.bookingClicks,
+      }
+    : {};
 
   const liveInsights = buildLiveGrowthInsights(live);
 
@@ -118,11 +184,12 @@ export function mergeLiveSpecialistAnalytics(
       topSurfaces: live.breakdown.topSurfaces,
       mobilePercent: live.breakdown.mobilePercent,
     },
-    coreMetrics: base.coreMetrics.map((metric) =>
-      metric.id in byMetricId
-        ? { ...metric, value: byMetricId[metric.id] }
-        : metric
-    ),
+    coreMetrics: base.coreMetrics.map((metric) => {
+      const value =
+        metric.id in byMetricId ? byMetricId[metric.id] : metric.value;
+      const trend = byTrendId[metric.id] ?? metric.trend;
+      return { ...metric, value, trend };
+    }),
   };
 }
 
@@ -147,6 +214,7 @@ export async function fetchSpecialistLiveAnalytics(): Promise<SpecialistLiveAnal
         desktopViews: 0,
         mobilePercent: null,
       },
+      weeklyTrends: body.counts.weeklyTrends,
     };
   } catch {
     return null;

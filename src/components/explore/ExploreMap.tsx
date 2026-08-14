@@ -359,8 +359,14 @@ export function ExploreMap({
       const href = `/trainers/${encodeURIComponent(pin.trainer.id)}`;
       const photoSrc = safeImageSrc(pin.trainer.image);
       const photoHtml = photoSrc
-        ? `<img class="explore-map-popup__photo" src="${escapeHtml(photoSrc)}" alt="" width="44" height="44" loading="lazy" decoding="async" />`
+        ? `<img class="explore-map-popup__photo" src="${escapeHtml(photoSrc)}" alt="" width="64" height="64" loading="lazy" decoding="async" />`
         : `<span class="explore-map-popup__photo explore-map-popup__photo--empty" aria-hidden="true"></span>`;
+      const priceIcon =
+        `<svg class="explore-map-popup__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.6 12.6 12.7 4.7A2 2 0 0 0 11.3 4H5a1 1 0 0 0-1 1v6.3a2 2 0 0 0 .6 1.4l7.9 7.9a2 2 0 0 0 2.8 0l5.3-5.3a2 2 0 0 0 0-2.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="8.2" cy="8.2" r="1.2" fill="currentColor"/></svg>`;
+      const pinIconSvg =
+        `<svg class="explore-map-popup__icon" width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.25" stroke="currentColor" stroke-width="1.8"/></svg>`;
+      const chevronIcon =
+        `<svg class="explore-map-popup__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
       marker.bindPopup(
         `<div class="explore-map-popup">
           <div class="explore-map-popup__main">
@@ -368,17 +374,19 @@ export function ExploreMap({
             <div class="explore-map-popup__copy">
               <p class="explore-map-popup__name">${escapeHtml(pin.trainer.name)}</p>
               <p class="explore-map-popup__meta">${escapeHtml(profession)}</p>
-              <p class="explore-map-popup__price">${escapeHtml(price)}</p>
-              ${
-                address
-                  ? `<p class="explore-map-popup__address">${escapeHtml(address)}</p>`
-                  : ""
-              }
             </div>
           </div>
-          <a class="explore-map-popup__link" href="${href}">View profile</a>
+          <div class="explore-map-popup__details">
+            <p class="explore-map-popup__detail">${priceIcon}<span>${escapeHtml(price)}</span></p>
+            ${
+              address
+                ? `<p class="explore-map-popup__detail">${pinIconSvg}<span>${escapeHtml(address)}</span></p>`
+                : ""
+            }
+          </div>
+          <a class="explore-map-popup__link" href="${href}"><span>View profile</span>${chevronIcon}</a>
         </div>`,
-        { maxWidth: 220, className: "explore-map-popup-wrap" }
+        { maxWidth: 260, minWidth: 210, className: "explore-map-popup-wrap" }
       );
       layer.addLayer(marker);
     }

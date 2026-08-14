@@ -36,6 +36,7 @@ export function AnalyticsMetricTile({
   const trendParts = formatTrendParts(metric.trend);
   const trendUp = metric.trend.direction === "up";
   const trendDown = metric.trend.direction === "down";
+  const trendFlat = metric.trend.direction === "flat";
 
   return (
     <article
@@ -67,8 +68,10 @@ export function AnalyticsMetricTile({
           className={cn(
             "dashboard-metric-tile__trend",
             trendUp && "dashboard-metric-tile__trend--up",
-            trendDown && "dashboard-metric-tile__trend--down"
+            trendDown && "dashboard-metric-tile__trend--down",
+            trendFlat && "dashboard-metric-tile__trend--flat"
           )}
+          title="Week-over-week change"
         >
           <span className="dashboard-metric-tile__trend-change">
             {trendParts.change}

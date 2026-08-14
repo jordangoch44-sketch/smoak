@@ -3,6 +3,8 @@ export { DashboardPageShell } from "./DashboardPageShell";
 export { DashboardSection } from "./DashboardSection";
 export { DashboardCollapsibleSection } from "./DashboardCollapsibleSection";
 export type { DashboardCollapsibleSectionProps } from "./DashboardCollapsibleSection";
+export { DashboardSectionIcon } from "./DashboardSectionIcon";
+export type { DashboardSectionIconId } from "./DashboardSectionIcon";
 export { DashboardButton } from "./DashboardButton";
 export type { DashboardButtonProps } from "./DashboardButton";
 export { StatTile } from "./StatTile";

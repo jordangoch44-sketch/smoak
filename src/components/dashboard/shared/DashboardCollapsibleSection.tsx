@@ -13,6 +13,8 @@ export interface DashboardCollapsibleSectionProps {
   description?: string;
   /** Short meta shown on the closed row (e.g. “#4 · Mira Mesa”) */
   summary?: ReactNode;
+  /** Small icon on the right of the title (before chevron) */
+  icon?: ReactNode;
   href?: string;
   linkLabel?: string;
   defaultOpen?: boolean;
@@ -28,6 +30,7 @@ export function DashboardCollapsibleSection({
   title,
   description,
   summary,
+  icon,
   href,
   linkLabel = "View all",
   defaultOpen = false,
@@ -64,7 +67,14 @@ export function DashboardCollapsibleSection({
           onClick={() => setOpen(!open)}
         >
           <span className="dashboard-accordion__trigger-copy">
-            <span className="dashboard-section__title">{title}</span>
+            <span className="dashboard-accordion__title-row">
+              <span className="dashboard-section__title">{title}</span>
+              {icon ? (
+                <span className="dashboard-accordion__section-icon" aria-hidden>
+                  {icon}
+                </span>
+              ) : null}
+            </span>
             {description ? (
               <span className="dashboard-section__desc">{description}</span>
             ) : null}
