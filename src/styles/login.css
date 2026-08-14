@@ -49,6 +49,11 @@ body:has(.login-page) main {
   --login-pad-x: 1.25rem;
   --login-gap-section: 1.25rem;
   --login-gap-field: 0.75rem;
+  /* Client default — purple aurora */
+  --login-glow-a: var(--aurora-lavender-rgb);
+  --login-glow-b: var(--aurora-violet-rgb);
+  --login-glow-c: var(--aurora-magenta-rgb);
+  --login-glow-d: var(--aurora-indigo-rgb);
 
   position: relative;
   display: flex;
@@ -61,6 +66,19 @@ body:has(.login-page) main {
   padding: 1.5rem var(--login-pad-x) 2.25rem;
   background: #030304;
   isolation: isolate;
+  transition: color 0.35s ease;
+}
+
+/* Specialist — blue glow (matches location / search accents) */
+.login-page[data-login-role="specialist"] {
+  --accent-glow: #38bdf8;
+  --accent-glow-rgb: 56, 189, 248;
+  --accent-glow-soft-rgb: 14, 165, 233;
+  --accent-glow-bright: #7dd3fc;
+  --login-glow-a: 56, 189, 248;
+  --login-glow-b: 14, 165, 233;
+  --login-glow-c: 37, 99, 235;
+  --login-glow-d: 2, 132, 199;
 }
 
 @media (min-width: 640px) {
@@ -106,14 +124,15 @@ body:has(.login-page) main {
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse 70% 60% at 50% 50%,
-    rgba(var(--aurora-lavender-rgb), 0.22) 0%,
-    rgba(var(--aurora-violet-rgb), 0.12) 35%,
-    rgba(var(--aurora-magenta-rgb), 0.06) 55%,
+    rgba(var(--login-glow-a), 0.22) 0%,
+    rgba(var(--login-glow-b), 0.12) 35%,
+    rgba(var(--login-glow-c), 0.06) 55%,
     transparent 75%
   );
   filter: blur(80px);
   opacity: 0.9;
   animation: login-card-glow 28s ease-in-out infinite;
+  transition: background 0.45s ease;
 }
 
 @keyframes login-card-glow {
@@ -178,10 +197,10 @@ body:has(.login-page) main {
   padding: 1px;
   background: linear-gradient(
     145deg,
-    rgba(var(--aurora-lavender-rgb), 0.32) 0%,
+    rgba(var(--login-glow-a), 0.32) 0%,
     rgba(255, 255, 255, 0.06) 40%,
-    rgba(var(--aurora-magenta-rgb), 0.18) 70%,
-    rgba(var(--aurora-indigo-rgb), 0.22) 100%
+    rgba(var(--login-glow-c), 0.18) 70%,
+    rgba(var(--login-glow-d), 0.22) 100%
   );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
@@ -193,6 +212,7 @@ body:has(.login-page) main {
   mask-composite: exclude;
   pointer-events: none;
   opacity: 0.55;
+  transition: opacity 0.35s ease;
 }
 
 .login-card > * {
@@ -520,38 +540,6 @@ body:has(.login-page) main {
   border-color: rgba(var(--accent-glow-rgb), 0.28);
   background: rgba(var(--accent-glow-rgb), 0.1);
   color: rgba(255, 255, 255, 0.82);
-}
-
-.login-method-switch {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-  padding: 0.25rem;
-  border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.login-method-switch__btn {
-  min-height: 2.5rem;
-  border: none;
-  border-radius: 0.5rem;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.58);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.login-method-switch__btn--active {
-  background: rgba(var(--accent-glow-rgb), 0.14);
-  color: #fff;
-  box-shadow: 0 0 18px rgba(var(--accent-glow-rgb), 0.12);
 }
 
 .login-card__link--button {

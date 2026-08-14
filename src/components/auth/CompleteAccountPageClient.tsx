@@ -307,22 +307,23 @@ export function CompleteAccountPageClient() {
               We couldn’t verify this sign-in link
             </h1>
             <p className="login-card__subtitle">
-              The link may have expired or already been used. Request a new link
-              to continue.
+              The link may have expired or already been used. Go back and
+              request a new one from save or inquiry, or sign in with your
+              password if you already set one up.
             </p>
           </div>
           <div className="login-form__section login-form__section--cta complete-account-actions">
             <Link
-              href={`${LOGIN_PATH}?method=magic_link`}
+              href={LOGIN_PATH}
               className="login-submit complete-account-actions__primary"
             >
-              Send a new sign-in link
+              Sign in with password
             </Link>
             <Link
-              href={LOGIN_PATH}
+              href="/login/forgot-password"
               className="login-card__link complete-account-actions__secondary"
             >
-              Return to sign in
+              Forgot password?
             </Link>
           </div>
         </>
