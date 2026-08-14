@@ -3872,14 +3872,14 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 .dashboard-accordion__title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
+  justify-content: flex-start;
+  gap: 0.45rem;
   min-width: 0;
 }
 
 .dashboard-accordion__title-row .dashboard-section__title {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
 }
 
 .dashboard-accordion__section-icon {

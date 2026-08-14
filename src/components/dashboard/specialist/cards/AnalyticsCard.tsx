@@ -7,16 +7,13 @@ import { SMOAC_PRO_UNLOCK } from "@/lib/specialist-premium";
 import { AnalyticsMetricTile } from "@/components/dashboard/specialist/AnalyticsMetricTile";
 import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import {
-  BoostVisibilityModal,
   DashboardButton,
   DashboardCollapsibleSection,
-  PremiumLockedValues,
   PremiumUnlockCta,
   SmoacProUpgradeModal,
   StatTile,
   DashboardSectionIcon,
 } from "@/components/dashboard/shared";
-import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 import { cn } from "@/lib/utils";
 
 interface AnalyticsCardProps {
@@ -33,10 +30,9 @@ export function AnalyticsCard({
   includeGrowthInsights = true,
   defaultOpen = false,
 }: AnalyticsCardProps) {
-  const [boostModalOpen, setBoostModalOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const secondaryTiles = buildSecondaryStatTiles(analytics);
-  const viewsMetric = analytics.coreMetrics.find((m) => m.id === "profile_views");
+  const viewsMetric = analytics.coreMetrics.find((m) => m.id === "profile-views");
   const summary = viewsMetric
     ? `${viewsMetric.value.toLocaleString("en-US")} profile views`
     : analytics.periodLabel;
@@ -140,56 +136,22 @@ export function AnalyticsCard({
             </div>
           ) : null}
 
-          <aside className="dashboard-analytics__insight dashboard-insight-box">
-            <p className="dashboard-analytics__insight-label">Quick tip</p>
-            <PremiumLockedValues locked={!isPremium}>
-              <p className="dashboard-analytics__insight-text">
-                {analytics.insightMessage}
-              </p>
-            </PremiumLockedValues>
-          </aside>
-
           {!isPremium ? (
-            <PremiumUnlockCta onUpgrade={() => setUpgradeModalOpen(true)} />
-          ) : null}
-
-          <div className="dashboard-analytics__actions dashboard-actions-row">
-            <DashboardButton inline onClick={() => setBoostModalOpen(true)}>
-              Boost Visibility
-            </DashboardButton>
-            {!isPremium ? (
-              <DashboardButton
-                inline
-                className="dashboard-pro-upgrade-btn"
-                onClick={() => setUpgradeModalOpen(true)}
-              >
-                {SMOAC_PRO_UNLOCK.cta}
-              </DashboardButton>
-            ) : null}
-            <DashboardButton
-              variant="secondary"
-              href="/specialist-dashboard/edit-profile"
-            >
-              Improve Profile
-            </DashboardButton>
-          </div>
-
-          {isPremium ? (
-            <SitePromoSlot
-              slotId="specialist_dashboard_boost"
-              className="dashboard-analytics__promo"
-              variant="compact"
-              onOpenBoost={() => setBoostModalOpen(true)}
-              onOpenPro={() => setUpgradeModalOpen(true)}
-            />
+            <>
+              <PremiumUnlockCta onUpgrade={() => setUpgradeModalOpen(true)} />
+              <div className="dashboard-analytics__actions dashboard-actions-row">
+                <DashboardButton
+                  inline
+                  className="dashboard-pro-upgrade-btn"
+                  onClick={() => setUpgradeModalOpen(true)}
+                >
+                  {SMOAC_PRO_UNLOCK.cta}
+                </DashboardButton>
+              </div>
+            </>
           ) : null}
         </div>
       </DashboardCollapsibleSection>
-
-      <BoostVisibilityModal
-        open={boostModalOpen}
-        onClose={() => setBoostModalOpen(false)}
-      />
 
       <SmoacProUpgradeModal
         open={upgradeModalOpen}
