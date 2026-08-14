@@ -26,6 +26,23 @@ function forceScrollTop(): void {
   if (main instanceof HTMLElement) main.scrollTop = 0;
 }
 
+/**
+ * Keep window scroll at 0 across the next paints.
+ * Needed when entering Search after a scrolled page — iOS can re-apply the
+ * previous offset after the first scrollTo, which floats the map shell.
+ */
+export function pinDocumentScrollTop(): void {
+  if (typeof window === "undefined") return;
+  forceScrollTop();
+  requestAnimationFrame(() => {
+    forceScrollTop();
+    requestAnimationFrame(forceScrollTop);
+  });
+  window.setTimeout(forceScrollTop, 50);
+  window.setTimeout(forceScrollTop, 200);
+  window.setTimeout(forceScrollTop, 400);
+}
+
 export function getClientRouteSearch(): string {
   if (typeof window === "undefined") return "";
   return window.location.search;
@@ -53,18 +70,14 @@ export function restoreBottomNavScroll(key: string): void {
 
   if (shouldResetScrollOnEnter(pathnameFromRouteKey(key))) {
     scrollPositions.delete(key);
-    requestAnimationFrame(() => {
-      forceScrollTop();
-    });
+    pinDocumentScrollTop();
     return;
   }
 
   const y = scrollPositions.get(key);
   if (y === undefined) {
     /* First visit after a scrolled page — clear inherited window offset */
-    requestAnimationFrame(() => {
-      forceScrollTop();
-    });
+    pinDocumentScrollTop();
     return;
   }
   requestAnimationFrame(() => {

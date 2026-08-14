@@ -16,6 +16,7 @@ import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
+import { pinDocumentScrollTop } from "@/lib/mobile-chrome";
 import { cn } from "@/lib/utils";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
@@ -126,19 +127,25 @@ export function ExplorePageClient() {
     };
   }, [session, submitSearch]);
 
-  /* Lock page scroll + hide footer while the mobile map shell is active */
+  /* Lock page scroll + hide footer while the mobile map shell is active.
+   * Do this on enter (including loading) — waiting for catalog hydrate lets
+   * inherited window scroll offset the map/search chrome. */
   useEffect(() => {
-    if (!isMobile || !catalogHydrated) return;
+    if (!isMobile) return;
+
+    pinDocumentScrollTop();
     document.body.classList.add(MAP_SHELL_BODY_CLASS);
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-    const main = document.querySelector(".app-main");
-    if (main instanceof HTMLElement) main.scrollTop = 0;
+    document.documentElement.classList.add(MAP_SHELL_BODY_CLASS);
+
+    const onViewport = () => pinDocumentScrollTop();
+    window.visualViewport?.addEventListener("resize", onViewport);
+
     return () => {
+      window.visualViewport?.removeEventListener("resize", onViewport);
       document.body.classList.remove(MAP_SHELL_BODY_CLASS);
+      document.documentElement.classList.remove(MAP_SHELL_BODY_CLASS);
     };
-  }, [isMobile, catalogHydrated]);
+  }, [isMobile]);
 
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
@@ -153,7 +160,7 @@ export function ExplorePageClient() {
   }, [clearSearch, clearFilters]);
 
   if (!catalogHydrated) {
-    return <ExploreRouteLoading />;
+    return <ExploreRouteLoading mapShell={isMobile} />;
   }
 
   const searchToolbar = (

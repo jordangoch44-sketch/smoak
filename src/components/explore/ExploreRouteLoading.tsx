@@ -1,7 +1,20 @@
+import { cn } from "@/lib/utils";
+
 /** Instant shell while explore RSC / catalog streams in */
-export function ExploreRouteLoading() {
+export function ExploreRouteLoading({
+  mapShell = false,
+}: {
+  mapShell?: boolean;
+} = {}) {
   return (
-    <div className="explore-page explore-page--loading" aria-busy="true">
+    <div
+      className={cn(
+        "explore-page",
+        "explore-page--loading",
+        mapShell && "explore-page--map-shell explore-page--map-hero"
+      )}
+      aria-busy="true"
+    >
       <div className="explore-page__content">
         <div className="explore-loading">
           <div className="explore-loading__bar explore-loading__bar--title" />
