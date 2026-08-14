@@ -111,15 +111,46 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
   if (application) {
     const fromApp = applicationToTrainer(application);
     const approved = getApprovedSpecialistProfileById(trainerId);
-    /* Approved catalog is durable SoT for style when the application row is
-     * stale (e.g. after reload before application hydrate finishes). */
-    if (approved?.profileStyle && !fromApp.profileStyle) {
-      return {
-        ...fromApp,
-        profileStyle: normalizeProfileStyle(approved.profileStyle),
-      };
-    }
-    return fromApp;
+    if (!approved) return fromApp;
+
+    /* Approved catalog holds durable gallery / pins / cover after publish.
+     * Application media alone drops pins and can stale the header slideshow. */
+    const appHasHeaderMedia = Boolean(
+      (application.media?.trainingVideoUrls ?? "").trim()
+    );
+    return {
+      ...fromApp,
+      image: fromApp.image || approved.image,
+      galleryImages: appHasHeaderMedia
+        ? fromApp.galleryImages?.length
+          ? fromApp.galleryImages
+          : approved.galleryImages
+        : approved.galleryImages?.length
+          ? approved.galleryImages
+          : fromApp.galleryImages,
+      gallery: appHasHeaderMedia
+        ? fromApp.gallery?.length
+          ? fromApp.gallery
+          : approved.gallery
+        : approved.gallery?.length
+          ? approved.gallery
+          : fromApp.gallery,
+      heroImage: appHasHeaderMedia
+        ? fromApp.galleryImages?.[0] ||
+          fromApp.heroImage ||
+          approved.heroImage
+        : approved.heroImage ||
+          fromApp.galleryImages?.[0] ||
+          fromApp.heroImage,
+      pinnedPhotos: approved.pinnedPhotos?.length
+        ? approved.pinnedPhotos
+        : fromApp.pinnedPhotos,
+      profileStyle:
+        fromApp.profileStyle ??
+        (approved.profileStyle
+          ? normalizeProfileStyle(approved.profileStyle)
+          : undefined),
+    };
   }
 
   const approved = getApprovedSpecialistProfileById(trainerId);
@@ -140,6 +171,8 @@ export function syncProfileOverridesFromApplication(
   saveTrainerProfileOverrides(app.id, {
     ...generated,
     coverImageUrl: existing?.coverImageUrl ?? generated.coverImageUrl,
+    pinnedPhotos: existing?.pinnedPhotos ?? generated.pinnedPhotos,
+    videoNotes: existing?.videoNotes ?? generated.videoNotes,
     profileStyle:
       generated.profileStyle ??
       existing?.profileStyle ??

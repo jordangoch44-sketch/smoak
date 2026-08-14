@@ -26,6 +26,12 @@ const ALLOWED_MIME = new Set([
   "application/pdf",
 ]);
 
+function normalizeUploadMime(mime: string): string {
+  const lower = mime.toLowerCase().trim();
+  if (lower === "image/jpg" || lower === "image/pjpeg") return "image/jpeg";
+  return lower;
+}
+
 /* `{specialistId}/{profile|cover|gallery}/...` — safe segments only */
 const SAFE_PATH =
   /^[a-z0-9][a-z0-9_-]{0,127}\/(profile|cover|gallery)(\/[a-z0-9][a-z0-9._-]{0,127}){1,3}$/i;
@@ -90,7 +96,7 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-  const mime = match[1].toLowerCase();
+  const mime = normalizeUploadMime(match[1]);
   if (!ALLOWED_MIME.has(mime)) {
     return NextResponse.json(
       { ok: false, message: `Unsupported file type: ${mime}` },

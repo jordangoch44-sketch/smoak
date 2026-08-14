@@ -260,12 +260,14 @@ function LiveEditSheet({
   onClose,
   onSave,
   children,
+  variant = "default",
 }: {
   title: string;
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
   children: ReactNode;
+  variant?: "default" | "photos";
 }) {
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
@@ -309,9 +311,16 @@ function LiveEditSheet({
           <h2 id={titleId} className="specialist-live-sheet__title">
             {title}
           </h2>
-          <p className="specialist-live-sheet__sub">
-            Changes publish to your live marketplace profile as soon as you save.
-          </p>
+          {variant === "photos" ? (
+            <p className="specialist-live-sheet__sub">
+              Tap to replace · Save when done
+            </p>
+          ) : (
+            <p className="specialist-live-sheet__sub">
+              Changes publish to your live marketplace profile as soon as you
+              save.
+            </p>
+          )}
         </div>
         <div className="specialist-live-sheet__body">{children}</div>
         <div className="specialist-live-sheet__actions">
@@ -321,7 +330,11 @@ function LiveEditSheet({
             disabled={saving}
             onClick={onSave}
           >
-            {saving ? "Publishing…" : "Save changes — goes live"}
+            {saving
+              ? "Publishing…"
+              : variant === "photos"
+                ? "Save"
+                : "Save changes — goes live"}
           </button>
           <button
             type="button"
@@ -417,6 +430,7 @@ export function SpecialistDashboardProfilePreview({
         saving={saving}
         onClose={cancelEdit}
         onSave={() => void publish()}
+        variant={editing === "hero" ? "photos" : "default"}
       >
         {editing === "hero" ? (
           <div className="specialist-dash-profile__fields">

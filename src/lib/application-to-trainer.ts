@@ -162,7 +162,7 @@ export function applicationToTrainer(
     reviewCount: 0,
     galleryImages: mediaUrls.length > 0 ? mediaUrls : [photo],
     image: photo,
-    heroImage: photo,
+    heroImage: mediaUrls[0] || photo,
     bio: app.bio?.trim() || "",
     bestFor: bestClientTypes
       .split(/[,;\n]/)

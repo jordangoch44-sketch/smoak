@@ -310,16 +310,18 @@ export function overridesFromTrainer(
     pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
     bio: stored?.bio ?? trainer.bio,
     photoNotes:
-      stored?.photoNotes ??
-      ((Array.isArray(trainer.galleryImages) ? trainer.galleryImages : [])
-        .filter(Boolean)
-        .join("\n") || ""),
+      stored?.photoNotes?.trim()
+        ? stored.photoNotes
+        : ((Array.isArray(trainer.galleryImages) ? trainer.galleryImages : [])
+            .filter(Boolean)
+            .join("\n") || ""),
     videoNotes:
-      stored?.videoNotes ??
-      (Array.isArray(trainer.gallery) ? trainer.gallery : [])
-        .filter((item) => item.type === "video")
-        .map((item) => item.src)
-        .join("\n"),
+      stored?.videoNotes?.trim()
+        ? stored.videoNotes
+        : (Array.isArray(trainer.gallery) ? trainer.gallery : [])
+            .filter((item) => item.type === "video")
+            .map((item) => item.src)
+            .join("\n"),
     transformationNotes: stored?.transformationNotes ?? "",
     bookingAvailability:
       stored?.bookingAvailability ??
@@ -338,7 +340,9 @@ export function overridesFromTrainer(
       stored?.coverImageUrl?.trim() ||
       (stored?.profilePhotoUrl?.trim() ? "" : trainer.heroImage?.trim() || ""),
     pinnedPhotos: normalizePinnedPhotos(
-      stored?.pinnedPhotos ?? trainer.pinnedPhotos,
+      stored?.pinnedPhotos?.length
+        ? stored.pinnedPhotos
+        : trainer.pinnedPhotos,
       (
         stored?.photoNotes?.trim()
           ? stored.photoNotes

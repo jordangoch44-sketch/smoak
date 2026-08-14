@@ -15,7 +15,7 @@ import {
   ProfileEditSection,
   ProfileEditViewField,
 } from "@/components/dashboard/specialist/ProfileEditSection";
-import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
+import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
@@ -160,6 +160,7 @@ export function SpecialistEditProfilePageClient({
     subscription: getSpecialistSubscriptionForSession(session),
   });
 
+  const isPremium = Boolean(session?.isPremium);
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
 
   const handleSignOut = useCallback(() => {
@@ -1154,8 +1155,8 @@ export function SpecialistEditProfilePageClient({
 
           <ProfileEditSection
             {...sectionProps("photos-links")}
-            title="Photos & review links"
-            description="Imagery, gallery, and social profiles"
+            title="Photos & links"
+            description="Profile photo, header slideshow, pins, and social"
             viewContent={
               <>
                 <ProfileEditViewField
@@ -1164,51 +1165,46 @@ export function SpecialistEditProfilePageClient({
                   emptyLabel="Add profile photo"
                 />
                 <ProfileEditViewField
-                  label="Cover / banner"
-                  value={savedForm.coverImageUrl ? "Uploaded" : ""}
-                  emptyLabel="Add cover image"
+                  label="Header photos"
+                  value={
+                    savedForm.photoNotes.trim()
+                      ? `${savedForm.photoNotes
+                          .split("\n")
+                          .filter(Boolean).length} photo(s)`
+                      : ""
+                  }
+                  emptyLabel="Add header photos"
+                />
+                <ProfileEditViewField
+                  label="Pinned"
+                  value={
+                    savedForm.pinnedPhotos.length
+                      ? `${savedForm.pinnedPhotos.length} pinned`
+                      : ""
+                  }
+                  emptyLabel={isPremium ? "Pin from header photos" : "Pro"}
                 />
                 <ProfileEditViewField label="Instagram" value={savedForm.instagram} />
                 <ProfileEditViewField label="TikTok" value={savedForm.tiktok} />
                 <ProfileEditViewField label="Website" value={savedForm.website} />
-                <ProfileEditViewField
-                  label="Gallery photos"
-                  value={savedForm.photoNotes}
-                  emptyLabel="Add gallery links"
-                  multiline
-                />
-                <ProfileEditViewField
-                  label="Transformation photos"
-                  value={savedForm.transformationNotes}
-                  emptyLabel="Add transformation photos"
-                  multiline
-                />
               </>
             }
             editContent={
               <>
-                <div className="dashboard-edit-media-grid">
-                  <ProfileMediaUploadField
-                    label="Cover / banner"
-                    hint="Wide banner for your profile header"
-                    value={form.coverImageUrl}
-                    onChange={(value) => updateField("coverImageUrl", value)}
-                    aspect="cover"
-                    specialistId={trainerId}
-                    mediaKind="cover"
-                    onClear={() => updateField("coverImageUrl", "")}
-                  />
-                  <ProfileMediaUploadField
-                    label="Profile photo"
-                    hint="Square headshot or brand portrait"
-                    value={form.profilePhotoUrl}
-                    onChange={(value) => updateField("profilePhotoUrl", value)}
-                    aspect="square"
-                    specialistId={trainerId}
-                    mediaKind="profile"
-                    onClear={() => updateField("profilePhotoUrl", "")}
-                  />
-                </div>
+                <SpecialistProfileMediaEditor
+                  profilePhotoUrl={form.profilePhotoUrl}
+                  coverImageUrl={form.coverImageUrl}
+                  photoNotes={form.photoNotes}
+                  videoNotes={form.videoNotes}
+                  pinnedPhotos={form.pinnedPhotos}
+                  isPremium={isPremium}
+                  specialistId={trainerId}
+                  onChange={(next) => {
+                    setSectionDraft((prev) =>
+                      prev ? { ...prev, ...next } : prev
+                    );
+                  }}
+                />
                 <div className="dashboard-edit-fields">
                   <ProfileEditInputField label="Instagram">
                     <input
@@ -1231,26 +1227,6 @@ export function SpecialistEditProfilePageClient({
                       className="login-field__input profile-edit-input"
                       value={form.website}
                       onChange={(event) => updateField("website", event.target.value)}
-                    />
-                  </ProfileEditInputField>
-                  <ProfileEditInputField label="Gallery photos">
-                    <textarea
-                      className="login-field__input dashboard-edit-textarea profile-edit-input"
-                      rows={4}
-                      value={form.photoNotes}
-                      onChange={(event) =>
-                        updateField("photoNotes", event.target.value)
-                      }
-                    />
-                  </ProfileEditInputField>
-                  <ProfileEditInputField label="Transformation photos">
-                    <textarea
-                      className="login-field__input dashboard-edit-textarea profile-edit-input"
-                      rows={4}
-                      value={form.transformationNotes}
-                      onChange={(event) =>
-                        updateField("transformationNotes", event.target.value)
-                      }
                     />
                   </ProfileEditInputField>
                 </div>

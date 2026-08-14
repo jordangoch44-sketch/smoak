@@ -1,8 +1,8 @@
 "use client";
 
-import { useId, useRef, useState, type ChangeEvent } from "react";
+import { useId, useState, type ChangeEvent } from "react";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
-import { readFileAsDataUrl } from "@/lib/media/crop-image";
+import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
   SPECIALIST_STORAGE_ACCEPT,
   SPECIALIST_STORAGE_LIMITS,
@@ -13,7 +13,7 @@ import type { SpecialistStorageMediaKind } from "@/types/supabase-storage";
 
 interface ProfileMediaUploadFieldProps {
   label: string;
-  hint: string;
+  hint?: string;
   value: string;
   onChange: (value: string) => void;
   aspect?: "cover" | "square";
@@ -35,6 +35,28 @@ function maxBytesForUiKind(
   return SPECIALIST_STORAGE_LIMITS.profile;
 }
 
+function rejectUnsupportedPhonePhoto(file: File): string | null {
+  const type = (file.type || "").toLowerCase();
+  const name = file.name.toLowerCase();
+  if (
+    type.includes("heic") ||
+    type.includes("heif") ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
+  ) {
+    return "Use JPEG or PNG (on iPhone: Format → Most Compatible).";
+  }
+  return null;
+}
+
+function compressKindFor(
+  mediaKind: ProfileMediaUploadFieldProps["mediaKind"]
+): "profile" | "cover" | "gallery" {
+  if (mediaKind === "cover") return "cover";
+  if (mediaKind === "gallery-image") return "gallery";
+  return "profile";
+}
+
 export function ProfileMediaUploadField({
   label,
   hint,
@@ -47,7 +69,6 @@ export function ProfileMediaUploadField({
   onClear,
 }: ProfileMediaUploadFieldProps) {
   const inputId = useId();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
@@ -67,12 +88,22 @@ export function ProfileMediaUploadField({
     setUploading(true);
     setUploadError(null);
     try {
+      const phoneReject = rejectUnsupportedPhonePhoto(file);
+      if (phoneReject) {
+        throw new SpecialistStorageValidationError(phoneReject);
+      }
+
       const maxBytes = maxBytesForUiKind(mediaKind);
       if (file.size > maxBytes) {
         throw new SpecialistStorageValidationError(
           `Image must be under ${Math.round(maxBytes / (1024 * 1024))}MB.`
         );
       }
+
+      const dataUrl = await prepareImageDataUrlForUpload(
+        file,
+        compressKindFor(mediaKind)
+      );
 
       const useStorage =
         Boolean(specialistId?.trim()) &&
@@ -92,9 +123,9 @@ export function ProfileMediaUploadField({
             : mediaKind === "cover"
               ? `${id}/cover/hero-${stamp}`
               : `${id}/gallery/g-${stamp}/image`;
-        const dataUrl = await readFileAsDataUrl(file);
         const response = await fetch("/api/media/specialist-application", {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ path: basePath, dataUrl }),
         });
@@ -103,7 +134,10 @@ export function ProfileMediaUploadField({
           | null;
         if (!response.ok || !payload?.ok || !payload.publicUrl) {
           throw new Error(
-            payload?.message ?? "Could not upload image. Try again."
+            payload?.message ??
+              (response.status === 413
+                ? "Photo is too large to upload."
+                : "Could not upload image. Try again.")
           );
         }
         /* Unique object path + cache-bust so img/CDN don't keep the old avatar. */
@@ -114,8 +148,6 @@ export function ProfileMediaUploadField({
         return;
       }
 
-      /* Dev / no-Supabase fallback — inline preview only */
-      const dataUrl = await readFileAsDataUrl(file);
       onChange(dataUrl);
     } catch (error) {
       const message =
@@ -132,17 +164,18 @@ export function ProfileMediaUploadField({
 
   return (
     <div className="dashboard-upload-field">
-      <span className="login-field__label">{label}</span>
-      <button
-        type="button"
+      <span className="login-field__label" id={`${inputId}-label`}>
+        {label}
+      </span>
+      <label
+        htmlFor={inputId}
         className={cn(
           "dashboard-upload-zone",
           aspect === "square" && "dashboard-upload-zone--square",
-          value && "dashboard-upload-zone--has-preview"
+          value && "dashboard-upload-zone--has-preview",
+          uploading && "dashboard-upload-zone--busy"
         )}
-        onClick={() => fileRef.current?.click()}
-        aria-labelledby={inputId}
-        disabled={uploading}
+        aria-labelledby={`${inputId}-label`}
       >
         {value ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -159,35 +192,36 @@ export function ProfileMediaUploadField({
             <span className="dashboard-upload-zone__icon" aria-hidden>
               +
             </span>
-            <span className="dashboard-upload-zone__hint">
-              {uploading ? "Uploading…" : hint}
-            </span>
+            {hint ? (
+              <span className="dashboard-upload-zone__hint">
+                {uploading ? "Uploading…" : hint}
+              </span>
+            ) : null}
           </>
         )}
         <span className="dashboard-upload-zone__overlay">
-          {uploading ? "Uploading…" : value ? "Replace image" : "Tap to upload"}
+          {uploading ? "Uploading…" : value ? "Replace" : "Upload"}
         </span>
-      </button>
-      <input
-        ref={fileRef}
-        id={inputId}
-        type="file"
-        accept={resolvedAccept}
-        className="dashboard-upload-zone__input"
-        onChange={(event) => void handleFileChange(event)}
-        tabIndex={-1}
-      />
+        <input
+          id={inputId}
+          type="file"
+          accept={`${resolvedAccept},.jpg,.jpeg,.png,.webp`}
+          className="dashboard-upload-zone__input"
+          onChange={(event) => void handleFileChange(event)}
+          disabled={uploading}
+        />
+      </label>
       {value && onClear ? (
         <button
           type="button"
-          className="dashboard-edit-hint"
+          className="dashboard-upload-clear"
           onClick={onClear}
         >
-          Remove image
+          Remove
         </button>
       ) : null}
       {uploadError ? (
-        <p className="dashboard-edit-hint" role="alert">
+        <p className="dashboard-upload-error" role="alert">
           {uploadError}
         </p>
       ) : null}

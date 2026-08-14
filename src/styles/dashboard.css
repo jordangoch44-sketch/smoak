@@ -1605,6 +1605,32 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   transform: translateY(0);
 }
 
+.dashboard-upload-zone--busy {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.dashboard-upload-clear {
+  display: inline-flex;
+  margin-top: 0.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  color: rgba(255, 190, 195, 0.82);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.dashboard-upload-error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(255, 180, 190, 0.95);
+}
+
 .dashboard-edit-hint {
   display: block;
   margin-top: 0.5rem;
@@ -5530,6 +5556,11 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   font-weight: 600;
   color: rgba(255, 255, 255, 0.62);
   cursor: pointer;
+}
+
+.specialist-media-editor__add--busy {
+  opacity: 0.72;
+  pointer-events: none;
 }
 
 .specialist-media-editor__add span:first-child {
