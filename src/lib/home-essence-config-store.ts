@@ -6,10 +6,13 @@ import {
 import { SPECIALIST_MEDIA_BUCKET } from "@/lib/supabase/constants";
 import {
   getDefaultHomeEssenceConfig,
-  HOME_ESSENCE_CONFIG_STORAGE_PATH,
   normalizeHomeEssenceConfig,
   type HomeEssenceConfig,
 } from "@/lib/home-essence-slides";
+
+const CONFIG_ROW_ID = "default";
+/** Storage fallback when the DB table is not migrated yet. */
+const CONFIG_STORAGE_PATH = "site/homepage-essence/config.json";
 
 function createServiceClient(): SupabaseClient | null {
   const config = getSupabasePublicConfig();
@@ -20,28 +23,70 @@ function createServiceClient(): SupabaseClient | null {
   });
 }
 
-/** Read live essence config from storage; falls back to built-in defaults. */
-export async function readHomeEssenceConfig(): Promise<HomeEssenceConfig> {
-  const service = createServiceClient();
-  if (!service) return getDefaultHomeEssenceConfig();
+function isMissingTableError(message: string): boolean {
+  return /relation .* does not exist|Could not find the table|schema cache/i.test(
+    message
+  );
+}
 
+async function readConfigFromStorage(
+  service: SupabaseClient
+): Promise<HomeEssenceConfig | null> {
   const { data, error } = await service.storage
     .from(SPECIALIST_MEDIA_BUCKET)
-    .download(HOME_ESSENCE_CONFIG_STORAGE_PATH);
-
-  if (error || !data) {
-    return getDefaultHomeEssenceConfig();
-  }
-
+    .download(CONFIG_STORAGE_PATH);
+  if (error || !data) return null;
   try {
     const text = await data.text();
     return normalizeHomeEssenceConfig(JSON.parse(text) as unknown);
   } catch {
-    return getDefaultHomeEssenceConfig();
+    return null;
   }
 }
 
-/** Persist essence config JSON (admin only — call after auth checks). */
+async function writeConfigToStorage(
+  service: SupabaseClient,
+  config: HomeEssenceConfig
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  /* specialist-media historically rejected application/json — use an allowed
+   * mime while still storing JSON text (PDF is on the bucket allow-list). */
+  const body = JSON.stringify(config, null, 2);
+  const { error } = await service.storage
+    .from(SPECIALIST_MEDIA_BUCKET)
+    .upload(CONFIG_STORAGE_PATH, body, {
+      contentType: "application/pdf",
+      upsert: true,
+      cacheControl: "30",
+    });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true };
+}
+
+/** Read live essence config; falls back to built-in defaults. */
+export async function readHomeEssenceConfig(): Promise<HomeEssenceConfig> {
+  const service = createServiceClient();
+  if (!service) return getDefaultHomeEssenceConfig();
+
+  const { data, error } = await service
+    .from("site_homepage_essence")
+    .select("interval_ms, slides")
+    .eq("id", CONFIG_ROW_ID)
+    .maybeSingle();
+
+  if (!error && data) {
+    return normalizeHomeEssenceConfig({
+      intervalMs: data.interval_ms,
+      slides: data.slides,
+    });
+  }
+
+  const fromStorage = await readConfigFromStorage(service);
+  if (fromStorage) return fromStorage;
+
+  return getDefaultHomeEssenceConfig();
+}
+
+/** Persist essence config (admin only — call after auth checks). */
 export async function writeHomeEssenceConfig(
   config: HomeEssenceConfig
 ): Promise<{ ok: true } | { ok: false; message: string }> {
@@ -51,19 +96,23 @@ export async function writeHomeEssenceConfig(
   }
 
   const normalized = normalizeHomeEssenceConfig(config);
-  const body = JSON.stringify(normalized, null, 2);
-  const { error } = await service.storage
-    .from(SPECIALIST_MEDIA_BUCKET)
-    .upload(HOME_ESSENCE_CONFIG_STORAGE_PATH, body, {
-      contentType: "application/json",
-      upsert: true,
-      cacheControl: "30",
-    });
+  const { error } = await service.from("site_homepage_essence").upsert(
+    {
+      id: CONFIG_ROW_ID,
+      interval_ms: normalized.intervalMs,
+      slides: normalized.slides,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "id" }
+  );
 
-  if (error) {
+  if (!error) return { ok: true };
+
+  if (!isMissingTableError(error.message)) {
     return { ok: false, message: error.message };
   }
-  return { ok: true };
+
+  return writeConfigToStorage(service, normalized);
 }
 
 export async function uploadHomeEssenceImage(params: {

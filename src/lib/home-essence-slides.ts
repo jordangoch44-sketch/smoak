@@ -24,10 +24,6 @@ export const HOME_ESSENCE_DEFAULT_INTERVAL_MS = 5200;
 export const HOME_ESSENCE_INTERVAL_MS_MIN = 2500;
 export const HOME_ESSENCE_INTERVAL_MS_MAX = 20000;
 
-/** Storage object path for the live JSON config (specialist-media bucket). */
-export const HOME_ESSENCE_CONFIG_STORAGE_PATH =
-  "site/homepage-essence/config.json";
-
 export const DEFAULT_HOME_ESSENCE_SLIDES: readonly HomeEssenceSlide[] = [
   {
     id: "plank",
