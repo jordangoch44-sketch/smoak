@@ -225,7 +225,7 @@
 
 .home-page--discovery .home-hero--discovery {
   isolation: auto;
-  padding-bottom: 1.25rem;
+  padding-bottom: 0.35rem;
 }
 
 .home-hero__canvas .atmosphere-mesh {
@@ -611,7 +611,7 @@
 .home-essence__dots {
   position: absolute;
   left: 50%;
-  bottom: 0.75rem;
+  bottom: 0.45rem;
   z-index: 3;
   display: flex;
   gap: 0.4rem;

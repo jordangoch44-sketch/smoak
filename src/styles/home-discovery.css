@@ -188,6 +188,12 @@
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
 }
 
+/* Banner → Browse by category — keep the title close under the strip */
+.home-page--discovery .home-hero + .home-specialty {
+  padding-top: 0.65rem;
+  padding-bottom: clamp(1.75rem, 4vw, 2.75rem);
+}
+
 .home-page--discovery .home-sponsored {
   padding-top: clamp(1.25rem, 3.5vw, 2rem);
 }
