@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 import {
   HOME_ESSENCE_INTERVAL_MS,
@@ -8,15 +8,24 @@ import {
 } from "@/lib/home-essence-slides";
 import { cn } from "@/lib/utils";
 
+const SWIPE_MIN_PX = 48;
+const SWIPE_AXIS_RATIO = 1.2;
+
 /**
  * Full-bleed lifestyle strip under the marketplace lede — Apple-style
- * slow crossfade, no on-image marketing copy.
+ * slow crossfade with single-finger swipe.
  */
 export function HomeEssenceSlideshow() {
   const reducedMotion = useReducedMotion();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const slides = HOME_ESSENCE_SLIDES;
+  const swipeRef = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    active: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (reducedMotion || paused || slides.length < 2) return;
@@ -25,6 +34,59 @@ export function HomeEssenceSlideshow() {
     }, HOME_ESSENCE_INTERVAL_MS);
     return () => window.clearInterval(id);
   }, [paused, reducedMotion, slides.length]);
+
+  function goTo(next: number) {
+    const len = slides.length;
+    if (len < 2) return;
+    setIndex(((next % len) + len) % len);
+  }
+
+  function onPointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    swipeRef.current = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      active: true,
+    };
+    setPaused(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function onPointerUp(event: PointerEvent<HTMLDivElement>) {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start?.active || start.pointerId !== event.pointerId) {
+      setPaused(false);
+      return;
+    }
+
+    try {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    } catch {
+      /* already released */
+    }
+
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    const horizontal =
+      Math.abs(dx) >= SWIPE_MIN_PX &&
+      Math.abs(dx) >= Math.abs(dy) * SWIPE_AXIS_RATIO;
+
+    if (horizontal) {
+      /* Swipe left → next; swipe right → previous */
+      goTo(index + (dx < 0 ? 1 : -1));
+    }
+
+    setPaused(false);
+  }
+
+  function onPointerCancel(event: PointerEvent<HTMLDivElement>) {
+    if (swipeRef.current?.pointerId === event.pointerId) {
+      swipeRef.current = null;
+    }
+    setPaused(false);
+  }
 
   return (
     <div
@@ -41,7 +103,12 @@ export function HomeEssenceSlideshow() {
         }
       }}
     >
-      <div className="home-essence__frame">
+      <div
+        className="home-essence__frame"
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+      >
         {slides.map((slide, i) => (
           <div
             key={slide.id}
@@ -66,7 +133,7 @@ export function HomeEssenceSlideshow() {
         <div className="home-essence__veil" aria-hidden />
       </div>
 
-      {slides.length > 1 && !reducedMotion ? (
+      {slides.length > 1 ? (
         <div className="home-essence__dots" role="tablist" aria-label="Slides">
           {slides.map((slide, i) => (
             <button
@@ -79,7 +146,7 @@ export function HomeEssenceSlideshow() {
                 "home-essence__dot",
                 i === index && "home-essence__dot--active"
               )}
-              onClick={() => setIndex(i)}
+              onClick={() => goTo(i)}
             />
           ))}
         </div>

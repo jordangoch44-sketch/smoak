@@ -1,6 +1,6 @@
 /**
- * Marketplace hero essence strip — swap `src` when real brand photos arrive.
- * Keep wide 16:9 (or wider) lifestyle frames; no on-image copy.
+ * Marketplace hero essence strip — brand campaign stills.
+ * Wide frames; creatives already include logo/copy where needed.
  */
 export type HomeEssenceSlide = {
   id: string;
@@ -10,24 +10,29 @@ export type HomeEssenceSlide = {
 
 export const HOME_ESSENCE_SLIDES: readonly HomeEssenceSlide[] = [
   {
-    id: "training",
-    src: "/home/essence/home-essence-01.jpg",
-    alt: "Specialist coaching a client outdoors",
+    id: "plank",
+    src: "/home/essence/home-essence-01.png",
+    alt: "SMOAC — Fitness Anywhere",
+  },
+  {
+    id: "compare",
+    src: "/home/essence/home-essence-02.png",
+    alt: "Find the perfect fit on SMOAC",
+  },
+  {
+    id: "search",
+    src: "/home/essence/home-essence-03.png",
+    alt: "Search specialists near you on SMOAC",
   },
   {
     id: "yoga",
-    src: "/home/essence/home-essence-02.jpg",
-    alt: "Morning wellness session on a sunlit deck",
+    src: "/home/essence/home-essence-04.png",
+    alt: "Outdoor fitness with SMOAC",
   },
   {
-    id: "nutrition",
-    src: "/home/essence/home-essence-03.jpg",
-    alt: "Nutrition guidance in a bright kitchen",
-  },
-  {
-    id: "mobility",
-    src: "/home/essence/home-essence-04.jpg",
-    alt: "Mobility work in a calm studio",
+    id: "crew",
+    src: "/home/essence/home-essence-05.png",
+    alt: "Train anywhere with SMOAC",
   },
 ] as const;
 
