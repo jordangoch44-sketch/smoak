@@ -225,6 +225,7 @@
 
 .home-page--discovery .home-hero--discovery {
   isolation: auto;
+  padding-bottom: 1.25rem;
 }
 
 .home-hero__canvas .atmosphere-mesh {
@@ -522,6 +523,131 @@
   }
 }
 
+/* Full-bleed lifestyle strip under the marketplace lede */
+.home-essence {
+  position: relative;
+  z-index: 12;
+  width: 100vw;
+  max-width: 100vw;
+  margin-top: 1.5rem;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 0;
+}
+
+@media (min-width: 768px) {
+  .home-essence {
+    margin-top: 1.85rem;
+  }
+}
+
+.home-essence__frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  min-height: 10.5rem;
+  max-height: min(42vw, 28rem);
+  overflow: hidden;
+  background: rgba(8, 6, 14, 0.55);
+}
+
+@media (max-width: 639px) {
+  .home-essence__frame {
+    aspect-ratio: 16 / 10;
+    max-height: 14.5rem;
+  }
+}
+
+.home-essence__slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.035);
+  transition:
+    opacity 1.15s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 6.5s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.home-essence__slide--active {
+  opacity: 1;
+  transform: scale(1);
+  z-index: 1;
+}
+
+.home-essence__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.home-essence__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(5, 4, 10, 0.55) 0%,
+      transparent 12%,
+      transparent 88%,
+      rgba(5, 4, 10, 0.55) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(5, 4, 10, 0.28) 0%,
+      transparent 22%,
+      transparent 68%,
+      rgba(5, 4, 10, 0.62) 100%
+    );
+}
+
+.home-essence__dots {
+  position: absolute;
+  left: 50%;
+  bottom: 0.75rem;
+  z-index: 3;
+  display: flex;
+  gap: 0.4rem;
+  transform: translateX(-50%);
+}
+
+.home-essence__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease,
+    width 0.25s ease;
+}
+
+.home-essence__dot--active {
+  width: 1.15rem;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+@media (hover: hover) {
+  .home-essence__dot:hover {
+    background: rgba(255, 255, 255, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-essence__slide {
+    transition: none;
+    transform: none;
+  }
+}
 
 /* Soft canvas blend into next section — no solid black horizon line */
 .home-hero::after {

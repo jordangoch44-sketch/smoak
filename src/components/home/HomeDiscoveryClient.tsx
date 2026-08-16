@@ -5,7 +5,6 @@ import {
   SponsoredSpecialists,
   FeaturedSpotlightSpecialists,
   Top50InYourCity,
-  Categories,
   NewSpecialists,
 } from "@/components/home";
 import { HomeRailsLoading } from "@/components/home/HomeRouteLoading";
@@ -18,8 +17,8 @@ import {
 } from "@/lib/reviews/specialist-review-types";
 
 /**
- * Marketplace discovery rails — catalog comes from the session store so soft
- * nav does not wait on a force-dynamic RSC + Supabase round-trip.
+ * Marketplace paid + ranked rails — catalog from the session store.
+ * Categories sit above this block on the homepage.
  */
 export function HomeDiscoveryClient() {
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
@@ -67,7 +66,6 @@ export function HomeDiscoveryClient() {
         initialCatalog={trainers}
         initialAggregates={aggregates}
       />
-      <Categories />
       <NewSpecialists initialCatalog={trainers} catalogMode={catalogMode} />
     </>
   );

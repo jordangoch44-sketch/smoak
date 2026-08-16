@@ -33,7 +33,7 @@ html.site-intro-pending body::before {
       />
       <script
         dangerouslySetInnerHTML={{
-          __html: `(function(){try{var k=${key};var path=location.pathname||"/";if(path!=="/")return;var q=new URLSearchParams(location.search);if(q.get("replay-intro")==="1"){try{localStorage.removeItem(k);sessionStorage.removeItem(k);}catch(e){}}var seen=false;try{seen=localStorage.getItem(k)==="1"||sessionStorage.getItem(k)==="1";}catch(e){seen=true;}if(!seen)document.documentElement.classList.add("site-intro-pending");}catch(e){}})();`,
+          __html: `(function(){try{var k=${key};var path=location.pathname||"/";if(path!=="/")return;try{history.scrollRestoration="manual";}catch(e){}window.scrollTo(0,0);if(document.documentElement)document.documentElement.scrollTop=0;if(document.body)document.body.scrollTop=0;var q=new URLSearchParams(location.search);if(q.get("replay-intro")==="1"){try{localStorage.removeItem(k);sessionStorage.removeItem(k);}catch(e){}}var seen=false;try{seen=localStorage.getItem(k)==="1"||sessionStorage.getItem(k)==="1";}catch(e){seen=true;}if(!seen)document.documentElement.classList.add("site-intro-pending");}catch(e){}})();`,
         }}
       />
     </>

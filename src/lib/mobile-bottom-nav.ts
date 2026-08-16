@@ -49,6 +49,11 @@ function isExplorePath(pathname: string): boolean {
   );
 }
 
+/** Marketplace tab / homepage — always open at scroll 0 */
+export function isHomeNavPath(pathname: string): boolean {
+  return pathname === SITE_ROUTES.home || pathname === "";
+}
+
 /** Search tab — map shell must open at scroll 0 */
 export function isExploreNavPath(pathname: string): boolean {
   return isExplorePath(pathname);

@@ -4,6 +4,7 @@
 
 import {
   isExploreNavPath,
+  isHomeNavPath,
   isProfileNavPath,
 } from "@/lib/mobile-bottom-nav";
 
@@ -16,8 +17,13 @@ function pathnameFromRouteKey(key: string): string {
   return q === -1 ? key : key.slice(0, q);
 }
 
+/** Marketplace, Search, and Profile always open at the top. */
 function shouldResetScrollOnEnter(pathname: string): boolean {
-  return isProfileNavPath(pathname) || isExploreNavPath(pathname);
+  return (
+    isHomeNavPath(pathname) ||
+    isProfileNavPath(pathname) ||
+    isExploreNavPath(pathname)
+  );
 }
 
 /** Immediate scroll-to-top across window + common scrollports. */
@@ -88,7 +94,7 @@ export function setBottomNavPanelBodyActive(active: boolean): void {
 
 export function saveBottomNavScroll(key: string): void {
   if (typeof window === "undefined") return;
-  /* Profile + Search always reopen at the top — don't cache mid-page scroll. */
+  /* Marketplace / Profile / Search always reopen at the top — don't cache mid-page scroll. */
   if (shouldResetScrollOnEnter(pathnameFromRouteKey(key))) {
     scrollPositions.delete(key);
     return;

@@ -58,6 +58,9 @@ export function SiteWelcomeIntroGate() {
     setArriving(false);
     clearIntroPendingClass();
     if (typeof window !== "undefined") {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       const url = new URL(window.location.href);
       if (url.searchParams.has("replay-intro")) {
         url.searchParams.delete("replay-intro");
