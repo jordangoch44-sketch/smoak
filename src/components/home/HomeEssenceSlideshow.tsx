@@ -3,23 +3,38 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 import {
-  HOME_ESSENCE_INTERVAL_MS,
-  HOME_ESSENCE_SLIDES,
+  getDefaultHomeEssenceConfig,
+  HOME_ESSENCE_DEFAULT_INTERVAL_MS,
+  listActiveHomeEssenceSlides,
+  type HomeEssenceSlide,
 } from "@/lib/home-essence-slides";
 import { cn } from "@/lib/utils";
 
 const SWIPE_MIN_PX = 48;
 const SWIPE_AXIS_RATIO = 1.2;
 
+type PublicSlide = Pick<HomeEssenceSlide, "id" | "src" | "alt">;
+
+function defaultPublicSlides(): PublicSlide[] {
+  return listActiveHomeEssenceSlides(getDefaultHomeEssenceConfig()).map(
+    (slide) => ({
+      id: slide.id,
+      src: slide.src,
+      alt: slide.alt,
+    })
+  );
+}
+
 /**
  * Full-bleed lifestyle strip under the marketplace lede — Apple-style
- * slow crossfade with single-finger swipe.
+ * slow crossfade with single-finger swipe. Config from Admin → Settings.
  */
 export function HomeEssenceSlideshow() {
   const reducedMotion = useReducedMotion();
+  const [slides, setSlides] = useState<PublicSlide[]>(defaultPublicSlides);
+  const [intervalMs, setIntervalMs] = useState(HOME_ESSENCE_DEFAULT_INTERVAL_MS);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const slides = HOME_ESSENCE_SLIDES;
   const swipeRef = useRef<{
     pointerId: number;
     x: number;
@@ -28,12 +43,61 @@ export function HomeEssenceSlideshow() {
   } | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetch("/api/homepage-essence")
+      .then((res) => (res.ok ? res.json() : null))
+      .then(
+        (
+          body:
+            | {
+                ok?: boolean;
+                intervalMs?: number;
+                slides?: PublicSlide[];
+              }
+            | null
+        ) => {
+          if (cancelled || !body?.ok || !Array.isArray(body.slides)) return;
+          if (body.slides.length === 0) {
+            setSlides([]);
+            return;
+          }
+          setSlides(
+            body.slides.map((slide) => ({
+              id: String(slide.id),
+              src: String(slide.src),
+              alt: String(slide.alt || "SMOAC"),
+            }))
+          );
+          if (
+            typeof body.intervalMs === "number" &&
+            Number.isFinite(body.intervalMs)
+          ) {
+            setIntervalMs(body.intervalMs);
+          }
+          setIndex(0);
+        }
+      )
+      .catch(() => {
+        /* keep defaults */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (reducedMotion || paused || slides.length < 2) return;
     const id = window.setInterval(() => {
       setIndex((prev) => (prev + 1) % slides.length);
-    }, HOME_ESSENCE_INTERVAL_MS);
+    }, intervalMs);
     return () => window.clearInterval(id);
-  }, [paused, reducedMotion, slides.length]);
+  }, [paused, reducedMotion, slides.length, intervalMs]);
+
+  useEffect(() => {
+    if (index >= slides.length && slides.length > 0) {
+      setIndex(0);
+    }
+  }, [index, slides.length]);
 
   function goTo(next: number) {
     const len = slides.length;
@@ -74,7 +138,6 @@ export function HomeEssenceSlideshow() {
       Math.abs(dx) >= Math.abs(dy) * SWIPE_AXIS_RATIO;
 
     if (horizontal) {
-      /* Swipe left → next; swipe right → previous */
       goTo(index + (dx < 0 ? 1 : -1));
     }
 
@@ -87,6 +150,8 @@ export function HomeEssenceSlideshow() {
     }
     setPaused(false);
   }
+
+  if (slides.length === 0) return null;
 
   return (
     <div
