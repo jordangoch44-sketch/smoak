@@ -1,5 +1,4 @@
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
-import { HomeEssenceSlideshow } from "./HomeEssenceSlideshow";
 import { RotatingSpecialistHeadline } from "./RotatingSpecialistHeadline";
 
 export function Hero() {
@@ -35,8 +34,6 @@ export function Hero() {
           </p>
         </div>
       </div>
-
-      <HomeEssenceSlideshow />
     </section>
   );
 }

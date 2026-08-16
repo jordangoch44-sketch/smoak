@@ -1,4 +1,4 @@
-import { Hero, Categories } from "@/components/home";
+import { Hero, Categories, HomeEssenceSlideshow } from "@/components/home";
 import { HomeDiscoveryClient } from "@/components/home/HomeDiscoveryClient";
 import { HomeScrollReset } from "@/components/home/HomeScrollReset";
 
@@ -13,6 +13,7 @@ export default function HomePage() {
       <div className="home-page__sky" aria-hidden />
       <Hero />
       <Categories />
+      <HomeEssenceSlideshow />
       <HomeDiscoveryClient />
     </div>
   );
