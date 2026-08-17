@@ -1,7 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useId, useState, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { createPortal } from "react-dom";
 import { LocationSelectorPanel } from "@/components/location/LocationSelectorPanel";
 import { Logo } from "@/components/ui/Logo";
@@ -65,7 +72,7 @@ export function SiteLocationGate() {
     setDismissed(true);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!shouldShow) return;
     document.body.classList.add("site-location-gate-open");
     document.documentElement.classList.add("site-location-gate-open");

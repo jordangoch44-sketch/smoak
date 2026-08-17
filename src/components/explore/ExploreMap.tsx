@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
 import type { Trainer } from "@/types";
 import { LocationMarkIcon } from "@/components/ui/icons";
-import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
+import {
+  useProfileSheetOpen,
+  useSiteLocationGateOpen,
+} from "@/hooks/useProfileSheetOpen";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import {
   exploreSearchAreasDiffer,
@@ -80,6 +83,37 @@ function frameRadiusMiles(
   }
 }
 
+function pinsFrameKey(pins: MappedTrainer[]): string {
+  if (pins.length === 0) return "pins:empty";
+  const first = pins[0];
+  const last = pins[pins.length - 1];
+  return `pins:${pins.length}:${first.latitude.toFixed(3)},${first.longitude.toFixed(3)}:${last.latitude.toFixed(3)},${last.longitude.toFixed(3)}`;
+}
+
+function fitMappedPins(
+  map: import("leaflet").Map,
+  L: typeof import("leaflet"),
+  pins: MappedTrainer[]
+) {
+  if (pins.length === 0) return;
+  if (pins.length === 1) {
+    map.setView([pins[0].latitude, pins[0].longitude], 12, { animate: false });
+    return;
+  }
+  try {
+    const bounds = L.latLngBounds(
+      pins.map((pin) => [pin.latitude, pin.longitude] as [number, number])
+    );
+    map.fitBounds(bounds, {
+      animate: false,
+      padding: [36, 36],
+      maxZoom: 13,
+    });
+  } catch {
+    map.setView([pins[0].latitude, pins[0].longitude], 11, { animate: false });
+  }
+}
+
 /**
  * Explore map — pins current results around the search origin.
  * Fresh visits / recenter use the default radius frame; pan/zoom or radius
@@ -112,6 +146,8 @@ export function ExploreMap({
   const suppressUntilRef = useRef(0);
   const [mapEpoch, setMapEpoch] = useState(0);
   const profileSheetOpen = useProfileSheetOpen();
+  const locationGateOpen = useSiteLocationGateOpen();
+  const mapPaused = profileSheetOpen || locationGateOpen;
 
   const mapped = useMemo(() => {
     const pins: MappedTrainer[] = [];
@@ -126,6 +162,8 @@ export function ExploreMap({
     }
     return pins;
   }, [trainers]);
+  const mappedRef = useRef(mapped);
+  mappedRef.current = mapped;
 
   const areaKey = areaCenter
     ? `${areaCenter.latitude.toFixed(4)},${areaCenter.longitude.toFixed(4)}`
@@ -155,18 +193,27 @@ export function ExploreMap({
     notify(viewport);
   }, []);
 
-  const runProgrammaticFrame = useCallback(
-    (center: ExploreMapArea, radiusMiles: number) => {
-      const map = mapRef.current;
-      const L = leafletRef.current;
-      if (!map || !L) return;
-      suppressMoves(280);
-      frameRadiusMiles(map, L, center, radiusMiles);
+  const applyLiveCamera = useCallback(
+    (map: import("leaflet").Map, L: typeof import("leaflet")) => {
+      const origin = areaCenterRef.current;
+      const pins = mappedRef.current;
+      if (origin) {
+        const radius =
+          activeSearchAreaRef.current?.radiusMiles ??
+          DEFAULT_EXPLORE_RADIUS_MILES;
+        frameRadiusMiles(map, L, origin, radius);
+        framedOriginRef.current = `${origin.latitude.toFixed(4)},${origin.longitude.toFixed(4)}`;
+      } else if (pins.length > 0) {
+        fitMappedPins(map, L, pins);
+        framedOriginRef.current = pinsFrameKey(pins);
+      } else {
+        framedOriginRef.current = "waiting";
+      }
       window.setTimeout(() => {
         onPendingRef.current?.(null);
       }, 200);
     },
-    [suppressMoves]
+    []
   );
 
   useEffect(() => {
@@ -174,13 +221,13 @@ export function ExploreMap({
     let map: import("leaflet").Map | null = null;
 
     async function mountMap() {
-      if (profileSheetOpen) return;
+      if (mapPaused) return;
 
       const el = containerRef.current;
       if (!el) return;
 
       const L = (await import("leaflet")).default;
-      if (cancelled || profileSheetOpen || !containerRef.current) return;
+      if (cancelled || mapPaused || !containerRef.current) return;
 
       if (mapRef.current) {
         mapRef.current.remove();
@@ -190,13 +237,17 @@ export function ExploreMap({
       areaDotRef.current = null;
       framedOriginRef.current = "";
 
-      const center = areaCenterRef.current ?? FALLBACK_CENTER;
-      const radius =
-        activeSearchAreaRef.current?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
+      const origin = areaCenterRef.current;
+      const pins = mappedRef.current;
+      const start =
+        origin ??
+        (pins[0]
+          ? { latitude: pins[0].latitude, longitude: pins[0].longitude }
+          : FALLBACK_CENTER);
       leafletRef.current = L;
 
       map = L.map(el, {
-        center: [center.latitude, center.longitude],
+        center: [start.latitude, start.longitude],
         zoom: 11,
         zoomControl: false,
         attributionControl: true,
@@ -227,10 +278,7 @@ export function ExploreMap({
       mapRef.current = map;
 
       suppressUntilRef.current = Date.now() + 400;
-      frameRadiusMiles(map, L, center, radius);
-      framedOriginRef.current = areaCenterRef.current
-        ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
-        : "fallback";
+      applyLiveCamera(map, L);
 
       setMapEpoch((value) => value + 1);
 
@@ -243,20 +291,8 @@ export function ExploreMap({
       window.setTimeout(() => {
         map?.invalidateSize();
         if (map && leafletRef.current) {
-          const liveCenter = areaCenterRef.current ?? FALLBACK_CENTER;
-          const liveRadius =
-            activeSearchAreaRef.current?.radiusMiles ??
-            DEFAULT_EXPLORE_RADIUS_MILES;
           suppressUntilRef.current = Date.now() + 320;
-          frameRadiusMiles(
-            map,
-            leafletRef.current,
-            liveCenter,
-            liveRadius
-          );
-          framedOriginRef.current = areaCenterRef.current
-            ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
-            : "fallback";
+          applyLiveCamera(map, leafletRef.current);
         }
       }, 80);
       window.setTimeout(() => {
@@ -279,35 +315,36 @@ export function ExploreMap({
         map.remove();
       }
     };
-  }, [emitPendingFromMap, locked, profileSheetOpen, variant]);
+  }, [applyLiveCamera, emitPendingFromMap, locked, mapPaused, variant]);
 
   useEffect(() => {
     const map = mapRef.current;
     const L = leafletRef.current;
-    if (!map || !L || profileSheetOpen) return;
+    if (!map || !L || mapPaused) return;
 
-    const center = areaCenter ?? FALLBACK_CENTER;
-    const key = areaKey || "fallback";
+    const key = areaCenter
+      ? areaKey
+      : pinsFrameKey(mapped);
     if (framedOriginRef.current === key) return;
 
-    const radius =
-      activeSearchArea?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
-    runProgrammaticFrame(center, radius);
-    framedOriginRef.current = key;
+    suppressMoves(280);
+    applyLiveCamera(map, L);
   }, [
     areaCenter,
     areaKey,
+    mapped,
     activeSearchArea?.radiusMiles,
-    profileSheetOpen,
+    mapPaused,
     mapEpoch,
-    runProgrammaticFrame,
+    applyLiveCamera,
+    suppressMoves,
   ]);
 
   useEffect(() => {
     const map = mapRef.current;
     const L = leafletRef.current;
     const layer = markersLayerRef.current;
-    if (!map || !L || !layer || profileSheetOpen) return;
+    if (!map || !L || !layer || mapPaused) return;
 
     layer.clearLayers();
     if (areaDotRef.current) {
@@ -390,21 +427,20 @@ export function ExploreMap({
       );
       layer.addLayer(marker);
     }
-  }, [mapped, userLocationDot, profileSheetOpen, mapEpoch]);
+  }, [mapped, userLocationDot, mapPaused, mapEpoch]);
 
   const handleRecenter = useCallback(() => {
-    if (profileSheetOpen) return;
-    const center = areaCenterRef.current ?? FALLBACK_CENTER;
-    runProgrammaticFrame(center, DEFAULT_EXPLORE_RADIUS_MILES);
-    const key = areaCenterRef.current
-      ? `${areaCenterRef.current.latitude.toFixed(4)},${areaCenterRef.current.longitude.toFixed(4)}`
-      : "fallback";
-    framedOriginRef.current = key;
+    if (mapPaused) return;
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    if (!map || !L) return;
+    suppressMoves(280);
+    applyLiveCamera(map, L);
     onRecenterSearch?.();
-  }, [onRecenterSearch, profileSheetOpen, runProgrammaticFrame]);
+  }, [onRecenterSearch, mapPaused, applyLiveCamera, suppressMoves]);
 
   const missing = trainers.length - mapped.length;
-  const showChrome = !locked && !profileSheetOpen;
+  const showChrome = !locked && !mapPaused;
   const rootClass = [
     "explore-map",
     variant === "hero"
