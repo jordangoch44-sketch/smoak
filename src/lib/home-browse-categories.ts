@@ -11,7 +11,7 @@ export type HomeBrowseCategoryIcon =
   | "sports"
   | "running";
 
-export interface HomeBrowseCategory {
+interface HomeBrowseCategory {
   id: string;
   /** Homepage-facing label */
   label: string;
@@ -21,6 +21,8 @@ export interface HomeBrowseCategory {
    */
   href: string;
   icon: HomeBrowseCategoryIcon;
+  /** Local cinematic photo for the homepage card */
+  image: string;
 }
 
 /** Six primary browse targets — closest existing filter values. */
@@ -30,12 +32,14 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     label: "Personal Trainer",
     href: "/explore?profession=Personal+Trainer",
     icon: "dumbbell",
+    image: "/images/categories/personal-trainer.jpg",
   },
   {
     id: "strength-coach",
     label: "Strength Coach",
     href: "/explore?profession=Strength+Coach",
     icon: "strength",
+    image: "/images/categories/strength-coach.jpg",
   },
   {
     id: "nutrition-coach",
@@ -43,6 +47,7 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     /* Canonical profession is Nutritionist; “Nutrition Coach” aliases there. */
     href: "/explore?profession=Nutritionist",
     icon: "leaf",
+    image: "/images/categories/nutrition-coach.jpg",
   },
   {
     id: "yoga-pilates",
@@ -50,18 +55,21 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     /* Pilates Instructor already normalizes to Yoga Instructor. */
     href: "/explore?profession=Yoga+Instructor",
     icon: "yoga",
+    image: "/images/categories/yoga-pilates.jpg",
   },
   {
     id: "sports-performance",
     label: "Sports Performance",
     href: "/explore?specialty=Sports+Performance",
     icon: "sports",
+    image: "/images/categories/sports-performance.jpg",
   },
   {
     id: "running-endurance",
     label: "Running & Endurance",
     href: "/explore?profession=Running+Coach",
     icon: "running",
+    image: "/images/categories/running-endurance.jpg",
   },
 ] as const;
 

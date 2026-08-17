@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
+import Image from "next/image";
 import { TapLink } from "@/components/ui/TapLink";
 import {
   AthleticBallIcon,
@@ -51,10 +52,21 @@ export function Categories() {
                 href={category.href}
                 className="home-specialty-card"
               >
-                <span className="home-specialty-card__icon" aria-hidden>
-                  <Icon className="home-specialty-card__svg" />
+                <span className="home-specialty-card__copy">
+                  <span className="home-specialty-card__icon" aria-hidden>
+                    <Icon className="home-specialty-card__svg" />
+                  </span>
+                  <span className="home-specialty-card__name">{category.label}</span>
                 </span>
-                <span className="home-specialty-card__name">{category.label}</span>
+                <span className="home-specialty-card__media" aria-hidden>
+                  <Image
+                    src={category.image}
+                    alt=""
+                    fill
+                    sizes="(max-width: 639px) 42vw, (max-width: 1023px) 22vw, 180px"
+                    className="home-specialty-card__photo"
+                  />
+                </span>
               </TapLink>
             );
           })}
