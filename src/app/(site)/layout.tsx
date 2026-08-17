@@ -9,6 +9,7 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SiteVisitTracker } from "@/components/layout/SiteVisitTracker";
 import { SiteWelcomeIntroGate } from "@/components/layout/SiteWelcomeIntroGate";
 import { SiteLocationGate } from "@/components/layout/SiteLocationGate";
+import { IpLocationHintBoot } from "@/components/layout/IpLocationHintBoot";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { ToastProvider } from "@/components/ui/toast";
@@ -64,6 +65,7 @@ export default function SiteLayout({
         <AppProviders supabaseConfigured={isSupabaseConfigured()}>
           <SiteVisitTracker />
           <SiteWelcomeIntroGate />
+          <IpLocationHintBoot />
           <SiteLocationGate />
           <SiteHeader />
           <AppMain>{children}</AppMain>

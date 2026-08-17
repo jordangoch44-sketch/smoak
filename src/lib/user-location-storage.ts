@@ -106,14 +106,11 @@ export function shouldShowLocationPrompt(): boolean {
 }
 
 /**
- * Full-screen site gate — location is required for marketplace proximity.
- * Ignores prior “skip” so guests who dismissed the old prompt still choose.
+ * Search-page location popup. Marketplace stays ungated.
+ * Skippable — IP still frames Search when ZIP / GPS are declined.
  */
 export function needsSiteLocationGate(): boolean {
-  if (typeof window === "undefined") return false;
-  if (loadSavedZipCode()) return false;
-  if (hasSavedGeolocation()) return false;
-  return true;
+  return shouldShowLocationPrompt();
 }
 
 export function hasPersonalizationLocation(): boolean {

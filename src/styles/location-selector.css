@@ -394,6 +394,18 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
+.location-selector-panel__btn--skip {
+  margin-top: 0.35rem;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
+  font-weight: 450;
+}
+
+.location-selector-panel__btn--skip:hover:not(:disabled) {
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .location-selector-panel__btn--clear {
   margin-top: 0.15rem;
   border: 1px solid rgba(255, 255, 255, 0.1);

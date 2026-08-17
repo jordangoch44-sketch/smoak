@@ -117,7 +117,7 @@ export function mergeExploreFiltersWithSavedLocation(
   };
 }
 
-/** True when the client can sort Explore by proximity (header ZIP or GPS). */
+/** True when the client opted into ZIP or GPS — not coarse IP fallback. */
 export function hasClientSearchLocation(
   session?: AuthSession | null
 ): boolean {

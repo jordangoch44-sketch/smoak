@@ -37,8 +37,7 @@ export function ExploreSearchToolbar({
 }: ExploreSearchToolbarProps) {
   const { session } = useAuthSession();
   const { hasLocation, pillLabel, isPlaceholder } = useUserLocation();
-  const locationReady =
-    hasLocation || hasClientSearchLocation(session) || !isPlaceholder;
+  const optedInLocation = hasLocation || hasClientSearchLocation(session);
   const [draft, setDraft] = useState(searchQuery);
   const [appliedQuery, setAppliedQuery] = useState(searchQuery);
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -166,7 +165,7 @@ export function ExploreSearchToolbar({
                 onFocus={handleFocus}
                 onClick={openOverlay}
                 placeholder={
-                  locationReady && !isPlaceholder
+                  optedInLocation && !isPlaceholder
                     ? `Search near ${pillLabel}…`
                     : "Name or keyword…"
                 }
@@ -229,9 +228,9 @@ export function ExploreSearchToolbar({
         onDraftChange={setDraft}
         onClose={closeOverlay}
         onSubmit={handleSubmitFromOverlay}
-        showLocationPrompt={!locationReady}
+        showLocationPrompt={!optedInLocation}
         locationLabel={
-          locationReady && !isPlaceholder ? pillLabel : undefined
+          optedInLocation && !isPlaceholder ? pillLabel : undefined
         }
       />
     </div>

@@ -69,6 +69,24 @@ export function findNearestMarketplaceCity(
   return nearest;
 }
 
+/** Marketplace city only when the point is actually in that metro (not “nearest US market”). */
+export function findNearbyMarketplaceCity(
+  latitude: number,
+  longitude: number,
+  maxKm = 160
+): MarketplaceCity | null {
+  const nearest = findNearestMarketplaceCity(latitude, longitude);
+  const center = MARKETPLACE_CITY_CENTERS[nearest];
+  const distance = haversineKm(
+    latitude,
+    longitude,
+    center.lat,
+    center.lng
+  );
+  if (distance > maxKm) return null;
+  return nearest;
+}
+
 export function marketplaceCityToSlug(city: string): string {
   return city.trim().toLowerCase().replace(/\s+/g, "-");
 }

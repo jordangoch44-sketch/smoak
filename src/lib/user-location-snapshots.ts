@@ -1,4 +1,5 @@
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
+import { getIpUserCoordinates } from "@/lib/geo/ip-location-hint";
 import {
   getActiveUserCoordinates,
   hasSavedGeolocation,
@@ -72,7 +73,7 @@ function rememberPoint(
 }
 
 export function getActiveUserCoordinatesSnapshot(): UserGeoPoint | null {
-  const next = getActiveUserCoordinates();
+  const next = getActiveUserCoordinates() ?? getIpUserCoordinates();
   const remembered = rememberPoint(next, {
     coords: cachedCoords,
     lat: cachedLat,

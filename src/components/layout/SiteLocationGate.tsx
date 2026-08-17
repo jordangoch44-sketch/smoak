@@ -8,28 +8,12 @@ import { Logo } from "@/components/ui/Logo";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getProfileZipFromSession } from "@/lib/client-profile-location";
-import { hasSeenSiteIntro, subscribeSiteIntroChange } from "@/lib/site-intro-storage";
+import { isExploreNavPath } from "@/lib/mobile-bottom-nav";
+import { skipLocationPrompt } from "@/lib/user-location-store";
 import {
   needsSiteLocationGate,
   USER_LOCATION_CHANGE_EVENT,
 } from "@/lib/user-location-storage";
-
-const GATE_EXCLUDED_PREFIXES = [
-  "/login",
-  "/create-account",
-  "/specialist-dashboard",
-  "/client-dashboard",
-  "/admin",
-  "/specialist-apply",
-  "/apply",
-  "/tap-test",
-] as const;
-
-function isLocationGateRoute(pathname: string): boolean {
-  return !GATE_EXCLUDED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-}
 
 function subscribeLocationChange(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") return () => undefined;
@@ -47,8 +31,8 @@ function readNeedsLocationGate(): boolean {
 }
 
 /**
- * Required location gate after the welcome warp (and on later visits without
- * a saved ZIP/geo). Header ZIP remains available to adjust later.
+ * Optional Search-page location popup (ZIP + precise GPS).
+ * Marketplace is never gated. Dismiss → IP frames the map.
  */
 export function SiteLocationGate() {
   const pathname = usePathname();
@@ -56,11 +40,6 @@ export function SiteLocationGate() {
   const titleId = useId();
   const { session } = useAuthSession();
   const [dismissed, setDismissed] = useState(false);
-  const introSeen = useSyncExternalStore(
-    subscribeSiteIntroChange,
-    hasSeenSiteIntro,
-    () => true
-  );
   const needsLocation = useSyncExternalStore(
     subscribeLocationChange,
     readNeedsLocationGate,
@@ -68,13 +47,10 @@ export function SiteLocationGate() {
   );
 
   const profileHasZip = Boolean(getProfileZipFromSession(session));
-  const introBlocking =
-    pathname === "/" && !introSeen;
   const shouldShow =
     hydrated &&
     !dismissed &&
-    !introBlocking &&
-    isLocationGateRoute(pathname) &&
+    isExploreNavPath(pathname) &&
     needsLocation &&
     !profileHasZip;
 
@@ -82,6 +58,11 @@ export function SiteLocationGate() {
     if (!needsSiteLocationGate()) {
       setDismissed(true);
     }
+  }, []);
+
+  const handleSkip = useCallback(() => {
+    skipLocationPrompt();
+    setDismissed(true);
   }, []);
 
   useEffect(() => {
@@ -102,6 +83,15 @@ export function SiteLocationGate() {
     }
   }, [profileHasZip, needsLocation]);
 
+  useEffect(() => {
+    if (!shouldShow) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") handleSkip();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [shouldShow, handleSkip]);
+
   if (!shouldShow) return null;
 
   return createPortal(
@@ -110,16 +100,24 @@ export function SiteLocationGate() {
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      onClick={handleSkip}
     >
       <div className="site-location-gate__glow" aria-hidden />
-      <div className="site-location-gate__panel">
+      <div
+        className="site-location-gate__panel"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="site-location-gate__brand">
           <Logo href={null} size="lg" className="site-location-gate__logo" />
           <p id={titleId} className="sr-only">
-            Welcome to SMOAC — set your location to continue
+            Set a location for closer Search results, or continue nearby
           </p>
         </div>
-        <LocationSelectorPanel mode="gate" onUpdated={handleUpdated} />
+        <LocationSelectorPanel
+          mode="gate"
+          onUpdated={handleUpdated}
+          onSkip={handleSkip}
+        />
       </div>
     </div>,
     document.body

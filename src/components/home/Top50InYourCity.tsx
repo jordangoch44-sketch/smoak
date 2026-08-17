@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useEffect, useMemo } from "react";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import {
-  useActiveUserCoordinates,
-  useActiveUserCoordinatesKey,
-} from "@/hooks/useActiveUserCoordinates";
+  useMarketplacePersonalizationCity,
+  useMarketplaceUserCoordinates,
+  useMarketplaceUserCoordinatesKey,
+} from "@/hooks/useMarketplaceGeo";
 import { useHydrated } from "@/hooks/useHydrated";
-import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { usePersonalizationMarketplaceCity } from "@/hooks/usePersonalizationMarketplaceCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listLiveTopRatedSpecialistsForCity } from "@/lib/live-city-rankings";
@@ -34,10 +34,10 @@ export function Top50InYourCity({
   initialAggregates?: SpecialistReviewAggregate[];
 }) {
   const hydrated = useHydrated();
-  const personalizationCity = usePersonalizationCity();
+  const personalizationCity = useMarketplacePersonalizationCity();
   const marketplaceCity = usePersonalizationMarketplaceCity();
-  const userCoords = useActiveUserCoordinates();
-  const coordsKey = useActiveUserCoordinatesKey();
+  const userCoords = useMarketplaceUserCoordinates();
+  const coordsKey = useMarketplaceUserCoordinatesKey();
 
   useEffect(() => {
     primePublicCatalogFromSSR(initialCatalog, catalogMode);

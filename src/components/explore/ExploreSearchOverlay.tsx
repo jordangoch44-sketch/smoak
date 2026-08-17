@@ -264,7 +264,7 @@ export function ExploreSearchOverlay({
                   <span className="explore-search-overlay__location-label">
                     {geoLoading
                       ? "Finding your location…"
-                      : "Use your current location"}
+                      : "Use current location"}
                   </span>
                   <span className="explore-search-overlay__location-hint">
                     Show specialists near you

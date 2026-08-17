@@ -1,20 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
 import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
-import { useAuthSession } from "@/hooks/useAuthSession";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
-import { useUserLocationEditor } from "@/contexts/UserLocationContext";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
-import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import type { ExploreSearchArea } from "@/lib/explore-map-area";
-import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
 import { cn } from "@/lib/utils";
@@ -28,12 +24,9 @@ import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
-  const { session } = useAuthSession();
   const isMobile = useMobileViewport(true);
   const isCompactAtmosphere = useTabletViewport(true);
-  const { openLocationPanel } = useUserLocationEditor();
   const preciseUserLocation = usePreciseUserCoordinates();
-  const pendingSearchRef = useRef<string | null>(null);
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
   const [boostOpen, setBoostOpen] = useState(false);
@@ -97,39 +90,11 @@ export function ExplorePageClient() {
     resetMapSearchArea();
   }, [resetMapSearchArea]);
 
-  const runSearchOrAskLocation = useCallback(
-    (query: string) => {
-      if (!hasClientSearchLocation(session)) {
-        pendingSearchRef.current = query;
-        openLocationPanel();
-        return;
-      }
-      pendingSearchRef.current = null;
-      submitSearch(query);
-    },
-    [session, openLocationPanel, submitSearch]
-  );
-
-  useEffect(() => {
-    function flushPendingSearch() {
-      const pending = pendingSearchRef.current;
-      if (!pending) return;
-      if (!hasClientSearchLocation(session)) return;
-      pendingSearchRef.current = null;
-      submitSearch(pending);
-    }
-
-    window.addEventListener(USER_LOCATION_CHANGE_EVENT, flushPendingSearch);
-    return () => {
-      window.removeEventListener(USER_LOCATION_CHANGE_EVENT, flushPendingSearch);
-    };
-  }, [session, submitSearch]);
-
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
-      runSearchOrAskLocation(category.searchQuery);
+      submitSearch(category.searchQuery);
     },
-    [runSearchOrAskLocation]
+    [submitSearch]
   );
 
   const handleViewAll = useCallback(() => {
@@ -144,7 +109,7 @@ export function ExplorePageClient() {
   const searchToolbar = (
     <ExploreSearchToolbar
       searchQuery={displayQuery}
-      onSearchSubmit={runSearchOrAskLocation}
+      onSearchSubmit={submitSearch}
       onClearSearch={clearSearch}
       activeFilterChips={activeFilterChips}
       onRemoveFilter={removeFilter}

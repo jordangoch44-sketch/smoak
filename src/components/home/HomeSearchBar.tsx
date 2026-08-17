@@ -33,8 +33,7 @@ export function HomeSearchBar() {
   const reduceMotion = usePrefersReducedMotion();
   const { session } = useAuthSession();
   const { hasLocation, pillLabel, isPlaceholder } = useUserLocation();
-  const locationReady =
-    hasLocation || hasClientSearchLocation(session) || !isPlaceholder;
+  const optedInLocation = hasLocation || hasClientSearchLocation(session);
 
   const [draft, setDraft] = useState("");
   const [promptIndex, setPromptIndex] = useState(0);
@@ -208,7 +207,7 @@ export function HomeSearchBar() {
             aria-expanded={overlayOpen}
             aria-controls="explore-search-overlay-panel"
             placeholder={
-              locationReady && !isPlaceholder && !showPrompt
+              optedInLocation && !isPlaceholder && !showPrompt
                 ? `Search near ${pillLabel}…`
                 : undefined
             }
@@ -236,9 +235,9 @@ export function HomeSearchBar() {
         onDraftChange={setDraft}
         onClose={closeOverlay}
         onSubmit={handleSubmitFromOverlay}
-        showLocationPrompt={!locationReady}
+        showLocationPrompt={!optedInLocation}
         locationLabel={
-          locationReady && !isPlaceholder ? pillLabel : undefined
+          optedInLocation && !isPlaceholder ? pillLabel : undefined
         }
       />
     </div>

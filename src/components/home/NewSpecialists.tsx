@@ -10,11 +10,11 @@ import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import {
-  useActiveUserCoordinates,
-  useActiveUserCoordinatesKey,
-} from "@/hooks/useActiveUserCoordinates";
+  useMarketplacePersonalizationCity,
+  useMarketplaceUserCoordinates,
+  useMarketplaceUserCoordinatesKey,
+} from "@/hooks/useMarketplaceGeo";
 import { useHydrated } from "@/hooks/useHydrated";
-import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
@@ -31,9 +31,9 @@ export function NewSpecialists({
 }) {
   const router = useRouter();
   const hydrated = useHydrated();
-  const personalizationCity = usePersonalizationCity();
-  const userCoords = useActiveUserCoordinates();
-  const coordsKey = useActiveUserCoordinatesKey();
+  const personalizationCity = useMarketplacePersonalizationCity();
+  const userCoords = useMarketplaceUserCoordinates();
+  const coordsKey = useMarketplaceUserCoordinatesKey();
 
   useEffect(() => {
     primePublicCatalogFromSSR(initialCatalog, catalogMode);

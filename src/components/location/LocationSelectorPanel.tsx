@@ -16,8 +16,9 @@ import { cn } from "@/lib/utils";
 
 interface LocationSelectorPanelProps {
   onUpdated: () => void;
-  /** Full-screen first-visit gate — required location, no clear. */
+  /** Search-page popup — ZIP / GPS opt-in, skip uses IP. */
   mode?: "dropdown" | "gate";
+  onSkip?: () => void;
 }
 
 function formatPanelLocationSummary(
@@ -34,6 +35,7 @@ function formatPanelLocationSummary(
 export function LocationSelectorPanel({
   onUpdated,
   mode = "dropdown",
+  onSkip,
 }: LocationSelectorPanelProps) {
   const isGate = mode === "gate";
   const {
@@ -165,10 +167,10 @@ export function LocationSelectorPanel({
       <header className="location-selector-panel__header">
         {isGate ? (
           <>
-            <h2 className="location-selector-panel__title">Welcome to SMOAC</h2>
+            <h2 className="location-selector-panel__title">Search near you</h2>
             <p className="location-selector-panel__lede">
-              Allow location so Search can show the closest specialists to you —
-              ranked by how near they are.
+              Use precise location or a ZIP to rank specialists by how close
+              they are. You can skip — we’ll still show nearby results.
             </p>
           </>
         ) : (
@@ -281,6 +283,17 @@ export function LocationSelectorPanel({
               : "Update location"}
         </button>
       </form>
+
+      {isGate && onSkip ? (
+        <button
+          type="button"
+          className="smoac-control location-selector-panel__btn location-selector-panel__btn--skip"
+          onClick={onSkip}
+          disabled={busy}
+        >
+          Not now
+        </button>
+      ) : null}
     </div>
   );
 }
