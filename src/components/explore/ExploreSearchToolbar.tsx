@@ -152,8 +152,7 @@ export function ExploreSearchToolbar({
         ref={searchRowRef}
       >
         <div className="explore-search-shell">
-          <div className="explore-search-shell__row">
-            <div className="explore-search-shell__field">
+          <div className="explore-search-shell__field">
               <SearchIcon className="explore-search-shell__icon" />
               <input
                 id="explore-search-input"
@@ -189,7 +188,6 @@ export function ExploreSearchToolbar({
                   ×
                 </button>
               ) : null}
-            </div>
           </div>
         </div>
 

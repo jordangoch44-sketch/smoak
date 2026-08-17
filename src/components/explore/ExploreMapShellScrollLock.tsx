@@ -4,11 +4,10 @@ import { useLayoutEffect } from "react";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import {
   armExploreMapShellScrollLock,
+  disarmExploreMapShellScrollLock,
   forceDocumentScrollTop,
   pinDocumentScrollTop,
 } from "@/lib/mobile-chrome";
-
-const MAP_SHELL_BODY_CLASS = "explore-map-shell-open";
 
 /**
  * Runs under the explore layout (including `loading.tsx`) so scroll is pinned
@@ -29,6 +28,7 @@ export function ExploreMapShellScrollLock() {
     }
 
     armExploreMapShellScrollLock();
+    /* Timeouts in pinDocumentScrollTop cover re-apply; scroll listener catches late iOS restores. */
     pinDocumentScrollTop(1800);
 
     const onScroll = () => {
@@ -38,19 +38,9 @@ export function ExploreMapShellScrollLock() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    const until = Date.now() + 1800;
-    const intervalId = window.setInterval(() => {
-      if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
-        forceDocumentScrollTop();
-      }
-      if (Date.now() >= until) window.clearInterval(intervalId);
-    }, 32);
-
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.clearInterval(intervalId);
-      document.body.classList.remove(MAP_SHELL_BODY_CLASS);
-      document.documentElement.classList.remove(MAP_SHELL_BODY_CLASS);
+      disarmExploreMapShellScrollLock();
       if (previousRestoration != null) {
         try {
           history.scrollRestoration = previousRestoration;

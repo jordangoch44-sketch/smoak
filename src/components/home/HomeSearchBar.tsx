@@ -19,8 +19,8 @@ import { prepareNavScrollReset } from "@/lib/mobile-chrome";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-/** Overlay styles live in explore.css — load them on Marketplace too */
-import "@/styles/explore.css";
+/** Overlay styles — shared with Explore (not full explore.css) */
+import "@/styles/explore-search-overlay.css";
 
 const ROTATE_MS = 3200;
 

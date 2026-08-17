@@ -9,7 +9,7 @@ CSS is split by **scope**, not one giant file.
    - `save-button.css`, `save-toast.css`, `toast.css`
    - `site-chrome.css`, `login-gate.css`, `mobile-safari.css`
 2. **`site-shell.css`** (`(site)/layout`) — `home.css`, `page-transition.css`, header panels, intro
-3. **Feature CSS** — imported from route layouts or components as needed (`explore.css`, `profile.css`, `login.css`, `dashboard.css`, …)
+3. **Feature CSS** — imported from route layouts or components as needed (`explore.css`, `explore-search-overlay.css`, `profile.css`, `login.css`, `dashboard.css`, …)
 
 ## Interaction-critical files
 

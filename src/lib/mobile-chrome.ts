@@ -79,6 +79,12 @@ export function armExploreMapShellScrollLock(): void {
   forceDocumentScrollTop();
 }
 
+export function disarmExploreMapShellScrollLock(): void {
+  if (typeof document === "undefined") return;
+  document.body.classList.remove(MAP_SHELL_BODY_CLASS);
+  document.documentElement.classList.remove(MAP_SHELL_BODY_CLASS);
+}
+
 /**
  * Call before router.push to Search/Profile so the next route paints at y=0
  * (SSR/loading HTML can inherit the previous page's scroll before hydration).

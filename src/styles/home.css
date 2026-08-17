@@ -223,10 +223,6 @@
   );
 }
 
-.home-page--discovery .home-hero--discovery {
-  isolation: auto;
-}
-
 .home-hero__canvas .atmosphere-mesh {
   inset: -40% -28% -52%;
 }

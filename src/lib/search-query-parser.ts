@@ -2,7 +2,7 @@ import { getSearchMappingEntries, SEARCH_STOP_WORDS } from "@/data/search-query-
 import { clampExplorePrice } from "@/lib/explore-price-range";
 import type { TrainerFilters } from "@/types";
 
-export interface ParsedSearchFilterUpdates {
+interface ParsedSearchFilterUpdates {
   city: string;
   neighborhood: string;
   profession: string;
@@ -12,7 +12,7 @@ export interface ParsedSearchFilterUpdates {
   priceMax: string;
 }
 
-export interface ParsedSearchResult {
+interface ParsedSearchResult {
   /** Full query as typed — shown in search input */
   displayQuery: string;
   /** Remaining terms for text matching after structured tokens are extracted */
@@ -166,7 +166,7 @@ function extractGenderFilter(work: string): { work: string; gender: string } {
  * Parse natural-language search into filter fields + optional residual text.
  * Longest phrases match first; each filter key is set at most once.
  */
-export function parseSearchQuery(rawQuery: string): ParsedSearchResult {
+function parseSearchQuery(rawQuery: string): ParsedSearchResult {
   const displayQuery = rawQuery.trim();
   const empty: ParsedSearchResult = {
     displayQuery,
@@ -231,7 +231,7 @@ export function parseSearchQuery(rawQuery: string): ParsedSearchResult {
 }
 
 /** Apply parsed tokens onto Explore filter state */
-export function mergeParsedIntoFilters(
+function mergeParsedIntoFilters(
   base: TrainerFilters,
   parsed: ParsedSearchFilterUpdates
 ): TrainerFilters {
