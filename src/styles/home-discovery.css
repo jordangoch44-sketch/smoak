@@ -228,7 +228,7 @@
   padding: 0;
   border: 0;
   background: transparent;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.5rem;
@@ -250,7 +250,7 @@
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.5rem;
@@ -278,9 +278,6 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter:
-    drop-shadow(0 0 1px rgba(255, 255, 255, 0.55))
-    drop-shadow(0 0 5px rgba(236, 72, 153, 0.42));
   pointer-events: none;
   transition:
     opacity 0.22s ease,
@@ -333,7 +330,6 @@
   .home-hero-search__prompt {
     transition: none;
     animation: none;
-    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.4));
   }
 }
 

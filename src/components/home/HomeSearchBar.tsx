@@ -12,7 +12,7 @@ import { prepareNavScrollReset } from "@/lib/mobile-chrome";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
-const ROTATE_MS = 2600;
+const ROTATE_MS = 3200;
 
 export function HomeSearchBar() {
   const router = useRouter();

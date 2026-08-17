@@ -77,3 +77,21 @@ export function lookupLocalZipPlace(zip: string): ZipPlaceRecord | null {
   if (!isValidZipCode(normalized)) return null;
   return ZIP_PLACE_NAMES[normalized] ?? null;
 }
+
+function normalizePlaceKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+}
+
+/** Reverse lookup — first ZIP whose USPS place name matches (e.g. Mission Valley → 92108). */
+export function findZipForPlaceName(placeName: string): string | null {
+  const target = normalizePlaceKey(placeName);
+  if (!target) return null;
+  for (const [zip, record] of Object.entries(ZIP_PLACE_NAMES)) {
+    if (normalizePlaceKey(record.placeName) === target) return zip;
+  }
+  return null;
+}

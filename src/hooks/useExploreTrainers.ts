@@ -180,13 +180,16 @@ export function useExploreTrainers({
   const initialSavedLocation = initialSavedZip
     ? exploreFiltersFromZipCode(initialSavedZip)
     : null;
-  const initialKeywordQ = initialSavedLocation
+  const locationOnlyQ = initialSavedLocation
     ? stripLocationLabelsFromQuery(initialQ, initialSavedLocation)
     : stripLocationLabelsFromQuery(initialQ, {
         zipCode: initialBaseFilters.zipCode,
         city: initialBaseFilters.city,
         neighborhood: initialBaseFilters.neighborhood,
       });
+  /* Header place leaked into q= with nothing else — ignore it.
+   * Otherwise parse the full query so “trainer in Mission Valley” keeps place. */
+  const initialKeywordQ = locationOnlyQ.trim() ? initialQ : "";
   const initialParsed = applySearchQueryToExploreState(initialKeywordQ, {
     ...EMPTY_TRAINER_FILTERS,
     gender: initialBaseFilters.gender,
@@ -316,7 +319,7 @@ export function useExploreTrainers({
           return;
         }
 
-        const parsed = applySearchQueryToExploreState(keywordOnly, {
+        const parsed = applySearchQueryToExploreState(nextQ, {
           ...EMPTY_TRAINER_FILTERS,
           gender: fromUrl.gender,
           priceMin: fromUrl.priceMin,
@@ -325,7 +328,7 @@ export function useExploreTrainers({
         });
         const syncedFilters: TrainerFilters = {
           ...mergeParsedWithUrlFilters(fromUrl, parsed.filters),
-          /* Keep map radius on header coords — not mirrored location filters. */
+          /* Typed place frames the map; header ZIP stays for personalization only. */
           zipCode: "",
           city: parsed.filters.city,
           neighborhood: parsed.filters.neighborhood,
@@ -334,7 +337,7 @@ export function useExploreTrainers({
           buildDisplayQueryFromSearchFilters(
             syncedFilters,
             parsed.residualQuery
-          ) || keywordOnly;
+          ) || nextQ;
 
         setDisplayQuery(syncedDisplay);
         setSearchQuery(parsed.residualQuery);
@@ -411,10 +414,24 @@ export function useExploreTrainers({
       const savedLocation = zip ? exploreFiltersFromZipCode(zip) : null;
 
       setFiltersState((prev) => {
+        const currentDisplay = displayQueryRef.current;
+        const typedNeighborhood = Boolean(
+          prev.neighborhood &&
+            currentDisplay
+              .toLowerCase()
+              .includes(prev.neighborhood.toLowerCase())
+        );
+        const typedCity = Boolean(
+          prev.city &&
+            currentDisplay.toLowerCase().includes(prev.city.toLowerCase())
+        );
+
         const mirroredNeighborhood =
+          !typedNeighborhood &&
           Boolean(savedLocation?.neighborhood) &&
           prev.neighborhood === savedLocation?.neighborhood;
         const mirroredCityOnly =
+          !typedCity &&
           Boolean(savedLocation) &&
           !prev.neighborhood &&
           prev.city === savedLocation?.city &&
@@ -427,10 +444,10 @@ export function useExploreTrainers({
           neighborhood: mirroredNeighborhood ? "" : prev.neighborhood,
         };
 
-        const currentDisplay = displayQueryRef.current;
-        const locationStripped = savedLocation
-          ? stripLocationLabelsFromQuery(currentDisplay, savedLocation)
-          : currentDisplay;
+        const locationStripped =
+          savedLocation && !typedNeighborhood && !typedCity
+            ? stripLocationLabelsFromQuery(currentDisplay, savedLocation)
+            : currentDisplay;
         const filtersChanged = !filtersEqual(prev, next);
         const locationTextRemoved = locationStripped !== currentDisplay;
 
@@ -689,8 +706,8 @@ export function useExploreTrainers({
         profession: "",
         specialty: "",
       });
-      /* Keep gender / price / service from the drawer. Map radius uses the
-       * header location via user coordinates — do not inject ZIP into chips. */
+      /* Keep gender / price / service from the drawer. Typed city/neighborhood
+       * frame the map; header ZIP is personalization only. */
       const nextFilters = {
         ...applied.filters,
         gender: filters.gender,

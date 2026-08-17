@@ -26,6 +26,7 @@ import {
   zipCodeToCoordinates,
 } from "@/lib/geo/zip-centroids";
 import { getCachedGeocodedZip } from "@/lib/geo/geocoded-zip-cache";
+import { findZipForPlaceName } from "@/lib/geo/zip-place-names";
 import type { AuthSession } from "@/types/auth";
 import type { TrainerFilters } from "@/types";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
@@ -165,14 +166,31 @@ function metroSearchAreaForCity(city: MarketplaceCity): ExploreSearchArea {
 }
 
 /**
- * Default Explore map frame: ZIP / GPS stay local (~12 mi); marketplace city
- * or neighborhood searches use a metro radius so northern / outer areas
- * (e.g. Mira Mesa vs downtown San Diego) stay on the map.
+ * Default Explore map frame: typed neighborhood/city win over header ZIP.
+ * ZIP / GPS stay local (~12 mi); marketplace city searches use a metro radius.
  */
 export function resolveDefaultExploreSearchArea(
   filters: TrainerFilters,
   userCoords: UserGeoPoint | null
 ): ExploreSearchArea | null {
+  const neighborhood = filters.neighborhood.trim();
+  if (neighborhood) {
+    const placeZip = findZipForPlaceName(neighborhood);
+    if (placeZip) {
+      const origin = zipExploreOrigin(placeZip);
+      if (origin) {
+        return {
+          ...origin,
+          radiusMiles: DEFAULT_EXPLORE_RADIUS_MILES,
+        };
+      }
+    }
+    const parent = findParentCityForNeighborhood(neighborhood);
+    if (parent && isMarketplaceCity(parent)) {
+      return metroSearchAreaForCity(parent);
+    }
+  }
+
   const zip = normalizeZipCode(filters.zipCode.trim());
   if (isValidZipCode(zip)) {
     const origin = zipExploreOrigin(zip);
@@ -187,14 +205,6 @@ export function resolveDefaultExploreSearchArea(
   const city = filters.city.trim();
   if (city && isMarketplaceCity(city)) {
     return metroSearchAreaForCity(city as MarketplaceCity);
-  }
-
-  const neighborhood = filters.neighborhood.trim();
-  if (neighborhood) {
-    const parent = findParentCityForNeighborhood(neighborhood);
-    if (parent && isMarketplaceCity(parent)) {
-      return metroSearchAreaForCity(parent);
-    }
   }
 
   if (city) {

@@ -139,7 +139,7 @@ export function stripChipLabelFromDisplayQuery(
 
 /**
  * Search bar text that matches the clearable search chips (+ residual free text).
- * Profession / specialty only — place comes from the header location pill, not the bar.
+ * Profession, specialty, and typed place (neighborhood/city).
  */
 export function buildDisplayQueryFromSearchFilters(
   filters: TrainerFilters,
@@ -148,6 +148,8 @@ export function buildDisplayQueryFromSearchFilters(
   const parts: string[] = [];
   if (filters.profession.trim()) parts.push(filters.profession.trim());
   if (filters.specialty.trim()) parts.push(filters.specialty.trim());
+  const place = filters.neighborhood.trim() || filters.city.trim();
+  if (place) parts.push(`in ${place}`);
 
   let residual = residualQuery.trim();
   if (filters.profession.trim()) {
@@ -155,6 +157,10 @@ export function buildDisplayQueryFromSearchFilters(
   }
   if (filters.specialty.trim()) {
     residual = stripChipLabelFromDisplayQuery(residual, filters.specialty);
+  }
+  if (place) {
+    residual = stripChipLabelFromDisplayQuery(residual, place);
+    residual = stripChipLabelFromDisplayQuery(residual, `in ${place}`);
   }
   if (residual) parts.push(residual);
   return parts.join(" ").trim();
