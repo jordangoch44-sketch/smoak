@@ -31,7 +31,7 @@ export function ExploreMapShellScrollLock() {
     document.body.classList.add(MAP_SHELL_BODY_CLASS);
     document.documentElement.classList.add(MAP_SHELL_BODY_CLASS);
     forceDocumentScrollTop();
-    pinDocumentScrollTop(900);
+    pinDocumentScrollTop(1200);
 
     const onScroll = () => {
       if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
@@ -40,7 +40,7 @@ export function ExploreMapShellScrollLock() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    const until = Date.now() + 900;
+    const until = Date.now() + 1200;
     const intervalId = window.setInterval(() => {
       if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
         forceDocumentScrollTop();

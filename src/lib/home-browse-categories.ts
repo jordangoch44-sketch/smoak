@@ -71,11 +71,11 @@ export const HOME_VIEW_ALL_SPECIALISTS_HREF = "/explore";
 /** Revolving marketplace search hints — phrases the existing Explore pipeline understands. */
 export const HOME_SEARCH_PROMPTS = [
   "Personal trainer in Mission Valley...",
-  "Nutrition coach in La Jolla...",
+  "Female nutrition coach under $120...",
   "Yoga in Encinitas...",
-  "Strength coach in Pacific Beach...",
+  "Male strength coach in Pacific Beach...",
   "Running coach in Carlsbad...",
-  "Sports performance in San Diego...",
+  "Sports performance between $80 and $150...",
 ] as const;
 
 export function buildHomeSearchHref(query: string): string {

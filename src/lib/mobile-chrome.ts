@@ -77,7 +77,9 @@ export function prepareNavScrollReset(pathname: string): void {
     /* ignore */
   }
   forceDocumentScrollTop();
-  pinDocumentScrollTop(400);
+  /* Marketplace → Search soft-nav needs a longer pin — iOS often re-applies
+   * the previous Marketplace offset after the first paint. */
+  pinDocumentScrollTop(isExploreNavPath(pathname) ? 1200 : 400);
 }
 
 export function getClientRouteSearch(): string {

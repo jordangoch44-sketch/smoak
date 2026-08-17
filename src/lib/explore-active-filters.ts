@@ -19,6 +19,9 @@ const SEARCH_BAR_FILTER_KEYS: ActiveFilterKey[] = [
   "neighborhood",
   "profession",
   "specialty",
+  "gender",
+  "priceMin",
+  "priceMax",
 ];
 
 function escapeRegExp(value: string): string {
@@ -139,19 +142,27 @@ export function stripChipLabelFromDisplayQuery(
 
 /**
  * Search bar text that matches the clearable search chips (+ residual free text).
- * Profession, specialty, and typed place (neighborhood/city).
+ * Profession, specialty, place, gender, and price.
  */
 export function buildDisplayQueryFromSearchFilters(
   filters: TrainerFilters,
   residualQuery = ""
 ): string {
   const parts: string[] = [];
+  const genderLabel = getFilterChipLabel(filters, "gender");
+  const priceLabel = getFilterChipLabel(filters, "priceMax");
+  if (genderLabel) parts.push(genderLabel);
   if (filters.profession.trim()) parts.push(filters.profession.trim());
   if (filters.specialty.trim()) parts.push(filters.specialty.trim());
   const place = filters.neighborhood.trim() || filters.city.trim();
   if (place) parts.push(`in ${place}`);
+  if (priceLabel) parts.push(priceLabel);
 
   let residual = residualQuery.trim();
+  if (genderLabel) {
+    residual = stripChipLabelFromDisplayQuery(residual, genderLabel);
+    residual = stripChipLabelFromDisplayQuery(residual, filters.gender);
+  }
   if (filters.profession.trim()) {
     residual = stripChipLabelFromDisplayQuery(residual, filters.profession);
   }
@@ -161,6 +172,9 @@ export function buildDisplayQueryFromSearchFilters(
   if (place) {
     residual = stripChipLabelFromDisplayQuery(residual, place);
     residual = stripChipLabelFromDisplayQuery(residual, `in ${place}`);
+  }
+  if (priceLabel) {
+    residual = stripChipLabelFromDisplayQuery(residual, priceLabel);
   }
   if (residual) parts.push(residual);
   return parts.join(" ").trim();

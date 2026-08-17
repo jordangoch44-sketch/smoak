@@ -987,7 +987,7 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
 .explore-map-hero__controls {
   position: absolute;
   z-index: 2;
-  top: 0.75rem;
+  top: 0.85rem;
   left: 0;
   right: 0;
   display: flex;
@@ -995,6 +995,22 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   gap: 0.65rem;
   padding-inline: 1rem;
   pointer-events: none;
+}
+
+/*
+ * Phones: pin Search chrome to the layout viewport under the site header.
+ * Soft-nav from a scrolled Marketplace page can leave window.scrollY > 0;
+ * absolute controls then ride up under the logo. Fixed placement survives that.
+ */
+@media (max-width: 767px) {
+  .explore-page--map-shell .explore-map-hero__controls {
+    position: fixed;
+    top: calc(var(--site-header-total-height) + 0.85rem);
+    left: 0;
+    right: 0;
+    /* Same band as .explore-split__cta-dock — above map, under header/nav. */
+    z-index: 32;
+  }
 }
 
 .explore-map-hero__controls > * {

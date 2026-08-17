@@ -705,14 +705,17 @@ export function useExploreTrainers({
         neighborhood: "",
         profession: "",
         specialty: "",
+        gender: "",
+        priceMin: "",
+        priceMax: "",
       });
-      /* Keep gender / price / service from the drawer. Typed city/neighborhood
-       * frame the map; header ZIP is personalization only. */
+      /* Typed gender/price win; otherwise keep drawer / prior values.
+       * serviceType stays drawer-only until NL support is added. */
       const nextFilters = {
         ...applied.filters,
-        gender: filters.gender,
-        priceMin: filters.priceMin,
-        priceMax: filters.priceMax,
+        gender: applied.filters.gender || filters.gender,
+        priceMin: applied.filters.priceMin || filters.priceMin,
+        priceMax: applied.filters.priceMax || filters.priceMax,
         serviceType: filters.serviceType,
       };
       const nextDisplay =
