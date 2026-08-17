@@ -828,6 +828,29 @@ body.location-selector-open .explore-split__cta-dock {
   visibility: visible;
 }
 
+/*
+ * Phones: results must sit above the fixed Search chrome (z-index 25),
+ * otherwise the list can’t receive scroll gestures.
+ */
+@media (max-width: 767px) {
+  .explore-page--map-shell .explore-split__panel--open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    height: 88%;
+    max-height: calc(100dvh - var(--site-header-total-height));
+    max-height: calc(100svh - var(--site-header-total-height));
+  }
+
+  .explore-page--map-shell:has(.explore-split--results-open)
+    .explore-map-hero__controls {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
 .explore-split__panel--dragging {
   transition: none;
 }
@@ -1014,6 +1037,7 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
     height: fit-content;
     max-height: min(42vh, 20rem);
     overflow: visible;
+    /* Below See results (40) and open results panel (50) */
     z-index: 25;
   }
 }
