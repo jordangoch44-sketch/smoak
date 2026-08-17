@@ -66,19 +66,25 @@ export function HomeSearchBar() {
     };
   }, [reduceMotion, showPrompt]);
 
-  function measureAnchor() {
+  function measureAnchor(): ExploreSearchOverlayAnchor {
     const el = searchRowRef.current;
-    if (!el) return null;
-    const rect = el.getBoundingClientRect();
-    return {
-      top: Math.max(0, rect.top),
-      insetInline: Math.max(0, rect.left),
-    };
+    const insetInline = el
+      ? Math.max(0, el.getBoundingClientRect().left)
+      : 16;
+
+    /*
+     * Pin under the site header like the Search-page overlay — do not use the
+     * hero field’s mid-page Y or the chrome/chips sit too low on Marketplace.
+     */
+    const header = document.getElementById("site-header");
+    const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+    const top = Math.max(0, headerBottom + 10);
+
+    return { top, insetInline };
   }
 
   function openOverlay() {
-    const next = measureAnchor();
-    if (next) setAnchor(next);
+    setAnchor(measureAnchor());
     setOverlayOpen(true);
   }
 
@@ -117,7 +123,6 @@ export function HomeSearchBar() {
 
     function sync() {
       const next = measureAnchor();
-      if (!next) return;
       setAnchor((prev) => {
         if (
           prev &&
