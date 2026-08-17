@@ -67,3 +67,19 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
 
 /** Unfiltered Search — all specialist categories available there. */
 export const HOME_VIEW_ALL_SPECIALISTS_HREF = "/explore";
+
+/** Revolving marketplace search hints — phrases the existing Explore pipeline understands. */
+export const HOME_SEARCH_PROMPTS = [
+  "Personal Trainer",
+  "Strength Coach",
+  "Nutrition Coach",
+  "Yoga",
+  "Sports Performance",
+  "Running Coach",
+] as const;
+
+export function buildHomeSearchHref(query: string): string {
+  const q = query.trim();
+  if (!q) return HOME_VIEW_ALL_SPECIALISTS_HREF;
+  return `${HOME_VIEW_ALL_SPECIALISTS_HREF}?q=${encodeURIComponent(q)}`;
+}
