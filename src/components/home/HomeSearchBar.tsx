@@ -67,6 +67,7 @@ export function HomeSearchBar() {
         <div className="home-hero-search__input-wrap">
           {showPrompt ? (
             <span
+              key={prompt}
               className={cn(
                 "home-hero-search__prompt",
                 !reduceMotion &&
