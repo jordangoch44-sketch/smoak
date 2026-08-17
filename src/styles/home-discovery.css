@@ -188,10 +188,10 @@
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
 }
 
-/* Banner sits under category chips — keep a short gap after Browse */
+/* Banner sits under category cards — compact gap after Browse */
 .home-page--discovery .home-hero + .home-specialty {
-  padding-top: 0.65rem;
-  padding-bottom: 0.85rem;
+  padding-top: 0.5rem;
+  padding-bottom: 1.15rem;
 }
 
 .home-page--discovery .home-specialty + .home-essence {
@@ -482,71 +482,165 @@
   color: rgba(255, 255, 255, 0.48);
 }
 
-/* Specialty browse — thin horizontal chips */
-.home-specialty__row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+/* Specialty browse — premium category cards (2-col mobile) */
+.home-specialty__header {
+  margin-bottom: 0.95rem;
 }
 
-.home-specialty-chip {
-  display: inline-flex;
-  min-height: 2.35rem;
-  max-width: 100%;
+.home-specialty__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.home-specialty-card {
+  display: flex;
+  min-height: 3.65rem;
   align-items: center;
-  gap: 0.4rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
-  padding: 0.35rem 0.85rem 0.35rem 0.65rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  gap: 0.65rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(168, 130, 255, 0.28);
+  background:
+    linear-gradient(
+      155deg,
+      rgba(48, 36, 78, 0.42) 0%,
+      rgba(18, 14, 32, 0.55) 100%
+    );
+  backdrop-filter: blur(16px) saturate(1.15);
+  -webkit-backdrop-filter: blur(16px) saturate(1.15);
+  padding: 0.75rem 0.85rem;
   text-decoration: none;
   touch-action: manipulation;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 0 1px rgba(120, 90, 200, 0.06),
+    0 6px 18px rgba(0, 0, 0, 0.22);
   transition:
     border-color 0.18s ease,
     background-color 0.18s ease,
+    box-shadow 0.18s ease,
     transform 0.14s ease;
 }
 
-.home-specialty-chip:active {
-  transform: scale(0.98);
+.home-specialty-card:active {
+  transform: scale(0.985);
 }
 
-.home-specialty-chip__emoji {
+.home-specialty-card:focus-visible {
+  outline: 2px solid rgba(168, 130, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.home-specialty-card__icon {
+  display: inline-flex;
   flex-shrink: 0;
-  font-size: 0.95rem;
-  line-height: 1;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  color: rgb(186, 154, 255);
 }
 
-.home-specialty-chip__name {
+.home-specialty-card__svg {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+.home-specialty-card__name {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-  color: rgba(255, 255, 255, 0.92);
-  white-space: nowrap;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: rgba(255, 255, 255, 0.94);
+  /* Prefer single-line labels; wrap cleanly on very narrow phones */
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.home-specialty__footer {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.85rem;
+}
+
+.home-specialty__view-all {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: rgba(196, 181, 253, 0.78);
+  text-decoration: none;
+  touch-action: manipulation;
+  transition: color 0.18s ease;
+}
+
+.home-specialty__view-all:hover {
+  color: rgba(220, 210, 255, 0.95);
+}
+
+.home-specialty__view-all:focus-visible {
+  outline: 2px solid rgba(168, 130, 255, 0.65);
+  outline-offset: 3px;
+  border-radius: 0.25rem;
+}
+
+@media (max-width: 359px) {
+  .home-specialty__grid {
+    gap: 0.5rem;
+  }
+
+  .home-specialty-card {
+    min-height: 3.4rem;
+    padding: 0.65rem 0.7rem;
+    gap: 0.5rem;
+  }
+
+  .home-specialty-card__name {
+    font-size: 0.75rem;
+  }
 }
 
 @media (min-width: 640px) {
-  .home-specialty__row {
-    gap: 0.55rem;
+  .home-specialty__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
   }
 
-  .home-specialty-chip {
-    min-height: 2.5rem;
-    padding: 0.4rem 0.95rem 0.4rem 0.7rem;
+  .home-specialty-card {
+    min-height: 3.85rem;
+    padding: 0.8rem 1rem;
   }
 
-  .home-specialty-chip__name {
+  .home-specialty-card__name {
     font-size: 0.875rem;
   }
 }
 
+@media (min-width: 1024px) {
+  .home-specialty__grid {
+    max-width: 52rem;
+  }
+}
+
 @media (hover: hover) {
-  .home-specialty-chip:hover {
-    border-color: rgba(255, 255, 255, 0.28);
-    background: rgba(255, 255, 255, 0.1);
+  .home-specialty-card:hover {
+    border-color: rgba(186, 154, 255, 0.48);
+    background:
+      linear-gradient(
+        155deg,
+        rgba(58, 42, 96, 0.55) 0%,
+        rgba(24, 18, 42, 0.62) 100%
+      );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.09),
+      0 0 20px rgba(140, 100, 230, 0.12),
+      0 8px 22px rgba(0, 0, 0, 0.28);
   }
 }
 
