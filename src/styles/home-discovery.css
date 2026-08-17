@@ -91,12 +91,13 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
-/* Hero — headline, lede, then jump-to-Search field */
+/* Hero — headline + search as a dark deck that fades into Browse */
 .home-page--discovery .home-hero--discovery {
+  position: relative;
   min-height: 0;
-  padding-top: clamp(2.5rem, 8vw, 4.5rem);
-  padding-bottom: clamp(2.25rem, 6vw, 3.5rem);
-  /* Wash lives on .home-page__sky so it isn’t clipped at the section edge */
+  padding-top: clamp(2.35rem, 7.5vw, 4rem);
+  padding-bottom: clamp(2.85rem, 8vw, 4.5rem);
+  /* Wash lives on ::after so aurora can still breathe underneath */
   background: transparent !important;
   isolation: auto;
 }
@@ -105,11 +106,56 @@
   display: none;
 }
 
+/*
+ * Charcoal search deck — reads continuous with the header frost,
+ * then dissolves before Browse by category.
+ */
 .home-page--discovery .home-hero--discovery::after {
-  display: none;
+  content: "";
+  display: block;
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  top: -1.25rem;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(8, 8, 12, 0.88) 0%,
+      rgba(9, 9, 14, 0.78) 28%,
+      rgba(11, 10, 16, 0.52) 58%,
+      rgba(12, 11, 18, 0.22) 78%,
+      rgba(12, 11, 18, 0.06) 90%,
+      transparent 100%
+    );
+}
+
+.home-page--discovery .home-hero__canvas {
+  z-index: 0;
+  opacity: 0.62;
+  /* Soften the canvas bleed so the dark deck owns the search band */
+  bottom: -4rem;
+  -webkit-mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 55%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    180deg,
+    #000 0%,
+    #000 55%,
+    rgba(0, 0, 0, 0.55) 78%,
+    transparent 100%
+  );
 }
 
 .home-page--discovery .home-hero__content--discovery {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -374,7 +420,7 @@
 
 /* New specialists sit under category cards — compact gap after Browse */
 .home-page--discovery .home-hero + .home-specialty {
-  padding-top: 0.5rem;
+  padding-top: 0.35rem;
   padding-bottom: 1.15rem;
 }
 
@@ -1024,8 +1070,8 @@
 /* Soften old mobile search-first overrides on discovery homepage */
 @media (max-width: 767px) {
   .home-page--discovery > .home-hero {
-    padding-top: clamp(2.25rem, 7vw, 3.25rem);
-    padding-bottom: 2rem;
+    padding-top: clamp(2.15rem, 7vw, 3.1rem);
+    padding-bottom: clamp(2.75rem, 9vw, 3.75rem);
   }
 
   .home-page--discovery > .home-hero__lede {
