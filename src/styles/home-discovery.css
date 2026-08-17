@@ -666,6 +666,41 @@
   }
 }
 
+/* Marketplace New specialists — ~15% smaller than shared portrait card */
+.home-page--discovery .home-new .home-portrait-card {
+  flex-basis: min(53vw, 12.3rem);
+}
+
+@media (min-width: 640px) {
+  .home-page--discovery .home-new .home-portrait-card {
+    flex-basis: 13.2rem;
+  }
+}
+
+.home-page--discovery .home-new .home-portrait-card__article {
+  border-radius: 1rem;
+}
+
+.home-page--discovery .home-new .home-portrait-card__body {
+  height: 7.25rem;
+  min-height: 7.25rem;
+  max-height: 7.25rem;
+  padding: 0.65rem 0.7rem 0.75rem;
+}
+
+.home-page--discovery .home-new .home-portrait-card__name {
+  font-size: 0.8125rem;
+}
+
+.home-page--discovery .home-new .home-portrait-card__profession {
+  font-size: 0.6875rem;
+}
+
+.home-page--discovery .home-new .home-portrait-card__meta {
+  font-size: 0.625rem;
+  padding-top: 0.3rem;
+}
+
 .home-portrait-card__link {
   display: flex;
   flex: 1 1 auto;
