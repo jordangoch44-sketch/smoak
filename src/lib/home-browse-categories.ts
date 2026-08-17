@@ -23,6 +23,8 @@ interface HomeBrowseCategory {
   icon: HomeBrowseCategoryIcon;
   /** Local cinematic photo for the homepage card */
   image: string;
+  /** CSS object-position so the subject stays in the visible right of the card */
+  imagePosition?: string;
 }
 
 /** Six primary browse targets — closest existing filter values. */
@@ -33,6 +35,7 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     href: "/explore?profession=Personal+Trainer",
     icon: "dumbbell",
     image: "/images/categories/personal-trainer.jpg",
+    imagePosition: "72% 42%",
   },
   {
     id: "strength-coach",
@@ -40,6 +43,7 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     href: "/explore?profession=Strength+Coach",
     icon: "strength",
     image: "/images/categories/strength-coach.jpg",
+    imagePosition: "68% 48%",
   },
   {
     id: "nutrition-coach",
@@ -48,6 +52,7 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     href: "/explore?profession=Nutritionist",
     icon: "leaf",
     image: "/images/categories/nutrition-coach.jpg",
+    imagePosition: "62% 50%",
   },
   {
     id: "yoga-pilates",
@@ -56,6 +61,7 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     href: "/explore?profession=Yoga+Instructor",
     icon: "yoga",
     image: "/images/categories/yoga-pilates.jpg",
+    imagePosition: "70% 38%",
   },
   {
     id: "sports-performance",
@@ -63,6 +69,7 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     href: "/explore?specialty=Sports+Performance",
     icon: "sports",
     image: "/images/categories/sports-performance.jpg",
+    imagePosition: "74% 46%",
   },
   {
     id: "running-endurance",
@@ -70,6 +77,7 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
     href: "/explore?profession=Running+Coach",
     icon: "running",
     image: "/images/categories/running-endurance.jpg",
+    imagePosition: "78% 48%",
   },
 ] as const;
 

@@ -63,8 +63,13 @@ export function Categories() {
                     src={category.image}
                     alt=""
                     fill
-                    sizes="(max-width: 639px) 42vw, (max-width: 1023px) 22vw, 180px"
+                    sizes="(max-width: 639px) 55vw, (max-width: 1023px) 28vw, 220px"
                     className="home-specialty-card__photo"
+                    style={
+                      category.imagePosition
+                        ? { objectPosition: category.imagePosition }
+                        : undefined
+                    }
                   />
                 </span>
               </TapLink>
