@@ -3,6 +3,7 @@
 import { useLayoutEffect } from "react";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import {
+  armExploreMapShellScrollLock,
   forceDocumentScrollTop,
   pinDocumentScrollTop,
 } from "@/lib/mobile-chrome";
@@ -27,11 +28,8 @@ export function ExploreMapShellScrollLock() {
       /* ignore */
     }
 
-    forceDocumentScrollTop();
-    document.body.classList.add(MAP_SHELL_BODY_CLASS);
-    document.documentElement.classList.add(MAP_SHELL_BODY_CLASS);
-    forceDocumentScrollTop();
-    pinDocumentScrollTop(1200);
+    armExploreMapShellScrollLock();
+    pinDocumentScrollTop(1800);
 
     const onScroll = () => {
       if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
@@ -40,7 +38,7 @@ export function ExploreMapShellScrollLock() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    const until = Date.now() + 1200;
+    const until = Date.now() + 1800;
     const intervalId = window.setInterval(() => {
       if (window.scrollY !== 0 || document.documentElement.scrollTop !== 0) {
         forceDocumentScrollTop();

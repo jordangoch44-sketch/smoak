@@ -998,6 +998,26 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   pointer-events: none;
 }
 
+/*
+ * Phones: pin Search + Filters to the layout viewport under the site header.
+ * Marketplace → Search soft-nav often keeps window.scrollY > 0; absolute chrome
+ * then rides up under the logo. Keep this box content-sized and below the
+ * See results dock (z-index 40) so taps still reach the CTA.
+ */
+@media (max-width: 767px) {
+  .explore-page--map-shell .explore-map-hero__controls {
+    position: fixed;
+    top: calc(var(--site-header-total-height) + 0.65rem);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    height: fit-content;
+    max-height: min(42vh, 20rem);
+    overflow: visible;
+    z-index: 25;
+  }
+}
+
 .explore-map-hero__controls > * {
   pointer-events: auto;
 }

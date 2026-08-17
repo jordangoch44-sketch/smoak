@@ -45,7 +45,8 @@ export function HomeSearchBar() {
 
   function goToSearch(value: string) {
     prepareNavScrollReset(SITE_ROUTES.explore);
-    router.push(buildHomeSearchHref(value));
+    /* scroll:false — we own top reset; Next’s default scroll races iOS restore */
+    router.push(buildHomeSearchHref(value), { scroll: false });
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {

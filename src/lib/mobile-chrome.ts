@@ -29,7 +29,11 @@ function shouldResetScrollOnEnter(pathname: string): boolean {
 /** Immediate scroll-to-top across window + common scrollports. */
 export function forceDocumentScrollTop(): void {
   if (typeof window === "undefined") return;
-  window.scrollTo(0, 0);
+  try {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  } catch {
+    window.scrollTo(0, 0);
+  }
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
   const main = document.querySelector(".app-main");
@@ -55,13 +59,24 @@ export function pinDocumentScrollTop(durationMs = 600): void {
     });
   });
 
-  for (const delay of [50, 100, 200, 400, 600, 800]) {
+  for (const delay of [16, 50, 100, 200, 400, 600, 800, 1200]) {
     if (delay > durationMs) break;
     window.setTimeout(() => {
       if (token !== pinGeneration) return;
       forceDocumentScrollTop();
     }, delay);
   }
+}
+
+const MAP_SHELL_BODY_CLASS = "explore-map-shell-open";
+
+/** Apply Search map-shell overflow lock before soft-nav paints Explore. */
+export function armExploreMapShellScrollLock(): void {
+  if (typeof document === "undefined") return;
+  forceDocumentScrollTop();
+  document.body.classList.add(MAP_SHELL_BODY_CLASS);
+  document.documentElement.classList.add(MAP_SHELL_BODY_CLASS);
+  forceDocumentScrollTop();
 }
 
 /**
@@ -77,9 +92,12 @@ export function prepareNavScrollReset(pathname: string): void {
     /* ignore */
   }
   forceDocumentScrollTop();
-  /* Marketplace → Search soft-nav needs a longer pin — iOS often re-applies
-   * the previous Marketplace offset after the first paint. */
-  pinDocumentScrollTop(isExploreNavPath(pathname) ? 1200 : 400);
+  if (isExploreNavPath(pathname)) {
+    armExploreMapShellScrollLock();
+    pinDocumentScrollTop(1800);
+    return;
+  }
+  pinDocumentScrollTop(400);
 }
 
 export function getClientRouteSearch(): string {
