@@ -13,8 +13,8 @@ export default function HomePage() {
       <div className="home-page__sky" aria-hidden />
       <Hero />
       <Categories />
-      <HomeEssenceSlideshow />
       <HomeDiscoveryClient />
+      <HomeEssenceSlideshow />
     </div>
   );
 }

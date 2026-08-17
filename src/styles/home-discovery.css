@@ -188,14 +188,22 @@
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
 }
 
-/* Banner sits under category cards — compact gap after Browse */
+/* New specialists sit under category cards — compact gap after Browse */
 .home-page--discovery .home-hero + .home-specialty {
   padding-top: 0.5rem;
   padding-bottom: 1.15rem;
 }
 
-.home-page--discovery .home-specialty + .home-essence {
-  margin-top: 0.35rem;
+.home-page--discovery .home-specialty + .home-new {
+  padding-top: 0.35rem;
+  padding-bottom: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+/* Essence strip after discovery rails */
+.home-page--discovery .home-top50 + .home-essence,
+.home-page--discovery .home-sponsored + .home-essence,
+.home-page--discovery .home-new + .home-essence {
+  margin-top: 0.5rem;
   margin-bottom: 0.75rem;
 }
 

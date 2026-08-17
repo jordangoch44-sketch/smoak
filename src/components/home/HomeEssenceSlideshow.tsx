@@ -26,7 +26,7 @@ function defaultPublicSlides(): PublicSlide[] {
 }
 
 /**
- * Full-bleed lifestyle strip under the marketplace lede — Apple-style
+ * Full-bleed lifestyle strip below marketplace discovery rails — Apple-style
  * slow crossfade with single-finger swipe. Config from Admin → Settings.
  */
 export function HomeEssenceSlideshow() {

@@ -17,8 +17,9 @@ import {
 } from "@/lib/reviews/specialist-review-types";
 
 /**
- * Marketplace paid + ranked rails — catalog from the session store.
- * Categories sit above this block on the homepage.
+ * Marketplace discovery rails — catalog from the session store.
+ * Categories sit above; essence photo strip sits below.
+ * New specialists lead so marketplace opens with people, not campaign stills.
  */
 export function HomeDiscoveryClient() {
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
@@ -53,6 +54,7 @@ export function HomeDiscoveryClient() {
 
   return (
     <>
+      <NewSpecialists initialCatalog={trainers} catalogMode={catalogMode} />
       <SponsoredSpecialists
         initialCatalog={trainers}
         catalogMode={catalogMode}
@@ -66,7 +68,6 @@ export function HomeDiscoveryClient() {
         initialCatalog={trainers}
         initialAggregates={aggregates}
       />
-      <NewSpecialists initialCatalog={trainers} catalogMode={catalogMode} />
     </>
   );
 }
