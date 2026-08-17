@@ -704,12 +704,13 @@ body.location-selector-open
   /*
    * Fixed to the same bottom inset as MobileBottomNav. Absolute-inside-shell
    * jumped whenever iOS changed 100dvh (URL bar) during map interaction.
+   * Keep above map chrome (recenter/zoom ~28) and never under search overlays.
    */
   position: fixed;
   left: 0;
   right: 0;
   bottom: calc(var(--mobile-bottom-nav-offset, 6.5rem) + 0.35rem);
-  z-index: 30;
+  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -995,22 +996,6 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   gap: 0.65rem;
   padding-inline: 1rem;
   pointer-events: none;
-}
-
-/*
- * Phones: pin Search chrome to the layout viewport under the site header.
- * Soft-nav from a scrolled Marketplace page can leave window.scrollY > 0;
- * absolute controls then ride up under the logo. Fixed placement survives that.
- */
-@media (max-width: 767px) {
-  .explore-page--map-shell .explore-map-hero__controls {
-    position: fixed;
-    top: calc(var(--site-header-total-height) + 0.85rem);
-    left: 0;
-    right: 0;
-    /* Same band as .explore-split__cta-dock — above map, under header/nav. */
-    z-index: 32;
-  }
 }
 
 .explore-map-hero__controls > * {
