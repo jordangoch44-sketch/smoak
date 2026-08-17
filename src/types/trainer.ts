@@ -125,7 +125,7 @@ export interface Trainer {
    * When empty/absent, cards use the first specialties from `specialty`.
    */
   homepageSpecialties?: string[];
-  gender: Gender;
+  gender: Gender | "";
   pricePerSession: number;
   rating: number;
   /** Sum of `reviewSources` when set; otherwise legacy total */

@@ -103,7 +103,13 @@ export function HomeSearchBar() {
     setDraft(query);
     setOverlayOpen(false);
     setAnchor(null);
-    goToSearch(query);
+    openFromUserRef.current = false;
+    /* Drop the overlay scroll-lock before Search mounts — otherwise Leaflet
+     * initializes against a 0-height map under body.explore-search-open. */
+    document.body.classList.remove("explore-search-open");
+    window.requestAnimationFrame(() => {
+      goToSearch(query);
+    });
   }
 
   function handlePointerDown() {

@@ -5,6 +5,7 @@ import { firstNameFromPersonName } from "@/lib/specialist-display-name";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { parseGender } from "@/lib/gender";
 import type {
   SpecialistApplication,
   SpecialistOnboardingState,
@@ -156,7 +157,7 @@ export function applicationToTrainer(
     sponsored: false,
     verified: app.profileStatus === "APPROVED",
     specialty: specialties,
-    gender: app.gender || "non-binary",
+    gender: parseGender(app.gender),
     pricePerSession,
     rating: 0,
     reviewCount: 0,
@@ -264,7 +265,7 @@ export function applicationToProfileOverrides(
   return {
     name: app.displayName?.trim() || app.fullName?.trim() || "",
     title: app.headline?.trim() ?? "",
-    gender: app.gender || "non-binary",
+    gender: parseGender(app.gender),
     profession:
       resolveTrainerProfessionCategory({
         profession: app.professionalType,

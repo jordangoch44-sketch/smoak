@@ -17,6 +17,7 @@ import {
 } from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
+import { parseGender } from "@/lib/gender";
 
 export type SpecialistProfilesMutationResult =
   | { ok: true }
@@ -44,10 +45,8 @@ function asStringArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string");
 }
 
-function asGender(value: unknown): Gender {
-  return value === "male" || value === "female" || value === "non-binary"
-    ? value
-    : "non-binary";
+function asGender(value: unknown): Gender | "" {
+  return parseGender(value);
 }
 
 function asGallery(value: unknown): TrainerMediaItem[] {

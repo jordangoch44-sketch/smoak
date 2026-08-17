@@ -1,5 +1,6 @@
 import type { Trainer, TrainerFilters } from "@/types";
 import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
+import { trainerMatchesGenderFilter } from "@/lib/gender";
 
 export function trainerMatchesSpecialty(
   trainer: Trainer,
@@ -35,7 +36,7 @@ export function filterTrainers(
     ) {
       return false;
     }
-    if (filters.gender && trainer.gender !== filters.gender) {
+    if (filters.gender && !trainerMatchesGenderFilter(trainer.gender, filters.gender)) {
       return false;
     }
     if (filters.serviceType === "in-person") {

@@ -75,7 +75,15 @@ export function getFilterChipLabel(
 export function getActiveFilterChips(filters: TrainerFilters): ActiveFilterChip[] {
   const chips: ActiveFilterChip[] = [];
 
-  /* Location lives in the header pill — not as Explore search chips. */
+  /* Typed place from the search bar is a real filter; header ZIP is not. */
+  if (filters.neighborhood) {
+    chips.push({
+      key: "neighborhood",
+      label: filters.neighborhood,
+    });
+  } else if (filters.city) {
+    chips.push({ key: "city", label: filters.city });
+  }
   if (filters.profession) {
     chips.push({
       key: "profession",

@@ -76,7 +76,8 @@ type SectionId =
   | "credentials"
   | "photos-links";
 
-function genderLabel(value: Gender): string {
+function genderLabel(value: Gender | ""): string {
+  if (!value) return "Add";
   return GENDER_OPTIONS.find((option) => option.value === value)?.label ?? value;
 }
 

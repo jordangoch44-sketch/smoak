@@ -11,7 +11,7 @@ import type {
 export interface SpecialistProfileOverrides {
   name?: string;
   title?: string;
-  gender?: Gender;
+  gender?: Gender | "";
   profession?: string;
   specialty?: string[];
   /** Up to two specialties shown on homepage cards */

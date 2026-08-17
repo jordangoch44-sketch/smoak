@@ -39,7 +39,8 @@ function previewOrAdd(value: string, empty = "Add"): string {
   return trimmed.length > 48 ? `${trimmed.slice(0, 48)}…` : trimmed;
 }
 
-function genderLabel(value: Gender): string {
+function genderLabel(value: Gender | ""): string {
+  if (!value) return "Add";
   if (value === "male") return "Male";
   if (value === "female") return "Female";
   if (value === "non-binary") return "Non-binary";

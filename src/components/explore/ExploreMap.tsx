@@ -318,6 +318,20 @@ export function ExploreMap({
   }, [applyLiveCamera, emitPendingFromMap, locked, mapPaused, variant]);
 
   useEffect(() => {
+    if (mapPaused) return;
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      map.invalidateSize({ animate: false });
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [mapPaused, mapEpoch, variant]);
+
+  useEffect(() => {
     const map = mapRef.current;
     const L = leafletRef.current;
     if (!map || !L || mapPaused) return;

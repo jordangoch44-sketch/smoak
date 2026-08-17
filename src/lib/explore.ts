@@ -36,8 +36,9 @@ export const EMPTY_TRAINER_FILTERS: TrainerFilters = {
 };
 
 export function countActiveFilters(filters: TrainerFilters): number {
-  /* Location is personalization (header), not an Explore filter chip. */
+  /* Location is personalization (header ZIP), except typed city / neighborhood. */
   let count = 0;
+  if (filters.neighborhood || filters.city) count += 1;
   if (filters.profession) count += 1;
   if (filters.specialty) count += 1;
   if (filters.gender) count += 1;
@@ -110,6 +111,48 @@ function categoryAffinityScore(
   return score;
 }
 
+function normalizePlaceKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "");
+}
+
+/** Typed “in Mission Valley” should match neighborhood / service area, not only a radius. */
+function trainerMatchesTypedPlace(
+  trainer: Trainer,
+  filters: TrainerFilters
+): boolean {
+  const neighborhood = normalizePlaceKey(filters.neighborhood);
+  if (neighborhood) {
+    const areas = [
+      trainer.neighborhood,
+      trainer.location,
+      ...(trainer.serviceArea ?? []),
+    ]
+      .map((value) => normalizePlaceKey(value ?? ""))
+      .filter(Boolean);
+    return areas.some(
+      (area) => area === neighborhood || area.includes(neighborhood)
+    );
+  }
+
+  const city = normalizePlaceKey(filters.city);
+  if (!city) return false;
+  return normalizePlaceKey(trainer.city ?? "") === city;
+}
+
+function uniqueTrainers(groups: Trainer[][]): Trainer[] {
+  const byId = new Map<string, Trainer>();
+  for (const group of groups) {
+    for (const trainer of group) {
+      byId.set(trainer.id, trainer);
+    }
+  }
+  return [...byId.values()];
+}
+
 function filterTrainersWithinRadius(
   trainers: Trainer[],
   origin: UserGeoPoint | null,
@@ -146,7 +189,14 @@ export function filterExploreTrainersInArea(
 ): ExploreAreaResult {
   const base = filterExploreTrainers(trainers, filters, searchQuery);
   const radiusMiles = options.nearbyExpanded ? null : options.radiusMiles;
-  const inArea = filterTrainersWithinRadius(base, origin, radiusMiles);
+  const inRadius = filterTrainersWithinRadius(base, origin, radiusMiles);
+  const typedPlace = Boolean(
+    filters.neighborhood.trim() || filters.city.trim()
+  );
+  const named = typedPlace
+    ? base.filter((trainer) => trainerMatchesTypedPlace(trainer, filters))
+    : [];
+  const inArea = typedPlace ? uniqueTrainers([named, inRadius]) : inRadius;
   const areaEmpty = Boolean(
     origin &&
       options.radiusMiles != null &&
