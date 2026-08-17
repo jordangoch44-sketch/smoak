@@ -162,13 +162,26 @@ export function applySpecialistProfileOverrides(
   ) {
     merged.social = {
       ...merged.social,
-      instagram: overrides.instagram?.trim() || merged.social.instagram,
-      website: overrides.website?.trim() || merged.social.website,
-      tiktok: overrides.tiktok?.trim() || merged.social.tiktok,
+      instagram:
+        overrides.instagram !== undefined
+          ? overrides.instagram.trim() || undefined
+          : merged.social?.instagram,
+      website:
+        overrides.website !== undefined
+          ? overrides.website.trim() || undefined
+          : merged.social?.website,
+      tiktok:
+        overrides.tiktok !== undefined
+          ? overrides.tiktok.trim() || undefined
+          : merged.social?.tiktok,
       googleReviewsUrl:
-        overrides.googleReviewsUrl?.trim() || merged.social.googleReviewsUrl,
+        overrides.googleReviewsUrl !== undefined
+          ? overrides.googleReviewsUrl.trim() || undefined
+          : merged.social?.googleReviewsUrl,
       googlePlaceId:
-        overrides.googlePlaceId?.trim() || merged.social.googlePlaceId,
+        overrides.googlePlaceId !== undefined
+          ? overrides.googlePlaceId.trim() || undefined
+          : merged.social?.googlePlaceId,
     };
   }
 

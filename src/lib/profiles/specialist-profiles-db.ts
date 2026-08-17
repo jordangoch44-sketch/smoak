@@ -16,6 +16,7 @@ import {
   isBusinessDerivedFirstName,
 } from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 
 export type SpecialistProfilesMutationResult =
   | { ok: true }
@@ -334,12 +335,12 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
   trainer: Trainer;
   overrides: SpecialistProfileOverrides;
 } {
+  const overrides = (row.overrides ?? {}) as SpecialistProfileOverrides;
   const trainer = trainerFromProfileData(
     row.id,
     (row.profile_data ?? {}) as Record<string, unknown>
   );
-  return {
-    trainer: {
+  const withColumns: Trainer = {
       ...trainer,
       id: row.id,
       name: trainer.name || row.display_name || "",
@@ -396,8 +397,14 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
       verified: trainer.verified ?? row.verified,
       rating: trainer.rating || Number(row.rating) || 0,
       reviewCount: trainer.reviewCount || row.review_count || 0,
-    },
-    overrides: (row.overrides ?? {}) as SpecialistProfileOverrides,
+  };
+
+  /* Durable overrides (Instagram, bio edits, etc.) live in the overrides JSON
+   * column. Public Marketplace / Profile Sheet read profile_data only in live
+   * mode — merge here so Connect / toolbar Instagram carry over after save. */
+  return {
+    trainer: applySpecialistProfileOverrides(withColumns, overrides),
+    overrides,
   };
 }
 

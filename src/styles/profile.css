@@ -1717,6 +1717,17 @@ a.profile-tag-pill--grid {
   filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.35));
 }
 
+.profile-toolbar__icon--instagram {
+  stroke: none;
+  stroke-width: 0;
+  /* Keep brand colors readable on dark glass */
+  filter: drop-shadow(0 0.5px 1.5px rgba(0, 0, 0, 0.45));
+}
+
+.profile-toolbar__btn--instagram:active .profile-toolbar__icon--instagram {
+  opacity: 0.88;
+}
+
 .profile-toolbar__icon--close {
   width: var(--profile-toolbar-close-icon);
   height: var(--profile-toolbar-close-icon);

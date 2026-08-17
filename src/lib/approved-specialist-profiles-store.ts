@@ -180,6 +180,15 @@ async function hydrateFromSupabase(): Promise<void> {
   const generation = ++loadGeneration;
   hydrating = true;
   const supabase = getMarketplaceAuthClient();
+  const HYDRATE_MS = 12_000;
+  const timeoutId = window.setTimeout(() => {
+    if (generation !== loadGeneration || hydrated) return;
+    /* Unstick Marketplace if the network request never resolves (common on
+     * flaky cellular / interrupted Safari reloads). */
+    setPublicCatalogMode("live");
+    markHydratedAndNotify();
+    hydrating = false;
+  }, HYDRATE_MS);
 
   try {
     if (!supabase) {
@@ -210,13 +219,22 @@ async function hydrateFromSupabase(): Promise<void> {
     }
     applyCache(next);
     writeLocalProfiles(next);
-    /* Do not push remote overrides into localStorage — public display uses
-     * approved profile_data; local overrides stay for seed / draft edits. */
-    await syncModerationMirrorsFromRemote(supabase);
-    if (generation !== loadGeneration) return;
+    /* Paint Marketplace rails as soon as the approved catalog is in memory.
+     * Admin/moderation mirrors can finish afterward — blocking here left
+     * iPhone reloads sitting on Hero + categories with empty rails. */
     setPublicCatalogMode("live");
     markHydratedAndNotify();
+
+    try {
+      await syncModerationMirrorsFromRemote(supabase);
+    } catch (err) {
+      console.warn(
+        "[SMOAC profiles] moderation mirror sync failed:",
+        err instanceof Error ? err.message : err
+      );
+    }
   } finally {
+    window.clearTimeout(timeoutId);
     if (generation === loadGeneration) {
       hydrating = false;
     }
