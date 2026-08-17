@@ -52,6 +52,10 @@ export function getIpPersonalizationCity(): string | null {
   return city || null;
 }
 
+let cachedIpCoords: UserGeoPoint | null = null;
+let cachedIpLat: number | null = null;
+let cachedIpLng: number | null = null;
+
 export function getIpUserCoordinates(): UserGeoPoint | null {
   const hint = readIpLocationHint();
   if (
@@ -60,7 +64,25 @@ export function getIpUserCoordinates(): UserGeoPoint | null {
     !Number.isFinite(hint.latitude) ||
     !Number.isFinite(hint.longitude)
   ) {
+    cachedIpCoords = null;
+    cachedIpLat = null;
+    cachedIpLng = null;
     return null;
   }
-  return { latitude: hint.latitude, longitude: hint.longitude };
+
+  if (
+    cachedIpCoords &&
+    cachedIpLat === hint.latitude &&
+    cachedIpLng === hint.longitude
+  ) {
+    return cachedIpCoords;
+  }
+
+  cachedIpLat = hint.latitude;
+  cachedIpLng = hint.longitude;
+  cachedIpCoords = {
+    latitude: hint.latitude,
+    longitude: hint.longitude,
+  };
+  return cachedIpCoords;
 }
