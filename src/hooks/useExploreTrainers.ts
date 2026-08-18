@@ -38,6 +38,7 @@ import {
   exploreParamsEqual,
   filtersFromSearchParams,
   hasExplicitFilterParams,
+  searchParamsMatch,
 } from "@/lib/explore-url";
 import {
   resolveDefaultExploreSearchArea,
@@ -268,11 +269,13 @@ export function useExploreTrainers({
   /* Sync when URL changes externally (homepage, back/forward) — not our own replace */
   useEffect(() => {
     const current = searchParams.toString();
-    if (
-      lastPushedParams.current !== null &&
-      lastPushedParams.current === current
-    ) {
-      lastPushedParams.current = null;
+    if (lastPushedParams.current !== null) {
+      if (searchParamsMatch(lastPushedParams.current, current)) {
+        lastPushedParams.current = null;
+        lastSyncedQ.current = searchParams.get("q") ?? "";
+      }
+      /* Ignore stale inbound URL until our replace lands — otherwise a chip
+       * dismiss can be overwritten by the previous profession/specialty. */
       return;
     }
 

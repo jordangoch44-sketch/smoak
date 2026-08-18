@@ -52,7 +52,7 @@ export function buildExploreSearchParams(
   return params.toString();
 }
 
-function searchParamsMatch(a: string, b: string): boolean {
+export function searchParamsMatch(a: string, b: string): boolean {
   if (a === b) return true;
   const left = new URLSearchParams(a);
   const right = new URLSearchParams(b);
