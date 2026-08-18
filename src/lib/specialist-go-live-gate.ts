@@ -1,3 +1,4 @@
+import { isListedGender } from "@/lib/gender";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
@@ -9,7 +10,8 @@ export interface SpecialistGoLiveGap {
     | "bio"
     | "location"
     | "specialties"
-    | "profession";
+    | "profession"
+    | "gender";
   label: string;
 }
 
@@ -84,6 +86,10 @@ export function getSpecialistGoLiveGaps(
 
   if (!profession) {
     gaps.push({ id: "profession", label: "Professional type" });
+  }
+
+  if (!isListedGender(app.gender)) {
+    gaps.push({ id: "gender", label: "Gender" });
   }
 
   return gaps;

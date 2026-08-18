@@ -46,6 +46,11 @@ export function SpecialistApplicationPreview({
           <p className="wizard-profile-preview__headline">{preview.title}</p>
           <p className="wizard-profile-preview__meta">
             {preview.profession} · {preview.location}
+            {state.gender === "male"
+              ? " · Male"
+              : state.gender === "female"
+                ? " · Female"
+                : ""}
           </p>
         </div>
       </div>

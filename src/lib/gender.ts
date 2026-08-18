@@ -2,7 +2,8 @@ import type { Gender } from "@/types/trainer";
 
 /**
  * Canonical gender from profile / search text.
- * Empty means unknown — never invent “non-binary” for a blank field.
+ * Marketplace listing gender is male or female only.
+ * Empty means unknown — never invent a third option for a blank field.
  */
 export function parseGender(value: unknown): Gender | "" {
   if (typeof value !== "string") return "";
@@ -13,8 +14,11 @@ export function parseGender(value: unknown): Gender | "" {
     .replace(/[\s_]+/g, "-");
   if (raw === "male" || raw === "man" || raw === "men") return "male";
   if (raw === "female" || raw === "woman" || raw === "women") return "female";
-  if (raw === "non-binary" || raw === "nonbinary") return "non-binary";
   return "";
+}
+
+export function isListedGender(value: unknown): value is Gender {
+  return value === "male" || value === "female";
 }
 
 /** Gender chip / search filter. Unknown profile gender does not hide the specialist. */

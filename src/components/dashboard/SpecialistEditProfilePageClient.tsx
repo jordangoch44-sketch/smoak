@@ -58,12 +58,8 @@ import {
   type ProfileNameFontId,
 } from "@/lib/specialist-profile-style";
 import { cn } from "@/lib/utils";
-
-const GENDER_OPTIONS: { value: Gender; label: string }[] = [
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
-  { value: "non-binary", label: "Non-binary" },
-];
+import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
+import { parseGender } from "@/lib/gender";
 
 type SectionId =
   | "basic-info"
@@ -472,10 +468,12 @@ export function SpecialistEditProfilePageClient({
                   <select
                     className="login-field__input dashboard-edit-select profile-edit-input"
                     value={form.gender}
+                    required
                     onChange={(event) =>
-                      updateField("gender", event.target.value as Gender)
+                      updateField("gender", parseGender(event.target.value))
                     }
                   >
+                    <option value="">Select</option>
                     {GENDER_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}

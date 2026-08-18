@@ -8,6 +8,7 @@ import {
   profileStyleFontLabel,
   profileStyleFrameLabel,
 } from "@/lib/specialist-profile-style";
+import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
 import { cn } from "@/lib/utils";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 import type { Gender, Trainer } from "@/types/trainer";
@@ -41,10 +42,7 @@ function previewOrAdd(value: string, empty = "Add"): string {
 
 function genderLabel(value: Gender | ""): string {
   if (!value) return "Add";
-  if (value === "male") return "Male";
-  if (value === "female") return "Female";
-  if (value === "non-binary") return "Non-binary";
-  return value;
+  return GENDER_OPTIONS.find((option) => option.value === value)?.label ?? "Add";
 }
 
 function IgEditRow({
@@ -269,6 +267,7 @@ export function SpecialistIgStyleProfileEditor({
         <IgEditRow
           label="Gender"
           value={genderLabel(formDefaults.gender)}
+          incomplete={!formDefaults.gender}
           onClick={() => onEditSection("gender")}
         />
         <IgEditRow

@@ -30,7 +30,6 @@ const GENDER_CHIPS: { label: string; value: string }[] = [
   { label: "Any", value: "" },
   { label: "Women", value: "female" },
   { label: "Men", value: "male" },
-  { label: "Non-binary", value: "non-binary" },
 ];
 
 /** Persist ZIP for proximity sort; chip shows ZIP without hard city/neighborhood exclude. */

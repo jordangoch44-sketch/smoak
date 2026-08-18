@@ -1,3 +1,4 @@
+import { isListedGender } from "@/lib/gender";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { isValidEmail } from "@/lib/validation/email";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
@@ -19,6 +20,7 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       break;
     case 2:
       if (!state.fullName.trim()) missing.push("Full name");
+      if (!isListedGender(state.gender)) missing.push("Gender");
       if (!state.displayName.trim()) missing.push("Business name");
       if (!state.headline.trim()) missing.push("Headline");
       if (!isValidEmail(state.email)) missing.push("Valid email");

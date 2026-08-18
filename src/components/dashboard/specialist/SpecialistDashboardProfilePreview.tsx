@@ -53,16 +53,12 @@ import {
   SPECIALIST_SERVICE_TYPE_OPTIONS,
   SPECIALIST_TRAVEL_RADIUS_OPTIONS,
 } from "@/types/specialist-service-area";
-import type { Gender, Trainer } from "@/types/trainer";
+import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
+import { parseGender } from "@/lib/gender";
+import type { Trainer } from "@/types/trainer";
 
 const LOCK_CLASS = "specialist-live-edit-open";
 const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
-
-const GENDER_OPTIONS: { value: Gender; label: string }[] = [
-  { value: "male", label: "Male" },
-  { value: "female", label: "Female" },
-  { value: "non-binary", label: "Non-binary" },
-];
 
 type SectionId =
   | "hero"
@@ -876,8 +872,10 @@ export function SpecialistDashboardProfilePreview({
             <select
               className="login-field__input dashboard-edit-select profile-edit-input"
               value={form.gender}
-              onChange={(e) => patch("gender", e.target.value as Gender)}
+              required
+              onChange={(e) => patch("gender", parseGender(e.target.value))}
             >
+              <option value="">Select</option>
               {GENDER_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}

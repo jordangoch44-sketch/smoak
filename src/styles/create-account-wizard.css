@@ -647,6 +647,18 @@ body:has(.login-page--wizard) main {
   color: rgba(255, 255, 255, 0.44);
 }
 
+.wizard-gender-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.login-page--wizard .login-card .wizard-gender-option {
+  min-height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ── Pills & fields ── */
 .wizard-pill-grid {
   display: flex;

@@ -1,3 +1,4 @@
+import { parseGender } from "@/lib/gender";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
@@ -62,7 +63,7 @@ export function normalizeSpecialistApplicationShape(
     displayName: asString(app.displayName),
     headline: asString(app.headline),
     phone: asString(app.phone),
-    gender: asString(app.gender) as SpecialistApplication["gender"],
+    gender: parseGender(app.gender),
     yearsExperience: asString(app.yearsExperience),
     ageRangesWorkedWith: asStringArray(app.ageRangesWorkedWith),
     city: asString(app.city),

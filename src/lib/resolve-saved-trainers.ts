@@ -34,7 +34,7 @@ export function buildUnavailableSavedTrainer(trainerId: string): Trainer {
     latitude: 0,
     longitude: 0,
     specialty: [],
-    gender: "non-binary",
+    gender: "",
     pricePerSession: 0,
     rating: 0,
     reviewCount: 0,

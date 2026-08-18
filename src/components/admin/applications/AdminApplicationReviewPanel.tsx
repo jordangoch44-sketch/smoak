@@ -14,6 +14,8 @@ import {
 } from "@/lib/specialist-go-live-gate";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { SpecialistApplication } from "@/types/specialist-application";
+import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
+import { parseGender } from "@/lib/gender";
 
 type ReviewFeedback =
   | "saved"
@@ -330,6 +332,21 @@ export function AdminApplicationReviewPanel({
                   value={draft.fullName}
                   onChange={(e) => patch("fullName", e.target.value)}
                 />
+              </label>
+              <label className="admin-field-label">
+                Gender
+                <select
+                  className="admin-field"
+                  value={draft.gender}
+                  onChange={(e) => patch("gender", parseGender(e.target.value))}
+                >
+                  <option value="">Select</option>
+                  {GENDER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label className="admin-field-label">
                 Display name

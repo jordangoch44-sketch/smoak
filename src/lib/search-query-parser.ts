@@ -126,17 +126,6 @@ function extractPriceFilters(work: string): {
 
 /** Gender words — run after specialty phrases so “women's health” is not stolen. */
 function extractGenderFilter(work: string): { work: string; gender: string } {
-  const nonBinary = work.match(/\bnon[\s-]?binary\b/);
-  if (nonBinary) {
-    return {
-      gender: "non-binary",
-      work: work
-        .replace(nonBinary[0], " ")
-        .replace(/\s+/g, " ")
-        .trim(),
-    };
-  }
-
   const female = work.match(/\b(?:female|woman|women)\b/);
   if (female) {
     return {

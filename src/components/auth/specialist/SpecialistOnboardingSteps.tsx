@@ -2,6 +2,7 @@
 
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import {
+  GENDER_OPTIONS,
   PROFESSIONAL_TYPE_OPTIONS,
   SPECIALIST_SPECIALTY_OPTIONS,
 } from "@/constants/specialist-onboarding-options";
@@ -166,6 +167,46 @@ export function SpecialistOnboardingSteps({
                 autoComplete="name"
               />
             </label>
+            <div className="login-field">
+              <span className="login-field__label">
+                Gender
+                <span className="login-field__label-hint">Required</span>
+              </span>
+              <div
+                className="wizard-gender-options"
+                role="radiogroup"
+                aria-label="Gender"
+              >
+                {GENDER_OPTIONS.map((option) => {
+                  const active = state.gender === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      onClick={() => onPatch({ gender: option.value })}
+                      className={cn(
+                        "wizard-option-card wizard-gender-option",
+                        active && "wizard-option-card--active"
+                      )}
+                    >
+                      <span className="wizard-option-card__indicator" aria-hidden>
+                        <span className="wizard-option-card__indicator-dot" />
+                      </span>
+                      <span className="wizard-option-card__copy">
+                        <span className="wizard-option-card__title">
+                          {option.label}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="wizard-field-hint">
+                Clients can search for specialists by gender.
+              </p>
+            </div>
             <label className="login-field">
               <span className="login-field__label">Business name</span>
               <input

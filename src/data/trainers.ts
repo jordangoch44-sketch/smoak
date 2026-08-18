@@ -505,7 +505,7 @@ export const specialties = [
     ...trainers.flatMap((t) => t.specialty),
   ]),
 ].sort();
-export const genders = ["male", "female", "non-binary"] as const;
+export const genders = ["male", "female"] as const;
 export const priceRanges = [
   { label: "Any price", value: "" },
   { label: "Under $130", value: "130" },

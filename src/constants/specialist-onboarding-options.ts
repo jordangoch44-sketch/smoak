@@ -87,8 +87,7 @@ export const SESSION_DURATION_OPTIONS = [
 export const GENDER_OPTIONS = [
   { value: "male" as const, label: "Male" },
   { value: "female" as const, label: "Female" },
-  { value: "non-binary" as const, label: "Non-binary" },
-];
+] as const;
 
 export const SPECIALIST_ONBOARDING_STEP_LABELS = [
   "Professional type",

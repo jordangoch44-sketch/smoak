@@ -77,7 +77,6 @@ export const CLIENT_GENDER_PREF_OPTIONS = [
   { value: "", label: "No preference" },
   { value: "female", label: "Women" },
   { value: "male", label: "Men" },
-  { value: "nonbinary", label: "Non-binary" },
 ] as const;
 
 export const CLIENT_SESSION_FORMAT_OPTIONS = [
