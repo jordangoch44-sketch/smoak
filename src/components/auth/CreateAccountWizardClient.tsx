@@ -763,7 +763,10 @@ export function CreateAccountWizardClient({
   }
 
   return (
-    <div className="login-page login-page--wizard">
+    <div
+      className="login-page login-page--wizard"
+      data-login-role={state.accountType ?? "client"}
+    >
       <div className="login-page__canvas" aria-hidden>
         <div className="wizard-aurora-pool wizard-aurora-pool--primary" />
         <div className="wizard-aurora-pool wizard-aurora-pool--secondary" />

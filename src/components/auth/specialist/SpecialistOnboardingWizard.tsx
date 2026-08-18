@@ -496,7 +496,10 @@ export function SpecialistOnboardingWizard({
 
   return (
     <>
-      <div className="login-page login-page--wizard login-page--specialist-onboarding">
+      <div
+        className="login-page login-page--wizard login-page--specialist-onboarding"
+        data-login-role="specialist"
+      >
         <div className="login-page__canvas" aria-hidden>
           <div className="wizard-aurora-pool wizard-aurora-pool--primary" />
           <div className="wizard-aurora-pool wizard-aurora-pool--secondary" />
