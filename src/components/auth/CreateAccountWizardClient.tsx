@@ -223,6 +223,8 @@ export function CreateAccountWizardClient({
 
   const progressPercent = stepProgressPercent(step);
   const isClientQuickSignup = state.accountType === "client";
+  /* Keep the role-picker header stable — client copy only after they continue. */
+  const showClientQuickHeader = isClientQuickSignup && step > 1;
 
   function wantsReturnToSaved(): boolean {
     if (initialReturnToSaved) return true;
@@ -791,7 +793,7 @@ export function CreateAccountWizardClient({
         <div className="login-card wizard-card">
           <div className="wizard-progress">
             <div className="wizard-signup-reassure">
-              {isClientQuickSignup ? (
+              {showClientQuickHeader ? (
                 <>
                   <p className="wizard-signup-reassure__title">Quick sign up</p>
                   <p className="wizard-signup-reassure__punch">
@@ -812,7 +814,7 @@ export function CreateAccountWizardClient({
                 </>
               )}
             </div>
-            {isClientQuickSignup ? null : (
+            {showClientQuickHeader ? null : (
               <>
                 <div className="wizard-progress__header">
                   <p className="wizard-progress__step">
