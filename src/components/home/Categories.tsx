@@ -44,7 +44,7 @@ export function Categories() {
         </header>
 
         <div className="home-specialty__grid">
-          {HOME_BROWSE_CATEGORIES.map((category) => {
+          {HOME_BROWSE_CATEGORIES.map((category, index) => {
             const Icon = CATEGORY_ICONS[category.icon];
             return (
               <TapLink
@@ -63,6 +63,7 @@ export function Categories() {
                     src={category.image}
                     alt=""
                     fill
+                    priority={index < 4}
                     sizes="(max-width: 639px) 55vw, (max-width: 1023px) 28vw, 220px"
                     className="home-specialty-card__photo"
                     style={
