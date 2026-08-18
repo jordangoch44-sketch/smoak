@@ -130,6 +130,13 @@ async function hydrateFromSupabase(): Promise<void> {
 
   const generation = ++loadGeneration;
   hydrating = true;
+  const HYDRATE_MS = 12_000;
+  const timeoutId = window.setTimeout(() => {
+    if (generation !== loadGeneration || hydrated) return;
+    hydrated = true;
+    hydrating = false;
+    applicationListeners.forEach((listener) => listener());
+  }, HYDRATE_MS);
 
   const supabase = getMarketplaceAuthClient();
   try {
@@ -158,6 +165,7 @@ async function hydrateFromSupabase(): Promise<void> {
     writeLocalApplications(cachedApplications);
     hydrated = true;
   } finally {
+    window.clearTimeout(timeoutId);
     if (generation === loadGeneration) {
       hydrating = false;
     }
@@ -166,7 +174,14 @@ async function hydrateFromSupabase(): Promise<void> {
 
 function ensureHydrated(): void {
   if (hydrated || hydrating) return;
+  /* Wait for an app session so this fetch does not race / timeout login. */
+  if (isMarketplaceSupabaseActive() && !getAuthSessionSnapshot()) return;
   void hydrateFromSupabase();
+}
+
+export function ensureSpecialistApplicationsHydrated(): void {
+  if (typeof window === "undefined") return;
+  ensureHydrated();
 }
 
 export function subscribeSpecialistApplications(

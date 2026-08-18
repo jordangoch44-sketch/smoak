@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
   applySpecialistProfileOverrides,
@@ -21,6 +21,7 @@ import {
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import {
+  ensureSpecialistApplicationsHydrated,
   getSpecialistApplicationById,
   getSpecialistApplicationsHydratedServerSnapshot,
   getSpecialistApplicationsHydratedSnapshot,
@@ -47,6 +48,11 @@ export function useManagedSpecialistProfile() {
   const { session } = useAuthSession();
   const sessionEmail = session?.email;
   const sessionUserId = session?.userId;
+
+  useEffect(() => {
+    if (!sessionUserId && !sessionEmail) return;
+    ensureSpecialistApplicationsHydrated();
+  }, [sessionUserId, sessionEmail]);
 
   const applicationRevision = useSyncExternalStore(
     subscribeSpecialistApplications,

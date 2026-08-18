@@ -29,6 +29,7 @@ import {
   signOutMarketplace,
   signUpWithPassword,
   type AuthResult,
+  type MarketplaceSessionLookup,
 } from "@/lib/auth/marketplace-auth";
 import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
 import { clearSavedTrainersActiveSession } from "@/lib/saved-trainers-store";
@@ -64,6 +65,29 @@ export interface AuthSessionContextValue {
 }
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
+
+const AUTH_HYDRATE_ATTEMPTS = 4;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function applyMarketplaceLookup(
+  result: MarketplaceSessionLookup
+): "ok" | "signed_out" | "transient_error" {
+  if (result.status === "ok") {
+    setAuthSession(result.session);
+    return "ok";
+  }
+  if (result.status === "signed_out") {
+    setAuthSession(null);
+    return "signed_out";
+  }
+  /* Keep any existing session — do not flicker to logged-out. */
+  return "transient_error";
+}
 
 function subscribeClientReady(onStoreChange: () => void) {
   if (typeof window !== "undefined") {
@@ -109,19 +133,7 @@ export function AuthSessionProvider({
 
     const result = await lookupMarketplaceSession();
     if (signingOutRef.current) return;
-
-    if (result.status === "ok") {
-      setAuthSession(result.session);
-      return;
-    }
-
-    if (result.status === "signed_out") {
-      setAuthSession(null);
-      return;
-    }
-
-    /* Transient role/profile/network error — keep existing session so UI
-     * does not flicker to logged-out or hang mid password-setup. */
+    applyMarketplaceLookup(result);
   }, [supabaseAuth]);
 
   useEffect(() => {
@@ -129,12 +141,38 @@ export function AuthSessionProvider({
       return;
     }
 
-    void refreshSession().finally(() => setSupabaseHydrated(true));
+    let cancelled = false;
+
+    async function hydrateAuth() {
+      for (let attempt = 0; attempt < AUTH_HYDRATE_ATTEMPTS; attempt += 1) {
+        if (cancelled || signingOutRef.current) return;
+
+        const result = await lookupMarketplaceSession();
+        if (cancelled || signingOutRef.current) return;
+
+        const status = applyMarketplaceLookup(result);
+        if (status === "ok" || status === "signed_out") {
+          setSupabaseHydrated(true);
+          return;
+        }
+
+        await delay(400 * (attempt + 1));
+      }
+
+      /* Transient errors: still mark ready so the UI can retry without a
+       * dashboard↔login bounce. useRequireAuth will not send us to /login
+       * while a Supabase cookie session still exists. */
+      if (!cancelled) setSupabaseHydrated(true);
+    }
+
+    void hydrateAuth();
 
     const supabase = getMarketplaceAuthClient();
     if (!supabase) {
       setSupabaseHydrated(true);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const {
@@ -157,9 +195,33 @@ export function AuthSessionProvider({
     });
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
     };
   }, [supabaseAuth, refreshSession]);
+
+  /* Cookie session exists but app session never built (timeout / huge row).
+   * Keep retrying instead of bouncing to /login (proxy would send us back). */
+  useEffect(() => {
+    if (!supabaseAuth || !supabaseHydrated || session) return;
+    const supabase = getMarketplaceAuthClient();
+    if (!supabase) return;
+
+    let cancelled = false;
+    const id = window.setInterval(() => {
+      void (async () => {
+        if (cancelled || signingOutRef.current) return;
+        const { data } = await supabase.auth.getSession();
+        if (cancelled || !data.session) return;
+        await refreshSession();
+      })();
+    }, 2500);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [supabaseAuth, supabaseHydrated, session, refreshSession]);
 
   useEffect(() => {
     if (!supabaseAuth || !session || session.role !== "client") return;
