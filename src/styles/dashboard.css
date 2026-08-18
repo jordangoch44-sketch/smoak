@@ -2644,6 +2644,11 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   cursor: pointer;
 }
 
+.dashboard-modal__close:disabled {
+  cursor: wait;
+  opacity: 0.4;
+}
+
 .dashboard-modal__content {
   position: relative;
   z-index: 1;

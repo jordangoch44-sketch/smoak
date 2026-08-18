@@ -16,6 +16,7 @@ import {
   type PanInfo,
 } from "framer-motion";
 import Link from "next/link";
+import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
 import { CloseIcon } from "@/components/ui/icons";
 import {
   QuickClientAccountAuthActions,
@@ -201,6 +202,7 @@ export function SpecialistInquirySheet({
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
+      if (submittingRef.current) return;
       if (
         info.offset.y > DISMISS_OFFSET_PX ||
         info.velocity.y > DISMISS_VELOCITY
@@ -391,7 +393,9 @@ export function SpecialistInquirySheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={backdropTransition}
-            onClick={onClose}
+            onClick={() => {
+              if (!sending) onClose();
+            }}
           />
 
           <motion.div
@@ -416,7 +420,10 @@ export function SpecialistInquirySheet({
                 type="button"
                 className="inquiry-sheet__handle-hit"
                 aria-label="Drag to close"
-                onPointerDown={(event) => dragControls.start(event)}
+                onPointerDown={(event) => {
+                  if (sending) return;
+                  dragControls.start(event);
+                }}
               >
                 <span className="inquiry-sheet__handle" aria-hidden />
               </button>
@@ -437,6 +444,7 @@ export function SpecialistInquirySheet({
                   onClick={onClose}
                   className="smoac-control inquiry-sheet__close"
                   aria-label="Close"
+                  disabled={sending}
                   data-sheet-initial-focus
                 >
                   <CloseIcon className="h-5 w-5" />
@@ -713,6 +721,18 @@ export function SpecialistInquirySheet({
                   />
                 ) : null}
               </div>
+            ) : null}
+
+            {sending ? (
+              <SmoacSavingOverlay
+                label={
+                  view === "signup"
+                    ? "Creating your account"
+                    : view === "signin"
+                      ? "Signing in"
+                      : "Sending your message"
+                }
+              />
             ) : null}
           </motion.div>
         </div>

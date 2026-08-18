@@ -14,6 +14,7 @@ import {
   LocationMarkIcon,
   SearchIcon,
 } from "@/components/ui/icons";
+import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import {
   EXPLORE_RECENT_SEARCH_OVERLAY_LIMIT,
   EXPLORE_SEARCH_GOAL_PROMPTS,
@@ -258,7 +259,15 @@ export function ExploreSearchOverlay({
                   className="explore-search-overlay__location-icon"
                   aria-hidden
                 >
-                  <LocationMarkIcon className="h-4 w-4" />
+                  {geoLoading ? (
+                    <SmoacSavingMark
+                      size="compact"
+                      hideLabel
+                      label="Finding your location"
+                    />
+                  ) : (
+                    <LocationMarkIcon className="h-4 w-4" />
+                  )}
                 </span>
                 <span className="explore-search-overlay__location-copy">
                   <span className="explore-search-overlay__location-label">

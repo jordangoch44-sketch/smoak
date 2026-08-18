@@ -262,6 +262,7 @@
 
 /* —— Panel content —— */
 .location-selector-panel__body {
+  position: relative;
   padding: 1.25rem 1.15rem 1.35rem;
 }
 

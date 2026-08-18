@@ -15,6 +15,7 @@ import {
   parseExplorePriceBound,
 } from "@/lib/explore-price-range";
 import { LocationMarkIcon } from "@/components/ui/icons";
+import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { cn } from "@/lib/utils";
 import { PriceRangeSlider } from "./PriceRangeSlider";
 
@@ -243,7 +244,15 @@ export function TrainerFilters({
           disabled={geoLoading}
         >
           <span className="explore-filter-location-btn__icon" aria-hidden>
-            <LocationMarkIcon className="h-4 w-4" />
+            {geoLoading ? (
+              <SmoacSavingMark
+                size="compact"
+                hideLabel
+                label="Finding your location"
+              />
+            ) : (
+              <LocationMarkIcon className="h-4 w-4" />
+            )}
           </span>
           <span className="explore-filter-location-btn__copy">
             <span className="explore-filter-location-btn__label">

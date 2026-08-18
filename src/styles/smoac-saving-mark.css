@@ -38,6 +38,39 @@
   }
 }
 
+.smoac-saving-mark--compact {
+  gap: 0;
+}
+
+.smoac-saving-mark--compact .smoac-saving-mark__ring {
+  width: 1.125rem;
+  height: 1.125rem;
+  border-width: 2px;
+  box-shadow: 0 0 10px rgba(52, 255, 136, 0.28);
+}
+
+.smoac-saving-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  border-radius: inherit;
+  background: rgba(5, 5, 8, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: auto;
+}
+
+.smoac-saving-overlay .smoac-saving-mark__label {
+  max-width: 16rem;
+  text-align: center;
+  line-height: 1.45;
+  letter-spacing: 0.1em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .smoac-saving-mark__ring {
     animation: none;

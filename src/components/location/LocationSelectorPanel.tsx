@@ -11,6 +11,7 @@ import {
 } from "@/lib/user-location-store";
 import { loadSavedZipCode } from "@/lib/user-location-storage";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
+import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { cn } from "@/lib/utils";
 
@@ -293,6 +294,10 @@ export function LocationSelectorPanel({
         >
           Not now
         </button>
+      ) : null}
+
+      {geoLoading ? (
+        <SmoacSavingOverlay label="Finding your location" />
       ) : null}
     </div>
   );

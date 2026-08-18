@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
 import { CloseIcon } from "@/components/ui/icons";
 import { DashboardButton } from "@/components/dashboard/shared";
 import type { GooglePlaceSnapshot } from "@/lib/google-places";
@@ -77,7 +78,13 @@ export function ConnectGoogleReviewsModal({
   }
 
   return createPortal(
-    <div className="dashboard-modal" role="presentation" onClick={onClose}>
+    <div
+      className="dashboard-modal"
+      role="presentation"
+      onClick={() => {
+        if (!busy) onClose();
+      }}
+    >
       <div
         className="dashboard-modal__dialog"
         role="dialog"
@@ -131,6 +138,9 @@ export function ConnectGoogleReviewsModal({
             </DashboardButton>
           </form>
         </div>
+        {busy ? (
+          <SmoacSavingOverlay label="Connecting Google Reviews" />
+        ) : null}
       </div>
     </div>,
     document.body
