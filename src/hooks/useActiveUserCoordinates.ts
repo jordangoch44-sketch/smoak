@@ -25,11 +25,10 @@ export function useActiveUserCoordinates(): UserGeoPoint | null {
     getActiveUserCoordinatesServerSnapshot
   );
 
-  /* Profile ZIP coords from session snapshot + storage coords from the
-   * location store only. Do not call getActiveUserCoordinates() here — that
-   * reads localStorage during render and hydrates distance labels the SSR
-   * tree did not include (dev-trainer-distance). */
+  /* Storage coords (header / gate ZIP or GPS) win over stale profile ZIP —
+   * completeZipEntry writes localStorage immediately on “Update location”. */
   return useMemo(() => {
+    if (storageCoords) return storageCoords;
     const profileZip = getProfileZipFromSession(session);
     if (profileZip) {
       const coords =
@@ -37,7 +36,7 @@ export function useActiveUserCoordinates(): UserGeoPoint | null {
         zipCodeToCoordinates(profileZip);
       if (coords) return coords;
     }
-    return storageCoords;
+    return null;
   }, [session, storageCoords]);
 }
 

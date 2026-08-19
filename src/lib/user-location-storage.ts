@@ -276,22 +276,21 @@ export function getSavedZipCoordinates(): GeoCoordinates | null {
   return coordinatesForSavedZip(zip);
 }
 
-/** Active coordinates for proximity sorting — device geo or ZIP centroid */
+/**
+ * Active coordinates for proximity sorting + Explore map framing.
+ * Saved ZIP wins when set — header “Update location” must reframe results
+ * even if device GPS is still stored for the purple map dot.
+ */
 export function getActiveUserCoordinates(): UserGeoPoint | null {
+  const zip = loadSavedZipCode();
+  if (zip) {
+    const fromZip = getSavedZipCoordinates() ?? coordinatesForSavedZip(zip);
+    if (fromZip) return fromZip;
+  }
+
   const geo = loadSavedCoordinates();
   if (geo && hasSavedGeolocation()) {
     return { latitude: geo.latitude, longitude: geo.longitude };
-  }
-
-  const zipLat = readNumber(USER_ZIP_LATITUDE_KEY);
-  const zipLng = readNumber(USER_ZIP_LONGITUDE_KEY);
-  if (zipLat !== null && zipLng !== null) {
-    return { latitude: zipLat, longitude: zipLng };
-  }
-
-  const zip = loadSavedZipCode();
-  if (zip) {
-    return coordinatesForSavedZip(zip);
   }
 
   return null;
