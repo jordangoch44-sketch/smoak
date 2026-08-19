@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { SiteLocationPill } from "@/components/location/SiteLocationPill";
 import { SiteNavPill } from "@/components/layout/SiteNavPill";
 import { Logo } from "@/components/ui/Logo";
@@ -38,7 +39,9 @@ export function SiteHeaderDesktop({ onLogoClick }: SiteHeaderDesktopProps) {
         </div>
 
         <div className="site-header__nav-center" aria-label="Main">
-          <SiteNavPill variant="header" />
+          <Suspense fallback={null}>
+            <SiteNavPill variant="header" />
+          </Suspense>
         </div>
 
         <div className="site-header__utility-end">
