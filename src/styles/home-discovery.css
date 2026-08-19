@@ -1320,3 +1320,14 @@
   color: rgb(255 255 255 / 0.42);
   font-size: 0.75rem;
 }
+
+.home-seo-links__category {
+  color: rgb(255 255 255 / 0.58);
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.home-seo-links__category:hover {
+  color: #fff;
+  text-decoration: underline;
+}

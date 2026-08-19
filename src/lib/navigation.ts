@@ -30,6 +30,10 @@ export const SITE_ROUTES = {
   terms: "/terms",
   cookies: "/cookies",
   accessibility: "/accessibility",
+  /** SEO city hubs, e.g. /find/san-diego */
+  find: "/find",
+  findSanDiego: "/find/san-diego",
+  findSanDiegoPersonalTrainers: "/find/san-diego/personal-trainers",
 } as const;
 
 /** Desktop header text links (saved uses heart control) */

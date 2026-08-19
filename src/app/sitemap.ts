@@ -2,6 +2,11 @@ import type { MetadataRoute } from "next";
 import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { absoluteUrl } from "@/lib/seo/site-url";
+import {
+  cityToSlug,
+  listMarketplaceLandingPaths,
+} from "@/lib/seo/marketplace-slugs";
+import { MARKETPLACE_CITIES } from "@/data/locations";
 
 const STATIC_ROUTES: Array<{
   path: string;
@@ -50,5 +55,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...staticEntries, ...trainerEntries];
+  const cityHubEntries: MetadataRoute.Sitemap = MARKETPLACE_CITIES.map((city) => ({
+    url: absoluteUrl(`/find/${cityToSlug(city)}`),
+    lastModified,
+    changeFrequency: "weekly",
+    priority: 0.85,
+  }));
+
+  const professionLandingEntries: MetadataRoute.Sitemap =
+    listMarketplaceLandingPaths().map(({ citySlug, professionSlug }) => ({
+      url: absoluteUrl(`/find/${citySlug}/${professionSlug}`),
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 0.82,
+    }));
+
+  return [
+    ...staticEntries,
+    ...cityHubEntries,
+    ...professionLandingEntries,
+    ...trainerEntries,
+  ];
 }
