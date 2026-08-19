@@ -26,6 +26,7 @@ export function ExplorePageClient() {
   const searchParams = useSearchParams();
   const isMobile = useMobileViewport(true);
   const isCompactAtmosphere = useTabletViewport(true);
+  const isDesktopSplit = !isMobile && !isCompactAtmosphere;
   const preciseUserLocation = usePreciseUserCoordinates();
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
@@ -156,7 +157,8 @@ export function ExplorePageClient() {
         areaEmpty={areaEmpty}
         mapSearchEmpty={mapSearchActive && filtered.length === 0}
         nearbyExpanded={nearbyExpanded}
-        showMap={!isMobile}
+        showMap={!isMobile && !isDesktopSplit}
+        layout={isDesktopSplit ? "split" : "toggle"}
         onClearFilters={clearFilters}
         onClearSearch={clearSearch}
         onClearAll={clearAll}
@@ -242,6 +244,37 @@ export function ExplorePageClient() {
           >
             {resultsMain}
           </ExploreResultsSheet>
+        ) : isDesktopSplit ? (
+          <div className="explore-page__layout explore-page__layout--split">
+            <aside className="explore-page__map-rail" aria-label="Search map">
+              <div className="explore-page__map-rail-inner">
+                <ExploreMap
+                  trainers={filtered}
+                  areaCenter={searchOrigin}
+                  userLocationDot={preciseUserLocation}
+                  activeSearchArea={activeSearchArea}
+                  onPendingSearchAreaChange={handlePendingSearchAreaChange}
+                  onRecenterSearch={handleRecenterSearch}
+                  locked={false}
+                  variant="column"
+                  showNotes={false}
+                />
+                {pendingMapArea ? (
+                  <div className="explore-page__map-rail-actions">
+                    <button
+                      type="button"
+                      className="smoac-control explore-split__search-here"
+                      disabled={mapSearchLoading}
+                      onClick={handleSearchHere}
+                    >
+                      {mapSearchLoading ? "Searching…" : "Search here"}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </aside>
+            <div className="explore-page__results-rail">{resultsMain}</div>
+          </div>
         ) : (
           <div className="explore-page__layout">{resultsMain}</div>
         )}

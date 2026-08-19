@@ -1733,6 +1733,90 @@ body.location-selector-open .explore-map__recenter--hero {
   .explore-page__layout {
     margin-top: 2.25rem;
   }
+
+  .explore-page__layout--split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .explore-page__map-rail {
+    position: sticky;
+    top: calc(var(--site-header-total-height) + 0.85rem);
+    align-self: start;
+    min-width: 0;
+  }
+
+  .explore-page__map-rail-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: calc(100dvh - var(--site-header-total-height) - 2.75rem);
+  }
+
+  .explore-page__map-rail .explore-map--column {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .explore-map--column .explore-map__canvas {
+    flex: 1 1 auto;
+    width: 100%;
+    height: auto;
+    min-height: 22rem;
+    max-height: calc(100dvh - var(--site-header-total-height) - 4.5rem);
+  }
+
+  .explore-page__map-rail-actions {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .explore-page__results-rail {
+    min-width: 0;
+    max-height: calc(100dvh - var(--site-header-total-height) - 2.75rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 0.15rem;
+  }
+
+  .explore-results-stack--split {
+    gap: 1rem;
+  }
+
+  /* Split rail — stacked horizontal cards (not 2-col vertical grid) */
+  .explore-page__layout--split .trainer-card-list--split-rail {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .explore-page__layout--split .trainer-card-compact {
+    display: flex !important;
+  }
+
+  .explore-page__layout--split .trainer-card-grid {
+    display: none !important;
+  }
+
+  .explore-page__layout--split .trainer-card-compact__media {
+    width: 5.35rem !important;
+    height: 6.85rem !important;
+    max-width: 5.35rem;
+  }
+
+  .explore-page__layout--split .trainer-card-compact {
+    padding: 0.85rem 0.9rem;
+  }
+
+  .explore-page__layout--split .trainer-card-compact__name {
+    font-size: 1rem;
+  }
 }
 
 .explore-page__results {

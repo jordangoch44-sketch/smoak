@@ -42,8 +42,8 @@ interface ExploreMapProps {
   onRecenterSearch?: () => void;
   /** Display-only: no drag / zoom (default true) */
   locked?: boolean;
-  /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header */
-  variant?: "panel" | "split" | "hero";
+  /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header; `column` = desktop split rail */
+  variant?: "panel" | "split" | "hero" | "column";
   showNotes?: boolean;
 }
 
@@ -461,7 +461,9 @@ export function ExploreMap({
       ? "explore-map--hero"
       : variant === "split"
         ? "explore-map--split"
-        : "explore-map--panel",
+        : variant === "column"
+          ? "explore-map--column"
+          : "explore-map--panel",
     locked ? "explore-map--locked" : "",
   ]
     .filter(Boolean)

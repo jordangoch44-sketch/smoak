@@ -28,6 +28,8 @@ interface ExploreResultsProps {
   nearbyExpanded?: boolean;
   /** When false, map is rendered by the page (mobile map-hero layout) */
   showMap?: boolean;
+  /** Desktop ≥1024px: side-by-side map rail — list only, no List/Map tabs */
+  layout?: "toggle" | "split";
   onClearFilters: () => void;
   onClearSearch: () => void;
   onClearAll: () => void;
@@ -48,6 +50,7 @@ export const ExploreResults = memo(function ExploreResults({
   mapSearchEmpty = false,
   nearbyExpanded = false,
   showMap = true,
+  layout = "toggle",
   onClearFilters,
   onClearSearch,
   onClearAll,
@@ -169,6 +172,20 @@ export const ExploreResults = memo(function ExploreResults({
           </p>
           <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
         </div>
+      </div>
+    );
+  }
+
+  if (layout === "split") {
+    return (
+      <div className="explore-results-stack explore-results-stack--split">
+        {expandedNote}
+        <TrainerList
+          trainers={trainers}
+          variant="explore"
+          priorityCount={4}
+          className="trainer-card-list--split-rail"
+        />
       </div>
     );
   }
