@@ -28,6 +28,64 @@
   z-index: 1;
 }
 
+/* ── Marketplace canvas: black hero → deep purple at Browse by category ── */
+.home-page--discovery {
+  background-color: #1a0b2e;
+}
+
+.home-page--discovery::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 120% 88% at 50% 42%,
+      rgba(139, 61, 255, 0.14) 0%,
+      rgba(90, 35, 170, 0.08) 35%,
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 90% 55% at 50% 38%,
+      rgba(124, 58, 237, 0.08) 0%,
+      transparent 58%
+    ),
+    linear-gradient(
+      to bottom,
+      #020204 0%,
+      #020204 max(11vh, 7rem),
+      #050208 max(20vh, 13.5rem),
+      #0b0413 max(27vh, 17.5rem),
+      #120720 max(33vh, 21.5rem),
+      #1a0b2e max(39vh, 25.5rem),
+      #24103d max(45vh, 29.5rem),
+      #21103a max(52vh, 34rem),
+      #1a0b2e 100%
+    );
+}
+
+/* Upper aurora wash — keep hero near-black; page gradient owns the purple handoff */
+.home-page--discovery .home-page__sky {
+  height: min(48vh, 26rem);
+  opacity: 0.28;
+  background:
+    radial-gradient(
+      ellipse 95% 52% at 50% 0%,
+      rgba(var(--aurora-lavender-rgb), 0.22) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 72% 40% at 18% 12%,
+      rgba(var(--aurora-indigo-rgb), 0.12) 0%,
+      transparent 58%
+    );
+}
+
+.home-page--discovery .home-specialty.home-section-aurora::before {
+  display: none;
+}
+
 /* Shared section chrome */
 .home-page--discovery .home-section__inner {
   position: relative;
@@ -107,8 +165,8 @@
 }
 
 /*
- * Charcoal search deck — reads continuous with the header frost,
- * then dissolves before Browse by category.
+ * Charcoal search deck — near-black through headline/search,
+ * then dissolves so the page purple canvas emerges (no hard seam).
  */
 .home-page--discovery .home-hero--discovery::after {
   content: "";
@@ -118,37 +176,38 @@
   pointer-events: none;
   top: -1.25rem;
   right: 0;
-  bottom: 0;
+  bottom: -3.5rem;
   left: 0;
   background:
     linear-gradient(
       180deg,
-      rgba(8, 8, 12, 0.88) 0%,
-      rgba(9, 9, 14, 0.78) 28%,
-      rgba(11, 10, 16, 0.52) 58%,
-      rgba(12, 11, 18, 0.22) 78%,
-      rgba(12, 11, 18, 0.06) 90%,
+      rgba(2, 2, 4, 0.94) 0%,
+      rgba(4, 3, 8, 0.88) 18%,
+      rgba(6, 5, 10, 0.72) 38%,
+      rgba(8, 6, 14, 0.46) 58%,
+      rgba(12, 8, 22, 0.22) 74%,
+      rgba(18, 10, 32, 0.08) 88%,
       transparent 100%
     );
 }
 
 .home-page--discovery .home-hero__canvas {
   z-index: 0;
-  opacity: 0.62;
+  opacity: 0.48;
   /* Soften the canvas bleed so the dark deck owns the search band */
-  bottom: -4rem;
+  bottom: -3rem;
   -webkit-mask-image: linear-gradient(
     180deg,
     #000 0%,
-    #000 55%,
-    rgba(0, 0, 0, 0.55) 78%,
+    #000 48%,
+    rgba(0, 0, 0, 0.45) 72%,
     transparent 100%
   );
   mask-image: linear-gradient(
     180deg,
     #000 0%,
-    #000 55%,
-    rgba(0, 0, 0, 0.55) 78%,
+    #000 48%,
+    rgba(0, 0, 0, 0.45) 72%,
     transparent 100%
   );
 }
@@ -428,6 +487,33 @@
 }
 
 @media (min-width: 768px) {
+  .home-page--discovery::before {
+    background:
+      radial-gradient(
+        ellipse 115% 90% at 50% 44%,
+        rgba(139, 61, 255, 0.14) 0%,
+        rgba(90, 35, 170, 0.08) 35%,
+        transparent 65%
+      ),
+      radial-gradient(
+        ellipse 88% 58% at 50% 40%,
+        rgba(124, 58, 237, 0.07) 0%,
+        transparent 56%
+      ),
+      linear-gradient(
+        to bottom,
+        #020204 0%,
+        #020204 max(13vh, 9.5rem),
+        #050208 max(22vh, 15rem),
+        #0b0413 max(29vh, 19.5rem),
+        #120720 max(35vh, 23.5rem),
+        #1a0b2e max(41vh, 27.5rem),
+        #24103d max(47vh, 31.5rem),
+        #21103a max(54vh, 36rem),
+        #1a0b2e 100%
+      );
+  }
+
   .home-page--discovery .home-hero__content--discovery,
   .home-page--discovery .home-hero__headline {
     align-items: center;
@@ -1165,6 +1251,37 @@
 
 /* Soften old mobile search-first overrides on discovery homepage */
 @media (max-width: 767px) {
+  .home-page--discovery::before {
+    background:
+      radial-gradient(
+        ellipse 130% 92% at 50% 40%,
+        rgba(139, 61, 255, 0.15) 0%,
+        rgba(90, 35, 170, 0.08) 32%,
+        transparent 62%
+      ),
+      linear-gradient(
+        to bottom,
+        #020204 0%,
+        #020204 max(10vh, 6.5rem),
+        #050208 max(18vh, 12rem),
+        #0b0413 max(24vh, 15.5rem),
+        #120720 max(30vh, 19rem),
+        #1a0b2e max(36vh, 22.5rem),
+        #24103d max(42vh, 26rem),
+        #21103a max(48vh, 30rem),
+        #1a0b2e 100%
+      );
+  }
+
+  .home-page--discovery .home-page__sky {
+    height: min(42vh, 22rem);
+    opacity: 0.22;
+  }
+
+  .home-page--discovery .home-hero__canvas {
+    bottom: -2.5rem;
+  }
+
   .home-page--discovery > .home-hero {
     padding-top: clamp(2.15rem, 7vw, 3.1rem);
     padding-bottom: clamp(2.75rem, 9vw, 3.75rem);
