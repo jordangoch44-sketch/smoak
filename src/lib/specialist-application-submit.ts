@@ -12,6 +12,11 @@ import {
 import { hideTrainerId } from "@/lib/hidden-trainers-store";
 import { syncProfileOverridesFromApplication } from "@/lib/managed-specialist-profile";
 import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
+import {
+  readFoundingTrainerInviteSession,
+  clearFoundingTrainerInviteSession,
+  fetchFoundingTrainerCohortFull,
+} from "@/lib/founding-trainer-invite";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import {
   clearSpecialistOnboardingDraft,
@@ -148,6 +153,23 @@ async function submitSpecialistApplicationOnce(
   /* Reuse id for draft/rejected/pending updates — never create a second profile row */
   const id = existing?.id ?? slugifyId(trimmedEmail);
   const enriched = enrichSpecialistApplicationFields(state);
+  const foundingSession = readFoundingTrainerInviteSession();
+  const foundingFields = foundingSession
+    ? {
+        foundingInvite: true as const,
+        foundingInviteCode: foundingSession.code,
+        foundingInviteAcceptedAt: foundingSession.acceptedAt,
+      }
+    : {};
+
+  if (foundingSession && !existing?.foundingInvite) {
+    const cohortFull = await fetchFoundingTrainerCohortFull();
+    if (cohortFull) {
+      throw new ApplicationSubmitError(
+        "Founding specialist invitations are full. We'll notify you when the next cohort opens."
+      );
+    }
+  }
 
   const application: SpecialistApplication = {
     id,
@@ -155,6 +177,7 @@ async function submitSpecialistApplicationOnce(
     submittedAt: existing?.submittedAt ?? now,
     updatedAt: now,
     ...enriched,
+    ...foundingFields,
     email: trimmedEmail,
     password: "",
     userId: userId ?? existing?.userId ?? null,
@@ -187,6 +210,9 @@ async function submitSpecialistApplicationOnce(
   hideTrainerId(id);
   clearSpecialistOnboardingDraft();
   clearPendingMarketplaceSignup();
+  if (foundingSession) {
+    clearFoundingTrainerInviteSession();
+  }
 
   const emailResult = await sendSpecialistApplicationConfirmationEmail(saved);
   if (!emailResult.success) {

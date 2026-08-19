@@ -16,6 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         "/login",
         "/complete-account",
         "/create-account",
+        "/founding-trainers",
         "/saved",
         "/profile",
         "/tap-test",

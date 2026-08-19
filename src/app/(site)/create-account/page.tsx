@@ -1,8 +1,17 @@
 import type { Metadata } from "next";
 import { CreateAccountWizardClient } from "@/components/auth/CreateAccountWizardClient";
 import { isAuthReturnToSavedFromParams } from "@/lib/auth-return";
-import { JOIN_INTRO_PARAM, JOIN_ROLE_PARAM, parseJoinAccountRole } from "@/lib/join-flow";
+import {
+  FOUNDING_INVITE_CODE_PARAM,
+  JOIN_FOUNDING_PARAM,
+  parseJoinFoundingFlag,
+} from "@/lib/founding-trainer-invite";
 import { NOINDEX_FOLLOW_NONE } from "@/lib/seo/noindex";
+import {
+  JOIN_INTRO_PARAM,
+  JOIN_ROLE_PARAM,
+  parseJoinAccountRole,
+} from "@/lib/join-flow";
 
 export const metadata: Metadata = {
   title: "Create Account",
@@ -19,6 +28,13 @@ function hasIntroFlag(
   return false;
 }
 
+function readInviteCode(
+  value: string | string[] | undefined
+): string | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw?.trim() || null;
+}
+
 export default async function CreateAccountPage({
   searchParams,
 }: {
@@ -28,12 +44,16 @@ export default async function CreateAccountPage({
   const initialJoinIntro = hasIntroFlag(params[JOIN_INTRO_PARAM]);
   const initialReturnToSaved = isAuthReturnToSavedFromParams(params);
   const initialAccountType = parseJoinAccountRole(params[JOIN_ROLE_PARAM]);
+  const initialFoundingInvite = parseJoinFoundingFlag(params[JOIN_FOUNDING_PARAM]);
+  const initialFoundingInviteCode = readInviteCode(params[FOUNDING_INVITE_CODE_PARAM]);
 
   return (
     <CreateAccountWizardClient
       initialJoinIntro={initialJoinIntro}
       initialReturnToSaved={initialReturnToSaved}
       initialAccountType={initialAccountType}
+      initialFoundingInvite={initialFoundingInvite}
+      initialFoundingInviteCode={initialFoundingInviteCode}
     />
   );
 }

@@ -1983,6 +1983,20 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
+.admin-inbox-card__founding-tag {
+  display: inline-block;
+  margin-left: 0.45rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid rgba(248, 226, 186, 0.28);
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(248, 226, 186, 0.82);
+  vertical-align: middle;
+}
+
 .admin-inbox-card__meta {
   display: grid;
   grid-template-columns: 1fr 1fr;

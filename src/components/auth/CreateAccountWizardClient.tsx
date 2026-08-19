@@ -43,6 +43,7 @@ import { hydrateClientLocationFromSession } from "@/lib/client-profile-location"
 import { cn } from "@/lib/utils";
 import { SpecialistOnboardingWizard } from "@/components/auth/specialist/SpecialistOnboardingWizard";
 import { useCreateAccountIntroGate } from "@/hooks/useCreateAccountIntroGate";
+import { persistFoundingTrainerInviteSession } from "@/lib/founding-trainer-invite";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -179,12 +180,17 @@ interface CreateAccountWizardClientProps {
   initialReturnToSaved?: boolean;
   /** From `?role=specialist|client` — deep links from promos / save complete */
   initialAccountType?: PublicAuthRole | null;
+  /** From founding trainer invite CTA (`?founding=1`) */
+  initialFoundingInvite?: boolean;
+  initialFoundingInviteCode?: string | null;
 }
 
 export function CreateAccountWizardClient({
   initialJoinIntro = false,
   initialReturnToSaved = false,
   initialAccountType = null,
+  initialFoundingInvite = false,
+  initialFoundingInviteCode = null,
 }: CreateAccountWizardClientProps) {
   const router = useRouter();
   const { isReady, session, signUp } = useAuthSession();
@@ -202,12 +208,22 @@ export function CreateAccountWizardClient({
   const [error, setError] = useState<string | null>(null);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(
-    () => initialAccountType === "specialist" && !initialJoinIntro
+    () =>
+      (initialAccountType === "specialist" && !initialJoinIntro) ||
+      (initialFoundingInvite && initialAccountType === "specialist")
   );
   const { ready: introReady, showIntro, completeIntro } =
     useCreateAccountIntroGate(initialJoinIntro);
   const portalReady = useHydrated();
   const [introVisible, setIntroVisible] = useState(false);
+
+  useEffect(() => {
+    if (!initialFoundingInvite) return;
+    persistFoundingTrainerInviteSession({
+      code: initialFoundingInviteCode?.trim() || "founding",
+      acceptedAt: new Date().toISOString(),
+    });
+  }, [initialFoundingInvite, initialFoundingInviteCode]);
 
   useEffect(() => {
     document.documentElement.classList.toggle(

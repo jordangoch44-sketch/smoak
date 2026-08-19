@@ -203,6 +203,11 @@ export function AdminApplicationsPanel({
                         </h3>
                         <p className="admin-inbox-card__category">
                           {app.professionalType || "Specialist"}
+                          {app.foundingInvite ? (
+                            <span className="admin-inbox-card__founding-tag">
+                              Founding
+                            </span>
+                          ) : null}
                         </p>
                       </div>
                       <AdminStatusBadge label={label} />

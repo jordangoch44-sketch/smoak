@@ -1,0 +1,249 @@
+/* Founding trainer invite — minimal Bond-meets-space dossier landing */
+
+body:has(.founding-invite-page) #site-header,
+body:has(.founding-invite-page) .site-footer,
+body:has(.founding-invite-page) .mobile-bottom-nav {
+  display: none !important;
+}
+
+body:has(.founding-invite-page) .app-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.founding-invite-page {
+  position: relative;
+  flex: 1;
+  min-height: calc(100dvh - env(safe-area-inset-top, 0px));
+  display: flex;
+  flex-direction: column;
+  color: rgba(255, 255, 255, 0.92);
+  background: #000;
+  overflow: hidden;
+}
+
+.founding-invite-page__scanline {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.035;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0,
+    transparent 2px,
+    rgba(255, 255, 255, 0.35) 2px,
+    rgba(255, 255, 255, 0.35) 3px
+  );
+}
+
+.founding-invite-page__main {
+  position: relative;
+  z-index: 3;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  width: min(100%, 28rem);
+  margin: 0 auto;
+  padding: calc(2.5rem + env(safe-area-inset-top, 0px)) 1.5rem
+    calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+.founding-invite-page__mark {
+  opacity: 0.72;
+}
+
+.founding-invite-page__logo {
+  width: 2.25rem;
+  height: auto;
+}
+
+.founding-invite-page__panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.25rem;
+  text-align: center;
+}
+
+.founding-invite-page__panel--gate {
+  gap: 1rem;
+}
+
+.founding-invite-page__eyebrow {
+  margin: 0;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(248, 226, 186, 0.62);
+}
+
+.founding-invite-page__title {
+  margin: 0;
+  font-family: var(--font-profile-editorial), "Cormorant Garamond", Georgia, serif;
+  font-size: clamp(2.25rem, 8vw, 3rem);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: rgba(255, 255, 255, 0.98);
+}
+
+.founding-invite-page__lede {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.founding-invite-page__dossier {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0.5rem 0 0;
+  padding: 1rem 0;
+  border-block: 1px solid rgba(248, 226, 186, 0.14);
+}
+
+.founding-invite-page__dossier div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.founding-invite-page__dossier dt {
+  margin: 0;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.founding-invite-page__dossier dd {
+  margin: 0;
+  font-family: var(--font-profile-display), "Syne", system-ui, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(248, 226, 186, 0.88);
+}
+
+.founding-invite-page__code-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  text-align: left;
+}
+
+.founding-invite-page__code-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.founding-invite-page__code-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(248, 226, 186, 0.18);
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.92);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.875rem;
+  letter-spacing: 0.12em;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.founding-invite-page__code-input:focus {
+  border-color: rgba(248, 226, 186, 0.42);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.founding-invite-page__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid rgba(248, 226, 186, 0.28);
+  background: transparent;
+  color: rgba(248, 226, 186, 0.92);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 0.22s ease,
+    background-color 0.22s ease,
+    color 0.22s ease,
+    box-shadow 0.22s ease;
+}
+
+.founding-invite-page__cta:hover {
+  border-color: rgba(248, 226, 186, 0.48);
+  background: rgba(248, 226, 186, 0.06);
+  color: #fff;
+  box-shadow: 0 0 28px rgba(168, 85, 247, 0.12);
+}
+
+.founding-invite-page__cta--primary {
+  margin-top: 0.25rem;
+}
+
+.founding-invite-page__fineprint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.founding-invite-page__ghost-link {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.founding-invite-page__ghost-link:hover {
+  color: rgba(248, 226, 186, 0.78);
+}
+
+.founding-invite-page__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.625rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+@media (min-width: 768px) {
+  .founding-invite-page__main {
+    width: min(100%, 32rem);
+    padding-inline: 2rem;
+  }
+}

@@ -122,6 +122,10 @@ export interface SpecialistApplication {
   bio: string;
   /** Curated public profile look — set from the dashboard full editor */
   profileStyle?: SpecialistProfileStyle;
+  /** Set when applicant entered via /founding-trainers invite */
+  foundingInvite?: boolean;
+  foundingInviteCode?: string;
+  foundingInviteAcceptedAt?: string;
 }
 
 export type SpecialistOnboardingState = Omit<
