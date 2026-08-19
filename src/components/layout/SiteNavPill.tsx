@@ -38,8 +38,6 @@ import { formatSavedCountBadge } from "@/lib/saved-ui";
 import { canSaveSpecialists, getUserRole } from "@/lib/specialist-saves";
 import { cn } from "@/lib/utils";
 
-export type SiteNavPillVariant = "bottom" | "header";
-
 const NavIcon = memo(function NavIcon({
   id,
   active,
@@ -288,13 +286,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   );
 });
 
-function SiteNavPillShell({
-  variant = "bottom",
-  className,
-}: {
-  variant?: SiteNavPillVariant;
-  className?: string;
-}) {
+function SiteNavPillShell({ className }: { className?: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -389,13 +381,7 @@ function SiteNavPillShell({
   );
 
   return (
-    <div
-      className={cn(
-        "mobile-bottom-nav__pill",
-        variant === "header" && "site-header-nav-pill",
-        className
-      )}
-    >
+    <div className={cn("mobile-bottom-nav__pill", className)}>
       <div className="mobile-bottom-nav__aurora" aria-hidden />
       <div className="mobile-bottom-nav__sheen" aria-hidden />
 

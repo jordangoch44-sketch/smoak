@@ -155,16 +155,6 @@ export const ExploreResults = memo(function ExploreResults({
     return (
       <div className="explore-results-split">
         {expandedNote}
-        {showMap ? (
-          <ExploreMap
-            trainers={trainers}
-            areaCenter={areaCenter}
-            userLocationDot={userLocationDot}
-            locked
-            variant="split"
-            showNotes={false}
-          />
-        ) : null}
         <div className="explore-results-split__list">
           <p className="explore-results-split__count">
             {trainers.length} specialist{trainers.length === 1 ? "" : "s"} in

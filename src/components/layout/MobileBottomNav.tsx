@@ -22,7 +22,7 @@ function MobileBottomNavShell() {
       <div className="mobile-bottom-nav__scrim" aria-hidden />
 
       <div className="mobile-bottom-nav__float">
-        <SiteNavPill variant="bottom" />
+        <SiteNavPill />
       </div>
     </nav>
   );

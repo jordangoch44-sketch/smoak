@@ -5,7 +5,7 @@
 /*
  * Atmosphere layers (keep separate — each targets different DOM; do not merge):
  * - atmosphere.css         — .atmosphere-mesh blobs + glass tokens (dashboard, login, reset)
- * - aurora.css               — site header/navbar frost + --site-navbar-height tokens
+ * - aurora.css               — site header height tokens + card atmosphere
  * - aurora-atmosphere.css    — AuroraAtmosphere component (nebula, starfield, home sections)
  * page-transition.css        — imported via site-shell.css (desktop route exit layers)
  */

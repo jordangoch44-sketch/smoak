@@ -1328,12 +1328,6 @@
   }
 }
 
-@media (min-width: 1024px) {
-  .home-specialty__grid {
-    max-width: 52rem;
-  }
-}
-
 /* Discovery marketplace — 2-up categories on phone/tablet only */
 @media (max-width: 1023px) {
   .home-page--discovery .home-specialty__grid {
