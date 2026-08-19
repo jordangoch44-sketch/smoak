@@ -20,8 +20,7 @@ import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 import type { Trainer } from "@/types/trainer";
-import { SponsoredSpecialistCard } from "./SponsoredSpecialistCard";
-import { Top50RankCard } from "./Top50RankCard";
+import { HomePortraitSpecialistCard } from "./HomePortraitSpecialistCard";
 
 /** Homepage “Top Rated Near You” — SMOAC review ranks + labeled ranking boosts */
 export function Top50InYourCity({
@@ -67,14 +66,7 @@ export function Top50InYourCity({
       aggregates,
       hydrated ? userCoords : null
     );
-  }, [
-    cityName,
-    hydrated,
-    coordsKey,
-    userCoords,
-    catalogOpts,
-    aggregates,
-  ]);
+  }, [cityName, hydrated, coordsKey, userCoords, catalogOpts, aggregates]);
 
   const rankingBoosts = useMemo(() => {
     if (!hydrated) return [];
@@ -112,7 +104,7 @@ export function Top50InYourCity({
               ariaLabel="Ranking boost specialists"
             >
               {rankingBoosts.map((trainer, index) => (
-                <SponsoredSpecialistCard
+                <HomePortraitSpecialistCard
                   key={trainer.id}
                   trainer={trainer}
                   priority={index < 2}
@@ -149,14 +141,14 @@ export function Top50InYourCity({
               className="home-top50__carousel"
               ariaLabel="Top rated specialists"
             >
-              {ranked.map(({ rank, trainer, avgRating, reviewCount }, index) => (
-                <Top50RankCard
+              {ranked.map(({ trainer, avgRating, reviewCount }, index) => (
+                <HomePortraitSpecialistCard
                   key={trainer.id}
-                  rank={rank}
                   trainer={trainer}
-                  smoacRating={avgRating}
-                  smoacReviewCount={reviewCount}
                   priority={index < 3}
+                  avgRating={avgRating}
+                  reviewCount={reviewCount}
+                  impressionSurface="home_top50"
                 />
               ))}
             </HorizontalCarousel>

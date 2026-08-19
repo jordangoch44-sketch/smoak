@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
+import { useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import {
   useMarketplacePersonalizationCity,
@@ -11,13 +11,10 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicSponsoredTrainers } from "@/lib/marketplace-public-catalog";
-import {
-  selectSponsoredRailTrainers,
-  type SponsoredRailResult,
-} from "@/lib/sponsored-rail";
+import { selectSponsoredRailTrainers } from "@/lib/sponsored-rail";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
-import { SponsoredSpecialistCard } from "./SponsoredSpecialistCard";
+import { HomePortraitSpecialistCard } from "./HomePortraitSpecialistCard";
 
 export function SponsoredSpecialists({
   initialCatalog,
@@ -26,14 +23,11 @@ export function SponsoredSpecialists({
   initialCatalog?: Trainer[];
   catalogMode?: PublicCatalogMode;
 }) {
+  const router = useRouter();
   const hydrated = useHydrated();
   const personalizationCity = useMarketplacePersonalizationCity();
   const userCoords = useMarketplaceUserCoordinates();
   const coordsKey = useMarketplaceUserCoordinatesKey();
-  const [rail, setRail] = useState<SponsoredRailResult>({
-    trainers: [],
-    isLocal: false,
-  });
 
   useEffect(() => {
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
@@ -49,47 +43,42 @@ export function SponsoredSpecialists({
     [hydrated, initialCatalog, catalogMode]
   );
 
-  /* Shuffle on mount and whenever location / pool changes (fresh page visit). */
-  useEffect(() => {
-    if (!hydrated) return;
-    setRail(
+  const rail = useMemo(
+    () =>
       selectSponsoredRailTrainers(sponsoredPool, {
-        personalizationCity,
-        userCoords,
-      })
-    );
-  }, [
-    hydrated,
-    sponsoredPool,
-    personalizationCity,
-    coordsKey,
-    userCoords,
-  ]);
+        personalizationCity: hydrated ? personalizationCity : null,
+        userCoords: hydrated ? userCoords : null,
+      }),
+    [sponsoredPool, hydrated, personalizationCity, coordsKey, userCoords]
+  );
 
-  if (!hydrated || rail.trainers.length === 0) return null;
+  useEffect(() => {
+    if (!hydrated || rail.trainers.length === 0) return;
+    for (const trainer of rail.trainers.slice(0, 4)) {
+      try {
+        router.prefetch(`/trainers/${trainer.id}`);
+      } catch {
+        /* prefetch is best-effort */
+      }
+    }
+  }, [hydrated, rail.trainers, router]);
+
+  if (rail.trainers.length === 0) return null;
 
   return (
     <section
-      className="home-sponsored home-section-aurora relative"
+      className="home-sponsored home-section-aurora"
       aria-labelledby="home-sponsored-heading"
     >
-      <AuroraAtmosphere
-        intensity="subtle"
-        starDensity="none"
-        glowPosition="section-top"
-        glowColor="violet"
-        enableMotion
-        className="home-sponsored__cosmic"
-      />
-      <div className="home-section__inner home-sponsored__inner mx-auto max-w-7xl px-4 sm:px-6">
+      <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header">
           <h2 id="home-sponsored-heading" className="home-section__title">
             {rail.isLocal ? "Sponsored near you" : "Sponsored on SMOAC"}
           </h2>
           <p className="home-section__subtitle">
             {rail.isLocal
-              ? "Paid Sponsored placements from specialists boosting in your area."
-              : "Paid Sponsored profile boosts. Enter your ZIP to see specialists near you."}
+              ? "Paid sponsored placements from specialists boosting in your area."
+              : "Paid sponsored profile boosts. Enter your ZIP to see specialists near you."}
           </p>
         </header>
 
@@ -98,10 +87,12 @@ export function SponsoredSpecialists({
           ariaLabel="Sponsored specialists"
         >
           {rail.trainers.map((trainer, index) => (
-            <SponsoredSpecialistCard
+            <HomePortraitSpecialistCard
               key={trainer.id}
               trainer={trainer}
               priority={index < 2}
+              impressionSurface="home_sponsored"
+              badgeLabel="Sponsored"
             />
           ))}
         </HorizontalCarousel>

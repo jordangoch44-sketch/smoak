@@ -231,11 +231,12 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  max-width: 40rem;
-  margin: 0;
+  align-items: center;
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
   padding: 0;
-  text-align: left;
+  text-align: center;
 }
 
 .home-page--discovery .home-hero__content--discovery::before {
@@ -245,7 +246,12 @@
 .home-page--discovery .home-hero__headline {
   margin: 0;
   padding: 0;
-  text-align: left;
+  width: 100%;
+  text-align: center;
+}
+
+.home-page--discovery .rotating-headline__typed {
+  justify-content: center;
 }
 
 .home-page--discovery .home-hero__title {
@@ -272,6 +278,7 @@
   width: 100%;
   max-width: 32rem;
   margin-top: 1.35rem;
+  margin-inline: auto;
 }
 
 .home-hero-search--ghost {
@@ -494,10 +501,7 @@
 }
 
 .home-page--discovery .home-sponsored__cosmic {
-  top: -8rem;
-  bottom: auto;
-  height: calc(100% + 10rem);
-  opacity: 1;
+  display: none;
 }
 
 @media (min-width: 768px) {
@@ -547,10 +551,81 @@
     align-items: center;
     text-align: center;
     margin-inline: auto;
+    max-width: 28rem;
   }
 
   .home-page--discovery .home-hero__lede {
     margin-inline: auto;
+  }
+
+  /* Desktop discovery = mobile marketplace rhythm (not cinematic legacy hero) */
+  .home-page--discovery > .home-hero.home-hero--discovery {
+    min-height: 0 !important;
+    padding-top: clamp(2.35rem, 4vw, 3.25rem) !important;
+    padding-bottom: clamp(2.85rem, 5vw, 4rem) !important;
+    background: transparent !important;
+  }
+
+  .home-page--discovery .home-hero__content--discovery {
+    max-width: 28rem;
+    width: 100%;
+  }
+
+  .home-page--discovery .home-hero__title,
+  .home-page--discovery .rotating-headline__typed,
+  .home-page--discovery .rotating-headline__static {
+    font-size: clamp(2.125rem, 4.2vw, 2.75rem);
+  }
+
+  .home-page--discovery .rotating-headline__typed {
+    justify-content: center;
+  }
+
+  .home-page--discovery .home-hero__canvas {
+    opacity: 0.28;
+    bottom: -2.5rem;
+  }
+
+  .home-page--discovery .home-hero__canvas .atmosphere-blob {
+    opacity: 0.45;
+    filter: blur(48px);
+    animation: none;
+  }
+
+  .home-page--discovery .home-hero__cosmic {
+    opacity: 0.35;
+  }
+
+  .home-page--discovery .home-sponsored__cosmic {
+    display: none;
+  }
+
+  .home-page--discovery .home-sponsored,
+  .home-page--discovery .home-top50,
+  .home-page--discovery .home-specialty,
+  .home-page--discovery .home-new,
+  .home-page--discovery .home-featured {
+    padding-block: clamp(1.35rem, 2.8vw, 2.15rem);
+  }
+
+  .home-page--discovery .home-specialty__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 36rem;
+    margin-inline: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-page--discovery .home-specialty__grid {
+    max-width: 52rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-page--discovery .home-new .home-portrait-card,
+  .home-page--discovery .home-featured .home-portrait-card,
+  .home-page--discovery .home-sponsored .home-portrait-card,
+  .home-page--discovery .home-top50 .home-portrait-card {
+    flex-basis: 14rem;
   }
 }
 
@@ -1120,24 +1195,32 @@
 
 /* Marketplace portrait rails — compact cards like New Specialists */
 .home-page--discovery .home-new .home-portrait-card,
-.home-page--discovery .home-featured .home-portrait-card {
+.home-page--discovery .home-featured .home-portrait-card,
+.home-page--discovery .home-sponsored .home-portrait-card,
+.home-page--discovery .home-top50 .home-portrait-card {
   flex-basis: min(53vw, 12.3rem);
 }
 
 @media (min-width: 640px) {
   .home-page--discovery .home-new .home-portrait-card,
-  .home-page--discovery .home-featured .home-portrait-card {
+  .home-page--discovery .home-featured .home-portrait-card,
+  .home-page--discovery .home-sponsored .home-portrait-card,
+  .home-page--discovery .home-top50 .home-portrait-card {
     flex-basis: 13.2rem;
   }
 }
 
 .home-page--discovery .home-new .home-portrait-card__article,
-.home-page--discovery .home-featured .home-portrait-card__article {
+.home-page--discovery .home-featured .home-portrait-card__article,
+.home-page--discovery .home-sponsored .home-portrait-card__article,
+.home-page--discovery .home-top50 .home-portrait-card__article {
   border-radius: 1rem;
 }
 
 .home-page--discovery .home-new .home-portrait-card__body,
-.home-page--discovery .home-featured .home-portrait-card__body {
+.home-page--discovery .home-featured .home-portrait-card__body,
+.home-page--discovery .home-sponsored .home-portrait-card__body,
+.home-page--discovery .home-top50 .home-portrait-card__body {
   height: 7.25rem;
   min-height: 7.25rem;
   max-height: 7.25rem;
@@ -1145,17 +1228,23 @@
 }
 
 .home-page--discovery .home-new .home-portrait-card__name,
-.home-page--discovery .home-featured .home-portrait-card__name {
+.home-page--discovery .home-featured .home-portrait-card__name,
+.home-page--discovery .home-sponsored .home-portrait-card__name,
+.home-page--discovery .home-top50 .home-portrait-card__name {
   font-size: 0.8125rem;
 }
 
 .home-page--discovery .home-new .home-portrait-card__profession,
-.home-page--discovery .home-featured .home-portrait-card__profession {
+.home-page--discovery .home-featured .home-portrait-card__profession,
+.home-page--discovery .home-sponsored .home-portrait-card__profession,
+.home-page--discovery .home-top50 .home-portrait-card__profession {
   font-size: 0.6875rem;
 }
 
 .home-page--discovery .home-new .home-portrait-card__meta,
-.home-page--discovery .home-featured .home-portrait-card__meta {
+.home-page--discovery .home-featured .home-portrait-card__meta,
+.home-page--discovery .home-sponsored .home-portrait-card__meta,
+.home-page--discovery .home-top50 .home-portrait-card__meta {
   font-size: 0.625rem;
   padding-top: 0.3rem;
 }
@@ -1195,6 +1284,43 @@
   top: 0.625rem;
   left: 0.625rem;
   z-index: 3;
+}
+
+.home-portrait-card__badges {
+  position: absolute;
+  top: 0.625rem;
+  left: 0.625rem;
+  right: 2.75rem;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  pointer-events: none;
+}
+
+.home-portrait-card__badges .home-portrait-card__verified {
+  position: static;
+}
+
+.home-portrait-card__chip {
+  border-radius: 9999px;
+  border: 1px solid rgba(196, 181, 253, 0.35);
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.92) 0%,
+    rgba(168, 85, 247, 0.88) 55%,
+    rgba(99, 102, 241, 0.9) 100%
+  );
+  padding: 0.2rem 0.5rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    0 0 12px rgba(139, 92, 246, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .home-portrait-card__thumb {
