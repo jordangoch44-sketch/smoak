@@ -70,6 +70,12 @@ export function pinDocumentScrollTop(durationMs = 600): void {
 
 const MAP_SHELL_BODY_CLASS = "explore-map-shell-open";
 
+/** Search map-shell scroll lock is phone/tablet only — desktop must stay document-scrollable. */
+function shouldUseExploreMapShellScrollLock(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 1023px)").matches;
+}
+
 /** Apply Search map-shell overflow lock before soft-nav paints Explore. */
 export function armExploreMapShellScrollLock(): void {
   if (typeof document === "undefined") return;
@@ -99,10 +105,13 @@ export function prepareNavScrollReset(pathname: string): void {
   }
   forceDocumentScrollTop();
   if (isExploreNavPath(pathname)) {
-    armExploreMapShellScrollLock();
-    pinDocumentScrollTop(1800);
+    if (shouldUseExploreMapShellScrollLock()) {
+      armExploreMapShellScrollLock();
+      pinDocumentScrollTop(1800);
+    }
     return;
   }
+  disarmExploreMapShellScrollLock();
   pinDocumentScrollTop(400);
 }
 

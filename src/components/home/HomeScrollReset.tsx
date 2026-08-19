@@ -22,7 +22,7 @@ export function HomeScrollReset() {
       /* ignore */
     }
     forceDocumentScrollTop();
-    pinDocumentScrollTop(900);
+    pinDocumentScrollTop(350);
   }, [pathname]);
 
   return null;

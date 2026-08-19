@@ -6,6 +6,7 @@ import { AppMain } from "@/components/layout/AppMain";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
+import { SiteRouteScrollHygiene } from "@/components/layout/SiteRouteScrollHygiene";
 import { SiteVisitTracker } from "@/components/layout/SiteVisitTracker";
 import { SiteWelcomeIntroGate } from "@/components/layout/SiteWelcomeIntroGate";
 import { SiteLocationGate } from "@/components/layout/SiteLocationGate";
@@ -64,6 +65,7 @@ export default function SiteLayout({
       <ToastProvider>
         <AppProviders supabaseConfigured={isSupabaseConfigured()}>
           <SiteVisitTracker />
+          <SiteRouteScrollHygiene />
           <SiteWelcomeIntroGate />
           <IpLocationHintBoot />
           <SiteLocationGate />
