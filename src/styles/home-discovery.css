@@ -561,9 +561,15 @@
   /* Desktop discovery = mobile marketplace rhythm (not cinematic legacy hero) */
   .home-page--discovery > .home-hero.home-hero--discovery {
     min-height: 0 !important;
-    padding-top: clamp(2.35rem, 4vw, 3.25rem) !important;
+    padding-top: calc(
+      var(--site-header-total-height) + clamp(1.5rem, 3vw, 2.25rem)
+    ) !important;
     padding-bottom: clamp(2.85rem, 5vw, 4rem) !important;
     background: transparent !important;
+  }
+
+  .home-page--discovery .home-section__inner {
+    max-width: 28rem;
   }
 
   .home-page--discovery .home-hero__content--discovery {
@@ -610,22 +616,8 @@
 
   .home-page--discovery .home-specialty__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-width: 36rem;
+    max-width: min(100%, 28rem);
     margin-inline: auto;
-  }
-}
-
-@media (min-width: 1024px) {
-  .home-page--discovery .home-specialty__grid {
-    max-width: 52rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .home-page--discovery .home-new .home-portrait-card,
-  .home-page--discovery .home-featured .home-portrait-card,
-  .home-page--discovery .home-sponsored .home-portrait-card,
-  .home-page--discovery .home-top50 .home-portrait-card {
-    flex-basis: 14rem;
   }
 }
 
@@ -1153,6 +1145,13 @@
   .home-specialty__grid {
     max-width: 52rem;
   }
+}
+
+/* Discovery marketplace — always 2-up categories (desktop matches mobile) */
+.home-page--discovery .home-specialty__grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: min(100%, 28rem);
+  margin-inline: auto;
 }
 
 @media (hover: hover) {
