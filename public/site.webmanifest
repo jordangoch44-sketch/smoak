@@ -1,7 +1,7 @@
 {
   "name": "SMOAC",
   "short_name": "SMOAC",
-  "description": "Discover trusted fitness and wellness specialists near you.",
+  "description": "SMOAC is a health and fitness search marketplace — discover specialists near you.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#020203",

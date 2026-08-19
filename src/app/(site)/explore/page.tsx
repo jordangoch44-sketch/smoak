@@ -1,9 +1,17 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { ExplorePageClient } from "@/components/explore/ExplorePageClient";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
 
-export const metadata = {
-  title: "Search",
+export const metadata: Metadata = {
+  title: "Search specialists near you",
+  description:
+    "Search personal trainers, coaches, and wellness professionals by location, specialty, and price. Map and filter specialists on SMOAC.",
+  openGraph: {
+    title: "Search specialists near you",
+    description:
+      "Search personal trainers, coaches, and wellness professionals by location, specialty, and price.",
+  },
 };
 
 /**

@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { TrainerProfilePageClient } from "@/components/profile/TrainerProfilePageClient";
 import {
   loadPublicCatalogForServer,
@@ -7,6 +9,8 @@ import {
 import { loadSmoacReviewAggregatesForServer } from "@/lib/reviews/load-review-aggregates-server";
 import { serializeReviewAggregates } from "@/lib/reviews/specialist-review-types";
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
+import { buildTrainerPageMetadata } from "@/lib/seo/trainer-metadata";
+import { buildTrainerProfileJsonLd } from "@/lib/seo/trainer-json-ld";
 import { trainers } from "@/data/trainers";
 
 interface PageProps {
@@ -25,14 +29,11 @@ export async function generateStaticParams() {
   return trainers.map((t) => ({ id: t.id }));
 }
 
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const trainer = await loadPublicTrainerByIdForServer(id);
   if (!trainer) return { title: "Specialist Not Found" };
-  return {
-    title: trainer.name,
-    description: trainer.bio,
-  };
+  return buildTrainerPageMetadata(trainer);
 }
 
 export default async function TrainerProfilePage({ params }: PageProps) {
@@ -58,12 +59,15 @@ export default async function TrainerProfilePage({ params }: PageProps) {
   );
 
   return (
-    <TrainerProfilePageClient
-      trainerId={id}
-      initialTrainer={trainer}
-      initialCatalog={cityPeers.length > 0 ? cityPeers : [trainer]}
-      initialAggregates={serializeReviewAggregates(aggregates)}
-      initialCityRanking={initialCityRanking}
-    />
+    <>
+      <JsonLd data={buildTrainerProfileJsonLd(trainer)} />
+      <TrainerProfilePageClient
+        trainerId={id}
+        initialTrainer={trainer}
+        initialCatalog={cityPeers.length > 0 ? cityPeers : [trainer]}
+        initialAggregates={serializeReviewAggregates(aggregates)}
+        initialCityRanking={initialCityRanking}
+      />
+    </>
   );
 }

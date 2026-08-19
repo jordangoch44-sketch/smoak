@@ -1,6 +1,7 @@
 import dynamic from "next/dynamic";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { NOINDEX_FOLLOW_NONE } from "@/lib/seo/noindex";
 
 const ClientDashboardPageClient = dynamic(
   () =>
@@ -13,6 +14,7 @@ const ClientDashboardPageClient = dynamic(
 export const metadata: Metadata = {
   title: "Client Dashboard",
   description: "Your saved specialists, searches, and inquiries on SMOAC.",
+  ...NOINDEX_FOLLOW_NONE,
 };
 
 export default function ClientDashboardPage() {

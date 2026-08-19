@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import { SiteIntroBoot } from "@/components/layout/SiteIntroBoot";
 
 export const metadata: Metadata = {
-  title: "SMOAC",
+  title: {
+    default: "SMOAC | Health and fitness Search",
+    template: "%s | SMOAC",
+  },
   applicationName: "SMOAC",
   description:
-    "Discover trusted fitness and wellness specialists near you.",
+    "SMOAC is a health and fitness search marketplace — discover personal trainers, coaches, nutritionists, and wellness specialists near you.",
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://smoac.com"
   ),
@@ -21,18 +24,18 @@ export const metadata: Metadata = {
     shortcut: ["/favicon.ico"],
   },
   openGraph: {
-    title: "SMOAC",
+    title: "SMOAC | Health and fitness Search",
     description:
-      "Discover trusted fitness and wellness specialists near you.",
+      "SMOAC is a health and fitness search marketplace — discover personal trainers, coaches, and wellness specialists near you.",
     siteName: "SMOAC",
     type: "website",
     images: [{ url: "/icon-512.png", width: 512, height: 512, alt: "SMOAC" }],
   },
   twitter: {
     card: "summary",
-    title: "SMOAC",
+    title: "SMOAC | Health and fitness Search",
     description:
-      "Discover trusted fitness and wellness specialists near you.",
+      "SMOAC is a health and fitness search marketplace — discover personal trainers, coaches, and wellness specialists near you.",
     images: ["/icon-512.png"],
   },
 };

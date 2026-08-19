@@ -1271,3 +1271,52 @@
     animation: none;
   }
 }
+
+/* SSR specialist index — crawlable links, low visual weight */
+.home-seo-links {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 2.5rem;
+}
+
+.home-seo-links__title {
+  margin: 0 0 0.75rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.45);
+}
+
+.home-seo-links__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-seo-links__list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.home-seo-links__list a {
+  color: rgb(255 255 255 / 0.82);
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.home-seo-links__list a:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.home-seo-links__meta {
+  color: rgb(255 255 255 / 0.42);
+  font-size: 0.75rem;
+}
