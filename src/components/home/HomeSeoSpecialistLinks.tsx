@@ -18,8 +18,11 @@ export function HomeSeoSpecialistLinks({ trainers }: HomeSeoSpecialistLinksProps
   if (trainers.length === 0) return null;
 
   return (
-    <nav className="home-seo-links" aria-label="Featured specialists">
-      <h2 className="home-seo-links__title">Featured specialists</h2>
+    <nav
+      className="home-seo-links sr-only"
+      aria-label="Specialist profiles index"
+    >
+      <h2 className="home-seo-links__title">Specialist profiles</h2>
           <ul className="home-seo-links__list">
             {trainers.map((trainer) => {
               const profession =

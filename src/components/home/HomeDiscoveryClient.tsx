@@ -55,11 +55,11 @@ export function HomeDiscoveryClient() {
   return (
     <>
       <NewSpecialists initialCatalog={trainers} catalogMode={catalogMode} />
-      <SponsoredSpecialists
+      <FeaturedSpotlightSpecialists
         initialCatalog={trainers}
         catalogMode={catalogMode}
       />
-      <FeaturedSpotlightSpecialists
+      <SponsoredSpecialists
         initialCatalog={trainers}
         catalogMode={catalogMode}
       />

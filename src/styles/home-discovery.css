@@ -558,7 +558,8 @@
 .home-page--discovery .home-sponsored,
 .home-page--discovery .home-top50,
 .home-page--discovery .home-specialty,
-.home-page--discovery .home-new {
+.home-page--discovery .home-new,
+.home-page--discovery .home-featured {
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
 }
 
@@ -570,7 +571,16 @@
 
 .home-page--discovery .home-specialty + .home-new {
   padding-top: 0.35rem;
+  padding-bottom: 1.15rem;
+}
+
+.home-page--discovery .home-new + .home-featured {
+  padding-top: 0.35rem;
   padding-bottom: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.home-page--discovery .home-featured + .home-sponsored {
+  padding-top: 0.35rem;
 }
 
 /* Essence strip after discovery rails */
@@ -587,7 +597,8 @@
 
 .home-page--discovery .home-sponsored .horizontal-carousel__track,
 .home-page--discovery .home-top50 .horizontal-carousel__track,
-.home-page--discovery .home-new .horizontal-carousel__track {
+.home-page--discovery .home-new .horizontal-carousel__track,
+.home-page--discovery .home-featured .horizontal-carousel__track {
   gap: 0.875rem;
   padding-block: 0.25rem;
   scroll-padding-inline: 1rem;
@@ -597,7 +608,8 @@
 @media (min-width: 640px) {
   .home-page--discovery .home-sponsored .horizontal-carousel__track,
   .home-page--discovery .home-top50 .horizontal-carousel__track,
-  .home-page--discovery .home-new .horizontal-carousel__track {
+  .home-page--discovery .home-new .horizontal-carousel__track,
+  .home-page--discovery .home-featured .horizontal-carousel__track {
     gap: 1rem;
   }
 }
@@ -1106,37 +1118,44 @@
   }
 }
 
-/* Marketplace New specialists — ~15% smaller than shared portrait card */
-.home-page--discovery .home-new .home-portrait-card {
+/* Marketplace portrait rails — compact cards like New Specialists */
+.home-page--discovery .home-new .home-portrait-card,
+.home-page--discovery .home-featured .home-portrait-card {
   flex-basis: min(53vw, 12.3rem);
 }
 
 @media (min-width: 640px) {
-  .home-page--discovery .home-new .home-portrait-card {
+  .home-page--discovery .home-new .home-portrait-card,
+  .home-page--discovery .home-featured .home-portrait-card {
     flex-basis: 13.2rem;
   }
 }
 
-.home-page--discovery .home-new .home-portrait-card__article {
+.home-page--discovery .home-new .home-portrait-card__article,
+.home-page--discovery .home-featured .home-portrait-card__article {
   border-radius: 1rem;
 }
 
-.home-page--discovery .home-new .home-portrait-card__body {
+.home-page--discovery .home-new .home-portrait-card__body,
+.home-page--discovery .home-featured .home-portrait-card__body {
   height: 7.25rem;
   min-height: 7.25rem;
   max-height: 7.25rem;
   padding: 0.65rem 0.7rem 0.75rem;
 }
 
-.home-page--discovery .home-new .home-portrait-card__name {
+.home-page--discovery .home-new .home-portrait-card__name,
+.home-page--discovery .home-featured .home-portrait-card__name {
   font-size: 0.8125rem;
 }
 
-.home-page--discovery .home-new .home-portrait-card__profession {
+.home-page--discovery .home-new .home-portrait-card__profession,
+.home-page--discovery .home-featured .home-portrait-card__profession {
   font-size: 0.6875rem;
 }
 
-.home-page--discovery .home-new .home-portrait-card__meta {
+.home-page--discovery .home-new .home-portrait-card__meta,
+.home-page--discovery .home-featured .home-portrait-card__meta {
   font-size: 0.625rem;
   padding-top: 0.3rem;
 }
