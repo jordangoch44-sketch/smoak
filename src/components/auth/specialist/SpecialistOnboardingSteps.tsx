@@ -6,7 +6,9 @@ import {
   PROFESSIONAL_TYPE_OPTIONS,
   SPECIALIST_SPECIALTY_OPTIONS,
 } from "@/constants/specialist-onboarding-options";
+import { EMPTY_CERTIFICATION } from "@/lib/specialist-profile-overrides";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
+import type { Certification } from "@/types/trainer";
 import { cn } from "@/lib/utils";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
 import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
@@ -110,11 +112,17 @@ export function SpecialistOnboardingSteps({
     );
   }
 
-  const primaryCert = state.certifications[0] ?? {
-    name: "",
-    issuer: "",
-    year: new Date().getFullYear(),
-  };
+  const certRows: Certification[] =
+    state.certifications.length > 0
+      ? state.certifications
+      : [{ ...EMPTY_CERTIFICATION }];
+
+  function setCertifications(next: Certification[]) {
+    onPatch({
+      certifications:
+        next.length > 0 ? next : [{ ...EMPTY_CERTIFICATION }],
+    });
+  }
 
   switch (step) {
     case 1:
@@ -330,7 +338,7 @@ export function SpecialistOnboardingSteps({
         <WizardStepPanel stepKey="sp-3">
           <WizardStepHeading
             title="Where do you work with clients?"
-            subtitle="ZIP matches you nearby. Add an exact address for better distance — or skip it. Virtual coaches can continue without a street address."
+            subtitle="ZIP matches you nearby. Add an exact address for better distance — or skip it. Virtual coaches can continue without a street address. You can set whether you travel to clients later from your profile."
           />
           <SpecialistServiceAreaFields state={state} onPatch={onPatch} />
         </WizardStepPanel>
@@ -368,49 +376,60 @@ export function SpecialistOnboardingSteps({
           </div>
           <div className="login-fields" style={{ marginTop: "1.25rem" }}>
             <p className="wizard-step-subsection-title">
-              Primary certification
+              Certifications
               <span className="login-field__label-hint"> Optional</span>
             </p>
-            <label className="login-field">
-              <span className="login-field__label">Certification name</span>
-              <input
-                className="login-field__input"
-                value={primaryCert.name}
-                onChange={(e) =>
-                  onPatch({
-                    certifications: [
-                      {
-                        ...primaryCert,
-                        name: e.target.value,
-                        issuer: primaryCert.issuer || " ",
-                        year: primaryCert.year || new Date().getFullYear(),
-                      },
-                    ],
-                  })
-                }
-                placeholder="e.g. NASM-CPT"
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">Issuer</span>
-              <input
-                className="login-field__input"
-                value={primaryCert.issuer.trim()}
-                onChange={(e) =>
-                  onPatch({
-                    certifications: [
-                      {
-                        ...primaryCert,
-                        name: primaryCert.name,
-                        issuer: e.target.value,
-                        year: primaryCert.year || new Date().getFullYear(),
-                      },
-                    ],
-                  })
-                }
-                placeholder="e.g. NASM"
-              />
-            </label>
+            {certRows.map((cert, index) => (
+              <div key={`cert-${index}`} className="login-field">
+                <span className="login-field__label">
+                  {certRows.length > 1
+                    ? `Certification ${index + 1}`
+                    : "Certification"}
+                </span>
+                <input
+                  className="login-field__input"
+                  value={cert.name}
+                  onChange={(e) =>
+                    setCertifications(
+                      certRows.map((row, i) =>
+                        i === index
+                          ? {
+                              ...row,
+                              name: e.target.value,
+                              issuer: "",
+                              year: row.year || new Date().getFullYear(),
+                            }
+                          : row
+                      )
+                    )
+                  }
+                  placeholder="e.g. NASM-CPT"
+                />
+                {certRows.length > 1 ? (
+                  <button
+                    type="button"
+                    className="wizard-cert-block__remove"
+                    onClick={() =>
+                      setCertifications(certRows.filter((_, i) => i !== index))
+                    }
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            <button
+              type="button"
+              className="smoac-control wizard-add-row-btn"
+              onClick={() =>
+                setCertifications([...certRows, { ...EMPTY_CERTIFICATION }])
+              }
+            >
+              Add another certification
+            </button>
+            <p className="wizard-field-hint">
+              You can add or edit these anytime from your profile after approval.
+            </p>
           </div>
         </WizardStepPanel>
       );

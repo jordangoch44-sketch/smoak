@@ -42,10 +42,12 @@ import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import type { Certification, Gender } from "@/types/trainer";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 import {
+  parseTravelToClients,
   SPECIALIST_SERVICE_TYPE_OPTIONS,
-  SPECIALIST_TRAVEL_RADIUS_OPTIONS,
+  TRAVEL_TO_CLIENTS_OPTIONS,
 } from "@/types/specialist-service-area";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import { formatTravelToClientsEditorLabel } from "@/lib/specialist-service-area";
 import {
   PROFILE_ACCENT_OPTIONS,
   PROFILE_AVATAR_FRAME_OPTIONS,
@@ -133,6 +135,7 @@ export function SpecialistEditProfilePageClient({
 
   useEffect(() => {
     if (!savedForm) return;
+    if (application?.profileStatus === "PENDING_APPROVAL") return;
     const hash =
       window.location.hash.replace("#", "") ||
       (focusPhoto ? "photos-links" : "");
@@ -148,7 +151,7 @@ export function SpecialistEditProfilePageClient({
       setEditingSection("photos-links");
       setSectionDraft(cloneSpecialistProfileEditForm(savedForm));
     }
-  }, [savedForm, focusPhoto]);
+  }, [savedForm, focusPhoto, application?.profileStatus]);
 
   const dashboardMode = resolveSpecialistDashboardMode({
     sessionEmail: session?.email,
@@ -167,6 +170,7 @@ export function SpecialistEditProfilePageClient({
   }, [router, signOut]);
 
   function startEdit(sectionId: SectionId) {
+    if (dashboardMode === "pending") return;
     if (!savedForm) return;
     if (editingSection != null && editingSection !== sectionId) {
       showToast({
@@ -269,6 +273,7 @@ export function SpecialistEditProfilePageClient({
   async function saveSection() {
     const draft = sectionDraft;
     if (!draft || !trainerId) return;
+    if (application?.profileStatus === "PENDING_APPROVAL") return;
     setSaving(true);
     const result = await saveForm(draft);
     setSaving(false);
@@ -417,6 +422,13 @@ export function SpecialistEditProfilePageClient({
         />
       ) : null}
 
+      {dashboardMode === "pending" ? (
+        <p className="specialist-dash-notice__text">
+          If some information was entered incorrectly, it can be fixed once
+          your application is approved.
+        </p>
+      ) : (
+        <>
       {!isModal && dashboardMode === "approved-free" ? (
         <SpecialistDashboardProfileHeader variant="live-free" />
       ) : null}
@@ -891,13 +903,11 @@ export function SpecialistEditProfilePageClient({
                   }
                 />
                 <ProfileEditViewField
-                  label="Service radius"
-                  value={
-                    savedForm.travelRadius
-                      ? `${savedForm.travelRadius} miles`
-                      : ""
-                  }
-                  emptyLabel="Add travel radius"
+                  label="Willing to travel to clients"
+                  value={formatTravelToClientsEditorLabel(
+                    savedForm.travelToClients
+                  )}
+                  emptyLabel="Add"
                 />
                 <ProfileEditViewField
                   label="Additional areas served"
@@ -1036,24 +1046,25 @@ export function SpecialistEditProfilePageClient({
                     ))}
                   </select>
                 </ProfileEditInputField>
-                {form.serviceType !== "virtual" ? (
-                  <ProfileEditInputField label="Service radius">
-                    <select
-                      className="login-field__input profile-edit-input"
-                      value={form.travelRadius}
-                      onChange={(event) =>
-                        updateField("travelRadius", event.target.value)
-                      }
-                    >
-                      <option value="">Select radius</option>
-                      {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </ProfileEditInputField>
-                ) : null}
+                <ProfileEditInputField label="Are you willing to travel to clients?">
+                  <select
+                    className="login-field__input profile-edit-input"
+                    value={form.travelToClients}
+                    onChange={(event) =>
+                      updateField(
+                        "travelToClients",
+                        parseTravelToClients(event.target.value)
+                      )
+                    }
+                  >
+                    <option value="">Select</option>
+                    {TRAVEL_TO_CLIENTS_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </ProfileEditInputField>
                 <ProfileEditInputField
                   label="Additional areas served"
                   hint="Separate neighborhoods with commas."
@@ -1233,7 +1244,9 @@ export function SpecialistEditProfilePageClient({
             }
           />
         </div>
-      </div>
+        </>
+      )}
+    </div>
   );
 
   if (isModal) {

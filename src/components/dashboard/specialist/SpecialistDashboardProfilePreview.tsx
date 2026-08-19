@@ -50,8 +50,9 @@ import { cn } from "@/lib/utils";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
 import {
+  parseTravelToClients,
   SPECIALIST_SERVICE_TYPE_OPTIONS,
-  SPECIALIST_TRAVEL_RADIUS_OPTIONS,
+  TRAVEL_TO_CLIENTS_OPTIONS,
 } from "@/types/specialist-service-area";
 import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
 import { parseGender } from "@/lib/gender";
@@ -672,23 +673,25 @@ export function SpecialistDashboardProfilePreview({
                 ))}
               </select>
             </label>
-            {form.serviceType !== "virtual" ? (
-              <label className="login-field">
-                <span className="login-field__label">Travel radius</span>
-                <select
-                  className="login-field__input dashboard-edit-select profile-edit-input"
-                  value={form.travelRadius}
-                  onChange={(e) => patch("travelRadius", e.target.value)}
-                >
-                  <option value="">Select radius</option>
-                  {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
+            <label className="login-field">
+              <span className="login-field__label">
+                Are you willing to travel to clients?
+              </span>
+              <select
+                className="login-field__input dashboard-edit-select profile-edit-input"
+                value={form.travelToClients}
+                onChange={(e) =>
+                  patch("travelToClients", parseTravelToClients(e.target.value))
+                }
+              >
+                <option value="">Select</option>
+                {TRAVEL_TO_CLIENTS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <label className="login-field">
               <span className="login-field__label">
                 Additional areas (comma-separated)

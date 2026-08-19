@@ -23,11 +23,15 @@ export function Certifications({ certifications }: CertificationsProps) {
           <li key={`${cert.name}-${cert.year}`} className="profile-cert-row">
             <div>
               <p className="font-medium text-white">{cert.name}</p>
-              <p className="mt-0.5 text-sm text-silver-400">{cert.issuer}</p>
+              {cert.issuer.trim() ? (
+                <p className="mt-0.5 text-sm text-silver-400">{cert.issuer}</p>
+              ) : null}
             </div>
-            <span className="shrink-0 text-sm tabular-nums text-silver-400">
-              {cert.year}
-            </span>
+            {cert.year ? (
+              <span className="shrink-0 text-sm tabular-nums text-silver-400">
+                {cert.year}
+              </span>
+            ) : null}
           </li>
         ))}
       </ul>

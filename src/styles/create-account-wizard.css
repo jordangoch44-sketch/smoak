@@ -982,8 +982,10 @@ body:has(.login-page--wizard) main {
 }
 
 .wizard-cert-block__remove {
+  align-self: flex-start;
   border: none;
   background: transparent;
+  padding: 0;
   font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.44);
   cursor: pointer;

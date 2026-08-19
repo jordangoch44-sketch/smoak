@@ -16,6 +16,10 @@ import type { AdminPermissions } from "@/types/admin-permissions";
 import type { SpecialistApplication } from "@/types/specialist-application";
 import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
 import { parseGender } from "@/lib/gender";
+import {
+  parseTravelToClients,
+  TRAVEL_TO_CLIENTS_OPTIONS,
+} from "@/types/specialist-service-area";
 
 type ReviewFeedback =
   | "saved"
@@ -464,19 +468,20 @@ export function AdminApplicationReviewPanel({
                 </select>
               </label>
               <label className="admin-field-label">
-                Travel radius
+                Willing to travel to clients
                 <select
                   className="admin-field"
-                  value={draft.travelRadius}
-                  onChange={(e) => patch("travelRadius", e.target.value)}
+                  value={draft.travelToClients}
+                  onChange={(e) =>
+                    patch("travelToClients", parseTravelToClients(e.target.value))
+                  }
                 >
                   <option value="">—</option>
-                  <option value="5">5 Miles</option>
-                  <option value="10">10 Miles</option>
-                  <option value="15">15 Miles</option>
-                  <option value="20">20 Miles</option>
-                  <option value="25">25 Miles</option>
-                  <option value="50+">50+ Miles</option>
+                  {TRAVEL_TO_CLIENTS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
               <label className="admin-field-label">

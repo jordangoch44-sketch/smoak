@@ -30,3 +30,24 @@ export function isSpecialistTravelRadius(
 ): value is SpecialistTravelRadiusValue {
   return SPECIALIST_TRAVEL_RADIUS_OPTIONS.some((opt) => opt.value === value);
 }
+
+/** Whether the specialist travels to the client — not a mile radius. */
+export type TravelToClients = "yes" | "no" | "n/a" | "";
+
+export const TRAVEL_TO_CLIENTS_OPTIONS: readonly {
+  value: Exclude<TravelToClients, "">;
+  label: string;
+}[] = [
+  { value: "yes", label: "Yes" },
+  { value: "no", label: "No" },
+  { value: "n/a", label: "N/A" },
+] as const;
+
+export function parseTravelToClients(value: unknown): TravelToClients {
+  if (typeof value !== "string") return "";
+  const raw = value.trim().toLowerCase();
+  if (raw === "yes") return "yes";
+  if (raw === "no") return "no";
+  if (raw === "n/a" || raw === "na" || raw === "n-a") return "n/a";
+  return "";
+}

@@ -61,9 +61,8 @@ export function SpecialistApplicationPreview({
           <p className="wizard-profile-preview__meta">
             Based in {serviceArea.basedInLine}
             {serviceArea.travelRadiusLine
-              ? ` · ${serviceArea.travelRadiusLine} travel`
-              : ""
-            }
+              ? ` · ${serviceArea.travelRadiusLine}`
+              : ""}
             {" · "}
             {serviceArea.serviceTypeLine}
           </p>
@@ -111,9 +110,9 @@ export function SpecialistApplicationPreview({
         <div className="wizard-profile-preview__section">
           <p className="wizard-profile-preview__label">Certifications</p>
           <ul className="wizard-profile-preview__list">
-            {preview.certifications.slice(0, 3).map((cert) => (
+            {preview.certifications.slice(0, 6).map((cert) => (
               <li key={`${cert.name}-${cert.year}`}>
-                {cert.name} · {cert.issuer}
+                {cert.name}
               </li>
             ))}
           </ul>

@@ -1,4 +1,4 @@
-import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
 import type { SpecialistProfileStyle } from "@/lib/specialist-profile-style";
 
 export type Gender = "male" | "female" | "non-binary";
@@ -102,6 +102,8 @@ export interface Trainer {
   workAddress?: string;
   /** zip = ZIP centroid (default for existing profiles); address = pinned street */
   locationPrecision?: "zip" | "address";
+  /** Yes / no / n/a — whether the specialist travels to the client */
+  travelToClients?: TravelToClients;
   /** When true, user ZIP within serviceRadiusMiles can match in Explore */
   willingToTravel?: boolean;
   /** How far the specialist typically travels for sessions */

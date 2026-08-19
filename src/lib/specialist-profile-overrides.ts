@@ -3,7 +3,11 @@ import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
 import { normalizePinnedPhotos, parseMediaUrlList } from "@/lib/specialist-media-limits";
-import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
+import {
+  parseTravelRadiusMiles,
+  travelToClientsFromLegacyRadius,
+} from "@/lib/specialist-service-area";
+import { parseTravelToClients } from "@/types/specialist-service-area";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import type { Certification, Trainer } from "@/types";
@@ -105,6 +109,11 @@ export function applySpecialistProfileOverrides(
       base.serviceRadiusMiles,
     social: { ...base.social },
   };
+
+  if (overrides.travelToClients) {
+    merged.travelToClients = overrides.travelToClients;
+    merged.willingToTravel = overrides.travelToClients === "yes";
+  }
 
   merged.homepageSpecialties = sanitizeHomepageSpecialties(
     merged.specialty,
@@ -311,6 +320,12 @@ export function overridesFromTrainer(
         : trainer.serviceRadiusMiles != null
           ? String(trainer.serviceRadiusMiles)
           : ""),
+    travelToClients:
+      parseTravelToClients(stored?.travelToClients) ||
+      parseTravelToClients(trainer.travelToClients) ||
+      travelToClientsFromLegacyRadius(
+        stored?.travelRadius ?? trainer.travelRadius ?? ""
+      ),
     serviceArea: [...(stored?.serviceArea ?? trainer.serviceArea ?? [])],
     workAddress: stored?.workAddress ?? trainer.workAddress ?? "",
     locationPrecision:
@@ -412,8 +427,9 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     neighborhood: form.neighborhood.trim(),
     zipCode: form.zipCode.trim(),
     serviceType: form.serviceType,
+    travelToClients: form.travelToClients || undefined,
     travelRadius: travel || undefined,
-    serviceRadiusMiles: radiusMiles,
+    serviceRadiusMiles: form.travelToClients === "yes" ? radiusMiles : 0,
     serviceArea: form.serviceArea.map((s) => s.trim()).filter(Boolean),
     workAddress: form.workAddress.trim(),
     locationPrecision: form.locationPrecision,

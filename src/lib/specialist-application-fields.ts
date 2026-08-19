@@ -1,5 +1,6 @@
 import { parseGender } from "@/lib/gender";
-import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
+import { travelToClientsFromLegacyRadius } from "@/lib/specialist-service-area";
+import { parseTravelToClients } from "@/types/specialist-service-area";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
@@ -72,6 +73,7 @@ export function normalizeSpecialistApplicationShape(
     zipCode: asString(app.zipCode),
     serviceType: asString(app.serviceType) as SpecialistApplication["serviceType"],
     travelRadius: asString(app.travelRadius),
+    travelToClients: parseTravelToClients(app.travelToClients),
     serviceAreaDescription: asString(app.serviceAreaDescription),
     gymName: asString(app.gymName),
     facilityAddress: asString(app.facilityAddress),
@@ -199,10 +201,14 @@ export function buildServiceAreaZipCodes(
   return [...zips];
 }
 
-export function deriveWillingToTravel(travelRadius: string): boolean {
-  if (!travelRadius.trim()) return false;
-  const miles = parseTravelRadiusMiles(travelRadius);
-  return miles > 0;
+export function deriveWillingToTravel(
+  travelToClients: string,
+  travelRadius: string
+): boolean {
+  const listed = parseTravelToClients(travelToClients);
+  if (listed === "yes") return true;
+  if (listed === "no" || listed === "n/a") return false;
+  return travelToClientsFromLegacyRadius(travelRadius) === "yes";
 }
 
 export function enrichSpecialistApplicationFields<
@@ -214,9 +220,13 @@ export function enrichSpecialistApplicationFields<
   membershipTier: "free" | "premium";
 } {
   const travelRadius = asString(state.travelRadius);
+  const travelToClients =
+    parseTravelToClients(
+      "travelToClients" in state ? state.travelToClients : ""
+    ) || travelToClientsFromLegacyRadius(travelRadius);
   const displayName = asString(state.displayName);
   const fullName = asString(state.fullName);
-  const willingToTravel = deriveWillingToTravel(travelRadius);
+  const willingToTravel = deriveWillingToTravel(travelToClients, travelRadius);
   const serviceAreaZipCodes = buildServiceAreaZipCodes({
     zipCode: asString(state.zipCode),
     serviceAreaDescription: asString(state.serviceAreaDescription),
@@ -230,6 +240,7 @@ export function enrichSpecialistApplicationFields<
   return {
     ...state,
     travelRadius,
+    travelToClients,
     displayName,
     fullName,
     willingToTravel,

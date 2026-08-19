@@ -220,6 +220,7 @@ export function mergeProfileEditsIntoApplication(
     neighborhood: form.neighborhood.trim(),
     zipCode: form.zipCode.trim() || app.zipCode,
     serviceType: form.serviceType || app.serviceType || "",
+    travelToClients: form.travelToClients,
     travelRadius: form.travelRadius.trim() || app.travelRadius,
     facilityAddress:
       form.serviceType === "virtual" ? "" : form.workAddress.trim(),

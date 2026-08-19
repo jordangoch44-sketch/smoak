@@ -2,7 +2,11 @@ import { getDefaultZipForMarketplaceCity } from "@/lib/marketplace-city-default-
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import { firstNameFromPersonName } from "@/lib/specialist-display-name";
-import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
+import { parseTravelToClients } from "@/types/specialist-service-area";
+import {
+  parseTravelRadiusMiles,
+  travelToClientsFromLegacyRadius,
+} from "@/lib/specialist-service-area";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { parseGender } from "@/lib/gender";
@@ -90,9 +94,13 @@ export function applicationToTrainer(
       : app.onlineCoachingAvailable
         ? "virtual"
         : "in-person");
+  const travelToClients =
+    parseTravelToClients(app.travelToClients) ||
+    travelToClientsFromLegacyRadius(app.travelRadius ?? "");
   const travelRadiusMiles =
-    parseTravelRadiusMiles(app.travelRadius ?? "") ||
-    (enriched.willingToTravel ? 25 : 0);
+    travelToClients === "yes"
+      ? parseTravelRadiusMiles(app.travelRadius ?? "")
+      : 0;
   const photo =
     app.media?.profilePhotoUrl?.trim() || "/trainers/placeholder.jpg";
   const mediaUrls = linesToUrls(app.media?.trainingVideoUrls ?? "");
@@ -150,9 +158,10 @@ export function applicationToTrainer(
       app.locationPrecision === "address" && app.facilityAddress?.trim()
         ? "address"
         : "zip",
-    willingToTravel: enriched.willingToTravel,
+    willingToTravel: travelToClients === "yes",
     serviceRadiusMiles: travelRadiusMiles,
     travelRadius: app.travelRadius ?? "",
+    travelToClients,
     serviceType,
     sponsored: false,
     verified: app.profileStatus === "APPROVED",
@@ -234,9 +243,7 @@ export function applicationToPreviewTrainer(
     updatedAt: now,
     ...state,
     email: state.email.trim(),
-    certifications: state.certifications.filter(
-      (cert) => cert.name.trim() && cert.issuer.trim()
-    ),
+    certifications: state.certifications.filter((cert) => cert.name.trim()),
   }) as SpecialistApplication;
 
   return applicationToTrainer(draftApp, id);
@@ -280,6 +287,9 @@ export function applicationToProfileOverrides(
     zipCode: zip,
     serviceType: app.serviceType || undefined,
     travelRadius: app.travelRadius ?? "",
+    travelToClients:
+      parseTravelToClients(app.travelToClients) ||
+      travelToClientsFromLegacyRadius(app.travelRadius ?? ""),
     serviceRadiusMiles:
       parseTravelRadiusMiles(app.travelRadius ?? "") || undefined,
     latitude: coords?.latitude,

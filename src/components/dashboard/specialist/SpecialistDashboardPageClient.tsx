@@ -394,11 +394,11 @@ export function SpecialistDashboardPageClient() {
             ) : isPendingGate ? (
               <p className="specialist-dash-notice__text">
                 Your submitted details will appear here once your application
-                finishes saving. Pull to refresh, or edit your profile below.
+                finishes saving. Pull to refresh if this keeps happening.
               </p>
             ) : null}
 
-            {isPendingGate ? (
+            {isPendingGate && dashboardMode === "rejected" ? (
               <DashboardButton
                 href="/specialist-dashboard/edit-profile"
                 className="specialist-dash-layout__edit-btn"
@@ -406,7 +406,12 @@ export function SpecialistDashboardPageClient() {
                 Edit submitted profile
               </DashboardButton>
             ) : null}
-            {isPendingGate ? (
+            {dashboardMode === "pending" ? (
+              <p className="specialist-dash-notice__text">
+                If some information was entered incorrectly, it can be fixed
+                once your application is approved.
+              </p>
+            ) : dashboardMode === "rejected" ? (
               <p className="specialist-dash-notice__text">
                 After approval, come back here to finish your full in-depth
                 profile — pricing, availability, media, and more.

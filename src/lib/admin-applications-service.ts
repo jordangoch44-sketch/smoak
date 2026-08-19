@@ -69,7 +69,7 @@ function normalizeApplicationEdits(
 ): SpecialistApplication {
   const certifications = Array.isArray(application.certifications)
     ? application.certifications.filter(
-        (cert) => cert?.name?.trim() && cert?.issuer?.trim()
+        (cert) => cert?.name?.trim()
       )
     : [];
   const shaped = normalizeSpecialistApplicationShape({

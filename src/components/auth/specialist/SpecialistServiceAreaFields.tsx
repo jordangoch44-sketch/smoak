@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   SPECIALIST_SERVICE_TYPE_OPTIONS,
-  SPECIALIST_TRAVEL_RADIUS_OPTIONS,
 } from "@/types/specialist-service-area";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
@@ -198,37 +197,6 @@ export function SpecialistServiceAreaFields({
           Virtual coaches don’t need a street address — clients find you by
           specialty. ZIP is optional for “based in” context.
         </p>
-      ) : null}
-
-      {state.serviceType !== "virtual" ? (
-        <fieldset className="login-field specialist-service-area-fields__section">
-          <legend className="login-field__label">
-            Travel radius
-            <span className="login-field__label-hint">
-              How far are you willing to travel for clients?
-            </span>
-          </legend>
-          <div className="wizard-pill-grid wizard-pill-grid--wide" role="radiogroup">
-            {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((option) => {
-              const active = state.travelRadius === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  onClick={() => onPatch({ travelRadius: option.value })}
-                  className={cn(
-                    "wizard-pill wizard-pill--touch",
-                    active && "wizard-pill--active"
-                  )}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
       ) : null}
 
       <label className="login-field">

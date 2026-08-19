@@ -89,7 +89,7 @@ export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
           {display.travelRadiusLine ? (
             <ServiceAreaFact
               icon={<TravelRangeIcon className="profile-service-area__icon" />}
-              label="Travel range"
+              label="Travel"
               value={display.travelRadiusLine}
             />
           ) : null}

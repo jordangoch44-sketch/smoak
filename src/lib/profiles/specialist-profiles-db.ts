@@ -18,6 +18,7 @@ import {
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 import { parseGender } from "@/lib/gender";
+import { parseTravelToClients } from "@/types/specialist-service-area";
 
 export type SpecialistProfilesMutationResult =
   | { ok: true }
@@ -220,6 +221,7 @@ function trainerFromProfileData(
       typeof profileData.travelRadius === "string"
         ? profileData.travelRadius
         : undefined,
+    travelToClients: parseTravelToClients(profileData.travelToClients),
     serviceType:
       profileData.serviceType === "in-person" ||
       profileData.serviceType === "virtual" ||

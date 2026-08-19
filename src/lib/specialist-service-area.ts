@@ -1,8 +1,5 @@
-import type { SpecialistServiceType } from "@/types/specialist-service-area";
-import {
-  isSpecialistTravelRadius,
-  SPECIALIST_TRAVEL_RADIUS_OPTIONS,
-} from "@/types/specialist-service-area";
+import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
+import { parseTravelToClients } from "@/types/specialist-service-area";
 import type { Trainer } from "@/types/trainer";
 
 export function parseTravelRadiusMiles(travelRadius: string): number {
@@ -12,14 +9,33 @@ export function parseTravelRadiusMiles(travelRadius: string): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-export function formatTravelRadiusLabel(travelRadius: string): string {
-  const miles = parseTravelRadiusMiles(travelRadius);
-  if (travelRadius === "50+") return "50+ Miles";
-  if (miles > 0) return `${miles} Miles`;
-  const match = SPECIALIST_TRAVEL_RADIUS_OPTIONS.find(
-    (opt) => opt.value === travelRadius
-  );
-  return match?.label ?? travelRadius;
+export function travelToClientsFromLegacyRadius(
+  travelRadius: string
+): TravelToClients {
+  return parseTravelRadiusMiles(travelRadius) > 0 ? "yes" : "";
+}
+
+export function resolveTravelToClients(trainer: Trainer): TravelToClients {
+  const explicit = parseTravelToClients(trainer.travelToClients);
+  if (explicit) return explicit;
+  return travelToClientsFromLegacyRadius(trainer.travelRadius ?? "");
+}
+
+export function formatTravelToClientsLine(
+  value: TravelToClients
+): string | null {
+  if (value === "yes") return "Travels to clients";
+  if (value === "no") return "Clients travel to you";
+  return null;
+}
+
+export function formatTravelToClientsEditorLabel(
+  value: TravelToClients
+): string {
+  if (value === "yes") return "Yes";
+  if (value === "no") return "No";
+  if (value === "n/a") return "N/A";
+  return "";
 }
 
 export function formatServiceTypeLabel(
@@ -99,19 +115,8 @@ export function buildServiceAreaDisplay(trainer: Trainer): SpecialistServiceArea
       ? `ZIP ${zip}`
       : "";
 
-  const radiusMiles =
-    trainer.serviceRadiusMiles ??
-    parseTravelRadiusMiles(trainer.travelRadius ?? "");
-  const travelRadiusLine =
-    serviceType === "virtual"
-      ? null
-      : radiusMiles > 0
-        ? radiusMiles >= 50
-          ? "50+ Miles"
-          : `${radiusMiles} Miles`
-        : trainer.travelRadius
-          ? formatTravelRadiusLabel(trainer.travelRadius)
-          : null;
+  const travelToClients = resolveTravelToClients(trainer);
+  const travelRadiusLine = formatTravelToClientsLine(travelToClients);
 
   const serviceTypeLine = formatServiceTypeLabel(serviceType);
   if (!serviceTypeLine && !basedInLine) return null;

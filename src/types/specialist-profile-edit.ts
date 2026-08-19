@@ -1,5 +1,5 @@
 import type { Certification, Gender } from "@/types/trainer";
-import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
 import type {
   ProfileAccentId,
   ProfileAvatarFrameId,
@@ -23,6 +23,7 @@ export interface SpecialistProfileOverrides {
   zipCode?: string;
   serviceType?: SpecialistServiceType;
   travelRadius?: string;
+  travelToClients?: TravelToClients;
   serviceRadiusMiles?: number;
   serviceArea?: string[];
   serviceAreaDescription?: string;
@@ -71,6 +72,7 @@ export type SpecialistProfileEditForm = Required<
     | "zipCode"
     | "serviceType"
     | "travelRadius"
+    | "travelToClients"
     | "serviceArea"
     | "workAddress"
     | "locationPrecision"

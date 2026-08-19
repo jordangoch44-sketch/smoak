@@ -1,6 +1,6 @@
 import type { SpecialistProfileStyle } from "@/lib/specialist-profile-style";
 import type { Certification, Gender, SocialLinks } from "@/types/trainer";
-import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
 
 export type ProfileStatus =
   | "DRAFT"
@@ -82,6 +82,7 @@ export interface SpecialistApplication {
   zipCode: string;
   serviceType: SpecialistServiceType | "";
   travelRadius: string;
+  travelToClients: TravelToClients;
   willingToTravel: boolean;
   serviceAreaZipCodes: string[];
   serviceAreaDescription: string;
@@ -145,6 +146,7 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   zipCode: "",
   serviceType: "",
   travelRadius: "",
+  travelToClients: "",
   willingToTravel: false,
   serviceAreaZipCodes: [],
   serviceAreaDescription: "",

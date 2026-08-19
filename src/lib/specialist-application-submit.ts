@@ -158,9 +158,7 @@ async function submitSpecialistApplicationOnce(
     email: trimmedEmail,
     password: "",
     userId: userId ?? existing?.userId ?? null,
-    certifications: state.certifications.filter(
-      (cert) => cert.name.trim() && cert.issuer.trim()
-    ),
+    certifications: state.certifications.filter((cert) => cert.name.trim()),
     media: {
       ...enriched.media,
       profilePhotoUrl: enriched.media.profilePhotoUrl.trim(),

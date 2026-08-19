@@ -2,7 +2,6 @@ import { isListedGender } from "@/lib/gender";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { isValidEmail } from "@/lib/validation/email";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
-import { isSpecialistTravelRadius } from "@/types/specialist-service-area";
 
 interface OnboardingMissingField {
   step: number;
@@ -33,9 +32,6 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       if (state.serviceType === "virtual") break;
       const zip = normalizeZipCode(state.zipCode);
       if (!isValidZipCode(zip)) missing.push("Primary ZIP code");
-      if (!isSpecialistTravelRadius(state.travelRadius)) {
-        missing.push("Travel radius");
-      }
       break;
     }
     case 4:
