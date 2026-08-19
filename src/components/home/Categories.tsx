@@ -64,7 +64,7 @@ export function Categories() {
                     alt=""
                     fill
                     priority={index < 4}
-                    sizes="(max-width: 639px) 55vw, (max-width: 1023px) 28vw, 220px"
+                    sizes="(max-width: 639px) 55vw, (max-width: 1023px) 28vw, 320px"
                     className="home-specialty-card__photo"
                     style={
                       category.imagePosition

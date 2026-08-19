@@ -779,10 +779,25 @@
   }
 
   .home-page--discovery .home-specialty__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
     max-width: none;
     width: 100%;
     margin-inline: 0;
+  }
+
+  .home-page--discovery .home-specialty-card {
+    min-height: 7.35rem;
+    padding: 0.9rem 1rem 0.9rem 1.55rem;
+  }
+
+  .home-page--discovery .home-specialty-card__copy {
+    max-width: 76%;
+  }
+
+  .home-page--discovery .home-specialty-card__name {
+    max-width: none;
+    font-size: 1.0625rem;
   }
 
   .home-page--discovery .home-new .home-portrait-card,

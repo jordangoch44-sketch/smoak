@@ -255,22 +255,13 @@ export function ExplorePageClient() {
                   activeSearchArea={activeSearchArea}
                   onPendingSearchAreaChange={handlePendingSearchAreaChange}
                   onRecenterSearch={handleRecenterSearch}
+                  showSearchHere={Boolean(pendingMapArea)}
+                  searchHereLoading={mapSearchLoading}
+                  onSearchHere={handleSearchHere}
                   locked={false}
                   variant="column"
                   showNotes={false}
                 />
-                {pendingMapArea ? (
-                  <div className="explore-page__map-rail-actions">
-                    <button
-                      type="button"
-                      className="smoac-control explore-split__search-here"
-                      disabled={mapSearchLoading}
-                      onClick={handleSearchHere}
-                    >
-                      {mapSearchLoading ? "Searching…" : "Search here"}
-                    </button>
-                  </div>
-                ) : null}
               </div>
             </aside>
             <div className="explore-page__results-rail">{resultsMain}</div>

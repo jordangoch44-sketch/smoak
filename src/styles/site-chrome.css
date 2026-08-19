@@ -445,6 +445,15 @@
     flex-shrink: 0;
   }
 
+  .site-header--desktop .navbar-brand.brand-logo {
+    gap: 0.5625rem;
+  }
+
+  .site-header--desktop .navbar-brand .brand-logo__wordmark.smoac-wordmark--primary {
+    height: 0.6875rem;
+    transform: translateY(0.5px);
+  }
+
   .site-header__toolbar--desktop .site-header__utility-end {
     flex-shrink: 0;
     align-items: center;

@@ -40,6 +40,10 @@ interface ExploreMapProps {
   onPendingSearchAreaChange?: (area: ExploreSearchArea | null) => void;
   /** Recenter camera + reset results to default 12-mile frame */
   onRecenterSearch?: () => void;
+  /** Desktop / map chrome — confirm panned viewport */
+  showSearchHere?: boolean;
+  searchHereLoading?: boolean;
+  onSearchHere?: () => void;
   /** Display-only: no drag / zoom (default true) */
   locked?: boolean;
   /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header; `column` = desktop split rail */
@@ -90,6 +94,20 @@ function pinsFrameKey(pins: MappedTrainer[]): string {
   return `pins:${pins.length}:${first.latitude.toFixed(3)},${first.longitude.toFixed(3)}:${last.latitude.toFixed(3)},${last.longitude.toFixed(3)}`;
 }
 
+function safeInvalidateMapSize(map: import("leaflet").Map | null | undefined): boolean {
+  if (!map) return false;
+  const container = map.getContainer?.();
+  if (!container?.isConnected) return false;
+  const { width, height } = container.getBoundingClientRect();
+  if (width <= 0 || height <= 0) return false;
+  try {
+    map.invalidateSize({ animate: false });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function fitMappedPins(
   map: import("leaflet").Map,
   L: typeof import("leaflet"),
@@ -126,6 +144,9 @@ export function ExploreMap({
   activeSearchArea = null,
   onPendingSearchAreaChange,
   onRecenterSearch,
+  showSearchHere = false,
+  searchHereLoading = false,
+  onSearchHere,
   locked = true,
   variant = "panel",
   showNotes = true,
@@ -219,6 +240,7 @@ export function ExploreMap({
   useEffect(() => {
     let cancelled = false;
     let map: import("leaflet").Map | null = null;
+    const invalidateTimeouts: number[] = [];
 
     async function mountMap() {
       if (mapPaused) return;
@@ -288,22 +310,31 @@ export function ExploreMap({
 
       map.on("moveend", onMoveEnd);
 
-      window.setTimeout(() => {
-        map?.invalidateSize();
-        if (map && leafletRef.current) {
-          suppressUntilRef.current = Date.now() + 320;
-          applyLiveCamera(map, leafletRef.current);
-        }
-      }, 80);
-      window.setTimeout(() => {
-        map?.invalidateSize();
-      }, 320);
+      invalidateTimeouts.push(
+        window.setTimeout(() => {
+          if (cancelled || mapRef.current !== map || !map) return;
+          if (!safeInvalidateMapSize(map)) return;
+          if (leafletRef.current) {
+            suppressUntilRef.current = Date.now() + 320;
+            applyLiveCamera(map, leafletRef.current);
+          }
+        }, 80)
+      );
+      invalidateTimeouts.push(
+        window.setTimeout(() => {
+          if (cancelled || mapRef.current !== map || !map) return;
+          safeInvalidateMapSize(map);
+        }, 320)
+      );
     }
 
     void mountMap();
 
     return () => {
       cancelled = true;
+      for (const timeoutId of invalidateTimeouts) {
+        window.clearTimeout(timeoutId);
+      }
       framedOriginRef.current = "";
       markersLayerRef.current = null;
       areaDotRef.current = null;
@@ -323,9 +354,7 @@ export function ExploreMap({
     if (!el) return;
 
     const observer = new ResizeObserver(() => {
-      const map = mapRef.current;
-      if (!map) return;
-      map.invalidateSize({ animate: false });
+      safeInvalidateMapSize(mapRef.current);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -471,26 +500,40 @@ export function ExploreMap({
 
   return (
     <div className={rootClass}>
-      <div
-        ref={containerRef}
-        className="explore-map__canvas"
-        role="img"
-        aria-label="Map of specialists in this search area"
-      />
-      {showChrome ? (
-        <button
-          type="button"
-          className={cn(
-            "smoac-control explore-map__recenter",
-            variant === "hero" && "explore-map__recenter--hero"
-          )}
-          onClick={handleRecenter}
-          aria-label="Recenter map to your 12-mile search area"
-        >
-          <LocationMarkIcon className="explore-map__recenter-icon" />
-          <span className="explore-map__recenter-label">Recenter</span>
-        </button>
-      ) : null}
+      <div className="explore-map__stage">
+        <div
+          ref={containerRef}
+          className="explore-map__canvas"
+          role="img"
+          aria-label="Map of specialists in this search area"
+        />
+        {showChrome ? (
+          <>
+            <button
+              type="button"
+              className={cn(
+                "smoac-control explore-map__recenter",
+                variant === "hero" && "explore-map__recenter--hero"
+              )}
+              onClick={handleRecenter}
+              aria-label="Recenter map to your 12-mile search area"
+            >
+              <LocationMarkIcon className="explore-map__recenter-icon" />
+              <span className="explore-map__recenter-label">Recenter</span>
+            </button>
+            {showSearchHere ? (
+              <button
+                type="button"
+                className="smoac-control explore-split__search-here explore-map__search-here"
+                disabled={searchHereLoading || !onSearchHere}
+                onClick={onSearchHere}
+              >
+                {searchHereLoading ? "Searching…" : "Search here"}
+              </button>
+            ) : null}
+          </>
+        ) : null}
+      </div>
       {showNotes ? (
         mapped.length === 0 ? (
           <p className="explore-map__empty">
