@@ -1,37 +1,19 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 import { useHeaderPanels } from "@/hooks/useHeaderPanels";
 import { useSiteHeaderScroll } from "@/hooks/useSiteHeaderScroll";
-import {
-  getMobileMaxWidthSnapshot,
-  subscribeMobileMaxWidth,
-} from "@/lib/viewport";
 import { SiteHeaderMobile } from "./SiteHeaderMobile";
 import { SiteHeaderDesktop } from "./SiteHeaderDesktop";
 import { HeaderOverlayRoot } from "./HeaderOverlayRoot";
-import { SavedPanelDropdown } from "./SavedPanelDropdown";
-
-function getMobileSnapshot(): boolean {
-  return getMobileMaxWidthSnapshot();
-}
 
 /**
- * Site header — mobile utility bar + desktop navigation.
+ * Site header — mobile/tablet utility bar + bottom nav; desktop utility bar + nav pill.
  */
 export function SiteHeader() {
-  const pathname = usePathname();
-  const isHomePage = pathname === "/";
   const panels = useHeaderPanels();
-  const isMobile = useSyncExternalStore(
-    subscribeMobileMaxWidth,
-    getMobileSnapshot,
-    () => false
-  );
 
-  useSiteHeaderScroll(isMobile);
+  useSiteHeaderScroll(true);
 
   const chromeActive = panels.menuOpen || panels.savedPanelOpen;
 
@@ -41,34 +23,17 @@ export function SiteHeader() {
         id="site-header"
         className={cn(
           "site-header",
-          isMobile && "site-header--utility",
+          "site-header--utility",
           chromeActive && "site-header--panel-open"
         )}
       >
-        <div className="site-header--mobile md:hidden">
+        <div className="site-header--mobile lg:hidden">
           <SiteHeaderMobile onLogoClick={panels.onLogoClick} />
         </div>
 
-        <nav
-          className={cn(
-            "site-header--desktop site-navbar hidden border-b backdrop-blur-xl md:block",
-            panels.savedPanelOpen ? "border-white/10" : "border-white/5"
-          )}
-          aria-label="Main"
-        >
-          <SiteHeaderDesktop
-            savedPanelOpen={panels.savedPanelOpen}
-            onSavedClick={panels.onSavedClick}
-            onCloseSavedPanel={panels.closeSavedPanel}
-            isHomePage={isHomePage}
-          />
-        </nav>
-
-        {panels.savedPanelOpen ? (
-          <div className="hidden md:block">
-            <SavedPanelDropdown open onClose={panels.closeSavedPanel} />
-          </div>
-        ) : null}
+        <div className="site-header--desktop hidden lg:block">
+          <SiteHeaderDesktop onLogoClick={panels.onLogoClick} />
+        </div>
       </header>
 
       <HeaderOverlayRoot

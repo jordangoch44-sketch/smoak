@@ -261,7 +261,7 @@
   touch-action: manipulation;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   #root.app-shell,
   .app-shell {
     padding-top: var(--site-header-total-height);
@@ -279,13 +279,190 @@
 }
 
 @media (min-width: 768px) {
-  #root.app-shell,
-  .app-shell {
-    padding-top: 0;
-  }
-
   .site-header--desktop {
     padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* ── Utility header atmosphere (mobile + desktop toolbar) ── */
+.site-header--utility {
+  border-bottom: none;
+}
+
+.site-header--utility .site-header__frost {
+  background: rgba(8, 8, 12, 0.82);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.site-header--utility[data-scrolled="true"] .site-header__frost,
+.site-header--utility.site-header--panel-open .site-header__frost {
+  background: rgba(8, 8, 12, 0.9);
+  border-bottom-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.site-header__aurora {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none !important;
+  background:
+    radial-gradient(
+      ellipse 80% 120% at 12% -20%,
+      rgba(var(--aurora-lavender-rgb), 0.12) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 60% 90% at 88% 110%,
+      rgba(var(--aurora-violet-rgb), 0.08) 0%,
+      transparent 58%
+    );
+  opacity: 0.85;
+  transition: opacity 0.4s ease;
+}
+
+.site-header--utility[data-scrolled="true"] .site-header__aurora,
+.site-header--utility.site-header--panel-open .site-header__aurora {
+  opacity: 1;
+}
+
+.site-header__edge-light {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  height: 1px;
+  pointer-events: none !important;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 100%
+  );
+  opacity: 0.7;
+}
+
+.site-header__signup {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  display: inline-flex;
+  min-height: 1.85rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(168, 85, 247, 0.42);
+  border-radius: 9999px;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(168, 85, 247, 0.28) 0%,
+      rgba(124, 58, 237, 0.16) 100%
+    );
+  padding: 0.2rem 0.65rem;
+  color: rgba(245, 240, 255, 0.98);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  touch-action: manipulation;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 0 0 1px rgba(168, 85, 247, 0.22),
+    0 0 14px rgba(139, 92, 246, 0.48),
+    0 0 26px rgba(124, 58, 237, 0.28);
+}
+
+.site-header__signup::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(168, 85, 247, 0.42) 0%,
+    rgba(124, 58, 237, 0.16) 42%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
+
+.site-header__signup:active {
+  transform: scale(0.98);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(168, 85, 247, 0.34) 0%,
+      rgba(124, 58, 237, 0.2) 100%
+    );
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --site-navbar-height: 5.75rem;
+  }
+
+  #root.app-shell,
+  .app-shell {
+    padding-top: var(--site-header-total-height);
+  }
+
+  .app-main {
+    position: relative;
+    z-index: var(--z-page-content);
+    isolation: isolate;
+  }
+
+  .site-header__toolbar--desktop {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem 1.5rem;
+    height: auto;
+    min-height: var(--site-navbar-height);
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-block: 0.55rem;
+    padding-inline: 1.5rem;
+  }
+
+  .site-header__toolbar--desktop .site-header__brand {
+    justify-self: start;
+    min-width: 0;
+  }
+
+  .site-header__nav-center {
+    justify-self: center;
+    width: min(100%, 26rem);
+    min-width: 0;
+    pointer-events: auto;
+  }
+
+  .site-header__toolbar--desktop .site-header__utility-end {
+    justify-self: end;
+  }
+
+  .site-header__toolbar--desktop .site-header__location {
+    max-width: 11rem;
+  }
+
+  .site-header-nav-pill {
+    width: 100%;
+    min-height: 4.25rem;
+  }
+
+  .site-header-nav-pill.mobile-bottom-nav__pill {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 10px 28px rgba(0, 0, 0, 0.28);
   }
 }
 
