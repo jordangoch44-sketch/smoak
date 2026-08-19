@@ -17,6 +17,11 @@ let cachedPreciseLat: number | null = null;
 let cachedPreciseLng: number | null = null;
 let cachedPreciseKey: string | null = null;
 
+let cachedExplicitCoords: UserGeoPoint | null = null;
+let cachedExplicitLat: number | null = null;
+let cachedExplicitLng: number | null = null;
+let cachedExplicitCoordsKey: string | null = null;
+
 function buildCoordsKey(lat: number, lng: number): string {
   return `${lat.toFixed(6)},${lng.toFixed(6)}`;
 }
@@ -87,6 +92,22 @@ export function getActiveUserCoordinatesSnapshot(): UserGeoPoint | null {
   return remembered.value;
 }
 
+/** Saved ZIP / GPS only — never IP hint (for “distance from you” labels). */
+export function getExplicitUserCoordinatesSnapshot(): UserGeoPoint | null {
+  const next = getActiveUserCoordinates();
+  const remembered = rememberPoint(next, {
+    coords: cachedExplicitCoords,
+    lat: cachedExplicitLat,
+    lng: cachedExplicitLng,
+    key: cachedExplicitCoordsKey,
+  });
+  cachedExplicitCoords = remembered.coords;
+  cachedExplicitLat = remembered.lat;
+  cachedExplicitLng = remembered.lng;
+  cachedExplicitCoordsKey = remembered.key;
+  return remembered.value;
+}
+
 /** Device GPS only — never ZIP / city centroids (map “you are here” dot). */
 export function getPreciseUserCoordinatesSnapshot(): UserGeoPoint | null {
   const geo = hasSavedGeolocation() ? loadSavedCoordinates() : null;
@@ -118,11 +139,24 @@ export function getActiveUserCoordinatesKeySnapshot(): string | null {
   return cachedCoordsKey;
 }
 
+export function getExplicitUserCoordinatesKeySnapshot(): string | null {
+  getExplicitUserCoordinatesSnapshot();
+  return cachedExplicitCoordsKey;
+}
+
 export function getActiveUserCoordinatesServerSnapshot(): UserGeoPoint | null {
   return null;
 }
 
 export function getActiveUserCoordinatesKeyServerSnapshot(): string | null {
+  return null;
+}
+
+export function getExplicitUserCoordinatesServerSnapshot(): UserGeoPoint | null {
+  return null;
+}
+
+export function getExplicitUserCoordinatesKeyServerSnapshot(): string | null {
   return null;
 }
 

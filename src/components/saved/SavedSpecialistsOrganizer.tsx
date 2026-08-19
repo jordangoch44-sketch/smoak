@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, type MouseEvent } from "react";
 import { TrainerCard } from "@/components/trainers/TrainerCard";
-import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
+import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { getTrainerDistanceMiles } from "@/lib/trainer-proximity-sort";
 import type { Trainer } from "@/types";
@@ -40,7 +40,7 @@ export function SavedSpecialistsOrganizer({
   const [compareMode, setCompareMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [comparePair, setComparePair] = useState<ComparePair | null>(null);
-  const coords = useActiveUserCoordinates();
+  const coords = useExplicitUserCoordinates();
 
   const trainersById = useMemo(
     () => new Map(trainers.map((trainer) => [trainer.id, trainer])),

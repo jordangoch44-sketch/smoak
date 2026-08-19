@@ -14,6 +14,10 @@ import {
   getActiveUserCoordinatesKeySnapshot,
   getActiveUserCoordinatesServerSnapshot,
   getActiveUserCoordinatesSnapshot,
+  getExplicitUserCoordinatesKeyServerSnapshot,
+  getExplicitUserCoordinatesKeySnapshot,
+  getExplicitUserCoordinatesServerSnapshot,
+  getExplicitUserCoordinatesSnapshot,
   subscribeUserLocation,
 } from "@/lib/user-location-store";
 
@@ -40,11 +44,41 @@ export function useActiveUserCoordinates(): UserGeoPoint | null {
   }, [session, storageCoords]);
 }
 
+/** Saved ZIP / GPS / profile ZIP — never coarse IP hint. */
+export function useExplicitUserCoordinates(): UserGeoPoint | null {
+  const { session } = useAuthSession();
+  const storageCoords = useSyncExternalStore(
+    subscribeUserLocation,
+    getExplicitUserCoordinatesSnapshot,
+    getExplicitUserCoordinatesServerSnapshot
+  );
+
+  return useMemo(() => {
+    if (storageCoords) return storageCoords;
+    const profileZip = getProfileZipFromSession(session);
+    if (profileZip) {
+      const coords =
+        lookupLocalZipCoordinates(profileZip) ??
+        zipCodeToCoordinates(profileZip);
+      if (coords) return coords;
+    }
+    return null;
+  }, [session, storageCoords]);
+}
+
 /** Stable string dependency for proximity useMemo (avoids object identity churn) */
 export function useActiveUserCoordinatesKey(): string | null {
   return useSyncExternalStore(
     subscribeUserLocation,
     getActiveUserCoordinatesKeySnapshot,
     getActiveUserCoordinatesKeyServerSnapshot
+  );
+}
+
+export function useExplicitUserCoordinatesKey(): string | null {
+  return useSyncExternalStore(
+    subscribeUserLocation,
+    getExplicitUserCoordinatesKeySnapshot,
+    getExplicitUserCoordinatesKeyServerSnapshot
   );
 }

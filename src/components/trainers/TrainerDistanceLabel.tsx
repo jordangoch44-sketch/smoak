@@ -1,6 +1,6 @@
 "use client";
 
-import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
+import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { getTrainerDistanceMiles } from "@/lib/trainer-proximity-sort";
 import type { Trainer } from "@/types";
 import { cn } from "@/lib/utils";
@@ -10,12 +10,12 @@ interface TrainerDistanceLabelProps {
   className?: string;
 }
 
-/** Public “distance from you” label when client location is known. */
+/** Public “distance from you” label when the visitor has set ZIP or GPS. */
 export function TrainerDistanceLabel({
   trainer,
   className,
 }: TrainerDistanceLabelProps) {
-  const userCoords = useActiveUserCoordinates();
+  const userCoords = useExplicitUserCoordinates();
   if (!userCoords) return null;
 
   const miles = getTrainerDistanceMiles(trainer, userCoords);
