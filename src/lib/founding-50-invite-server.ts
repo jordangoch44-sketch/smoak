@@ -11,7 +11,7 @@ export type Founding50InviteStatus = {
   cap: number;
   claimed: number | null;
   spotsRemaining: number | null;
-  cohortFull: boolean;
+  isFull: boolean;
 };
 
 /** @deprecated Use Founding50InviteStatus */
@@ -42,7 +42,7 @@ export async function getFounding50InviteStatus(
   const claimed = await countFounding50Applications();
   const spotsRemaining =
     claimed === null ? null : Math.max(0, cap - claimed);
-  const cohortFull =
+  const isFull =
     accessGranted && spotsRemaining !== null && spotsRemaining <= 0;
 
   return {
@@ -50,7 +50,7 @@ export async function getFounding50InviteStatus(
     cap,
     claimed,
     spotsRemaining,
-    cohortFull,
+    isFull,
   };
 }
 

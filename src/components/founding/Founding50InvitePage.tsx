@@ -9,9 +9,9 @@ import {
   FOUNDING_INVITE_CODE_PARAM,
   buildFounding50InviteHref,
   buildFounding50JoinHref,
-  formatFounding50MemberIndex,
   formatFounding50SpotsRemaining,
   persistFounding50InviteSession,
+  FOUNDING_50_CAP,
 } from "@/lib/founding-50-invite";
 import type { Founding50InviteStatus } from "@/lib/founding-50-invite-server";
 import { cn } from "@/lib/utils";
@@ -49,10 +49,7 @@ export function Founding50InvitePage({
           initialStatus.cap
         );
 
-  const memberLabel =
-    initialStatus.claimed === null
-      ? "—"
-      : formatFounding50MemberIndex(initialStatus.claimed, initialStatus.cap);
+  const isFull = initialStatus.isFull;
 
   return (
     <div className="founding-invite-page">
@@ -102,7 +99,7 @@ export function Founding50InvitePage({
               </button>
             </form>
           </section>
-        ) : initialStatus.cohortFull ? (
+        ) : isFull ? (
           <section className="founding-invite-page__panel">
             <p className="founding-invite-page__eyebrow">{FOUNDING_50_LABEL}</p>
             <h1 className="founding-invite-page__title">All 50 spots claimed.</h1>
@@ -134,12 +131,12 @@ export function Founding50InvitePage({
 
             <dl className="founding-invite-page__dossier">
               <div>
-                <dt>Member</dt>
-                <dd>{memberLabel}</dd>
+                <dt>Spots left</dt>
+                <dd>{spotsLabel}</dd>
               </div>
               <div>
-                <dt>Remaining</dt>
-                <dd>{spotsLabel}</dd>
+                <dt>Total spots</dt>
+                <dd>{FOUNDING_50_CAP}</dd>
               </div>
               <div>
                 <dt>Status</dt>

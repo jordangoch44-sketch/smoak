@@ -11,6 +11,6 @@ export async function GET() {
     cap: status.cap,
     claimed: status.claimed,
     spotsRemaining: status.spotsRemaining,
-    cohortFull: status.cohortFull,
+    isFull: status.isFull,
   });
 }

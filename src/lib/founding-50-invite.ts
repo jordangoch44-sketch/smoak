@@ -132,8 +132,8 @@ export async function fetchFounding50Full(): Promise<boolean> {
       cache: "no-store",
     });
     if (!response.ok) return false;
-    const payload = (await response.json()) as { cohortFull?: boolean };
-    return Boolean(payload.cohortFull);
+    const payload = (await response.json()) as { isFull?: boolean };
+    return Boolean(payload.isFull);
   } catch {
     return false;
   }

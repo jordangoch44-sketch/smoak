@@ -163,10 +163,10 @@ async function submitSpecialistApplicationOnce(
     : {};
 
   if (foundingSession && !existing?.foundingInvite) {
-    const cohortFull = await fetchFounding50Full();
-    if (cohortFull) {
+    const isFull = await fetchFounding50Full();
+    if (isFull) {
       throw new ApplicationSubmitError(
-        "Founding 50 invitations are full. We'll notify you when the next cohort opens."
+        "Founding 50 is full. We'll notify you when more spots open."
       );
     }
   }
