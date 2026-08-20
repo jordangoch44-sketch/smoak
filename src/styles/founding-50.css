@@ -5,9 +5,16 @@ body:has(.founding-invite-page) {
   background-image: none !important;
 }
 
+/* Header is hidden — drop the reserved chrome offset so content sits at the top */
+body:has(.founding-invite-page) #root.app-shell,
+body:has(.founding-invite-page) .app-shell {
+  padding-top: 0 !important;
+}
+
 body:has(.founding-invite-page) #site-header,
 body:has(.founding-invite-page) .site-footer,
-body:has(.founding-invite-page) .mobile-bottom-nav {
+body:has(.founding-invite-page) .mobile-bottom-nav,
+body:has(.founding-invite-page) .site-page-backdrop {
   display: none !important;
 }
 
@@ -15,7 +22,7 @@ body:has(.founding-invite-page) .app-main {
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: 0;
+  padding: 0 !important;
   overflow: hidden;
   background: #000;
 }
@@ -71,8 +78,8 @@ body:has(.founding-invite-page) .app-main {
   gap: 2.5rem;
   width: min(100%, 28rem);
   margin: 0 auto;
-  padding: calc(2.5rem + env(safe-area-inset-top, 0px)) 1.5rem
-    calc(2.5rem + env(safe-area-inset-bottom, 0px));
+  padding: max(1.25rem, env(safe-area-inset-top, 0px)) 1.5rem
+    calc(1.5rem + env(safe-area-inset-bottom, 0px));
   box-sizing: border-box;
 }
 
