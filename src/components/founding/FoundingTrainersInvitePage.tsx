@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
-import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { Logo } from "@/components/ui/Logo";
 import {
   FOUNDING_INVITE_CODE_PARAM,
@@ -53,16 +52,7 @@ export function FoundingTrainersInvitePage({
 
   return (
     <div className="founding-invite-page">
-      <AuroraAtmosphere
-        mode="fixed"
-        intensity="subtle"
-        starDensity="sparse"
-        glowPosition="center"
-        glowColor="nebula"
-        enableMotion
-      />
-
-      <div className="founding-invite-page__scanline" aria-hidden />
+      <div className="founding-invite-page__backdrop" aria-hidden />
 
       <main className="founding-invite-page__main">
         <div className="founding-invite-page__mark">

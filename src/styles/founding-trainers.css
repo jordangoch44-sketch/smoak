@@ -1,5 +1,10 @@
 /* Founding trainer invite — minimal Bond-meets-space dossier landing */
 
+body:has(.founding-invite-page) {
+  background: #000 !important;
+  background-image: none !important;
+}
+
 body:has(.founding-invite-page) #site-header,
 body:has(.founding-invite-page) .site-footer,
 body:has(.founding-invite-page) .mobile-bottom-nav {
@@ -12,37 +17,56 @@ body:has(.founding-invite-page) .app-main {
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+  background: #000;
 }
 
 .founding-invite-page {
   position: relative;
   flex: 1;
-  min-height: calc(100dvh - env(safe-area-inset-top, 0px));
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   color: rgba(255, 255, 255, 0.92);
   background: #000;
   overflow: hidden;
+  isolation: isolate;
 }
 
-.founding-invite-page__scanline {
+/* Single smooth aurora wash — black → purple → pink → green → black */
+.founding-invite-page__backdrop {
   position: fixed;
   inset: 0;
-  z-index: 2;
+  z-index: 0;
   pointer-events: none;
-  opacity: 0.035;
-  background: repeating-linear-gradient(
+  background: linear-gradient(
     180deg,
-    transparent 0,
-    transparent 2px,
-    rgba(255, 255, 255, 0.35) 2px,
-    rgba(255, 255, 255, 0.35) 3px
+    #000000 0%,
+    #020204 6%,
+    #080412 14%,
+    #140824 24%,
+    #241040 34%,
+    #351862 42%,
+    #4c1d95 48%,
+    #6d28d9 52%,
+    #9333ea 55%,
+    #a855f7 57%,
+    #c026d3 60%,
+    #db2777 63%,
+    #ec4899 66%,
+    #be185d 69%,
+    #6b21a8 73%,
+    #3b0764 77%,
+    #0f3d2e 82%,
+    #064e3b 86%,
+    #053526 90%,
+    #021810 95%,
+    #000000 100%
   );
 }
 
 .founding-invite-page__main {
   position: relative;
-  z-index: 3;
+  z-index: 1;
   flex: 1;
   display: flex;
   flex-direction: column;
