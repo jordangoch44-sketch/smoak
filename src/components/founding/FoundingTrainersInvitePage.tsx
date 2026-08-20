@@ -115,7 +115,9 @@ export function FoundingTrainersInvitePage({
             <p className="founding-invite-page__eyebrow">
               SMOAC&nbsp;&nbsp;|&nbsp;&nbsp;FIND FITNESS ANYWHERE
             </p>
-            <h1 className="founding-invite-page__title">You&apos;re invited.</h1>
+            <h1 className="founding-invite-page__title founding-invite-page__title--countdown">
+              You&apos;re invited
+            </h1>
             <p className="founding-invite-page__lede">
               One of the first wellness specialists on SMOAC — curated, verified,
               and positioned before the marketplace opens wide.
