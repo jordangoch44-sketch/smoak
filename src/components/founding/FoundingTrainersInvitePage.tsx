@@ -113,7 +113,7 @@ export function FoundingTrainersInvitePage({
         ) : (
           <section className="founding-invite-page__panel">
             <p className="founding-invite-page__eyebrow">
-              Classified · founding cohort
+              SMOAC&nbsp;&nbsp;|&nbsp;&nbsp;FIND FITNESS ANYWHERE
             </p>
             <h1 className="founding-invite-page__title">You&apos;re invited.</h1>
             <p className="founding-invite-page__lede">
