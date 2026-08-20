@@ -149,6 +149,7 @@ body:has(.founding-invite-page) .app-main {
 .founding-invite-page__lede--invite {
   padding: 0.9rem 1rem;
   border: 1px solid rgba(248, 226, 186, 0.22);
+  border-radius: 1rem;
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.92);
   font-weight: 500;
