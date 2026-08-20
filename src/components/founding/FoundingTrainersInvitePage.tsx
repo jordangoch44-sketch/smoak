@@ -101,7 +101,7 @@ export function FoundingTrainersInvitePage({
         ) : initialStatus.cohortFull ? (
           <section className="founding-invite-page__panel">
             <p className="founding-invite-page__eyebrow">Cohort sealed</p>
-            <h1 className="founding-invite-page__title">The first hundred are in.</h1>
+            <h1 className="founding-invite-page__title">The first fifty are in.</h1>
             <p className="founding-invite-page__lede">
               Founding specialist invitations are closed. We&apos;ll open the
               next wave quietly — watch your inbox.
@@ -119,8 +119,13 @@ export function FoundingTrainersInvitePage({
               You&apos;re invited
             </h1>
             <p className="founding-invite-page__lede">
-              One of the first wellness specialists on SMOAC — curated, verified,
-              and positioned before the marketplace opens wide.
+              SMOAC — Explore. Discover. Move. Find health and wellness
+              professionals near you, at your fingertips.
+            </p>
+            <p className="founding-invite-page__lede founding-invite-page__lede--invite">
+              You&apos;ve been invited to join as one of the original 50
+              specialists on SMOAC. Enjoy one free month on our Pro tier —
+              analytics, boosted profiles, tools, and more.
             </p>
 
             <dl className="founding-invite-page__dossier">
@@ -149,8 +154,8 @@ export function FoundingTrainersInvitePage({
             </Link>
 
             <p className="founding-invite-page__fineprint">
-              By continuing you&apos;ll complete specialist onboarding — same
-              review process, priority placement for founding members.
+              Accepting your invitation continues into specialist onboarding and
+              admin review.
             </p>
           </section>
         )}

@@ -143,6 +143,10 @@ body:has(.founding-invite-page) .app-main {
   color: rgba(255, 255, 255, 0.58);
 }
 
+.founding-invite-page__lede--invite {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .founding-invite-page__dossier {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

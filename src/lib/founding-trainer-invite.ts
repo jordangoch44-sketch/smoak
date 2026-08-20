@@ -11,7 +11,7 @@ export const JOIN_FOUNDING_PARAM = "founding";
 
 export const FOUNDING_INVITE_STORAGE_KEY = "smoac.founding-trainer-invite";
 
-export const FOUNDING_TRAINER_CAP = 100;
+export const FOUNDING_TRAINER_CAP = 50;
 
 export interface FoundingTrainerInviteSession {
   code: string;
