@@ -32,7 +32,7 @@ body:has(.founding-invite-page) .app-main {
   isolation: isolate;
 }
 
-/* Single smooth aurora wash — black → purple → pink → green → black */
+/* Single smooth wash — black → purple → black */
 .founding-invite-page__backdrop {
   position: fixed;
   inset: 0;
@@ -41,25 +41,21 @@ body:has(.founding-invite-page) .app-main {
   background: linear-gradient(
     180deg,
     #000000 0%,
-    #020204 6%,
-    #080412 14%,
-    #140824 24%,
-    #241040 34%,
-    #351862 42%,
-    #4c1d95 48%,
-    #6d28d9 52%,
-    #9333ea 55%,
-    #a855f7 57%,
-    #c026d3 60%,
-    #db2777 63%,
-    #ec4899 66%,
-    #be185d 69%,
-    #6b21a8 73%,
-    #3b0764 77%,
-    #0f3d2e 82%,
-    #064e3b 86%,
-    #053526 90%,
-    #021810 95%,
+    #020204 10%,
+    #080412 20%,
+    #140824 30%,
+    #241040 38%,
+    #351862 44%,
+    #4c1d95 50%,
+    #5b21b6 54%,
+    #6d28d9 57%,
+    #7c3aed 60%,
+    #6d28d9 64%,
+    #4c1d95 70%,
+    #2d1260 78%,
+    #140824 86%,
+    #080412 93%,
+    #020204 97%,
     #000000 100%
   );
 }
@@ -132,8 +128,8 @@ body:has(.founding-invite-page) .app-main {
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.96);
   text-shadow:
-    0 0 24px rgba(168, 85, 247, 0.28),
-    0 0 48px rgba(236, 72, 153, 0.12);
+    0 0 24px rgba(124, 58, 237, 0.32),
+    0 0 48px rgba(109, 40, 217, 0.16);
 }
 
 .founding-invite-page__lede {
