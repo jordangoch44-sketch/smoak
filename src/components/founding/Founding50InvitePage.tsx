@@ -124,9 +124,10 @@ export function Founding50InvitePage({
               professionals near you, at your fingertips.
             </p>
             <p className="founding-invite-page__lede founding-invite-page__lede--invite">
-              You&apos;ve been invited to join the {FOUNDING_50_LABEL} on SMOAC.
-              Enjoy one free month on our Pro tier — analytics, boosted profiles,
-              tools, and more.
+              You&apos;ve been invited to join the {FOUNDING_50_LABEL} on SMOAC —
+              one of the first specialists on the marketplace. Apply now, and
+              when you go live you get the same complimentary month of Pro as
+              every specialist who joins.
             </p>
 
             <dl className="founding-invite-page__dossier">
@@ -155,8 +156,8 @@ export function Founding50InvitePage({
             </Link>
 
             <p className="founding-invite-page__fineprint">
-              Accepting your invitation continues into specialist onboarding and
-              admin review.
+              Accepting continues into specialist onboarding. Profiles go live
+              after admin review — same process as every specialist.
             </p>
           </section>
         )}
