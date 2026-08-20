@@ -5,7 +5,7 @@ import {
   FOUNDING_INVITE_CODE_PARAM,
   JOIN_FOUNDING_PARAM,
   parseJoinFoundingFlag,
-} from "@/lib/founding-trainer-invite";
+} from "@/lib/founding-50-invite";
 import { NOINDEX_FOLLOW_NONE } from "@/lib/seo/noindex";
 import {
   JOIN_INTRO_PARAM,

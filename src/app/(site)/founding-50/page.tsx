@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
-import { FoundingTrainersInvitePage } from "@/components/founding/FoundingTrainersInvitePage";
-import { FOUNDING_INVITE_CODE_PARAM } from "@/lib/founding-trainer-invite";
-import { getFoundingTrainerInviteStatus } from "@/lib/founding-trainer-invite-server";
+import { Founding50InvitePage } from "@/components/founding/Founding50InvitePage";
+import {
+  FOUNDING_50_LABEL,
+  FOUNDING_INVITE_CODE_PARAM,
+} from "@/lib/founding-50-invite";
+import { getFounding50InviteStatus } from "@/lib/founding-50-invite-server";
 import { NOINDEX_FOLLOW_NONE } from "@/lib/seo/noindex";
 
 export const metadata: Metadata = {
-  title: "Founding Specialists",
-  description: "Private invitation for SMOAC founding wellness specialists.",
+  title: FOUNDING_50_LABEL,
+  description: `Private invitation for SMOAC ${FOUNDING_50_LABEL} wellness specialists.`,
   ...NOINDEX_FOLLOW_NONE,
 };
 
@@ -17,17 +20,17 @@ function readInviteCode(
   return raw?.trim() || null;
 }
 
-export default async function FoundingTrainersPage({
+export default async function Founding50Page({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
   const inviteCode = readInviteCode(params[FOUNDING_INVITE_CODE_PARAM]);
-  const initialStatus = await getFoundingTrainerInviteStatus(inviteCode);
+  const initialStatus = await getFounding50InviteStatus(inviteCode);
 
   return (
-    <FoundingTrainersInvitePage
+    <Founding50InvitePage
       initialStatus={initialStatus}
       inviteCode={inviteCode}
     />

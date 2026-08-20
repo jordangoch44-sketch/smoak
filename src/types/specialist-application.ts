@@ -122,7 +122,7 @@ export interface SpecialistApplication {
   bio: string;
   /** Curated public profile look — set from the dashboard full editor */
   profileStyle?: SpecialistProfileStyle;
-  /** Set when applicant entered via /founding-trainers invite */
+  /** Set when applicant entered via /founding-50 invite */
   foundingInvite?: boolean;
   foundingInviteCode?: string;
   foundingInviteAcceptedAt?: string;

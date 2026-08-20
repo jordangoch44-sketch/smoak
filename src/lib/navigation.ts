@@ -34,8 +34,8 @@ export const SITE_ROUTES = {
   find: "/find",
   findSanDiego: "/find/san-diego",
   findSanDiegoPersonalTrainers: "/find/san-diego/personal-trainers",
-  /** Hidden founding specialist invite — not linked from public chrome */
-  foundingTrainers: "/founding-trainers",
+  /** Hidden Founding 50 invite — not linked from public chrome */
+  founding50: "/founding-50",
 } as const;
 
 /** Desktop header text links (saved uses heart control) */

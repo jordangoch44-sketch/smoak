@@ -205,7 +205,7 @@ export function AdminApplicationsPanel({
                           {app.professionalType || "Specialist"}
                           {app.foundingInvite ? (
                             <span className="admin-inbox-card__founding-tag">
-                              Founding
+                              Founding 50
                             </span>
                           ) : null}
                         </p>

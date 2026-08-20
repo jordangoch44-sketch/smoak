@@ -13,10 +13,10 @@ import { hideTrainerId } from "@/lib/hidden-trainers-store";
 import { syncProfileOverridesFromApplication } from "@/lib/managed-specialist-profile";
 import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import {
-  readFoundingTrainerInviteSession,
-  clearFoundingTrainerInviteSession,
-  fetchFoundingTrainerCohortFull,
-} from "@/lib/founding-trainer-invite";
+  readFounding50InviteSession,
+  clearFounding50InviteSession,
+  fetchFounding50Full,
+} from "@/lib/founding-50-invite";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import {
   clearSpecialistOnboardingDraft,
@@ -153,7 +153,7 @@ async function submitSpecialistApplicationOnce(
   /* Reuse id for draft/rejected/pending updates — never create a second profile row */
   const id = existing?.id ?? slugifyId(trimmedEmail);
   const enriched = enrichSpecialistApplicationFields(state);
-  const foundingSession = readFoundingTrainerInviteSession();
+  const foundingSession = readFounding50InviteSession();
   const foundingFields = foundingSession
     ? {
         foundingInvite: true as const,
@@ -163,10 +163,10 @@ async function submitSpecialistApplicationOnce(
     : {};
 
   if (foundingSession && !existing?.foundingInvite) {
-    const cohortFull = await fetchFoundingTrainerCohortFull();
+    const cohortFull = await fetchFounding50Full();
     if (cohortFull) {
       throw new ApplicationSubmitError(
-        "Founding specialist invitations are full. We'll notify you when the next cohort opens."
+        "Founding 50 invitations are full. We'll notify you when the next cohort opens."
       );
     }
   }
@@ -211,7 +211,7 @@ async function submitSpecialistApplicationOnce(
   clearSpecialistOnboardingDraft();
   clearPendingMarketplaceSignup();
   if (foundingSession) {
-    clearFoundingTrainerInviteSession();
+    clearFounding50InviteSession();
   }
 
   const emailResult = await sendSpecialistApplicationConfirmationEmail(saved);

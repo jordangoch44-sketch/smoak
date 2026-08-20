@@ -43,7 +43,7 @@ import { hydrateClientLocationFromSession } from "@/lib/client-profile-location"
 import { cn } from "@/lib/utils";
 import { SpecialistOnboardingWizard } from "@/components/auth/specialist/SpecialistOnboardingWizard";
 import { useCreateAccountIntroGate } from "@/hooks/useCreateAccountIntroGate";
-import { persistFoundingTrainerInviteSession } from "@/lib/founding-trainer-invite";
+import { persistFounding50InviteSession } from "@/lib/founding-50-invite";
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -180,7 +180,7 @@ interface CreateAccountWizardClientProps {
   initialReturnToSaved?: boolean;
   /** From `?role=specialist|client` — deep links from promos / save complete */
   initialAccountType?: PublicAuthRole | null;
-  /** From founding trainer invite CTA (`?founding=1`) */
+  /** From Founding 50 invite CTA (`?founding=1`) */
   initialFoundingInvite?: boolean;
   initialFoundingInviteCode?: string | null;
 }
@@ -219,8 +219,8 @@ export function CreateAccountWizardClient({
 
   useEffect(() => {
     if (!initialFoundingInvite) return;
-    persistFoundingTrainerInviteSession({
-      code: initialFoundingInviteCode?.trim() || "founding",
+    persistFounding50InviteSession({
+      code: initialFoundingInviteCode?.trim() || "founding-50",
       acceptedAt: new Date().toISOString(),
     });
   }, [initialFoundingInvite, initialFoundingInviteCode]);

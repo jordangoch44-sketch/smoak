@@ -1,5 +1,5 @@
 import { Orbitron } from "next/font/google";
-import "@/styles/founding-trainers.css";
+import "@/styles/founding-50.css";
 
 const foundingCountdown = Orbitron({
   variable: "--font-founding-countdown",
@@ -8,7 +8,7 @@ const foundingCountdown = Orbitron({
   display: "swap",
 });
 
-export default function FoundingTrainersLayout({
+export default function Founding50Layout({
   children,
 }: {
   children: React.ReactNode;

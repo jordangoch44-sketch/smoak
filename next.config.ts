@@ -20,6 +20,20 @@ const allowedDevOrigins = [
 
 const nextConfig: NextConfig = {
   allowedDevOrigins,
+  async redirects() {
+    return [
+      {
+        source: "/founding-trainers",
+        destination: "/founding-50",
+        permanent: true,
+      },
+      {
+        source: "/api/founding-trainers/status",
+        destination: "/api/founding-50/status",
+        permanent: true,
+      },
+    ];
+  },
   experimental: {
     optimizePackageImports: ["framer-motion"],
   },

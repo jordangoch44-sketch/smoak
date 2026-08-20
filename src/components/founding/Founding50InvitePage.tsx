@@ -5,36 +5,37 @@ import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import {
+  FOUNDING_50_LABEL,
   FOUNDING_INVITE_CODE_PARAM,
-  buildFoundingTrainersInviteHref,
-  buildFoundingTrainerJoinHref,
-  formatFoundingCohortIndex,
-  formatFoundingSpotsRemaining,
-  persistFoundingTrainerInviteSession,
-} from "@/lib/founding-trainer-invite";
-import type { FoundingTrainerInviteStatus } from "@/lib/founding-trainer-invite-server";
+  buildFounding50InviteHref,
+  buildFounding50JoinHref,
+  formatFounding50MemberIndex,
+  formatFounding50SpotsRemaining,
+  persistFounding50InviteSession,
+} from "@/lib/founding-50-invite";
+import type { Founding50InviteStatus } from "@/lib/founding-50-invite-server";
 import { cn } from "@/lib/utils";
 
-interface FoundingTrainersInvitePageProps {
-  initialStatus: FoundingTrainerInviteStatus;
+interface Founding50InvitePageProps {
+  initialStatus: Founding50InviteStatus;
   inviteCode: string | null;
 }
 
-export function FoundingTrainersInvitePage({
+export function Founding50InvitePage({
   initialStatus,
   inviteCode,
-}: FoundingTrainersInvitePageProps) {
+}: Founding50InvitePageProps) {
   const router = useRouter();
   const formId = useId();
   const [draftCode, setDraftCode] = useState(inviteCode ?? "");
   const accessGranted = initialStatus.accessGranted;
-  const joinHref = buildFoundingTrainerJoinHref({
+  const joinHref = buildFounding50JoinHref({
     inviteCode: inviteCode?.trim() || undefined,
   });
 
   useEffect(() => {
     if (!accessGranted || !inviteCode?.trim()) return;
-    persistFoundingTrainerInviteSession({
+    persistFounding50InviteSession({
       code: inviteCode.trim(),
       acceptedAt: new Date().toISOString(),
     });
@@ -43,12 +44,15 @@ export function FoundingTrainersInvitePage({
   const spotsLabel =
     initialStatus.spotsRemaining === null
       ? "—"
-      : formatFoundingSpotsRemaining(initialStatus.claimed ?? 0, initialStatus.cap);
+      : formatFounding50SpotsRemaining(
+          initialStatus.claimed ?? 0,
+          initialStatus.cap
+        );
 
-  const cohortLabel =
+  const memberLabel =
     initialStatus.claimed === null
       ? "—"
-      : formatFoundingCohortIndex(initialStatus.claimed, initialStatus.cap);
+      : formatFounding50MemberIndex(initialStatus.claimed, initialStatus.cap);
 
   return (
     <div className="founding-invite-page">
@@ -64,19 +68,19 @@ export function FoundingTrainersInvitePage({
             className="founding-invite-page__panel founding-invite-page__panel--gate"
             aria-labelledby={`${formId}-title`}
           >
-            <p className="founding-invite-page__eyebrow">Restricted access</p>
+            <p className="founding-invite-page__eyebrow">{FOUNDING_50_LABEL}</p>
             <h1 id={`${formId}-title`} className="founding-invite-page__title">
               Clearance required.
             </h1>
             <p className="founding-invite-page__lede">
-              Enter the invite code from your SMOAC dossier to continue.
+              Enter your {FOUNDING_50_LABEL} invite code to continue.
             </p>
 
             <form
               className="founding-invite-page__code-form"
               onSubmit={(event) => {
                 event.preventDefault();
-                router.push(buildFoundingTrainersInviteHref(draftCode));
+                router.push(buildFounding50InviteHref(draftCode));
               }}
             >
               <label className="founding-invite-page__code-label" htmlFor={formId}>
@@ -100,10 +104,10 @@ export function FoundingTrainersInvitePage({
           </section>
         ) : initialStatus.cohortFull ? (
           <section className="founding-invite-page__panel">
-            <p className="founding-invite-page__eyebrow">Cohort sealed</p>
-            <h1 className="founding-invite-page__title">The first fifty are in.</h1>
+            <p className="founding-invite-page__eyebrow">{FOUNDING_50_LABEL}</p>
+            <h1 className="founding-invite-page__title">All 50 spots claimed.</h1>
             <p className="founding-invite-page__lede">
-              Founding specialist invitations are closed. We&apos;ll open the
+              {FOUNDING_50_LABEL} invitations are closed. We&apos;ll open the
               next wave quietly — watch your inbox.
             </p>
             <Link href="/" className="founding-invite-page__ghost-link">
@@ -123,15 +127,15 @@ export function FoundingTrainersInvitePage({
               professionals near you, at your fingertips.
             </p>
             <p className="founding-invite-page__lede founding-invite-page__lede--invite">
-              You&apos;ve been invited to join as one of the original 50
-              specialists on SMOAC. Enjoy one free month on our Pro tier —
-              analytics, boosted profiles, tools, and more.
+              You&apos;ve been invited to join the {FOUNDING_50_LABEL} on SMOAC.
+              Enjoy one free month on our Pro tier — analytics, boosted profiles,
+              tools, and more.
             </p>
 
             <dl className="founding-invite-page__dossier">
               <div>
-                <dt>Cohort</dt>
-                <dd>{cohortLabel}</dd>
+                <dt>Member</dt>
+                <dd>{memberLabel}</dd>
               </div>
               <div>
                 <dt>Remaining</dt>
@@ -163,7 +167,7 @@ export function FoundingTrainersInvitePage({
         <footer className="founding-invite-page__footer">
           <span>SMOAC</span>
           <span aria-hidden>·</span>
-          <span>San Diego</span>
+          <span>{FOUNDING_50_LABEL}</span>
         </footer>
       </main>
     </div>
