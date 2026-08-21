@@ -28,9 +28,9 @@
   z-index: 1;
 }
 
-/* ── Marketplace canvas: black hero → luminous purple at Browse by category ── */
+/* ── Marketplace canvas: black hero → deep violet (search-bar colorway) ── */
 .home-page--discovery {
-  background-color: #321858;
+  background-color: #4c1d95;
 }
 
 .home-page--discovery::before {
@@ -42,27 +42,27 @@
   background:
     radial-gradient(
       ellipse 88% 72% at 78% 62%,
-      rgba(236, 72, 153, 0.13) 0%,
-      rgba(238, 70, 190, 0.07) 38%,
+      rgba(124, 58, 237, 0.16) 0%,
+      rgba(91, 33, 182, 0.08) 38%,
       transparent 68%
     ),
     radial-gradient(
       ellipse 82% 68% at 18% 74%,
-      rgba(168, 85, 247, 0.11) 0%,
-      rgba(124, 58, 237, 0.05) 42%,
+      rgba(168, 85, 247, 0.12) 0%,
+      rgba(76, 29, 149, 0.06) 42%,
       transparent 70%
     ),
     radial-gradient(
       ellipse 120% 88% at 50% 42%,
-      rgba(139, 61, 255, 0.2) 0%,
-      rgba(168, 85, 247, 0.1) 32%,
-      rgba(90, 35, 170, 0.06) 48%,
+      rgba(109, 40, 217, 0.22) 0%,
+      rgba(124, 58, 237, 0.12) 32%,
+      rgba(76, 29, 149, 0.07) 48%,
       transparent 68%
     ),
     radial-gradient(
       ellipse 95% 62% at 50% 58%,
-      rgba(255, 90, 170, 0.09) 0%,
-      rgba(236, 72, 153, 0.05) 40%,
+      rgba(139, 92, 246, 0.1) 0%,
+      rgba(91, 33, 182, 0.05) 40%,
       transparent 66%
     ),
     linear-gradient(
@@ -71,11 +71,11 @@
       #020204 max(11vh, 7rem),
       #050208 max(20vh, 13.5rem),
       #0b0413 max(27vh, 17.5rem),
-      #120720 max(33vh, 21.5rem),
-      #28124a max(39vh, 25.5rem),
-      #351862 max(45vh, 29.5rem),
-      #3d1a70 max(52vh, 34rem),
-      #321858 100%
+      #140824 max(33vh, 21.5rem),
+      #2d1260 max(39vh, 25.5rem),
+      #4c1d95 max(45vh, 29.5rem),
+      #5b21b6 max(52vh, 34rem),
+      #4c1d95 100%
     );
 }
 
@@ -509,27 +509,27 @@
     background:
       radial-gradient(
         ellipse 88% 72% at 78% 62%,
-        rgba(236, 72, 153, 0.13) 0%,
-        rgba(238, 70, 190, 0.07) 38%,
+        rgba(124, 58, 237, 0.16) 0%,
+        rgba(91, 33, 182, 0.08) 38%,
         transparent 68%
       ),
       radial-gradient(
         ellipse 82% 68% at 18% 74%,
-        rgba(168, 85, 247, 0.11) 0%,
-        rgba(124, 58, 237, 0.05) 42%,
+        rgba(168, 85, 247, 0.12) 0%,
+        rgba(76, 29, 149, 0.06) 42%,
         transparent 70%
       ),
       radial-gradient(
         ellipse 115% 90% at 50% 44%,
-        rgba(139, 61, 255, 0.2) 0%,
-        rgba(168, 85, 247, 0.1) 32%,
-        rgba(90, 35, 170, 0.06) 48%,
+        rgba(109, 40, 217, 0.22) 0%,
+        rgba(124, 58, 237, 0.12) 32%,
+        rgba(76, 29, 149, 0.07) 48%,
         transparent 66%
       ),
       radial-gradient(
         ellipse 95% 62% at 50% 60%,
-        rgba(255, 90, 170, 0.09) 0%,
-        rgba(236, 72, 153, 0.05) 40%,
+        rgba(139, 92, 246, 0.1) 0%,
+        rgba(91, 33, 182, 0.05) 40%,
         transparent 66%
       ),
       linear-gradient(
@@ -538,11 +538,11 @@
         #020204 max(13vh, 9.5rem),
         #050208 max(22vh, 15rem),
         #0b0413 max(29vh, 19.5rem),
-        #120720 max(35vh, 23.5rem),
-        #28124a max(41vh, 27.5rem),
-        #351862 max(47vh, 31.5rem),
-        #3d1a70 max(54vh, 36rem),
-        #321858 100%
+        #140824 max(35vh, 23.5rem),
+        #2d1260 max(41vh, 27.5rem),
+        #4c1d95 max(47vh, 31.5rem),
+        #5b21b6 max(54vh, 36rem),
+        #4c1d95 100%
       );
   }
 
@@ -621,27 +621,27 @@
     background:
       radial-gradient(
         ellipse 88% 72% at 78% 62%,
-        rgba(236, 72, 153, 0.1) 0%,
-        rgba(238, 70, 190, 0.05) 38%,
+        rgba(124, 58, 237, 0.12) 0%,
+        rgba(91, 33, 182, 0.06) 38%,
         transparent 68%
       ),
       radial-gradient(
         ellipse 82% 68% at 18% 74%,
-        rgba(168, 85, 247, 0.09) 0%,
-        rgba(124, 58, 237, 0.04) 42%,
+        rgba(168, 85, 247, 0.1) 0%,
+        rgba(76, 29, 149, 0.05) 42%,
         transparent 70%
       ),
       radial-gradient(
         ellipse 115% 90% at 50% 44%,
-        rgba(139, 61, 255, 0.16) 0%,
-        rgba(168, 85, 247, 0.08) 32%,
-        rgba(90, 35, 170, 0.04) 48%,
+        rgba(109, 40, 217, 0.18) 0%,
+        rgba(124, 58, 237, 0.1) 32%,
+        rgba(76, 29, 149, 0.05) 48%,
         transparent 66%
       ),
       radial-gradient(
         ellipse 95% 62% at 50% 60%,
-        rgba(255, 90, 170, 0.07) 0%,
-        rgba(236, 72, 153, 0.04) 40%,
+        rgba(139, 92, 246, 0.08) 0%,
+        rgba(91, 33, 182, 0.04) 40%,
         transparent 66%
       ),
       linear-gradient(
@@ -653,17 +653,16 @@
         #090810 20%,
         #0b0a12 25%,
         #0e0c16 30%,
-        #110e1a 35%,
-        #14101f 40%,
-        #171224 45%,
-        #1a142a 50%,
-        #1e1632 55%,
-        #22183a 60%,
-        #271a44 65%,
-        #2c184c 70%,
-        #301856 75%,
-        #321858 82%,
-        #321858 100%
+        #120820 35%,
+        #180c2e 40%,
+        #1e1038 45%,
+        #261448 50%,
+        #2f1858 55%,
+        #3b1c70 60%,
+        #45208a 65%,
+        #4c1d95 72%,
+        #5b21b6 82%,
+        #4c1d95 100%
       );
   }
 
@@ -1610,21 +1609,21 @@
     background:
       radial-gradient(
         ellipse 92% 74% at 82% 64%,
-        rgba(236, 72, 153, 0.14) 0%,
-        rgba(238, 70, 190, 0.07) 36%,
+        rgba(124, 58, 237, 0.16) 0%,
+        rgba(91, 33, 182, 0.08) 36%,
         transparent 66%
       ),
       radial-gradient(
         ellipse 130% 92% at 50% 40%,
-        rgba(139, 61, 255, 0.2) 0%,
-        rgba(168, 85, 247, 0.1) 30%,
-        rgba(90, 35, 170, 0.06) 46%,
+        rgba(109, 40, 217, 0.22) 0%,
+        rgba(124, 58, 237, 0.12) 30%,
+        rgba(76, 29, 149, 0.07) 46%,
         transparent 64%
       ),
       radial-gradient(
         ellipse 100% 65% at 50% 62%,
-        rgba(255, 90, 170, 0.1) 0%,
-        rgba(236, 72, 153, 0.05) 38%,
+        rgba(139, 92, 246, 0.1) 0%,
+        rgba(91, 33, 182, 0.05) 38%,
         transparent 64%
       ),
       linear-gradient(
@@ -1633,11 +1632,11 @@
         #020204 max(10vh, 6.5rem),
         #050208 max(18vh, 12rem),
         #0b0413 max(24vh, 15.5rem),
-        #120720 max(30vh, 19rem),
-        #28124a max(36vh, 22.5rem),
-        #351862 max(42vh, 26rem),
-        #3d1a70 max(48vh, 30rem),
-        #321858 100%
+        #140824 max(30vh, 19rem),
+        #2d1260 max(36vh, 22.5rem),
+        #4c1d95 max(42vh, 26rem),
+        #5b21b6 max(48vh, 30rem),
+        #4c1d95 100%
       );
   }
 
