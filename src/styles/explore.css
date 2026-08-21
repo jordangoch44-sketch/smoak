@@ -214,32 +214,57 @@
   }
 }
 
-/* Search shell — elevated glass, highest emphasis */
+/* Search shell — SMOAC Color rim (matches marketplace search) */
 .explore-search-shell {
   position: relative;
   width: 100%;
   max-width: 44rem;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(18, 16, 28, 0.72);
+  border: none;
+  background: rgba(22, 22, 28, 0.92);
   backdrop-filter: blur(36px) saturate(1.28);
   -webkit-backdrop-filter: blur(36px) saturate(1.28);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--smoac-color-glow),
     0 8px 28px rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+  overflow: hidden;
   transition:
-    border-color 0.22s ease,
     box-shadow 0.22s ease,
     background-color 0.22s ease;
 }
 
+.explore-search-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--smoac-color);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.explore-search-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
 .explore-search-shell:focus-within {
-  border-color: rgba(var(--aurora-lavender-rgb), 0.45);
-  background: rgba(24, 20, 38, 0.82);
+  background: rgba(26, 26, 32, 0.96);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 24px rgba(var(--aurora-lavender-rgb), 0.18),
+    var(--smoac-color-glow-strong),
     0 10px 32px rgba(0, 0, 0, 0.4);
+}
+
+.explore-search-shell:focus-within::before {
+  padding: 1.75px;
+  background: var(--smoac-color-bright);
 }
 
 .explore-search-shell__field {

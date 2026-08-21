@@ -159,8 +159,8 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 9999px;
-  background: var(--aurora-gradient, linear-gradient(135deg, #7c3aed, #a855f7));
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.55);
+  background: var(--smoac-color);
+  box-shadow: 0 0 10px rgba(var(--smoac-color-violet-rgb), 0.55);
 }
 
 .profile-hub__actions {
@@ -182,7 +182,7 @@
   padding: 0 1.5rem;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.22);
-  background: var(--aurora-gradient, linear-gradient(135deg, #7c3aed, #a855f7, #6366f1));
+  background: var(--smoac-color);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
@@ -191,7 +191,7 @@
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     0 10px 28px rgba(0, 0, 0, 0.35),
-    0 0 28px rgba(139, 92, 246, 0.4);
+    var(--smoac-color-glow-strong);
   transition:
     transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.22s ease,

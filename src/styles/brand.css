@@ -140,3 +140,8 @@
 .smoac-color-rim--bright::before {
   background: var(--smoac-color-bright);
 }
+
+.smoac-color-focus:focus-visible {
+  outline: none;
+  box-shadow: var(--smoac-color-focus-ring);
+}

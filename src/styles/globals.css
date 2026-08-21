@@ -108,6 +108,11 @@
     0 0 22px rgba(var(--smoac-color-warm-rgb), 0.22),
     0 0 34px rgba(var(--smoac-color-violet-rgb), 0.28),
     0 0 40px rgba(var(--smoac-color-cool-rgb), 0.16);
+  --smoac-color-focus-ring:
+    0 0 0 2px rgba(0, 0, 0, 0.85),
+    0 0 0 4px rgba(var(--smoac-color-violet-rgb), 0.55),
+    0 0 16px rgba(var(--smoac-color-warm-rgb), 0.2),
+    0 0 22px rgba(var(--smoac-color-cool-rgb), 0.16);
 
   /* New work: prefer --smoac-color. Alias keeps older gradient call sites in sync. */
   --aurora-gradient: var(--smoac-color);
