@@ -16,14 +16,26 @@
   pointer-events: auto;
   background:
     radial-gradient(
+      ellipse 78% 70% at 92% 28%,
+      rgba(172, 97, 137, 0.42) 0%,
+      rgba(140, 72, 130, 0.16) 36%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 82% 72% at 8% 26%,
+      rgba(136, 104, 194, 0.4) 0%,
+      rgba(110, 78, 161, 0.16) 40%,
+      transparent 70%
+    ),
+    radial-gradient(
       ellipse 100% 70% at 50% 18%,
-      rgba(var(--aurora-violet-rgb), 0.34) 0%,
-      rgba(var(--aurora-indigo-rgb), 0.18) 38%,
+      rgba(var(--smoac-color-violet-rgb), 0.28) 0%,
+      rgba(var(--aurora-indigo-rgb), 0.16) 38%,
       transparent 68%
     ),
     radial-gradient(
       ellipse 80% 50% at 80% 70%,
-      rgba(var(--aurora-magenta-rgb), 0.14) 0%,
+      rgba(var(--smoac-color-cool-rgb), 0.1) 0%,
       transparent 55%
     ),
     #0a0910;
@@ -53,50 +65,87 @@
   min-width: 0;
 }
 
+/* SMOAC Color pill — matches marketplace / Explore search */
 .explore-search-overlay__field {
   position: relative;
   display: flex;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: none;
   border-radius: 9999px;
-  background: rgba(18, 16, 28, 0.92);
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+  background: rgba(22, 22, 28, 0.94);
+  backdrop-filter: blur(20px) saturate(1.15);
+  -webkit-backdrop-filter: blur(20px) saturate(1.15);
   box-shadow:
-    0 8px 28px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    var(--smoac-color-glow),
+    0 8px 28px rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.explore-search-overlay__field::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--smoac-color);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.explore-search-overlay__field:focus-within {
+  background: rgba(26, 26, 32, 0.96);
+  box-shadow:
+    var(--smoac-color-glow-strong),
+    0 10px 28px rgba(0, 0, 0, 0.4);
+}
+
+.explore-search-overlay__field:focus-within::before {
+  padding: 1.75px;
+  background: var(--smoac-color-bright);
 }
 
 .explore-search-overlay__search-icon {
   position: absolute;
   left: 1rem;
+  z-index: 1;
   width: 1.15rem;
   height: 1.15rem;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(170, 170, 180, 0.92);
   pointer-events: none;
 }
 
 .explore-search-overlay__input {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-height: 3.25rem;
   border: none;
   border-radius: 9999px;
   background: transparent;
   padding: 0.8rem 2.75rem 0.8rem 2.85rem;
-  color: #fff;
+  color: rgba(235, 235, 240, 0.96);
   font-size: 1rem;
+  font-weight: 500;
   line-height: 1.35;
   outline: none;
 }
 
 .explore-search-overlay__input::placeholder {
-  color: rgba(255, 255, 255, 0.38);
+  color: rgba(160, 160, 170, 0.88);
+  font-weight: 500;
 }
 
 .explore-search-overlay__clear {
   position: absolute;
   right: 0.5rem;
   top: 50%;
+  z-index: 1;
   display: inline-flex;
   width: 2rem;
   height: 2rem;
@@ -106,10 +155,15 @@
   border: none;
   border-radius: 9999px;
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(200, 200, 210, 0.85);
   font-size: 1.15rem;
   line-height: 1;
   cursor: pointer;
+}
+
+.explore-search-overlay__clear:active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .explore-search-overlay__body {
@@ -133,17 +187,30 @@
   width: 100%;
   align-items: center;
   gap: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid transparent;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.05);
+  background:
+    linear-gradient(
+      155deg,
+      rgba(28, 26, 36, 0.96) 0%,
+      rgba(18, 16, 26, 0.94) 100%
+    )
+      padding-box,
+    var(--smoac-color) border-box;
   padding: 0.85rem 0.95rem;
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
+  box-shadow: 0 0 16px rgba(var(--smoac-color-violet-rgb), 0.1);
 }
 
 .explore-search-overlay__location-btn:disabled {
   opacity: 0.72;
+}
+
+.explore-search-overlay__location-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--smoac-color-focus-ring);
 }
 
 .explore-search-overlay__location-icon {
@@ -154,8 +221,9 @@
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: rgba(155, 92, 255, 0.22);
-  color: #d7b8ff;
+  background: var(--smoac-color);
+  color: #fff;
+  box-shadow: var(--smoac-color-glow);
 }
 
 .explore-search-overlay__location-copy {
@@ -218,26 +286,53 @@
   flex: 0 0 auto;
   scroll-snap-align: start;
   min-height: 2.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid transparent;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(
+      155deg,
+      rgba(28, 26, 36, 0.96) 0%,
+      rgba(18, 16, 26, 0.94) 100%
+    )
+      padding-box,
+    var(--smoac-color) border-box;
   padding: 0.5rem 0.95rem;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.94);
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
   cursor: pointer;
   touch-action: manipulation;
+  box-shadow: 0 0 12px rgba(var(--smoac-color-violet-rgb), 0.08);
 }
 
 .explore-search-overlay__chip:active {
-  background: rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(
+      155deg,
+      rgba(36, 32, 48, 0.98) 0%,
+      rgba(24, 20, 34, 0.96) 100%
+    )
+      padding-box,
+    var(--smoac-color-bright) border-box;
+  box-shadow: var(--smoac-color-glow);
+}
+
+.explore-search-overlay__chip:focus-visible {
+  outline: none;
+  box-shadow: var(--smoac-color-focus-ring);
 }
 
 .explore-search-overlay__chip--goal {
-  border-color: rgba(var(--aurora-lavender-rgb), 0.28);
-  background: rgba(var(--aurora-violet-rgb), 0.16);
+  background:
+    linear-gradient(
+      155deg,
+      rgba(32, 24, 44, 0.96) 0%,
+      rgba(22, 16, 34, 0.94) 100%
+    )
+      padding-box,
+    var(--smoac-color) border-box;
 }
 
 body.explore-search-open .mobile-bottom-nav {
@@ -263,4 +358,9 @@ body.explore-search-open .mobile-bottom-nav {
 
 .explore-search-cancel:active {
   color: #fff;
+}
+
+.explore-search-cancel:focus-visible {
+  outline: none;
+  box-shadow: var(--smoac-color-focus-ring);
 }
