@@ -8,12 +8,8 @@
   --aurora-purple-deep: #4c1d95;
   --aurora-purple-soft: #c4b5fd;
   --aurora-indigo-accent: #6366f1;
-  --aurora-gradient: linear-gradient(
-    135deg,
-    #7c3aed 0%,
-    #a855f7 50%,
-    #6366f1 100%
-  );
+  /* Prefer SMOAC Color spectrum for gradients */
+  --aurora-gradient: var(--smoac-color);
   --aurora-glow: 0 0 24px rgba(139, 92, 246, 0.2);
   --toolbar-surface: rgba(12, 10, 18, 0.88);
   --toolbar-border: rgba(168, 85, 247, 0.3);
