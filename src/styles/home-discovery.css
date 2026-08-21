@@ -28,9 +28,9 @@
   z-index: 1;
 }
 
-/* ── Marketplace canvas: black hero → deep violet (search-bar colorway) ── */
+/* ── Marketplace canvas: black hero → soft violet/mauve mesh (iOS search colorway) ── */
 .home-page--discovery {
-  background-color: #4c1d95;
+  background-color: #3d2468;
 }
 
 .home-page--discovery::before {
@@ -40,42 +40,52 @@
   z-index: 0;
   pointer-events: none;
   background:
+    /* Top-right dusty rose / mauve */
     radial-gradient(
-      ellipse 88% 72% at 78% 62%,
-      rgba(124, 58, 237, 0.16) 0%,
-      rgba(91, 33, 182, 0.08) 38%,
+      ellipse 78% 70% at 92% 38%,
+      rgba(172, 97, 137, 0.55) 0%,
+      rgba(140, 72, 130, 0.22) 36%,
       transparent 68%
     ),
+    /* Top-left lavender-violet */
     radial-gradient(
-      ellipse 82% 68% at 18% 74%,
-      rgba(168, 85, 247, 0.12) 0%,
-      rgba(76, 29, 149, 0.06) 42%,
+      ellipse 82% 72% at 8% 36%,
+      rgba(136, 104, 194, 0.5) 0%,
+      rgba(110, 78, 161, 0.22) 40%,
       transparent 70%
     ),
+    /* Bottom-left deep indigo */
     radial-gradient(
-      ellipse 120% 88% at 50% 42%,
-      rgba(109, 40, 217, 0.22) 0%,
-      rgba(124, 58, 237, 0.12) 32%,
-      rgba(76, 29, 149, 0.07) 48%,
-      transparent 68%
+      ellipse 90% 78% at 12% 78%,
+      rgba(78, 52, 140, 0.62) 0%,
+      rgba(62, 36, 110, 0.28) 42%,
+      transparent 72%
     ),
+    /* Bottom-right brighter plum */
     radial-gradient(
-      ellipse 95% 62% at 50% 58%,
-      rgba(139, 92, 246, 0.1) 0%,
-      rgba(91, 33, 182, 0.05) 40%,
-      transparent 66%
+      ellipse 88% 76% at 88% 82%,
+      rgba(124, 61, 145, 0.58) 0%,
+      rgba(98, 48, 130, 0.24) 40%,
+      transparent 70%
+    ),
+    /* Soft center bloom */
+    radial-gradient(
+      ellipse 110% 80% at 50% 55%,
+      rgba(108, 78, 168, 0.42) 0%,
+      rgba(72, 48, 120, 0.18) 46%,
+      transparent 74%
     ),
     linear-gradient(
       to bottom,
       #020204 0%,
       #020204 max(11vh, 7rem),
-      #050208 max(20vh, 13.5rem),
-      #0b0413 max(27vh, 17.5rem),
-      #140824 max(33vh, 21.5rem),
-      #2d1260 max(39vh, 25.5rem),
-      #4c1d95 max(45vh, 29.5rem),
-      #5b21b6 max(52vh, 34rem),
-      #4c1d95 100%
+      #050208 max(18vh, 12rem),
+      #0a0614 max(24vh, 15.5rem),
+      #16102a max(30vh, 19rem),
+      #271848 max(36vh, 22.5rem),
+      #352258 max(42vh, 26rem),
+      #3d2468 max(50vh, 32rem),
+      #3d2468 100%
     );
 }
 
@@ -508,41 +518,46 @@
   .home-page--discovery::before {
     background:
       radial-gradient(
-        ellipse 88% 72% at 78% 62%,
-        rgba(124, 58, 237, 0.16) 0%,
-        rgba(91, 33, 182, 0.08) 38%,
+        ellipse 78% 70% at 92% 38%,
+        rgba(172, 97, 137, 0.55) 0%,
+        rgba(140, 72, 130, 0.22) 36%,
         transparent 68%
       ),
       radial-gradient(
-        ellipse 82% 68% at 18% 74%,
-        rgba(168, 85, 247, 0.12) 0%,
-        rgba(76, 29, 149, 0.06) 42%,
+        ellipse 82% 72% at 8% 36%,
+        rgba(136, 104, 194, 0.5) 0%,
+        rgba(110, 78, 161, 0.22) 40%,
         transparent 70%
       ),
       radial-gradient(
-        ellipse 115% 90% at 50% 44%,
-        rgba(109, 40, 217, 0.22) 0%,
-        rgba(124, 58, 237, 0.12) 32%,
-        rgba(76, 29, 149, 0.07) 48%,
-        transparent 66%
+        ellipse 90% 78% at 12% 78%,
+        rgba(78, 52, 140, 0.62) 0%,
+        rgba(62, 36, 110, 0.28) 42%,
+        transparent 72%
       ),
       radial-gradient(
-        ellipse 95% 62% at 50% 60%,
-        rgba(139, 92, 246, 0.1) 0%,
-        rgba(91, 33, 182, 0.05) 40%,
-        transparent 66%
+        ellipse 88% 76% at 88% 82%,
+        rgba(124, 61, 145, 0.58) 0%,
+        rgba(98, 48, 130, 0.24) 40%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 110% 80% at 50% 55%,
+        rgba(108, 78, 168, 0.42) 0%,
+        rgba(72, 48, 120, 0.18) 46%,
+        transparent 74%
       ),
       linear-gradient(
         to bottom,
         #020204 0%,
         #020204 max(13vh, 9.5rem),
         #050208 max(22vh, 15rem),
-        #0b0413 max(29vh, 19.5rem),
-        #140824 max(35vh, 23.5rem),
-        #2d1260 max(41vh, 27.5rem),
-        #4c1d95 max(47vh, 31.5rem),
-        #5b21b6 max(54vh, 36rem),
-        #4c1d95 100%
+        #0a0614 max(29vh, 19.5rem),
+        #16102a max(35vh, 23.5rem),
+        #271848 max(41vh, 27.5rem),
+        #352258 max(47vh, 31.5rem),
+        #3d2468 max(54vh, 36rem),
+        #3d2468 100%
       );
   }
 
@@ -616,33 +631,38 @@
 }
 
 @media (min-width: 1024px) {
-  /* Smoother page canvas — avoid stepped black→purple banding on compact desktop hero */
+  /* Soft violet/mauve mesh under a smooth black→color fade */
   .home-page--discovery::before {
     background:
       radial-gradient(
-        ellipse 88% 72% at 78% 62%,
-        rgba(124, 58, 237, 0.12) 0%,
-        rgba(91, 33, 182, 0.06) 38%,
+        ellipse 78% 70% at 92% 38%,
+        rgba(172, 97, 137, 0.48) 0%,
+        rgba(140, 72, 130, 0.18) 36%,
         transparent 68%
       ),
       radial-gradient(
-        ellipse 82% 68% at 18% 74%,
-        rgba(168, 85, 247, 0.1) 0%,
-        rgba(76, 29, 149, 0.05) 42%,
+        ellipse 82% 72% at 8% 36%,
+        rgba(136, 104, 194, 0.44) 0%,
+        rgba(110, 78, 161, 0.18) 40%,
         transparent 70%
       ),
       radial-gradient(
-        ellipse 115% 90% at 50% 44%,
-        rgba(109, 40, 217, 0.18) 0%,
-        rgba(124, 58, 237, 0.1) 32%,
-        rgba(76, 29, 149, 0.05) 48%,
-        transparent 66%
+        ellipse 90% 78% at 12% 78%,
+        rgba(78, 52, 140, 0.55) 0%,
+        rgba(62, 36, 110, 0.24) 42%,
+        transparent 72%
       ),
       radial-gradient(
-        ellipse 95% 62% at 50% 60%,
-        rgba(139, 92, 246, 0.08) 0%,
-        rgba(91, 33, 182, 0.04) 40%,
-        transparent 66%
+        ellipse 88% 76% at 88% 82%,
+        rgba(124, 61, 145, 0.5) 0%,
+        rgba(98, 48, 130, 0.2) 40%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 110% 80% at 50% 55%,
+        rgba(108, 78, 168, 0.36) 0%,
+        rgba(72, 48, 120, 0.14) 46%,
+        transparent 74%
       ),
       linear-gradient(
         to bottom,
@@ -654,15 +674,14 @@
         #0b0a12 25%,
         #0e0c16 30%,
         #120820 35%,
-        #180c2e 40%,
-        #1e1038 45%,
-        #261448 50%,
-        #2f1858 55%,
-        #3b1c70 60%,
-        #45208a 65%,
-        #4c1d95 72%,
-        #5b21b6 82%,
-        #4c1d95 100%
+        #18102a 40%,
+        #1e1436 45%,
+        #261848 50%,
+        #2e1c56 55%,
+        #352258 60%,
+        #3a2462 68%,
+        #3d2468 78%,
+        #3d2468 100%
       );
   }
 
@@ -1608,35 +1627,46 @@
   .home-page--discovery::before {
     background:
       radial-gradient(
-        ellipse 92% 74% at 82% 64%,
-        rgba(124, 58, 237, 0.16) 0%,
-        rgba(91, 33, 182, 0.08) 36%,
-        transparent 66%
+        ellipse 78% 70% at 92% 38%,
+        rgba(172, 97, 137, 0.58) 0%,
+        rgba(140, 72, 130, 0.24) 36%,
+        transparent 68%
       ),
       radial-gradient(
-        ellipse 130% 92% at 50% 40%,
-        rgba(109, 40, 217, 0.22) 0%,
-        rgba(124, 58, 237, 0.12) 30%,
-        rgba(76, 29, 149, 0.07) 46%,
-        transparent 64%
+        ellipse 82% 72% at 8% 36%,
+        rgba(136, 104, 194, 0.52) 0%,
+        rgba(110, 78, 161, 0.24) 40%,
+        transparent 70%
       ),
       radial-gradient(
-        ellipse 100% 65% at 50% 62%,
-        rgba(139, 92, 246, 0.1) 0%,
-        rgba(91, 33, 182, 0.05) 38%,
-        transparent 64%
+        ellipse 90% 78% at 12% 78%,
+        rgba(78, 52, 140, 0.64) 0%,
+        rgba(62, 36, 110, 0.3) 42%,
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 88% 76% at 88% 82%,
+        rgba(124, 61, 145, 0.6) 0%,
+        rgba(98, 48, 130, 0.26) 40%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 110% 80% at 50% 55%,
+        rgba(108, 78, 168, 0.44) 0%,
+        rgba(72, 48, 120, 0.2) 46%,
+        transparent 74%
       ),
       linear-gradient(
         to bottom,
         #020204 0%,
         #020204 max(10vh, 6.5rem),
         #050208 max(18vh, 12rem),
-        #0b0413 max(24vh, 15.5rem),
-        #140824 max(30vh, 19rem),
-        #2d1260 max(36vh, 22.5rem),
-        #4c1d95 max(42vh, 26rem),
-        #5b21b6 max(48vh, 30rem),
-        #4c1d95 100%
+        #0a0614 max(24vh, 15.5rem),
+        #16102a max(30vh, 19rem),
+        #271848 max(36vh, 22.5rem),
+        #352258 max(42vh, 26rem),
+        #3d2468 max(48vh, 30rem),
+        #3d2468 100%
       );
   }
 
