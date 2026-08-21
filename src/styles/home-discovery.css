@@ -309,15 +309,13 @@
   backdrop-filter: blur(20px) saturate(1.15);
   -webkit-backdrop-filter: blur(20px) saturate(1.15);
   box-shadow:
-    0 0 18px rgba(255, 107, 74, 0.18),
-    0 0 28px rgba(168, 85, 247, 0.2),
-    0 0 32px rgba(125, 211, 252, 0.12),
+    var(--smoac-color-glow),
     0 8px 24px rgba(0, 0, 0, 0.35);
   isolation: isolate;
   overflow: hidden;
 }
 
-/* Multi-color pill rim — warm left → purple → cool right */
+/* SMOAC Color rim — warm → rose → violet → indigo → cool */
 .home-hero-search__field::before {
   content: "";
   position: absolute;
@@ -325,14 +323,7 @@
   z-index: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: linear-gradient(
-    105deg,
-    #ff6b4a 0%,
-    #f472b6 28%,
-    #a855f7 52%,
-    #818cf8 78%,
-    #7dd3fc 100%
-  );
+  background: var(--smoac-color);
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -453,22 +444,13 @@
 .home-hero-search__field:focus-within {
   background: rgba(26, 26, 32, 0.96);
   box-shadow:
-    0 0 22px rgba(255, 107, 74, 0.22),
-    0 0 34px rgba(168, 85, 247, 0.28),
-    0 0 40px rgba(125, 211, 252, 0.16),
+    var(--smoac-color-glow-strong),
     0 10px 28px rgba(0, 0, 0, 0.38);
 }
 
 .home-hero-search__field:focus-within::before {
   padding: 1.75px;
-  background: linear-gradient(
-    105deg,
-    #ff7a5c 0%,
-    #f472b6 28%,
-    #c084fc 52%,
-    #93c5fd 78%,
-    #a5f3fc 100%
-  );
+  background: var(--smoac-color-bright);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -55,18 +55,12 @@
   --save-heart-rgb: 196, 71, 90;
   --save-heart-glow-rgb: 220, 88, 108;
 
-  /* Aurora mesh + brand purple system */
+  /* Aurora mesh + brand purple system (legacy solids — prefer SMOAC Color below) */
   --aurora-purple: #8b5cf6;
   --aurora-purple-bright: #a855f7;
   --aurora-purple-electric: #7c3aed;
   --aurora-purple-deep: #4c1d95;
   --aurora-purple-soft: #c4b5fd;
-  --aurora-gradient: linear-gradient(
-    135deg,
-    #7c3aed 0%,
-    #a855f7 50%,
-    #6366f1 100%
-  );
   --aurora-violet-rgb: 139, 92, 246;
   --aurora-lavender-rgb: 168, 85, 247;
   --aurora-indigo-rgb: 76, 29, 149;
@@ -74,6 +68,50 @@
   --aurora-magenta-rgb: 124, 58, 237;
   --aurora-plum-rgb: 56, 42, 72;
   --aurora-pink-rgb: 168, 85, 247;
+
+  /*
+   * SMOAC Color — primary brand spectrum (warm → rose → violet → indigo → cool).
+   * Use for rims, CTAs, fills, and glows instead of flat purple.
+   */
+  --smoac-color-warm: #ff6b4a;
+  --smoac-color-warm-rgb: 255, 107, 74;
+  --smoac-color-rose: #f472b6;
+  --smoac-color-rose-rgb: 244, 114, 182;
+  --smoac-color-violet: #a855f7;
+  --smoac-color-violet-rgb: 168, 85, 247;
+  --smoac-color-indigo: #818cf8;
+  --smoac-color-indigo-rgb: 129, 140, 248;
+  --smoac-color-cool: #7dd3fc;
+  --smoac-color-cool-rgb: 125, 211, 252;
+  --smoac-color-angle: 105deg;
+  --smoac-color: linear-gradient(
+    var(--smoac-color-angle),
+    var(--smoac-color-warm) 0%,
+    var(--smoac-color-rose) 28%,
+    var(--smoac-color-violet) 52%,
+    var(--smoac-color-indigo) 78%,
+    var(--smoac-color-cool) 100%
+  );
+  --smoac-color-bright: linear-gradient(
+    var(--smoac-color-angle),
+    #ff7a5c 0%,
+    var(--smoac-color-rose) 28%,
+    #c084fc 52%,
+    #93c5fd 78%,
+    #a5f3fc 100%
+  );
+  --smoac-color-glow:
+    0 0 18px rgba(var(--smoac-color-warm-rgb), 0.18),
+    0 0 28px rgba(var(--smoac-color-violet-rgb), 0.2),
+    0 0 32px rgba(var(--smoac-color-cool-rgb), 0.12);
+  --smoac-color-glow-strong:
+    0 0 22px rgba(var(--smoac-color-warm-rgb), 0.22),
+    0 0 34px rgba(var(--smoac-color-violet-rgb), 0.28),
+    0 0 40px rgba(var(--smoac-color-cool-rgb), 0.16);
+
+  /* New work: prefer --smoac-color. Alias keeps older gradient call sites in sync. */
+  --aurora-gradient: var(--smoac-color);
+
   /* Nebula green — category accents (deep body + neon glow) */
   --nebula-green-deep: #053526;
   --nebula-green-deep-rgb: 5, 53, 38;

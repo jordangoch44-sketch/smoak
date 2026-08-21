@@ -85,3 +85,58 @@
 .group:active .brand-logo__mark {
   transform: scale(0.98);
 }
+
+/* ── SMOAC Color utilities — multi-spectrum brand (see :root tokens) ── */
+
+.smoac-color-fill {
+  background-image: var(--smoac-color);
+}
+
+.smoac-color-text {
+  background-image: var(--smoac-color);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.smoac-color-glow {
+  box-shadow: var(--smoac-color-glow);
+}
+
+.smoac-color-glow--strong {
+  box-shadow: var(--smoac-color-glow-strong);
+}
+
+/**
+ * Gradient rim on a rounded surface — pair with a solid/dark fill on the host.
+ * Host needs: position: relative; border-radius; isolation: isolate;
+ */
+.smoac-color-rim {
+  position: relative;
+  isolation: isolate;
+}
+
+.smoac-color-rim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  padding: var(--smoac-color-rim-width, 1.5px);
+  background: var(--smoac-color);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.smoac-color-rim > * {
+  position: relative;
+  z-index: 1;
+}
+
+.smoac-color-rim--bright::before {
+  background: var(--smoac-color-bright);
+}
