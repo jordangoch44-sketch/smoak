@@ -52,5 +52,29 @@ export function getTrainerGallery(trainerId: string): TrainerMediaItem[] {
       src: `https://picsum.photos/seed/smoac-gallery-3-${trainerId}/960/600`,
       alt: "Client progress",
     },
+    {
+      id: `${trainerId}-g4`,
+      type: "image",
+      src: `https://picsum.photos/seed/smoac-gallery-4-${trainerId}/960/600`,
+      alt: "Studio detail",
+    },
+    {
+      id: `${trainerId}-g5`,
+      type: "image",
+      src: `https://picsum.photos/seed/smoac-gallery-5-${trainerId}/960/600`,
+      alt: "Movement session",
+    },
+    {
+      id: `${trainerId}-g6`,
+      type: "image",
+      src: `https://picsum.photos/seed/smoac-gallery-6-${trainerId}/960/600`,
+      alt: "Recovery work",
+    },
+    {
+      id: `${trainerId}-g7`,
+      type: "image",
+      src: `https://picsum.photos/seed/smoac-gallery-7-${trainerId}/960/600`,
+      alt: "Outdoor training",
+    },
   ];
 }

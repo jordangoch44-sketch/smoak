@@ -102,8 +102,8 @@ export function SmoacStarRating({
   }
 
   return (
-    <div className={classes} aria-label={summary}>
+    <span className={classes} aria-label={summary}>
       {body}
-    </div>
+    </span>
   );
 }
