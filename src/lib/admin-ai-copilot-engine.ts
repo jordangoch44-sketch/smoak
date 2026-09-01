@@ -1,4 +1,5 @@
 import type { AdminPlatformPulse } from "@/types/admin-platform-pulse";
+import { smoacRevenueTotalCents } from "@/types/admin-platform-pulse";
 import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
 
 export interface EngineQueryResult {
@@ -36,11 +37,13 @@ export function generateCopilotTelemetryResponse(
   const desktopPct = Math.round((devices.desktop / totalDevices) * 100);
 
   const earnings = pulse?.earnings;
-  const mrrCents = earnings?.subscriberRevenueCents ?? 0;
+  const membershipCents = earnings?.subscriberRevenueCents ?? 0;
   const adCents = earnings?.adRevenueCents ?? 0;
   const paidCount = earnings?.paidSubscriberCount ?? 0;
-  const mrrFormatted = formatBillingCents(mrrCents, { decimals: 0 });
+  const totalCents = smoacRevenueTotalCents(earnings);
+  const mrrFormatted = formatBillingCents(membershipCents, { decimals: 0 });
   const adFormatted = formatBillingCents(adCents, { decimals: 0 });
+  const totalFormatted = formatBillingCents(totalCents, { decimals: 0 });
 
   const funnel = pulse?.conversionFunnel;
   const viewToInquiryRate = funnel?.viewToInquiryRate ?? 0;
@@ -315,7 +318,7 @@ export function generateCopilotTelemetryResponse(
   reply += `- **Supply**: **${specialistsTotal} active specialists** (${pendingApps > 0 ? `${pendingApps} pending in queue` : "queue clear"}).\n`;
   reply += `- **Demand**: **${clientsTotal} registered clients**, **${uniqueVisitors.toLocaleString()} weekly visitors**.\n`;
   reply += `- **Conversions**: **${viewToInquiryRate}% view-to-inquiry rate**, **${inquiryCompletionRate}% form completion rate**.\n`;
-  reply += `- **Revenue**: **${mrrFormatted}/mo** Stripe MRR (${paidCount} paid subscribers).\n`;
+  reply += `- **Revenue**: **${totalFormatted}/mo** all SMOAC payments (${paidCount} paid subscribers).\n`;
   reply += `- **Audience**: **${mobilePct}% Mobile**, led by **${topSource}** (${topSourceShare}% share).\n`;
 
   return {

@@ -11,6 +11,14 @@ import type {
   AdminTrafficWeek,
   AdminWeeklyCount,
 } from "@/types/admin-platform-pulse";
+
+export { smoacRevenueTotalCents } from "@/types/admin-platform-pulse";
+
+const EMPTY_COLLECTED = {
+  collectedThisWeekCents: 0,
+  collectedPrevWeekCents: 0,
+  collectedWeekSeriesCents: [] as number[],
+};
 import { buildMarketplaceConversionFunnel } from "@/lib/admin-conversion-funnel-service";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -138,23 +146,43 @@ async function fetchLiveEarnings(
 ): Promise<AdminLiveEarnings | null> {
   const periodLabel = formatPeriodLabel(new Date());
 
-  /* Prefer live Stripe MRR (server-only — secret key) */
-  try {
-    const { fetchStripeMrrCents } = await import(
-      "@/lib/stripe/sync-subscription"
-    );
-    const stripeMrr = await fetchStripeMrrCents();
-    if (stripeMrr && stripeMrr.dataSource === "stripe") {
-      return {
-        paidSubscriberCount: stripeMrr.payingCount,
-        subscriberRevenueCents: stripeMrr.mrrCents,
-        adRevenueCents: 0,
-        periodLabel,
-        source: "stripe",
-      };
+  const stripeMod = await import("@/lib/stripe/sync-subscription").catch(
+    (err) => {
+      console.warn("[SMOAC admin] Stripe module load failed:", err);
+      return null;
     }
-  } catch (err) {
-    console.warn("[SMOAC admin] Stripe MRR fetch failed:", err);
+  );
+
+  const [collected, stripeMrr] = stripeMod
+    ? await Promise.all([
+        stripeMod.fetchStripeCollectedWeek().catch((err) => {
+          console.warn("[SMOAC admin] Stripe collected-week fetch failed:", err);
+          return null;
+        }),
+        stripeMod.fetchStripeMrrCents().catch((err) => {
+          console.warn("[SMOAC admin] Stripe MRR fetch failed:", err);
+          return null;
+        }),
+      ])
+    : [null, null];
+
+  const collectedFields = collected
+    ? {
+        collectedThisWeekCents: collected.thisWeekCents,
+        collectedPrevWeekCents: collected.prevWeekCents,
+        collectedWeekSeriesCents: collected.seriesCents,
+      }
+    : EMPTY_COLLECTED;
+
+  if (stripeMrr && stripeMrr.dataSource === "stripe") {
+    return {
+      paidSubscriberCount: stripeMrr.payingCount,
+      subscriberRevenueCents: stripeMrr.membershipCents,
+      adRevenueCents: stripeMrr.addonCents,
+      periodLabel,
+      source: "stripe",
+      ...collectedFields,
+    };
   }
 
   /* Fallback: specialist_billing rows synced from Stripe webhooks (not profile flags) */
@@ -171,6 +199,7 @@ async function fetchLiveEarnings(
       adRevenueCents: 0,
       periodLabel,
       source: "none",
+      ...EMPTY_COLLECTED,
     };
   }
 
@@ -213,6 +242,7 @@ async function fetchLiveEarnings(
     adRevenueCents,
     periodLabel,
     source: "billing_table",
+    ...collectedFields,
   };
 }
 

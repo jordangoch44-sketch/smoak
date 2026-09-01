@@ -330,6 +330,12 @@ export function AdminDashboardPageClient() {
               <AdminExecutiveRevenueSnapshot
                 refreshKey={specialistKey}
                 pulse={pulse}
+                canViewRevenue={permissions.canViewRevenue}
+                onOpenRevenue={
+                  permissions.canViewRevenue
+                    ? () => setActiveSection("revenue")
+                    : undefined
+                }
               />
             ) : null}
 
