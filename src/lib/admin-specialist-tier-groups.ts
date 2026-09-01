@@ -3,7 +3,12 @@ import type { AdminSpecialistRow } from "@/lib/admin-specialists-service";
 import type { SpecialistBillingRecord } from "@/types/admin-specialist-billing";
 
 /** Owner Specialists subcategory — maps to Stripe tier + add-on products later */
-export type SpecialistTierCategory = "free" | "premium" | "platinum" | "addons";
+export type SpecialistTierCategory =
+  | "free"
+  | "pro_trial"
+  | "premium"
+  | "platinum"
+  | "addons";
 
 export interface SpecialistTierCategoryMeta {
   id: SpecialistTierCategory;
@@ -22,11 +27,18 @@ export const SPECIALIST_TIER_CATEGORIES: readonly SpecialistTierCategoryMeta[] =
     description: "Free tier specialists",
   },
   {
+    id: "pro_trial",
+    label: "Pro trial",
+    tierLabel: "Complimentary",
+    priceLabel: "30 days free",
+    description: "Specialists on the complimentary 30-day Pro trial",
+  },
+  {
     id: "premium",
     label: "Pro",
-    tierLabel: "Pro",
+    tierLabel: "Paid Pro",
     priceLabel: "$9.99/month",
-    description: "Pro tier specialists",
+    description: "Paid Pro specialists",
   },
   {
     id: "platinum",
@@ -44,14 +56,27 @@ export const SPECIALIST_TIER_CATEGORIES: readonly SpecialistTierCategoryMeta[] =
   },
 ] as const;
 
+function isActiveProTrial(row: AdminSpecialistRow): boolean {
+  return Boolean(row.premiumTrialActive) && !row.isPaidPro;
+}
+
 export function specialistMatchesTierCategory(
+  row: AdminSpecialistRow,
   billing: SpecialistBillingRecord | undefined,
   category: SpecialistTierCategory
 ): boolean {
-  if (!billing) return category === "free";
   if (category === "addons") {
-    return billing.activeAddOns.length > 0 && billing.addOnMonthlyCents > 0;
+    return Boolean(
+      billing && billing.activeAddOns.length > 0 && billing.addOnMonthlyCents > 0
+    );
   }
+
+  if (isActiveProTrial(row)) {
+    return category === "pro_trial";
+  }
+
+  if (category === "pro_trial") return false;
+  if (!billing) return category === "free";
   return billing.tier === category;
 }
 
@@ -61,7 +86,7 @@ export function filterSpecialistsByTierCategory(
   category: SpecialistTierCategory
 ): AdminSpecialistRow[] {
   return specialists.filter((row) =>
-    specialistMatchesTierCategory(billingById.get(row.id), category)
+    specialistMatchesTierCategory(row, billingById.get(row.id), category)
   );
 }
 
@@ -70,11 +95,23 @@ export function countSpecialistsByTierCategory(
   billingById: ReadonlyMap<string, SpecialistBillingRecord>
 ): Record<SpecialistTierCategory, number> {
   return {
-    free: filterSpecialistsByTierCategory(specialists, billingById, "free").length,
-    premium: filterSpecialistsByTierCategory(specialists, billingById, "premium")
+    free: filterSpecialistsByTierCategory(specialists, billingById, "free")
       .length,
-    platinum: filterSpecialistsByTierCategory(specialists, billingById, "platinum")
-      .length,
+    pro_trial: filterSpecialistsByTierCategory(
+      specialists,
+      billingById,
+      "pro_trial"
+    ).length,
+    premium: filterSpecialistsByTierCategory(
+      specialists,
+      billingById,
+      "premium"
+    ).length,
+    platinum: filterSpecialistsByTierCategory(
+      specialists,
+      billingById,
+      "platinum"
+    ).length,
     addons: filterSpecialistsByTierCategory(specialists, billingById, "addons")
       .length,
   };
@@ -84,6 +121,10 @@ export function countSpecialistsByTierCategory(
 export function tierCategoryPriceLabel(category: SpecialistTierCategory): string {
   if (category === "addons") {
     return SPECIALIST_TIER_CATEGORIES.find((c) => c.id === "addons")!.priceLabel;
+  }
+  if (category === "pro_trial") {
+    return SPECIALIST_TIER_CATEGORIES.find((c) => c.id === "pro_trial")!
+      .priceLabel;
   }
   const cents = SPECIALIST_TIER_CATALOG[category].monthlyCents;
   if (cents === 0) return "$0/month";

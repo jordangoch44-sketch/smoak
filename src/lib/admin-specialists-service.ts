@@ -63,6 +63,13 @@ export interface AdminSpecialistRow {
   accountKind: "real" | "test";
   inSeedCatalog: boolean;
   profileHref: string;
+  /** Complimentary 30-day Pro trial started (ISO). */
+  premiumTrialStartedAt?: string | null;
+  premiumTrialEndsAt?: string | null;
+  premiumTrialActive?: boolean;
+  premiumTrialDaysRemaining?: number | null;
+  /** Paid Stripe Pro / Platinum (active or Stripe-trialing). */
+  isPaidPro?: boolean;
 }
 
 const EMPTY_DIRECTORY: Record<string, AdminSpecialistDirectoryEntry> =
