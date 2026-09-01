@@ -1,4 +1,3 @@
-import { trainers } from "@/data/trainers";
 import {
   getAdminSpecialistMeta,
   getAdminSpecialistMetaSnapshot,
@@ -27,7 +26,6 @@ import {
   hideTrainerId,
   unhideTrainerId,
 } from "@/lib/hidden-trainers-store";
-import { isLivePublicCatalogMode } from "@/lib/public-catalog-mode";
 import {
   applySpecialistProfileOverrides,
   loadAllSpecialistOverrides,
@@ -159,10 +157,6 @@ export async function refreshAdminSpecialistDirectoryFromRemote(): Promise<void>
   setAdminSpecialistDirectoryFromRemote(result.entries);
 }
 
-function mergeTrainerBase(base: Trainer, id: string): Trainer {
-  return applySpecialistProfileOverrides(base, loadAllSpecialistOverrides()[id]);
-}
-
 function statusToVisibility(
   status: string | undefined
 ): AdminSpecialistVisibility | null {
@@ -254,104 +248,65 @@ function resolveVisibility(
   return "active";
 }
 
-function usesLiveAdminRoster(): boolean {
-  return isLivePublicCatalogMode() || isMarketplaceSupabaseActive();
-}
-
 /**
- * Admin specialists table.
- * Live: specialist_profiles directory + pending applications (never seed).
- * Seed mode: demo trainers + local applications.
+ * Admin specialists table — live specialist_profiles directory + pending
+ * applications only. Never the public seed catalog.
  */
 export function listAdminSpecialists(): AdminSpecialistRow[] {
   const hiddenIds = getHiddenTrainersSnapshot();
   const rows: AdminSpecialistRow[] = [];
   const seen = new Set<string>();
 
-  if (usesLiveAdminRoster()) {
-    for (const [id, entry] of Object.entries(directoryById)) {
-      seen.add(id);
-      const visibility = resolveVisibility(id, hiddenIds);
-      const approved = getApprovedSpecialistProfileById(id);
-      rows.push(
-        rowFromTrainer(
-          approved ?? entry.trainer,
-          visibility,
-          false,
-          entry.email
-        )
-      );
-    }
-
-    /* Approved cache may be ahead of directory briefly after approve */
-    for (const [id, trainer] of Object.entries(
-      getApprovedSpecialistProfilesSnapshot()
-    )) {
-      if (seen.has(id)) continue;
-      seen.add(id);
-      rows.push(
-        rowFromTrainer(
-          trainer,
-          resolveVisibility(id, hiddenIds),
-          false,
-          directoryById[id]?.email
-        )
-      );
-    }
-
-    for (const app of listSpecialistApplications()) {
-      /* Only pending apps appear here — approved live as profiles; rejected/archived are gone. */
-      if (app.profileStatus !== "PENDING_APPROVAL") continue;
-      if (seen.has(app.id)) continue;
-      seen.add(app.id);
-      const visibility = resolveVisibility(app.id, hiddenIds);
-      const fromApp = applicationAsTrainerRow(app.id, visibility);
-      if (fromApp) rows.push(fromApp);
-    }
-
-    /* Meta-only stubs (ops flags) without a profile row yet */
-    for (const id of Object.keys(getAdminSpecialistMetaSnapshot())) {
-      if (seen.has(id)) continue;
-      const fromApp = applicationAsTrainerRow(
-        id,
-        resolveVisibility(id, hiddenIds)
-      );
-      if (fromApp) {
-        seen.add(id);
-        rows.push(fromApp);
-      }
-    }
-
-    return rows.sort((a, b) => a.name.localeCompare(b.name));
+  for (const [id, entry] of Object.entries(directoryById)) {
+    seen.add(id);
+    const visibility = resolveVisibility(id, hiddenIds);
+    const approved = getApprovedSpecialistProfileById(id);
+    rows.push(
+      rowFromTrainer(
+        approved ?? entry.trainer,
+        visibility,
+        false,
+        entry.email
+      )
+    );
   }
 
-  const ids = new Set<string>(trainers.map((t) => t.id));
-  listSpecialistApplications().forEach((a) => ids.add(a.id));
+  /* Approved cache may be ahead of directory briefly after approve */
+  for (const [id, trainer] of Object.entries(
+    getApprovedSpecialistProfilesSnapshot()
+  )) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    rows.push(
+      rowFromTrainer(
+        trainer,
+        resolveVisibility(id, hiddenIds),
+        false,
+        directoryById[id]?.email
+      )
+    );
+  }
 
-  for (const id of ids) {
-    const visibility = resolveVisibility(id, hiddenIds);
-    const seed = trainers.find((t) => t.id === id);
+  for (const app of listSpecialistApplications()) {
+    /* Only pending apps appear here — approved live as profiles; rejected/archived are gone. */
+    if (app.profileStatus !== "PENDING_APPROVAL") continue;
+    if (seen.has(app.id)) continue;
+    seen.add(app.id);
+    const visibility = resolveVisibility(app.id, hiddenIds);
+    const fromApp = applicationAsTrainerRow(app.id, visibility);
+    if (fromApp) rows.push(fromApp);
+  }
 
-    if (seed) {
-      const merged = mergeTrainerBase(seed, id);
-      const approved = getApprovedSpecialistProfileById(id);
-      rows.push(
-        rowFromTrainer(
-          {
-            ...merged,
-            featured: approved?.featured ?? merged.featured,
-            sponsored: approved?.sponsored ?? merged.sponsored,
-            topRanked: approved?.topRanked ?? false,
-            isPremium: approved?.isPremium ?? false,
-          },
-          visibility,
-          true,
-          directoryById[id]?.email
-        )
-      );
-    } else {
-      const fromApp = applicationAsTrainerRow(id, visibility);
-      if (fromApp) rows.push(fromApp);
+  /* Meta-only stubs (ops flags) without a profile row yet */
+  for (const id of Object.keys(getAdminSpecialistMetaSnapshot())) {
+    if (seen.has(id)) continue;
+    const fromApp = applicationAsTrainerRow(
+      id,
+      resolveVisibility(id, hiddenIds)
+    );
+    if (fromApp) {
+      seen.add(id);
+      rows.push(fromApp);
     }
   }
 

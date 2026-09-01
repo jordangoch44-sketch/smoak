@@ -1,6 +1,6 @@
 # Admin & billing — backend map
 
-Live paths prefer Stripe settlement + Supabase. Control never invents demo traffic or catalog-flag revenue.
+Live Control reads use a Supabase **admin cookie session**, then a **service-role** client for `site_visits` / `specialist_billing` so RLS cannot hide platform totals. Stripe MRR uses `STRIPE_SECRET_KEY`.
 
 ## Live today
 
@@ -15,10 +15,7 @@ Live paths prefer Stripe settlement + Supabase. Control never invents demo traff
 
 ## Local-only when marketplace Supabase is off
 
-| Domain | Current module |
-|--------|----------------|
-| Applications seed merge | `admin-applications-seed.ts` — skipped when `isMarketplaceSupabaseActive()` |
-| Permissions | `admin-permissions.ts` |
+Control does not inject demo applications or seed trainers. Sign in with a real admin account so pulse and revenue APIs can run.
 
 ## Single entry points (keep)
 
