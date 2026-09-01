@@ -242,6 +242,29 @@ function ReviewModalForm({
             onFocus={scrollActionsIntoView}
             onChange={(event) => setText(event.target.value)}
           />
+
+          <div className="review-modal__actions" ref={actionsRef}>
+            <button
+              type="button"
+              className="smoac-control review-modal__submit review-modal__submit--primary"
+              disabled={!canSubmit}
+              onClick={() => void handleSubmit()}
+            >
+              {submitting ? "Submitting…" : "Submit Review"}
+            </button>
+            <button
+              type="button"
+              className="smoac-control review-modal__cancel"
+              disabled={submitting}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+          </div>
+          {submitHint ? (
+            <p className="review-modal__submit-hint">{submitHint}</p>
+          ) : null}
+
           <div className="review-modal__count-row">
             <span className="review-modal__hint">
               SMOAC Client Review · Submitted by a signed-in SMOAC client
@@ -259,28 +282,6 @@ function ReviewModalForm({
           </div>
 
           {error ? <p className="review-modal__error">{error}</p> : null}
-
-          <div className="review-modal__actions" ref={actionsRef}>
-            <button
-              type="button"
-              className="smoac-control review-modal__cancel"
-              disabled={submitting}
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="smoac-control review-modal__submit"
-              disabled={!canSubmit}
-              onClick={() => void handleSubmit()}
-            >
-              {submitting ? "Submitting…" : "Submit Review"}
-            </button>
-          </div>
-          {submitHint ? (
-            <p className="review-modal__submit-hint">{submitHint}</p>
-          ) : null}
         </div>
       </div>
     </div>
