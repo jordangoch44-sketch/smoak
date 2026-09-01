@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { DashboardSection } from "@/components/dashboard";
 import { AdminCollapsible } from "@/components/admin/AdminCollapsible";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
@@ -14,6 +14,12 @@ import {
   type SpecialistTierCategory,
 } from "@/lib/admin-specialist-tier-groups";
 import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
+import {
+  computeProTrialConversion,
+  entitlementToTrialFields,
+  formatProTrialDaysLabel,
+  type AdminSpecialistEntitlement,
+} from "@/lib/admin-specialist-trial-service";
 import type { AdminSpecialistRow } from "@/hooks/useAdminDashboard";
 import type { AdminSpecialistVisibility } from "@/types/admin";
 import type { AdminPermissions } from "@/types/admin-permissions";
@@ -123,7 +129,7 @@ function SpecialistCard({
               .filter(Boolean)
               .join(" · ") || "—"}
           </p>
-          {showBilling && billing ? (
+          {showBilling && billing && !row.premiumTrialActive ? (
             <p className="admin-entity-card__sub admin-entity-card__sub--billing">
               {billing.tierLabel} ·{" "}
               {formatBillingCents(billing.totalMonthlyCents, { decimals: 0 })}
@@ -133,6 +139,10 @@ function SpecialistCard({
                     billing.activeAddOns.length === 1 ? "" : "s"
                   }`
                 : ""}
+            </p>
+          ) : row.premiumTrialActive ? (
+            <p className="admin-entity-card__sub admin-entity-card__sub--billing">
+              {formatProTrialDaysLabel(row.premiumTrialDaysRemaining ?? null)}
             </p>
           ) : locationLine ? (
             <p className="admin-entity-card__sub">{locationLine}</p>
@@ -182,7 +192,11 @@ function SpecialistCard({
             {row.topRanked ? (
               <span className="admin-chip">Top ranked</span>
             ) : null}
-            {row.isPremium ? <span className="admin-chip">Pro</span> : null}
+            {row.premiumTrialActive ? (
+              <span className="admin-chip">Pro trial</span>
+            ) : row.isPremium ? (
+              <span className="admin-chip">Pro</span>
+            ) : null}
             {row.isProtected || row.accountKind === "real" ? (
               <span className="admin-chip">Real / protected</span>
             ) : null}
@@ -400,21 +414,62 @@ export function AdminSpecialistsPanel({
   const [activeCategory, setActiveCategory] =
     useState<SpecialistTierCategory>("free");
   const [search, setSearch] = useState("");
+  const [entitlementsById, setEntitlementsById] = useState<
+    Record<string, AdminSpecialistEntitlement>
+  >({});
+
+  useEffect(() => {
+    if (!showTierBilling) return;
+    let cancelled = false;
+    void fetch("/api/admin/specialist-entitlements", {
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then(
+        (body: {
+          ok?: boolean;
+          byProfileId?: Record<string, AdminSpecialistEntitlement>;
+        }) => {
+          if (cancelled || !body?.ok || !body.byProfileId) return;
+          setEntitlementsById(body.byProfileId);
+        }
+      )
+      .catch(() => {
+        if (!cancelled) setEntitlementsById({});
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [showTierBilling, specialists.length]);
+
+  const roster = useMemo(
+    () =>
+      specialists.map((row) => ({
+        ...row,
+        ...entitlementToTrialFields(entitlementsById[row.id]),
+      })),
+    [specialists, entitlementsById]
+  );
+
+  const trialConversion = useMemo(
+    () => computeProTrialConversion(roster),
+    [roster]
+  );
 
   const tierCounts = useMemo(() => {
     if (!billingById) return null;
-    return countSpecialistsByTierCategory(specialists, billingById);
-  }, [specialists, billingById]);
+    return countSpecialistsByTierCategory(roster, billingById);
+  }, [roster, billingById]);
 
   const filteredSpecialists = useMemo(() => {
     const byTier =
       showTierBilling && billingById
         ? filterSpecialistsByTierCategory(
-            specialists,
+            roster,
             billingById,
             activeCategory
           )
-        : specialists;
+        : roster;
 
     const query = search.trim().toLowerCase();
     if (!query) return byTier;
@@ -430,7 +485,7 @@ export function AdminSpecialistsPanel({
       );
     });
   }, [
-    specialists,
+    roster,
     billingById,
     showTierBilling,
     activeCategory,
@@ -453,12 +508,13 @@ export function AdminSpecialistsPanel({
       {showTierBilling && tierCounts ? (
         <>
           <p className="admin-status-note">
-            Entitlement projection from placement flags. Stripe settlement is on
-            Revenue when connected.
+            Paid Pro and add-on dollars are Stripe-settled. Pro trial is the
+            complimentary 30-day window — it is not counted as paid Pro.
           </p>
           <AdminSpecialistsTierNav
             activeCategory={activeCategory}
             counts={tierCounts}
+            trialConversion={trialConversion}
             onSelect={setActiveCategory}
           />
           <p className="admin-tier-section__summary">
@@ -467,6 +523,10 @@ export function AdminSpecialistsPanel({
               {filteredSpecialists.length} specialist
               {filteredSpecialists.length === 1 ? "" : "s"}
               {search.trim() ? " matching" : ""}
+              {activeCategory === "pro_trial" &&
+              trialConversion.startedCount > 0
+                ? ` · ${trialConversion.convertedCount} of ${trialConversion.startedCount} trials converted to paid Pro (${trialConversion.conversionPercent ?? 0}%)`
+                : ""}
             </span>
           </p>
         </>
@@ -534,32 +594,45 @@ export function AdminSpecialistsPanel({
               <tbody>
                 {filteredSpecialists.map((row) => {
                   const billing = billingById?.get(row.id);
-                  if (!billing) return null;
+                  if (!billing && !row.premiumTrialActive) return null;
+                  const onTrial = Boolean(row.premiumTrialActive);
                   return (
                     <tr key={`billing-${row.id}`}>
-                      <td>{row.name}</td>
-                      <td>{billing.tierLabel}</td>
                       <td>
-                        {formatBillingCents(billing.tierMonthlyCents, {
-                          decimals: 2,
-                        })}
+                        {row.name}
+                        {onTrial ? (
+                          <div className="admin-card__meta">
+                            {formatProTrialDaysLabel(
+                              row.premiumTrialDaysRemaining ?? null
+                            )}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td>{onTrial ? "Pro trial" : billing?.tierLabel ?? "—"}</td>
+                      <td>
+                        {onTrial
+                          ? "$0.00"
+                          : formatBillingCents(billing?.tierMonthlyCents ?? 0, {
+                              decimals: 2,
+                            })}
                       </td>
                       <td>
-                        {billing.activeAddOns.length > 0
+                        {billing && billing.activeAddOns.length > 0
                           ? billing.activeAddOns.map((a) => a.label).join(", ")
                           : "—"}
                       </td>
                       <td>
-                        {billing.addOnMonthlyCents > 0
+                        {billing && billing.addOnMonthlyCents > 0
                           ? formatBillingCents(billing.addOnMonthlyCents, {
                               decimals: 0,
                             })
                           : "—"}
                       </td>
                       <td className="admin-table__money">
-                        {formatBillingCents(billing.totalMonthlyCents, {
-                          decimals: 2,
-                        })}
+                        {formatBillingCents(
+                          onTrial ? billing?.addOnMonthlyCents ?? 0 : billing?.totalMonthlyCents ?? 0,
+                          { decimals: 2 }
+                        )}
                       </td>
                     </tr>
                   );

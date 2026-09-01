@@ -8,14 +8,18 @@ import { useBlockingModalOpen } from "@/hooks/useBlockingModalOpen";
 import type {
   AdminPlatformPulse,
   AdminTrafficWeek,
+  AdminTrafficWindowId,
   AdminWeeklyCount,
 } from "@/types/admin-platform-pulse";
+import { smoacRevenueTotalCents } from "@/types/admin-platform-pulse";
 import { cn } from "@/lib/utils";
 
 interface AdminExecutiveRevenueSnapshotProps {
   /** Bump pulse refresh when specialists change in-session */
   refreshKey?: string | number;
   pulse?: AdminPlatformPulse | null;
+  canViewRevenue?: boolean;
+  onOpenRevenue?: () => void;
 }
 
 const SOURCE_COLORS = [
@@ -43,9 +47,9 @@ function clientWeeklyChangeLabel(count: AdminWeeklyCount): string {
 }
 
 function trafficChangeLabel(percent: number | null): string {
-  if (percent == null) return "↗ 77.0% vs. prior week";
+  if (percent == null) return "No prior window";
   const sign = percent >= 0 ? "+" : "";
-  return `↗ ${sign}${percent.toFixed(1)}% vs. prior week`;
+  return `${sign}${percent.toFixed(1)}% vs. prior window`;
 }
 
 function earningsSourceLabel(
@@ -60,13 +64,14 @@ function earningsSourceLabel(
  * Generates smooth cubic bezier SVG area and line path from numeric points.
  */
 function generateSmoothWavePaths(points: number[], width = 700, height = 150, paddingBottom = 15, paddingTop = 20) {
-  const min = Math.min(...points);
-  const max = Math.max(...points);
+  const series = points.length >= 2 ? points : [0, 0];
+  const min = Math.min(...series);
+  const max = Math.max(...series);
   const range = max - min || 1;
   const usableHeight = height - paddingTop - paddingBottom;
 
-  const coords = points.map((val, idx) => {
-    const x = (idx / (points.length - 1)) * width;
+  const coords = series.map((val, idx) => {
+    const x = (idx / (series.length - 1)) * width;
     const normalized = (val - min) / range;
     const y = height - paddingBottom - normalized * usableHeight;
     return { x: Number(x.toFixed(1)), y: Number(y.toFixed(1)) };
@@ -86,6 +91,84 @@ function generateSmoothWavePaths(points: number[], width = 700, height = 150, pa
   const areaPath = `${linePath} L ${width} ${height} L 0 ${height} Z`;
 
   return { linePath, areaPath, coords };
+}
+
+function OverviewWaveChart({
+  points,
+  tone,
+}: {
+  points: number[];
+  tone: "purple" | "emerald";
+}) {
+  const reactId = useId().replace(/:/g, "");
+  const { linePath, areaPath, coords } = useMemo(
+    () => generateSmoothWavePaths(points, 700, 160, 20, 25),
+    [points]
+  );
+  const areaId = `${reactId}-area`;
+  const lineId = `${reactId}-line`;
+  const glowId = `${reactId}-glow`;
+  const lineStart = tone === "emerald" ? "#34D399" : "#A855F7";
+  const lineEnd = tone === "emerald" ? "#10B981" : "#8B5CF6";
+  const fill = tone === "emerald" ? "#10B981" : "#8B5CF6";
+
+  return (
+    <div className="admin-exec-chart-card__canvas-wrap">
+      <svg
+        className="admin-exec-chart-card__svg"
+        viewBox="0 0 700 160"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={fill} stopOpacity="0.4" />
+            <stop offset="50%" stopColor={fill} stopOpacity="0.12" />
+            <stop offset="100%" stopColor={fill} stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id={lineId} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={lineStart} />
+            <stop offset="100%" stopColor={lineEnd} />
+          </linearGradient>
+          <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow
+              dx="0"
+              dy="4"
+              stdDeviation="6"
+              floodColor={fill}
+              floodOpacity="0.45"
+            />
+          </filter>
+        </defs>
+        <line x1="0" y1="40" x2="700" y2="40" stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
+        <line x1="0" y1="90" x2="700" y2="90" stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
+        <line x1="0" y1="140" x2="700" y2="140" stroke="rgba(255,255,255,0.04)" />
+        <path d={areaPath} fill={`url(#${areaId})`} />
+        <path
+          d={linePath}
+          fill="none"
+          stroke={`url(#${lineId})`}
+          strokeWidth="3.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter={`url(#${glowId})`}
+        />
+        {coords.map((pt, i) => (
+          <g key={i} className="admin-exec-chart-point">
+            <circle
+              cx={pt.x}
+              cy={pt.y}
+              r="4"
+              fill={fill}
+              stroke="#FFFFFF"
+              strokeWidth="2"
+              className="admin-exec-chart-point__circle"
+            />
+          </g>
+        ))}
+      </svg>
+    </div>
+  );
 }
 
 function TrafficDeepPanel({
@@ -294,11 +377,13 @@ function TrafficDeepPanel({
 export function AdminExecutiveRevenueSnapshot({
   refreshKey,
   pulse: pulseProp,
+  canViewRevenue = false,
+  onOpenRevenue,
 }: AdminExecutiveRevenueSnapshotProps) {
   const [internalPulse, setInternalPulse] = useState<AdminPlatformPulse | null>(null);
   const [specialistBump, setSpecialistBump] = useState(false);
   const [trafficOpen, setTrafficOpen] = useState(false);
-  const [timeframe, setTimeframe] = useState<"7d" | "14d" | "30d">("7d");
+  const [timeframe, setTimeframe] = useState<AdminTrafficWindowId>("7d");
   const previousSpecialistTotal = useRef<number | null>(null);
 
   useEffect(() => {
@@ -331,68 +416,82 @@ export function AdminExecutiveRevenueSnapshot({
   const live = pulse?.dataSource === "live" ? pulse : null;
   const traffic = live?.traffic ?? null;
   const earnings = live?.earnings ?? null;
+  const windowStats = traffic?.windows?.[timeframe] ?? (timeframe === "7d" ? traffic : null);
 
-  // Values with graceful fallbacks
-  const specialistCount = live ? live.specialists.total : 2;
+  const specialistCount = live ? live.specialists.total : 0;
   const specialistSub = live
     ? weeklyChangeLabel(live.specialists)
-    : "+0 this week / 0.0%";
+    : "Waiting for live telemetry";
 
-  const clientCount = live ? live.clients.total : 2;
+  const clientCount = live ? live.clients.total : 0;
   const clientSub = live
     ? clientWeeklyChangeLabel(live.clients)
-    : "+2 this week";
+    : "Waiting for live telemetry";
 
-  const pendingCount = live ? live.pendingApplications : 1;
+  const pendingCount = live ? live.pendingApplications : 0;
 
-  const viewsCount = traffic && traffic.views > 0 ? traffic.views : 639;
-  const uniqueCount = traffic && traffic.uniqueVisitors > 0 ? traffic.uniqueVisitors : 47;
-  const viewsDeltaLabel =
-    traffic && traffic.viewsPercentChange != null
-      ? trafficChangeLabel(traffic.viewsPercentChange)
-      : "↗ 77.0% vs. prior week";
+  const viewsCount = windowStats?.views ?? 0;
+  const uniqueCount = windowStats?.uniqueVisitors ?? 0;
+  const viewsDeltaLabel = windowStats
+    ? trafficChangeLabel(windowStats.viewsPercentChange)
+    : live
+      ? "No visit data"
+      : "Waiting for live telemetry";
 
-  const stripeMrrFormatted = earnings
-    ? formatBillingCents(earnings.subscriberRevenueCents, { decimals: 0 })
-    : "$0";
+  const stripeMrrFormatted = formatBillingCents(
+    earnings?.subscriberRevenueCents ?? 0,
+    { decimals: 0 }
+  );
 
   const stripeMrrSubtitle = earnings
-    ? `${earnings.paidSubscriberCount} paying customers / ${earningsSourceLabel(earnings.source)}`
-    : "0 paying customers / Stripe live MRR";
+    ? `${earnings.paidSubscriberCount} paying · Pro & Platinum / ${earningsSourceLabel(earnings.source)}`
+    : "0 paying · Pro & Platinum";
 
-  const adSpendFormatted = earnings
-    ? formatBillingCents(earnings.adRevenueCents, { decimals: 0 })
-    : "$0";
+  const adSpendFormatted = formatBillingCents(earnings?.adRevenueCents ?? 0, {
+    decimals: 0,
+  });
 
-  const adSpendSubtitle =
-    earnings?.source === "stripe"
-      ? "Included in Stripe MRR above / Owner revenue for detail"
-      : earnings
-        ? `Boost add-ons / ${earnings.periodLabel}`
-        : "Included in Stripe MRR above / Owner revenue for detail";
+  const adSpendSubtitle = earnings
+    ? `Boosts & spotlights / ${earnings.periodLabel}`
+    : "Boosts & spotlights";
 
-  // Wave points for 7 days
+  const revenueTotalCents = smoacRevenueTotalCents(earnings);
+  const revenueFormatted = formatBillingCents(revenueTotalCents, {
+    decimals: 0,
+  });
+  const revenuePaying = earnings?.paidSubscriberCount ?? 0;
+  const revenueSub =
+    revenuePaying > 0
+      ? `${revenuePaying} paying · all SMOAC payments`
+      : "Pro, Platinum & boosts";
+
+  const collectedThisWeek = earnings?.collectedThisWeekCents ?? 0;
+  const collectedPrevWeek = earnings?.collectedPrevWeekCents ?? 0;
+  const collectedSeries = earnings?.collectedWeekSeriesCents ?? [];
+  const hasCollectedActivity =
+    collectedSeries.length === 7 && collectedSeries.some((value) => value > 0);
+  const revenueWeekDeltaLabel = hasCollectedActivity
+    ? trafficChangeLabel(
+        collectedPrevWeek > 0
+          ? ((collectedThisWeek - collectedPrevWeek) / collectedPrevWeek) * 100
+          : null
+      )
+    : "Stripe invoices this week";
+  const revenueChartSubtext = hasCollectedActivity
+    ? `${formatBillingCents(collectedThisWeek, { decimals: 0 })} collected this week`
+    : `${revenuePaying} paying specialist${revenuePaying === 1 ? "" : "s"}`;
+
   const wavePoints = useMemo(() => {
-    if (traffic && traffic.views > 0) {
-      // Calculate realistic 7-day trend leading to current views
-      const base = traffic.views / 7;
-      return [
-        Math.max(10, Math.round(base * 0.55)),
-        Math.max(15, Math.round(base * 0.75)),
-        Math.max(20, Math.round(base * 0.65)),
-        Math.max(25, Math.round(base * 1.05)),
-        Math.max(30, Math.round(base * 1.15)),
-        Math.max(35, Math.round(base * 1.35)),
-        Math.max(40, Math.round(base * 1.5)),
-      ];
-    }
-    // High aesthetic reference distribution curve
-    return [48, 62, 54, 88, 96, 128, 163];
-  }, [traffic]);
+    const series = windowStats?.dailyViews;
+    if (series && series.length > 0) return series;
+    const days = timeframe === "30d" ? 30 : timeframe === "14d" ? 14 : 7;
+    return Array.from({ length: days }, () => 0);
+  }, [windowStats, timeframe]);
 
-  const { linePath, areaPath, coords } = useMemo(() => {
-    return generateSmoothWavePaths(wavePoints, 700, 160, 20, 25);
-  }, [wavePoints]);
+  const revenueWavePoints = useMemo(() => {
+    if (hasCollectedActivity) return collectedSeries;
+    return [0, 0, 0, 0, 0, 0, 0];
+  }, [collectedSeries, hasCollectedActivity]);
 
   return (
     <section className="admin-exec-overview" aria-label="Platform snapshot">
@@ -513,135 +612,203 @@ export function AdminExecutiveRevenueSnapshot({
             </span>
           </div>
         </article>
-      </div>
 
-      {/* Row 2: Large Site Views Card with Wave Chart */}
-      <article className="admin-exec-chart-card">
-        <div className="admin-exec-chart-card__header">
-          <div className="admin-exec-chart-card__title-group">
-            <div className="admin-exec-card__icon-wrap admin-exec-card__icon-wrap--purple">
-              <svg
-                className="admin-exec-card__icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </div>
-            <span className="admin-exec-card__label">SITE VIEWS (7D)</span>
-          </div>
-
-          <div className="admin-exec-chart-card__controls">
-            <div className="admin-exec-chart-card__dropdown-btn">
-              <span>{timeframe === "7d" ? "7 Days" : timeframe === "14d" ? "14 Days" : "30 Days"}</span>
-              <svg
-                className="admin-exec-chart-card__dropdown-icon"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M4 6l4 4 4-4" />
-              </svg>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Row */}
-        <div className="admin-exec-chart-card__metrics">
-          <div className="admin-exec-chart-card__main-metric">
-            <span className="admin-exec-chart-card__stat">{viewsCount.toLocaleString()}</span>
-            <span className="admin-exec-chart-card__delta-badge">
-              {viewsDeltaLabel}
-            </span>
-          </div>
-          <span className="admin-exec-chart-card__unique-subtext">
-            {uniqueCount.toLocaleString()} unique
-          </span>
-        </div>
-
-        {/* Elegant Glowing Purple SVG Area Wave Chart */}
-        <div className="admin-exec-chart-card__canvas-wrap">
-          <svg
-            className="admin-exec-chart-card__svg"
-            viewBox="0 0 700 160"
-            preserveAspectRatio="none"
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="purpleAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.4" />
-                <stop offset="50%" stopColor="#8B5CF6" stopOpacity="0.12" />
-                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
-              </linearGradient>
-
-              <linearGradient id="purpleLineGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#A855F7" />
-                <stop offset="100%" stopColor="#8B5CF6" />
-              </linearGradient>
-
-              <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
-                <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#8B5CF6" floodOpacity="0.45" />
-              </filter>
-            </defs>
-
-            {/* Subtle horizontal grid lines */}
-            <line x1="0" y1="40" x2="700" y2="40" stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
-            <line x1="0" y1="90" x2="700" y2="90" stroke="rgba(255,255,255,0.04)" strokeDasharray="3 3" />
-            <line x1="0" y1="140" x2="700" y2="140" stroke="rgba(255,255,255,0.04)" />
-
-            {/* Glowing gradient area */}
-            <path d={areaPath} fill="url(#purpleAreaGrad)" />
-
-            {/* Smooth glowing line */}
-            <path
-              d={linePath}
-              fill="none"
-              stroke="url(#purpleLineGrad)"
-              strokeWidth="3.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              filter="url(#purpleGlow)"
-            />
-
-            {/* Point highlights */}
-            {coords.map((pt, i) => (
-              <g key={i} className="admin-exec-chart-point">
-                <circle
-                  cx={pt.x}
-                  cy={pt.y}
-                  r="4"
-                  fill="#8B5CF6"
-                  stroke="#FFFFFF"
-                  strokeWidth="2"
-                  className="admin-exec-chart-point__circle"
-                />
-              </g>
-            ))}
-          </svg>
-        </div>
-
-        {/* Card Footer Link */}
-        <div className="admin-exec-chart-card__footer">
+        {onOpenRevenue ? (
           <button
             type="button"
-            className="admin-exec-chart-card__analytics-link"
-            onClick={() => setTrafficOpen(true)}
+            className="admin-exec-card admin-exec-card--button"
+            onClick={onOpenRevenue}
           >
-            <span>View full analytics</span>
-            <span aria-hidden="true">→</span>
+            <div className="admin-exec-card__top">
+              <div className="admin-exec-card__icon-wrap admin-exec-card__icon-wrap--green">
+                <svg
+                  className="admin-exec-card__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v10" />
+                  <path d="M15 9.5a2.5 2.5 0 0 0-5 0c0 2 3 2 3 4a2.5 2.5 0 0 1-5 0" />
+                </svg>
+              </div>
+              <span className="admin-exec-card__label">REVENUE</span>
+            </div>
+            <div className="admin-exec-card__body">
+              <span className="admin-exec-card__stat">{revenueFormatted}</span>
+              <span className="admin-exec-card__subtext admin-exec-card__subtext--emerald">
+                {revenueSub}
+              </span>
+            </div>
           </button>
-        </div>
-      </article>
+        ) : (
+          <article className="admin-exec-card">
+            <div className="admin-exec-card__top">
+              <div className="admin-exec-card__icon-wrap admin-exec-card__icon-wrap--green">
+                <svg
+                  className="admin-exec-card__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 7v10" />
+                  <path d="M15 9.5a2.5 2.5 0 0 0-5 0c0 2 3 2 3 4a2.5 2.5 0 0 1-5 0" />
+                </svg>
+              </div>
+              <span className="admin-exec-card__label">REVENUE</span>
+            </div>
+            <div className="admin-exec-card__body">
+              <span className="admin-exec-card__stat">{revenueFormatted}</span>
+              <span className="admin-exec-card__subtext admin-exec-card__subtext--emerald">
+                {revenueSub}
+              </span>
+            </div>
+          </article>
+        )}
+      </div>
+
+      {/* Row 2: Site views + Revenue charts */}
+      <div className="admin-exec-overview__row-charts">
+        <article className="admin-exec-chart-card">
+          <div className="admin-exec-chart-card__header">
+            <div className="admin-exec-chart-card__title-group">
+              <div className="admin-exec-card__icon-wrap admin-exec-card__icon-wrap--purple">
+                <svg
+                  className="admin-exec-card__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+              <span className="admin-exec-card__label">
+                SITE VIEWS ({timeframe.toUpperCase()})
+              </span>
+            </div>
+
+            <div
+              className="admin-exec-chart-card__controls"
+              role="group"
+              aria-label="Traffic window"
+            >
+              {(["7d", "14d", "30d"] as const).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={cn(
+                    "admin-exec-chart-card__dropdown-btn",
+                    timeframe === id && "is-active"
+                  )}
+                  onClick={() => setTimeframe(id)}
+                >
+                  {id === "7d" ? "7 Days" : id === "14d" ? "14 Days" : "30 Days"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-exec-chart-card__metrics">
+            <div className="admin-exec-chart-card__main-metric">
+              <span className="admin-exec-chart-card__stat">
+                {viewsCount.toLocaleString()}
+              </span>
+              <span className="admin-exec-chart-card__delta-badge">
+                {viewsDeltaLabel}
+              </span>
+            </div>
+            <span className="admin-exec-chart-card__unique-subtext">
+              {uniqueCount.toLocaleString()} unique
+            </span>
+          </div>
+
+          <OverviewWaveChart points={wavePoints} tone="purple" />
+
+          <div className="admin-exec-chart-card__footer">
+            <button
+              type="button"
+              className="admin-exec-chart-card__analytics-link"
+              onClick={() => traffic && setTrafficOpen(true)}
+              disabled={!traffic}
+            >
+              <span>
+                {traffic ? "View full analytics" : "No visit data yet"}
+              </span>
+              <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        </article>
+
+        <article className="admin-exec-chart-card">
+          <div className="admin-exec-chart-card__header">
+            <div className="admin-exec-chart-card__title-group">
+              <div className="admin-exec-card__icon-wrap admin-exec-card__icon-wrap--green">
+                <svg
+                  className="admin-exec-card__icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
+                  <polyline points="17 6 23 6 23 12" />
+                </svg>
+              </div>
+              <span className="admin-exec-card__label">REVENUE (7D)</span>
+            </div>
+          </div>
+
+          <div className="admin-exec-chart-card__metrics">
+            <div className="admin-exec-chart-card__main-metric">
+              <span className="admin-exec-chart-card__stat admin-exec-chart-card__stat--money">
+                {revenueFormatted}
+              </span>
+              <span className="admin-exec-chart-card__delta-badge">
+                {revenueWeekDeltaLabel}
+              </span>
+            </div>
+            <span className="admin-exec-chart-card__unique-subtext">
+              {revenueChartSubtext}
+            </span>
+          </div>
+
+          <OverviewWaveChart points={revenueWavePoints} tone="emerald" />
+
+          <div className="admin-exec-chart-card__footer">
+            {canViewRevenue && onOpenRevenue ? (
+              <button
+                type="button"
+                className="admin-exec-chart-card__analytics-link"
+                onClick={onOpenRevenue}
+              >
+                <span>View revenue details</span>
+                <span aria-hidden="true">→</span>
+              </button>
+            ) : (
+              <span className="admin-exec-chart-card__unique-subtext">
+                Membership MRR + boosts
+              </span>
+            )}
+          </div>
+        </article>
+      </div>
 
       {/* Row 3: Two Bottom Metric Cards (2-Column Grid) */}
       <div className="admin-exec-overview__row-bottom">
@@ -707,34 +874,7 @@ export function AdminExecutiveRevenueSnapshot({
           onClose={() => setTrafficOpen(false)}
           traffic={traffic}
         />
-      ) : (
-        <TrafficDeepPanel
-          open={trafficOpen}
-          onClose={() => setTrafficOpen(false)}
-          traffic={{
-            views: viewsCount,
-            uniqueVisitors: uniqueCount,
-            prevViews: 361,
-            prevUniqueVisitors: 28,
-            viewsPercentChange: 77.0,
-            uniqueVisitorsPercentChange: 67.8,
-            newVisitors: 38,
-            topSources: [
-              { source: "Direct", views: 320, sharePercent: 50.1 },
-              { source: "Instagram", views: 184, sharePercent: 28.8 },
-              { source: "Google", views: 92, sharePercent: 14.4 },
-              { source: "ChatGPT", views: 43, sharePercent: 6.7 },
-            ],
-            topPaths: [
-              { path: "/", views: 340 },
-              { path: "/explore", views: 180 },
-              { path: "/calorie-calculator", views: 72 },
-              { path: "/saved", views: 47 },
-            ],
-            devices: { mobile: 490, desktop: 142, unknown: 7 },
-          }}
-        />
-      )}
+      ) : null}
     </section>
   );
 }

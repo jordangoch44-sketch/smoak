@@ -9,11 +9,22 @@ import type {
   AdminPlatformPulse,
   AdminTrafficDeviceSplit,
   AdminTrafficWeek,
+  AdminTrafficWindow,
+  AdminTrafficWindowId,
   AdminWeeklyCount,
 } from "@/types/admin-platform-pulse";
 import { buildMarketplaceConversionFunnel } from "@/lib/admin-conversion-funnel-service";
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+export { smoacRevenueTotalCents } from "@/types/admin-platform-pulse";
+
+const EMPTY_COLLECTED = {
+  collectedThisWeekCents: 0,
+  collectedPrevWeekCents: 0,
+  collectedWeekSeriesCents: [] as number[],
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
 
 function percentChange(current: number, baseline: number): number | null {
   if (baseline <= 0) return null;
@@ -138,23 +149,43 @@ async function fetchLiveEarnings(
 ): Promise<AdminLiveEarnings | null> {
   const periodLabel = formatPeriodLabel(new Date());
 
-  /* Prefer live Stripe MRR (server-only — secret key) */
-  try {
-    const { fetchStripeMrrCents } = await import(
-      "@/lib/stripe/sync-subscription"
-    );
-    const stripeMrr = await fetchStripeMrrCents();
-    if (stripeMrr && stripeMrr.dataSource === "stripe") {
-      return {
-        paidSubscriberCount: stripeMrr.payingCount,
-        subscriberRevenueCents: stripeMrr.mrrCents,
-        adRevenueCents: 0,
-        periodLabel,
-        source: "stripe",
-      };
+  const stripeMod = await import("@/lib/stripe/sync-subscription").catch(
+    (err) => {
+      console.warn("[SMOAC admin] Stripe module load failed:", err);
+      return null;
     }
-  } catch (err) {
-    console.warn("[SMOAC admin] Stripe MRR fetch failed:", err);
+  );
+
+  const [collected, stripeMrr] = stripeMod
+    ? await Promise.all([
+        stripeMod.fetchStripeCollectedWeek().catch((err) => {
+          console.warn("[SMOAC admin] Stripe collected-week fetch failed:", err);
+          return null;
+        }),
+        stripeMod.fetchStripeMrrCents().catch((err) => {
+          console.warn("[SMOAC admin] Stripe MRR fetch failed:", err);
+          return null;
+        }),
+      ])
+    : [null, null];
+
+  const collectedFields = collected
+    ? {
+        collectedThisWeekCents: collected.thisWeekCents,
+        collectedPrevWeekCents: collected.prevWeekCents,
+        collectedWeekSeriesCents: collected.seriesCents,
+      }
+    : EMPTY_COLLECTED;
+
+  if (stripeMrr && stripeMrr.dataSource === "stripe") {
+    return {
+      paidSubscriberCount: stripeMrr.payingCount,
+      subscriberRevenueCents: stripeMrr.membershipCents,
+      adRevenueCents: stripeMrr.addonCents,
+      periodLabel,
+      source: "stripe",
+      ...collectedFields,
+    };
   }
 
   /* Fallback: specialist_billing rows synced from Stripe webhooks (not profile flags) */
@@ -171,6 +202,7 @@ async function fetchLiveEarnings(
       adRevenueCents: 0,
       periodLabel,
       source: "none",
+      ...EMPTY_COLLECTED,
     };
   }
 
@@ -213,6 +245,7 @@ async function fetchLiveEarnings(
     adRevenueCents,
     periodLabel,
     source: "billing_table",
+    ...collectedFields,
   };
 }
 
@@ -268,18 +301,68 @@ export function friendlyTrafficSource(raw: string): string {
   return raw.replace(/^www\./i, "").slice(0, 40);
 }
 
+function buildTrafficWindow(
+  visits: readonly {
+    at: number;
+    visitorKey: string;
+    isNew: boolean;
+  }[],
+  now: number,
+  days: number
+): AdminTrafficWindow {
+  const windowMs = days * DAY_MS;
+  const currentStart = now - windowMs;
+  const prevStart = now - 2 * windowMs;
+  const dailyViews = Array.from({ length: days }, () => 0);
+  const visitors = new Set<string>();
+  const prevVisitors = new Set<string>();
+  let views = 0;
+  let prevViews = 0;
+  let newVisitors = 0;
+
+  for (const visit of visits) {
+    if (visit.at >= currentStart) {
+      views += 1;
+      visitors.add(visit.visitorKey);
+      if (visit.isNew) newVisitors += 1;
+      const ageDays = Math.min(
+        days - 1,
+        Math.max(0, Math.floor((now - visit.at) / DAY_MS))
+      );
+      dailyViews[days - 1 - ageDays] += 1;
+    } else if (visit.at >= prevStart) {
+      prevViews += 1;
+      prevVisitors.add(visit.visitorKey);
+    }
+  }
+
+  return {
+    views,
+    uniqueVisitors: visitors.size,
+    prevViews,
+    prevUniqueVisitors: prevVisitors.size,
+    viewsPercentChange: percentChange(views, prevViews),
+    uniqueVisitorsPercentChange: percentChange(
+      visitors.size,
+      prevVisitors.size
+    ),
+    newVisitors,
+    dailyViews,
+  };
+}
+
 async function fetchTrafficWeek(
   supabase: SupabaseClient,
   now: number
 ): Promise<AdminTrafficWeek | null> {
-  const twoWeeksAgoIso = new Date(now - 2 * WEEK_MS).toISOString();
+  const lookbackIso = new Date(now - 60 * DAY_MS).toISOString();
   const { data, error } = await supabase
     .from("site_visits")
     .select(
       "occurred_at, visitor_key, utm_source, referrer_host, path, device, is_new_visitor"
     )
-    .gte("occurred_at", twoWeeksAgoIso)
-    .limit(20000);
+    .gte("occurred_at", lookbackIso)
+    .limit(50000);
 
   if (error) {
     /* Table may not be migrated yet — traffic stays unavailable, totals still load */
@@ -287,12 +370,23 @@ async function fetchTrafficWeek(
     return null;
   }
 
-  const weekAgo = now - WEEK_MS;
-  let views = 0;
-  let prevViews = 0;
-  let newVisitors = 0;
-  const visitors = new Set<string>();
-  const prevVisitors = new Set<string>();
+  const parsed = (data ?? []).map((visit) => ({
+    at: new Date(visit.occurred_at as string).getTime(),
+    visitorKey: String(visit.visitor_key ?? ""),
+    isNew: Boolean(visit.is_new_visitor),
+    utm_source: visit.utm_source as string | null,
+    referrer_host: visit.referrer_host as string | null,
+    path: String(visit.path ?? "/").slice(0, 80) || "/",
+    device: String(visit.device ?? ""),
+  }));
+
+  const windows: Record<AdminTrafficWindowId, AdminTrafficWindow> = {
+    "7d": buildTrafficWindow(parsed, now, 7),
+    "14d": buildTrafficWindow(parsed, now, 14),
+    "30d": buildTrafficWindow(parsed, now, 30),
+  };
+  const week = windows["7d"];
+  const weekStart = now - WEEK_MS;
   const sourceViews = new Map<string, number>();
   const pathViews = new Map<string, number>();
   const devices: AdminTrafficDeviceSplit = {
@@ -301,32 +395,20 @@ async function fetchTrafficWeek(
     unknown: 0,
   };
 
-  for (const visit of data ?? []) {
-    const at = new Date(visit.occurred_at as string).getTime();
-    if (at >= weekAgo) {
-      views += 1;
-      visitors.add(visit.visitor_key as string);
-      if (visit.is_new_visitor) newVisitors += 1;
-
-      const label = sourceLabel(
-        visit as { utm_source: string | null; referrer_host: string | null }
-      );
-      sourceViews.set(label, (sourceViews.get(label) ?? 0) + 1);
-
-      const path = String(visit.path ?? "/").slice(0, 80) || "/";
-      pathViews.set(path, (pathViews.get(path) ?? 0) + 1);
-
-      const device = String(visit.device ?? "");
-      if (device === "mobile") devices.mobile += 1;
-      else if (device === "desktop") devices.desktop += 1;
-      else devices.unknown += 1;
-    } else {
-      prevViews += 1;
-      prevVisitors.add(visit.visitor_key as string);
-    }
+  for (const visit of parsed) {
+    if (visit.at < weekStart) continue;
+    const label = sourceLabel({
+      utm_source: visit.utm_source,
+      referrer_host: visit.referrer_host,
+    });
+    sourceViews.set(label, (sourceViews.get(label) ?? 0) + 1);
+    pathViews.set(visit.path, (pathViews.get(visit.path) ?? 0) + 1);
+    if (visit.device === "mobile") devices.mobile += 1;
+    else if (visit.device === "desktop") devices.desktop += 1;
+    else devices.unknown += 1;
   }
 
-  const viewTotal = Math.max(views, 1);
+  const viewTotal = Math.max(week.views, 1);
   const topSources = [...sourceViews.entries()]
     .map(([source, count]) => ({
       source,
@@ -342,19 +424,11 @@ async function fetchTrafficWeek(
     .slice(0, 8);
 
   return {
-    views,
-    uniqueVisitors: visitors.size,
-    prevViews,
-    prevUniqueVisitors: prevVisitors.size,
-    viewsPercentChange: percentChange(views, prevViews),
-    uniqueVisitorsPercentChange: percentChange(
-      visitors.size,
-      prevVisitors.size
-    ),
-    newVisitors,
+    ...week,
     topSources,
     topPaths,
     devices,
+    windows,
   };
 }
 

@@ -2833,8 +2833,14 @@
 
 @media (min-width: 640px) {
   .admin-tier-nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1100px) {
+  .admin-tier-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -2919,6 +2925,12 @@
   font-size: 0.75rem;
   line-height: 1.35;
   color: rgba(var(--aurora-lavender-rgb), 0.95);
+}
+
+.admin-tier-card__conversion {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.48);
 }
 
 .admin-tier-section__summary {
@@ -7402,10 +7414,10 @@ body.admin-review-open .app-shell > footer {
   margin: 0;
 }
 
-/* Row 1: Three Metric Cards */
+/* Row 1: Metric Cards */
 .admin-exec-overview__row-top {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1.25rem;
 }
 
@@ -7425,6 +7437,20 @@ body.admin-review-open .app-shell > footer {
   border-color: rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+}
+
+button.admin-exec-card--button {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  appearance: none;
+}
+
+button.admin-exec-card--button:focus-visible {
+  outline: 2px solid rgba(16, 185, 129, 0.55);
+  outline-offset: 2px;
 }
 
 .admin-exec-card__top {
@@ -7487,6 +7513,12 @@ body.admin-review-open .app-shell > footer {
   line-height: 1.1;
 }
 
+@media (min-width: 1101px) {
+  .admin-exec-overview__row-top .admin-exec-card__stat {
+    font-size: 1.85rem;
+  }
+}
+
 .admin-exec-card__stat--bump {
   animation: adminStatBump 0.8s ease-out;
 }
@@ -7546,6 +7578,8 @@ body.admin-review-open .app-shell > footer {
 .admin-exec-chart-card__controls {
   display: flex;
   align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
 }
 
 .admin-exec-chart-card__dropdown-btn {
@@ -7563,10 +7597,20 @@ body.admin-review-open .app-shell > footer {
   transition: all 0.15s ease;
 }
 
+.admin-exec-chart-card__dropdown-btn.is-active {
+  background: rgba(139, 92, 246, 0.18);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #ffffff;
+}
+
 .admin-exec-chart-card__dropdown-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #FFFFFF;
   border-color: rgba(255, 255, 255, 0.15);
+}
+
+.admin-exec-chart-card__dropdown-btn.is-active:hover {
+  background: rgba(139, 92, 246, 0.24);
 }
 
 .admin-exec-chart-card__dropdown-icon {
@@ -7594,6 +7638,10 @@ body.admin-review-open .app-shell > footer {
   color: #FFFFFF;
   letter-spacing: -0.03em;
   line-height: 1;
+}
+
+.admin-exec-chart-card__stat--money {
+  font-size: 2.15rem;
 }
 
 .admin-exec-chart-card__delta-badge {
@@ -7665,6 +7713,19 @@ body.admin-review-open .app-shell > footer {
   transform: translateX(2px);
 }
 
+.admin-exec-chart-card__analytics-link:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+/* Row 2: Site views + Revenue charts */
+.admin-exec-overview__row-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
 /* Row 3: Two Bottom Metric Cards */
 .admin-exec-overview__row-bottom {
   display: grid;
@@ -7672,12 +7733,21 @@ body.admin-review-open .app-shell > footer {
   gap: 1.25rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .admin-exec-overview__row-top {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .admin-exec-overview__row-charts,
+  .admin-exec-overview__row-bottom {
     grid-template-columns: 1fr;
   }
+}
 
-  .admin-exec-overview__row-bottom {
+@media (max-width: 640px) {
+  .admin-exec-overview__row-top {
     grid-template-columns: 1fr;
   }
 }

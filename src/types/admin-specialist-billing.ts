@@ -28,7 +28,7 @@ export interface SpecialistBillingRecord {
   totalMonthlyCents: number;
 }
 
-/** Owner revenue rollup from specialist billing mock */
+/** Owner revenue rollup from Stripe-synced specialist billing */
 export interface AdminOwnerRevenueMetrics {
   tierRevenueCents: number;
   addOnRevenueCents: number;
@@ -38,7 +38,10 @@ export interface AdminOwnerRevenueMetrics {
   payingSpecialistsCount: number;
 }
 
-export type AdminOwnerRevenueDataSource = "catalog-estimate" | "stripe";
+export type AdminOwnerRevenueDataSource =
+  | "catalog-estimate"
+  | "stripe"
+  | "billing_table";
 
 export interface AdminOwnerRevenueDashboard {
   metrics: AdminOwnerRevenueMetrics;

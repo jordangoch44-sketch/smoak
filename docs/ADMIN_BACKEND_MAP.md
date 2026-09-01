@@ -1,24 +1,21 @@
 # Admin & billing — backend map
 
-Live paths prefer Stripe settlement + Supabase. Catalog estimates remain for specialist tier entitlement projection only.
+Live Control reads use a Supabase **admin cookie session**, then a **service-role** client for `site_visits` / `specialist_billing` so RLS cannot hide platform totals. Stripe MRR uses `STRIPE_SECRET_KEY`.
 
 ## Live today
 
 | Domain | Module / API |
 |--------|----------------|
-| Owner Revenue (MRR) | `/api/admin/revenue`, `AdminOwnerRevenuePanel`, `sync-subscription.ts` |
-| Specialist billing projection | `admin-specialist-billing-catalog.ts`, `getAdminOwnerRevenueDashboard` (flags × list price) |
+| Owner Revenue (MRR + collected week) | `/api/admin/revenue`, `AdminOwnerRevenuePanel`, `fetchStripeMrrCents`, `fetchStripeCollectedWeek` |
+| Overview pulse | `/api/admin/platform-pulse` — roster counts, `site_visits` (7/14/30d), Stripe MRR + invoice series |
+| Specialists roster $ | `/api/admin/revenue` billing rows (`plan` + `active_addons`) — not profile flags |
+| Pro trial vs paid Pro | `/api/admin/specialist-entitlements` |
 | Boost / Pro checkout | `/api/stripe/subscription-intent` (Elements), `/api/stripe/checkout` (Pro redirect) |
 | Ad spend (specialist) | `/api/stripe/billing-summary` |
-| Platform pulse | `admin-platform-pulse-service.ts` |
 
-## Still local / seed (optional later)
+## Local-only when marketplace Supabase is off
 
-| Domain | Current module |
-|--------|----------------|
-| Applications seed merge | `admin-applications-seed.ts` |
-| Owner alert issues seed | `admin-notification-issues-seed.ts` |
-| Permissions | `admin-permissions.ts` |
+Control does not inject demo applications or seed trainers. Sign in with a real admin account so pulse and revenue APIs can run.
 
 ## Single entry points (keep)
 

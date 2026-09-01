@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isAdminAppRole } from "@/types/auth-roles";
+import { getAdminDataClient } from "@/lib/admin-api-auth";
 import {
   fetchStripeMrrCents,
   subscriptionGrantsPremium,
 } from "@/lib/stripe/sync-subscription";
-import { getStripe, getStripePremiumPriceId } from "@/lib/stripe/config";
+import { getStripe } from "@/lib/stripe/config";
+import {
+  getStripePriceIdForProduct,
+  listPriceCents,
+  SMOAC_STRIPE_PRODUCTS,
+  type SmoacAddonProduct,
+  type SmoacStripeProductKey,
+} from "@/lib/stripe/products";
+import {
+  SPECIALIST_AD_ADDON_CATALOG,
+} from "@/data/admin-specialist-billing-catalog";
+import type { SpecialistAdAddOnId } from "@/types/admin-specialist-billing";
 
 export interface AdminStripeBillingRow {
   userId: string;
@@ -13,52 +23,67 @@ export interface AdminStripeBillingRow {
   specialistName: string;
   email: string;
   status: string;
+  plan: "free" | "premium" | "platinum";
+  activeAddOns: SpecialistAdAddOnId[];
   stripeSubscriptionId: string | null;
   stripePriceId: string | null;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
-  /** Monthly amount attributed from Stripe price (0 if unknown / not paying) */
+  membershipCents: number;
+  addonCents: number;
+  /** Membership + add-ons for paying Stripe rows */
   monthlyCents: number;
   isPaying: boolean;
 }
 
 async function requireAdminCaller() {
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) return null;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  const { data: roleRow } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!roleRow || !isAdminAppRole(String(roleRow.role))) return null;
-  return supabase;
+  return getAdminDataClient();
 }
 
-async function resolvePremiumMonthlyCents(): Promise<number> {
-  const priceId = getStripePremiumPriceId();
+function monthlyFromStripePrice(amount: number, interval?: string | null, intervalCount = 1): number {
+  if (interval === "year") return Math.round(amount / 12);
+  if (interval === "week") return Math.round((amount * 52) / 12);
+  if (interval === "month" && intervalCount > 1) {
+    return Math.round(amount / intervalCount);
+  }
+  return amount;
+}
+
+async function resolveProductMonthlyCents(
+  key: SmoacStripeProductKey
+): Promise<number> {
+  const catalog = listPriceCents(key);
+  const priceId = getStripePriceIdForProduct(key);
   const stripe = getStripe();
-  if (!stripe || !priceId) return 999; /* known SMOAC Pro list price fallback */
+  if (!stripe || !priceId) return catalog;
   try {
     const price = await stripe.prices.retrieve(priceId);
-    const amount = price.unit_amount ?? 999;
-    const interval = price.recurring?.interval;
-    const intervalCount = price.recurring?.interval_count ?? 1;
-    if (interval === "year") return Math.round(amount / 12);
-    if (interval === "week") return Math.round((amount * 52) / 12);
-    if (interval === "month" && intervalCount > 1) {
-      return Math.round(amount / intervalCount);
-    }
-    return amount;
+    const amount = price.unit_amount ?? catalog;
+    return monthlyFromStripePrice(
+      amount,
+      price.recurring?.interval,
+      price.recurring?.interval_count ?? 1
+    );
   } catch {
-    return 999;
+    return catalog;
   }
+}
+
+function asPlan(value: string | null | undefined): "free" | "premium" | "platinum" {
+  if (value === "premium" || value === "platinum") return value;
+  return "free";
+}
+
+function asAddonIds(raw: unknown): SpecialistAdAddOnId[] {
+  if (!Array.isArray(raw)) return [];
+  const ids: SpecialistAdAddOnId[] = [];
+  for (const value of raw) {
+    const key = String(value);
+    if (key in SPECIALIST_AD_ADDON_CATALOG) {
+      ids.push(key as SpecialistAdAddOnId);
+    }
+  }
+  return ids;
 }
 
 export async function GET() {
@@ -70,16 +95,24 @@ export async function GET() {
     );
   }
 
-  const [stripeMrr, billingRes, premiumMonthlyCents] = await Promise.all([
+  const priceEntries = await Promise.all(
+    SMOAC_STRIPE_PRODUCTS.map(async (key) => [key, await resolveProductMonthlyCents(key)] as const)
+  );
+  const priceByProduct = Object.fromEntries(priceEntries) as Record<
+    SmoacStripeProductKey,
+    number
+  >;
+
+  const [stripeMrr, billingRes] = await Promise.all([
     fetchStripeMrrCents().catch(() => null),
     supabase
       .from("specialist_billing")
       .select(
-        "user_id, specialist_profile_id, status, stripe_subscription_id, stripe_price_id, cancel_at_period_end, current_period_end"
+        "user_id, specialist_profile_id, status, plan, active_addons, stripe_subscription_id, stripe_price_id, cancel_at_period_end, current_period_end"
       )
       .order("updated_at", { ascending: false }),
-    resolvePremiumMonthlyCents(),
   ]);
+  const premiumMonthlyCents = priceByProduct.premium;
 
   if (billingRes.error) {
     return NextResponse.json(
@@ -121,7 +154,24 @@ export async function GET() {
     const specialistProfileId =
       (row.specialist_profile_id as string | null) ?? null;
     const status = String(row.status ?? "none");
-    const isPaying = subscriptionGrantsPremium(status);
+    const paying = subscriptionGrantsPremium(status);
+    const plan = asPlan(row.plan as string | null);
+    const activeAddOns = paying
+      ? asAddonIds(row.active_addons)
+      : [];
+    const membershipCents = paying
+      ? plan === "platinum"
+        ? priceByProduct.platinum
+        : plan === "premium"
+          ? priceByProduct.premium
+          : 0
+      : 0;
+    const addonCents = activeAddOns.reduce(
+      (sum, id) => sum + priceByProduct[id as SmoacAddonProduct],
+      0
+    );
+    const monthlyCents = membershipCents + addonCents;
+    const isPaying = monthlyCents > 0;
     const profile = profilesByUser.get(userId);
     const specialist = specialistProfileId
       ? specialistsById.get(specialistProfileId)
@@ -141,12 +191,16 @@ export async function GET() {
       specialistName,
       email: String(profile?.email ?? ""),
       status,
+      plan,
+      activeAddOns,
       stripeSubscriptionId:
         (row.stripe_subscription_id as string | null) ?? null,
       stripePriceId: (row.stripe_price_id as string | null) ?? null,
       cancelAtPeriodEnd: Boolean(row.cancel_at_period_end),
       currentPeriodEnd: (row.current_period_end as string | null) ?? null,
-      monthlyCents: isPaying ? premiumMonthlyCents : 0,
+      membershipCents,
+      addonCents,
+      monthlyCents,
       isPaying,
     };
   });
@@ -169,6 +223,8 @@ export async function GET() {
       stripeMrr?.dataSource === "stripe"
         ? {
             mrrCents: stripeMrr.mrrCents,
+            membershipCents: stripeMrr.membershipCents,
+            addonCents: stripeMrr.addonCents,
             payingCount: stripeMrr.payingCount,
             dataSource: "stripe" as const,
           }

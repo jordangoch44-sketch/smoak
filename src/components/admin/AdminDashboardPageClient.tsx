@@ -21,7 +21,7 @@ import {
   useAdminSectionAttentionItemIds,
   useAdminSectionBadgeCounts,
 } from "@/hooks/useAdminSectionBadgeCounts";
-import { getAdminOwnerRevenueDashboard } from "@/lib/admin-specialist-billing-service";
+import { liveBillingBySpecialistId } from "@/lib/admin-specialist-billing-service";
 import { markAdminSectionBadgeSeen } from "@/lib/admin-section-badge-seen-store";
 import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
 import { buildInternalLoginHref } from "@/lib/internal-routes";
@@ -30,6 +30,7 @@ import type { AdminNotifiableSectionId } from "@/types/admin-notifications";
 import type { SpecialistApplication } from "@/types/specialist-application";
 import type { AdminSpecialistVisibility } from "@/types/admin";
 import type { AdminPlatformPulse } from "@/types/admin-platform-pulse";
+import type { SpecialistBillingRecord } from "@/types/admin-specialist-billing";
 import { SmoacWordmark } from "@/components/brand/SmoacWordmark";
 
 function getInitials(name: string): string {
@@ -80,6 +81,12 @@ export function AdminDashboardPageClient() {
   const [pulse, setPulse] = useState<AdminPlatformPulse | null>(null);
   const [isPulseLoading, setIsPulseLoading] = useState(true);
   const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
+  const [liveBillingById, setLiveBillingById] = useState<
+    Map<string, SpecialistBillingRecord>
+  >(() => new Map());
+  const [stripeBillingByProfileId, setStripeBillingByProfileId] = useState<
+    Map<string, string>
+  >(() => new Map());
 
   const specialistKey = useMemo(
     () =>
@@ -116,20 +123,51 @@ export function AdminDashboardPageClient() {
     return fetchPulse();
   }, [fetchPulse, specialistKey, pulseRefreshKey]);
 
-  const billingById = useMemo(() => {
-    if (!access?.isOwnerAdmin) return undefined;
-    const dashboard = getAdminOwnerRevenueDashboard(
-      specialists.map((row) => ({
-        id: row.id,
-        name: row.name,
-        isPremium: row.isPremium,
-        featured: row.featured,
-      }))
-    );
-    return new Map(
-      dashboard.specialistBilling.map((record) => [record.specialistId, record])
-    );
-  }, [access?.isOwnerAdmin, specialists]);
+  useEffect(() => {
+    if (!access?.isOwnerAdmin) {
+      setLiveBillingById(new Map());
+      setStripeBillingByProfileId(new Map());
+      return;
+    }
+    let cancelled = false;
+    void fetch("/api/admin/revenue", { credentials: "include" })
+      .then((res) => res.json())
+      .then(
+        (body: {
+          ok?: boolean;
+          billingRows?: Array<{
+            specialistProfileId: string | null;
+            specialistName: string;
+            status: string;
+            plan?: string | null;
+            activeAddOns?: string[] | null;
+            membershipCents?: number;
+            addonCents?: number;
+          }>;
+        }) => {
+          if (cancelled || !body?.ok) return;
+          const rows = body.billingRows ?? [];
+          setLiveBillingById(liveBillingBySpecialistId(rows));
+          const statuses = new Map<string, string>();
+          for (const row of rows) {
+            const id = row.specialistProfileId?.trim();
+            if (id) statuses.set(id, row.status);
+          }
+          setStripeBillingByProfileId(statuses);
+        }
+      )
+      .catch(() => {
+        if (!cancelled) {
+          setLiveBillingById(new Map());
+          setStripeBillingByProfileId(new Map());
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [access?.isOwnerAdmin, specialistKey, pulseRefreshKey]);
+
+  const billingById = access?.isOwnerAdmin ? liveBillingById : undefined;
 
   const [activeSection, setActiveSection] = useState<AdminSectionId>("overview");
   const allApplications = applications;
@@ -139,6 +177,7 @@ export function AdminDashboardPageClient() {
     clientApplications,
     specialists,
     billingById,
+    stripeBillingByProfileId,
     isOwnerAdmin: access?.isOwnerAdmin ?? false,
   });
 
@@ -147,6 +186,7 @@ export function AdminDashboardPageClient() {
     clientApplications,
     specialists,
     billingById,
+    stripeBillingByProfileId,
     isOwnerAdmin: access?.isOwnerAdmin ?? false,
   });
 
@@ -330,6 +370,8 @@ export function AdminDashboardPageClient() {
               <AdminExecutiveRevenueSnapshot
                 refreshKey={specialistKey}
                 pulse={pulse}
+                canViewRevenue={permissions.canViewRevenue}
+                onOpenRevenue={() => setActiveSection("revenue")}
               />
             ) : null}
 

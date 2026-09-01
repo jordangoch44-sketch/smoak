@@ -23,6 +23,7 @@ export function useAdminSectionBadgeCounts(input: {
   clientApplications?: readonly ClientApplication[];
   specialists: readonly AdminSpecialistRow[];
   billingById?: ReadonlyMap<string, SpecialistBillingRecord>;
+  stripeBillingByProfileId?: ReadonlyMap<string, string>;
   isOwnerAdmin: boolean;
 }): Partial<Record<AdminNotifiableSectionId, number>> {
   const seenSnapshot = useSyncExternalStore(
@@ -37,6 +38,7 @@ export function useAdminSectionBadgeCounts(input: {
       clientApplications: input.clientApplications,
       specialists: input.specialists,
       billingById: input.billingById,
+      stripeBillingByProfileId: input.stripeBillingByProfileId,
       isOwnerAdmin: input.isOwnerAdmin,
     };
     const raw = computeAdminSectionBadgeCounts(countInput);
@@ -57,6 +59,7 @@ export function useAdminSectionBadgeCounts(input: {
     input.clientApplications,
     input.specialists,
     input.billingById,
+    input.stripeBillingByProfileId,
     input.isOwnerAdmin,
     seenSnapshot,
   ]);
@@ -67,6 +70,7 @@ export function useAdminSectionAttentionItemIds(input: {
   clientApplications?: readonly ClientApplication[];
   specialists: readonly AdminSpecialistRow[];
   billingById?: ReadonlyMap<string, SpecialistBillingRecord>;
+  stripeBillingByProfileId?: ReadonlyMap<string, string>;
   isOwnerAdmin: boolean;
 }): Record<AdminNotifiableSectionId, string[]> {
   return useMemo(
@@ -76,6 +80,7 @@ export function useAdminSectionAttentionItemIds(input: {
         clientApplications: input.clientApplications,
         specialists: input.specialists,
         billingById: input.billingById,
+        stripeBillingByProfileId: input.stripeBillingByProfileId,
         isOwnerAdmin: input.isOwnerAdmin,
       }),
     [
@@ -83,6 +88,7 @@ export function useAdminSectionAttentionItemIds(input: {
       input.clientApplications,
       input.specialists,
       input.billingById,
+      input.stripeBillingByProfileId,
       input.isOwnerAdmin,
     ]
   );

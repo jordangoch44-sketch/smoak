@@ -5,16 +5,19 @@ import {
   tierCategoryPriceLabel,
   type SpecialistTierCategory,
 } from "@/lib/admin-specialist-tier-groups";
+import type { ProTrialConversion } from "@/lib/admin-specialist-trial-service";
 
 interface AdminSpecialistsTierNavProps {
   activeCategory: SpecialistTierCategory;
   counts: Record<SpecialistTierCategory, number>;
+  trialConversion?: ProTrialConversion | null;
   onSelect: (category: SpecialistTierCategory) => void;
 }
 
 export function AdminSpecialistsTierNav({
   activeCategory,
   counts,
+  trialConversion,
   onSelect,
 }: AdminSpecialistsTierNavProps) {
   return (
@@ -39,8 +42,20 @@ export function AdminSpecialistsTierNav({
             <span className="admin-tier-card__label">{category.label}</span>
             <span className="admin-tier-card__tier">{category.tierLabel}</span>
             <span className="admin-tier-card__price">
-              {tierCategoryPriceLabel(category.id)}
+              {category.id === "pro_trial" &&
+              trialConversion &&
+              trialConversion.startedCount > 0
+                ? `${trialConversion.conversionPercent ?? 0}% to paid`
+                : tierCategoryPriceLabel(category.id)}
             </span>
+            {category.id === "pro_trial" &&
+            trialConversion &&
+            trialConversion.startedCount > 0 ? (
+              <span className="admin-tier-card__conversion">
+                {trialConversion.convertedCount} of{" "}
+                {trialConversion.startedCount} converted
+              </span>
+            ) : null}
           </button>
         );
       })}
