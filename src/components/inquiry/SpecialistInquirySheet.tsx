@@ -52,6 +52,7 @@ import {
   writePendingInquiryDraft,
   type PendingInquiryDraft,
 } from "@/lib/pending-inquiry-storage";
+import { skipNextProfileSheetPopstate } from "@/lib/nested-sheet-history";
 import { cn } from "@/lib/utils";
 
 const DISMISS_OFFSET_PX = 110;
@@ -110,6 +111,9 @@ export function SpecialistInquirySheet({
   const dragControls = useDragControls();
   const reduceMotion = useReducedMotion();
   const historyPushedRef = useRef(false);
+  const openedAtRef = useRef(0);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const { session, isSignedIn, refreshSession } = useAuthSession();
   const topicOptions = getInquiryTopicsForProfession(specialistProfession);
 
@@ -167,15 +171,17 @@ export function SpecialistInquirySheet({
     };
   }, [open]);
 
+  /* onClose is read via ref so parent re-renders (live catalog/reviews) don't pop history. */
   useEffect(() => {
     if (!open) return;
 
+    openedAtRef.current = Date.now();
     window.history.pushState({ smoacInquirySheet: true }, "");
     historyPushedRef.current = true;
 
     function onPopState() {
       historyPushedRef.current = false;
-      onClose();
+      onCloseRef.current();
     }
 
     window.addEventListener("popstate", onPopState);
@@ -183,10 +189,12 @@ export function SpecialistInquirySheet({
       window.removeEventListener("popstate", onPopState);
       if (historyPushedRef.current) {
         historyPushedRef.current = false;
+        /* Popping inquiry history must not also dismiss the mobile profile sheet. */
+        skipNextProfileSheetPopstate();
         window.history.back();
       }
     };
-  }, [open, onClose]);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -394,7 +402,10 @@ export function SpecialistInquirySheet({
             exit={{ opacity: 0 }}
             transition={backdropTransition}
             onClick={() => {
-              if (!sending) onClose();
+              if (sending) return;
+              /* Ignore the opening tap / iOS delayed click so Contact doesn't instantly dismiss. */
+              if (Date.now() - openedAtRef.current < 450) return;
+              onClose();
             }}
           />
 
