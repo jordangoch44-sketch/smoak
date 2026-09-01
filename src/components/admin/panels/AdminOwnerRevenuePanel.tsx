@@ -16,10 +16,14 @@ interface StripeBillingRow {
   specialistName: string;
   email: string;
   status: string;
+  plan?: string;
+  activeAddOns?: string[];
   stripeSubscriptionId: string | null;
   stripePriceId: string | null;
   cancelAtPeriodEnd: boolean;
   currentPeriodEnd: string | null;
+  membershipCents?: number;
+  addonCents?: number;
   monthlyCents: number;
   isPaying: boolean;
 }
@@ -30,6 +34,8 @@ interface AdminRevenueApiResponse {
   stripeConfigured?: boolean;
   stripe?: {
     mrrCents: number;
+    membershipCents?: number;
+    addonCents?: number;
     payingCount: number;
     dataSource: "stripe";
   } | null;
@@ -101,14 +107,21 @@ export function AdminOwnerRevenuePanel() {
     [billingRows]
   );
 
-  /* Primary truth = specialist_billing (webhook sync). Stripe account MRR is cross-check only. */
-  const heroMrrCents = data?.attributedMrrCents ?? 0;
-  const payingCount = payingRows.length;
+  /* Prefer live Stripe account MRR; billing table is the per-specialist roster. */
   const stripeCrossCheck = data?.stripe?.dataSource === "stripe" ? data.stripe : null;
+  const heroMrrCents = stripeCrossCheck?.mrrCents ?? data?.attributedMrrCents ?? 0;
+  const payingCount = stripeCrossCheck?.payingCount ?? payingRows.length;
+  const membershipCents =
+    stripeCrossCheck?.membershipCents ??
+    payingRows.reduce((sum, row) => sum + (row.membershipCents ?? 0), 0);
+  const addonCents =
+    stripeCrossCheck?.addonCents ??
+    payingRows.reduce((sum, row) => sum + (row.addonCents ?? 0), 0);
   const stripeDiverges =
     stripeCrossCheck != null &&
-    (stripeCrossCheck.payingCount !== payingCount ||
-      stripeCrossCheck.mrrCents !== heroMrrCents);
+    data?.attributedMrrCents != null &&
+    (stripeCrossCheck.payingCount !== payingRows.length ||
+      stripeCrossCheck.mrrCents !== data.attributedMrrCents);
 
   const chartSegments = [
     {
@@ -137,7 +150,7 @@ export function AdminOwnerRevenuePanel() {
   return (
     <DashboardSection
       title="Revenue"
-      description="Live Stripe settlement from specialist_billing — no catalog estimates."
+      description="Live Stripe MRR plus per-specialist specialist_billing roster. Complimentary trials are $0."
     >
       {loading ? <p className="admin-empty">Loading Stripe billing…</p> : null}
       {error ? <p className="admin-status-error">{error}</p> : null}
@@ -146,9 +159,11 @@ export function AdminOwnerRevenuePanel() {
         <>
           <p className="admin-status-note">
             {data.stripeConfigured
-              ? payingCount > 0
-                ? `SMOAC billing · ${payingCount} paying specialist${payingCount === 1 ? "" : "s"} (from specialist_billing)`
-                : "No SMOAC paid subscriptions in specialist_billing yet. Complimentary Pro trials do not count as revenue."
+              ? stripeCrossCheck
+                ? `Live Stripe MRR · ${payingCount} paying SMOAC subscription${payingCount === 1 ? "" : "s"}. Complimentary Pro trials do not count.`
+                : payingRows.length > 0
+                  ? `Stripe secret not returning account MRR — showing specialist_billing roster (${payingRows.length} paying).`
+                  : "No SMOAC paid subscriptions yet. Complimentary Pro trials do not count as revenue."
               : "Stripe is not configured on the server (STRIPE_SECRET_KEY). Billing rows still show webhook sync state when present."}
           </p>
           {stripeDiverges && stripeCrossCheck ? (
@@ -164,7 +179,7 @@ export function AdminOwnerRevenuePanel() {
           <div className="admin-revenue-hero">
             <div className="admin-revenue-hero__mrr">
               <span className="admin-revenue-hero__label">
-                Monthly recurring revenue (SMOAC billing)
+                Monthly recurring revenue (live Stripe)
               </span>
               <span className="admin-revenue-hero__value">
                 {formatBillingCents(heroMrrCents, { decimals: 0 })}
@@ -182,6 +197,17 @@ export function AdminOwnerRevenuePanel() {
               <DashboardMetricCard
                 label="Needs attention"
                 value={String(issueRows.length)}
+              />
+              <DashboardMetricCard
+                label="Pro / Platinum MRR"
+                value={formatBillingCents(
+                  stripeCrossCheck?.membershipCents ?? membershipCents,
+                  { decimals: 0 }
+                )}
+              />
+              <DashboardMetricCard
+                label="Boost / add-on MRR"
+                value={formatBillingCents(addonCents, { decimals: 0 })}
               />
               <DashboardMetricCard
                 label="Pro price / mo"

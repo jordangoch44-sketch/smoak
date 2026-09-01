@@ -508,8 +508,8 @@ export function AdminSpecialistsPanel({
       {showTierBilling && tierCounts ? (
         <>
           <p className="admin-status-note">
-            Paid Pro is Stripe-settled. Pro trial is the complimentary 30-day
-            window — it is not counted as paid Pro.
+            Paid Pro and add-on dollars are Stripe-settled. Pro trial is the
+            complimentary 30-day window — it is not counted as paid Pro.
           </p>
           <AdminSpecialistsTierNav
             activeCategory={activeCategory}

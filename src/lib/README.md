@@ -75,8 +75,10 @@ See `docs/PHASE2_AUTH_ARCHITECTURE.md`.
 
 ## Admin platform
 
-- permissions, notifications, specialist billing catalog projection
-- live revenue via `/api/admin/revenue` + Stripe sync
+- permissions, notifications
+- live revenue via `/api/admin/revenue` + Stripe sync (`fetchStripeMrrCents`, `fetchStripeCollectedWeek`)
+- live overview via `/api/admin/platform-pulse` (`site_visits` + Stripe)
+- specialist roster $ from Stripe-synced `specialist_billing`, not profile flags
 - `internal-auth*.ts`, `internal-routes.ts`
 
 ## Cross-cutting

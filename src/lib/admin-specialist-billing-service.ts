@@ -93,6 +93,104 @@ export function listSpecialistBillingFromRows(
     .sort((a, b) => b.totalMonthlyCents - a.totalMonthlyCents);
 }
 
+function asBillingTier(plan: string | null | undefined): SpecialistBillingTier {
+  if (plan === "premium" || plan === "platinum") return plan;
+  return "free";
+}
+
+function asAddOnId(value: string): SpecialistAdAddOnId | null {
+  if (
+    value === "boosted_profile" ||
+    value === "category_spotlight" ||
+    value === "homepage_spotlight" ||
+    value === "top_ranking_boost"
+  ) {
+    return value;
+  }
+  return null;
+}
+
+/** Stripe-synced specialist_billing row → roster amounts (not profile flags). */
+export function buildSpecialistBillingFromLiveRow(input: {
+  specialistId: string;
+  specialistName: string;
+  plan?: string | null;
+  status?: string | null;
+  activeAddOns?: readonly string[] | null;
+  membershipCents?: number;
+  addonCents?: number;
+}): SpecialistBillingRecord {
+  const paying =
+    input.status === "active" || input.status === "trialing";
+  const tier = paying ? asBillingTier(input.plan) : "free";
+  const tierMeta = SPECIALIST_TIER_CATALOG[tier];
+  const addOnIds = paying
+    ? (input.activeAddOns ?? [])
+        .map((id) => asAddOnId(String(id)))
+        .filter((id): id is SpecialistAdAddOnId => Boolean(id))
+    : [];
+  const activeAddOns = buildAddOns(addOnIds);
+  const catalogAddOnCents = activeAddOns.reduce(
+    (sum, addOn) => sum + addOn.monthlyCents,
+    0
+  );
+  const catalogTierCents = paying ? tierMeta.monthlyCents : 0;
+  const tierMonthlyCents =
+    typeof input.membershipCents === "number"
+      ? input.membershipCents
+      : catalogTierCents;
+  const addOnMonthlyCents =
+    typeof input.addonCents === "number"
+      ? input.addonCents
+      : catalogAddOnCents;
+  const pricedAddOns =
+    typeof input.addonCents === "number" && activeAddOns.length === 1
+      ? [{ ...activeAddOns[0], monthlyCents: addOnMonthlyCents }]
+      : activeAddOns;
+
+  return {
+    specialistId: input.specialistId,
+    specialistName: input.specialistName,
+    tier,
+    tierLabel: paying ? tierMeta.label : SPECIALIST_TIER_CATALOG.free.label,
+    tierMonthlyCents,
+    activeAddOns: pricedAddOns,
+    addOnMonthlyCents,
+    totalMonthlyCents: tierMonthlyCents + addOnMonthlyCents,
+  };
+}
+
+export function liveBillingBySpecialistId(
+  rows: readonly {
+    specialistProfileId: string | null;
+    specialistName: string;
+    status: string;
+    plan?: string | null;
+    activeAddOns?: readonly string[] | null;
+    membershipCents?: number;
+    addonCents?: number;
+  }[]
+): Map<string, SpecialistBillingRecord> {
+  const map = new Map<string, SpecialistBillingRecord>();
+  for (const row of rows) {
+    const id = row.specialistProfileId?.trim();
+    if (!id) continue;
+    map.set(
+      id,
+      buildSpecialistBillingFromLiveRow({
+        specialistId: id,
+        specialistName: row.specialistName,
+        plan: row.plan,
+        status: row.status,
+        activeAddOns: row.activeAddOns,
+        membershipCents: row.membershipCents,
+        addonCents: row.addonCents,
+      })
+    );
+  }
+  return map;
+}
+
 function computeOwnerMetrics(
   records: readonly SpecialistBillingRecord[]
 ): AdminOwnerRevenueMetrics {

@@ -99,7 +99,9 @@ export function generateJarvisGreetingBriefing(
   const topSource = pulse.traffic?.topSources?.[0]?.source ?? null;
   const pending = pulse.pendingApplications ?? 0;
   const specialists = pulse.specialists?.total ?? 0;
-  const mrrCents = pulse.earnings?.subscriberRevenueCents ?? 0;
+  const mrrCents =
+    (pulse.earnings?.subscriberRevenueCents ?? 0) +
+    (pulse.earnings?.adRevenueCents ?? 0);
   const mrrFormatted = formatBillingCents(mrrCents, { decimals: 0 });
 
   const sentences: string[] = [];
