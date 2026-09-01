@@ -44,7 +44,7 @@ function ReviewModalForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
-  const footerRef = useRef<HTMLElement | null>(null);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
   const [viewportLayout, setViewportLayout] = useState<{
     height: number;
     offsetTop: number;
@@ -81,11 +81,16 @@ function ReviewModalForm({
     };
   }, []);
 
-  const scrollFooterIntoView = useCallback(() => {
+  const scrollActionsIntoView = useCallback(() => {
     requestAnimationFrame(() => {
-      footerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      actionsRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
     });
   }, []);
+
+  useEffect(() => {
+    if (rating < 1) return;
+    scrollActionsIntoView();
+  }, [rating, scrollActionsIntoView]);
 
   const trimmedLength = text.trim().length;
   const canSubmit =
@@ -138,6 +143,12 @@ function ReviewModalForm({
   ]);
 
   const displayStars = hovered || rating;
+  const submitHint =
+    rating < 1
+      ? "Select a star rating to continue."
+      : trimmedLength < REVIEW_TEXT_MIN
+        ? `Write at least ${REVIEW_TEXT_MIN} characters to submit.`
+        : null;
 
   return (
     <div
@@ -226,9 +237,9 @@ function ReviewModalForm({
             value={text}
             maxLength={REVIEW_TEXT_MAX}
             disabled={submitting}
-            rows={5}
+            rows={4}
             enterKeyHint="send"
-            onFocus={scrollFooterIntoView}
+            onFocus={scrollActionsIntoView}
             onChange={(event) => setText(event.target.value)}
           />
           <div className="review-modal__count-row">
@@ -248,26 +259,29 @@ function ReviewModalForm({
           </div>
 
           {error ? <p className="review-modal__error">{error}</p> : null}
-        </div>
 
-        <footer className="review-modal__footer" ref={footerRef}>
-          <button
-            type="button"
-            className="smoac-control review-modal__cancel"
-            disabled={submitting}
-            onClick={onClose}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="smoac-control review-modal__submit"
-            disabled={!canSubmit}
-            onClick={() => void handleSubmit()}
-          >
-            {submitting ? "Submitting…" : "Submit Review"}
-          </button>
-        </footer>
+          <div className="review-modal__actions" ref={actionsRef}>
+            <button
+              type="button"
+              className="smoac-control review-modal__cancel"
+              disabled={submitting}
+              onClick={onClose}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="smoac-control review-modal__submit"
+              disabled={!canSubmit}
+              onClick={() => void handleSubmit()}
+            >
+              {submitting ? "Submitting…" : "Submit Review"}
+            </button>
+          </div>
+          {submitHint ? (
+            <p className="review-modal__submit-hint">{submitHint}</p>
+          ) : null}
+        </div>
       </div>
     </div>
   );
