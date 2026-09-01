@@ -239,6 +239,17 @@
   color: #ffb4b4;
 }
 
+.review-modal__error-link {
+  color: inherit;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.review-modal__error-link:hover {
+  color: #ffd0d0;
+}
+
 .review-modal__actions {
   display: none;
 }

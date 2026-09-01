@@ -7,17 +7,20 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
+import { LOGIN_PATH } from "@/lib/auth-routes";
 import { submitSpecialistReview } from "@/lib/reviews/specialist-reviews-client";
 import {
   REVIEW_TEXT_MAX,
   REVIEW_TEXT_MIN,
   submitReviewErrorMessage,
   type SpecialistReview,
+  type SubmitSpecialistReviewErrorCode,
 } from "@/lib/reviews/specialist-review-types";
 import { cn } from "@/lib/utils";
 
@@ -41,7 +44,8 @@ function ReviewModalForm({
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [text, setText] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] =
+    useState<SubmitSpecialistReviewErrorCode | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -94,7 +98,7 @@ function ReviewModalForm({
     if (submittingRef.current || !canSubmit) return;
     submittingRef.current = true;
     setSubmitting(true);
-    setError(null);
+    setSubmitError(null);
 
     await refreshSession();
 
@@ -106,7 +110,7 @@ function ReviewModalForm({
     });
 
     if (!result.ok) {
-      setError(submitReviewErrorMessage(result));
+      setSubmitError(result.error);
       submittingRef.current = false;
       setSubmitting(false);
       return;
@@ -251,7 +255,23 @@ function ReviewModalForm({
             <p className="review-modal__submit-hint">{submitHint}</p>
           ) : null}
 
-          {error ? <p className="review-modal__error">{error}</p> : null}
+          {submitError ? (
+            <p className="review-modal__error" role="alert">
+              {submitReviewErrorMessage({ ok: false, error: submitError })}
+              {submitError === "not_authenticated" ? (
+                <>
+                  {" "}
+                  <Link
+                    href={LOGIN_PATH}
+                    className="review-modal__error-link"
+                    onClick={onClose}
+                  >
+                    Log in
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          ) : null}
         </div>
 
         <footer className="review-modal__footer">
