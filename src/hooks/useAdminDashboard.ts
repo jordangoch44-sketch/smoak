@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useRequireInternalAuth } from "@/hooks/useRequireInternalAuth";
-import { ensureAdminApplicationSeeds } from "@/lib/admin-applications-seed";
+import {
+  ensureAdminApplicationSeeds,
+  isAdminDemoApplicationId,
+} from "@/lib/admin-applications-seed";
 import {
   activateSpecialistApplicationWithEditsAsync,
   activateSpecialistFromApplicationAsync,
@@ -83,10 +86,14 @@ export function useAdminDashboard() {
     getHiddenTrainersSnapshot,
     getHiddenTrainersServerSnapshot
   );
-  const applications = useSyncExternalStore(
+  const applicationsRaw = useSyncExternalStore(
     subscribeSpecialistApplications,
     getSpecialistApplicationsSnapshot,
     getSpecialistApplicationsServerSnapshot
+  );
+  const applications = useMemo(
+    () => applicationsRaw.filter((app) => !isAdminDemoApplicationId(app.id)),
+    [applicationsRaw]
   );
   const clientApplications = useSyncExternalStore(
     subscribeClientApplications,

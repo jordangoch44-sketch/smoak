@@ -4,17 +4,20 @@ import { removeSpecialistApplicationLocal } from "@/lib/specialist-application-s
 const SEED_MERGED_KEY = "smoac_admin_applications_seed_v1";
 const SEED_PURGED_KEY = "smoac_admin_applications_seed_purged_v1";
 
+export const ADMIN_DEMO_APPLICATION_IDS: ReadonlySet<string> = new Set(
+  ADMIN_APPLICATIONS_SEED.map((app) => app.id)
+);
+
+export function isAdminDemoApplicationId(id: string): boolean {
+  return ADMIN_DEMO_APPLICATION_IDS.has(id);
+}
+
 /**
  * Control is live-only: never inject demo applications, and drop leftover
  * local seed IDs from older admin sessions.
  */
 export function ensureAdminApplicationSeeds(): void {
   if (typeof window === "undefined") return;
-  try {
-    if (window.localStorage.getItem(SEED_PURGED_KEY) === "1") return;
-  } catch {
-    return;
-  }
 
   for (const seed of ADMIN_APPLICATIONS_SEED) {
     removeSpecialistApplicationLocal(seed.id);

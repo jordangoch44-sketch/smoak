@@ -1,3 +1,4 @@
+import { isAdminDemoApplicationId } from "@/lib/admin-applications-seed";
 import {
   getAdminSpecialistMeta,
   getAdminSpecialistMetaSnapshot,
@@ -258,6 +259,7 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
   const seen = new Set<string>();
 
   for (const [id, entry] of Object.entries(directoryById)) {
+    if (isAdminDemoApplicationId(id)) continue;
     seen.add(id);
     const visibility = resolveVisibility(id, hiddenIds);
     const approved = getApprovedSpecialistProfileById(id);
@@ -275,6 +277,7 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
   for (const [id, trainer] of Object.entries(
     getApprovedSpecialistProfilesSnapshot()
   )) {
+    if (isAdminDemoApplicationId(id)) continue;
     if (seen.has(id)) continue;
     seen.add(id);
     rows.push(
@@ -289,6 +292,7 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
 
   for (const app of listSpecialistApplications()) {
     /* Only pending apps appear here — approved live as profiles; rejected/archived are gone. */
+    if (isAdminDemoApplicationId(app.id)) continue;
     if (app.profileStatus !== "PENDING_APPROVAL") continue;
     if (seen.has(app.id)) continue;
     seen.add(app.id);
@@ -299,6 +303,7 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
 
   /* Meta-only stubs (ops flags) without a profile row yet */
   for (const id of Object.keys(getAdminSpecialistMetaSnapshot())) {
+    if (isAdminDemoApplicationId(id)) continue;
     if (seen.has(id)) continue;
     const fromApp = applicationAsTrainerRow(
       id,
