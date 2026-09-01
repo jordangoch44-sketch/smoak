@@ -150,7 +150,7 @@ export function AdminOwnerRevenuePanel() {
   return (
     <DashboardSection
       title="Revenue"
-      description="Live Stripe MRR plus per-specialist specialist_billing roster. Complimentary trials are $0."
+      description="Live Stripe monthly recurring revenue plus each specialist's billing roster. Complimentary trials are $0."
     >
       {loading ? <p className="admin-empty">Loading Stripe billing…</p> : null}
       {error ? <p className="admin-status-error">{error}</p> : null}
