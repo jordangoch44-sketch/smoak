@@ -18,6 +18,7 @@ import {
 } from "framer-motion";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
+import { shouldSkipProfileSheetPopstate } from "@/lib/nested-sheet-history";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
 import {
@@ -246,10 +247,11 @@ export function TrainerProfileSheet({
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      /* Nested lightboxes own Escape while open */
+      /* Nested overlays own Escape while open */
       if (
         document.body.classList.contains("gallery-modal-open") ||
-        document.body.classList.contains("profile-image-preview-open")
+        document.body.classList.contains("profile-image-preview-open") ||
+        document.body.classList.contains("inquiry-sheet-open")
       ) {
         return;
       }
@@ -271,6 +273,8 @@ export function TrainerProfileSheet({
     function onPopState() {
       if (programmaticNavRef.current) return;
       if (dismissingRef.current || exited) return;
+      /* Inquiry (and similar overlays) push/pop history; those pops are not profile Back. */
+      if (shouldSkipProfileSheetPopstate()) return;
       dismissingRef.current = true;
       runDismissAnimation({ navigate: false });
     }

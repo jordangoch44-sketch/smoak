@@ -41,10 +41,8 @@ export function ProfileInquiryAction({
     [controlledOpen, onOpenChange]
   );
 
-  const profilePath =
-    typeof window !== "undefined"
-      ? window.location.pathname
-      : `/trainers/${specialistId}`;
+  const profilePath = `/trainers/${encodeURIComponent(specialistId)}`;
+  const onClose = useCallback(() => setOpen(false), [setOpen]);
 
   return (
     <>
@@ -59,11 +57,11 @@ export function ProfileInquiryAction({
       ) : null}
       <SpecialistInquirySheet
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={onClose}
         specialistId={specialistId}
         specialistName={specialistName}
         specialistProfession={specialistProfession}
-        profilePath={profilePath || `/trainers/${specialistId}`}
+        profilePath={profilePath}
         initialAction={initialAction}
       />
     </>
