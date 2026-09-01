@@ -3,7 +3,7 @@
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { SavedPanelContent } from "./SavedPanelContent";
 
-/** Direct /saved route — full page access */
+/** Direct /saved route — clients and specialists share the shortlist. */
 export function SavedPageClient() {
   return (
     <div className="saved-page-route saved-page-route--fill relative overflow-hidden px-4 sm:px-6">

@@ -15,7 +15,6 @@ import { TrainerList } from "@/components/trainers";
 import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOrganizer";
 import { Button } from "@/components/ui/Button";
 import { SavedAuthGlassCard } from "@/components/saved/SavedAuthGlassCard";
-import { SavedPanelAuthCta } from "@/components/saved/SavedPanelAuthCta";
 import { cn } from "@/lib/utils";
 import {
   buildJoinFlowHrefForSaved,
@@ -66,11 +65,6 @@ export function SavedPanelContent({
   const treatsSavesReady = isSavesReady || loadTimedOut;
   const isEmptyClient =
     isReady && treatsSavesReady && isClientWithSaves && saved.length === 0;
-  const isSpecialistSignedIn =
-    isReady &&
-    treatsSavesReady &&
-    session?.role === "specialist" &&
-    saved.length === 0;
   const isClientLoadingSaves =
     isReady && isClientWithSaves && !treatsSavesReady && !isLoggedOut;
 
@@ -104,7 +98,10 @@ export function SavedPanelContent({
       return `${saved.length} specialist${saved.length !== 1 ? "s" : ""} in your shortlist`;
     }
     if (isClientWithSaves) return "Your saved library is empty.";
-    return "Sign in as a client to save specialists.";
+    if (session?.role === "specialist") {
+      return "Sign in with a client account to save specialists and view your shortlist.";
+    }
+    return "Sign in to save specialists.";
   }
 
   const showPageAuthStage = !isOverlay && isReady && isLoggedOut;
@@ -179,25 +176,6 @@ export function SavedPanelContent({
             />
           )}
         </div>
-      ) : isSpecialistSignedIn ? (
-        <div
-          className={
-            isOverlay
-              ? "saved-dropdown__empty saved-dropdown__auth-block"
-              : "explore-empty saved-dropdown__auth-block mt-10"
-          }
-        >
-          <p className="saved-dropdown__auth-headline">Client account required</p>
-          <p className="saved-dropdown__auth-lede">
-            Specialist accounts cannot save trainers. Sign in as a client to
-            build your shortlist.
-          </p>
-          <SavedPanelAuthCta
-            loginHref={loginHref}
-            loginLabel="Log in as client"
-            onNavigate={handleAuthNavigate}
-          />
-        </div>
       ) : isClientLoadingSaves ? (
         <div
           className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}
@@ -223,9 +201,15 @@ export function SavedPanelContent({
         <div
           className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}
         >
-          <p className="explore-empty__title">Sign in to save specialists</p>
+          <p className="explore-empty__title">
+            {session?.role === "specialist"
+              ? "Client account required"
+              : "Sign in to save specialists"}
+          </p>
           <p className="explore-empty__text">
-            Create a client account to build your shortlist.
+            {session?.role === "specialist"
+              ? "Specialist accounts cannot save favorites. Create or log in to a client account to save specialists."
+              : "Create an account to build your shortlist."}
           </p>
           <div className="explore-empty__actions">
             <Link
@@ -233,14 +217,14 @@ export function SavedPanelContent({
               className="explore-empty__btn"
               onClick={handleAuthNavigate}
             >
-              Log in
+              {session?.role === "specialist" ? "Log in as client" : "Log in"}
             </Link>
             <Link
               href={joinHref}
               className="explore-empty__btn explore-empty__btn--ghost"
               onClick={handleAuthNavigate}
             >
-              Create account
+              {session?.role === "specialist" ? "Create client account" : "Create account"}
             </Link>
           </div>
         </div>

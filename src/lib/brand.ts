@@ -1,13 +1,17 @@
 /** Central SMOAC brand constants */
 export const BRAND_NAME = "SMOAC";
 
-/** Bump when logo assets change to bust browser / CDN caches */
+/**
+ * Official mark + wordmark (transparent PNGs).
+ * Sources archived under `/public/brand/*-source.png`.
+ * Bump query when swapping files if CDN caches stick.
+ */
 export const LOGO_SRC = "/smoac-mark.png";
 
-/** Transparent raster wordmark (typography from brand asset) */
+/** Transparent raster wordmark — custom SMOAC letterforms (brand “font”) */
 export const WORDMARK_SRC = "/smoac-wordmark.png";
-export const WORDMARK_WIDTH = 881;
-export const WORDMARK_HEIGHT = 78;
+export const WORDMARK_WIDTH = 978;
+export const WORDMARK_HEIGHT = 177;
 
 export type BrandWordmarkTone = "metallic" | "silver" | "white";
 export type BrandWordmarkVariant = "primary" | "compact" | "display";

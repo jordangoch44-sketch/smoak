@@ -3,6 +3,7 @@ import { Hero, Categories, HomeEssenceSlideshow } from "@/components/home";
 import { HomeDiscoveryClient } from "@/components/home/HomeDiscoveryClient";
 import { HomeScrollReset } from "@/components/home/HomeScrollReset";
 import { HomeSeoSpecialistLinks } from "@/components/home/HomeSeoSpecialistLinks";
+import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
 
 export const metadata: Metadata = {
@@ -27,6 +28,14 @@ export default async function HomePage() {
   return (
     <div className="home-page home-page--discovery">
       <HomeScrollReset />
+      <AuroraAtmosphere
+        intensity="subtle"
+        starDensity="none"
+        glowPosition="header"
+        glowColor="mixed"
+        enableMotion
+        className="home-page__cosmic"
+      />
       <div className="home-page__sky" aria-hidden />
       <Hero />
       <Categories />

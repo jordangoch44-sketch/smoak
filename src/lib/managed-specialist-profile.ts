@@ -31,6 +31,10 @@ import {
 import { resolveSpecialistFormLocation } from "@/lib/specialist-form-location";
 import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
+import {
+  parseSlideshowFrameMap,
+  pruneSlideshowFrameMap,
+} from "@/lib/media/slideshow-frame";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
 import type {
   ProfileStatus,
@@ -118,16 +122,29 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
     const appHasHeaderMedia = Boolean(
       (application.media?.trainingVideoUrls ?? "").trim()
     );
+    const galleryImages = appHasHeaderMedia
+      ? fromApp.galleryImages?.length
+        ? fromApp.galleryImages
+        : approved.galleryImages
+      : approved.galleryImages?.length
+        ? approved.galleryImages
+        : fromApp.galleryImages;
+    const appSlideshowFrames = parseSlideshowFrameMap(
+      application.media?.slideshowFramesJson ?? ""
+    );
+    const slideshowFramesSource =
+      approved.gallerySlideshowFrames ??
+      (Object.keys(appSlideshowFrames).length > 0
+        ? appSlideshowFrames
+        : undefined);
+    const gallerySlideshowFrames = slideshowFramesSource
+      ? pruneSlideshowFrameMap(slideshowFramesSource, galleryImages ?? [])
+      : undefined;
+
     return {
       ...fromApp,
       image: fromApp.image || approved.image,
-      galleryImages: appHasHeaderMedia
-        ? fromApp.galleryImages?.length
-          ? fromApp.galleryImages
-          : approved.galleryImages
-        : approved.galleryImages?.length
-          ? approved.galleryImages
-          : fromApp.galleryImages,
+      galleryImages,
       gallery: appHasHeaderMedia
         ? fromApp.gallery?.length
           ? fromApp.gallery
@@ -145,6 +162,7 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
       pinnedPhotos: approved.pinnedPhotos?.length
         ? approved.pinnedPhotos
         : fromApp.pinnedPhotos,
+      gallerySlideshowFrames,
       profileStyle:
         fromApp.profileStyle ??
         (approved.profileStyle
@@ -173,6 +191,10 @@ export function syncProfileOverridesFromApplication(
     coverImageUrl: existing?.coverImageUrl ?? generated.coverImageUrl,
     pinnedPhotos: existing?.pinnedPhotos ?? generated.pinnedPhotos,
     videoNotes: existing?.videoNotes ?? generated.videoNotes,
+    slideshowFramesJson:
+      generated.slideshowFramesJson?.trim() ||
+      existing?.slideshowFramesJson?.trim() ||
+      "",
     profileStyle:
       generated.profileStyle ??
       existing?.profileStyle ??
@@ -269,6 +291,7 @@ export function mergeProfileEditsIntoApplication(
       transformationPhotoUrls: form.transformationNotes.trim(),
       /* Legacy field name — stores header/gallery image URLs (not only videos). */
       trainingVideoUrls: form.photoNotes.trim(),
+      slideshowFramesJson: form.slideshowFramesJson.trim(),
     },
     profileStyle: normalizeProfileStyle({
       accent: form.profileAccent,

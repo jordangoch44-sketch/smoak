@@ -36,8 +36,14 @@
   position: absolute;
   inset: 0;
   border: none;
-  /* Soft dim — avoid solid black that flashes when the portal unmounts */
-  background: rgba(6, 6, 10, 0.55);
+  /* Soft dim + faint SMOAC Color wash — avoid solid black that flashes on unmount */
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 50% 100%,
+      rgba(var(--smoac-color-violet-rgb), 0.18) 0%,
+      transparent 55%
+    ),
+    rgba(6, 6, 10, 0.55);
   cursor: pointer;
   touch-action: manipulation;
   backdrop-filter: none;
@@ -68,7 +74,7 @@
   border-radius: 1.5rem 1.5rem 0 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-bottom: none;
-  background: #0e0e14;
+  background: #0a0910;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 -20px 64px rgba(0, 0, 0, 0.45);

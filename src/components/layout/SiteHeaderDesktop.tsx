@@ -50,7 +50,7 @@ export function SiteHeaderDesktop({ onLogoClick }: SiteHeaderDesktopProps) {
               data-header-btn="signup"
               className="smoac-control site-header__signup"
             >
-              Sign up
+              <span className="site-header__signup__label">Sign up</span>
             </Link>
           ) : null}
         </div>

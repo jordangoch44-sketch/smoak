@@ -11,6 +11,7 @@ import {
   isActiveNavItem,
   type MobileBottomNavItemId,
 } from "@/lib/mobile-bottom-nav";
+import { SITE_ROUTES } from "@/lib/navigation";
 import { formatSavedCountBadge } from "@/lib/saved-ui";
 import { canSaveSpecialists } from "@/lib/specialist-saves";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,10 @@ function SiteHeaderDesktopNavInner() {
       <ul className="site-header-desktop-nav__list">
         {items.map((item) => {
           const active = isActiveNavItem(item.id, pathname, searchParams);
-          const label = DESKTOP_NAV_LABELS[item.id];
+          const label =
+            item.id === "saved" && item.label === "Overview"
+              ? "Overview"
+              : DESKTOP_NAV_LABELS[item.id];
 
           return (
             <li key={item.id} className="site-header-desktop-nav__item">
@@ -58,7 +62,9 @@ function SiteHeaderDesktopNavInner() {
                 aria-current={active ? "page" : undefined}
               >
                 {label}
-                {item.id === "saved" && showSaveBadge ? (
+                {item.id === "saved" &&
+                item.href === SITE_ROUTES.saved &&
+                showSaveBadge ? (
                   <span className="site-header-desktop-nav__badge" aria-hidden>
                     {formatSavedCountBadge(savedCount)}
                   </span>

@@ -14,6 +14,7 @@ export interface DashboardHeaderProps {
   statusTone?: "pending" | "active" | "rejected";
   actions?: ReactNode;
   introActions?: ReactNode;
+  className?: string;
 }
 
 export function DashboardHeader({
@@ -28,11 +29,18 @@ export function DashboardHeader({
   statusTone = "pending",
   actions,
   introActions,
+  className,
 }: DashboardHeaderProps) {
   const hasAside = Boolean(roleLabel || statusLabel || actions);
 
   return (
-    <header className="dashboard-page__header">
+    <header
+      className={
+        className
+          ? `dashboard-page__header ${className}`
+          : "dashboard-page__header"
+      }
+    >
       <div
         className={
           hasAside

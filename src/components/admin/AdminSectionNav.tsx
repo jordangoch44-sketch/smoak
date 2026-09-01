@@ -33,6 +33,7 @@ export function AdminSectionNav({
         {sections.map((section) => {
           const badgeCount = badgeCounts?.[section.id] ?? 0;
           const showBadge = badgeCount > 0;
+          const isActive = activeId === section.id;
 
           return (
             <button
@@ -40,11 +41,11 @@ export function AdminSectionNav({
               type="button"
               id={`admin-tab-${section.id}`}
               role="tab"
-              aria-selected={activeId === section.id}
+              aria-selected={isActive}
               aria-controls={`admin-panel-${section.id}`}
               className={cn(
                 "admin-nav__link",
-                activeId === section.id && "admin-nav__link--active",
+                isActive && "admin-nav__link--active",
                 showBadge && "admin-nav__link--has-badge"
               )}
               onClick={() => onSelect(section.id)}
@@ -57,6 +58,9 @@ export function AdminSectionNav({
                 >
                   {formatBadgeCount(badgeCount)}
                 </span>
+              ) : null}
+              {isActive ? (
+                <span className="admin-nav__indicator" aria-hidden="true" />
               ) : null}
             </button>
           );

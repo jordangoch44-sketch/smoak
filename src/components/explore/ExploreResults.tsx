@@ -49,7 +49,7 @@ export const ExploreResults = memo(function ExploreResults({
   areaEmpty = false,
   mapSearchEmpty = false,
   nearbyExpanded = false,
-  showMap = true,
+  showMap: _showMap = true,
   layout = "toggle",
   onClearFilters,
   onClearSearch,

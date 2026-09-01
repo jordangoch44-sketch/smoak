@@ -44,6 +44,11 @@ function ReviewModalForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
+  const footerRef = useRef<HTMLElement | null>(null);
+  const [viewportLayout, setViewportLayout] = useState<{
+    height: number;
+    offsetTop: number;
+  } | null>(null);
 
   useEffect(() => {
     const previous = document.body.classList.contains("review-modal-open");
@@ -53,6 +58,33 @@ function ReviewModalForm({
         document.body.classList.remove("review-modal-open");
       }
     };
+  }, []);
+
+  useEffect(() => {
+    function syncViewport() {
+      const viewport = window.visualViewport;
+      setViewportLayout({
+        height: viewport?.height ?? window.innerHeight,
+        offsetTop: viewport?.offsetTop ?? 0,
+      });
+    }
+
+    syncViewport();
+    window.visualViewport?.addEventListener("resize", syncViewport);
+    window.visualViewport?.addEventListener("scroll", syncViewport);
+    window.addEventListener("resize", syncViewport);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("scroll", syncViewport);
+      window.removeEventListener("resize", syncViewport);
+    };
+  }, []);
+
+  const scrollFooterIntoView = useCallback(() => {
+    requestAnimationFrame(() => {
+      footerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    });
   }, []);
 
   const trimmedLength = text.trim().length;
@@ -73,6 +105,7 @@ function ReviewModalForm({
 
     const result = await submitSpecialistReview({
       specialistId,
+      specialistName,
       rating,
       reviewText: text,
     });
@@ -101,6 +134,7 @@ function ReviewModalForm({
     showToast,
     specialistId,
     text,
+    specialistName,
   ]);
 
   const displayStars = hovered || rating;
@@ -109,6 +143,14 @@ function ReviewModalForm({
     <div
       className="review-modal-root"
       role="presentation"
+      style={
+        viewportLayout
+          ? {
+              top: `${viewportLayout.offsetTop}px`,
+              height: `${viewportLayout.height}px`,
+            }
+          : undefined
+      }
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !submitting) {
           onClose();
@@ -121,6 +163,11 @@ function ReviewModalForm({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        style={
+          viewportLayout
+            ? { maxHeight: `${Math.min(viewportLayout.height * 0.94, 640)}px` }
+            : undefined
+        }
       >
         <header className="review-modal__header">
           <h2 id={titleId} className="review-modal__title">
@@ -180,6 +227,8 @@ function ReviewModalForm({
             maxLength={REVIEW_TEXT_MAX}
             disabled={submitting}
             rows={5}
+            enterKeyHint="send"
+            onFocus={scrollFooterIntoView}
             onChange={(event) => setText(event.target.value)}
           />
           <div className="review-modal__count-row">
@@ -201,7 +250,7 @@ function ReviewModalForm({
           {error ? <p className="review-modal__error">{error}</p> : null}
         </div>
 
-        <footer className="review-modal__footer">
+        <footer className="review-modal__footer" ref={footerRef}>
           <button
             type="button"
             className="smoac-control review-modal__cancel"

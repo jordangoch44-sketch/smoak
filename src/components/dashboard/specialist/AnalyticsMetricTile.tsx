@@ -42,6 +42,7 @@ export function AnalyticsMetricTile({
     <article
       className={cn(
         "dashboard-metric-tile",
+        metric.id && `dashboard-metric-tile--${metric.id}`,
         metric.isCoreKpi && "dashboard-metric-tile--core",
         isPremium && metric.isCoreKpi && "dashboard-metric-tile--premium",
         fullLock && "dashboard-metric-tile--locked",

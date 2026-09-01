@@ -7,10 +7,12 @@ import { useReducedMotion } from "framer-motion";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { AlertTriangleIcon, CloseIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { PUBLIC_INVALID_LOGIN_MESSAGE, type PublicAuthRole } from "@/lib/dev-auth";
+import type { AuthRole } from "@/types/auth";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
 import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
@@ -19,6 +21,12 @@ import { cn } from "@/lib/utils";
 
 const LOGIN_FAILURE_DELAY_MS = 300;
 const ERROR_FADE_MS = 220;
+
+interface RoleMismatchState {
+  expectedRole: PublicAuthRole;
+  actualRole: AuthRole;
+  message: string;
+}
 
 const PUBLIC_LOGIN_ROLES: {
   id: PublicAuthRole;
@@ -54,6 +62,9 @@ export function LoginPageClient() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [roleMismatch, setRoleMismatch] = useState<RoleMismatchState | null>(null);
+  const [roleMismatchActive, setRoleMismatchActive] = useState(false);
+  const roleMismatchDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [errorVisible, setErrorVisible] = useState(false);
   const [fieldsError, setFieldsError] = useState(false);
   const [shakeFields, setShakeFields] = useState(false);
@@ -62,6 +73,48 @@ export function LoginPageClient() {
   const errorFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!roleMismatchActive) return;
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        clearRoleMismatchModal();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [roleMismatchActive]);
+
+  function clearRoleMismatchModal() {
+    setRoleMismatchActive(false);
+    if (roleMismatchDismissTimerRef.current) {
+      clearTimeout(roleMismatchDismissTimerRef.current);
+    }
+    roleMismatchDismissTimerRef.current = setTimeout(() => {
+      setRoleMismatch(null);
+      roleMismatchDismissTimerRef.current = null;
+    }, 220);
+    setFieldsError(false);
+    setError(null);
+    setErrorVisible(false);
+  }
+
+  function handleSwitchRole(targetRole: PublicAuthRole) {
+    setRole(targetRole);
+    clearRoleMismatchModal();
+  }
+
+  useEffect(() => {
+    return () => {
+      if (errorFadeTimerRef.current) {
+        clearTimeout(errorFadeTimerRef.current);
+      }
+      if (roleMismatchDismissTimerRef.current) {
+        clearTimeout(roleMismatchDismissTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (submitting || submitPressed || roleMismatch || roleMismatchActive) return;
     if (!isReady || !session || session.role === "admin") return;
     const publicRole = getUserRole(session);
     if (!publicRole) return;
@@ -71,10 +124,11 @@ export function LoginPageClient() {
         ? "/saved"
         : getDashboardPathForRole(publicRole)
     );
-  }, [isReady, session, returnToSaved]);
+  }, [isReady, session, returnToSaved, submitting, submitPressed, roleMismatch, roleMismatchActive]);
 
   useEffect(() => {
     if (searchParams.get("error") !== "auth_callback") return;
+    setRoleMismatch(null);
     setError(
       "That email link is invalid or has expired. Sign in with your password, or use Forgot password."
     );
@@ -91,7 +145,7 @@ export function LoginPageClient() {
   }, []);
 
   function clearLoginError() {
-    if (!fieldsError && !error) return;
+    if (!fieldsError && !error && !roleMismatchActive) return;
 
     setFieldsError(false);
     setShakeFields(false);
@@ -103,6 +157,9 @@ export function LoginPageClient() {
 
     errorFadeTimerRef.current = setTimeout(() => {
       setError(null);
+      if (!roleMismatchActive) {
+        setRoleMismatch(null);
+      }
       errorFadeTimerRef.current = null;
     }, ERROR_FADE_MS);
   }
@@ -114,6 +171,8 @@ export function LoginPageClient() {
   }
 
   async function showLoginFailure(message?: string) {
+    setRoleMismatchActive(false);
+    setRoleMismatch(null);
     setError(message ?? PUBLIC_INVALID_LOGIN_MESSAGE);
     setFieldsError(true);
     setErrorVisible(true);
@@ -126,6 +185,10 @@ export function LoginPageClient() {
     if (errorFadeTimerRef.current) {
       clearTimeout(errorFadeTimerRef.current);
       errorFadeTimerRef.current = null;
+    }
+    if (roleMismatchDismissTimerRef.current) {
+      clearTimeout(roleMismatchDismissTimerRef.current);
+      roleMismatchDismissTimerRef.current = null;
     }
 
     setErrorVisible(false);
@@ -156,6 +219,24 @@ export function LoginPageClient() {
     if (result.ok === false) {
       setSubmitPressed(false);
       setSubmitting(false);
+      if (
+        result.reason === "role_mismatch" &&
+        result.expectedRole &&
+        result.actualRole
+      ) {
+        setRoleMismatch({
+          expectedRole: result.expectedRole,
+          actualRole: result.actualRole,
+          message: result.message,
+        });
+        setRoleMismatchActive(true);
+        setError(null);
+        setFieldsError(false);
+        setErrorVisible(false);
+        return;
+      }
+      setRoleMismatchActive(false);
+      setRoleMismatch(null);
       await showLoginFailure(result.message);
       return;
     }
@@ -199,7 +280,12 @@ export function LoginPageClient() {
   }
 
   const publicSessionRole =
-    isReady && session && session.role !== "admin"
+    !submitting &&
+    !roleMismatch &&
+    !roleMismatchActive &&
+    isReady &&
+    session &&
+    session.role !== "admin"
       ? getUserRole(session)
       : null;
 
@@ -285,6 +371,8 @@ export function LoginPageClient() {
                     }}
                     className={cn(
                       "login-role-card",
+                      option.id === "client" && "login-role-card--client",
+                      option.id === "specialist" && "login-role-card--specialist",
                       selected && "login-role-card--active"
                     )}
                   >
@@ -388,6 +476,100 @@ export function LoginPageClient() {
           </form>
         </div>
       </div>
+
+      {roleMismatch && (
+        <div
+          className={cn(
+            "login-modal-backdrop",
+            roleMismatchActive && "login-modal-backdrop--active",
+            !roleMismatchActive && "login-modal-backdrop--closing"
+          )}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="role-mismatch-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              clearRoleMismatchModal();
+            }
+          }}
+        >
+          <div
+            className={cn(
+              "login-modal-dialog",
+              roleMismatchActive && "login-modal-dialog--active",
+              !roleMismatchActive && "login-modal-dialog--closing"
+            )}
+          >
+            <button
+              type="button"
+              className="login-modal-dialog__close"
+              onClick={clearRoleMismatchModal}
+              aria-label="Close dialog"
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+
+            <div className="login-modal-dialog__badge" aria-hidden>
+              <AlertTriangleIcon className="login-modal-dialog__badge-icon" />
+            </div>
+
+            <h2 id="role-mismatch-title" className="login-modal-dialog__title">
+              {roleMismatch.actualRole === "client"
+                ? "Client Account Detected"
+                : roleMismatch.actualRole === "specialist"
+                ? "Specialist Account Detected"
+                : roleMismatch.actualRole === "admin"
+                ? "Admin Account Detected"
+                : "Account Type Mismatch"}
+            </h2>
+
+            <p className="login-modal-dialog__desc">
+              {roleMismatch.actualRole === "client"
+                ? "This email is registered as a client account. Switch to Client Sign In to continue without retyping your password."
+                : roleMismatch.actualRole === "specialist"
+                ? "This email is registered as a specialist account. Switch to Specialist Sign In to access your portal."
+                : roleMismatch.message}
+            </p>
+
+            <div className="login-modal-dialog__actions">
+              {roleMismatch.actualRole === "client" ? (
+                <button
+                  type="button"
+                  onClick={() => handleSwitchRole("client")}
+                  className="login-modal-dialog__btn login-modal-dialog__btn--primary"
+                  autoFocus
+                >
+                  Switch to Client Login
+                </button>
+              ) : roleMismatch.actualRole === "specialist" ? (
+                <button
+                  type="button"
+                  onClick={() => handleSwitchRole("specialist")}
+                  className="login-modal-dialog__btn login-modal-dialog__btn--primary"
+                  autoFocus
+                >
+                  Switch to Specialist Login
+                </button>
+              ) : (
+                <Link
+                  href="/internal/login"
+                  className="login-modal-dialog__btn login-modal-dialog__btn--primary"
+                >
+                  Go to Admin Portal
+                </Link>
+              )}
+
+              <button
+                type="button"
+                onClick={clearRoleMismatchModal}
+                className="login-modal-dialog__btn login-modal-dialog__btn--ghost"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

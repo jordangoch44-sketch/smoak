@@ -5,7 +5,6 @@ import {
   getSupabasePublicConfig,
   getSupabaseServiceRoleKey,
 } from "@/lib/supabase/config";
-import { isAdminAppRole } from "@/types/auth-roles";
 import { getSiteUrlForStripe } from "@/lib/stripe/config";
 
 /**

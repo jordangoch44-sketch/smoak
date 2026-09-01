@@ -11,7 +11,7 @@ import {
 import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 
 /** Default search radius around ZIP / device GPS (miles). */
-export const DEFAULT_EXPLORE_RADIUS_MILES = 12;
+export const DEFAULT_EXPLORE_RADIUS_MILES = 7;
 
 /**
  * Fallback metro radius when a marketplace city has no per-city override.

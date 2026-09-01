@@ -31,7 +31,13 @@ export function SiteHeaderMobile({ onLogoClick }: SiteHeaderMobileProps) {
             aria-label="SMOAC home"
             onClick={onLogoClick}
           >
-            <Logo href={null} size="md" priority className="navbar-brand" />
+            <Logo
+              href={null}
+              size="md"
+              priority
+              markOnly
+              className="navbar-brand"
+            />
           </Link>
           <SiteHeaderProBadge />
         </div>
@@ -45,7 +51,7 @@ export function SiteHeaderMobile({ onLogoClick }: SiteHeaderMobileProps) {
               data-header-btn="signup"
               className="smoac-control site-header__signup"
             >
-              Sign up
+              <span className="site-header__signup__label">Sign up</span>
             </Link>
           ) : null}
         </div>

@@ -2,7 +2,11 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
-import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
+import { readFileAsDataUrl } from "@/lib/media/crop-image";
+import {
+  ProfilePhotoCropper,
+  GALLERY_ASPECT_PRESETS,
+} from "@/components/media/ProfilePhotoCropper";
 import {
   SPECIALIST_STORAGE_ACCEPT,
   SPECIALIST_STORAGE_LIMITS,
@@ -49,14 +53,6 @@ function rejectUnsupportedPhonePhoto(file: File): string | null {
   return null;
 }
 
-function compressKindFor(
-  mediaKind: ProfileMediaUploadFieldProps["mediaKind"]
-): "profile" | "cover" | "gallery" {
-  if (mediaKind === "cover") return "cover";
-  if (mediaKind === "gallery-image") return "gallery";
-  return "profile";
-}
-
 export function ProfileMediaUploadField({
   label,
   hint,
@@ -71,6 +67,7 @@ export function ProfileMediaUploadField({
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [pendingCropSrc, setPendingCropSrc] = useState<string | null>(null);
 
   const resolvedAccept =
     accept ??
@@ -85,7 +82,6 @@ export function ProfileMediaUploadField({
     event.target.value = "";
     if (!file) return;
 
-    setUploading(true);
     setUploadError(null);
     try {
       const phoneReject = rejectUnsupportedPhonePhoto(file);
@@ -100,11 +96,23 @@ export function ProfileMediaUploadField({
         );
       }
 
-      const dataUrl = await prepareImageDataUrlForUpload(
-        file,
-        compressKindFor(mediaKind)
-      );
+      const rawDataUrl = await readFileAsDataUrl(file);
+      setPendingCropSrc(rawDataUrl);
+    } catch (error) {
+      const message =
+        error instanceof SpecialistStorageValidationError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Could not read image.";
+      setUploadError(message);
+    }
+  }
 
+  async function handleCropSave(croppedImageDataUrl: string) {
+    setUploading(true);
+    setUploadError(null);
+    try {
       const useStorage =
         Boolean(specialistId?.trim()) &&
         isMarketplaceSupabaseActive() &&
@@ -113,8 +121,6 @@ export function ProfileMediaUploadField({
           mediaKind === "gallery-image");
 
       if (useStorage) {
-        /* Server route uploads with the service role — storage RLS on the
-         * live project does not allow direct client uploads. */
         const id = specialistId!.trim();
         const stamp = Date.now().toString(36);
         const basePath =
@@ -127,7 +133,7 @@ export function ProfileMediaUploadField({
           method: "POST",
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: basePath, dataUrl }),
+          body: JSON.stringify({ path: basePath, dataUrl: croppedImageDataUrl }),
         });
         const payload = (await response.json().catch(() => null)) as
           | { ok: boolean; publicUrl?: string; message?: string }
@@ -140,15 +146,14 @@ export function ProfileMediaUploadField({
                 : "Could not upload image. Try again.")
           );
         }
-        /* Unique object path + cache-bust so img/CDN don't keep the old avatar. */
         const publicUrl = payload.publicUrl.includes("?")
           ? `${payload.publicUrl}&v=${stamp}`
           : `${payload.publicUrl}?v=${stamp}`;
         onChange(publicUrl);
-        return;
+      } else {
+        onChange(croppedImageDataUrl);
       }
-
-      onChange(dataUrl);
+      setPendingCropSrc(null);
     } catch (error) {
       const message =
         error instanceof SpecialistStorageValidationError
@@ -157,10 +162,13 @@ export function ProfileMediaUploadField({
             ? error.message
             : "Could not upload image. Try again.";
       setUploadError(message);
+      throw error;
     } finally {
       setUploading(false);
     }
   }
+
+  const isSquare = aspect === "square" || mediaKind === "profile";
 
   return (
     <div className="dashboard-upload-field">
@@ -171,7 +179,7 @@ export function ProfileMediaUploadField({
         htmlFor={inputId}
         className={cn(
           "dashboard-upload-zone",
-          aspect === "square" && "dashboard-upload-zone--square",
+          isSquare && "dashboard-upload-zone--square",
           value && "dashboard-upload-zone--has-preview",
           uploading && "dashboard-upload-zone--busy"
         )}
@@ -211,19 +219,62 @@ export function ProfileMediaUploadField({
           disabled={uploading}
         />
       </label>
-      {value && onClear ? (
-        <button
-          type="button"
-          className="dashboard-upload-clear"
-          onClick={onClear}
-        >
-          Remove
-        </button>
+
+      {value ? (
+        <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.375rem" }}>
+          <button
+            type="button"
+            className="smoac-control"
+            style={{
+              padding: "0.25rem 0.65rem",
+              fontSize: "0.75rem",
+              borderRadius: "6px",
+              background: "rgba(255, 255, 255, 0.07)",
+              border: "1px solid rgba(255, 255, 255, 0.12)",
+              color: "rgba(255, 255, 255, 0.85)",
+              cursor: "pointer",
+            }}
+            onClick={() => setPendingCropSrc(value)}
+            disabled={uploading}
+          >
+            Adjust crop
+          </button>
+          {onClear ? (
+            <button
+              type="button"
+              className="dashboard-upload-clear"
+              onClick={onClear}
+              disabled={uploading}
+            >
+              Remove
+            </button>
+          ) : null}
+        </div>
       ) : null}
+
       {uploadError ? (
         <p className="dashboard-upload-error" role="alert">
           {uploadError}
         </p>
+      ) : null}
+
+      {pendingCropSrc ? (
+        <ProfilePhotoCropper
+          imageSrc={pendingCropSrc}
+          aspect={isSquare ? 1 : 16 / 9}
+          cropShape={isSquare ? "round" : "rect"}
+          showAspectPresets={false}
+          title={isSquare ? "Adjust Profile Picture" : "Frame Cover Photo"}
+          lead={
+            isSquare
+              ? "Drag to reposition. Pinch or use the zoom slider. The circle shows your avatar preview."
+              : "Drag to reposition, zoom, or rotate your photo to fit the header slideshow."
+          }
+          confirmLabel="Use photo"
+          confirmingLabel="Uploading…"
+          onCancel={() => setPendingCropSrc(null)}
+          onSave={handleCropSave}
+        />
       ) : null}
     </div>
   );

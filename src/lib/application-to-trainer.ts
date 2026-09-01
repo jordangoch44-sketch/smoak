@@ -317,6 +317,7 @@ export function applicationToProfileOverrides(
     servicesOffered: app.bestClientTypes?.trim() ?? "",
     transformationNotes: app.media?.transformationPhotoUrls?.trim() ?? "",
     photoNotes: app.media?.trainingVideoUrls?.trim() ?? "",
+    slideshowFramesJson: app.media?.slideshowFramesJson?.trim() ?? "",
     bookingAvailability: buildSessionExperience(app).join(", "),
     profileStyle: app.profileStyle
       ? normalizeProfileStyle(app.profileStyle)

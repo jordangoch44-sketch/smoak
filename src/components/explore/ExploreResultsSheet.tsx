@@ -182,7 +182,9 @@ export function ExploreResultsSheet({
               onClick={onSearchHere}
               disabled={searchHereLoading || !onSearchHere}
             >
-              {searchHereLoading ? "Searching…" : "Search here"}
+              <span className="explore-split__search-here__label">
+                {searchHereLoading ? "Searching…" : "Search here"}
+              </span>
             </button>
           ) : null}
           <button

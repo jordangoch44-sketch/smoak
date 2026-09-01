@@ -8,7 +8,6 @@ import { getCachedGeocodedZipPlace } from "@/lib/geo/geocoded-zip-cache";
 import { findNearestMarketplaceCity } from "@/lib/marketplace-city-centers";
 import {
   lookupLocalZipPlace,
-  UNKNOWN_ZIP_AREA_LABEL,
 } from "@/lib/geo/zip-place-names";
 import {
   isValidZipCode,

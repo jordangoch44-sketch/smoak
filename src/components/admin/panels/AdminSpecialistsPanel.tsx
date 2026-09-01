@@ -175,6 +175,7 @@ function SpecialistCard({
           {showBilling && billing ? (
             <SpecialistBillingBlock billing={billing} />
           ) : null}
+
           <div className="admin-entity-card__chips">
             {row.featured ? <span className="admin-chip">Featured</span> : null}
             {row.sponsored ? <span className="admin-chip">Sponsored</span> : null}
@@ -186,21 +187,41 @@ function SpecialistCard({
               <span className="admin-chip">Real / protected</span>
             ) : null}
           </div>
-          <label className="admin-field-label">
-            Visibility
-            <select
-              className="admin-field"
-              value={row.visibility}
-              onChange={(e) =>
-                onVisibilityChange(row.id, e.target.value as AdminSpecialistVisibility)
-              }
-            >
-              <option value="active">active</option>
-              <option value="hidden">hidden</option>
-              <option value="pending">pending</option>
-              <option value="suspended">suspended</option>
-            </select>
-          </label>
+
+          <div className="admin-review-grid admin-review-grid--2col">
+            <label className="admin-field-label">
+              Visibility
+              <select
+                className="admin-field"
+                value={row.visibility}
+                onChange={(e) =>
+                  onVisibilityChange(row.id, e.target.value as AdminSpecialistVisibility)
+                }
+              >
+                <option value="active">active</option>
+                <option value="hidden">hidden</option>
+                <option value="pending">pending</option>
+                <option value="suspended">suspended</option>
+              </select>
+            </label>
+            <label className="admin-field-label">
+              Account kind
+              <select
+                className="admin-field"
+                value={row.accountKind ?? "test"}
+                onChange={(e) =>
+                  onAccountKindChange(
+                    row.id,
+                    e.target.value as "real" | "test"
+                  )
+                }
+              >
+                <option value="real">real</option>
+                <option value="test">test</option>
+              </select>
+            </label>
+          </div>
+
           <label className="admin-check admin-check--block">
             <input
               type="checkbox"
@@ -209,25 +230,10 @@ function SpecialistCard({
             />
             Protected real account
           </label>
-          <label className="admin-field-label">
-            Account kind
-            <select
-              className="admin-field"
-              value={row.accountKind ?? "test"}
-              onChange={(e) =>
-                onAccountKindChange(
-                  row.id,
-                  e.target.value as "real" | "test"
-                )
-              }
-            >
-              <option value="real">real</option>
-              <option value="test">test</option>
-            </select>
-          </label>
+
           {permissions.canFeatureSpecialists ? (
-            <>
-              <label className="admin-check admin-check--block">
+            <div className="admin-check-grid">
+              <label className="admin-check">
                 <input
                   type="checkbox"
                   checked={row.featured}
@@ -235,7 +241,7 @@ function SpecialistCard({
                 />
                 Featured
               </label>
-              <label className="admin-check admin-check--block">
+              <label className="admin-check">
                 <input
                   type="checkbox"
                   checked={row.sponsored}
@@ -243,7 +249,7 @@ function SpecialistCard({
                 />
                 Sponsored
               </label>
-              <label className="admin-check admin-check--block">
+              <label className="admin-check">
                 <input
                   type="checkbox"
                   checked={row.topRanked}
@@ -251,7 +257,7 @@ function SpecialistCard({
                 />
                 Top ranked
               </label>
-              <label className="admin-check admin-check--block">
+              <label className="admin-check">
                 <input
                   type="checkbox"
                   checked={row.isPremium}
@@ -259,10 +265,11 @@ function SpecialistCard({
                 />
                 Pro
               </label>
-            </>
+            </div>
           ) : null}
+
           <label className="admin-field-label">
-            Category
+            Category / Profession
             <input
               className="admin-field"
               defaultValue={row.profession}
@@ -274,44 +281,48 @@ function SpecialistCard({
               }}
             />
           </label>
-          <label className="admin-field-label">
-            ZIP code
-            <input
-              className="admin-field"
-              defaultValue={row.zipCode}
-              inputMode="numeric"
-              maxLength={5}
-              onBlur={(e) => {
-                const value = e.target.value.replace(/\D/g, "").slice(0, 5);
-                if (value !== row.zipCode) {
-                  onBasicsChange(row.id, { zipCode: value });
-                }
-              }}
-            />
-          </label>
-          <label className="admin-field-label">
-            City
-            <input
-              className="admin-field"
-              defaultValue={row.city}
-              onBlur={(e) => {
-                const value = e.target.value.trim();
-                if (value !== row.city) onBasicsChange(row.id, { city: value });
-              }}
-            />
-          </label>
-          <label className="admin-field-label">
-            State
-            <input
-              className="admin-field"
-              defaultValue={row.state}
-              maxLength={2}
-              onBlur={(e) => {
-                const value = e.target.value.trim().toUpperCase();
-                if (value !== row.state) onBasicsChange(row.id, { state: value });
-              }}
-            />
-          </label>
+
+          <div className="admin-review-grid admin-review-grid--3col">
+            <label className="admin-field-label">
+              ZIP code
+              <input
+                className="admin-field"
+                defaultValue={row.zipCode}
+                inputMode="numeric"
+                maxLength={5}
+                onBlur={(e) => {
+                  const value = e.target.value.replace(/\D/g, "").slice(0, 5);
+                  if (value !== row.zipCode) {
+                    onBasicsChange(row.id, { zipCode: value });
+                  }
+                }}
+              />
+            </label>
+            <label className="admin-field-label">
+              City
+              <input
+                className="admin-field"
+                defaultValue={row.city}
+                onBlur={(e) => {
+                  const value = e.target.value.trim();
+                  if (value !== row.city) onBasicsChange(row.id, { city: value });
+                }}
+              />
+            </label>
+            <label className="admin-field-label">
+              State
+              <input
+                className="admin-field"
+                defaultValue={row.state}
+                maxLength={2}
+                onBlur={(e) => {
+                  const value = e.target.value.trim().toUpperCase();
+                  if (value !== row.state) onBasicsChange(row.id, { state: value });
+                }}
+              />
+            </label>
+          </div>
+
           <label className="admin-field-label">
             Neighborhood
             <input
@@ -325,42 +336,45 @@ function SpecialistCard({
               }}
             />
           </label>
-          <label className="admin-field-label">
-            Service type
-            <select
-              className="admin-field"
-              value={row.serviceType || ""}
-              onChange={(e) =>
-                onBasicsChange(row.id, {
-                  serviceType: e.target.value as "in-person" | "virtual" | "both",
-                })
-              }
-            >
-              <option value="">—</option>
-              {SPECIALIST_SERVICE_TYPE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="admin-field-label">
-            Travel radius
-            <select
-              className="admin-field"
-              value={row.travelRadius || ""}
-              onChange={(e) =>
-                onBasicsChange(row.id, { travelRadius: e.target.value })
-              }
-            >
-              <option value="">—</option>
-              {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </label>
+
+          <div className="admin-review-grid admin-review-grid--2col">
+            <label className="admin-field-label">
+              Service type
+              <select
+                className="admin-field"
+                value={row.serviceType || ""}
+                onChange={(e) =>
+                  onBasicsChange(row.id, {
+                    serviceType: e.target.value as "in-person" | "virtual" | "both",
+                  })
+                }
+              >
+                <option value="">—</option>
+                {SPECIALIST_SERVICE_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="admin-field-label">
+              Travel radius
+              <select
+                className="admin-field"
+                value={row.travelRadius || ""}
+                onChange={(e) =>
+                  onBasicsChange(row.id, { travelRadius: e.target.value })
+                }
+              >
+                <option value="">—</option>
+                {SPECIALIST_TRAVEL_RADIUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
         </div>
       ) : null}
     </li>

@@ -260,7 +260,6 @@ export function SpecialistPreciseLocationField({
       <label className="login-field specialist-precise-location__field">
         <span className="login-field__label specialist-precise-location__label">
           Exact work / studio address
-          <span className="specialist-precise-location__optional">Optional</span>
         </span>
         <span className="specialist-precise-location__hint">
           Search and pick an address for accurate distance. Street stays private

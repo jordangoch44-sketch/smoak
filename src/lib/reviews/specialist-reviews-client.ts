@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Live SMOAC client reviews — Supabase `specialist_reviews` + `submit_specialist_review` RPC.
+ * Live SMOAC client reviews — Supabase `specialist_reviews` via `/api/reviews/submit`.
  *
  * Powers: `SmoacReviewsSection`, `WriteSpecialistReviewModal`, `useSpecialistReviews`.
  *
@@ -111,85 +111,48 @@ export async function fetchSpecialistReviewAggregates(
 
 export async function submitSpecialistReview(input: {
   specialistId: string;
+  specialistName?: string;
   rating: number;
   reviewText: string;
 }): Promise<SubmitSpecialistReviewResult> {
-  const supabase = createSupabaseBrowserClient();
-  if (!supabase) {
-    return { ok: false, error: "network" };
-  }
+  try {
+    const response = await fetch("/api/reviews/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        specialistId: input.specialistId,
+        specialistName: input.specialistName,
+        rating: input.rating,
+        reviewText: input.reviewText,
+      }),
+    });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { ok: false, error: "not_authenticated" };
-  }
+    const payload = (await response.json()) as SubmitSpecialistReviewResult & {
+      nextEligibleAt?: string;
+    };
 
-  const { data, error } = await supabase.rpc("submit_specialist_review", {
-    p_specialist_id: input.specialistId,
-    p_rating: input.rating,
-    p_review_text: input.reviewText,
-  });
-
-  if (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("[submit_specialist_review]", error.code, error.message);
+    if (payload.ok) {
+      return payload;
     }
-    // Table / RPC missing from schema cache (migration not applied)
-    if (
-      error.code === "PGRST202" ||
-      error.code === "PGRST205" ||
-      /schema cache|could not find/i.test(error.message)
-    ) {
+
+    if (payload.error) {
+      return {
+        ok: false,
+        error: payload.error,
+        nextEligibleAt: payload.nextEligibleAt,
+      };
+    }
+
+    if (response.status === 401) {
+      return { ok: false, error: "not_authenticated" };
+    }
+    if (response.status === 503) {
       return { ok: false, error: "unavailable" };
     }
+
+    return { ok: false, error: "network" };
+  } catch {
     return { ok: false, error: "network" };
   }
-
-  const payload = data as {
-    ok?: boolean;
-    error?: string;
-    next_eligible_at?: string;
-    review?: {
-      id: string;
-      specialist_id: string;
-      rating: number;
-      review_text: string;
-      author_display_name: string;
-      created_at: string;
-      status: string;
-    };
-  } | null;
-
-  if (!payload?.ok) {
-    const knownErrors = new Set([
-      "not_authenticated",
-      "not_client",
-      "specialist_not_found",
-      "self_review",
-      "already_reviewed",
-      "cooldown",
-      "invalid_rating",
-      "invalid_text",
-    ]);
-    const raw = payload?.error ?? "unknown";
-    const error = knownErrors.has(raw)
-      ? (raw as Exclude<
-          SubmitSpecialistReviewResult,
-          { ok: true }
-        >["error"])
-      : "unknown";
-    return {
-      ok: false,
-      error,
-      nextEligibleAt: payload?.next_eligible_at,
-    };
-  }
-
-  if (!payload.review) {
-    return { ok: false, error: "unknown" };
-  }
-
-  return { ok: true, review: mapReviewRow(payload.review) };
 }

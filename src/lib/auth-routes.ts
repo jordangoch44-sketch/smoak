@@ -3,10 +3,14 @@ import { isInternalPath } from "@/lib/internal-routes";
 
 export const CLIENT_DASHBOARD_PATH = "/client-dashboard";
 export const SPECIALIST_DASHBOARD_PATH = "/specialist-dashboard";
+export const SPECIALIST_DASHBOARD_OVERVIEW_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=overview`;
+export const SPECIALIST_DASHBOARD_PROFILE_TAB_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile`;
 export const LOGIN_PATH = "/login";
 
 export function getDashboardPathForRole(role: PublicAuthRole): string {
-  return role === "client" ? CLIENT_DASHBOARD_PATH : SPECIALIST_DASHBOARD_PATH;
+  return role === "client"
+    ? CLIENT_DASHBOARD_PATH
+    : SPECIALIST_DASHBOARD_PROFILE_TAB_HREF;
 }
 
 /** Marketplace account dashboards only — not company portal */

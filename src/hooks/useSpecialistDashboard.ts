@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   DEMO_SPECIALIST_ID,
   DEV_SPECIALIST_DASHBOARD_ID,
@@ -54,7 +53,6 @@ function resolveAnalyticsTrainerId(
 }
 
 export function useSpecialistDashboard() {
-  const router = useRouter();
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
   const {
@@ -253,7 +251,7 @@ export function useSpecialistDashboard() {
 
   async function handleSignOut() {
     await signOut();
-    afterLogoutNavigation(() => router.push("/profile"));
+    afterLogoutNavigation("/profile");
   }
 
   const unreadInquiryLeads = mergedLeads.filter((lead) => lead.unread);

@@ -137,7 +137,7 @@ SMOAC`;
     const bodyHtml = [
       renderEmailParagraphs([
         `Hi ${specialistFirst},`,
-        `You have a new inquiry from ${first}. Reply by email to start the conversation.`,
+        `${first} just reached out through SMOAC. Reply by email to start the conversation — clients often compare a few specialists.`,
       ]),
       renderEmailDetailRows([
         { label: "Client", value: first },
@@ -156,14 +156,20 @@ SMOAC`;
       eyebrow: "New client inquiry",
       title: `${first} reached out`,
       bodyHtml,
-      cta: {
-        label: "Open specialist portal",
-        href: input.dashboardPath,
-      },
+      cta: clientEmail
+        ? { label: `Reply to ${first}`, href: `mailto:${clientEmail}` }
+        : {
+            label: "Open specialist portal",
+            href: input.dashboardPath,
+          },
       secondaryLink: clientEmail
-        ? { label: `Email ${first}`, href: `mailto:${clientEmail}` }
+        ? {
+            label: "Open specialist portal",
+            href: input.dashboardPath,
+          }
         : undefined,
-      footerNote: "Reply promptly — clients often compare a few specialists.",
+      footerNote:
+        "Hit Reply in your inbox to respond — this email is set to the client’s address.",
     });
 
     return await dispatchTransactionalEmail({
@@ -171,6 +177,7 @@ SMOAC`;
       subject: `New SMOAC inquiry from ${first}`,
       text,
       html,
+      replyTo: clientEmail || undefined,
       kind: "inquiry_specialist",
     });
   } catch (error) {

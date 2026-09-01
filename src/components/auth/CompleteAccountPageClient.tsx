@@ -15,6 +15,7 @@ import {
   updatePassword,
 } from "@/lib/auth/marketplace-auth";
 import { ensureClientProfileForAuthUser } from "@/lib/auth/ensure-client-profile";
+import { sendClientWelcomeEmail } from "@/lib/email/confirmation-email-service";
 import { LOGIN_PATH } from "@/lib/auth-routes";
 import { setAuthSession } from "@/lib/auth-session-store";
 import {
@@ -221,6 +222,16 @@ export function CompleteAccountPageClient() {
 
       markPasswordSetupDoneLocally();
       void refreshSession();
+
+      if (email) {
+        const metaFirst = String(
+          authUser?.user_metadata?.first_name ?? ""
+        ).trim();
+        void sendClientWelcomeEmail({
+          to: email,
+          firstName: metaFirst || email.split("@")[0] || "there",
+        });
+      }
 
       /* Profile sync only — do NOT apply pending save until the user chooses. */
       void (async () => {

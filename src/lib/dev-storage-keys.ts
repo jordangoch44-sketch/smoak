@@ -23,6 +23,8 @@ export const DEV_PENDING_SAVE_KEY = "smoac_pending_save";
 /** Survives email-confirm gap before profiles/roles can be written */
 export const DEV_PENDING_MARKETPLACE_SIGNUP_KEY =
   "smoac_pending_marketplace_signup";
+/** Once-per-browser marker so client welcome email isn’t double-sent */
+export const CLIENT_WELCOME_EMAIL_SENT_PREFIX = "smoac_client_welcome_sent:";
 /** Local fallback inbox when Supabase inquiry tables are unavailable */
 export const LOCAL_INQUIRIES_STORAGE_KEY = "smoac_local_inquiries";
 /** Specialist portal inquiry alerts (local + same-browser notify) */

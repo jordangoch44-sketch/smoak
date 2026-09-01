@@ -33,6 +33,11 @@ export interface ProfilePhotoCropSettings {
   x: number;
   y: number;
   zoom: number;
+  /** Cropped region on the original image (percent), for hero framing without file crop. */
+  areaX?: number;
+  areaY?: number;
+  areaWidth?: number;
+  areaHeight?: number;
 }
 
 export interface SpecialistApplicationMedia {
@@ -44,6 +49,8 @@ export interface SpecialistApplicationMedia {
   transformationPhotoUrls: string;
   certificationUploadUrls: string;
   trainingVideoUrls: string;
+  /** JSON map of slideshow image URL → framing { x, y, zoom, area* } */
+  slideshowFramesJson?: string;
 }
 
 export interface SpecialistApplicationSocial extends SocialLinks {
@@ -204,6 +211,7 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
     transformationPhotoUrls: "",
     certificationUploadUrls: "",
     trainingVideoUrls: "",
+    slideshowFramesJson: "",
   },
   bio: "",
 };

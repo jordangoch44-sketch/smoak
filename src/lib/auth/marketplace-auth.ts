@@ -2,7 +2,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { logAuth } from "@/lib/auth/auth-logger";
 import {
-  validateDevLogin,
+  validateDevLoginDetailed,
   validateDevSignup,
   getDevSessionFields,
   PUBLIC_INVALID_LOGIN_MESSAGE,
@@ -17,7 +17,7 @@ import {
   saveSpecialistSignupProfile,
 } from "@/lib/profiles/profile-service";
 import { resolveAvatarUrlFromProfile } from "@/lib/profiles/profile-avatar";
-import type { AuthSession } from "@/types/auth";
+import type { AuthRole, AuthSession } from "@/types/auth";
 import type { PublicAuthRole } from "@/types/auth-roles";
 import type { AdminRoleType } from "@/types/admin-permissions";
 import { isAdminAppRole } from "@/types/auth-roles";
@@ -35,16 +35,24 @@ import {
 } from "@/lib/auth/site-origin";
 import { updatePasswordSetupStatus } from "@/lib/auth/password-setup-status";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
+import { resetAuthSessionCache, setAuthSession } from "@/lib/auth-session-store";
+import { clearAuthClientState } from "@/lib/auth/clear-auth-client-state";
+import { clearSavedTrainersActiveSession } from "@/lib/saved-trainers-store";
 
 function marketplaceSignupRedirectTo(role: PublicAuthRole): string | null {
-  const next =
-    role === "specialist" ? "/specialist-dashboard" : "/client-dashboard";
+  const next = getDashboardPathForRole(role);
   return getAuthCallbackUrl(next);
 }
 
 export type AuthResult =
   | { ok: true; session: AuthSession }
-  | { ok: false; message: string }
+  | {
+      ok: false;
+      message: string;
+      reason?: "role_mismatch" | "invalid_credentials" | "other";
+      expectedRole?: PublicAuthRole;
+      actualRole?: AuthRole;
+    }
   | { ok: "confirm_email"; email: string };
 
 let clientSupabaseEnabled: boolean | null = null;
@@ -357,6 +365,19 @@ export async function ensureMarketplaceSignupProfile(
       });
       return null;
     }
+
+    if (role === "client") {
+      const { sendClientWelcomeEmail } = await import(
+        "@/lib/email/confirmation-email-service"
+      );
+      void sendClientWelcomeEmail({
+        to: email,
+        firstName:
+          pending?.firstName ??
+          String(user.user_metadata?.first_name ?? "").trim() ??
+          "",
+      });
+    }
   }
 
   return buildAuthSessionFromSupabaseUser(supabase, user);
@@ -377,10 +398,29 @@ export async function signInWithPassword(
           "Supabase auth is not active in this build. Run npm run build with .env.local set, then npm run start:lan.",
       };
     }
-    const validated = validateDevLogin(role, trimmedEmail, password);
-    if (!validated || validated === "admin") {
+    const devResult = validateDevLoginDetailed(role, trimmedEmail, password);
+    if (devResult.status === "role_mismatch") {
+      const message =
+        role === "specialist" && devResult.actualRole === "client"
+          ? "This email is registered as a client account. Please log in with specialist credentials, switch to client login, or apply as a specialist."
+          : role === "client" && devResult.actualRole === "specialist"
+          ? "This email is registered as a specialist account. Please log in with client credentials, switch to specialist login, or create a client account."
+          : devResult.actualRole === "admin"
+          ? "This email is registered as an admin account. Please use the admin portal to sign in."
+          : "The selected account type does not match your credentials.";
+
+      return {
+        ok: false,
+        reason: "role_mismatch",
+        expectedRole: role,
+        actualRole: devResult.actualRole,
+        message,
+      };
+    }
+    if (devResult.status !== "ok" || devResult.role === "admin") {
       return { ok: false, message: PUBLIC_INVALID_LOGIN_MESSAGE };
     }
+    const validated = devResult.role;
     const devFields = getDevSessionFields(validated, trimmedEmail);
     return {
       ok: true,
@@ -421,7 +461,7 @@ export async function signInWithPassword(
     return { ok: false, message: PUBLIC_INVALID_LOGIN_MESSAGE };
   }
 
-  const session = await buildAuthSessionFromSupabaseUser(supabase, user);
+  let session = await buildAuthSessionFromSupabaseUser(supabase, user);
   if (!session) {
     const recovered = await ensureMarketplaceSignupProfile(supabase, user, role);
     if (recovered) {
@@ -433,23 +473,49 @@ export async function signInWithPassword(
       if (!peekPendingMarketplaceSignupForEmail(trimmedEmail)?.submitSpecialistApplication) {
         clearPendingMarketplaceSignup();
       }
-      return { ok: true, session: recovered };
+      session = recovered;
+    } else {
+      await supabase.auth.signOut({ scope: "local" });
+      return {
+        ok: false,
+        message: "Account setup is incomplete. Please contact support.",
+      };
     }
-    await supabase.auth.signOut();
-    return {
-      ok: false,
-      message: "Account setup is incomplete. Please contact support.",
-    };
   }
 
-  /* Password proves identity — use the account's real role (pending specialists
-   * included). The login UI role picker is only a preference, not a gate. */
+  /* Role enforcement */
   if (session.role !== role) {
-    logAuth("signin.role_ui_mismatch_allowed", {
+    logAuth("signin.role_mismatch_rejected", {
       userId: user.id,
       requestedRole: role,
       actualRole: session.role,
     });
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      /* ignore */
+    }
+    clearAuthClientState();
+    clearSavedTrainersActiveSession();
+    resetAuthSessionCache();
+    setAuthSession(null);
+
+    const message =
+      role === "specialist" && session.role === "client"
+        ? "This email is registered as a client account. Please log in with specialist credentials, switch to client login, or apply as a specialist."
+        : role === "client" && session.role === "specialist"
+        ? "This email is registered as a specialist account. Please log in with client credentials, switch to specialist login, or create a client account."
+        : session.role === "admin"
+        ? "This email is registered as an admin account. Please use the admin portal to sign in."
+        : "The selected account type does not match your credentials.";
+
+    return {
+      ok: false,
+      reason: "role_mismatch",
+      expectedRole: role,
+      actualRole: session.role,
+      message,
+    };
   }
 
   /* Finish role/profile if pending payload exists (email-confirm path).

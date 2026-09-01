@@ -1,4 +1,4 @@
-import { ShieldCheckIcon } from "@/components/ui/icons";
+import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { cn } from "@/lib/utils";
 import type { Trainer } from "@/types";
@@ -8,7 +8,7 @@ interface TrainerVerifiedCheckProps {
   className?: string;
 }
 
-/** Neon green Pro shield — same mark as the specialist profile hero. */
+/** Luxury smoke-spectrum verified seal — same mark as the specialist profile hero. */
 export function TrainerVerifiedCheck({
   trainer,
   className,
@@ -16,12 +16,9 @@ export function TrainerVerifiedCheck({
   if (!isTrainerVerified(trainer)) return null;
 
   return (
-    <span
+    <VerifiedBadgeMark
       className={cn("trainer-card__verified", className)}
-      title="Verified Pro specialist"
-      aria-label="Verified Pro specialist"
-    >
-      <ShieldCheckIcon className="trainer-card__verified-icon" />
-    </span>
+      iconClassName="trainer-card__verified-icon"
+    />
   );
 }

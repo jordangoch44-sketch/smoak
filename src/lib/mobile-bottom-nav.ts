@@ -1,9 +1,10 @@
 import {
   CLIENT_DASHBOARD_PATH,
   getDashboardPathForRole,
-  isDashboardPath,
   LOGIN_PATH,
+  SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
 } from "@/lib/auth-routes";
 import { JOIN_FLOW_PATH } from "@/lib/join-flow";
 import { SITE_ROUTES } from "@/lib/navigation";
@@ -17,29 +18,76 @@ export type MobileBottomNavItemId =
   | "saved"
   | "profile";
 
+export type MobileBottomNavGlyph = "home" | "search" | "heart" | "chart" | "user";
+
 export interface MobileBottomNavItem {
   id: MobileBottomNavItemId;
   href: string;
   label: string;
+  glyph?: MobileBottomNavGlyph;
   isPrimary?: boolean;
 }
 
-/** Routes that activate the Profile bottom-nav tab */
+/** Routes that activate the Profile bottom-nav tab (not specialist overview). */
 const PROFILE_NAV_PATHS = [
   SITE_ROUTES.profile,
   LOGIN_PATH,
   "/signin",
   JOIN_FLOW_PATH,
   CLIENT_DASHBOARD_PATH,
-  SPECIALIST_DASHBOARD_PATH,
 ] as const;
 
 export function isProfileNavPath(pathname: string): boolean {
-  if (isDashboardPath(pathname)) return true;
+  if (
+    pathname === CLIENT_DASHBOARD_PATH ||
+    pathname.startsWith(`${CLIENT_DASHBOARD_PATH}/`)
+  ) {
+    return true;
+  }
 
   return PROFILE_NAV_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   );
+}
+
+export function isSpecialistDashboardPath(pathname: string): boolean {
+  return (
+    pathname === SPECIALIST_DASHBOARD_PATH ||
+    pathname.startsWith(`${SPECIALIST_DASHBOARD_PATH}/`)
+  );
+}
+
+function specialistDashboardTab(
+  searchParams?: URLSearchParams | null
+): string | null {
+  const tab = searchParams?.get("tab")?.trim().toLowerCase() ?? "";
+  return tab || null;
+}
+
+/** Edit-profile or `?tab=profile` or default specialist dashboard route — Profile tab, not Overview. */
+export function isSpecialistDashboardProfileTab(
+  pathname: string,
+  searchParams?: URLSearchParams | null
+): boolean {
+  if (
+    pathname === `${SPECIALIST_DASHBOARD_PATH}/edit-profile` ||
+    pathname.startsWith(`${SPECIALIST_DASHBOARD_PATH}/edit-profile/`)
+  ) {
+    return true;
+  }
+  if (pathname !== SPECIALIST_DASHBOARD_PATH) return false;
+  const tab = specialistDashboardTab(searchParams);
+  return tab !== "overview" && tab !== "plan";
+}
+
+/** Specialist dashboard overview / plan tab — Favorites slot when logged in. */
+export function isSpecialistDashboardOverviewTab(
+  pathname: string,
+  searchParams?: URLSearchParams | null
+): boolean {
+  if (pathname !== SPECIALIST_DASHBOARD_PATH) return false;
+  const tab = specialistDashboardTab(searchParams);
+  return tab === "overview" || tab === "plan";
 }
 
 function isExplorePath(pathname: string): boolean {
@@ -64,8 +112,13 @@ export function getMobileBottomNavItems(
 ): MobileBottomNavItem[] {
   const signedIn = isLoggedIn(session);
   const role = getUserRole(session);
+  const isSpecialist = role === "specialist";
   const profileHref =
-    signedIn && role ? getDashboardPathForRole(role) : SITE_ROUTES.profile;
+    signedIn && role
+      ? isSpecialist
+        ? SPECIALIST_DASHBOARD_PROFILE_TAB_HREF
+        : getDashboardPathForRole(role)
+      : SITE_ROUTES.profile;
 
   return [
     { id: "home", href: SITE_ROUTES.home, label: "Marketplace", isPrimary: true },
@@ -74,7 +127,14 @@ export function getMobileBottomNavItems(
       href: SITE_ROUTES.exploreSearchFocus,
       label: "Search",
     },
-    { id: "saved", href: SITE_ROUTES.saved, label: "Favorites" },
+    isSpecialist
+      ? {
+          id: "saved",
+          href: SPECIALIST_DASHBOARD_OVERVIEW_HREF,
+          label: "Overview",
+          glyph: "chart",
+        }
+      : { id: "saved", href: SITE_ROUTES.saved, label: "Favorites", glyph: "heart" },
     { id: "profile", href: profileHref, label: "Profile" },
   ];
 }
@@ -136,11 +196,12 @@ export function getMobileBottomNavProfilePresentation(
 /**
  * Single source of truth for bottom-nav active state.
  * Search owns all `/explore` routes (Specialists tab removed).
+ * Specialists: Favorites slot = dashboard overview; Profile = edit-profile tab.
  */
 export function isActiveNavItem(
   itemId: MobileBottomNavItemId,
   pathname: string,
-  _searchParams?: URLSearchParams | null
+  searchParams?: URLSearchParams | null
 ): boolean {
   switch (itemId) {
     case "home":
@@ -150,10 +211,14 @@ export function isActiveNavItem(
     case "saved":
       return (
         pathname === SITE_ROUTES.saved ||
-        pathname.startsWith(`${SITE_ROUTES.saved}/`)
+        pathname.startsWith(`${SITE_ROUTES.saved}/`) ||
+        isSpecialistDashboardOverviewTab(pathname, searchParams)
       );
     case "profile":
-      return isProfileNavPath(pathname);
+      return (
+        isProfileNavPath(pathname) ||
+        isSpecialistDashboardProfileTab(pathname, searchParams)
+      );
     default:
       return false;
   }

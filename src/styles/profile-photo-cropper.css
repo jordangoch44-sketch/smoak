@@ -1,4 +1,5 @@
-/* Full-screen profile photo crop modal — portaled to document.body */
+/* Full-screen photo crop / reposition modal — portaled to document.body */
+/* Luxury SMOAK frosted dark glass aesthetic */
 
 .profile-photo-cropper {
   position: fixed;
@@ -13,14 +14,68 @@
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
-  background: #050508;
+  background: rgba(5, 5, 9, 0.96);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
   isolation: isolate;
+  color: #fff;
+  font-family: inherit;
 }
 
 .profile-photo-cropper__header {
+  position: relative;
   flex-shrink: 0;
   padding: max(1rem, env(safe-area-inset-top, 0px)) 1.25rem 0.75rem;
   text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(10, 10, 16, 0.65);
+}
+
+.profile-photo-cropper__close-btn {
+  position: absolute;
+  top: max(0.875rem, env(safe-area-inset-top, 0px));
+  right: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1.125rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-photo-cropper__close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.profile-photo-cropper__badge-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+}
+
+.profile-photo-cropper__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.625rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(var(--aurora-lavender-rgb), 0.95);
+  background: rgba(var(--aurora-lavender-rgb), 0.12);
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.28);
+  border-radius: 9999px;
 }
 
 .profile-photo-cropper__title {
@@ -32,7 +87,7 @@
 }
 
 .profile-photo-cropper__lead {
-  margin: 0.375rem 0 0;
+  margin: 0.25rem 0 0;
   font-size: 0.8125rem;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.55);
@@ -44,39 +99,170 @@
   min-height: 0;
   width: 100%;
   overflow: hidden;
-  background: rgba(0, 0, 0, 0.35);
+  background: radial-gradient(circle at center, rgba(20, 20, 30, 0.4) 0%, rgba(3, 3, 6, 0.9) 100%);
 }
 
 .profile-photo-cropper__controls {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
-  padding: 0.875rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 20px);
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(8, 8, 12, 0.98);
+  background: rgba(8, 8, 14, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
-.profile-photo-cropper__zoom {
+/* Aspect ratio presets */
+.profile-photo-cropper__aspect-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.profile-photo-cropper__aspect-label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.profile-photo-cropper__aspect-row {
   display: flex;
   align-items: center;
+  gap: 0.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+
+.profile-photo-cropper__aspect-row::-webkit-scrollbar {
+  display: none;
+}
+
+.profile-photo-cropper__aspect-btn {
+  flex-shrink: 0;
+  padding: 0.35rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.profile-photo-cropper__aspect-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.profile-photo-cropper__aspect-btn--active {
+  color: #fff;
+  background: rgba(var(--aurora-lavender-rgb), 0.2);
+  border-color: rgba(var(--aurora-lavender-rgb), 0.65);
+  box-shadow: 0 0 12px rgba(var(--aurora-lavender-rgb), 0.25);
+  font-weight: 600;
+}
+
+/* Toolbar: Rotate, Reset, Zoom */
+.profile-photo-cropper__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
-  margin: 0;
+  flex-wrap: wrap;
+}
+
+.profile-photo-cropper__tool-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-photo-cropper__tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.profile-photo-cropper__tool-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.profile-photo-cropper__tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.profile-photo-cropper__zoom-wrap {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .profile-photo-cropper__zoom-label {
   flex-shrink: 0;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.45);
 }
 
+.profile-photo-cropper__zoom-step-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.875rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.profile-photo-cropper__zoom-step-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.profile-photo-cropper__zoom-step-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .profile-photo-cropper__zoom-input {
   flex: 1;
-  min-width: 0;
+  min-width: 60px;
+  height: 4px;
+  border-radius: 2px;
   accent-color: rgba(var(--aurora-lavender-rgb), 0.95);
+  cursor: pointer;
 }
 
 .profile-photo-cropper__error {
@@ -88,22 +274,80 @@
 
 .profile-photo-cropper__footer {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.profile-photo-cropper__footer--simple {
+  display: grid;
+  grid-template-columns: 1fr 1.35fr;
   gap: 0.625rem;
 }
 
+.profile-photo-cropper__footer--simple .profile-photo-cropper__btn {
+  flex: initial;
+  min-height: 2.75rem;
+}
+
 .profile-photo-cropper__btn {
-  width: 100%;
+  flex: 1;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.profile-photo-cropper__btn--cancel {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.profile-photo-cropper__btn--cancel:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.profile-photo-cropper__btn--skip {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.profile-photo-cropper__btn--skip:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.profile-photo-cropper__btn--confirm {
+  background: linear-gradient(135deg, rgba(var(--aurora-lavender-rgb), 0.95) 0%, rgba(130, 95, 220, 0.95) 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(130, 95, 220, 0.35);
+}
+
+.profile-photo-cropper__btn--confirm:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 4px 20px rgba(130, 95, 220, 0.5);
+}
+
+.profile-photo-cropper__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .profile-photo-cropper__saving {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 5, 8, 0.72);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: rgba(5, 5, 9, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }

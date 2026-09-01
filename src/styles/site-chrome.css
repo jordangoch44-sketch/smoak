@@ -199,16 +199,17 @@
 /* Mobile logo sizing (was .site-navbar scoped) */
 .site-header--mobile .navbar-brand.brand-logo {
   align-items: center;
-  gap: 0.6875rem;
+  gap: 0;
 }
 
-.site-header--mobile .navbar-brand .brand-logo__mark,
-.site-header--mobile .navbar-brand .brand-logo__wordmark {
+.site-header--mobile .navbar-brand .brand-logo__mark {
   display: block;
+  height: 1.75rem;
+  width: 1.75rem;
 }
 
-.site-header--mobile .navbar-brand .brand-logo__wordmark.smoac-wordmark--primary {
-  height: 0.54125rem;
+.site-header--mobile .navbar-brand .brand-logo__wordmark {
+  display: none;
 }
 
 /* ═══ App layout offset ═══ */
@@ -350,7 +351,7 @@
 
 .site-header__signup {
   position: relative;
-  z-index: 0;
+  z-index: 3;
   isolation: isolate;
   display: inline-flex;
   min-height: 1.85rem;
@@ -390,7 +391,7 @@
   pointer-events: none;
 }
 
-.site-header__signup > * {
+.site-header__signup__label {
   position: relative;
   z-index: 1;
 }
@@ -454,7 +455,7 @@
   }
 
   .site-header--desktop .navbar-brand .brand-logo__wordmark.smoac-wordmark--primary {
-    height: 0.6875rem;
+    height: 0.95rem;
     transform: translateY(0.5px);
   }
 
@@ -466,6 +467,14 @@
 
   .site-header__toolbar--desktop .site-header__location {
     max-width: 11rem;
+  }
+
+  /* Desktop Sign up — same control as mobile, sized for the wider bar */
+  .site-header--desktop .site-header__signup {
+    min-height: 2.125rem;
+    padding: 0.35rem 0.95rem;
+    font-size: 0.8125rem;
+    letter-spacing: -0.012em;
   }
 
   .site-header-desktop-nav {

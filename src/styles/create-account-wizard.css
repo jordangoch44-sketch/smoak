@@ -9,6 +9,15 @@
   --wizard-space-lg: 1.75rem;
   --wizard-space-md: 1.25rem;
   --wizard-space-sm: 0.875rem;
+  /* SMOAC Color — background glow (replaces flat purple / single-hue pools) */
+  --login-glow-a: var(--smoac-color-warm-rgb);
+  --login-glow-b: var(--smoac-color-rose-rgb);
+  --login-glow-c: var(--smoac-color-violet-rgb);
+  --login-glow-d: var(--smoac-color-cool-rgb);
+  --accent-glow: var(--smoac-color-violet);
+  --accent-glow-rgb: var(--smoac-color-violet-rgb);
+  --accent-glow-soft-rgb: var(--smoac-color-indigo-rgb);
+  --accent-glow-bright: var(--smoac-color-indigo);
   background: #020203;
   padding-top: max(2rem, calc(env(safe-area-inset-top, 0px) + 1rem));
   padding-bottom: max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 6.5rem));
@@ -16,6 +25,18 @@
   align-items: flex-start;
   min-height: calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px));
   height: auto;
+}
+
+/* Specialist / Health & Wellness Professional — neon blue glow */
+.login-page--wizard[data-login-role="specialist"] {
+  --login-glow-a: 56, 189, 248;
+  --login-glow-b: 14, 165, 233;
+  --login-glow-c: 37, 99, 235;
+  --login-glow-d: 2, 132, 199;
+  --accent-glow: #38bdf8;
+  --accent-glow-rgb: 56, 189, 248;
+  --accent-glow-soft-rgb: 14, 165, 233;
+  --accent-glow-bright: #7dd3fc;
 }
 
 body:has(.login-page--wizard) main {
@@ -31,13 +52,23 @@ body:has(.login-page--wizard) main {
   }
 }
 
-/* ── Layered aurora atmosphere ── */
+/* ── Layered SMOAC Color atmosphere ── */
 .login-page--wizard .login-page__canvas {
   background:
     radial-gradient(
-      ellipse 120% 80% at 50% 0%,
-      rgba(var(--aurora-indigo-rgb), 0.08) 0%,
+      ellipse 90% 55% at 18% 8%,
+      rgba(var(--smoac-color-warm-rgb), 0.1) 0%,
       transparent 55%
+    ),
+    radial-gradient(
+      ellipse 100% 60% at 72% 0%,
+      rgba(var(--smoac-color-violet-rgb), 0.1) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 50% 100%,
+      rgba(var(--smoac-color-cool-rgb), 0.06) 0%,
+      transparent 50%
     ),
     #020203;
 }
@@ -59,10 +90,10 @@ body:has(.login-page--wizard) main {
   transform: translate(-50%, -50%);
   background: radial-gradient(
     ellipse 72% 68% at 50% 50%,
-    rgba(var(--login-glow-b), 0.2) 0%,
-    rgba(var(--login-glow-a), 0.12) 32%,
-    rgba(var(--login-glow-d), 0.08) 52%,
-    rgba(var(--login-glow-c), 0.04) 68%,
+    rgba(var(--login-glow-b), 0.18) 0%,
+    rgba(var(--login-glow-c), 0.14) 28%,
+    rgba(var(--login-glow-a), 0.1) 48%,
+    rgba(var(--login-glow-d), 0.08) 62%,
     transparent 78%
   );
   opacity: 0.88;
@@ -78,8 +109,8 @@ body:has(.login-page--wizard) main {
   transform: translate(-50%, -50%);
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(var(--login-glow-c), 0.1) 0%,
-    rgba(var(--login-glow-d), 0.06) 45%,
+    rgba(var(--login-glow-a), 0.1) 0%,
+    rgba(var(--login-glow-d), 0.08) 42%,
     transparent 72%
   );
   opacity: 0.65;
@@ -120,6 +151,51 @@ body:has(.login-page--wizard) main {
   opacity: 0.62;
 }
 
+.login-page--wizard .atmosphere-blob--indigo {
+  background: radial-gradient(
+    circle at 40% 45%,
+    rgba(var(--smoac-color-indigo-rgb), 0.5) 0%,
+    rgba(var(--smoac-color-cool-rgb), 0.22) 38%,
+    transparent 68%
+  );
+}
+
+.login-page--wizard .atmosphere-blob--violet {
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 50%,
+    rgba(var(--smoac-color-violet-rgb), 0.38) 0%,
+    rgba(var(--smoac-color-rose-rgb), 0.16) 42%,
+    transparent 72%
+  );
+}
+
+.login-page--wizard .atmosphere-blob--magenta {
+  background: radial-gradient(
+    circle at 45% 50%,
+    rgba(var(--smoac-color-rose-rgb), 0.34) 0%,
+    rgba(var(--smoac-color-warm-rgb), 0.14) 45%,
+    transparent 70%
+  );
+}
+
+.login-page--wizard .atmosphere-blob--pink {
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(var(--smoac-color-warm-rgb), 0.24) 0%,
+    rgba(var(--smoac-color-rose-rgb), 0.1) 48%,
+    transparent 72%
+  );
+}
+
+.login-page--wizard .atmosphere-blob--blue {
+  background: radial-gradient(
+    circle at 55% 45%,
+    rgba(var(--smoac-color-cool-rgb), 0.3) 0%,
+    rgba(var(--smoac-color-indigo-rgb), 0.12) 50%,
+    transparent 70%
+  );
+}
+
 .login-page--wizard .wizard-card-glow {
   z-index: 1;
   top: 46%;
@@ -127,9 +203,10 @@ body:has(.login-page--wizard) main {
   height: min(78vw, 34rem);
   background: radial-gradient(
     ellipse 68% 62% at 50% 50%,
-    rgba(var(--login-glow-a), 0.28) 0%,
-    rgba(var(--login-glow-b), 0.14) 38%,
-    rgba(var(--login-glow-c), 0.06) 58%,
+    rgba(var(--login-glow-b), 0.22) 0%,
+    rgba(var(--login-glow-c), 0.16) 28%,
+    rgba(var(--login-glow-a), 0.1) 48%,
+    rgba(var(--login-glow-d), 0.08) 62%,
     transparent 76%
   );
   filter: blur(88px);
@@ -367,15 +444,8 @@ body:has(.login-page--wizard) main {
 .wizard-progress__fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    rgba(var(--aurora-violet-rgb), 0.92) 0%,
-    rgba(var(--aurora-lavender-rgb), 0.95) 52%,
-    rgba(255, 255, 255, 0.86) 100%
-  );
-  box-shadow:
-    0 0 16px rgba(var(--accent-glow-rgb), 0.32),
-    0 0 32px rgba(var(--aurora-lavender-rgb), 0.16);
+  background: var(--smoac-color);
+  box-shadow: var(--smoac-color-glow);
   transition: width 0.52s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -526,6 +596,58 @@ body:has(.login-page--wizard) main {
     0 0 32px rgba(var(--accent-glow-rgb), 0.18),
     0 0 56px rgba(var(--accent-glow-rgb), 0.1),
     0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+/* Client — SMOAC Color selection glow */
+.login-page--wizard .wizard-account-card--client.login-role-card--active {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      155deg,
+      rgba(var(--smoac-color-violet-rgb), 0.14) 0%,
+      rgba(12, 10, 18, 0.92) 55%,
+      rgba(8, 8, 12, 0.94) 100%
+    )
+    padding-box,
+    var(--smoac-color) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    var(--smoac-color-glow-strong),
+    0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.login-page--wizard
+  .wizard-account-card--client.login-role-card--active
+  .wizard-account-icon--active {
+  border-color: transparent;
+  background:
+    linear-gradient(rgba(18, 14, 28, 0.95), rgba(18, 14, 28, 0.95)) padding-box,
+    var(--smoac-color) border-box;
+  color: #fff;
+  box-shadow: var(--smoac-color-glow);
+}
+
+/* Health & Wellness Professional — neon blue selection glow */
+.login-page--wizard .wizard-account-card--specialist.login-role-card--active {
+  border-color: rgba(56, 189, 248, 0.58);
+  background: rgba(56, 189, 248, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 0 1px rgba(56, 189, 248, 0.18),
+    0 0 28px rgba(56, 189, 248, 0.32),
+    0 0 52px rgba(14, 165, 233, 0.2),
+    0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.login-page--wizard
+  .wizard-account-card--specialist.login-role-card--active
+  .wizard-account-icon--active {
+  border-color: rgba(56, 189, 248, 0.65);
+  background: rgba(56, 189, 248, 0.18);
+  color: #e0f2fe;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 22px rgba(56, 189, 248, 0.4);
 }
 
 .login-page--wizard .wizard-account-card.login-role-card--active .login-role-card__desc {
@@ -1205,10 +1327,43 @@ body:has(.login-page--wizard) main {
 }
 
 /* Specialist service area — touch-friendly pills + ZIP */
+.specialist-service-area-fields {
+  gap: 1.375rem;
+}
+
 .specialist-service-area-fields__section {
   border: 0;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.login-page--specialist-onboarding .wizard-step {
+  gap: 1.625rem;
+}
+
+.login-page--specialist-onboarding .wizard-step-heading {
+  gap: 0.5rem;
+  padding-bottom: 0.125rem;
+}
+
+.login-page--specialist-onboarding .wizard-question__subtitle {
+  max-width: 18rem;
+  line-height: 1.45;
+}
+
+.login-page--specialist-onboarding .specialist-service-area-fields .wizard-field-hint {
+  margin: 0.125rem 0 0;
+}
+
+.login-page--specialist-onboarding .specialist-service-area-fields .login-field {
+  gap: 0.5rem;
+}
+
+.login-page--specialist-onboarding .specialist-service-area-fields .wizard-pill-grid {
+  margin-top: 0.125rem;
 }
 
 .specialist-service-area-fields__training {
@@ -1242,14 +1397,6 @@ body:has(.login-page--wizard) main {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0.45rem 0.65rem;
-}
-
-.specialist-precise-location__optional {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
 }
 
 .specialist-precise-location__hint {
@@ -1398,10 +1545,8 @@ body:has(.login-page--wizard) main {
   color: rgba(255, 255, 255, 0.45);
 }
 
-.login-field__label-hint {
-  display: block;
-  margin-top: 0.25rem;
-  font-size: 0.8125rem;
+.login-field__label-required {
+  margin-left: 0.2rem;
   font-weight: 400;
   letter-spacing: normal;
   text-transform: none;
@@ -1530,6 +1675,184 @@ body:has(.login-page--wizard) main {
 
 .wizard-incomplete-modal__btn {
   width: 100%;
+}
+
+/* ── Specialist email OTP — smoke glass modal ── */
+.wizard-incomplete-modal--email-otp .wizard-incomplete-modal__backdrop {
+  background: rgba(2, 2, 4, 0.94);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.wizard-email-otp-panel {
+  position: relative;
+  z-index: 1;
+  width: min(92vw, 22rem);
+  margin: auto;
+  padding: 1.5rem 1.25rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: center;
+  border-radius: 1.25rem;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      165deg,
+      rgba(36, 32, 52, 0.99) 0%,
+      rgba(16, 14, 26, 1) 48%,
+      rgba(10, 9, 16, 1) 100%
+    )
+    padding-box,
+    var(--smoac-color) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    var(--smoac-color-glow);
+  overflow: hidden;
+}
+
+.wizard-email-otp-panel__glow {
+  position: absolute;
+  inset: -40% -20%;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 70% 55% at 50% 0%,
+      rgba(var(--smoac-color-violet-rgb), 0.28) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 50% 42% at 12% 100%,
+      rgba(var(--smoac-color-warm-rgb), 0.16) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 45% 40% at 100% 100%,
+      rgba(var(--smoac-color-cool-rgb), 0.16) 0%,
+      transparent 70%
+    );
+}
+
+.wizard-email-otp-panel__sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.07) 0%,
+    rgba(255, 255, 255, 0.02) 34%,
+    transparent 58%
+  );
+}
+
+.wizard-email-otp-panel__header {
+  position: relative;
+  z-index: 1;
+}
+
+.wizard-email-otp-panel__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.wizard-email-otp-panel__lead {
+  margin: 0.4rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.wizard-email-otp-panel__lead strong {
+  color: #fff;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.wizard-email-otp-panel__input {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 0.875rem 1rem;
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-align: center;
+  color: #fff;
+  border-radius: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.38);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.wizard-email-otp-panel__input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.18em;
+  font-weight: 500;
+}
+
+.wizard-email-otp-panel__input:focus {
+  outline: none;
+  border-color: rgba(var(--smoac-color-violet-rgb), 0.55);
+  box-shadow: var(--smoac-color-focus-ring);
+}
+
+.wizard-email-otp-panel__input:disabled {
+  opacity: 0.55;
+}
+
+.wizard-email-otp-panel__error {
+  position: relative;
+  z-index: 1;
+  margin: -0.25rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: #fca5a5;
+}
+
+.wizard-email-otp-panel__verify {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.wizard-email-otp-panel__links {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wizard-email-otp-panel__links button {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.62);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.wizard-email-otp-panel__links button:hover:not(:disabled) {
+  color: #fff;
+}
+
+.wizard-email-otp-panel__links button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .wizard-email-otp-label {

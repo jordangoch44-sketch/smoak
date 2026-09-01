@@ -64,7 +64,8 @@ export function QuickClientAccountModal({
   const submittingRef = useRef(false);
   const closingRef = useRef(false);
   const gestureEatCleanupRef = useRef<(() => void) | null>(null);
-  const { refreshSession } = useAuthSession();
+  const { session, refreshSession } = useAuthSession();
+  const isSpecialistSession = session?.role === "specialist";
   const [view, setView] = useState<View>("signup");
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
@@ -382,13 +383,19 @@ export function QuickClientAccountModal({
           {view === "signup" ? (
             <div className="login-gate__reassure">
               <h2 id={titleId} className="login-gate__reassure-title">
-                Quick sign up
+                {isSpecialistSession
+                  ? (signupTitle ?? "Client account required")
+                  : (signupTitle ?? "Quick sign up")}
               </h2>
               <p className="login-gate__reassure-punch">
-                Email and that&apos;s it!
+                {isSpecialistSession
+                  ? "Create or log in to a client account"
+                  : "Email and that's it!"}
               </p>
               <p id={descId} className="login-gate__reassure-sub">
-                Browse and compare specialists near you instantly.
+                {isSpecialistSession
+                  ? (signupSupport ?? "Specialist profiles cannot save favorites. Create or log in to a client account to save specialists.")
+                  : resolvedSignupSupport}
               </p>
             </div>
           ) : (

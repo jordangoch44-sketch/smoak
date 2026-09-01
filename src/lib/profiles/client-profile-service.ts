@@ -5,6 +5,7 @@ import {
 } from "@/lib/auth-session-store";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
+  fetchClientProfileEditorRow,
   fetchProfileRow,
   upsertUserRole,
 } from "@/lib/profiles/profile-service";
@@ -74,7 +75,7 @@ export async function loadClientProfileFormState(
     return profileRowToClientFormState(null, authEmail);
   }
 
-  const profile = await fetchProfileRow(supabase, userId);
+  const profile = await fetchClientProfileEditorRow(supabase, userId);
   return profileRowToClientFormState(profile, authEmail);
 }
 
@@ -189,11 +190,15 @@ export async function saveClientProfile(
     .from("profiles")
     .upsert(payload, { onConflict: "user_id" });
 
-  /* Graceful fallback when migration has not been applied yet. */
+  /* Graceful fallback when preference columns are not migrated yet. */
   if (
     error &&
     /42703|column.*does not exist|PGRST204/i.test(error.message)
   ) {
+    console.warn(
+      "[client-profile] preference columns missing — saving core fields only",
+      error.message
+    );
     const legacy = {
       user_id: userId,
       email: authEmail,
@@ -214,7 +219,31 @@ export async function saveClientProfile(
   }
 
   if (error) {
+    console.error("[client-profile] save failed", error.message);
     return { ok: false, message: error.message, section: "profile" };
+  }
+
+  /* Confirm goals/preferences actually persisted (catches silent RLS/select gaps). */
+  const verified = await fetchClientProfileEditorRow(supabase, userId);
+  if (verified) {
+    const savedGoals = Array.isArray(verified.client_goals)
+      ? verified.client_goals
+      : [];
+    if (
+      input.goals.length > 0 &&
+      input.goals.some((goal) => !savedGoals.includes(goal))
+    ) {
+      console.error("[client-profile] save verification mismatch", {
+        sentGoals: input.goals,
+        savedGoals,
+      });
+      return {
+        ok: false,
+        message:
+          "Profile could not be verified after saving. Please try again.",
+        section: "profile",
+      };
+    }
   }
 
   patchAuthSessionFromClientProfile({

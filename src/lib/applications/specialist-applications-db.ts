@@ -58,25 +58,23 @@ export function specialistApplicationToRow(
   application: SpecialistApplication
 ): SpecialistApplicationRow {
   const safe = specialistApplicationForStorage(application);
-  const {
-    id,
-    profileStatus,
-    email,
-    submittedAt,
-    updatedAt,
-    userId,
-    password: _password,
-    ...rest
-  } = safe;
+  const rest = { ...safe } as Record<string, unknown>;
+  delete rest.password;
+  delete rest.id;
+  delete rest.profileStatus;
+  delete rest.email;
+  delete rest.submittedAt;
+  delete rest.updatedAt;
+  delete rest.userId;
 
   return {
-    id,
-    user_id: userId ?? null,
-    profile_status: profileStatus,
-    email: email.trim().toLowerCase(),
-    application_data: rest as unknown as Record<string, unknown>,
-    submitted_at: submittedAt,
-    updated_at: updatedAt,
+    id: safe.id,
+    user_id: safe.userId ?? null,
+    profile_status: safe.profileStatus,
+    email: safe.email.trim().toLowerCase(),
+    application_data: rest,
+    submitted_at: safe.submittedAt,
+    updated_at: safe.updatedAt,
   };
 }
 

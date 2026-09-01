@@ -2,6 +2,7 @@
 
 import { QuickClientAccountModal } from "@/components/auth/QuickClientAccountModal";
 import { applyPendingSaveAfterLogin } from "@/lib/specialist-saves";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import type { PendingSaveRecord } from "@/lib/dev-storage-keys";
 
 export interface SaveQuickSignupModalProps {
@@ -22,6 +23,9 @@ export function SaveQuickSignupModal({
   profilePath,
   onSaved,
 }: SaveQuickSignupModalProps) {
+  const { session } = useAuthSession();
+  const isSpecialistSession = session?.role === "specialist";
+
   async function handleAuthenticated() {
     const applied = await applyPendingSaveAfterLogin("client");
     if (applied.kind === "client-saved" && applied.record) {
@@ -54,9 +58,36 @@ export function SaveQuickSignupModal({
       returnPath={profilePath || `/trainers/${specialistId}`}
       specialistName={specialistName}
       onAuthenticated={handleAuthenticated}
-      signupTitle="Save this specialist"
-      signupSupport="Enter your first name and email to add this specialist to your saved list."
-      signupCta="Continue & Save"
+      signupTitle={
+        isSpecialistSession
+          ? "Client account required"
+          : "Save this specialist"
+      }
+      signupSupport={
+        isSpecialistSession
+          ? "You are signed in to a specialist profile. To save favorites, create or log in to a client account."
+          : "Enter your first name and email to add this specialist to your saved list."
+      }
+      signupCta={
+        isSpecialistSession
+          ? "Create Client Account"
+          : "Continue & Save"
+      }
+      signInTitle={
+        isSpecialistSession
+          ? "Log in to a client account"
+          : "Log in to save"
+      }
+      signInSupport={
+        isSpecialistSession
+          ? "Sign in with a client account to save favorites and view your shortlist."
+          : `Sign in to add${specialistName ? ` ${specialistName}` : " this specialist"} to your saved list.`
+      }
+      signInCta={
+        isSpecialistSession
+          ? "Log in as Client"
+          : "Log in & Save"
+      }
     />
   );
 }

@@ -11,6 +11,7 @@ import type {
   AdminTrafficWeek,
   AdminWeeklyCount,
 } from "@/types/admin-platform-pulse";
+import { buildMarketplaceConversionFunnel } from "@/lib/admin-conversion-funnel-service";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -369,6 +370,7 @@ function surfaceLabel(raw: string | null): string {
     profile: "Profile",
     rankings: "Rankings",
     client_dashboard: "Client dashboard",
+    tools_calories: "Calorie tool",
     unknown: "Unknown",
   };
   return labels[key] ?? key;
@@ -450,6 +452,7 @@ const UNAVAILABLE: AdminPlatformPulse = {
   traffic: null,
   earnings: null,
   engagement: null,
+  conversionFunnel: null,
 };
 
 /** Build pulse from a Supabase client (browser admin session or server). */
@@ -466,6 +469,7 @@ export async function buildAdminPlatformPulse(
     traffic,
     earnings,
     engagement,
+    conversionFunnel,
   ] = await Promise.all([
     fetchWeeklySpecialistCount(supabase, weekAgoIso),
     fetchWeeklyClientCount(supabase, weekAgoIso),
@@ -473,6 +477,10 @@ export async function buildAdminPlatformPulse(
     fetchTrafficWeek(supabase, now),
     fetchLiveEarnings(supabase),
     fetchEngagementWeek(supabase, now),
+    buildMarketplaceConversionFunnel(supabase, "7d").catch((err) => {
+      console.warn("[SMOAC admin] conversion funnel build failed:", err);
+      return null;
+    }),
   ]);
 
   if (
@@ -481,7 +489,8 @@ export async function buildAdminPlatformPulse(
     pendingApplications == null &&
     !traffic &&
     !earnings &&
-    !engagement
+    !engagement &&
+    !conversionFunnel
   ) {
     return UNAVAILABLE;
   }
@@ -494,5 +503,6 @@ export async function buildAdminPlatformPulse(
     traffic,
     earnings,
     engagement,
+    conversionFunnel,
   };
 }

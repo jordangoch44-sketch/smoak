@@ -39,32 +39,57 @@ body:has(.founding-invite-page) .app-main {
   isolation: isolate;
 }
 
-/* Single smooth wash — black → purple → black */
+/* Single smooth wash — black → SMOAC Color → black */
 .founding-invite-page__backdrop {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 50% 48%,
+      rgba(var(--smoac-color-violet-rgb), 0.42) 0%,
+      rgba(var(--smoac-color-rose-rgb), 0.22) 28%,
+      rgba(var(--smoac-color-indigo-rgb), 0.18) 48%,
+      transparent 72%
+    ),
+    linear-gradient(
+      180deg,
+      #000000 0%,
+      #020204 8%,
+      #0a0408 16%,
+      #1a0a12 26%,
+      #2a1020 34%,
+      #3d1830 40%,
+      #5c2048 46%,
+      #7c3a5c 50%,
+      #6b2d78 54%,
+      #4c2a8a 58%,
+      #3b2a7a 64%,
+      #1e1848 72%,
+      #0c1028 82%,
+      #060810 90%,
+      #020204 96%,
+      #000000 100%
+    );
+}
+
+/* Soft spectrum bloom layered over the wash */
+.founding-invite-page__backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
-    180deg,
-    #000000 0%,
-    #020204 10%,
-    #080412 20%,
-    #140824 30%,
-    #241040 38%,
-    #351862 44%,
-    #4c1d95 50%,
-    #5b21b6 54%,
-    #6d28d9 57%,
-    #7c3aed 60%,
-    #6d28d9 64%,
-    #4c1d95 70%,
-    #2d1260 78%,
-    #140824 86%,
-    #080412 93%,
-    #020204 97%,
-    #000000 100%
+    105deg,
+    rgba(var(--smoac-color-warm-rgb), 0.22) 0%,
+    rgba(var(--smoac-color-rose-rgb), 0.2) 28%,
+    rgba(var(--smoac-color-violet-rgb), 0.28) 52%,
+    rgba(var(--smoac-color-indigo-rgb), 0.2) 78%,
+    rgba(var(--smoac-color-cool-rgb), 0.16) 100%
   );
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 .founding-invite-page__main {
@@ -134,9 +159,7 @@ body:has(.founding-invite-page) .app-main {
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   color: rgba(255, 255, 255, 0.96);
-  text-shadow:
-    0 0 24px rgba(124, 58, 237, 0.32),
-    0 0 48px rgba(109, 40, 217, 0.16);
+  text-shadow: var(--smoac-color-glow);
 }
 
 .founding-invite-page__lede {
@@ -153,7 +176,7 @@ body:has(.founding-invite-page) .app-main {
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.92);
   font-weight: 500;
-  box-shadow: 0 0 28px rgba(124, 58, 237, 0.12);
+  box-shadow: var(--smoac-color-glow);
 }
 
 .founding-invite-page__dossier {
@@ -254,7 +277,7 @@ body:has(.founding-invite-page) .app-main {
   border-color: rgba(248, 226, 186, 0.48);
   background: rgba(248, 226, 186, 0.06);
   color: #fff;
-  box-shadow: 0 0 28px rgba(168, 85, 247, 0.12);
+  box-shadow: var(--smoac-color-glow);
 }
 
 .founding-invite-page__cta--primary {

@@ -19,6 +19,7 @@ const SURFACE_LABELS: Record<string, string> = {
   rankings: "Rankings",
   rankings_boost: "Rankings boost",
   client_dashboard: "Client dashboard",
+  tools_calories: "Calorie tool",
 };
 
 function surfaceLabel(raw: string | null | undefined): string {
@@ -101,6 +102,30 @@ async function countSavesInRange(
   const { count, error } = await query;
   if (error) {
     console.warn("[SMOAC analytics] saved_trainers count failed:", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+async function countInquiriesInRange(
+  service: ServiceClient,
+  profileId: string,
+  sinceIso: string,
+  untilIso?: string
+): Promise<number> {
+  let query = service
+    .from("inquiry_conversations")
+    .select("*", { count: "exact", head: true })
+    .eq("specialist_id", profileId)
+    .gte("created_at", sinceIso);
+
+  if (untilIso) {
+    query = query.lt("created_at", untilIso);
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    console.warn("[SMOAC analytics] inquiry_conversations count failed:", error.message);
     return 0;
   }
   return count ?? 0;
@@ -210,6 +235,7 @@ export async function GET() {
     bookingPrevWeek,
     savesThisWeek,
     savesPrevWeek,
+    inquiriesInRange,
   ] = await Promise.all([
     service
       .from("site_visits")
@@ -257,6 +283,7 @@ export async function GET() {
     ),
     countSavesInRange(service, profileId, thisWeekSince),
     countSavesInRange(service, profileId, prevWeekSince, thisWeekSince),
+    countInquiriesInRange(service, profileId, sinceIso),
   ]);
 
   if (visitsRes.error) {
@@ -297,14 +324,29 @@ export async function GET() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 4);
 
+  const pViews = visitsRes.count ?? 0;
+  const pSaves = savesRes.count ?? 0;
+  const inqStarts = contactClicks + bookingClicks;
+  const inqSubs = inquiriesInRange ?? 0;
+  const viewToInquiryRate =
+    pViews > 0 ? Number(((inqSubs / pViews) * 100).toFixed(1)) : 0;
+
   return NextResponse.json({
     ok: true,
     counts: {
-      profileViews: visitsRes.count ?? 0,
-      savedByClients: savesRes.count ?? 0,
+      profileViews: pViews,
+      savedByClients: pSaves,
       searchAppearances,
       contactClicks,
       bookingClicks,
+      funnel: {
+        searchAppearances,
+        profileViews: pViews,
+        highIntentActions: pSaves + inqStarts,
+        inquiryStarts: inqStarts,
+        inquiriesSubmitted: inqSubs,
+        viewToInquiryRate,
+      },
       breakdown: {
         topSurfaces,
         mobileViews,

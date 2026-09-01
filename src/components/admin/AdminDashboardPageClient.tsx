@@ -1,14 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { DashboardLoadingState, DashboardPageShell } from "@/components/dashboard";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { DashboardLoadingState } from "@/components/dashboard";
 import {
   AdminSectionNav,
   type AdminSectionId,
 } from "@/components/admin/AdminSectionNav";
+import { AdminJarvisFloatingWidget } from "@/components/admin/AdminJarvisFloatingWidget";
 import { AdminExecutiveRevenueSnapshot } from "@/components/admin/AdminExecutiveRevenueSnapshot";
-import { AdminOwnerCeoTitle } from "@/components/admin/AdminOwnerCeoTitle";
 import { AdminApplicationsPanel } from "@/components/admin/panels/AdminApplicationsPanel";
 import { AdminClientsPanel } from "@/components/admin/panels/AdminClientsPanel";
 import { AdminOwnerRevenuePanel } from "@/components/admin/panels/AdminOwnerRevenuePanel";
@@ -29,6 +29,15 @@ import type { AdminApplicationMutationResult } from "@/lib/admin-applications-se
 import type { AdminNotifiableSectionId } from "@/types/admin-notifications";
 import type { SpecialistApplication } from "@/types/specialist-application";
 import type { AdminSpecialistVisibility } from "@/types/admin";
+import type { AdminPlatformPulse } from "@/types/admin-platform-pulse";
+import { SmoacWordmark } from "@/components/brand/SmoacWordmark";
+
+function getInitials(name: string): string {
+  if (!name || !name.trim()) return "JG";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
 function isNotifiableAdminSection(
   id: AdminSectionId
@@ -67,6 +76,45 @@ export function AdminDashboardPageClient() {
     updateSpecialistBasics,
   } = useAdminDashboard();
   const access = useAdminPermissions(session);
+
+  const [pulse, setPulse] = useState<AdminPlatformPulse | null>(null);
+  const [isPulseLoading, setIsPulseLoading] = useState(true);
+  const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
+
+  const specialistKey = useMemo(
+    () =>
+      specialists
+        .map(
+          (row) =>
+            `${row.id}:${row.isPremium}:${row.featured}:${row.sponsored}:${row.topRanked}:${row.visibility}`
+        )
+        .join("|"),
+    [specialists]
+  );
+
+  const fetchPulse = useCallback(() => {
+    let cancelled = false;
+    setIsPulseLoading(true);
+    fetch("/api/admin/platform-pulse", { credentials: "include" })
+      .then((res) => res.json())
+      .then((body: { ok?: boolean; pulse?: AdminPlatformPulse }) => {
+        if (cancelled || !body?.ok || !body.pulse) return;
+        setPulse(body.pulse);
+      })
+      .catch(() => {
+        if (!cancelled) setPulse(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsPulseLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    return fetchPulse();
+  }, [fetchPulse, specialistKey, pulseRefreshKey]);
 
   const billingById = useMemo(() => {
     if (!access?.isOwnerAdmin) return undefined;
@@ -121,8 +169,8 @@ export function AdminDashboardPageClient() {
   }
 
   const { permissions, roleLabel, allowedSectionIds, isOwnerAdmin } = access;
-  const pageTitle = isOwnerAdmin
-    ? null
+  const adminDisplayName = isOwnerAdmin
+    ? "Jordan Gochenour"
     : session.displayName ?? session.email.split("@")[0] ?? "Admin";
 
   function handleSignOut() {
@@ -148,7 +196,6 @@ export function AdminDashboardPageClient() {
     const approved = await approveApplication(app);
     if (!approved.ok) return approved;
     const activated = await activateFromApplication(approved.application);
-    /* Fail closed — do not claim success if catalog/email activation failed. */
     if (!activated.ok) {
       return {
         ok: false,
@@ -189,158 +236,217 @@ export function AdminDashboardPageClient() {
   }
 
   return (
-    <DashboardPageShell
-      variant="admin"
-      adminSection={resolvedSection}
-      eyebrow="SMOAC Control"
-      title={isOwnerAdmin ? <AdminOwnerCeoTitle /> : pageTitle ?? "Operations"}
-      subtitle="Internal system"
-      quote="A bad question leads to a dead end, but a great question rewrites the entire map of what is possible."
-      quoteAttribution="Albert Einstein"
-      roleLabel={roleLabel}
-      utilityBar={
-        <button
-          type="button"
-          className="dashboard-signout dashboard-signout--utility"
-          onClick={handleSignOut}
-        >
-          Sign out
-        </button>
-      }
-    >
-      <div className="admin-app">
-        <AdminSectionNav
-          activeId={resolvedSection}
-          allowedSectionIds={allowedSectionIds}
-          badgeCounts={sectionBadgeCounts}
-          onSelect={setActiveSection}
-        />
+    <div className="admin-apple-layout">
+      {/* Luxury Dark SMOAC Top Bar & Navigation */}
+      <header className="admin-apple-topbar">
+        <div className="admin-apple-topbar__inner">
+          <div className="admin-apple-topbar__brand">
+            <div className="admin-apple-topbar__logo">
+              <SmoacWordmark
+                variant="compact"
+                tone="white"
+                priority
+                className="admin-apple-topbar__wordmark"
+              />
+            </div>
+            <div className="admin-apple-topbar__status">
+              <span className="admin-apple-topbar__pulse-dot" />
+              <span className="admin-apple-topbar__status-label">CONTROL</span>
+            </div>
+          </div>
 
+          <div className="admin-apple-topbar__actions">
+            <button
+              type="button"
+              className="admin-apple-topbar__refresh-btn"
+              onClick={() => setPulseRefreshKey((k) => k + 1)}
+              title="Refresh live telemetry"
+              aria-label="Refresh live telemetry"
+            >
+              <svg
+                className="admin-apple-topbar__refresh-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+              </svg>
+            </button>
+
+            <div className="admin-apple-topbar__user-pill">
+              <div className="admin-apple-topbar__user-text">
+                <span className="admin-apple-topbar__user-name">
+                  {adminDisplayName}
+                </span>
+                <span className="admin-apple-topbar__user-role">
+                  {isOwnerAdmin ? "CEO" : roleLabel}
+                </span>
+              </div>
+              <div className="admin-apple-topbar__user-avatar" aria-hidden="true">
+                {getInitials(adminDisplayName)}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="admin-apple-topbar__signout-btn"
+              onClick={handleSignOut}
+              title="Sign out"
+            >
+              Sign out
+            </button>
+          </div>
+        </div>
+
+        {/* Minimalist Horizontal Navigation Bar Directly Below */}
+        <div className="admin-apple-topbar__nav-bar">
+          <div className="admin-apple-topbar__nav-inner">
+            <AdminSectionNav
+              activeId={resolvedSection}
+              allowedSectionIds={allowedSectionIds}
+              badgeCounts={sectionBadgeCounts}
+              onSelect={setActiveSection}
+            />
+          </div>
+        </div>
+      </header>
+
+      {/* Main Admin Page Container */}
+      <main className="admin-apple-main">
+        {/* Active Tab Panel */}
         <div
-          className="admin-app__panel"
+          className="admin-apple-panel"
           role="tabpanel"
           id={`admin-panel-${resolvedSection}`}
           aria-labelledby={`admin-tab-${resolvedSection}`}
         >
-          {/* No AnimatePresence exit layers on admin — they fight scroll on iOS. */}
-          <div key={resolvedSection} className="admin-app__panel-layer">
-              {resolvedSection === "overview" &&
-              (permissions.canViewOverview || permissions.canViewRevenue) ? (
-            <AdminExecutiveRevenueSnapshot
-              refreshKey={specialists
-                .map(
-                  (row) =>
-                    `${row.id}:${row.isPremium}:${row.featured}:${row.sponsored}:${row.topRanked}:${row.visibility}`
-                )
-                .join("|")}
-            />
-              ) : null}
-              {resolvedSection === "applications" ? (
-                <AdminApplicationsPanel
-                  specialistApplications={allApplications}
-                  clientApplications={clientApplications}
-                  permissions={permissions}
-                  onSaveSpecialist={handleSaveApplication}
-                  onApproveSpecialist={handleApprove}
-                  onRejectSpecialist={handleReject}
-                  onArchiveSpecialist={handleArchiveSpecialist}
-                  onActivateSpecialist={handleActivate}
-                  onSaveClient={async (app) => {
-                    if (!permissions.canApproveApplications) {
-                      return {
-                        ok: false,
-                        message: "Missing permission to edit applications.",
-                      };
-                    }
-                    return saveClientApplicationEdits(app);
-                  }}
-                  onApproveClient={async (app) => {
-                    if (!permissions.canApproveApplications) {
-                      return {
-                        ok: false,
-                        message: "Missing permission to approve applications.",
-                      };
-                    }
-                    return approveClientApplication(app);
-                  }}
-                  onRejectClient={async (app) => {
-                    if (!permissions.canApproveApplications) {
-                      return {
-                        ok: false,
-                        message: "Missing permission to reject applications.",
-                      };
-                    }
-                    return rejectClientApplication(app);
-                  }}
-                  onArchiveClient={async (app) => {
-                    if (!permissions.canApproveApplications) {
-                      return {
-                        ok: false,
-                        message: "Missing permission to archive applications.",
-                      };
-                    }
-                    return archiveClientApplication(app);
-                  }}
-                />
-              ) : null}
-              {resolvedSection === "specialists" ? (
-                <AdminSpecialistsPanel
-                  specialists={specialists}
-                  permissions={permissions}
-                  isOwnerAdmin={isOwnerAdmin}
-                  billingById={billingById}
-                  onVisibilityChange={async (
-                    id,
-                    visibility: AdminSpecialistVisibility
-                  ) => {
-                    if (!permissions.canEditSpecialists) return;
-                    await setSpecialistVisibility(id, visibility);
-                  }}
-                  onFeaturedChange={(id, value) => {
-                    if (!permissions.canFeatureSpecialists) return;
-                    void setSpecialistFlag(id, "featured", value);
-                  }}
-                  onSponsoredChange={(id, value) => {
-                    if (!permissions.canFeatureSpecialists) return;
-                    void setSpecialistFlag(id, "sponsored", value);
-                  }}
-                  onTopRankedChange={(id, value) => {
-                    if (!permissions.canFeatureSpecialists) return;
-                    void setSpecialistFlag(id, "topRanked", value);
-                  }}
-                  onPremiumChange={(id, value) => {
-                    if (!permissions.canFeatureSpecialists) return;
-                    void setSpecialistFlag(id, "isPremium", value);
-                  }}
-                  onBasicsChange={(id, basics) => {
-                    if (!permissions.canEditSpecialists) return;
-                    void updateSpecialistBasics(id, basics);
-                  }}
-                  onProtectedChange={(id, value) => {
-                    if (!permissions.canEditSpecialists) return;
-                    void setSpecialistProtected(id, value);
-                  }}
-                  onAccountKindChange={(id, value) => {
-                    if (!permissions.canEditSpecialists) return;
-                    void setSpecialistAccountKind(id, value);
-                  }}
-                />
-              ) : null}
-              {resolvedSection === "clients" && permissions.canViewClients ? (
-                <AdminClientsPanel canDelete={isOwnerAdmin} />
-              ) : null}
-              {resolvedSection === "revenue" && permissions.canViewRevenue ? (
-                <AdminOwnerRevenuePanel />
-              ) : null}
-              {resolvedSection === "team" && permissions.canManageAdmins ? (
-                <AdminTeamPanel />
-              ) : null}
-              {resolvedSection === "settings" && permissions.canManageSettings ? (
-                <AdminSettingsPanel />
-              ) : null}
+          <div key={resolvedSection} className="admin-apple-panel-layer">
+            {resolvedSection === "overview" &&
+            (permissions.canViewOverview || permissions.canViewRevenue) ? (
+              <AdminExecutiveRevenueSnapshot
+                refreshKey={specialistKey}
+                pulse={pulse}
+              />
+            ) : null}
+
+            {resolvedSection === "applications" ? (
+              <AdminApplicationsPanel
+                specialistApplications={allApplications}
+                clientApplications={clientApplications}
+                permissions={permissions}
+                onSaveSpecialist={handleSaveApplication}
+                onApproveSpecialist={handleApprove}
+                onRejectSpecialist={handleReject}
+                onArchiveSpecialist={handleArchiveSpecialist}
+                onActivateSpecialist={handleActivate}
+                onSaveClient={async (app) => {
+                  if (!permissions.canApproveApplications) {
+                    return {
+                      ok: false,
+                      message: "Missing permission to edit applications.",
+                    };
+                  }
+                  return saveClientApplicationEdits(app);
+                }}
+                onApproveClient={async (app) => {
+                  if (!permissions.canApproveApplications) {
+                    return {
+                      ok: false,
+                      message: "Missing permission to approve applications.",
+                    };
+                  }
+                  return approveClientApplication(app);
+                }}
+                onRejectClient={async (app) => {
+                  if (!permissions.canApproveApplications) {
+                    return {
+                      ok: false,
+                      message: "Missing permission to reject applications.",
+                    };
+                  }
+                  return rejectClientApplication(app);
+                }}
+                onArchiveClient={async (app) => {
+                  if (!permissions.canApproveApplications) {
+                    return {
+                      ok: false,
+                      message: "Missing permission to archive applications.",
+                    };
+                  }
+                  return archiveClientApplication(app);
+                }}
+              />
+            ) : null}
+
+            {resolvedSection === "specialists" ? (
+              <AdminSpecialistsPanel
+                specialists={specialists}
+                permissions={permissions}
+                isOwnerAdmin={isOwnerAdmin}
+                billingById={billingById}
+                onVisibilityChange={async (
+                  id,
+                  visibility: AdminSpecialistVisibility
+                ) => {
+                  if (!permissions.canEditSpecialists) return;
+                  await setSpecialistVisibility(id, visibility);
+                }}
+                onFeaturedChange={(id, value) => {
+                  if (!permissions.canFeatureSpecialists) return;
+                  void setSpecialistFlag(id, "featured", value);
+                }}
+                onSponsoredChange={(id, value) => {
+                  if (!permissions.canFeatureSpecialists) return;
+                  void setSpecialistFlag(id, "sponsored", value);
+                }}
+                onTopRankedChange={(id, value) => {
+                  if (!permissions.canFeatureSpecialists) return;
+                  void setSpecialistFlag(id, "topRanked", value);
+                }}
+                onPremiumChange={(id, value) => {
+                  if (!permissions.canFeatureSpecialists) return;
+                  void setSpecialistFlag(id, "isPremium", value);
+                }}
+                onBasicsChange={(id, basics) => {
+                  if (!permissions.canEditSpecialists) return;
+                  void updateSpecialistBasics(id, basics);
+                }}
+                onProtectedChange={(id, value) => {
+                  if (!permissions.canEditSpecialists) return;
+                  void setSpecialistProtected(id, value);
+                }}
+                onAccountKindChange={(id, value) => {
+                  if (!permissions.canEditSpecialists) return;
+                  void setSpecialistAccountKind(id, value);
+                }}
+              />
+            ) : null}
+
+            {resolvedSection === "clients" && permissions.canViewClients ? (
+              <AdminClientsPanel canDelete={isOwnerAdmin} />
+            ) : null}
+
+            {resolvedSection === "revenue" && permissions.canViewRevenue ? (
+              <AdminOwnerRevenuePanel />
+            ) : null}
+
+            {resolvedSection === "team" && permissions.canManageAdmins ? (
+              <AdminTeamPanel />
+            ) : null}
+
+            {resolvedSection === "settings" && permissions.canManageSettings ? (
+              <AdminSettingsPanel />
+            ) : null}
           </div>
         </div>
-      </div>
-    </DashboardPageShell>
+      </main>
+
+      {/* Floating Jarvis Assistant */}
+      <AdminJarvisFloatingWidget pulse={pulse} adminName={adminDisplayName} />
+    </div>
   );
 }

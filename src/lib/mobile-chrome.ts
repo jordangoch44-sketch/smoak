@@ -6,6 +6,7 @@ import {
   isExploreNavPath,
   isHomeNavPath,
   isProfileNavPath,
+  isSpecialistDashboardPath,
 } from "@/lib/mobile-bottom-nav";
 
 const scrollPositions = new Map<string, number>();
@@ -17,11 +18,12 @@ function pathnameFromRouteKey(key: string): string {
   return q === -1 ? key : key.slice(0, q);
 }
 
-/** Marketplace, Search, and Profile always open at the top. */
+/** Marketplace, Search, Profile, and specialist dashboard always open at the top. */
 function shouldResetScrollOnEnter(pathname: string): boolean {
   return (
     isHomeNavPath(pathname) ||
     isProfileNavPath(pathname) ||
+    isSpecialistDashboardPath(pathname) ||
     isExploreNavPath(pathname)
   );
 }

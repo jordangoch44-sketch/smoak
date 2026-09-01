@@ -49,11 +49,15 @@ body:has(.login-page) main {
   --login-pad-x: 1.25rem;
   --login-gap-section: 1.25rem;
   --login-gap-field: 0.75rem;
-  /* Client default — purple aurora */
-  --login-glow-a: var(--aurora-lavender-rgb);
-  --login-glow-b: var(--aurora-violet-rgb);
-  --login-glow-c: var(--aurora-magenta-rgb);
-  --login-glow-d: var(--aurora-indigo-rgb);
+  /* Client default — SMOAC Color glow */
+  --login-glow-a: var(--smoac-color-warm-rgb);
+  --login-glow-b: var(--smoac-color-rose-rgb);
+  --login-glow-c: var(--smoac-color-violet-rgb);
+  --login-glow-d: var(--smoac-color-cool-rgb);
+  --accent-glow: var(--smoac-color-violet);
+  --accent-glow-rgb: var(--smoac-color-violet-rgb);
+  --accent-glow-soft-rgb: var(--smoac-color-indigo-rgb);
+  --accent-glow-bright: var(--smoac-color-indigo);
 
   position: relative;
   display: flex;
@@ -322,6 +326,36 @@ body:has(.login-page) main {
     0 0 18px rgba(var(--accent-glow-rgb), 0.1);
 }
 
+/* Continue as Client — SMOAC Color selection glow (matches signup) */
+.login-role-card--client.login-role-card--active {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      155deg,
+      rgba(var(--smoac-color-violet-rgb), 0.14) 0%,
+      rgba(12, 10, 18, 0.92) 55%,
+      rgba(8, 8, 12, 0.94) 100%
+    )
+    padding-box,
+    var(--smoac-color) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--smoac-color-glow-strong);
+}
+
+.login-role-card--client.login-role-card--active .login-role-card__indicator {
+  border-color: transparent;
+  background:
+    linear-gradient(rgba(18, 14, 28, 0.95), rgba(18, 14, 28, 0.95)) padding-box,
+    var(--smoac-color) border-box;
+  box-shadow: var(--smoac-color-glow);
+}
+
+.login-role-card--client.login-role-card--active .login-role-card__indicator-dot {
+  background: var(--smoac-color-violet);
+  box-shadow: 0 0 8px rgba(var(--smoac-color-violet-rgb), 0.55);
+}
+
 .login-role-card__indicator {
   display: flex;
   height: 1.125rem;
@@ -533,6 +567,215 @@ body:has(.login-page) main {
 .login-card__message--error-hidden {
   opacity: 0;
   transform: translateY(4px);
+}
+
+/* Role mismatch popup modal */
+.login-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(3, 3, 5, 0.72);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  opacity: 0;
+  transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+.login-modal-backdrop--active {
+  opacity: 1;
+}
+
+.login-modal-backdrop--closing {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.login-modal-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 24rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(245, 158, 11, 0.1) 0%,
+      transparent 65%
+    ),
+    rgba(16, 16, 22, 0.94);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 16px 40px rgba(0, 0, 0, 0.55),
+    0 0 32px rgba(245, 158, 11, 0.08);
+  backdrop-filter: blur(32px) saturate(1.2);
+  -webkit-backdrop-filter: blur(32px) saturate(1.2);
+  opacity: 0;
+  transform: scale(0.96) translateY(6px);
+  transition:
+    opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+}
+
+.login-modal-dialog--active {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.login-modal-dialog--closing {
+  opacity: 0;
+  transform: scale(0.96) translateY(6px);
+}
+
+.login-modal-dialog__close {
+  position: absolute;
+  top: 0.875rem;
+  right: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (hover: hover) {
+  .login-modal-dialog__close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #fff;
+  }
+}
+
+.login-modal-dialog__close:active {
+  transform: scale(0.94);
+}
+
+.login-modal-dialog__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.18);
+  margin-bottom: 1rem;
+}
+
+.login-modal-dialog__badge-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.login-modal-dialog__title {
+  margin: 0;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  color: #fff;
+}
+
+.login-modal-dialog__desc {
+  margin: 0.5rem 0 0;
+  font-size: 0.84375rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.64);
+  max-width: 20rem;
+}
+
+.login-modal-dialog__actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0.625rem;
+  margin-top: 1.375rem;
+}
+
+.login-modal-dialog__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  width: 100%;
+  padding: 0.625rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.login-modal-dialog__btn--primary {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #f5f5f7;
+  color: #0a0a0a;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.5) inset,
+    0 2px 8px rgba(0, 0, 0, 0.24);
+}
+
+@media (hover: hover) {
+  .login-modal-dialog__btn--primary:hover {
+    background: #fff;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.6) inset,
+      0 0 16px rgba(255, 255, 255, 0.15),
+      0 4px 12px rgba(0, 0, 0, 0.28);
+  }
+}
+
+.login-modal-dialog__btn--primary:active {
+  transform: scale(0.98);
+}
+
+.login-modal-dialog__btn--ghost {
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+@media (hover: hover) {
+  .login-modal-dialog__btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.85);
+  }
+}
+
+.login-modal-dialog__btn--ghost:active {
+  transform: scale(0.98);
 }
 
 .login-card__message--success {
@@ -1281,5 +1524,10 @@ body.complete-account-lock .login-page--complete-account {
 
   .login-submit--pressed {
     transform: none;
+  }
+
+  .login-modal-backdrop,
+  .login-modal-dialog {
+    animation: none;
   }
 }

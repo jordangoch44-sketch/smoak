@@ -1,11 +1,14 @@
 import { dispatchTransactionalEmail } from "@/lib/email/email-transport";
 import {
+  emailAbsoluteUrl,
+  renderEmailBioLinkBubble,
   renderEmailParagraphs,
   wrapTransactionalEmailHtml,
 } from "@/lib/email/email-html-shell";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { getSiteUrlForStripe } from "@/lib/stripe/config";
-import { LOGIN_PATH } from "@/lib/auth-routes";
+import { CLIENT_DASHBOARD_PATH, LOGIN_PATH } from "@/lib/auth-routes";
+import { CLIENT_WELCOME_EMAIL_SENT_PREFIX } from "@/lib/dev-storage-keys";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 export interface ConfirmationEmailPayload {
@@ -15,6 +18,11 @@ export interface ConfirmationEmailPayload {
   html?: string;
   applicationId: string;
   kind: "specialist" | "client";
+}
+
+export interface ClientWelcomeEmailInput {
+  to: string;
+  firstName?: string | null;
 }
 
 /** @deprecated Prefer EmailSendResult from email-transport — kept for existing callers */
@@ -82,11 +90,21 @@ function buildSpecialistApprovalEmail(
 ): ConfirmationEmailPayload {
   const firstName = specialistFirstName(application);
   const loginUrl = specialistLoginUrl();
+  const profileUrl = emailAbsoluteUrl(
+    `/trainers/${encodeURIComponent(application.id)}`
+  );
   const text = `Hi ${firstName},
 
 Great news — your SMOAC specialist account is approved and your profile is live on Marketplace.
 
-Log in with the email and password you used to apply:
+Add your link to your Instagram bio:
+Your personal landing page is live. Share this link on your Instagram bio, TikTok, or website so clients can view your verified credentials and book you directly:
+${profileUrl}
+
+View Your Live Page:
+${profileUrl}
+
+Log in to Dashboard:
 ${loginUrl}
 
 Choose Continue as Specialist to open your dashboard. You can deepen your listing anytime from Edit profile — availability, extra photos, credentials, and coaching details.
@@ -94,18 +112,37 @@ Choose Continue as Specialist to open your dashboard. You can deepen your listin
 Welcome to SMOAC,
 The SMOAC team`;
 
+  const bioLinkBubbleHtml = renderEmailBioLinkBubble({
+    title: "Add your link to your Instagram bio",
+    description:
+      "Your personal landing page is live. Share this link on your Instagram bio, TikTok, or website so clients can view your verified credentials and book you directly:",
+    profileUrl,
+    viewPageLabel: "View Your Live Page",
+  });
+
+  const bodyHtml = [
+    renderEmailParagraphs([
+      `Hi ${firstName},`,
+      "Your specialist account is approved and your profile is live on Marketplace for clients to discover.",
+    ]),
+    bioLinkBubbleHtml,
+    renderEmailParagraphs([
+      "Log in with the email and password you used to apply. Choose Continue as Specialist, then use Edit profile anytime to deepen availability, photos, credentials, and coaching details.",
+    ]),
+  ].join("");
+
   const html = wrapTransactionalEmailHtml({
     preheader: "You’re approved — your profile is live on SMOAC",
     eyebrow: "You’re live",
     title: "Welcome to SMOAC",
-    bodyHtml: renderEmailParagraphs([
-      `Hi ${firstName},`,
-      "Your specialist account is approved and your profile is live on Marketplace for clients to discover.",
-      "Log in with the email and password you used to apply. Choose Continue as Specialist, then use Edit profile anytime to deepen availability, photos, credentials, and coaching details.",
-    ]),
+    bodyHtml,
     cta: {
-      label: "Open specialist dashboard",
+      label: "Log in to Dashboard",
       href: loginUrl,
+    },
+    secondaryLink: {
+      label: "View Your Live Page",
+      href: profileUrl,
     },
     footerNote: "You’re discoverable now — keep strengthening your profile as you grow.",
   });
@@ -222,6 +259,109 @@ export async function sendSpecialistApplicationRejectedEmail(
     });
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist rejection email failed", error);
+    return { success: false };
+  }
+}
+
+function clientWelcomeAlreadySent(email: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return (
+      window.localStorage.getItem(
+        `${CLIENT_WELCOME_EMAIL_SENT_PREFIX}${email.trim().toLowerCase()}`
+      ) === "1"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function markClientWelcomeSent(email: string): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      `${CLIENT_WELCOME_EMAIL_SENT_PREFIX}${email.trim().toLowerCase()}`,
+      "1"
+    );
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function buildClientWelcomeEmail(
+  input: ClientWelcomeEmailInput
+): Omit<ConfirmationEmailPayload, "applicationId" | "kind"> {
+  const firstName = firstNameFromFullName(input.firstName?.trim() || "", "there");
+  const exploreUrl = `${getSiteUrlForStripe()}/explore`;
+  const dashboardUrl = `${getSiteUrlForStripe()}${CLIENT_DASHBOARD_PATH}`;
+
+  const text = `Hi ${firstName},
+
+Welcome to SMOAC — your account is ready.
+
+Browse vetted wellness specialists near you, save favorites, and send inquiries when you’re ready to connect.
+
+Explore specialists: ${exploreUrl}
+Your dashboard: ${dashboardUrl}
+
+Glad you’re here,
+SMOAC`;
+
+  const html = wrapTransactionalEmailHtml({
+    preheader: "Welcome to SMOAC — your account is ready",
+    eyebrow: "Welcome",
+    title: "You’re in",
+    bodyHtml: renderEmailParagraphs([
+      `Hi ${firstName},`,
+      "Welcome to SMOAC — your account is ready.",
+      "Browse vetted wellness specialists near you, save favorites, and send inquiries when you’re ready to connect.",
+    ]),
+    cta: {
+      label: "Explore specialists",
+      href: exploreUrl,
+    },
+    footerNote: "You can edit your profile anytime from your dashboard.",
+  });
+
+  return {
+    to: input.to.trim().toLowerCase(),
+    subject: "Welcome to SMOAC — your account is ready",
+    text,
+    html,
+  };
+}
+
+/**
+ * Client Join Now / complete-account welcome.
+ * Deduped per browser email so confirm-email → login doesn’t double-send.
+ */
+export async function sendClientWelcomeEmail(
+  input: ClientWelcomeEmailInput
+): Promise<ConfirmationEmailResult> {
+  const to = input.to.trim().toLowerCase();
+  if (!to || !to.includes("@")) {
+    return { success: false };
+  }
+
+  if (clientWelcomeAlreadySent(to)) {
+    return { success: true, mode: "console" };
+  }
+
+  try {
+    const payload = buildClientWelcomeEmail({ ...input, to });
+    const result = await dispatchTransactionalEmail({
+      to: payload.to,
+      subject: payload.subject,
+      text: payload.text,
+      html: payload.html,
+      kind: "confirmation_client",
+    });
+    if (result.success) {
+      markClientWelcomeSent(to);
+    }
+    return result;
+  } catch (error) {
+    console.warn("[SMOAC EMAIL] Client welcome email failed", error);
     return { success: false };
   }
 }

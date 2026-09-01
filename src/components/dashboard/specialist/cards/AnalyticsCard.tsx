@@ -5,7 +5,6 @@ import type { SpecialistProfileAnalytics } from "@/types/specialist-analytics";
 import { buildSecondaryStatTiles } from "@/lib/specialist-dashboard-stats";
 import { SMOAC_PRO_UNLOCK } from "@/lib/specialist-premium";
 import { AnalyticsMetricTile } from "@/components/dashboard/specialist/AnalyticsMetricTile";
-import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import {
   DashboardButton,
   DashboardCollapsibleSection,
@@ -19,23 +18,27 @@ import { cn } from "@/lib/utils";
 interface AnalyticsCardProps {
   analytics: SpecialistProfileAnalytics;
   isPremium: boolean;
-  /** When false, Growth Insights is rendered by the parent accordion stack */
-  includeGrowthInsights?: boolean;
   defaultOpen?: boolean;
 }
 
 export function AnalyticsCard({
   analytics,
   isPremium,
-  includeGrowthInsights = true,
   defaultOpen = false,
 }: AnalyticsCardProps) {
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const secondaryTiles = buildSecondaryStatTiles(analytics);
   const viewsMetric = analytics.coreMetrics.find((m) => m.id === "profile-views");
-  const summary = viewsMetric
-    ? `${viewsMetric.value.toLocaleString("en-US")} profile views`
-    : analytics.periodLabel;
+  const summary = viewsMetric ? (
+    <span className="dashboard-analytics__summary-views">
+      <span className="dashboard-analytics__summary-views-number">
+        {viewsMetric.value.toLocaleString("en-US")}
+      </span>{" "}
+      <span className="dashboard-analytics__summary-views-label">profile views</span>
+    </span>
+  ) : (
+    analytics.periodLabel
+  );
 
   return (
     <>
@@ -94,13 +97,6 @@ export function AnalyticsCard({
               />
             ))}
           </div>
-
-          {includeGrowthInsights ? (
-            <GrowthInsightsSection
-              insights={analytics.growthInsights}
-              isPremium={isPremium}
-            />
-          ) : null}
 
           {isPremium && analytics.discoveryBreakdown ? (
             <div className="dashboard-analytics__discovery">

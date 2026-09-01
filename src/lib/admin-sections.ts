@@ -1,6 +1,6 @@
 /** Admin dashboard section registry — shared by nav + permissions */
 export const ADMIN_SECTIONS = [
-  { id: "overview", label: "Snapshot" },
+  { id: "overview", label: "Overview" },
   { id: "applications", label: "Applications" },
   { id: "specialists", label: "Specialists" },
   { id: "clients", label: "Clients" },

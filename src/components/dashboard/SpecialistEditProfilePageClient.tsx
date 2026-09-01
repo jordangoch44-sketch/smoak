@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
@@ -16,7 +16,6 @@ import {
   ProfileEditViewField,
 } from "@/components/dashboard/specialist/ProfileEditSection";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
-import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { useToast } from "@/components/ui/toast";
@@ -38,6 +37,10 @@ import {
   showsProfileFirstDashboard,
 } from "@/lib/specialist-dashboard-mode";
 import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-subscription";
+import {
+  formatProTrialBadgeLabel,
+  SMOAC_FREE_PLAN_LABEL,
+} from "@/lib/specialist-premium";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import type { Certification, Gender } from "@/types/trainer";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
@@ -59,7 +62,7 @@ import {
   type ProfileAvatarFrameId,
   type ProfileNameFontId,
 } from "@/lib/specialist-profile-style";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
 import { parseGender } from "@/lib/gender";
 
@@ -86,7 +89,6 @@ export function SpecialistEditProfilePageClient({
   presentation?: "page" | "modal";
   onRequestClose?: () => void;
 } = {}) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
@@ -161,13 +163,19 @@ export function SpecialistEditProfilePageClient({
   });
 
   const isPremium = Boolean(session?.isPremium);
+  const onProTrial = Boolean(session?.premiumTrialActive);
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
+  const profilePlanLabel = onProTrial
+    ? formatProTrialBadgeLabel(session?.premiumTrialDaysRemaining)
+    : isPremium
+      ? "SMOAC Pro"
+      : SMOAC_FREE_PLAN_LABEL;
 
   const handleSignOut = useCallback(() => {
     void signOut().then(() => {
-      afterLogoutNavigation(() => router.push("/profile"));
+      afterLogoutNavigation("/profile");
     });
-  }, [router, signOut]);
+  }, [signOut]);
 
   function startEdit(sectionId: SectionId) {
     if (dashboardMode === "pending") return;
@@ -380,6 +388,16 @@ export function SpecialistEditProfilePageClient({
   }
 
   const completion = computeProfileCompletion(savedForm);
+  const photoUrl =
+    (editingSection === "photos-links" && sectionDraft
+      ? sectionDraft.profilePhotoUrl
+      : savedForm?.profilePhotoUrl) ||
+    session?.avatarUrl ||
+    "";
+  const initials =
+    (savedForm?.name ? getInitials(savedForm.name) : "") ||
+    (session?.firstName ? getInitials(session.firstName) : "") ||
+    "SM";
 
   const editorBody = (
     <div
@@ -388,6 +406,75 @@ export function SpecialistEditProfilePageClient({
         isModal && "dashboard-edit--full-editor-modal"
       )}
     >
+      <div className="specialist-edit-profile__header">
+        <div className="specialist-edit-profile__avatar-wrap">
+          <button
+            type="button"
+            className="specialist-edit-profile__avatar-btn smoac-control"
+            onClick={() => {
+              startEdit("photos-links");
+              const el = document.getElementById("photos-links");
+              el?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            aria-label="Edit profile picture"
+          >
+            {photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={photoUrl}
+                alt=""
+                className="specialist-edit-profile__avatar-img"
+              />
+            ) : (
+              <span className="specialist-edit-profile__avatar-initials">
+                {initials}
+              </span>
+            )}
+            <span
+              className="specialist-edit-profile__avatar-ring"
+              aria-hidden
+            />
+          </button>
+          <button
+            type="button"
+            className="specialist-edit-profile__photo-trigger smoac-control"
+            onClick={() => {
+              startEdit("photos-links");
+              const el = document.getElementById("photos-links");
+              el?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          >
+            Edit pictures/slideshow
+          </button>
+        </div>
+
+        <div className="specialist-edit-profile__title-bubble">
+          {profilePlanLabel ? (
+            <div className="ig-profile-edit__badge-wrap">
+              <span
+                className={cn(
+                  "dashboard-role-badge",
+                  (onProTrial || isPremium) && "dashboard-role-badge--pro-trial"
+                )}
+              >
+                {profilePlanLabel}
+              </span>
+            </div>
+          ) : (
+            <div className="specialist-edit-profile__title-badge">
+              <span className="specialist-edit-profile__title-dot" aria-hidden />
+              <span>Profile</span>
+            </div>
+          )}
+          <h1 className="specialist-edit-profile__title">Edit profile</h1>
+          <p className="specialist-edit-profile__subtitle">
+            {profileFirst
+              ? "Update one section at a time — changes save to your profile draft."
+              : "Tap a section to update. Saves go live on Marketplace instantly."}
+          </p>
+        </div>
+      </div>
+
       {dashboardMode === "pending" || dashboardMode === "rejected" ? (
         <SpecialistPendingApprovalNotice
           variant={dashboardMode === "rejected" ? "rejected" : "pending"}
@@ -429,10 +516,6 @@ export function SpecialistEditProfilePageClient({
         </p>
       ) : (
         <>
-      {!isModal && dashboardMode === "approved-free" ? (
-        <SpecialistDashboardProfileHeader variant="live-free" />
-      ) : null}
-
       <div className="dashboard-edit__summary">
         <p className="dashboard-edit__summary-label">Profile strength</p>
         <p className="dashboard-edit__summary-value">{completion}% complete</p>
@@ -446,6 +529,11 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("basic-info")}
             title="Basic info"
             description="Name, headline, and contact details"
+            incomplete={
+              !savedForm.name.trim() ||
+              !savedForm.title.trim() ||
+              (!savedForm.phone.trim() && !savedForm.email.trim())
+            }
             viewContent={
               <>
                 <ProfileEditViewField label="Full name" value={savedForm.name} />
@@ -519,6 +607,7 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("profile-style")}
             title="Profile style"
             description="Accent color, avatar frame, and name font"
+            incomplete={false}
             viewContent={
               <>
                 <ProfileEditViewField
@@ -638,6 +727,7 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("bio")}
             title="Bio / about"
             description="Your story and approach"
+            incomplete={!savedForm.bio.trim() || savedForm.bio.trim().length < 40}
             viewContent={
               <ProfileEditViewField
                 label="Bio"
@@ -662,6 +752,11 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("experience")}
             title="Experience & training"
             description="Credentials clients trust"
+            incomplete={
+              savedForm.pricePerSession <= 0 ||
+              !savedForm.bookingAvailability.trim() ||
+              !savedForm.experienceYears.trim()
+            }
             viewContent={
               <>
                 <ProfileEditViewField
@@ -722,6 +817,11 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("professional-role")}
             title="Professional role"
             description="Your main profession category"
+            incomplete={
+              !savedForm.profession.trim() ||
+              !savedForm.trainingStyle.trim() ||
+              !savedForm.servicesOffered.trim()
+            }
             viewContent={
               <ProfileEditViewField
                 label="Profession"
@@ -750,6 +850,7 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("specialties")}
             title="Specialties"
             description="Tags on cards and filters"
+            incomplete={savedForm.specialty.length === 0}
             viewContent={
               <>
                 {savedForm.specialty.length > 0 ? (
@@ -873,6 +974,11 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("service-area")}
             title="Service area"
             description="Where you train and neighborhoods you serve"
+            incomplete={
+              !savedForm.city.trim() &&
+              !savedForm.zipCode.trim() &&
+              !savedForm.workAddress.trim()
+            }
             viewContent={
               <>
                 <ProfileEditViewField
@@ -1112,6 +1218,11 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("credentials")}
             title="Credentials"
             description="Licenses and certifications"
+            incomplete={
+              !savedForm.certifications.some(
+                (cert) => cert && cert.name.trim().length > 0
+              )
+            }
             viewContent={
               savedForm.certifications.some((cert) => cert.name.trim()) ? (
                 <ul className="profile-edit-credential-list">
@@ -1167,6 +1278,7 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("photos-links")}
             title="Photos & links"
             description="Profile photo, header slideshow, pins, and social"
+            incomplete={!savedForm.profilePhotoUrl.trim()}
             viewContent={
               <>
                 <ProfileEditViewField
@@ -1205,6 +1317,7 @@ export function SpecialistEditProfilePageClient({
                   profilePhotoUrl={form.profilePhotoUrl}
                   coverImageUrl={form.coverImageUrl}
                   photoNotes={form.photoNotes}
+                  slideshowFramesJson={form.slideshowFramesJson}
                   videoNotes={form.videoNotes}
                   pinnedPhotos={form.pinnedPhotos}
                   isPremium={isPremium}
@@ -1309,19 +1422,22 @@ export function SpecialistEditProfilePageClient({
   return (
     <DashboardPageShell
       variant="specialist"
-      eyebrow="Specialist dashboard"
-      title="Edit profile"
-      subtitle={
-        profileFirst
-          ? "Update one section at a time — changes save to your profile draft."
-          : "Shape how clients discover and book you on SMOAC."
-      }
-      roleLabel="Specialist"
-      utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
-      actions={
-        <Link href="/specialist-dashboard" className="dashboard-back-link">
-          ← Dashboard
-        </Link>
+      hideHeader
+      utilityBar={
+        <div className="specialist-edit-profile__utility-bar">
+          <Link
+            href="/specialist-dashboard"
+            className="specialist-edit-profile__back-link smoac-control"
+          >
+            <span className="specialist-edit-profile__back-arrow" aria-hidden>
+              ←
+            </span>
+            <span>Dashboard</span>
+          </Link>
+          <div className="specialist-edit-profile__utility-end">
+            <SpecialistDashboardAccountMenu onSignOut={handleSignOut} />
+          </div>
+        </div>
       }
     >
       {editorBody}

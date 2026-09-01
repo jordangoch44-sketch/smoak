@@ -107,21 +107,44 @@ function findDevAccount(
   return account;
 }
 
+export type DevLoginValidationResult =
+  | { status: "ok"; role: AuthRole }
+  | { status: "role_mismatch"; expectedRole: AuthRole; actualRole: AuthRole }
+  | { status: "invalid_credentials" };
+
+/** DEV ONLY — detailed validation distinguishing wrong credentials from role mismatch */
+export function validateDevLoginDetailed(
+  role: AuthRole,
+  email: string,
+  password: string
+): DevLoginValidationResult {
+  const normalizedEmail = normalizeDevEmail(email);
+  const normalizedPassword = normalizeDevPassword(password);
+  const foundUser = findDevAccountByEmail(normalizedEmail);
+
+  if (!foundUser) return { status: "invalid_credentials" };
+  if (normalizeDevPassword(foundUser.password) !== normalizedPassword) {
+    return { status: "invalid_credentials" };
+  }
+  if (foundUser.role !== role) {
+    return {
+      status: "role_mismatch",
+      expectedRole: role,
+      actualRole: foundUser.role,
+    };
+  }
+
+  return { status: "ok", role: foundUser.role };
+}
+
 /** DEV ONLY — returns matching role when credentials are valid, otherwise null */
 export function validateDevLogin(
   role: AuthRole,
   email: string,
   password: string
 ): AuthRole | null {
-  const normalizedEmail = normalizeDevEmail(email);
-  const normalizedPassword = normalizeDevPassword(password);
-  const foundUser = findDevAccountByEmail(normalizedEmail);
-
-  if (!foundUser) return null;
-  if (normalizeDevPassword(foundUser.password) !== normalizedPassword) return null;
-  if (foundUser.role !== role) return null;
-
-  return foundUser.role;
+  const result = validateDevLoginDetailed(role, email, password);
+  return result.status === "ok" ? result.role : null;
 }
 
 /** DEV — session fields for dashboard tier + greeting (stored on sign-in) */

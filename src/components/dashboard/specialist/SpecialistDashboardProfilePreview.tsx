@@ -8,6 +8,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
@@ -108,6 +109,74 @@ interface SpecialistDashboardProfilePreviewProps {
   trainer: Trainer;
   editable?: boolean;
   isPremium?: boolean;
+  isLivePublished?: boolean;
+  planBadgeLabel?: string;
+  focusSection?: string | null;
+  onClearFocus?: () => void;
+}
+
+function mapTargetSectionToSectionId(target: string | null | undefined): SectionId | null {
+  if (!target) return null;
+  const lower = target.toLowerCase().trim();
+  switch (lower) {
+    case "photo":
+    case "hero":
+    case "avatar":
+    case "picture":
+      return "hero";
+    case "name":
+    case "business-name":
+      return "name";
+    case "headline":
+    case "title":
+      return "headline";
+    case "profession":
+    case "category":
+      return "profession";
+    case "price":
+    case "pricing":
+    case "rates":
+      return "pricing";
+    case "bio":
+    case "about":
+      return "bio";
+    case "booking":
+    case "session-experience":
+    case "experience-booking":
+      return "session-experience";
+    case "specialties":
+    case "specialty":
+      return "specialties";
+    case "location":
+    case "service-area":
+    case "city":
+    case "zip":
+      return "service-area";
+    case "credentials":
+    case "certifications":
+      return "credentials";
+    case "transformations":
+      return "transformations";
+    case "social":
+    case "links":
+      return "social";
+    case "contact":
+    case "phone":
+    case "email":
+      return "contact";
+    case "gender":
+      return "gender";
+    case "experience":
+    case "years-experience":
+      return "experience";
+    case "profile-style":
+    case "style":
+      return "profile-style";
+    case "featured-specialties":
+      return "featured-specialties";
+    default:
+      return null;
+  }
 }
 
 function nonEmptyStrings(items: string[] | null | undefined): string[] {
@@ -356,7 +425,12 @@ export function SpecialistDashboardProfilePreview({
   trainer: trainerProp,
   editable = false,
   isPremium = false,
+  isLivePublished = false,
+  planBadgeLabel,
+  focusSection = null,
+  onClearFocus,
 }: SpecialistDashboardProfilePreviewProps) {
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const {
     formDefaults,
@@ -372,8 +446,37 @@ export function SpecialistDashboardProfilePreview({
   const [editing, setEditing] = useState<SectionId | null>(null);
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
   const [saving, setSaving] = useState(false);
+  const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
 
   const canEdit = editable && Boolean(formDefaults && trainerId);
+
+  useEffect(() => {
+    const target =
+      focusSection || searchParams.get("focus") || searchParams.get("section");
+    const mapped = mapTargetSectionToSectionId(target);
+    if (!mapped) return;
+
+    setHighlightedRow(mapped);
+
+    const scrollTimer = window.setTimeout(() => {
+      const el =
+        document.getElementById(`ig-edit-row-${mapped}`) ||
+        document.querySelector(`[data-edit-section="${mapped}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 120);
+
+    const clearTimer = window.setTimeout(() => {
+      setHighlightedRow(null);
+      onClearFocus?.();
+    }, 3500);
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [focusSection, searchParams, onClearFocus]);
 
   function startEdit(section: SectionId) {
     if (!canEdit || !formDefaults) return;
@@ -435,6 +538,7 @@ export function SpecialistDashboardProfilePreview({
               profilePhotoUrl={form.profilePhotoUrl}
               coverImageUrl={form.coverImageUrl}
               photoNotes={form.photoNotes}
+              slideshowFramesJson={form.slideshowFramesJson}
               videoNotes={form.videoNotes}
               pinnedPhotos={form.pinnedPhotos}
               isPremium={isPremium}
@@ -1061,6 +1165,9 @@ export function SpecialistDashboardProfilePreview({
           trainer={trainer}
           formDefaults={formDefaults}
           onEditSection={(id) => startEdit(id)}
+          highlightedSection={highlightedRow}
+          planBadgeLabel={planBadgeLabel}
+          isLivePublished={isLivePublished}
           footer={
             <p className="ig-profile-edit__hint">
               Changes go live on Marketplace when you save. Clients still see

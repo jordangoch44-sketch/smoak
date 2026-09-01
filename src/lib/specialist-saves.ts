@@ -46,13 +46,12 @@ async function applyPendingSaveAfterLoginInner(
 ): Promise<PostLoginPendingResult> {
   const peeked = peekPendingSaveRecord();
 
-  if (role === "specialist") {
-    if (peeked) {
+  if (role !== "client") {
+    if (role !== "specialist" && peeked) {
       consumePendingSave();
       clearSaveAutoApplyFlag();
-      return { kind: "specialist-blocked" };
     }
-    return { kind: "client-no-pending" };
+    return { kind: "specialist-blocked" };
   }
 
   if (!peeked?.specialistId) {

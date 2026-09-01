@@ -161,7 +161,7 @@ export function AdminClientApplicationReviewPanel({
             <AdminStatusBadge label={statusLabel} />
             <button
               type="button"
-              className="admin-btn admin-btn--ghost"
+              className="admin-btn smoac-control"
               onClick={onClose}
             >
               Close
@@ -174,66 +174,73 @@ export function AdminClientApplicationReviewPanel({
             Submitted {formatSubmittedDate(draft.submittedAt)}
           </p>
           <div className="admin-review-fields">
+            <div className="admin-review-grid admin-review-grid--2col">
+              <label className="admin-field-label">
+                Full name
+                <input
+                  className="admin-field"
+                  value={draft.fullName}
+                  onChange={(e) => patch("fullName", e.target.value)}
+                />
+              </label>
+              <label className="admin-field-label">
+                Email
+                <input
+                  className="admin-field"
+                  value={draft.email}
+                  onChange={(e) => patch("email", e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="admin-review-grid admin-review-grid--2col">
+              <label className="admin-field-label">
+                Phone
+                <input
+                  className="admin-field"
+                  value={draft.phone}
+                  onChange={(e) => patch("phone", e.target.value)}
+                />
+              </label>
+              <label className="admin-field-label">
+                Budget
+                <input
+                  className="admin-field"
+                  value={draft.budget}
+                  onChange={(e) => patch("budget", e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="admin-review-grid admin-review-grid--3col">
+              <label className="admin-field-label">
+                Preferred city
+                <input
+                  className="admin-field"
+                  value={draft.preferredCity}
+                  onChange={(e) => patch("preferredCity", e.target.value)}
+                />
+              </label>
+              <label className="admin-field-label">
+                Neighborhood
+                <input
+                  className="admin-field"
+                  value={draft.preferredNeighborhood}
+                  onChange={(e) => patch("preferredNeighborhood", e.target.value)}
+                />
+              </label>
+              <label className="admin-field-label">
+                ZIP
+                <input
+                  className="admin-field"
+                  value={draft.preferredZipCode}
+                  onChange={(e) => patch("preferredZipCode", e.target.value)}
+                />
+              </label>
+            </div>
             <label className="admin-field-label">
-              Full name
-              <input
-                className="admin-field"
-                value={draft.fullName}
-                onChange={(e) => patch("fullName", e.target.value)}
-              />
-            </label>
-            <label className="admin-field-label">
-              Email
-              <input
-                className="admin-field"
-                value={draft.email}
-                onChange={(e) => patch("email", e.target.value)}
-              />
-            </label>
-            <label className="admin-field-label">
-              Phone
-              <input
-                className="admin-field"
-                value={draft.phone}
-                onChange={(e) => patch("phone", e.target.value)}
-              />
-            </label>
-            <label className="admin-field-label">
-              Preferred city
-              <input
-                className="admin-field"
-                value={draft.preferredCity}
-                onChange={(e) => patch("preferredCity", e.target.value)}
-              />
-            </label>
-            <label className="admin-field-label">
-              Neighborhood
-              <input
-                className="admin-field"
-                value={draft.preferredNeighborhood}
-                onChange={(e) => patch("preferredNeighborhood", e.target.value)}
-              />
-            </label>
-            <label className="admin-field-label">
-              ZIP
-              <input
-                className="admin-field"
-                value={draft.preferredZipCode}
-                onChange={(e) => patch("preferredZipCode", e.target.value)}
-              />
-            </label>
-            <label className="admin-field-label">
-              Budget
-              <input
-                className="admin-field"
-                value={draft.budget}
-                onChange={(e) => patch("budget", e.target.value)}
-              />
-            </label>
-            <label className="admin-field-label">
-              Goals
+              Fitness Goals
               <textarea
                 className="admin-field admin-field--textarea"
+                rows={3}
                 value={draft.fitnessGoals.join(", ")}
                 onChange={(e) =>
                   patch(
@@ -265,42 +272,48 @@ export function AdminClientApplicationReviewPanel({
           ) : null}
           {canAct ? (
             <div className="admin-review-sheet__actions">
+              {/* Primary Action Button */}
+              {statusLabel === "pending" ? (
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--primary admin-btn--block smoac-control"
+                  disabled={busyAction != null}
+                  onClick={() => void runAction("approve", onApprove)}
+                >
+                  {busyAction === "approve" ? "Approving…" : "Approve & Activate"}
+                </button>
+              ) : null}
+
+              {/* Secondary Action: Save Edits */}
               <button
                 type="button"
-                className="admin-btn admin-btn--block smoac-control"
+                className="admin-btn admin-btn--secondary admin-btn--block smoac-control"
                 disabled={busyAction != null}
                 onClick={() => void runAction("save", onSave)}
               >
                 {busyAction === "save" ? "Saving…" : "Save edits"}
               </button>
+
+              {/* Destructive Action: Reject or Archive */}
               {statusLabel === "pending" ? (
-                <>
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn--primary admin-btn--block smoac-control"
-                    disabled={busyAction != null}
-                    onClick={() => void runAction("approve", onApprove)}
-                  >
-                    {busyAction === "approve" ? "Approving…" : "Mark active"}
-                  </button>
-                  <button
-                    type="button"
-                    className="admin-btn admin-btn--danger admin-btn--block smoac-control"
-                    disabled={busyAction != null}
-                    onClick={() => void runAction("reject", onReject)}
-                  >
-                    {busyAction === "reject" ? "Rejecting…" : "Reject"}
-                  </button>
-                </>
+                <button
+                  type="button"
+                  className="admin-btn admin-btn--danger admin-btn--block smoac-control"
+                  disabled={busyAction != null}
+                  onClick={() => void runAction("reject", onReject)}
+                >
+                  {busyAction === "reject" ? "Rejecting…" : "Reject application"}
+                </button>
               ) : null}
+
               {statusLabel === "rejected" || statusLabel === "approved" ? (
                 <button
                   type="button"
-                  className="admin-btn admin-btn--block smoac-control"
+                  className="admin-btn admin-btn--danger admin-btn--block smoac-control"
                   disabled={busyAction != null}
                   onClick={() => void runAction("archive", onArchive)}
                 >
-                  {busyAction === "archive" ? "Archiving…" : "Archive"}
+                  {busyAction === "archive" ? "Archiving…" : "Archive application"}
                 </button>
               ) : null}
             </div>

@@ -25,7 +25,6 @@ function serviceClient() {
   });
 }
 
-type ServiceClient = NonNullable<ReturnType<typeof serviceClient>>;
 type CookieClient = NonNullable<
   Awaited<ReturnType<typeof createSupabaseServerClient>>
 >;

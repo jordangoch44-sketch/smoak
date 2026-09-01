@@ -32,6 +32,7 @@ import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
 import { persistCreateAccountProfile } from "@/lib/create-account-profile-storage";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
+import { sendClientWelcomeEmail } from "@/lib/email/confirmation-email-service";
 import type { PublicAuthRole } from "@/types/auth-roles";
 import {
   INITIAL_CREATE_ACCOUNT_STATE,
@@ -156,7 +157,12 @@ function AccountTypeCard({
       role="radio"
       aria-checked={selected}
       onClick={onSelect}
-      className={cn("login-role-card wizard-account-card", selected && "login-role-card--active")}
+      className={cn(
+        "login-role-card wizard-account-card",
+        id === "client" && "wizard-account-card--client",
+        id === "specialist" && "wizard-account-card--specialist",
+        selected && "login-role-card--active"
+      )}
     >
       <span
         className={cn(
@@ -416,6 +422,10 @@ export function CreateAccountWizardClient({
 
       if (resolvedAccountType === "client" && signUpResult.ok === true) {
         await hydrateClientLocationFromSession(signUpResult.session);
+        void sendClientWelcomeEmail({
+          to: signUpResult.session.email,
+          firstName: signUpResult.session.firstName ?? derivedFirst,
+        });
       }
 
       showToast({

@@ -1,9 +1,5 @@
 import type { PublicAuthRole } from "@/types/auth-roles";
-import {
-  CLIENT_DASHBOARD_PATH,
-  getDashboardPathForRole,
-  SPECIALIST_DASHBOARD_PATH,
-} from "@/lib/auth-routes";
+import { getDashboardPathForRole } from "@/lib/auth-routes";
 import { peekPendingSave } from "@/lib/pending-save-storage";
 import type { SaveToastOptions } from "@/lib/saved-ui";
 
@@ -23,11 +19,13 @@ export function resolvePostLoginNavigation(
   options?: PostLoginNavigationOptions
 ): PostLoginNavigation {
   const pendingId = peekPendingSave();
-  const returnToSaved = options?.returnToSaved && role === "client";
+  const returnToSaved =
+    Boolean(options?.returnToSaved) &&
+    (role === "client" || role === "specialist");
 
-  if (pendingId && role === "client") {
+  if (pendingId && (role === "client" || role === "specialist")) {
     return {
-      path: returnToSaved ? "/saved" : CLIENT_DASHBOARD_PATH,
+      path: returnToSaved ? "/saved" : getDashboardPathForRole(role),
       toast: {
         title: "Specialist saved to your shortlist.",
         linkHref: "/saved",
@@ -38,17 +36,6 @@ export function resolvePostLoginNavigation(
 
   if (returnToSaved) {
     return { path: "/saved" };
-  }
-
-  if (pendingId && role === "specialist") {
-    return {
-      path: SPECIALIST_DASHBOARD_PATH,
-      toast: {
-        title:
-          "Specialist accounts cannot save trainers. Switch to a client account to save specialists.",
-        variant: "neutral",
-      },
-    };
   }
 
   return {

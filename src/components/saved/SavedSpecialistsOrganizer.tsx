@@ -33,6 +33,50 @@ function formatDistance(miles: number | null): string {
   return miles < 10 ? `${miles.toFixed(1)} mi` : `${Math.round(miles)} mi`;
 }
 
+type CompareWinner = "left" | "right" | null;
+
+function winnerLower(left: number | null, right: number | null): CompareWinner {
+  if (left == null || right == null) return null;
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+  if (left === right) return null;
+  return left < right ? "left" : "right";
+}
+
+function winnerHigher(left: number | null, right: number | null): CompareWinner {
+  if (left == null || right == null) return null;
+  if (!Number.isFinite(left) || !Number.isFinite(right)) return null;
+  if (left === right) return null;
+  return left > right ? "left" : "right";
+}
+
+function winnerReviews(
+  leftRating: number,
+  leftCount: number,
+  rightRating: number,
+  rightCount: number
+): CompareWinner {
+  const leftScore = leftRating * 1000 + leftCount;
+  const rightScore = rightRating * 1000 + rightCount;
+  if (leftScore === 0 && rightScore === 0) return null;
+  return winnerHigher(leftScore, rightScore);
+}
+
+function CompareCheck() {
+  return (
+    <span className="saved-compare-modal__check" aria-label="Better">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M5 12.5 9.5 17 19 7.5"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </span>
+  );
+}
+
 export function SavedSpecialistsOrganizer({
   trainers,
   impressionSurface = "saved",
@@ -75,30 +119,45 @@ export function SavedSpecialistsOrganizer({
     setComparePair({ dragged, target });
   }
 
-  const rows = comparePair
-    ? [
-        {
-          label: "Price",
-          left: formatPrice(comparePair.dragged.pricePerSession),
-          right: formatPrice(comparePair.target.pricePerSession),
-        },
-        {
-          label: "Location",
-          left: formatProviderLocation(comparePair.dragged),
-          right: formatProviderLocation(comparePair.target),
-        },
-        {
-          label: "Distance from you",
-          left: formatDistance(getTrainerDistanceMiles(comparePair.dragged, coords)),
-          right: formatDistance(getTrainerDistanceMiles(comparePair.target, coords)),
-        },
-        {
-          label: "Reviews",
-          left: `${comparePair.dragged.reviewCount} (${comparePair.dragged.rating.toFixed(1)}★)`,
-          right: `${comparePair.target.reviewCount} (${comparePair.target.rating.toFixed(1)}★)`,
-        },
-      ]
-    : [];
+  const rows = (() => {
+    if (!comparePair) return [];
+    const leftDistance = getTrainerDistanceMiles(comparePair.dragged, coords);
+    const rightDistance = getTrainerDistanceMiles(comparePair.target, coords);
+    return [
+      {
+        label: "Price",
+        left: formatPrice(comparePair.dragged.pricePerSession),
+        right: formatPrice(comparePair.target.pricePerSession),
+        winner: winnerLower(
+          comparePair.dragged.pricePerSession,
+          comparePair.target.pricePerSession
+        ),
+      },
+      {
+        label: "Location",
+        left: formatProviderLocation(comparePair.dragged),
+        right: formatProviderLocation(comparePair.target),
+        winner: null as CompareWinner,
+      },
+      {
+        label: "Distance from you",
+        left: formatDistance(leftDistance),
+        right: formatDistance(rightDistance),
+        winner: winnerLower(leftDistance, rightDistance),
+      },
+      {
+        label: "Reviews",
+        left: `${comparePair.dragged.reviewCount} (${comparePair.dragged.rating.toFixed(1)}★)`,
+        right: `${comparePair.target.reviewCount} (${comparePair.target.rating.toFixed(1)}★)`,
+        winner: winnerReviews(
+          comparePair.dragged.rating,
+          comparePair.dragged.reviewCount,
+          comparePair.target.rating,
+          comparePair.target.reviewCount
+        ),
+      },
+    ];
+  })();
 
   return (
     <>
@@ -160,9 +219,11 @@ export function SavedSpecialistsOrganizer({
             onClick={openCompareFromSelection}
             disabled={selectedCount !== 2}
           >
-            {selectedCount === 2
-              ? "Compare selected specialists"
-              : `Select 2 specialists (${selectedCount}/2)`}
+            <span className="saved-organizer-compare-action__label">
+              {selectedCount === 2
+                ? "Compare selected specialists"
+                : `Select 2 specialists (${selectedCount}/2)`}
+            </span>
           </button>
         </div>
       ) : null}
@@ -191,27 +252,57 @@ export function SavedSpecialistsOrganizer({
             <h2 id="saved-compare-title" className="saved-compare-modal__title">
               Quick side-by-side
             </h2>
-            <div className="saved-compare-modal__grid">
-              <p className="saved-compare-modal__name">{comparePair.dragged.name}</p>
-              <p className="saved-compare-modal__name">{comparePair.target.name}</p>
+            <div className="saved-compare-modal__board">
+              <div className="saved-compare-modal__header">
+                <div className="saved-compare-modal__col">
+                  <p className="saved-compare-modal__name">{comparePair.dragged.name}</p>
+                </div>
+                <div className="saved-compare-modal__split" aria-hidden="true" />
+                <div className="saved-compare-modal__col">
+                  <p className="saved-compare-modal__name">{comparePair.target.name}</p>
+                </div>
+              </div>
               {rows.map((row) => (
                 <div key={row.label} className="saved-compare-modal__row">
                   <p className="saved-compare-modal__label">{row.label}</p>
-                  <p className="saved-compare-modal__value">{row.left}</p>
-                  <p className="saved-compare-modal__value">{row.right}</p>
+                  <div className="saved-compare-modal__pair">
+                    <p
+                      className={[
+                        "saved-compare-modal__value",
+                        row.winner === "left" ? "saved-compare-modal__value--win" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <span>{row.left}</span>
+                      {row.winner === "left" ? <CompareCheck /> : null}
+                    </p>
+                    <div className="saved-compare-modal__split" aria-hidden="true" />
+                    <p
+                      className={[
+                        "saved-compare-modal__value",
+                        row.winner === "right" ? "saved-compare-modal__value--win" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                    >
+                      <span>{row.right}</span>
+                      {row.winner === "right" ? <CompareCheck /> : null}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
             <div className="saved-compare-modal__actions">
               <Link
                 href={`/trainers/${comparePair.dragged.id}`}
-                className="saved-compare-modal__primary"
+                className="saved-compare-modal__action"
               >
                 View {comparePair.dragged.name.split(" ")[0]}
               </Link>
               <Link
                 href={`/trainers/${comparePair.target.id}`}
-                className="saved-compare-modal__secondary"
+                className="saved-compare-modal__action saved-compare-modal__action--alt"
               >
                 View {comparePair.target.name.split(" ")[0]}
               </Link>

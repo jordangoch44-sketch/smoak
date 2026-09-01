@@ -52,7 +52,7 @@
   overflow: hidden;
 }
 
-.home-page > *:not(.home-page__stars):not(.home-page__sky) {
+.home-page > *:not(.home-page__stars):not(.home-page__sky):not(.home-page__cosmic) {
   position: relative;
   z-index: 1;
 }
@@ -1044,9 +1044,11 @@ button.smoked-glass:hover {
 
 .top50-card__verified {
   position: absolute;
-  top: 3.15rem;
-  left: 0.75rem;
+  top: 3.05rem;
+  left: 0.65rem;
   z-index: 3;
+  width: 1.45rem;
+  height: 1.45rem;
 }
 
 .top50-card__thumb {

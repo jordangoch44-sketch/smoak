@@ -121,7 +121,14 @@ export function SpecialistServiceAreaFields({
   return (
     <div className="login-fields specialist-service-area-fields">
       <fieldset className="login-field specialist-service-area-fields__section">
-        <legend className="login-field__label">Primary ZIP code</legend>
+        <legend className="login-field__label">
+          Primary ZIP code
+          {state.serviceType !== "virtual" ? (
+            <span className="login-field__label-required" aria-hidden="true">
+              *
+            </span>
+          ) : null}
+        </legend>
         <input
           className="login-field__input"
           value={state.zipCode}
@@ -133,13 +140,15 @@ export function SpecialistServiceAreaFields({
           maxLength={5}
           aria-invalid={state.zipCode.length === 5 && !zipValid}
           aria-describedby="specialist-zip-hint"
+          aria-required={state.serviceType !== "virtual"}
+          required={state.serviceType !== "virtual"}
         />
         <p id="specialist-zip-hint" className="wizard-field-hint">
           {zipLookupBusy
             ? "Looking up your city…"
             : zipValid && state.city
               ? `Detected: ${state.city}, ${state.state}`
-              : "Enter your 5-digit US ZIP — we'll detect city and state."}
+              : "5-digit US ZIP — we'll detect city and state."}
         </p>
         {zipLookupError ? (
           <p className="wizard-field-error" role="alert">
@@ -149,8 +158,18 @@ export function SpecialistServiceAreaFields({
       </fieldset>
 
       <fieldset className="login-field specialist-service-area-fields__section">
-        <legend className="login-field__label">Service type</legend>
-        <div className="wizard-pill-grid wizard-pill-grid--wide" role="radiogroup">
+        <legend className="login-field__label">
+          Service type
+          <span className="login-field__label-required" aria-hidden="true">
+            *
+          </span>
+        </legend>
+        <div
+          className="wizard-pill-grid wizard-pill-grid--wide"
+          role="radiogroup"
+          aria-label="Service type"
+          aria-required="true"
+        >
           {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => {
             const active = state.serviceType === option.value;
             return (
@@ -194,16 +213,12 @@ export function SpecialistServiceAreaFields({
         />
       ) : state.serviceType === "virtual" ? (
         <p className="wizard-field-hint">
-          Virtual coaches don’t need a street address — clients find you by
-          specialty. ZIP is optional for “based in” context.
+          Virtual coaches don&apos;t need a street address.
         </p>
       ) : null}
 
       <label className="login-field">
-        <span className="login-field__label">
-          Service area description
-          <span className="login-field__label-hint">Optional</span>
-        </span>
+        <span className="login-field__label">Service area description</span>
         <textarea
           className="login-field__input login-field__textarea"
           rows={3}

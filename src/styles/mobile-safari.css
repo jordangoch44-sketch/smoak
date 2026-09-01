@@ -176,6 +176,18 @@ html {
       background: rgba(255, 255, 255, 0.1) !important;
     }
 
+    .explore-filter-location-btn:disabled:not(.explore-filter-location-btn--loading):not(.explore-filter-location-btn--active):not(.explore-filter-location-btn--applied) {
+      background: rgba(255, 255, 255, 0.04) !important;
+      opacity: 0.45 !important;
+    }
+
+    .explore-filter-location-btn--active,
+    .explore-filter-location-btn--applied {
+      background: rgba(12, 110, 72, 0.6) !important;
+      border-color: rgba(57, 255, 135, 0.75) !important;
+      opacity: 1 !important;
+    }
+
     .explore-filter-seg__chip--selected {
       background: rgba(var(--aurora-violet-rgb), 0.5) !important;
     }

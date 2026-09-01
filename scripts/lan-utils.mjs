@@ -9,15 +9,19 @@ export function getDefaultPort() {
  * First non-internal IPv4 from network interfaces (typical LAN IP for iPhone testing).
  */
 export function getLanIpv4() {
-  const nets = os.networkInterfaces();
-  for (const name of Object.keys(nets)) {
-    for (const net of nets[name] ?? []) {
-      if (net.family === "IPv4" && !net.internal) {
-        return net.address;
+  try {
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name] ?? []) {
+        if (net.family === "IPv4" && !net.internal) {
+          return net.address;
+        }
       }
     }
+    return null;
+  } catch {
+    return null;
   }
-  return null;
 }
 
 /** `http://<lan-ip>:<port>` when a LAN IP is available. */

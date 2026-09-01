@@ -18,9 +18,10 @@ export function getUserRole(
   return session.role;
 }
 
-/** Client accounts may save specialists to the shortlist */
+/** Only client accounts may save specialists to the shortlist */
 export function canSaveSpecialists(
   session: AuthSession | null | undefined
 ): boolean {
-  return getUserRole(session) === "client";
+  const role = getUserRole(session);
+  return role === "client";
 }

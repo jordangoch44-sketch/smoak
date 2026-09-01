@@ -87,8 +87,10 @@ export function SavedTrainersOverlayHost() {
       if (isPendingSaveLocked() || peekPendingSaveResume()) return;
       if (window.location.pathname.startsWith("/complete-account")) return;
     }
+    const role = getAuthSessionSnapshot()?.role;
+    if (role !== "client") return;
     void (async () => {
-      const result = await applyPendingSaveAfterLogin("client");
+      const result = await applyPendingSaveAfterLogin(role);
       if (result.kind !== "client-saved") return;
       showSavedConfirmation(
         result.record ?? {

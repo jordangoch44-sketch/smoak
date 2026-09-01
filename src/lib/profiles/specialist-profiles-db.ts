@@ -16,6 +16,7 @@ import {
   isBusinessDerivedFirstName,
 } from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { parseGallerySlideshowFrames } from "@/lib/media/slideshow-frame";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
@@ -242,6 +243,9 @@ function trainerFromProfileData(
     reviewCount: asNumber(profileData.reviewCount, 0),
     reviewSources: asReviewSources(profileData.reviewSources),
     galleryImages,
+    gallerySlideshowFrames: parseGallerySlideshowFrames(
+      profileData.gallerySlideshowFrames
+    ),
     pinnedPhotos: asStringArray(profileData.pinnedPhotos),
     image,
     heroImage,

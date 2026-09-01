@@ -1,5 +1,20 @@
 /* Trainer profile — premium mobile UX, smoked glass panels */
 
+/*
+ * SMOAC Color — remap flat purple accents on the specialist sheet/page
+ * so panels, badges, trust cards, and CTAs share the spectrum with search.
+ */
+.profile-sheet,
+.profile-page--styled {
+  --profile-accent-rgb: var(--smoac-color-violet-rgb);
+  --aurora-lavender-rgb: var(--smoac-color-violet-rgb);
+  --aurora-violet-rgb: var(--smoac-color-indigo-rgb);
+  --aurora-magenta-rgb: var(--smoac-color-rose-rgb);
+  --accent-glow-rgb: var(--smoac-color-violet-rgb);
+  --accent-glow-soft-rgb: var(--smoac-color-indigo-rgb);
+  --accent-glow: var(--smoac-color-violet);
+}
+
 /* Admin chrome — only rendered when signed in as platform admin */
 .admin-profile-moderation {
   position: sticky;
@@ -294,22 +309,26 @@
   text-transform: none;
 }
 
-.profile-hero {
-  --profile-accent-rgb: var(--aurora-lavender-rgb);
-}
-
 .profile-hero .profile-hero__profession {
   color: rgba(var(--profile-accent-rgb), 0.92);
 }
 
 .profile-hero .profile-verified-mark {
-  /* Verified stays neon green — not tied to profile accent */
-  color: rgb(var(--profile-verified-rgb));
-  filter: drop-shadow(0 0 8px rgba(var(--profile-verified-rgb), 0.55));
+  /* Luxury smoke seal mark with radiance */
+  width: 1.5rem;
+  height: 1.5rem;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45))
+          drop-shadow(0 0 12px rgba(var(--smoac-color-violet-rgb), 0.4));
+}
+
+@media (min-width: 640px) {
+  .profile-hero .profile-verified-mark {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
 }
 
 .profile-page--styled {
-  --profile-accent-rgb: var(--aurora-lavender-rgb);
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -341,22 +360,32 @@
   inset: -18% -10% -8%;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.72;
+  opacity: 0.78;
   filter: blur(24px);
   background:
     radial-gradient(
-      ellipse 62% 44% at 16% 20%,
-      rgba(var(--profile-accent-rgb), 0.2) 0%,
+      ellipse 58% 42% at 12% 18%,
+      rgba(var(--smoac-color-warm-rgb), 0.14) 0%,
       transparent 70%
     ),
     radial-gradient(
-      ellipse 56% 40% at 82% 18%,
-      rgba(var(--aurora-violet-rgb), 0.18) 0%,
+      ellipse 52% 40% at 38% 12%,
+      rgba(var(--smoac-color-rose-rgb), 0.16) 0%,
       transparent 72%
     ),
     radial-gradient(
-      ellipse 58% 44% at 48% 66%,
-      rgba(84, 191, 220, 0.12) 0%,
+      ellipse 56% 44% at 72% 20%,
+      rgba(var(--smoac-color-violet-rgb), 0.2) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 88% 42%,
+      rgba(var(--smoac-color-indigo-rgb), 0.16) 0%,
+      transparent 72%
+    ),
+    radial-gradient(
+      ellipse 58% 44% at 48% 72%,
+      rgba(var(--smoac-color-cool-rgb), 0.12) 0%,
       transparent 74%
     );
 }
@@ -367,7 +396,7 @@
 }
 
 .profile-page--styled .profile-contact-cta__eyebrow {
-  color: rgba(var(--profile-accent-rgb), 0.8);
+  color: #a78bfa;
 }
 
 .profile-page--styled .profile-contact-cta__glow {
@@ -381,9 +410,9 @@
 .profile-page--styled .profile-contact-cta__button {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.55) inset,
-    0 0 0 1px rgba(var(--profile-accent-rgb), 0.18),
+    0 0 0 1px rgba(var(--smoac-color-violet-rgb), 0.2),
     0 10px 28px rgba(0, 0, 0, 0.28),
-    0 0 28px rgba(var(--profile-accent-rgb), 0.12);
+    var(--smoac-color-glow);
 }
 
 .profile-hero__avatar--frame-none {
@@ -636,20 +665,22 @@
   align-items: center;
   gap: 0.375rem;
   border-radius: 9999px;
-  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.38);
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.11) 0%,
-    rgba(var(--aurora-violet-rgb), 0.12) 42%,
-    rgba(var(--aurora-plum-rgb), 0.28) 100%
-  );
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 255, 255, 0.11) 0%,
+      rgba(var(--smoac-color-violet-rgb), 0.14) 42%,
+      rgba(var(--smoac-color-indigo-rgb), 0.22) 100%
+    )
+    padding-box,
+    var(--smoac-color) border-box;
   padding: 0.3125rem 0.625rem 0.3125rem 0.4375rem;
   box-shadow:
-    0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.08),
-    0 0 18px rgba(var(--aurora-violet-rgb), 0.22),
-    0 0 36px rgba(var(--aurora-indigo-rgb), 0.16),
+    0 0 0 1px rgba(var(--smoac-color-violet-rgb), 0.08),
+    var(--smoac-color-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 0 14px rgba(var(--aurora-lavender-rgb), 0.12);
+    inset 0 0 14px rgba(var(--smoac-color-rose-rgb), 0.1);
   backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
 }
@@ -882,6 +913,7 @@
   position: absolute;
   inset: 0;
   opacity: 0;
+  overflow: hidden;
   transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: opacity;
 }
@@ -2444,15 +2476,19 @@ body.profile-image-preview-open .profile-toolbar {
 }
 
 .profile-verified-mark {
-  --profile-verified-rgb: 52, 255, 136;
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 1.05rem;
-  height: 1.05rem;
-  color: rgb(var(--profile-verified-rgb));
-  filter: drop-shadow(0 0 7px rgba(var(--profile-verified-rgb), 0.5));
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+@media (min-width: 640px) {
+  .profile-verified-mark {
+    width: 1.6rem;
+    height: 1.6rem;
+  }
 }
 
 .profile-verified-mark__icon {
@@ -2465,17 +2501,19 @@ body.profile-image-preview-open .profile-toolbar {
   overflow: hidden;
   padding: 1.05rem 1.1rem 1.1rem;
   border-radius: 1.25rem;
-  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.38);
+  border: 1px solid transparent;
   background:
     linear-gradient(
       145deg,
-      rgba(var(--aurora-lavender-rgb), 0.22) 0%,
+      rgba(var(--smoac-color-violet-rgb), 0.2) 0%,
       rgba(18, 14, 28, 0.92) 46%,
       rgba(8, 8, 12, 0.94) 100%
-    );
+    )
+    padding-box,
+    var(--smoac-color) border-box;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 48px rgba(var(--aurora-lavender-rgb), 0.16),
+    var(--smoac-color-glow-strong),
     0 18px 40px rgba(0, 0, 0, 0.35);
 }
 
@@ -2488,7 +2526,8 @@ body.profile-image-preview-open .profile-toolbar {
   border-radius: 9999px;
   background: radial-gradient(
     circle,
-    rgba(var(--aurora-lavender-rgb), 0.28) 0%,
+    rgba(var(--smoac-color-rose-rgb), 0.22) 0%,
+    rgba(var(--smoac-color-violet-rgb), 0.18) 42%,
     transparent 70%
   );
   filter: blur(8px);
@@ -2498,10 +2537,11 @@ body.profile-image-preview-open .profile-toolbar {
   position: relative;
   margin: 0 0 0.45rem;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(var(--aurora-lavender-rgb), 0.9);
+  color: #c4b5fd;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .profile-contact-cta__title {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   DashboardButton,
   DashboardLoadingState,
@@ -18,7 +18,6 @@ import {
   SubscriptionCard,
   VisibilityRankingCard,
 } from "@/components/dashboard/specialist/cards";
-import { GrowthInsightsSection } from "@/components/dashboard/specialist/GrowthInsightsSection";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
@@ -28,6 +27,11 @@ import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/Spe
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
+import {
+  SPECIALIST_DASHBOARD_OVERVIEW_HREF,
+  SPECIALIST_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
+} from "@/lib/auth-routes";
 import {
   showsPremiumDashboard,
   showsProfileFirstDashboard,
@@ -56,6 +60,8 @@ const PREMIUM_TABS: ReadonlyArray<{ id: PremiumDashboardTab; label: string }> = 
   { id: "profile", label: "Edit profile" },
 ];
 
+type SpecialistDashHeaderSurface = "overview" | "profile" | "plan" | "status";
+
 function dashboardSubtitle(
   mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"]
 ): string {
@@ -78,25 +84,40 @@ function scrollToInquiries() {
 }
 
 function parseFreeTab(value: string | null): FreeDashboardTab {
-  return value === "profile" ? "profile" : "plan";
+  return value === "plan" ? "plan" : "profile";
 }
 
 function parsePremiumTab(value: string | null): PremiumDashboardTab {
-  return value === "profile" ? "profile" : "overview";
+  return value === "overview" ? "overview" : "profile";
+}
+
+function hrefForDashboardTab(tab: FreeDashboardTab | PremiumDashboardTab): string {
+  if (tab === "profile") {
+    return SPECIALIST_DASHBOARD_PROFILE_TAB_HREF;
+  }
+  if (tab === "plan") {
+    return `${SPECIALIST_DASHBOARD_PATH}?tab=plan`;
+  }
+  return SPECIALIST_DASHBOARD_OVERVIEW_HREF;
 }
 
 export function SpecialistDashboardPageClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const justSubmitted = searchParams.get("submitted") === "1";
+  const tabParam = searchParams.get("tab");
   const [freeTab, setFreeTab] = useState<FreeDashboardTab>(() =>
-    parseFreeTab(searchParams.get("tab"))
+    parseFreeTab(tabParam)
   );
   const [premiumTab, setPremiumTab] = useState<PremiumDashboardTab>(() =>
-    parsePremiumTab(searchParams.get("tab"))
+    parsePremiumTab(tabParam)
   );
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
+  const [focusSection, setFocusSection] = useState<string | null>(() => {
+    return searchParams.get("focus") || searchParams.get("section");
+  });
   const [requestReviewBusy, setRequestReviewBusy] = useState(false);
   const [requestReviewError, setRequestReviewError] = useState<string | null>(
     null
@@ -139,6 +160,20 @@ export function SpecialistDashboardPageClient() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    setFreeTab(parseFreeTab(tabParam));
+    setPremiumTab(parsePremiumTab(tabParam));
+  }, [tabParam]);
+
+  function replaceDashboardTab(tab: FreeDashboardTab | PremiumDashboardTab) {
+    const nextHref = hrefForDashboardTab(tab);
+    if (typeof window !== "undefined") {
+      const current = `${window.location.pathname}${window.location.search}`;
+      if (current === nextHref) return;
+    }
+    router.replace(nextHref, { scroll: false });
+  }
+
   async function handleRequestReview() {
     if (!application?.id) return;
     setRequestReviewBusy(true);
@@ -180,20 +215,50 @@ export function SpecialistDashboardPageClient() {
   const onProTrial = Boolean(session.premiumTrialActive);
   const showLastChance = showProTrialLastChance(session);
 
+  const headerSurface: SpecialistDashHeaderSurface = isPendingGate
+    ? "status"
+    : premiumDashboard
+      ? premiumTab === "profile"
+        ? "profile"
+        : "overview"
+      : isFreeLive
+        ? freeTab === "profile"
+          ? "profile"
+          : "plan"
+        : "status";
+
   function openOverviewAndInquiries() {
     void handleDismissInquiryNotifications();
     if (isFreeLive) {
       /* Free plan has no Overview — inquiries live on Edit profile. */
-      setFreeTab("profile");
+      replaceDashboardTab("profile");
     } else if (premiumDashboard) {
-      setPremiumTab("overview");
+      replaceDashboardTab("overview");
     }
     window.requestAnimationFrame(() => {
       window.setTimeout(scrollToInquiries, 80);
     });
   }
 
-  const roleLabel = onProTrial
+  function handleNavigateToProfile(sectionId?: string) {
+    if (sectionId) {
+      setFocusSection(sectionId);
+    }
+    replaceDashboardTab("profile");
+  }
+
+  const liveDot =
+    isLivePublished && headerSurface !== "plan" ? (
+      <span
+        className="dashboard-live-indicator"
+        title="Live on Marketplace"
+        aria-label="Live on Marketplace"
+      >
+        <span className="dashboard-live-indicator__dot" aria-hidden />
+      </span>
+    ) : null;
+
+  const profilePlanLabel = onProTrial
     ? formatProTrialBadgeLabel(session.premiumTrialDaysRemaining)
     : isFreeLive
       ? SMOAC_FREE_PLAN_LABEL
@@ -201,30 +266,77 @@ export function SpecialistDashboardPageClient() {
         ? "SMOAC Pro"
         : "Specialist";
 
+  /* Pro Trial days badge lives on Profile only — not Overview. */
+  const roleLabel =
+    headerSurface === "profile"
+      ? profilePlanLabel
+      : headerSurface === "plan"
+        ? SMOAC_FREE_PLAN_LABEL
+        : headerSurface === "overview" && isPremium && !onProTrial
+          ? "SMOAC Pro"
+          : undefined;
+
+  const roleLabelTone =
+    headerSurface === "profile" && (onProTrial || isPremium)
+      ? "pro-trial"
+      : headerSurface === "overview" && isPremium && !onProTrial
+        ? "pro-trial"
+        : "default";
+
+  const headerCopy =
+    headerSurface === "overview"
+      ? {
+          eyebrow: "Overview",
+          title: (
+            <>
+              Good to see you, {firstName}
+              {liveDot}
+            </>
+          ),
+          subtitle:
+            "Leads, analytics, and how you show up on Marketplace — at a glance.",
+        }
+      : headerSurface === "profile"
+        ? {
+            eyebrow: "Profile",
+            title: (
+              <>
+                Edit your profile
+                {liveDot}
+              </>
+            ),
+            subtitle:
+              "Tap a row to update. Saves go live on Marketplace — your public layout stays the same for clients.",
+          }
+        : headerSurface === "plan"
+          ? {
+              eyebrow: "Your plan",
+              title: <>Grow with SMOAC Pro</>,
+              subtitle:
+                "See what Pro unlocks for leads, insights, and marketplace reach.",
+            }
+          : {
+              eyebrow: "Specialist dashboard",
+              title: (
+                <>
+                  Good to see you, {firstName}
+                  {liveDot}
+                </>
+              ),
+              subtitle: dashboardSubtitle(dashboardMode),
+            };
+
   return (
     <>
     <DashboardPageShell
       variant="specialist"
-      eyebrow="Specialist dashboard"
-      title={
-        <>
-          Good to see you, {firstName}
-          {isLivePublished ? (
-            <span
-              className="dashboard-live-indicator"
-              title="Live on Marketplace"
-              aria-label="Live on Marketplace"
-            >
-              <span className="dashboard-live-indicator__dot" aria-hidden />
-            </span>
-          ) : null}
-        </>
-      }
-      subtitle={dashboardSubtitle(dashboardMode)}
+      eyebrow={headerCopy.eyebrow}
+      title={headerCopy.title}
+      subtitle={headerCopy.subtitle}
       roleLabel={roleLabel}
-      roleLabelTone={
-        onProTrial || isPremium ? "pro-trial" : "default"
-      }
+      roleLabelTone={roleLabelTone}
+      headerClassName={`dashboard-page__header--${headerSurface}`}
+      hideHeader={headerSurface === "profile"}
       statusLabel={
         profileFirst || isLivePublished ? null : profileStatusLabel
       }
@@ -268,7 +380,7 @@ export function SpecialistDashboardPageClient() {
                     "specialist-dash-tabs__btn",
                     freeTab === tab.id && "specialist-dash-tabs__btn--active"
                   )}
-                  onClick={() => setFreeTab(tab.id)}
+                  onClick={() => replaceDashboardTab(tab.id)}
                 >
                   {tab.label}
                   {tab.id === "profile" && inquiryUnreadCount > 0 ? (
@@ -307,13 +419,15 @@ export function SpecialistDashboardPageClient() {
                   aria-labelledby="specialist-dash-tab-profile"
                   className="specialist-dash-panel"
                 >
-                  <SpecialistDashboardProfileHeader variant="live-free" />
-
                   {hasProfilePreview ? (
                     <SpecialistDashboardProfilePreview
                       trainer={trainer!}
                       editable
                       isPremium={isPremium}
+                      isLivePublished={isLivePublished}
+                      planBadgeLabel={profilePlanLabel}
+                      focusSection={focusSection}
+                      onClearFocus={() => setFocusSection(null)}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">
@@ -439,7 +553,7 @@ export function SpecialistDashboardPageClient() {
                     "specialist-dash-tabs__btn",
                     premiumTab === tab.id && "specialist-dash-tabs__btn--active"
                   )}
-                  onClick={() => setPremiumTab(tab.id)}
+                  onClick={() => replaceDashboardTab(tab.id)}
                 >
                   {tab.label}
                   {tab.id === "overview" && inquiryUnreadCount > 0 ? (
@@ -468,17 +582,12 @@ export function SpecialistDashboardPageClient() {
                     <AnalyticsCard
                       analytics={analytics}
                       isPremium={isPremium}
-                      includeGrowthInsights={false}
-                    />
-                    <GrowthInsightsSection
-                      insights={analytics.growthInsights}
-                      isPremium={isPremium}
-                      collapsible
                     />
                     <ProfileCompletionCard
                       profileCompletion={profileCompletion}
                       trainer={trainer}
                       checklist={completionChecklist}
+                      onEditProfile={handleNavigateToProfile}
                     />
                     <VisibilityRankingCard
                       ranking={data.ranking ?? null}
@@ -507,13 +616,15 @@ export function SpecialistDashboardPageClient() {
                   aria-labelledby="specialist-dash-tab-premium-profile"
                   className="specialist-dash-panel"
                 >
-                  <SpecialistDashboardProfileHeader variant="live-free" />
-
                   {hasProfilePreview ? (
                     <SpecialistDashboardProfilePreview
                       trainer={trainer!}
                       editable
                       isPremium={isPremium}
+                      isLivePublished={isLivePublished}
+                      planBadgeLabel={profilePlanLabel}
+                      focusSection={focusSection}
+                      onClearFocus={() => setFocusSection(null)}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">

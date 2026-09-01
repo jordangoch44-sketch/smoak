@@ -180,7 +180,7 @@ export function ClientDashboardPageClient() {
 
   async function handleSignOut() {
     await signOut();
-    afterLogoutNavigation(() => router.push("/profile"));
+    afterLogoutNavigation("/profile");
   }
 
   function openProfileEditor() {

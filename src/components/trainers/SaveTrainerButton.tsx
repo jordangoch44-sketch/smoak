@@ -6,7 +6,6 @@ import { SAVE_TOAST_ADDED, SAVE_TOAST_REMOVED } from "@/lib/saved-ui";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
   canSaveSpecialists,
-  getUserRole,
   isLoggedIn,
 } from "@/lib/specialist-saves";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
@@ -38,7 +37,7 @@ export function SaveTrainerButton({
   } = useSavedTrainers();
   const { showToast } = useSaveToast();
   const saved = isSaved(trainerId);
-  const heartDisabled = isSavesLoading && Boolean(session);
+  const heartDisabled = Boolean(session) && isSavesLoading && !isSavesReady;
 
   function openSaveSignup() {
     const name =
@@ -56,43 +55,16 @@ export function SaveTrainerButton({
 
   async function handleToggle() {
     try {
-      if (saved) {
-        if (canSaveSpecialists(session)) {
-          const result = await toggleSaved(trainerId);
-          if (result.ok) {
-            showToast(SAVE_TOAST_REMOVED);
-          } else if (result.message) {
-            console.error("[save] remove failed", result.message);
-            showToast({ title: result.message, variant: "neutral" });
-          }
-        }
-        return;
-      }
-
-      if (!isLoggedIn(session)) {
-        openSaveSignup();
-        return;
-      }
-
-      const role = getUserRole(session);
-      if (role === "specialist") {
-        showToast({
-          title: "Switch to a client account to save specialists.",
-          variant: "neutral",
-        });
-        return;
-      }
-
-      if (!canSaveSpecialists(session)) {
+      if (!isLoggedIn(session) || !canSaveSpecialists(session)) {
         openSaveSignup();
         return;
       }
 
       const result = await toggleSaved(trainerId);
       if (result.ok) {
-        showToast(SAVE_TOAST_ADDED);
+        showToast(saved ? SAVE_TOAST_REMOVED : SAVE_TOAST_ADDED);
       } else if (result.message) {
-        console.error("[save] add failed", result.message);
+        console.error("[save] toggle failed", result.message);
         showToast({ title: result.message, variant: "neutral" });
       }
     } catch (error) {

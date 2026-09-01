@@ -4,6 +4,8 @@ export interface OutboundEmail {
   text: string;
   /** Branded HTML multipart body — always prefer sending with text fallback */
   html?: string;
+  /** Sets Resend reply_to so specialists can hit Reply in their inbox */
+  replyTo?: string;
   kind: string;
 }
 
@@ -39,6 +41,7 @@ export async function sendOutboundEmail(
   const from =
     process.env.EMAIL_FROM?.trim() || "SMOAC <onboarding@resend.dev>";
   const html = payload.html?.trim() || undefined;
+  const replyTo = payload.replyTo?.trim().toLowerCase() || undefined;
 
   if (apiKey) {
     try {
@@ -54,6 +57,7 @@ export async function sendOutboundEmail(
           subject: payload.subject,
           text: payload.text,
           ...(html ? { html } : {}),
+          ...(replyTo ? { reply_to: replyTo } : {}),
         }),
       });
 

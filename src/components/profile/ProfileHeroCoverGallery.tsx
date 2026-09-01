@@ -6,10 +6,17 @@ import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { useProfileHeroCoverGallery } from "@/hooks/useProfileHeroCoverGallery";
 import { cn } from "@/lib/utils";
 
+import {
+  resolveSlideshowFrame,
+  slideshowFrameToImageStyle,
+  type SlideshowFrameMap,
+} from "@/lib/media/slideshow-frame";
+
 interface ProfileHeroCoverGalleryProps {
   images: string[];
   trainerName: string;
   fallbackHeroImage: string;
+  slideshowFrames?: SlideshowFrameMap;
 }
 
 /** Cover slideshow only — gallery lightbox is owned by ProfileHero. */
@@ -17,6 +24,7 @@ export function ProfileHeroCoverGallery({
   images,
   trainerName,
   fallbackHeroImage,
+  slideshowFrames,
 }: ProfileHeroCoverGalleryProps) {
   const slides = useMemo(
     () =>
@@ -67,7 +75,10 @@ export function ProfileHeroCoverGallery({
               alt=""
               fill
               sizes="100vw"
-              className="object-cover object-[50%_18%]"
+              className="object-cover"
+              style={slideshowFrameToImageStyle(
+                resolveSlideshowFrame(slideshowFrames ?? {}, src)
+              )}
               priority={slideIndex === 0}
             />
           </div>

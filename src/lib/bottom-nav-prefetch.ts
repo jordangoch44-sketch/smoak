@@ -10,6 +10,7 @@ export const BOTTOM_NAV_PREFETCH_ROUTES: readonly string[] = [
   SITE_ROUTES.login,
   "/client-dashboard",
   "/specialist-dashboard",
+  "/specialist-dashboard?tab=profile",
 ] as const;
 
 export function prefetchBottomNavRoutes(

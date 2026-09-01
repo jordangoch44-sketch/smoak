@@ -15,6 +15,7 @@ const STATIC_ROUTES: Array<{
 }> = [
   { path: SITE_ROUTES.home, priority: 1, changeFrequency: "daily" },
   { path: SITE_ROUTES.explore, priority: 0.9, changeFrequency: "daily" },
+  { path: SITE_ROUTES.calorieCalculator, priority: 0.92, changeFrequency: "weekly" },
   { path: SITE_ROUTES.rankings, priority: 0.8, changeFrequency: "weekly" },
   { path: SITE_ROUTES.pricing, priority: 0.7, changeFrequency: "monthly" },
   { path: SITE_ROUTES.about, priority: 0.6, changeFrequency: "monthly" },

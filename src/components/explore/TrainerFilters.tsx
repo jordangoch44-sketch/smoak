@@ -4,9 +4,13 @@ import { useCallback, useRef, useState } from "react";
 import type { TrainerFilters as Filters } from "@/types";
 import { exploreFiltersFromZipCode } from "@/lib/explore-location-filters";
 import {
+  clearUserLocation,
   completeGeolocationAsync,
   completeZipEntryAsync,
 } from "@/lib/user-location-store";
+import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
+import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
+import { useUserLocation } from "@/hooks/useUserLocation";
 import { normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { professions, specialties, genders } from "@/data/trainers";
 import {
@@ -54,6 +58,10 @@ export function TrainerFilters({
   const filtersRef = useRef(filters);
   filtersRef.current = filters;
 
+  const preciseCoords = usePreciseUserCoordinates();
+  const activeCoords = useActiveUserCoordinates();
+  const { hasLocation: hasSavedLocation } = useUserLocation();
+
   const priceMinRaw = parseExplorePriceBound(
     filters.priceMin,
     EXPLORE_PRICE_RANGE.min
@@ -71,6 +79,7 @@ export function TrainerFilters({
 
   function clearLocation() {
     setGeoError(null);
+    clearUserLocation();
     onChange({
       ...filters,
       zipCode: "",
@@ -97,6 +106,7 @@ export function TrainerFilters({
 
   function clearAll() {
     setGeoError(null);
+    clearUserLocation();
     onChange({
       zipCode: "",
       city: "",
@@ -111,6 +121,7 @@ export function TrainerFilters({
   }
 
   function handleUseCurrentLocation() {
+    if (geoLoading) return;
     setGeoError(null);
 
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -131,13 +142,23 @@ export function TrainerFilters({
               setGeoError(result.message);
               return;
             }
-            if (!result.zip) {
-              setGeoError(
-                "Couldn’t find a ZIP for your location. Enter one below."
-              );
-              return;
+            if (result.zip) {
+              onChange(applyLocationFilters(filtersRef.current, result.zip));
+            } else if (result.placeName) {
+              onChange({
+                ...filtersRef.current,
+                city: result.placeName,
+                zipCode: "",
+                neighborhood: "",
+              });
+            } else {
+              onChange({
+                ...filtersRef.current,
+                zipCode: "",
+                city: "",
+                neighborhood: "",
+              });
             }
-            onChange(applyLocationFilters(filtersRef.current, result.zip));
           } catch {
             setGeoError(
               "Couldn’t finish locating you. Enter a ZIP instead."
@@ -184,10 +205,20 @@ export function TrainerFilters({
     [filters, onChange]
   );
 
-  const hasFilters = Object.values(filters).some(Boolean);
-  const hasLocation = Boolean(
+  const hasFilterLocation = Boolean(
     filters.zipCode || filters.city || filters.neighborhood
   );
+  const isLocationActive = Boolean(
+    hasFilterLocation ||
+      preciseCoords ||
+      activeCoords ||
+      hasSavedLocation
+  );
+
+  const hasOtherFilters = Object.entries(filters).some(
+    ([k, v]) => !["zipCode", "city", "neighborhood"].includes(k) && Boolean(v)
+  );
+  const hasFilters = hasOtherFilters || isLocationActive;
 
   return (
     <div
@@ -222,7 +253,7 @@ export function TrainerFilters({
           >
             Location
           </h3>
-          {hasLocation ? (
+          {isLocationActive ? (
             <button
               type="button"
               onClick={clearLocation}
@@ -237,10 +268,12 @@ export function TrainerFilters({
           type="button"
           className={cn(
             "smoac-control explore-filter-location-btn",
-            hasLocation && !geoLoading && "explore-filter-location-btn--active"
+            isLocationActive && !geoLoading && "explore-filter-location-btn--active",
+            geoLoading && "explore-filter-location-btn--loading"
           )}
           onClick={handleUseCurrentLocation}
           disabled={geoLoading}
+          aria-pressed={isLocationActive}
         >
           <span className="explore-filter-location-btn__icon" aria-hidden>
             {geoLoading ? (
@@ -257,10 +290,14 @@ export function TrainerFilters({
             <span className="explore-filter-location-btn__label">
               {geoLoading
                 ? "Finding your location…"
+                : isLocationActive
+                ? "Current location active"
                 : "Use your current location"}
             </span>
             <span className="explore-filter-location-btn__hint">
-              Show specialists near you
+              {isLocationActive
+                ? "Location is applied to your search"
+                : "Show specialists near you"}
             </span>
           </span>
         </button>

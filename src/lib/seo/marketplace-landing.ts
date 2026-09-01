@@ -123,7 +123,7 @@ export function buildCityHubJsonLd(
     name: `Health & fitness specialists in ${city}`,
     description: `Directory of wellness professionals in ${city} on SMOAC.`,
     url: pageUrl,
-    mainEntity: buildTrainerItemList(trainers, pageUrl),
+    mainEntity: buildTrainerItemList(trainers),
   };
 }
 
@@ -143,7 +143,7 @@ export function buildProfessionLandingJsonLd(
       "@type": "Thing",
       name: profession.searchPhrase,
     },
-    mainEntity: buildTrainerItemList(trainers, pageUrl),
+    mainEntity: buildTrainerItemList(trainers),
   };
 }
 
@@ -163,8 +163,7 @@ export function buildLandingBreadcrumbJsonLd(
 }
 
 function buildTrainerItemList(
-  trainers: Trainer[],
-  pageUrl: string
+  trainers: Trainer[]
 ): Record<string, unknown> {
   return {
     "@type": "ItemList",

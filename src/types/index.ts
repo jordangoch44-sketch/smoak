@@ -14,3 +14,13 @@ export type {
 } from "./trainer";
 
 export type { TrainerFilters } from "./filters";
+
+export type {
+  FunnelWindow,
+  FunnelStageId,
+  FunnelStageMetric,
+  SpecialistConversionMetric,
+  FunnelKeyInsight,
+  MarketplaceConversionFunnel,
+} from "./admin-conversion-funnel";
+

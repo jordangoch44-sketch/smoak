@@ -135,6 +135,11 @@ export interface Trainer {
   reviewSources?: TrainerReviewSources;
   /** Hero slideshow URLs — falls back to `heroImage` when empty */
   galleryImages: string[];
+  /** Per-image hero framing — full photos stay intact for gallery view */
+  gallerySlideshowFrames?: Record<
+    string,
+    { x: number; y: number; zoom: number }
+  >;
   /**
    * Pro / trial only — up to 3 gallery URLs pinned under the hero bio.
    * Hidden on public profiles when empty or when not Pro.

@@ -41,6 +41,15 @@ export interface SpecialistDiscoveryBreakdown {
   mobilePercent: number | null;
 }
 
+export interface SpecialistFunnelMetrics {
+  searchAppearances: number;
+  profileViews: number;
+  highIntentActions: number;
+  inquiryStarts: number;
+  inquiriesSubmitted: number;
+  viewToInquiryRate: number;
+}
+
 export interface SpecialistProfileAnalytics {
   periodLabel: string;
   profileViews: number;
@@ -55,6 +64,8 @@ export interface SpecialistProfileAnalytics {
   growthInsights: SpecialistGrowthInsight[];
   /** Present when live engagement data includes surface/device mix */
   discoveryBreakdown?: SpecialistDiscoveryBreakdown;
+  /** Individual specialist conversion funnel */
+  funnel?: SpecialistFunnelMetrics;
 }
 
 export interface SpecialistAnalyticsContext {

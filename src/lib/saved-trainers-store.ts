@@ -30,6 +30,12 @@ let hasLoadedForCachedUser = false;
 let isLoading = false;
 let loadError: string | null = null;
 let loadGeneration = 0;
+/** Bumps on every heart add/remove so a stale in-flight fetch cannot wipe it. */
+let mutationEpoch = 0;
+/** Shared in-flight load so toggleSaved can await instead of racing. */
+let loadPromise: Promise<void> | null = null;
+/** Debounce clearing when auth briefly flickers null (TOKEN_REFRESHED). */
+let clearSessionTimer: number | null = null;
 let emitDepth = 0;
 const listeners = new Set<() => void>();
 
@@ -37,7 +43,33 @@ function idsKey(ids: readonly string[]): string {
   return ids.length === 0 ? "" : ids.join("\0");
 }
 
-function resolveClientUserId(): string | null {
+/**
+ * Prefer live Supabase auth uid (matches RLS). Fall back to session snapshot
+ * so hearts still work before the auth client finishes hydrating.
+ */
+async function resolvePersistedUserId(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+
+  const session = getAuthSessionSnapshot();
+  if (!session || session.role !== "client") {
+    return null;
+  }
+
+  const supabase = getMarketplaceAuthClient();
+  if (supabase) {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const authId = data.session?.user?.id?.trim();
+      if (authId) return authId;
+    } catch {
+      /* fall through */
+    }
+  }
+
+  return getActiveClientUserId(session);
+}
+
+function resolveClientUserIdSync(): string | null {
   if (typeof window === "undefined") return null;
   return getActiveClientUserId(getAuthSessionSnapshot());
 }
@@ -67,7 +99,7 @@ function emitChange(): void {
 }
 
 function applyCache(userId: string, ids: readonly string[]): void {
-  const unique = [...new Set(ids)];
+  const unique = [...new Set(ids.map((id) => id.trim()).filter(Boolean))];
   const nextCache: readonly string[] =
     unique.length > 0 ? unique : EMPTY_SNAPSHOT;
 
@@ -118,7 +150,13 @@ export function markSavedTrainersLoadTimedOut(): void {
 
 /** Drop in-memory saves on logout — Supabase rows remain per user */
 export function clearSavedTrainersActiveSession(): void {
+  if (clearSessionTimer != null) {
+    window.clearTimeout(clearSessionTimer);
+    clearSessionTimer = null;
+  }
   loadGeneration += 1;
+  mutationEpoch += 1;
+  loadPromise = null;
   cachedForUserId = null;
   hasLoadedForCachedUser = false;
   isLoading = false;
@@ -131,23 +169,45 @@ export function clearSavedTrainersActiveSession(): void {
   emitChange();
 }
 
+function scheduleClearIfStillSignedOut(): void {
+  if (typeof window === "undefined") return;
+  if (clearSessionTimer != null) {
+    window.clearTimeout(clearSessionTimer);
+  }
+  clearSessionTimer = window.setTimeout(() => {
+    clearSessionTimer = null;
+    if (resolveClientUserIdSync()) return;
+    clearSavedTrainersActiveSession();
+  }, 400);
+}
+
 function reloadSavedTrainersFromLocalStorage(userId: string): void {
   const loaded = loadSavedTrainerIdsForUser(userId);
   applyCache(userId, loaded);
 }
 
-async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
+async function reloadSavedTrainersForActiveUserAsync(
+  options?: { force?: boolean }
+): Promise<void> {
   if (typeof window === "undefined") return;
 
-  const userId = resolveClientUserId();
+  const userId = await resolvePersistedUserId();
 
   if (!userId) {
-    clearSavedTrainersActiveSession();
+    scheduleClearIfStillSignedOut();
     return;
   }
 
-  /* Already loaded (including empty shortlist) — do not refetch in a loop. */
+  if (clearSessionTimer != null) {
+    window.clearTimeout(clearSessionTimer);
+    clearSessionTimer = null;
+  }
+
+  const force = Boolean(options?.force);
+
+  /* Already loaded — skip unless caller forces a sync after a write. */
   if (
+    !force &&
     userId === cachedForUserId &&
     hasLoadedForCachedUser &&
     !isLoading &&
@@ -156,8 +216,9 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
     return;
   }
 
-  /* In-flight load for this user — wait; do not stack nested emitChange. */
-  if (userId === cachedForUserId && isLoading) {
+  /* Wait for the in-flight load instead of returning early (heart race). */
+  if (loadPromise && userId === cachedForUserId && !force) {
+    await loadPromise;
     return;
   }
 
@@ -170,47 +231,107 @@ async function reloadSavedTrainersForActiveUserAsync(): Promise<void> {
   }
 
   const generation = ++loadGeneration;
-  /* Claim ownership before emitting so getSnapshot does not re-schedule. */
+  const epochAtStart = mutationEpoch;
+  const hadCacheForUser =
+    userId === cachedForUserId && hasLoadedForCachedUser && cachedIds.length >= 0;
   cachedForUserId = userId;
-  hasLoadedForCachedUser = false;
+  /*
+   * Stale-while-revalidate: keep showing the current shortlist (and lit hearts)
+   * while a background fetch runs. Only blank "loaded" on a true cold start.
+   */
+  if (!hadCacheForUser) {
+    hasLoadedForCachedUser = false;
+  }
   isLoading = true;
   loadError = null;
   emitChange();
 
   const supabase = getMarketplaceAuthClient();
 
+  loadPromise = (async () => {
+    try {
+      if (!supabase) {
+        throw new Error("Saved specialists require Supabase.");
+      }
+
+      let remote = await withTimeout(
+        fetchSavedTrainerIds(supabase, userId),
+        SAVED_TRAINERS_FETCH_TIMEOUT_MS
+      );
+      if (!remote.ok) {
+        throw new Error(remote.message);
+      }
+
+      if (generation !== loadGeneration) return;
+
+      /*
+       * Heart toggled while this fetch was in flight. Re-fetch once so we do
+       * not apply a stale empty list over an optimistic save.
+       */
+      if (mutationEpoch !== epochAtStart) {
+        const refreshed = await withTimeout(
+          fetchSavedTrainerIds(supabase, userId),
+          SAVED_TRAINERS_FETCH_TIMEOUT_MS
+        );
+        if (!refreshed.ok) {
+          throw new Error(refreshed.message);
+        }
+        if (generation !== loadGeneration) return;
+        remote = refreshed;
+      }
+
+      const remoteIds = remote.specialistIds;
+      let merged =
+        mutationEpoch !== epochAtStart &&
+        cachedForUserId === userId &&
+        cachedIds.length > 0
+          ? [...new Set([...remoteIds, ...cachedIds])]
+          : remoteIds;
+
+      /* Bridge: keep browser backup when remote momentarily returns empty after a heart. */
+      if (merged.length === 0) {
+        const localBackup = loadSavedTrainerIdsForUser(userId);
+        if (localBackup.length > 0) {
+          merged = localBackup;
+        }
+      }
+
+      if (remoteIds.length > 0) {
+        clearLocalSavedTrainersForUser(userId);
+      }
+      applyCache(userId, merged);
+      loadError = null;
+    } catch (error) {
+      if (generation !== loadGeneration) return;
+
+      console.error("[saved-trainers] load failed", error);
+      loadError =
+        error instanceof Error
+          ? error.message
+          : "Failed to load saved specialists";
+
+      /* Keep whatever we already showed — never wipe hearts on a fetch failure. */
+      if (cachedForUserId === userId && cachedIds.length > 0) {
+        hasLoadedForCachedUser = true;
+      } else if (!hadCacheForUser) {
+        applyCache(userId, []);
+        hasLoadedForCachedUser = true;
+      } else {
+        hasLoadedForCachedUser = true;
+      }
+    } finally {
+      if (generation === loadGeneration) {
+        isLoading = false;
+        emitChange();
+      }
+    }
+  })();
+
   try {
-    if (!supabase) {
-      throw new Error("Saved specialists require Supabase.");
-    }
-
-    const remote = await withTimeout(
-      fetchSavedTrainerIds(supabase, userId),
-      SAVED_TRAINERS_FETCH_TIMEOUT_MS
-    );
-    if (!remote.ok) {
-      throw new Error(remote.message);
-    }
-
-    if (generation !== loadGeneration) return;
-
-    /* Discard any leftover pre-migration local shortlist — Supabase is SoT. */
-    clearLocalSavedTrainersForUser(userId);
-    applyCache(userId, remote.specialistIds);
-    loadError = null;
-  } catch (error) {
-    if (generation !== loadGeneration) return;
-
-    console.error("[saved-trainers] load failed", error);
-    loadError =
-      error instanceof Error ? error.message : "Failed to load saved specialists";
-    /* Live mode: do not invent saves from stale localStorage */
-    applyCache(userId, []);
-    hasLoadedForCachedUser = true;
+    await loadPromise;
   } finally {
     if (generation === loadGeneration) {
-      isLoading = false;
-      emitChange();
+      loadPromise = null;
     }
   }
 }
@@ -224,19 +345,20 @@ function readCache(): readonly string[] {
     return EMPTY_SNAPSHOT;
   }
 
-  const userId = resolveClientUserId();
+  const userId = resolveClientUserIdSync();
 
   if (!userId) {
     if (cachedForUserId !== null || cachedIds !== EMPTY_SNAPSHOT) {
-      clearSavedTrainersActiveSession();
+      scheduleClearIfStillSignedOut();
     }
-    return EMPTY_SNAPSHOT;
+    /* Keep last shortlist visible during a brief auth flicker. */
+    return cachedIds;
   }
 
   if (userId !== cachedForUserId) {
-    /* Schedule async load; do not emit synchronously from getSnapshot. */
     scheduleReloadForActiveUser();
-    return EMPTY_SNAPSHOT;
+    /* If we already have ids for a prior paint of this account, keep them. */
+    return cachedForUserId === userId ? cachedIds : EMPTY_SNAPSHOT;
   }
 
   if (!hasLoadedForCachedUser && !isLoading) {
@@ -248,7 +370,6 @@ function readCache(): readonly string[] {
 
 export function subscribeSavedTrainers(onStoreChange: () => void): () => void {
   if (typeof window !== "undefined") {
-    /* Kick off initial load without nesting emitChange in getSnapshot. */
     queueMicrotask(() => {
       scheduleReloadForActiveUser();
     });
@@ -257,21 +378,27 @@ export function subscribeSavedTrainers(onStoreChange: () => void): () => void {
   listeners.add(onStoreChange);
 
   const unsubAuth = subscribeAuthSession(() => {
-    const userId = resolveClientUserId();
+    const userId = resolveClientUserIdSync();
     if (!userId) {
-      clearSavedTrainersActiveSession();
-    } else if (userId !== cachedForUserId) {
-      /* User switched — reset and load once for the new account. */
-      cachedForUserId = null;
-      hasLoadedForCachedUser = false;
-      cachedIds = EMPTY_SNAPSHOT;
-      isLoading = false;
-      loadError = null;
-      emitChange();
-      scheduleReloadForActiveUser();
+      scheduleClearIfStillSignedOut();
+    } else {
+      if (clearSessionTimer != null) {
+        window.clearTimeout(clearSessionTimer);
+        clearSessionTimer = null;
+      }
+      if (userId !== cachedForUserId) {
+        loadGeneration += 1;
+        mutationEpoch += 1;
+        loadPromise = null;
+        cachedForUserId = null;
+        hasLoadedForCachedUser = false;
+        cachedIds = EMPTY_SNAPSHOT;
+        isLoading = false;
+        loadError = null;
+        emitChange();
+        scheduleReloadForActiveUser();
+      }
     }
-    /* Do NOT reload when cache is intentionally empty for this user —
-     * that previously caused an infinite load loop after every auth tick. */
     onStoreChange();
   });
 
@@ -312,15 +439,28 @@ export type ToggleSavedTrainerResult =
 export async function toggleSavedTrainerId(
   trainerId: string
 ): Promise<ToggleSavedTrainerResult> {
-  const userId = resolveClientUserId();
   const id = trainerId.trim();
-  if (!userId || !id) {
-    return { ok: false, message: "Sign in as a client to save specialists." };
+  if (!id) {
+    return { ok: false, message: "Invalid specialist." };
+  }
+
+  const userId = await resolvePersistedUserId();
+  if (!userId) {
+    return { ok: false, message: "A client account is required to save specialists." };
+  }
+
+  if (clearSessionTimer != null) {
+    window.clearTimeout(clearSessionTimer);
+    clearSessionTimer = null;
   }
 
   /* Ensure we mutate against the loaded list for this user. */
   if (userId !== cachedForUserId || !hasLoadedForCachedUser) {
     await reloadSavedTrainersForActiveUserAsync();
+  }
+
+  if (userId !== cachedForUserId) {
+    cachedForUserId = userId;
   }
 
   const previous = [...(cachedForUserId === userId ? cachedIds : [])];
@@ -329,6 +469,7 @@ export async function toggleSavedTrainerId(
     ? previous.filter((entry) => entry !== id)
     : [...previous, id];
 
+  mutationEpoch += 1;
   applyCache(userId, next);
 
   if (!isMarketplaceSupabaseActive()) {
@@ -338,6 +479,7 @@ export async function toggleSavedTrainerId(
 
   const supabase = getMarketplaceAuthClient();
   if (!supabase) {
+    mutationEpoch += 1;
     applyCache(userId, previous);
     return { ok: false, message: "Unable to save — try again shortly." };
   }
@@ -354,14 +496,30 @@ export async function toggleSavedTrainerId(
         specialistId: id,
         message: mutation.message,
       });
+      mutationEpoch += 1;
       applyCache(userId, previous);
       return { ok: false, message: mutation.message };
     }
 
-    /* Supabase is SoT when active — no local mirror after successful write. */
+    /* Soft local backup so Favorites survives a flaky re-fetch after sheet close. */
+    persistSavedTrainerIdsForUser(userId, next);
+
+    /* Confirm from server, but never drop the id we just wrote. */
+    await reloadSavedTrainersForActiveUserAsync({ force: true });
+    if (cachedForUserId === userId) {
+      const confirmed = removing
+        ? cachedIds.filter((entry) => entry !== id)
+        : cachedIds.includes(id)
+          ? [...cachedIds]
+          : [...cachedIds, id];
+      applyCache(userId, confirmed);
+      persistSavedTrainerIdsForUser(userId, confirmed);
+    }
+
     return { ok: true };
   } catch (error) {
     console.error("[saved-trainers] mutation threw", error);
+    mutationEpoch += 1;
     applyCache(userId, previous);
     return {
       ok: false,
@@ -379,7 +537,7 @@ export async function addSavedTrainerId(
   const id = specialistId.trim();
   if (!id) return { ok: false, message: "Invalid specialist id" };
 
-  const userId = resolveClientUserId();
+  const userId = await resolvePersistedUserId();
   if (
     userId &&
     cachedForUserId === userId &&

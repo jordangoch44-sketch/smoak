@@ -28,9 +28,53 @@
   z-index: 1;
 }
 
-/* ── Marketplace canvas: black hero → soft violet/mauve mesh (iOS search colorway) ── */
+/* ── Marketplace canvas: SMOAC Color (smoke) + frosted glass ── */
 .home-page--discovery {
-  background-color: #3d2468;
+  --home-smoke-canvas:
+    /* SMOAC Color spectrum pools */
+    radial-gradient(
+      ellipse 78% 58% at 12% 18%,
+      rgba(var(--smoac-color-warm-rgb), 0.42) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      ellipse 70% 52% at 88% 22%,
+      rgba(var(--smoac-color-rose-rgb), 0.38) 0%,
+      transparent 64%
+    ),
+    radial-gradient(
+      ellipse 85% 60% at 50% 48%,
+      rgba(var(--smoac-color-violet-rgb), 0.5) 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 72% 55% at 18% 78%,
+      rgba(var(--smoac-color-indigo-rgb), 0.4) 0%,
+      transparent 66%
+    ),
+    radial-gradient(
+      ellipse 68% 50% at 92% 72%,
+      rgba(var(--smoac-color-cool-rgb), 0.34) 0%,
+      transparent 64%
+    ),
+    /* Black top → smoked spectrum body */
+    linear-gradient(
+      to bottom,
+      #000000 0%,
+      #080414 max(10vh, 6.5rem),
+      #140a24 max(20vh, 12rem),
+      #1e1238 max(32vh, 20rem),
+      #261848 max(48vh, 30rem),
+      #1a1234 100%
+    );
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #120a22;
+}
+
+.home-page--discovery .home-page__cosmic {
+  z-index: 0;
 }
 
 .home-page--discovery::before {
@@ -39,69 +83,51 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    /* Top-right dusty rose / mauve */
-    radial-gradient(
-      ellipse 78% 70% at 92% 38%,
-      rgba(172, 97, 137, 0.55) 0%,
-      rgba(140, 72, 130, 0.22) 36%,
-      transparent 68%
-    ),
-    /* Top-left lavender-violet */
-    radial-gradient(
-      ellipse 82% 72% at 8% 36%,
-      rgba(136, 104, 194, 0.5) 0%,
-      rgba(110, 78, 161, 0.22) 40%,
-      transparent 70%
-    ),
-    /* Bottom-left deep indigo */
-    radial-gradient(
-      ellipse 90% 78% at 12% 78%,
-      rgba(78, 52, 140, 0.62) 0%,
-      rgba(62, 36, 110, 0.28) 42%,
-      transparent 72%
-    ),
-    /* Bottom-right brighter plum */
-    radial-gradient(
-      ellipse 88% 76% at 88% 82%,
-      rgba(124, 61, 145, 0.58) 0%,
-      rgba(98, 48, 130, 0.24) 40%,
-      transparent 70%
-    ),
-    /* Soft center bloom */
-    radial-gradient(
-      ellipse 110% 80% at 50% 55%,
-      rgba(108, 78, 168, 0.42) 0%,
-      rgba(72, 48, 120, 0.18) 46%,
-      transparent 74%
-    ),
-    linear-gradient(
-      to bottom,
-      #020204 0%,
-      #020204 max(11vh, 7rem),
-      #050208 max(18vh, 12rem),
-      #0a0614 max(24vh, 15.5rem),
-      #16102a max(30vh, 19rem),
-      #271848 max(36vh, 22.5rem),
-      #352258 max(42vh, 26rem),
-      #3d2468 max(50vh, 32rem),
-      #3d2468 100%
-    );
+  background: var(--home-smoke-canvas);
 }
 
-/* Upper aurora wash — keep hero near-black; page gradient owns the purple handoff */
+/* Frosted glass veil — softens smoke into smoked glass */
+.home-page--discovery::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.09) 0%,
+      rgba(255, 255, 255, 0.03) 28%,
+      transparent 52%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(6, 4, 12, 0.38) 0%,
+      rgba(10, 8, 20, 0.22) 36%,
+      rgba(8, 6, 16, 0.3) 100%
+    );
+  backdrop-filter: blur(48px) saturate(1.45);
+  -webkit-backdrop-filter: blur(48px) saturate(1.45);
+}
+
+/* Upper sky wash — SMOAC Color bloom under frost */
 .home-page--discovery .home-page__sky {
   height: min(48vh, 26rem);
-  opacity: 0.28;
+  opacity: 0.7;
   background:
     radial-gradient(
       ellipse 95% 52% at 50% 0%,
-      rgba(var(--aurora-lavender-rgb), 0.22) 0%,
+      rgba(var(--smoac-color-violet-rgb), 0.3) 0%,
       transparent 62%
     ),
     radial-gradient(
       ellipse 72% 40% at 18% 12%,
-      rgba(var(--aurora-indigo-rgb), 0.12) 0%,
+      rgba(var(--smoac-color-warm-rgb), 0.2) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 64% 38% at 88% 16%,
+      rgba(var(--smoac-color-cool-rgb), 0.18) 0%,
       transparent 58%
     );
 }
@@ -482,52 +508,6 @@
 }
 
 @media (min-width: 768px) {
-  .home-page--discovery::before {
-    background:
-      radial-gradient(
-        ellipse 78% 70% at 92% 38%,
-        rgba(172, 97, 137, 0.55) 0%,
-        rgba(140, 72, 130, 0.22) 36%,
-        transparent 68%
-      ),
-      radial-gradient(
-        ellipse 82% 72% at 8% 36%,
-        rgba(136, 104, 194, 0.5) 0%,
-        rgba(110, 78, 161, 0.22) 40%,
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 90% 78% at 12% 78%,
-        rgba(78, 52, 140, 0.62) 0%,
-        rgba(62, 36, 110, 0.28) 42%,
-        transparent 72%
-      ),
-      radial-gradient(
-        ellipse 88% 76% at 88% 82%,
-        rgba(124, 61, 145, 0.58) 0%,
-        rgba(98, 48, 130, 0.24) 40%,
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 110% 80% at 50% 55%,
-        rgba(108, 78, 168, 0.42) 0%,
-        rgba(72, 48, 120, 0.18) 46%,
-        transparent 74%
-      ),
-      linear-gradient(
-        to bottom,
-        #020204 0%,
-        #020204 max(13vh, 9.5rem),
-        #050208 max(22vh, 15rem),
-        #0a0614 max(29vh, 19.5rem),
-        #16102a max(35vh, 23.5rem),
-        #271848 max(41vh, 27.5rem),
-        #352258 max(47vh, 31.5rem),
-        #3d2468 max(54vh, 36rem),
-        #3d2468 100%
-      );
-  }
-
   .home-page--discovery .home-hero__content--discovery,
   .home-page--discovery .home-hero__headline {
     align-items: center;
@@ -598,60 +578,6 @@
 }
 
 @media (min-width: 1024px) {
-  /* Soft violet/mauve mesh under a smooth black→color fade */
-  .home-page--discovery::before {
-    background:
-      radial-gradient(
-        ellipse 78% 70% at 92% 38%,
-        rgba(172, 97, 137, 0.48) 0%,
-        rgba(140, 72, 130, 0.18) 36%,
-        transparent 68%
-      ),
-      radial-gradient(
-        ellipse 82% 72% at 8% 36%,
-        rgba(136, 104, 194, 0.44) 0%,
-        rgba(110, 78, 161, 0.18) 40%,
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 90% 78% at 12% 78%,
-        rgba(78, 52, 140, 0.55) 0%,
-        rgba(62, 36, 110, 0.24) 42%,
-        transparent 72%
-      ),
-      radial-gradient(
-        ellipse 88% 76% at 88% 82%,
-        rgba(124, 61, 145, 0.5) 0%,
-        rgba(98, 48, 130, 0.2) 40%,
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 110% 80% at 50% 55%,
-        rgba(108, 78, 168, 0.36) 0%,
-        rgba(72, 48, 120, 0.14) 46%,
-        transparent 74%
-      ),
-      linear-gradient(
-        to bottom,
-        #020204 0%,
-        #030305 5%,
-        #050408 10%,
-        #07060b 15%,
-        #090810 20%,
-        #0b0a12 25%,
-        #0e0c16 30%,
-        #120820 35%,
-        #18102a 40%,
-        #1e1436 45%,
-        #261848 50%,
-        #2e1c56 55%,
-        #352258 60%,
-        #3a2462 68%,
-        #3d2468 78%,
-        #3d2468 100%
-      );
-  }
-
   /* Headline + search on the left ~55%; right side stays open for aurora */
   .home-page--discovery > .home-hero.home-hero--discovery {
     display: grid;
@@ -772,17 +698,13 @@
   }
 
   .home-page--discovery .home-specialty-card {
-    min-height: 7.35rem;
-    padding: 0.9rem 1rem 0.9rem 1.55rem;
-  }
-
-  .home-page--discovery .home-specialty-card__copy {
-    max-width: 76%;
+    min-height: 4.5rem;
+    padding: 0.95rem 1rem 0.95rem 1.1rem;
   }
 
   .home-page--discovery .home-specialty-card__name {
     max-width: none;
-    font-size: 1.0625rem;
+    font-size: 1rem;
   }
 
   .home-page--discovery .home-new .home-portrait-card,
@@ -1115,7 +1037,7 @@
   color: rgba(255, 255, 255, 0.48);
 }
 
-/* Specialty browse — premium category cards (2-col mobile) */
+/* Specialty browse — simple icon + label cards (2-col mobile) */
 .home-specialty__header {
   margin-bottom: 0.95rem;
 }
@@ -1123,37 +1045,34 @@
 .home-specialty__grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1.05rem;
+  gap: 0.75rem;
 }
 
 .home-specialty-card {
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 6.875rem;
+  gap: 0.75rem;
+  min-height: 4.25rem;
   overflow: hidden;
-  isolation: isolate;
-  border-radius: 1rem;
-  border: 1px solid rgba(168, 130, 255, 0.28);
-  background: #0b0714;
-  padding: 0.7rem 0.75rem 0.7rem 1.35rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(28, 28, 34, 0.92);
+  padding: 0.85rem 0.85rem 0.85rem 0.95rem;
   text-decoration: none;
   touch-action: manipulation;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 0 0 1px rgba(120, 90, 200, 0.05),
-    0 6px 18px rgba(0, 0, 0, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 8px 20px rgba(0, 0, 0, 0.22);
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 .home-specialty-card:active {
-  border-color: rgba(186, 154, 255, 0.48);
-}
-
-.home-specialty-card:active .home-specialty-card__media {
-  transform: scale(1.04);
+  border-color: rgba(var(--smoac-color-violet-rgb), 0.45);
+  background: rgba(34, 32, 42, 0.96);
 }
 
 .home-specialty-card:focus-visible {
@@ -1161,92 +1080,49 @@
   box-shadow: var(--smoac-color-focus-ring);
 }
 
-.home-specialty-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    #0b0714 0%,
-    #0b0714 28%,
-    rgba(11, 7, 20, 0.88) 40%,
-    rgba(11, 7, 20, 0.42) 58%,
-    rgba(11, 7, 20, 0.12) 74%,
-    rgba(11, 7, 20, 0) 88%
-  );
-}
-
-.home-specialty-card__copy {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.95rem;
-  min-width: 0;
-  max-width: 72%;
-  pointer-events: none;
-}
-
 .home-specialty-card__icon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 1.4rem;
-  height: 1.4rem;
-  color: rgb(var(--smoac-color-indigo-rgb));
+  width: 1.65rem;
+  height: 1.65rem;
+  color: rgb(var(--smoac-color-violet-rgb));
 }
 
 .home-specialty-card__svg {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.55rem;
+  height: 1.55rem;
+  color: inherit;
 }
 
 .home-specialty-card__name {
+  flex: 1 1 auto;
   min-width: 0;
-  max-width: 7.25rem;
-  font-size: 0.96875rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: #fff;
+  line-height: 1.25;
+  color: #f5f5f7;
   word-break: normal;
-  overflow-wrap: normal;
+  overflow-wrap: break-word;
   hyphens: none;
   -webkit-hyphens: none;
 }
 
-.home-specialty-card__media {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 0;
-  width: 70%;
-  overflow: hidden;
-  pointer-events: none;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transition: transform 0.2s ease;
+.home-specialty-card__chevron {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  color: rgb(var(--smoac-color-violet-rgb));
+  opacity: 0.88;
 }
 
-.home-specialty-card__media::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: rgba(11, 7, 20, 0.14);
-}
-
-.home-specialty-card__photo {
-  object-fit: cover;
-  object-position: center;
-  opacity: 0.92;
+.home-specialty-card__chevron-svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .home-specialty__footer {
@@ -1282,34 +1158,33 @@
 
 @media (max-width: 359px) {
   .home-specialty__grid {
-    gap: 1rem;
+    gap: 0.65rem;
   }
 
   .home-specialty-card {
-    min-height: 6.6rem;
-    padding-left: 1.2rem;
+    min-height: 4rem;
+    padding-inline: 0.8rem;
+    gap: 0.6rem;
   }
 
   .home-specialty-card__name {
-    font-size: 0.9375rem;
-    max-width: 6.5rem;
+    font-size: 0.875rem;
   }
 }
 
 @media (min-width: 640px) {
   .home-specialty__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.05rem;
+    gap: 0.85rem;
   }
 
   .home-specialty-card {
-    min-height: 7.5rem;
-    padding: 0.85rem 0.9rem 0.85rem 1.4rem;
+    min-height: 4.65rem;
+    padding: 1rem 1rem 1rem 1.1rem;
   }
 
   .home-specialty-card__name {
-    font-size: 1.0625rem;
-    max-width: 9rem;
+    font-size: 1rem;
   }
 }
 
@@ -1324,25 +1199,21 @@
 
 @media (hover: hover) {
   .home-specialty-card:hover {
-    border-color: rgba(186, 154, 255, 0.46);
+    border-color: rgba(var(--smoac-color-violet-rgb), 0.4);
+    background: rgba(34, 32, 42, 0.96);
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 6px 18px rgba(0, 0, 0, 0.26);
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 10px 24px rgba(0, 0, 0, 0.28);
   }
 
-  .home-specialty-card:hover .home-specialty-card__media {
-    transform: scale(1.045);
+  .home-specialty-card:hover .home-specialty-card__chevron {
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .home-specialty-card__media {
+  .home-specialty-card {
     transition: none;
-  }
-
-  .home-specialty-card:hover .home-specialty-card__media,
-  .home-specialty-card:active .home-specialty-card__media {
-    transform: none;
   }
 }
 
@@ -1448,9 +1319,11 @@
 
 .home-portrait-card__verified {
   position: absolute;
-  top: 0.625rem;
-  left: 0.625rem;
+  top: 0.5rem;
+  left: 0.5rem;
   z-index: 3;
+  width: 1.55rem;
+  height: 1.55rem;
 }
 
 .home-portrait-card__badges {
@@ -1591,55 +1464,9 @@
 
 /* Soften old mobile search-first overrides on discovery homepage */
 @media (max-width: 767px) {
-  .home-page--discovery::before {
-    background:
-      radial-gradient(
-        ellipse 78% 70% at 92% 38%,
-        rgba(172, 97, 137, 0.58) 0%,
-        rgba(140, 72, 130, 0.24) 36%,
-        transparent 68%
-      ),
-      radial-gradient(
-        ellipse 82% 72% at 8% 36%,
-        rgba(136, 104, 194, 0.52) 0%,
-        rgba(110, 78, 161, 0.24) 40%,
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 90% 78% at 12% 78%,
-        rgba(78, 52, 140, 0.64) 0%,
-        rgba(62, 36, 110, 0.3) 42%,
-        transparent 72%
-      ),
-      radial-gradient(
-        ellipse 88% 76% at 88% 82%,
-        rgba(124, 61, 145, 0.6) 0%,
-        rgba(98, 48, 130, 0.26) 40%,
-        transparent 70%
-      ),
-      radial-gradient(
-        ellipse 110% 80% at 50% 55%,
-        rgba(108, 78, 168, 0.44) 0%,
-        rgba(72, 48, 120, 0.2) 46%,
-        transparent 74%
-      ),
-      linear-gradient(
-        to bottom,
-        #020204 0%,
-        #020204 max(10vh, 6.5rem),
-        #050208 max(18vh, 12rem),
-        #0a0614 max(24vh, 15.5rem),
-        #16102a max(30vh, 19rem),
-        #271848 max(36vh, 22.5rem),
-        #352258 max(42vh, 26rem),
-        #3d2468 max(48vh, 30rem),
-        #3d2468 100%
-      );
-  }
-
   .home-page--discovery .home-page__sky {
     height: min(42vh, 22rem);
-    opacity: 0.22;
+    opacity: 0.5;
   }
 
   .home-page--discovery .home-hero__canvas {

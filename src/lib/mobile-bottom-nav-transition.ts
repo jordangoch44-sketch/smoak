@@ -52,6 +52,18 @@ export function isSameBottomNavDestination(
     return targetFocusSearch === currentFocusSearch;
   }
 
+  if (target.pathname === "/specialist-dashboard") {
+    const targetTab =
+      new URLSearchParams(target.search.slice(1)).get("tab") ?? "";
+    const currentTab = searchParams.get("tab") ?? "";
+    const targetIsOverview =
+      targetTab === "" || targetTab === "overview" || targetTab === "plan";
+    const currentIsOverview =
+      currentTab === "" || currentTab === "overview" || currentTab === "plan";
+    if (targetIsOverview && currentIsOverview) return true;
+    return targetTab === currentTab;
+  }
+
   if (target.search) {
     const targetParams = new URLSearchParams(target.search.slice(1));
     for (const [key, value] of targetParams.entries()) {

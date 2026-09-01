@@ -27,12 +27,15 @@
     "setup:stripe": "node scripts/setup-stripe-products.mjs"
   },
   "dependencies": {
+    "@apple/mapkit-loader": "^1.0.0",
+    "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "@stripe/react-stripe-js": "^6.8.0",
     "@stripe/stripe-js": "^9.12.1",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
     "framer-motion": "^12.40.0",
     "leaflet": "^1.9.4",
+    "maplibre-gl": "^6.6.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",

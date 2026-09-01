@@ -12,6 +12,7 @@ import {
 } from "react";
 import { TapLink } from "@/components/ui/TapLink";
 import {
+  ChartIcon,
   HeartIcon,
   HomeIcon,
   SearchIcon,
@@ -42,10 +43,12 @@ const NavIcon = memo(function NavIcon({
   id,
   active,
   savedCount,
+  glyph,
 }: {
   id: MobileBottomNavItemId;
   active: boolean;
   savedCount: number;
+  glyph?: MobileBottomNavItem["glyph"];
 }) {
   const className = cn(
     "mobile-bottom-nav__icon",
@@ -60,6 +63,9 @@ const NavIcon = memo(function NavIcon({
     case "search":
       return <SearchIcon className={className} />;
     case "saved":
+      if (glyph === "chart") {
+        return <ChartIcon className={className} />;
+      }
       return (
         <HeartIcon className={className} filled={active || savedCount > 0} />
       );
@@ -171,7 +177,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
     ? signedIn
       ? "Open My Profile"
       : "Open Profile"
-    : item.id === "saved" && showSaveBadge
+    : item.id === "saved" && item.href === "/saved" && showSaveBadge
       ? `${item.label}, ${savedCount} saved`
       : item.label;
 
@@ -221,10 +227,17 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
           <NavIcon
             id={item.id}
             active={active}
-            savedCount={item.id === "saved" && showSaveBadge ? savedCount : 0}
+            glyph={item.glyph}
+            savedCount={
+              item.id === "saved" &&
+              item.href === "/saved" &&
+              showSaveBadge
+                ? savedCount
+                : 0
+            }
           />
         )}
-        {item.id === "saved" && showSaveBadge ? (
+        {item.id === "saved" && item.href === "/saved" && showSaveBadge ? (
           <SavedNavBadge count={savedCount} />
         ) : null}
       </span>

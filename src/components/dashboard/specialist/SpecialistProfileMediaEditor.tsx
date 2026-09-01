@@ -2,8 +2,19 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
+import {
+  ProfilePhotoCropper,
+} from "@/components/media/ProfilePhotoCropper";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
-import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
+import { readFileAsDataUrl } from "@/lib/media/crop-image";
+import {
+  normalizeSlideshowImageKey,
+  parseSlideshowFrameMap,
+  pruneSlideshowFrameMap,
+  resolveSlideshowFrame,
+  serializeSlideshowFrameMap,
+  type SlideshowFrameMap,
+} from "@/lib/media/slideshow-frame";
 import {
   normalizePinnedPhotos,
   parseMediaUrlList,
@@ -14,11 +25,13 @@ import {
 } from "@/lib/specialist-media-limits";
 import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
 import { cn } from "@/lib/utils";
+import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
 
 interface SpecialistProfileMediaEditorProps {
   profilePhotoUrl: string;
   coverImageUrl: string;
   photoNotes: string;
+  slideshowFramesJson: string;
   videoNotes: string;
   pinnedPhotos: string[];
   isPremium: boolean;
@@ -27,9 +40,25 @@ interface SpecialistProfileMediaEditorProps {
     profilePhotoUrl?: string;
     coverImageUrl?: string;
     photoNotes?: string;
+    slideshowFramesJson?: string;
     videoNotes?: string;
     pinnedPhotos?: string[];
   }) => void;
+}
+
+interface CropQueueItem {
+  file?: File;
+  dataUrl: string;
+  name: string;
+  replaceIndex?: number;
+  initialFrame?: ProfilePhotoCropSettings;
+}
+
+interface CropQueueState {
+  items: CropQueueItem[];
+  currentIndex: number;
+  uploadedUrls: string[];
+  uploadedFrames: SlideshowFrameMap;
 }
 
 function rejectUnsupportedPhonePhoto(file: File): string | null {
@@ -46,18 +75,14 @@ function rejectUnsupportedPhonePhoto(file: File): string | null {
   return null;
 }
 
-async function uploadGalleryImage(
+async function uploadCroppedDataUrl(
   specialistId: string | null | undefined,
-  file: File
+  dataUrl: string
 ): Promise<string> {
-  const phoneReject = rejectUnsupportedPhonePhoto(file);
-  if (phoneReject) throw new Error(phoneReject);
-
-  const dataUrl = await prepareImageDataUrlForUpload(file, "gallery");
   const id = specialistId?.trim();
   if (!id || !isMarketplaceSupabaseActive()) return dataUrl;
 
-  const stamp = Date.now().toString(36);
+  const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const basePath = `${id}/gallery/g-${stamp}/image`;
   const response = await fetch("/api/media/specialist-application", {
     method: "POST",
@@ -82,11 +107,12 @@ async function uploadGalleryImage(
   return publicUrl;
 }
 
-/** Profile photo, header slideshow, and pins — short labels, clear actions. */
+/** Profile photo, header slideshow, and pins — short labels, multi-photo selection, in-browser crop. */
 export function SpecialistProfileMediaEditor({
   profilePhotoUrl,
   coverImageUrl,
   photoNotes,
+  slideshowFramesJson,
   videoNotes,
   pinnedPhotos,
   isPremium,
@@ -95,6 +121,7 @@ export function SpecialistProfileMediaEditor({
 }: SpecialistProfileMediaEditorProps) {
   const limits = specialistMediaLimitsForPlan(isPremium);
   const headerImages = parseMediaUrlList(photoNotes);
+  const slideshowFrames = parseSlideshowFrameMap(slideshowFramesJson);
   const headerVideos = parseMediaUrlList(videoNotes);
   const pins = normalizePinnedPhotos(pinnedPhotos, headerImages);
   const cover = coverImageUrl.trim() || headerImages[0] || "";
@@ -102,6 +129,7 @@ export function SpecialistProfileMediaEditor({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [brokenHeaderUrls, setBrokenHeaderUrls] = useState<string[]>([]);
+  const [cropQueue, setCropQueue] = useState<CropQueueState | null>(null);
 
   const atImageLimit = headerImages.length >= limits.images;
   const atVideoLimit = headerVideos.length >= limits.videos;
@@ -113,15 +141,19 @@ export function SpecialistProfileMediaEditor({
     );
   }
 
-  function setHeaderImages(next: string[], nextPins?: string[]) {
+  function setHeaderImages(next: string[], nextPins?: string[], nextFrames?: SlideshowFrameMap) {
     const trimmed = next.map((url) => url.trim()).filter(Boolean);
     const nextCover =
       cover && trimmed.includes(cover) ? cover : trimmed[0] || "";
+    const frameBase = nextFrames ?? slideshowFrames;
     setBrokenHeaderUrls((prev) => prev.filter((url) => trimmed.includes(url)));
     onChange({
       photoNotes: serializeMediaUrlList(trimmed),
       coverImageUrl: nextCover,
       pinnedPhotos: normalizePinnedPhotos(nextPins ?? pins, trimmed),
+      slideshowFramesJson: serializeSlideshowFrameMap(
+        pruneSlideshowFrameMap(frameBase, trimmed)
+      ),
     });
   }
 
@@ -159,10 +191,11 @@ export function SpecialistProfileMediaEditor({
     onChange({ pinnedPhotos: [...pins, trimmed] });
   }
 
-  async function handleAddHeaderImage(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
+  async function handleAddHeaderImages(event: ChangeEvent<HTMLInputElement>) {
+    const fileList = event.target.files;
     event.target.value = "";
-    if (!file) return;
+    if (!fileList || fileList.length === 0) return;
+
     if (atImageLimit) {
       setError(
         isPremium
@@ -172,17 +205,123 @@ export function SpecialistProfileMediaEditor({
       return;
     }
 
+    const remainingSlots = limits.images - headerImages.length;
+    const selectedFiles = Array.from(fileList).slice(0, remainingSlots);
+
+    if (fileList.length > remainingSlots) {
+      setError(
+        `Selected ${fileList.length} photos; only ${remainingSlots} more allowed on your plan.`
+      );
+    } else {
+      setError(null);
+    }
+
+    // Filter invalid files
+    const validItems: CropQueueItem[] = [];
+    for (const file of selectedFiles) {
+      const phoneReject = rejectUnsupportedPhonePhoto(file);
+      if (phoneReject) {
+        setError(phoneReject);
+        continue;
+      }
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        validItems.push({ file, dataUrl, name: file.name });
+      } catch {
+        setError("Could not read one of the selected photos.");
+      }
+    }
+
+    if (validItems.length === 0) return;
+
+    setCropQueue({
+      items: validItems,
+      currentIndex: 0,
+      uploadedUrls: [],
+      uploadedFrames: {},
+    });
+  }
+
+  function handleAdjustExistingPhoto(index: number) {
+    const url = headerImages[index];
+    if (!url) return;
+    setCropQueue({
+      items: [
+        {
+          dataUrl: url,
+          name: `Slideshow photo ${index + 1}`,
+          replaceIndex: index,
+          initialFrame: resolveSlideshowFrame(slideshowFrames, url),
+        },
+      ],
+      currentIndex: 0,
+      uploadedUrls: [],
+      uploadedFrames: {},
+    });
+  }
+
+  async function handleFrameSave(
+    imageData: string,
+    frame: ProfilePhotoCropSettings
+  ) {
+    if (!cropQueue) return;
+    const currentItem = cropQueue.items[cropQueue.currentIndex];
+    if (!currentItem) return;
+
     setBusy(true);
-    setError(null);
     try {
-      const url = await uploadGalleryImage(specialistId, file);
-      setHeaderImages([...headerImages, url]);
+      const isRemote = /^https?:\/\//i.test(imageData.trim());
+      const uploadedUrl = isRemote
+        ? imageData.trim()
+        : await uploadCroppedDataUrl(specialistId, imageData);
+
+      const frameKey = normalizeSlideshowImageKey(uploadedUrl);
+      const nextFrames: SlideshowFrameMap = { ...slideshowFrames };
+
+      if (currentItem.replaceIndex !== undefined) {
+        const previousUrl = headerImages[currentItem.replaceIndex];
+        if (previousUrl) {
+          delete nextFrames[normalizeSlideshowImageKey(previousUrl)];
+        }
+        const next = [...headerImages];
+        next[currentItem.replaceIndex] = uploadedUrl;
+        nextFrames[frameKey] = frame;
+        setHeaderImages(next, pins, nextFrames);
+        setCropQueue(null);
+        return;
+      }
+
+      const queuedFrames = {
+        ...cropQueue.uploadedFrames,
+        [frameKey]: frame,
+      };
+      const nextUploaded = [...cropQueue.uploadedUrls, uploadedUrl];
+      if (cropQueue.currentIndex < cropQueue.items.length - 1) {
+        setCropQueue({
+          ...cropQueue,
+          currentIndex: cropQueue.currentIndex + 1,
+          uploadedUrls: nextUploaded,
+          uploadedFrames: queuedFrames,
+        });
+      } else {
+        setHeaderImages([...headerImages, ...nextUploaded], pins, {
+          ...nextFrames,
+          ...queuedFrames,
+        });
+        setCropQueue(null);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed.");
+      throw err;
     } finally {
       setBusy(false);
     }
   }
+
+  const currentCropItem =
+    cropQueue && cropQueue.items[cropQueue.currentIndex]
+      ? cropQueue.items[cropQueue.currentIndex]
+      : null;
 
   return (
     <div className="specialist-media-editor">
@@ -209,13 +348,13 @@ export function SpecialistProfileMediaEditor({
         </div>
 
         <div className="specialist-media-editor__thumbs">
-          {headerImages.map((url) => {
+          {headerImages.map((url, index) => {
             const isCover = url === cover;
             const isPinned = pins.includes(url);
             const isBroken = brokenHeaderUrls.includes(url);
             return (
               <div
-                key={url}
+                key={`${url}-${index}`}
                 className={cn(
                   "specialist-media-editor__thumb",
                   isCover && "specialist-media-editor__thumb--cover",
@@ -244,6 +383,14 @@ export function SpecialistProfileMediaEditor({
                       <button
                         type="button"
                         className="smoac-control specialist-media-editor__thumb-btn"
+                        onClick={() => handleAdjustExistingPhoto(index)}
+                        title="Adjust slideshow framing"
+                      >
+                        Adjust
+                      </button>
+                      <button
+                        type="button"
+                        className="smoac-control specialist-media-editor__thumb-btn"
                         onClick={() => makeCover(url)}
                         disabled={isCover}
                       >
@@ -266,7 +413,7 @@ export function SpecialistProfileMediaEditor({
                         className="smoac-control specialist-media-editor__thumb-btn specialist-media-editor__thumb-btn--danger"
                         onClick={() =>
                           setHeaderImages(
-                            headerImages.filter((item) => item !== url),
+                            headerImages.filter((_, i) => i !== index),
                             pins.filter((item) => item !== url)
                           )
                         }
@@ -289,7 +436,7 @@ export function SpecialistProfileMediaEditor({
               )}
             >
               <span aria-hidden>+</span>
-              <span>{busy ? "Uploading…" : "Add photo"}</span>
+              <span>{busy ? "Uploading…" : "Add photos"}</span>
             </label>
           ) : null}
         </div>
@@ -297,9 +444,10 @@ export function SpecialistProfileMediaEditor({
         <input
           id={inputId}
           type="file"
+          multiple
           accept={`${SPECIALIST_STORAGE_ACCEPT.galleryImage},.jpg,.jpeg,.png,.webp`}
           className="dashboard-upload-zone__input"
-          onChange={(event) => void handleAddHeaderImage(event)}
+          onChange={(event) => void handleAddHeaderImages(event)}
           disabled={busy || atImageLimit}
         />
       </div>
@@ -390,6 +538,39 @@ export function SpecialistProfileMediaEditor({
         <p className="dashboard-upload-error" role="alert">
           {error}
         </p>
+      ) : null}
+
+      {currentCropItem ? (
+        <ProfilePhotoCropper
+          imageSrc={currentCropItem.dataUrl}
+          aspect={16 / 9}
+          exportMode="frame-preview"
+          hideToolbarExtras
+          showAspectPresets={false}
+          cropShape="rect"
+          initialCrop={{
+            x: currentCropItem.initialFrame?.x ?? 0,
+            y: currentCropItem.initialFrame?.y ?? 0,
+          }}
+          initialZoom={currentCropItem.initialFrame?.zoom ?? 1}
+          title="Frame Slideshow Photo"
+          lead="Drag and zoom to set how this photo appears in the header slideshow. Your full photo is kept for gallery view."
+          stepBadge={
+            cropQueue && cropQueue.items.length > 1
+              ? `Photo ${cropQueue.currentIndex + 1} of ${cropQueue.items.length}`
+              : undefined
+          }
+          confirmLabel={
+            cropQueue && cropQueue.currentIndex < cropQueue.items.length - 1
+              ? "Save & Next →"
+              : "Save"
+          }
+          confirmingLabel="Saving…"
+          onCancel={() => setCropQueue(null)}
+          onSave={async (imageData, frame) => {
+            await handleFrameSave(imageData, frame);
+          }}
+        />
       ) : null}
     </div>
   );

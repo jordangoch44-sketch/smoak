@@ -1,14 +1,13 @@
 "use client";
 
 import type { ComponentType } from "react";
-import Image from "next/image";
 import { TapLink } from "@/components/ui/TapLink";
 import {
+  AppleFruitIcon,
   AthleticBallIcon,
   DumbbellIcon,
-  LeafIcon,
   MeditationIcon,
-  RunningFigureIcon,
+  RunningShoeIcon,
   StrengthArmIcon,
 } from "@/components/ui/icons";
 import {
@@ -23,11 +22,28 @@ const CATEGORY_ICONS: Record<
 > = {
   dumbbell: DumbbellIcon,
   strength: StrengthArmIcon,
-  leaf: LeafIcon,
+  leaf: AppleFruitIcon,
   yoga: MeditationIcon,
   sports: AthleticBallIcon,
-  running: RunningFigureIcon,
+  running: RunningShoeIcon,
 };
+
+function CategoryChevronIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
 
 export function Categories() {
   return (
@@ -44,7 +60,7 @@ export function Categories() {
         </header>
 
         <div className="home-specialty__grid">
-          {HOME_BROWSE_CATEGORIES.map((category, index) => {
+          {HOME_BROWSE_CATEGORIES.map((category) => {
             const Icon = CATEGORY_ICONS[category.icon];
             return (
               <TapLink
@@ -52,26 +68,12 @@ export function Categories() {
                 href={category.href}
                 className="home-specialty-card"
               >
-                <span className="home-specialty-card__copy">
-                  <span className="home-specialty-card__icon" aria-hidden>
-                    <Icon className="home-specialty-card__svg" />
-                  </span>
-                  <span className="home-specialty-card__name">{category.label}</span>
+                <span className="home-specialty-card__icon" aria-hidden>
+                  <Icon className="home-specialty-card__svg" />
                 </span>
-                <span className="home-specialty-card__media" aria-hidden>
-                  <Image
-                    src={category.image}
-                    alt=""
-                    fill
-                    priority={index < 4}
-                    sizes="(max-width: 639px) 55vw, (max-width: 1023px) 28vw, 320px"
-                    className="home-specialty-card__photo"
-                    style={
-                      category.imagePosition
-                        ? { objectPosition: category.imagePosition }
-                        : undefined
-                    }
-                  />
+                <span className="home-specialty-card__name">{category.label}</span>
+                <span className="home-specialty-card__chevron" aria-hidden>
+                  <CategoryChevronIcon className="home-specialty-card__chevron-svg" />
                 </span>
               </TapLink>
             );

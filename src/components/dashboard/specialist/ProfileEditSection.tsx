@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { AlertTriangleIcon, CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export interface ProfileEditSectionProps {
@@ -14,6 +15,8 @@ export interface ProfileEditSectionProps {
   viewContent: ReactNode;
   editContent: ReactNode;
   saving?: boolean;
+  incomplete?: boolean;
+  highlighted?: boolean;
 }
 
 export function ProfileEditSection({
@@ -27,21 +30,45 @@ export function ProfileEditSection({
   viewContent,
   editContent,
   saving = false,
+  incomplete,
+  highlighted = false,
 }: ProfileEditSectionProps) {
   return (
     <section
       id={id}
       className={cn(
         "profile-edit-section",
-        isEditing && "profile-edit-section--editing"
+        isEditing && "profile-edit-section--editing",
+        highlighted && "profile-edit-section--highlighted"
       )}
       aria-labelledby={`${id}-title`}
     >
       <header className="profile-edit-section__head">
         <div className="profile-edit-section__intro">
-          <h2 id={`${id}-title`} className="profile-edit-section__title">
-            {title}
-          </h2>
+          <div className="profile-edit-section__title-row">
+            <h2 id={`${id}-title`} className="profile-edit-section__title">
+              {title}
+            </h2>
+            {incomplete !== undefined ? (
+              incomplete ? (
+                <span
+                  className="profile-edit-section__status-badge profile-edit-section__status-badge--incomplete"
+                  title="Needs attention"
+                  aria-label="Needs attention"
+                >
+                  <AlertTriangleIcon className="profile-edit-section__status-badge-icon" />
+                </span>
+              ) : (
+                <span
+                  className="profile-edit-section__status-badge profile-edit-section__status-badge--complete"
+                  title="Complete"
+                  aria-label="Complete"
+                >
+                  <CheckIcon className="profile-edit-section__status-badge-icon" />
+                </span>
+              )
+            ) : null}
+          </div>
           {description ? (
             <p className="profile-edit-section__desc">{description}</p>
           ) : null}

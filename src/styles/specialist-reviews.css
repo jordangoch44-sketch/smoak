@@ -1,5 +1,14 @@
 /* SMOAC client review modal + summary (profile) */
 
+.review-modal-root,
+.review-modal,
+.smoac-reviews {
+  --aurora-lavender-rgb: var(--smoac-color-violet-rgb);
+  --aurora-violet-rgb: var(--smoac-color-indigo-rgb);
+  --accent-glow-rgb: var(--smoac-color-violet-rgb);
+  --accent-glow: var(--smoac-color-violet);
+}
+
 .review-modal-root {
   position: fixed;
   inset: 0;
@@ -11,14 +20,6 @@
   padding: 0;
 }
 
-.review-modal__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(4, 2, 10, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
 .review-modal {
   position: relative;
   z-index: 1;
@@ -27,6 +28,7 @@
   max-height: min(92dvh, 40rem);
   flex-direction: column;
   overflow: hidden;
+  flex-shrink: 0;
   border: 1px solid rgba(var(--aurora-lavender-rgb), 0.28);
   border-radius: 1.25rem 1.25rem 0 0;
   background:
@@ -39,6 +41,14 @@
   box-shadow:
     0 -12px 40px rgba(0, 0, 0, 0.45),
     0 0 40px rgba(var(--aurora-lavender-rgb), 0.18);
+}
+
+.review-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 2, 10, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 @media (min-width: 640px) {
@@ -199,6 +209,7 @@
 
 .review-modal__footer {
   display: flex;
+  flex-shrink: 0;
   gap: 0.65rem;
   padding: 0.875rem 1.125rem max(0.875rem, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(var(--aurora-lavender-rgb), 0.14);

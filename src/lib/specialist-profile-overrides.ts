@@ -4,6 +4,12 @@ import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
 import { normalizePinnedPhotos, parseMediaUrlList } from "@/lib/specialist-media-limits";
 import {
+  parseSlideshowFrameMap,
+  parseGallerySlideshowFrames,
+  pruneSlideshowFrameMap,
+  serializeSlideshowFrameMap,
+} from "@/lib/media/slideshow-frame";
+import {
   parseTravelRadiusMiles,
   travelToClientsFromLegacyRadius,
 } from "@/lib/specialist-service-area";
@@ -256,6 +262,17 @@ export function applySpecialistProfileOverrides(
     merged.heroImage,
     merged.galleryImages
   );
+  if (overrides.slideshowFramesJson?.trim()) {
+    merged.gallerySlideshowFrames = pruneSlideshowFrameMap(
+      parseSlideshowFrameMap(overrides.slideshowFramesJson),
+      merged.galleryImages
+    );
+  } else if (merged.gallerySlideshowFrames) {
+    merged.gallerySlideshowFrames = pruneSlideshowFrameMap(
+      merged.gallerySlideshowFrames,
+      merged.galleryImages
+    );
+  }
   merged.reviewCount = computeTrainerReviewCount(merged);
 
   if (overrides.pinnedPhotos !== undefined) {
@@ -343,6 +360,9 @@ export function overridesFromTrainer(
         : ((Array.isArray(trainer.galleryImages) ? trainer.galleryImages : [])
             .filter(Boolean)
             .join("\n") || ""),
+    slideshowFramesJson:
+      stored?.slideshowFramesJson?.trim() ??
+      serializeSlideshowFrameMap(trainer.gallerySlideshowFrames ?? {}),
     videoNotes:
       stored?.videoNotes?.trim()
         ? stored.videoNotes
@@ -439,6 +459,7 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     pricePerSession: form.pricePerSession,
     bio: form.bio.trim(),
     photoNotes: form.photoNotes.trim(),
+    slideshowFramesJson: form.slideshowFramesJson.trim(),
     videoNotes: form.videoNotes.trim(),
     transformationNotes: form.transformationNotes.trim(),
     bookingAvailability: form.bookingAvailability.trim(),

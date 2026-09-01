@@ -176,8 +176,8 @@ export function SavedTrainersProvider({
   );
 
   const isSaved = useCallback(
-    (trainerId: string) => isSavesReady && savedIdSet.has(trainerId),
-    [savedIdSet, isSavesReady]
+    (trainerId: string) => savedIdSet.has(trainerId.trim()),
+    [savedIdSet]
   );
 
   const toggleSaved = useCallback((trainerId: string) => {
@@ -202,7 +202,7 @@ export function SavedTrainersProvider({
       savesError,
       isClientWithSaves,
       savedIds,
-      savedCount: isSavesReady ? savedIds.length : 0,
+      savedCount: savedIds.length,
       isSaved,
       toggleSaved,
       getSavedTrainers,

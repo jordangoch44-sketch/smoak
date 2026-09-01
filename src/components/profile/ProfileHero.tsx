@@ -17,7 +17,7 @@ import {
 } from "@/lib/specialist-profile-style";
 import { isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { SessionPrice } from "@/components/ui/SessionPrice";
-import { ShieldCheckIcon } from "@/components/ui/icons";
+import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
@@ -115,6 +115,7 @@ export function ProfileHero({
             images={coverImages}
             trainerName={trainer.name}
             fallbackHeroImage={trainer.heroImage}
+            slideshowFrames={trainer.gallerySlideshowFrames}
           />
           <div
             className="profile-hero__scrim profile-hero__scrim--top absolute inset-x-0 top-0 z-[1] h-[42%]"
@@ -147,13 +148,10 @@ export function ProfileHero({
                 <div className="profile-hero__identity-copy min-w-0 flex-1">
                   <div className="profile-hero__name-row">
                     {isTrainerVerified(trainer) ? (
-                      <span
+                      <VerifiedBadgeMark
                         className="profile-verified-mark"
-                        title="Verified Pro specialist"
-                        aria-label="Verified Pro specialist"
-                      >
-                        <ShieldCheckIcon className="profile-verified-mark__icon" />
-                      </span>
+                        iconClassName="profile-verified-mark__icon"
+                      />
                     ) : null}
                     <h1
                       className={cn(

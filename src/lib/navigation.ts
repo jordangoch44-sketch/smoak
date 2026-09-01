@@ -34,6 +34,8 @@ export const SITE_ROUTES = {
   find: "/find",
   findSanDiego: "/find/san-diego",
   findSanDiegoPersonalTrainers: "/find/san-diego/personal-trainers",
+  /** Acquisition tool — not primary chrome */
+  calorieCalculator: "/calorie-calculator",
   /** Hidden Founding 50 invite — not linked from public chrome */
   founding50: "/founding-50",
 } as const;

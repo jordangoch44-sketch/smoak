@@ -112,6 +112,10 @@ export function AuthSessionProvider({
   const { enabled: supabaseAuth } = useSupabaseConfig();
   const [supabaseHydrated, setSupabaseHydrated] = useState(() => !supabaseAuth);
   const signingOutRef = useRef(false);
+  /** Bumps on each sign-in / sign-out start so a late logout cannot wipe a newer session. */
+  const authGenerationRef = useRef(0);
+  /** Role undergoing sign-in verification — blocks onAuthStateChange race conditions */
+  const pendingSignInRoleRef = useRef<PublicAuthRole | null>(null);
 
   useEffect(() => {
     setClientSupabaseEnabled(supabaseAuth);
@@ -133,6 +137,14 @@ export function AuthSessionProvider({
 
     const result = await lookupMarketplaceSession();
     if (signingOutRef.current) return;
+    if (
+      pendingSignInRoleRef.current &&
+      result.status === "ok" &&
+      result.session.role !== pendingSignInRoleRef.current
+    ) {
+      /* Suppress publishing mismatched session while role verification is in flight */
+      return;
+    }
     applyMarketplaceLookup(result);
   }, [supabaseAuth]);
 
@@ -178,9 +190,20 @@ export function AuthSessionProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (signingOutRef.current) return;
+      if (signingOutRef.current && event !== "SIGNED_OUT") return;
 
       if (event === "SIGNED_OUT") {
+        /* Stale SIGNED_OUT after a quick re-login — keep the new session. */
+        if (!signingOutRef.current) {
+          void (async () => {
+            const { data } = await supabase.auth.getSession();
+            if (data.session) return;
+            resetAuthSessionCache();
+            clearSavedTrainersActiveSession();
+            setAuthSession(null);
+          })();
+          return;
+        }
         resetAuthSessionCache();
         clearSavedTrainersActiveSession();
         setAuthSession(null);
@@ -257,46 +280,68 @@ export function AuthSessionProvider({
 
   const handleSignInWithPassword = useCallback(
     async (role: PublicAuthRole, email: string, password: string) => {
-      const result = await signInWithPassword(role, email, password);
-      if (result.ok === true) {
-        setAuthSession(result.session);
-        if (result.session.role === "specialist") {
-          const { completePendingSpecialistApplicationAfterAuth } = await import(
-            "@/lib/auth/complete-pending-specialist-application"
-          );
-          const pending = await completePendingSpecialistApplicationAfterAuth(
-            result.session.email
-          );
-          if (pending.submitted) {
-            showToast({
-              type: "success",
-              message: "Application submitted — pending SMOAC review.",
-            });
-          } else if (pending.message) {
-            showToast({ type: "info", message: pending.message });
-          }
+      /* Cancel any in-flight logout gate so a quick re-login isn't blocked. */
+      signingOutRef.current = false;
+      pendingSignInRoleRef.current = role;
 
-          const { ensurePendingSpecialistApplicationForAuthUser } = await import(
-            "@/lib/auth/ensure-specialist-application"
-          );
-          const ensured = await ensurePendingSpecialistApplicationForAuthUser({
-            userId: result.session.userId,
-            email: result.session.email,
-            firstName: result.session.firstName,
-            displayName: result.session.displayName,
-            avatarUrl: result.session.avatarUrl,
-          });
-          if (ensured.created) {
-            showToast({
-              type: "success",
-              message: "Application submitted — pending SMOAC review.",
+      try {
+        const result = await signInWithPassword(role, email, password);
+        if (result.ok === true) {
+          authGenerationRef.current += 1;
+          signingOutRef.current = false;
+          pendingSignInRoleRef.current = null;
+          setAuthSession(result.session);
+          if (result.session.role === "specialist") {
+            const { completePendingSpecialistApplicationAfterAuth } = await import(
+              "@/lib/auth/complete-pending-specialist-application"
+            );
+            const pending = await completePendingSpecialistApplicationAfterAuth(
+              result.session.email
+            );
+            if (pending.submitted) {
+              showToast({
+                type: "success",
+                message: "Application submitted — pending SMOAC review.",
+              });
+            } else if (pending.message) {
+              showToast({ type: "info", message: pending.message });
+            }
+
+            const { ensurePendingSpecialistApplicationForAuthUser } = await import(
+              "@/lib/auth/ensure-specialist-application"
+            );
+            const ensured = await ensurePendingSpecialistApplicationForAuthUser({
+              userId: result.session.userId,
+              email: result.session.email,
+              firstName: result.session.firstName,
+              displayName: result.session.displayName,
+              avatarUrl: result.session.avatarUrl,
             });
-          } else if (ensured.message) {
-            showToast({ type: "info", message: ensured.message });
+            if (ensured.created) {
+              showToast({
+                type: "success",
+                message: "Application submitted — pending SMOAC review.",
+              });
+            } else if (ensured.message) {
+              showToast({ type: "info", message: ensured.message });
+            }
           }
+        } else {
+          pendingSignInRoleRef.current = null;
+          clearAuthClientState();
+          clearSavedTrainersActiveSession();
+          resetAuthSessionCache();
+          setAuthSession(null);
         }
+        return result;
+      } catch (err) {
+        pendingSignInRoleRef.current = null;
+        clearAuthClientState();
+        clearSavedTrainersActiveSession();
+        resetAuthSessionCache();
+        setAuthSession(null);
+        throw err;
       }
-      return result;
     },
     []
   );
@@ -317,6 +362,8 @@ export function AuthSessionProvider({
     ) => {
       const result = await signUpWithPassword(role, email, password, options);
       if (result.ok === true) {
+        authGenerationRef.current += 1;
+        signingOutRef.current = false;
         setAuthSession(result.session);
       }
       return result;
@@ -327,6 +374,7 @@ export function AuthSessionProvider({
   const signOut = useCallback(async () => {
     if (signingOutRef.current) return;
     signingOutRef.current = true;
+    const logoutGeneration = ++authGenerationRef.current;
 
     const role = getAuthSessionSnapshot()?.role;
     if (role === "client") {
@@ -341,17 +389,45 @@ export function AuthSessionProvider({
     try {
       await signOutMarketplace();
     } finally {
+      /*
+       * Quick re-login can finish before this logout resolves. Never wipe a
+       * newer session that landed while signOutMarketplace was still in flight.
+       */
+      if (authGenerationRef.current !== logoutGeneration) {
+        return;
+      }
+
+      try {
+        const supabase = getMarketplaceAuthClient();
+        if (supabase) {
+          const { data } = await supabase.auth.getSession();
+          if (data.session) {
+            signingOutRef.current = false;
+            await refreshSession();
+            return;
+          }
+        }
+      } catch {
+        /* fall through to local clear */
+      }
+
+      if (authGenerationRef.current !== logoutGeneration) {
+        return;
+      }
+
       resetAuthSessionCache();
       setAuthSession(null);
       clearSavedTrainersActiveSession();
       /* Keep gate briefly so late USER_UPDATED / TOKEN_REFRESHED cannot restore. */
       window.setTimeout(() => {
-        signingOutRef.current = false;
+        if (authGenerationRef.current === logoutGeneration) {
+          signingOutRef.current = false;
+        }
       }, 750);
     }
 
     showToast({ type: "info", message: "Logged out" });
-  }, []);
+  }, [refreshSession]);
 
   const value = useMemo(
     (): AuthSessionContextValue => ({

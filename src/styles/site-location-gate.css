@@ -76,18 +76,20 @@ body.site-location-gate-open {
   overflow: auto;
   padding: 1.5rem 1.35rem 1.5rem;
   border-radius: 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid transparent;
   background:
     linear-gradient(
       160deg,
       rgba(255, 255, 255, 0.07) 0%,
       rgba(18, 18, 28, 0.96) 42%,
       rgba(10, 10, 16, 0.98) 100%
-    );
+    )
+    padding-box,
+    var(--smoac-color) border-box;
   box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.08) inset,
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 24px 64px rgba(0, 0, 0, 0.55),
-    0 0 48px rgba(14, 165, 233, 0.12);
+    var(--smoac-color-glow-strong);
 }
 
 .site-location-gate__brand {
@@ -123,27 +125,6 @@ body.site-location-gate-open {
   font-size: 0.9375rem;
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.68);
-}
-
-.site-location-gate .location-selector-panel__btn--primary {
-  border-color: rgba(56, 189, 248, 0.45);
-  background:
-    linear-gradient(
-      180deg,
-      rgba(56, 189, 248, 0.28),
-      rgba(14, 165, 233, 0.14)
-    );
-  color: rgba(224, 242, 254, 0.98);
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.16) inset,
-    0 0 24px rgba(14, 165, 233, 0.28);
-}
-
-.site-location-gate .location-selector-panel__btn--primary:hover:not(:disabled) {
-  border-color: rgba(125, 211, 252, 0.65);
-  box-shadow:
-    0 0 0 1px rgba(56, 189, 248, 0.22) inset,
-    0 0 28px rgba(14, 165, 233, 0.4);
 }
 
 @keyframes site-location-gate-in {

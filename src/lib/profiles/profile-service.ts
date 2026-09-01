@@ -26,6 +26,54 @@ const PROFILE_SESSION_COLUMNS = [
   "password_setup_status",
 ].join(", ");
 
+/**
+ * Full client profile editor columns — must include goals, budget, radius, etc.
+ * Do not reuse PROFILE_SESSION_COLUMNS here or edits appear not to save.
+ */
+export const CLIENT_PROFILE_EDITOR_COLUMNS = [
+  "user_id",
+  "email",
+  "first_name",
+  "last_name",
+  "display_name",
+  "phone",
+  "avatar_url",
+  "avatar_path",
+  "client_goals",
+  "client_city",
+  "client_neighborhood",
+  "client_zip_code",
+  "client_state",
+  "client_budget",
+  "client_training_style",
+  "preferred_radius_miles",
+  "preferred_price_min",
+  "preferred_price_max",
+  "preferred_professions",
+  "preferred_specialties",
+  "preferred_gender",
+  "preferred_session_format",
+  "profile_completion_status",
+  "password_setup_status",
+].join(", ");
+
+/** Lean subset when preference columns are not migrated yet. */
+const CLIENT_PROFILE_EDITOR_COLUMNS_LEGACY = [
+  "user_id",
+  "email",
+  "first_name",
+  "last_name",
+  "avatar_url",
+  "client_goals",
+  "client_city",
+  "client_neighborhood",
+  "client_zip_code",
+  "client_budget",
+  "client_training_style",
+  "profile_completion_status",
+  "password_setup_status",
+].join(", ");
+
 function isInlineDataUrl(value: string): boolean {
   return value.trim().toLowerCase().startsWith("data:");
 }
@@ -193,6 +241,46 @@ export async function fetchProfileRow(
   if (!data) return null;
 
   return data as unknown as ProfileRow;
+}
+
+/**
+ * Full profile row for the client account editor (goals, budget, radius, etc.).
+ */
+export async function fetchClientProfileEditorRow(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<ProfileRow | null> {
+  const primary = await supabase
+    .from("profiles")
+    .select(CLIENT_PROFILE_EDITOR_COLUMNS)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (
+    primary.error &&
+    /42703|column.*does not exist|PGRST204/i.test(primary.error.message)
+  ) {
+    const legacy = await supabase
+      .from("profiles")
+      .select(CLIENT_PROFILE_EDITOR_COLUMNS_LEGACY)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (legacy.error) {
+      logProfileFetchIssue(
+        "fetchClientProfileEditorRow.legacy",
+        legacy.error.message
+      );
+      return null;
+    }
+    return (legacy.data as unknown as ProfileRow) ?? null;
+  }
+
+  if (primary.error) {
+    logProfileFetchIssue("fetchClientProfileEditorRow", primary.error.message);
+    return null;
+  }
+
+  return (primary.data as unknown as ProfileRow) ?? null;
 }
 
 export async function upsertUserRole(

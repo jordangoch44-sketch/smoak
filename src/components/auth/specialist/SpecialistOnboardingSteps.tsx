@@ -20,6 +20,14 @@ function toggleInList(list: string[], value: string): string[] {
     : [...list, value];
 }
 
+function RequiredMark() {
+  return (
+    <span className="login-field__label-required" aria-hidden="true">
+      *
+    </span>
+  );
+}
+
 function WizardStepPanel({
   children,
   className,
@@ -132,7 +140,16 @@ export function SpecialistOnboardingSteps({
             title="What type of professional are you?"
             subtitle="Choose the role that best describes your practice."
           />
-          <div className="wizard-scroll-options">
+          <p className="login-field__label">
+            Professional type
+            <RequiredMark />
+          </p>
+          <div
+            className="wizard-scroll-options"
+            role="radiogroup"
+            aria-label="Professional type"
+            aria-required="true"
+          >
             {PROFESSIONAL_TYPE_OPTIONS.map((type) => {
               const active = state.professionalType === type;
               return (
@@ -167,23 +184,29 @@ export function SpecialistOnboardingSteps({
           />
           <div className="login-fields">
             <label className="login-field">
-              <span className="login-field__label">Full name</span>
+              <span className="login-field__label">
+                Full name
+                <RequiredMark />
+              </span>
               <input
                 className="login-field__input"
                 value={state.fullName}
                 onChange={(e) => onPatch({ fullName: e.target.value })}
                 autoComplete="name"
+                required
+                aria-required="true"
               />
             </label>
             <div className="login-field">
               <span className="login-field__label">
                 Gender
-                <span className="login-field__label-hint">Required</span>
+                <RequiredMark />
               </span>
               <div
                 className="wizard-gender-options"
                 role="radiogroup"
                 aria-label="Gender"
+                aria-required="true"
               >
                 {GENDER_OPTIONS.map((option) => {
                   const active = state.gender === option.value;
@@ -211,30 +234,40 @@ export function SpecialistOnboardingSteps({
                   );
                 })}
               </div>
-              <p className="wizard-field-hint">
-                Clients can search for specialists by gender.
-              </p>
             </div>
             <label className="login-field">
-              <span className="login-field__label">Business name</span>
+              <span className="login-field__label">
+                Business name
+                <RequiredMark />
+              </span>
               <input
                 className="login-field__input"
                 value={state.displayName}
                 onChange={(e) => onPatch({ displayName: e.target.value })}
                 placeholder="How clients will see you"
+                required
+                aria-required="true"
               />
             </label>
             <label className="login-field">
-              <span className="login-field__label">Profile headline</span>
+              <span className="login-field__label">
+                Profile headline
+                <RequiredMark />
+              </span>
               <input
                 className="login-field__input"
                 value={state.headline}
                 onChange={(e) => onPatch({ headline: e.target.value })}
                 placeholder="Hybrid Performance Coach"
+                required
+                aria-required="true"
               />
             </label>
             <label className="login-field">
-              <span className="login-field__label">Email</span>
+              <span className="login-field__label">
+                Email
+                <RequiredMark />
+              </span>
               <input
                 type="email"
                 className="login-field__input"
@@ -253,24 +286,32 @@ export function SpecialistOnboardingSteps({
               onAnimationEnd={onPasswordShakeEnd}
             >
               <label className="login-field">
-                <span className="login-field__label">Create a password</span>
+                <span className="login-field__label">
+                  Create a password
+                  <RequiredMark />
+                </span>
                 <PasswordInput
                   value={state.password}
                   onChange={(e) => onPatch({ password: e.target.value })}
                   autoComplete="new-password"
                   placeholder="At least 8 characters"
                   required
+                  aria-required="true"
                   aria-invalid={passwordFieldsError}
                 />
               </label>
               <label className="login-field">
-                <span className="login-field__label">Confirm password</span>
+                <span className="login-field__label">
+                  Confirm password
+                  <RequiredMark />
+                </span>
                 <PasswordInput
                   value={confirmPassword}
                   onChange={(e) => onConfirmPasswordChange(e.target.value)}
                   autoComplete="new-password"
                   placeholder="Re-enter your password"
                   required
+                  aria-required="true"
                   aria-invalid={passwordFieldsError}
                 />
               </label>
@@ -283,24 +324,30 @@ export function SpecialistOnboardingSteps({
               ) : null}
             </div>
             <label className="login-field">
-              <span className="login-field__label">Phone number</span>
+              <span className="login-field__label">
+                Phone number
+                <RequiredMark />
+              </span>
               <input
                 type="tel"
                 className="login-field__input"
                 value={state.phone}
                 onChange={(e) => onPatch({ phone: e.target.value })}
                 autoComplete="tel"
+                required
+                aria-required="true"
               />
             </label>
             <label className="login-field">
               <span className="login-field__label">
                 Profile photo
-                <span className="login-field__label-hint">Required</span>
+                <RequiredMark />
               </span>
               <input
                 type="file"
                 accept="image/*"
                 className="login-field__input wizard-file-input"
+                aria-required="true"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleProfilePhotoFile(file);
@@ -338,7 +385,7 @@ export function SpecialistOnboardingSteps({
         <WizardStepPanel stepKey="sp-3">
           <WizardStepHeading
             title="Where do you work with clients?"
-            subtitle="ZIP matches you nearby. Add an exact address for better distance — or skip it. Virtual coaches can continue without a street address. You can set whether you travel to clients later from your profile."
+            subtitle="Enter your ZIP so clients can find you. Street address is optional."
           />
           <SpecialistServiceAreaFields state={state} onPatch={onPatch} />
         </WizardStepPanel>
@@ -351,7 +398,16 @@ export function SpecialistOnboardingSteps({
             title="Your specialties"
             subtitle="Select the areas you coach. You can refine these anytime from your dashboard."
           />
-          <div className="wizard-pill-grid wizard-pill-grid--wide">
+          <p className="login-field__label">
+            Specialties
+            <RequiredMark />
+          </p>
+          <div
+            className="wizard-pill-grid wizard-pill-grid--wide"
+            role="group"
+            aria-label="Specialties"
+            aria-required="true"
+          >
             {SPECIALIST_SPECIALTY_OPTIONS.map((specialty) => {
               const active = state.specialties.includes(specialty);
               return (
@@ -375,10 +431,7 @@ export function SpecialistOnboardingSteps({
             })}
           </div>
           <div className="login-fields" style={{ marginTop: "1.25rem" }}>
-            <p className="wizard-step-subsection-title">
-              Certifications
-              <span className="login-field__label-hint"> Optional</span>
-            </p>
+            <p className="wizard-step-subsection-title">Certifications</p>
             {certRows.map((cert, index) => (
               <div key={`cert-${index}`} className="login-field">
                 <span className="login-field__label">
@@ -443,20 +496,28 @@ export function SpecialistOnboardingSteps({
           />
           <div className="login-fields">
             <label className="login-field">
-              <span className="login-field__label">Short bio</span>
+              <span className="login-field__label">
+                Short bio
+                <RequiredMark />
+              </span>
               <textarea
                 className="login-field__input wizard-textarea"
                 value={state.bio}
                 onChange={(e) => onPatch({ bio: e.target.value })}
                 rows={5}
                 placeholder="Who you help, what you specialize in, and what clients can expect."
+                required
+                aria-required="true"
               />
             </label>
             <p className="wizard-field-hint">
               About 40+ characters · {state.bio.trim().length} entered
             </p>
             <label className="login-field">
-              <span className="login-field__label">1:1 session price</span>
+              <span className="login-field__label">
+                1:1 session price
+                <RequiredMark />
+              </span>
               <input
                 className="login-field__input"
                 inputMode="decimal"
@@ -470,6 +531,8 @@ export function SpecialistOnboardingSteps({
                   })
                 }
                 placeholder="$120"
+                required
+                aria-required="true"
               />
             </label>
             <p className="wizard-field-hint">
@@ -477,10 +540,7 @@ export function SpecialistOnboardingSteps({
               anytime from Edit profile.
             </p>
             <label className="login-field">
-              <span className="login-field__label">
-                Instagram
-                <span className="login-field__label-hint">Optional</span>
-              </span>
+              <span className="login-field__label">Instagram</span>
               <input
                 className="login-field__input"
                 value={state.social.instagram ?? ""}
@@ -491,10 +551,7 @@ export function SpecialistOnboardingSteps({
               />
             </label>
             <label className="login-field">
-              <span className="login-field__label">
-                Website
-                <span className="login-field__label-hint">Optional</span>
-              </span>
+              <span className="login-field__label">Website</span>
               <input
                 className="login-field__input"
                 value={state.social.website ?? ""}

@@ -35,6 +35,8 @@ export interface SpecialistProfileOverrides {
   pricePerSession?: number;
   bio?: string;
   photoNotes?: string;
+  /** JSON map of slideshow image URL → { x, y, zoom } framing for hero cover */
+  slideshowFramesJson?: string;
   /** Header / gallery video URLs (Pro) — one per line */
   videoNotes?: string;
   transformationNotes?: string;
@@ -79,6 +81,7 @@ export type SpecialistProfileEditForm = Required<
     | "pricePerSession"
     | "bio"
     | "photoNotes"
+    | "slideshowFramesJson"
     | "videoNotes"
     | "transformationNotes"
     | "bookingAvailability"

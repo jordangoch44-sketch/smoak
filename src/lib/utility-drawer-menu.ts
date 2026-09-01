@@ -44,6 +44,9 @@ export const utilityDrawerCompanyLinks: readonly UtilityDrawerNavItem[] = [
   },
 ];
 
+/** Extra rows for signed-in specialists. */
+export const utilityDrawerSpecialistLinks: readonly UtilityDrawerNavItem[] = [];
+
 export const utilityDrawerLegalLinks: readonly UtilityDrawerNavItem[] = [
   { id: "privacy", label: "Privacy Policy", href: SITE_ROUTES.privacy },
   { id: "terms", label: "Terms of Service", href: SITE_ROUTES.terms },

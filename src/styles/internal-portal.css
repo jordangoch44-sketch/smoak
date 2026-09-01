@@ -234,10 +234,11 @@
 
 .internal-console {
   min-height: 100dvh;
-  background: #030304;
+  background: #0D0D0D;
 }
 
-.internal-console .dashboard-page {
+.internal-console .dashboard-page,
+.internal-console .admin-apple-layout {
   min-height: 100dvh;
 }
 

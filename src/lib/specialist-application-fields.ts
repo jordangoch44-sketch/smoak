@@ -180,6 +180,10 @@ export function normalizeSpecialistApplicationShape(
         media?.trainingVideoUrls,
         defaults.media.trainingVideoUrls
       ),
+      slideshowFramesJson: asString(
+        media?.slideshowFramesJson,
+        defaults.media.slideshowFramesJson ?? ""
+      ),
     },
   };
 }

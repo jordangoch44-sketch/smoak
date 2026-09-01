@@ -8,22 +8,32 @@
   margin: 0 0 1.25rem;
   padding: 0.95rem 1rem;
   border-radius: 1rem;
-  border: 1px solid rgba(var(--accent-glow-rgb), 0.22);
-  background: rgba(14, 14, 20, 0.55);
-  box-shadow: 0 0 24px rgba(var(--accent-glow-rgb), 0.08);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      165deg,
+      rgba(36, 32, 52, 0.98) 0%,
+      rgba(16, 14, 26, 0.99) 48%,
+      rgba(10, 9, 16, 1) 100%
+    )
+    padding-box,
+    var(--smoac-color) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--smoac-color-glow);
   text-align: left;
   color: inherit;
   font: inherit;
   cursor: pointer;
   transition:
-    border-color 0.2s ease,
     box-shadow 0.2s ease,
-    background-color 0.2s ease;
+    filter 0.2s ease;
 }
 
 .client-dash-progress:hover {
-  border-color: rgba(var(--accent-glow-rgb), 0.36);
-  box-shadow: 0 0 28px rgba(var(--accent-glow-rgb), 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--smoac-color-glow-strong);
 }
 
 .client-dash-progress--done {
@@ -31,12 +41,12 @@
   flex-direction: row;
   align-items: center;
   padding: 0.75rem 1rem;
-  border-color: rgba(var(--accent-glow-rgb), 0.18);
-  background: rgba(var(--accent-glow-rgb), 0.08);
 }
 
 .client-dash-progress--done:hover {
-  box-shadow: 0 0 24px rgba(var(--accent-glow-rgb), 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    var(--smoac-color-glow);
 }
 
 .client-dash-progress__row {
@@ -56,7 +66,10 @@
 .client-dash-progress__pct {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: rgba(var(--accent-glow-rgb), 0.95);
+  background-image: var(--smoac-color);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   letter-spacing: 0.02em;
 }
 
@@ -72,12 +85,8 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    rgba(var(--accent-glow-rgb), 0.55),
-    rgba(var(--accent-glow-rgb), 0.95)
-  );
-  box-shadow: 0 0 12px rgba(var(--accent-glow-rgb), 0.35);
+  background: var(--smoac-color);
+  box-shadow: var(--smoac-color-glow);
   transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -95,8 +104,11 @@
   margin: 0 0 1.35rem;
   padding: 0.3rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(8, 8, 12, 0.55);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(10, 9, 16, 0.96), rgba(10, 9, 16, 0.96)) padding-box,
+    var(--smoac-color) border-box;
+  box-shadow: var(--smoac-color-glow);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -132,10 +144,10 @@
 
 .client-dash-tabs__btn--active {
   color: #fff;
-  background: rgba(var(--accent-glow-rgb), 0.18);
+  background: var(--smoac-color);
   box-shadow:
-    inset 0 0 0 1px rgba(var(--accent-glow-rgb), 0.35),
-    0 0 18px rgba(var(--accent-glow-rgb), 0.14);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    var(--smoac-color-glow);
 }
 
 .client-dash-tabs__count {
@@ -152,7 +164,7 @@
 }
 
 .client-dash-tabs__btn--active .client-dash-tabs__count {
-  background: rgba(var(--accent-glow-rgb), 0.28);
+  background: rgba(255, 255, 255, 0.18);
   color: #fff;
 }
 
@@ -160,8 +172,8 @@
   width: 0.4rem;
   height: 0.4rem;
   border-radius: 999px;
-  background: rgba(var(--accent-glow-rgb), 0.95);
-  box-shadow: 0 0 8px rgba(var(--accent-glow-rgb), 0.55);
+  background: var(--smoac-color-cool);
+  box-shadow: var(--smoac-color-glow);
 }
 
 .client-dash-panels {
@@ -197,11 +209,20 @@
   gap: 1.35rem;
   padding: 1.35rem 1.2rem 1.25rem;
   border-radius: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(14, 14, 20, 0.48);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(
+      165deg,
+      rgba(36, 32, 52, 0.98) 0%,
+      rgba(16, 14, 26, 0.99) 48%,
+      rgba(10, 9, 16, 1) 100%
+    )
+    padding-box,
+    var(--smoac-color) border-box;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 12px 36px rgba(0, 0, 0, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    var(--smoac-color-glow);
 }
 
 .client-dash-summary__identity {
@@ -217,9 +238,11 @@
   height: 4.5rem;
   overflow: hidden;
   border-radius: 999px;
-  border: 1px solid rgba(var(--accent-glow-rgb), 0.4);
-  background: rgba(var(--accent-glow-rgb), 0.12);
-  box-shadow: 0 0 22px rgba(var(--accent-glow-rgb), 0.16);
+  border: 1.5px solid transparent;
+  background:
+    linear-gradient(rgba(16, 12, 24, 0.95), rgba(16, 12, 24, 0.95)) padding-box,
+    var(--smoac-color) border-box;
+  box-shadow: var(--smoac-color-glow);
 }
 
 .client-dash-summary__avatar img {
@@ -274,10 +297,13 @@
 
 .client-dash-summary__meta dt {
   font-size: 0.6875rem;
-  font-weight: 500;
+  font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.38);
+  background-image: var(--smoac-color);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .client-dash-summary__meta dd {
@@ -294,16 +320,16 @@
   min-height: 3rem;
   width: 100%;
   margin-top: 0.15rem;
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: #f5f5f7;
-  color: #0a0a0a;
+  background: var(--smoac-color);
+  color: #fff;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 650;
   cursor: pointer;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.45) inset,
-    0 0 20px rgba(var(--accent-glow-rgb), 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    var(--smoac-color-glow-strong);
 }
 
 .client-dash-summary__edit:active {

@@ -18,7 +18,14 @@ import {
 } from "framer-motion";
 import type { TrainerFilters } from "@/types";
 import { countActiveFilters } from "@/lib/explore";
-import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
+import {
+  isExploreCategoryActive,
+  type ExploreBrowseCategory,
+} from "@/lib/explore-browse-categories";
+import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
+import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
+import { useUserLocation } from "@/hooks/useUserLocation";
+import { clearUserLocation } from "@/lib/user-location-store";
 import { cn } from "@/lib/utils";
 import { CloseIcon } from "@/components/ui/icons";
 import { ExploreBrowseCategories } from "./ExploreBrowseCategories";
@@ -74,6 +81,20 @@ export function ExploreFiltersDrawer({
     () => countActiveFilters(draft),
     [draft]
   );
+
+  const preciseCoords = usePreciseUserCoordinates();
+  const activeCoords = useActiveUserCoordinates();
+  const { hasLocation: hasSavedLocation } = useUserLocation();
+
+  const hasDraftLocation = Boolean(
+    draft.zipCode ||
+      draft.city ||
+      draft.neighborhood ||
+      preciseCoords ||
+      activeCoords ||
+      hasSavedLocation
+  );
+  const canClear = draftActiveFilterCount > 0 || hasDraftLocation;
 
   const filtersKey = filtersSnapshot(filters);
   if (open && syncedKey !== filtersKey) {
@@ -150,9 +171,34 @@ export function ExploreFiltersDrawer({
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
       onSelectCategory?.(category);
-      onClose();
+      const isActive = isExploreCategoryActive(category, {
+        filters: draft,
+        activeSearchQuery,
+      });
+
+      if (isActive) {
+        setDraft((prev) => ({
+          ...prev,
+          profession:
+            category.profession &&
+            prev.profession.toLowerCase() === category.profession.toLowerCase()
+              ? ""
+              : prev.profession,
+          specialty:
+            category.specialty &&
+            prev.specialty.toLowerCase() === category.specialty.toLowerCase()
+              ? ""
+              : prev.specialty,
+        }));
+      } else {
+        const nextProfession = category.profession ?? category.searchQuery;
+        setDraft((prev) => ({
+          ...prev,
+          profession: nextProfession,
+        }));
+      }
     },
-    [onSelectCategory, onClose]
+    [draft, activeSearchQuery, onSelectCategory]
   );
 
   const handleApply = useCallback(() => {
@@ -161,6 +207,7 @@ export function ExploreFiltersDrawer({
   }, [draft, onApply, onClose]);
 
   const handleClear = useCallback(() => {
+    clearUserLocation();
     onClearFilters();
     setDraft({
       zipCode: "",
@@ -259,13 +306,12 @@ export function ExploreFiltersDrawer({
             </div>
 
             <div className="explore-filters-drawer__body">
-              {onSelectCategory ? (
-                <ExploreBrowseCategories
-                  variant="drawer"
-                  onSelect={handleCategorySelect}
-                  activeSearchQuery={activeSearchQuery}
-                />
-              ) : null}
+              <ExploreBrowseCategories
+                variant="drawer"
+                onSelect={handleCategorySelect}
+                filters={draft}
+                activeSearchQuery={activeSearchQuery}
+              />
               <FiltersPanel
                 filters={draft}
                 onChange={setDraft}
@@ -280,10 +326,9 @@ export function ExploreFiltersDrawer({
                 onClick={handleClear}
                 className={cn(
                   "smoac-control explore-filters-drawer__clear",
-                  draftActiveFilterCount === 0 &&
-                    "explore-filters-drawer__clear--muted"
+                  !canClear && "explore-filters-drawer__clear--muted"
                 )}
-                disabled={draftActiveFilterCount === 0}
+                disabled={!canClear}
               >
                 Clear all
               </button>

@@ -28,6 +28,11 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
+        source: "/tools/calories",
+        destination: "/calorie-calculator",
+        permanent: true,
+      },
+      {
         source: "/api/founding-trainers/status",
         destination: "/api/founding-50/status",
         permanent: true,

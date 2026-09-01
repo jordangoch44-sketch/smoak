@@ -4,7 +4,13 @@ import { useMemo, useState } from "react";
 import { DashboardSection } from "@/components/dashboard";
 import { AdminApplicationReviewPanel } from "@/components/admin/applications/AdminApplicationReviewPanel";
 import { AdminClientApplicationReviewPanel } from "@/components/admin/applications/AdminClientApplicationReviewPanel";
-import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
+import {
+  AdminApplicationsControlBar,
+  type ApplicationQueue,
+  type QueueCountMetrics,
+} from "@/components/admin/applications/AdminApplicationsControlBar";
+import { AdminApplicationCard } from "@/components/admin/applications/AdminApplicationCard";
+import { AdminClientApplicationCard } from "@/components/admin/applications/AdminClientApplicationCard";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
 import type { AdminApplicationMutationResult } from "@/lib/admin-applications-service";
 import { clientApplicationStatusLabel } from "@/lib/client-applications-service";
@@ -13,17 +19,6 @@ import type { AdminApplicationStatusLabel } from "@/types/admin";
 import type { AdminPermissions } from "@/types/admin-permissions";
 import type { ClientApplication } from "@/types/client-application";
 import type { SpecialistApplication } from "@/types/specialist-application";
-
-type ApplicationQueue = "specialists" | "clients";
-
-function formatSubmittedDate(iso: string | null): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 type SpecialistAppAction = (
   app: SpecialistApplication
@@ -67,43 +62,135 @@ export function AdminApplicationsPanel({
   onArchiveClient,
 }: AdminApplicationsPanelProps) {
   const [queue, setQueue] = useState<ApplicationQueue>("specialists");
-  const [filter, setFilter] = useState<AdminApplicationStatusLabel | "all">(
+  const [statusFilter, setStatusFilter] = useState<AdminApplicationStatusLabel | "all">(
     "pending"
   );
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedSpecialistId, setSelectedSpecialistId] = useState<string | null>(
     null
   );
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
-  const pendingSpecialists = useMemo(
-    () =>
-      specialistApplications.filter(
-        (a) => applicationStatusLabel(a.profileStatus) === "pending"
-      ).length,
-    [specialistApplications]
-  );
+  // Compute status counts for specialists
+  const specialistCounts = useMemo<QueueCountMetrics>(() => {
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let archived = 0;
 
-  const pendingClients = useMemo(
-    () =>
-      clientApplications.filter(
-        (a) => clientApplicationStatusLabel(a.status) === "pending"
-      ).length,
-    [clientApplications]
-  );
+    for (const app of specialistApplications) {
+      const label = applicationStatusLabel(app.profileStatus);
+      if (label === "pending") pending++;
+      else if (label === "approved") approved++;
+      else if (label === "rejected") rejected++;
+      else if (label === "archived") archived++;
+    }
 
-  const filteredSpecialists =
-    filter === "all"
-      ? specialistApplications
-      : specialistApplications.filter(
-          (app) => applicationStatusLabel(app.profileStatus) === filter
-        );
+    return {
+      total: specialistApplications.length,
+      pending,
+      approved,
+      rejected,
+      archived,
+    };
+  }, [specialistApplications]);
 
-  const filteredClients =
-    filter === "all"
-      ? clientApplications
-      : clientApplications.filter(
-          (app) => clientApplicationStatusLabel(app.status) === filter
-        );
+  // Compute status counts for clients
+  const clientCounts = useMemo<QueueCountMetrics>(() => {
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let archived = 0;
+
+    for (const app of clientApplications) {
+      const label = clientApplicationStatusLabel(app.status);
+      if (label === "pending") pending++;
+      else if (label === "approved") approved++;
+      else if (label === "rejected") rejected++;
+      else if (label === "archived") archived++;
+    }
+
+    return {
+      total: clientApplications.length,
+      pending,
+      approved,
+      rejected,
+      archived,
+    };
+  }, [clientApplications]);
+
+  // Filter specialists by status and search query
+  const filteredSpecialists = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return specialistApplications.filter((app) => {
+      // Status filter
+      if (statusFilter !== "all") {
+        const label = applicationStatusLabel(app.profileStatus);
+        if (label !== statusFilter) return false;
+      }
+
+      // Search filter
+      if (!query) return true;
+
+      const name = (
+        app.businessName ||
+        app.displayName ||
+        app.fullName ||
+        ""
+      ).toLowerCase();
+      const email = (app.email || "").toLowerCase();
+      const city = (app.city || "").toLowerCase();
+      const neighborhood = (app.neighborhood || "").toLowerCase();
+      const zip = (app.zipCode || "").toLowerCase();
+      const profession = (app.professionalType || "").toLowerCase();
+      const headline = (app.headline || "").toLowerCase();
+      const specialties = (app.specialties || []).join(" ").toLowerCase();
+
+      return (
+        name.includes(query) ||
+        email.includes(query) ||
+        city.includes(query) ||
+        neighborhood.includes(query) ||
+        zip.includes(query) ||
+        profession.includes(query) ||
+        headline.includes(query) ||
+        specialties.includes(query)
+      );
+    });
+  }, [specialistApplications, statusFilter, searchQuery]);
+
+  // Filter clients by status and search query
+  const filteredClients = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    return clientApplications.filter((app) => {
+      // Status filter
+      if (statusFilter !== "all") {
+        const label = clientApplicationStatusLabel(app.status);
+        if (label !== statusFilter) return false;
+      }
+
+      // Search filter
+      if (!query) return true;
+
+      const name = (app.fullName || "").toLowerCase();
+      const email = (app.email || "").toLowerCase();
+      const city = (app.preferredCity || "").toLowerCase();
+      const neighborhood = (app.preferredNeighborhood || "").toLowerCase();
+      const zip = (app.preferredZipCode || "").toLowerCase();
+      const goals = (app.fitnessGoals || []).join(" ").toLowerCase();
+
+      return (
+        name.includes(query) ||
+        email.includes(query) ||
+        city.includes(query) ||
+        neighborhood.includes(query) ||
+        zip.includes(query) ||
+        goals.includes(query)
+      );
+    });
+  }, [clientApplications, statusFilter, searchQuery]);
 
   const selectedSpecialist =
     selectedSpecialistId != null
@@ -116,182 +203,121 @@ export function AdminApplicationsPanel({
       ? clientApplications.find((app) => app.id === selectedClientId) ?? null
       : null;
 
-  const filterOptions: (AdminApplicationStatusLabel | "all")[] = [
-    "all",
-    "pending",
-    "approved",
-    "rejected",
-    "archived",
-  ];
+  const totalFilteredCount =
+    queue === "specialists"
+      ? filteredSpecialists.length
+      : filteredClients.length;
+
+  const totalQueueCount =
+    queue === "specialists"
+      ? specialistApplications.length
+      : clientApplications.length;
 
   return (
     <DashboardSection
-      title="Applications"
-      description="Join SMOAC inbox — review specialist and client questionnaires before they go live."
+      title="Applications Queue"
+      description="Review and manage specialist and client questionnaires before they go live on the SMOAK marketplace."
     >
-      <div
-        className="admin-filter-pills admin-filter-pills--queue"
-        role="tablist"
-        aria-label="Application queue"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={queue === "specialists"}
-          className={`admin-filter-pill${queue === "specialists" ? " admin-filter-pill--active" : ""}`}
-          onClick={() => {
-            setQueue("specialists");
-            setSelectedClientId(null);
-          }}
-        >
-          Specialists
-          {pendingSpecialists > 0 ? (
-            <span className="admin-filter-pill__count">{pendingSpecialists}</span>
-          ) : null}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={queue === "clients"}
-          className={`admin-filter-pill${queue === "clients" ? " admin-filter-pill--active" : ""}`}
-          onClick={() => {
-            setQueue("clients");
-            setSelectedSpecialistId(null);
-          }}
-        >
-          Clients
-          {pendingClients > 0 ? (
-            <span className="admin-filter-pill__count">{pendingClients}</span>
-          ) : null}
-        </button>
-      </div>
+      {/* Unified Apple-Style Filter & Search Bar */}
+      <AdminApplicationsControlBar
+        queue={queue}
+        onQueueChange={(newQueue) => {
+          setQueue(newQueue);
+          setSelectedSpecialistId(null);
+          setSelectedClientId(null);
+        }}
+        specialistCounts={specialistCounts}
+        clientCounts={clientCounts}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        searchQuery={searchQuery}
+        onSearchQueryChange={setSearchQuery}
+        totalFilteredCount={totalFilteredCount}
+        totalQueueCount={totalQueueCount}
+      />
 
-      <div className="admin-filter-pills" role="tablist" aria-label="Application filters">
-        {filterOptions.map((item) => (
-          <button
-            key={item}
-            type="button"
-            role="tab"
-            aria-selected={filter === item}
-            className={`admin-filter-pill${filter === item ? " admin-filter-pill--active" : ""}`}
-            onClick={() => setFilter(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-
-      {queue === "specialists" ? (
-        filteredSpecialists.length === 0 ? (
-          <p className="admin-empty">No specialist applications in this filter.</p>
-        ) : (
-          <ul className="admin-card-list admin-applications-inbox">
-            {filteredSpecialists.map((app) => {
-              const label = applicationStatusLabel(app.profileStatus);
-              const isSelected = selectedSpecialistId === app.id;
-              return (
-                <li key={app.id}>
-                  <button
-                    type="button"
-                    className={`admin-inbox-card${isSelected ? " admin-inbox-card--selected" : ""}`}
-                    onClick={() => setSelectedSpecialistId(app.id)}
-                  >
-                    <div className="admin-inbox-card__head">
-                      <div>
-                        <h3 className="admin-inbox-card__title">
-                          {app.businessName || app.displayName || app.fullName}
-                        </h3>
-                        <p className="admin-inbox-card__category">
-                          {app.professionalType || "Specialist"}
-                          {app.foundingInvite ? (
-                            <span className="admin-inbox-card__founding-tag">
-                              Founding 50
-                            </span>
-                          ) : null}
-                        </p>
-                      </div>
-                      <AdminStatusBadge label={label} />
-                    </div>
-                    <dl className="admin-inbox-card__meta">
-                      <div>
-                        <dt>Email</dt>
-                        <dd>{app.email}</dd>
-                      </div>
-                      <div>
-                        <dt>City</dt>
-                        <dd>
-                          {app.neighborhood ? `${app.neighborhood}, ` : ""}
-                          {app.city || "—"}
-                        </dd>
-                      </div>
-                      <div>
-                        <dt>ZIP</dt>
-                        <dd>{app.zipCode || "—"}</dd>
-                      </div>
-                      <div>
-                        <dt>Submitted</dt>
-                        <dd>{formatSubmittedDate(app.submittedAt)}</dd>
-                      </div>
-                    </dl>
-                    <span className="admin-inbox-card__cta">Review application →</span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )
-      ) : filteredClients.length === 0 ? (
-        <p className="admin-empty">No client applications in this filter.</p>
-      ) : (
-        <ul className="admin-card-list admin-applications-inbox">
-          {filteredClients.map((app) => {
-            const label = clientApplicationStatusLabel(app.status);
-            const isSelected = selectedClientId === app.id;
-            return (
-              <li key={app.id}>
+      {/* Applications List */}
+      <div className="admin-app-content">
+        {queue === "specialists" ? (
+          filteredSpecialists.length === 0 ? (
+            <div className="admin-app-empty">
+              <div className="admin-app-empty__icon">📋</div>
+              <h4 className="admin-app-empty__title">
+                {searchQuery
+                  ? "No matching specialist applications"
+                  : `No ${statusFilter === "all" ? "" : statusFilter} specialist applications`}
+              </h4>
+              <p className="admin-app-empty__desc">
+                {searchQuery
+                  ? `No applications matched "${searchQuery}". Try a different name, city, or specialty keyword.`
+                  : `There are currently no specialist applications in the ${statusFilter} status.`}
+              </p>
+              {(searchQuery || statusFilter !== "pending") ? (
                 <button
                   type="button"
-                  className={`admin-inbox-card${isSelected ? " admin-inbox-card--selected" : ""}`}
-                  onClick={() => setSelectedClientId(app.id)}
+                  className="admin-app-empty__reset-btn"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("pending");
+                  }}
                 >
-                  <div className="admin-inbox-card__head">
-                    <div>
-                      <h3 className="admin-inbox-card__title">{app.fullName}</h3>
-                      <p className="admin-inbox-card__category">Client</p>
-                    </div>
-                    <AdminStatusBadge label={label} />
-                  </div>
-                  <dl className="admin-inbox-card__meta">
-                    <div>
-                      <dt>Email</dt>
-                      <dd>{app.email}</dd>
-                    </div>
-                    <div>
-                      <dt>Location</dt>
-                      <dd>
-                        {app.preferredNeighborhood
-                          ? `${app.preferredNeighborhood}, `
-                          : ""}
-                        {app.preferredCity || "—"}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>ZIP</dt>
-                      <dd>{app.preferredZipCode || "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>Submitted</dt>
-                      <dd>{formatSubmittedDate(app.submittedAt)}</dd>
-                    </div>
-                  </dl>
-                  <span className="admin-inbox-card__cta">Review application →</span>
+                  Reset filters & search
                 </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+              ) : null}
+            </div>
+          ) : (
+            <ul className="admin-app-cards-list">
+              {filteredSpecialists.map((app) => (
+                <AdminApplicationCard
+                  key={app.id}
+                  application={app}
+                  isSelected={selectedSpecialistId === app.id}
+                  onSelect={() => setSelectedSpecialistId(app.id)}
+                />
+              ))}
+            </ul>
+          )
+        ) : filteredClients.length === 0 ? (
+          <div className="admin-app-empty">
+            <div className="admin-app-empty__icon">👤</div>
+            <h4 className="admin-app-empty__title">
+              {searchQuery
+                ? "No matching client applications"
+                : `No ${statusFilter === "all" ? "" : statusFilter} client applications`}
+            </h4>
+            <p className="admin-app-empty__desc">
+              {searchQuery
+                ? `No client applications matched "${searchQuery}". Try a different name or location keyword.`
+                : `There are currently no client questionnaires in the ${statusFilter} status.`}
+            </p>
+            {(searchQuery || statusFilter !== "pending") ? (
+              <button
+                type="button"
+                className="admin-app-empty__reset-btn"
+                onClick={() => {
+                  setSearchQuery("");
+                  setStatusFilter("pending");
+                }}
+              >
+                Reset filters & search
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <ul className="admin-app-cards-list">
+            {filteredClients.map((app) => (
+              <AdminClientApplicationCard
+                key={app.id}
+                application={app}
+                isSelected={selectedClientId === app.id}
+                onSelect={() => setSelectedClientId(app.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
 
+      {/* Specialist Review Sheet */}
       {selectedSpecialist ? (
         <AdminApplicationReviewPanel
           application={selectedSpecialist}
@@ -305,6 +331,7 @@ export function AdminApplicationsPanel({
         />
       ) : null}
 
+      {/* Client Review Sheet */}
       {selectedClient ? (
         <AdminClientApplicationReviewPanel
           application={selectedClient}

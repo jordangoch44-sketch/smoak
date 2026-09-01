@@ -5,9 +5,9 @@ import type { AdminSectionId } from "@/lib/admin-sections";
 import { DashboardHeader } from "./DashboardHeader";
 
 interface DashboardPageShellProps {
-  eyebrow: string;
-  title: ReactNode;
-  subtitle: string;
+  eyebrow?: string;
+  title?: ReactNode;
+  subtitle?: string;
   quote?: string;
   quoteAttribution?: string;
   roleLabel?: string;
@@ -17,6 +17,8 @@ interface DashboardPageShellProps {
   actions?: ReactNode;
   utilityBar?: ReactNode;
   introActions?: ReactNode;
+  headerClassName?: string;
+  hideHeader?: boolean;
   variant?: "default" | "client" | "admin" | "specialist";
   /** Admin tab — drives milky-way dissolve between sky moods */
   adminSection?: AdminSectionId;
@@ -24,9 +26,9 @@ interface DashboardPageShellProps {
 }
 
 export function DashboardPageShell({
-  eyebrow,
-  title,
-  subtitle,
+  eyebrow = "",
+  title = null,
+  subtitle = "",
   quote,
   quoteAttribution,
   roleLabel,
@@ -36,6 +38,8 @@ export function DashboardPageShell({
   actions,
   utilityBar,
   introActions,
+  headerClassName,
+  hideHeader = false,
   variant = "default",
   adminSection = "overview",
   children,
@@ -93,19 +97,22 @@ export function DashboardPageShell({
         {utilityBar ? (
           <div className="dashboard-page__utility-bar">{utilityBar}</div>
         ) : null}
-        <DashboardHeader
-          eyebrow={eyebrow}
-          title={title}
-          subtitle={subtitle}
-          quote={quote}
-          quoteAttribution={quoteAttribution}
-          roleLabel={roleLabel}
-          roleLabelTone={roleLabelTone}
-          statusLabel={statusLabel}
-          statusTone={statusTone}
-          actions={actions}
-          introActions={introActions}
-        />
+        {!hideHeader && eyebrow && title ? (
+          <DashboardHeader
+            eyebrow={eyebrow}
+            title={title}
+            subtitle={subtitle}
+            quote={quote}
+            quoteAttribution={quoteAttribution}
+            roleLabel={roleLabel}
+            roleLabelTone={roleLabelTone}
+            statusLabel={statusLabel}
+            statusTone={statusTone}
+            actions={actions}
+            introActions={introActions}
+            className={headerClassName}
+          />
+        ) : null}
         {children}
       </div>
     </div>

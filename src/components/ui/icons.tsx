@@ -474,12 +474,31 @@ export function DumbbellIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M6.75 8.25v7.5M17.25 8.25v7.5M4.5 10.5v3M19.5 10.5v3M6.75 12h10.5" />
+      <path d="M6 8.5v7M18 8.5v7M3.75 10v4M20.25 10v4M6 12h12" />
+    </svg>
+  );
+}
+
+/** Homepage / Explore browse — Nutrition (apple) */
+export function AppleFruitIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 6.5c.4-1.2 1.2-2.1 2.4-2.6" />
+      <path d="M12 21.25c-3.7 0-6.25-2.55-6.25-5.9 0-2.3 1.25-4.2 3.05-5.1A5.4 5.4 0 0112 9.5c.75 0 1.5.15 2.2.4 1.8.9 3.05 2.8 3.05 5.1 0 3.35-2.55 5.9-6.25 5.9z" />
     </svg>
   );
 }
@@ -492,7 +511,7 @@ export function LeafIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -511,7 +530,7 @@ export function BoxingGloveIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -523,7 +542,7 @@ export function BoxingGloveIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-/** Explore browse category — Running Coach */
+/** Explore browse category — Running Coach (figure) */
 export function RunningFigureIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
@@ -531,13 +550,32 @@ export function RunningFigureIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
       <circle cx="14.25" cy="5.25" r="1.5" />
       <path d="M8.25 21l2.25-4.5 3-1.5 1.5 3 3 1.5M10.5 16.5l-2.25-3 3-2.25 3.75 1.5" />
+    </svg>
+  );
+}
+
+/** Homepage browse — Running & Endurance (shoe) */
+export function RunningShoeIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4.5 15.5c0-1.5 1-2.5 2.5-3l5-1.5c1.2-.4 2.3-1.1 3.1-2.1L17 7.5c.4-.5 1.1-.7 1.7-.4.7.3 1 1.1.7 1.8l-1.2 2.6c-.4.9-.4 1.9 0 2.8l.6 1.4c.3.7 0 1.5-.7 1.8H6.2c-1 0-1.7-.8-1.7-1.8v-.2z" />
+      <path d="M8 14.5h5.5M9.5 12.2l3.2-.9" />
     </svg>
   );
 }
@@ -550,13 +588,13 @@ export function AthleticBallIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <circle cx="12" cy="12" r="8.25" />
-      <path d="M12 3.75c2.25 2.25 3.375 5.25 3.375 8.25S14.25 18 12 20.25M12 3.75C9.75 6 8.625 9 8.625 12S9.75 18 12 20.25M3.75 12h16.5" />
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 4c2.2 2.4 3.4 5.1 3.4 8s-1.2 5.6-3.4 8M12 4c-2.2 2.4-3.4 5.1-3.4 8s1.2 5.6 3.4 8M4.5 10.5c2.5.6 5 .9 7.5.9s5-.3 7.5-.9M4.5 13.5c2.5-.6 5-.9 7.5-.9s5 .3 7.5.9" />
     </svg>
   );
 }
@@ -569,13 +607,13 @@ export function MeditationIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <circle cx="12" cy="6" r="1.75" />
-      <path d="M9 20.25l3-5.25 3 5.25M7.5 14.25c1.5-1.5 3-2.25 4.5-2.25s3 .75 4.5 2.25M8.25 11.25h7.5" />
+      <circle cx="12" cy="5.5" r="1.85" />
+      <path d="M8.5 20.5l3.5-5.5 3.5 5.5M7 13.75c1.6-1.4 3.2-2.1 5-2.1s3.4.7 5 2.1M8.25 11h7.5" />
     </svg>
   );
 }
@@ -588,7 +626,7 @@ export function SpineIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -606,7 +644,7 @@ export function MedicalCrossIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
@@ -625,14 +663,15 @@ export function StrengthArmIcon({ className = "h-5 w-5" }: IconProps) {
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
-      strokeWidth={1.5}
+      strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M15.75 6.75a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-      <path d="M8.25 10.5c1.5-1.5 3-2.25 4.5-1.5 2.25 1.125 3 3.75 2.25 6.75-.75 3-3 4.5-5.25 4.5" />
-      <path d="M11.25 12.75c.75 1.5.75 3 0 4.5" />
+      <path d="M9.25 8.25a2.35 2.35 0 114.7 0 2.35 2.35 0 01-4.7 0z" />
+      <path d="M7.5 11.25c1.4-1.2 2.7-1.7 4.1-1.1 2.1 1 2.9 3.5 2.2 6.3-.7 2.8-2.8 4.2-4.9 4.2" />
+      <path d="M11 13c.7 1.4.7 2.8 0 4.2" />
+      <path d="M14.75 12.5c1.1.3 2 .2 2.9-.5.7-.6 1.1-1.5 1.1-2.4" />
     </svg>
   );
 }
@@ -651,6 +690,62 @@ export function ChevronDownIcon({ className = "h-5 w-5" }: IconProps) {
       aria-hidden
     >
       <path d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+    </svg>
+  );
+}
+
+/** Warning triangle for incomplete profile sections */
+export function AlertTriangleIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
+
+/** Checkmark icon for complete profile sections */
+export function CheckIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2.25}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M4.5 12.75l6 6 9-13.5" />
+    </svg>
+  );
+}
+
+/** Checkmark circle for completed verification/status */
+export function CheckCircleIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
 }

@@ -1,3 +1,5 @@
+import type { MarketplaceConversionFunnel } from "./admin-conversion-funnel";
+
 /** Live platform totals + traffic for the admin executive snapshot. */
 
 export interface AdminWeeklyCount {
@@ -77,4 +79,6 @@ export interface AdminPlatformPulse {
   earnings: AdminLiveEarnings | null;
   /** null until specialist_engagement_events exists / has data access */
   engagement: AdminEngagementWeek | null;
+  /** Full marketplace conversion funnel (7d / 30d telemetry) */
+  conversionFunnel?: MarketplaceConversionFunnel | null;
 }

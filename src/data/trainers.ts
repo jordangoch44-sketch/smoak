@@ -37,6 +37,7 @@ interface LocGeo {
   sponsored?: boolean;
   verified?: boolean;
   serviceArea?: string[];
+  workAddress?: string;
 }
 
 /** Seed location fields — onboarding will set city, neighborhood, serviceArea */
@@ -57,6 +58,7 @@ function loc(
   | "willingToTravel"
   | "sponsored"
   | "verified"
+  | "workAddress"
 > {
   const serviceArea = geo.serviceArea ?? [];
   const radius = geo.serviceRadiusMiles ?? 25;
@@ -72,6 +74,7 @@ function loc(
     willingToTravel: geo.willingToTravel ?? radius > 0,
     sponsored: geo.sponsored ?? false,
     verified: geo.verified ?? false,
+    workAddress: geo.workAddress,
   };
 }
 
@@ -320,6 +323,7 @@ const trainerRecords: TrainerRecord[] = [
       zipCode: "92108",
       latitude: 32.7719,
       longitude: -117.154,
+      workAddress: "Perform Athletic Club & Recovery Hub",
       serviceArea: ["Mission Valley", "Sorrento Valley"],
       sponsored: true,
       verified: true,
@@ -437,10 +441,11 @@ const trainerRecords: TrainerRecord[] = [
     name: "Anthony Brooks",
     profession: "Personal Trainer",
     title: "Speed, strength & athletic development",
-    ...loc("San Diego", "North Park", {
-      zipCode: "92104",
-      latitude: 32.7484,
-      longitude: -117.1295,
+    ...loc("San Diego", "Mission Valley", {
+      zipCode: "92108",
+      latitude: 32.7719,
+      longitude: -117.154,
+      workAddress: "Perform Athletic Club & Recovery Hub",
       serviceArea: ["North Park", "Hillcrest", "Mission Valley"],
       sponsored: true,
       verified: true,

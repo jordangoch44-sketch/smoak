@@ -22,10 +22,18 @@ export async function fetchSavedTrainerIds(
   supabase: SupabaseClient,
   userId: string
 ): Promise<SavedTrainersFetchResult> {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const authUserId = session?.user?.id?.trim() || userId.trim();
+  if (!authUserId) {
+    return { ok: false, message: "Sign in to load saved specialists." };
+  }
+
   const { data, error } = await supabase
     .from("saved_trainers")
     .select("specialist_id, created_at")
-    .eq("user_id", userId)
+    .eq("user_id", authUserId)
     .order("created_at", { ascending: true });
 
   if (error) {
@@ -44,8 +52,28 @@ export async function insertSavedTrainer(
   const id = specialistId.trim();
   if (!id) return { ok: false, message: "Invalid specialist id" };
 
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return {
+      ok: false,
+      message: userError?.message || "Sign in to save specialists.",
+    };
+  }
+
+  /* Prefer auth.uid() so RLS with-check always matches. */
+  const authUserId = user.id;
+  if (userId && userId !== authUserId) {
+    console.warn("[saved-trainers] session userId mismatch; using auth.uid()", {
+      sessionUserId: userId,
+      authUserId,
+    });
+  }
+
   const { error } = await supabase.from("saved_trainers").insert({
-    user_id: userId,
+    user_id: authUserId,
     specialist_id: id,
   });
 
@@ -67,10 +95,15 @@ export async function deleteSavedTrainer(
   const id = specialistId.trim();
   if (!id) return { ok: false, message: "Invalid specialist id" };
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const authUserId = user?.id || userId;
+
   const { error } = await supabase
     .from("saved_trainers")
     .delete()
-    .eq("user_id", userId)
+    .eq("user_id", authUserId)
     .eq("specialist_id", id);
 
   if (error) {

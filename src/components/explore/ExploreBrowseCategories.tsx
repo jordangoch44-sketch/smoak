@@ -11,9 +11,11 @@ import {
 } from "@/components/ui/icons";
 import {
   EXPLORE_BROWSE_CATEGORIES,
+  isExploreCategoryActive,
   type ExploreBrowseCategory,
   type ExploreBrowseCategoryIcon,
 } from "@/lib/explore-browse-categories";
+import type { TrainerFilters } from "@/types";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_ICONS: Record<
@@ -31,6 +33,9 @@ const CATEGORY_ICONS: Record<
 interface ExploreBrowseCategoriesProps {
   onSelect: (category: ExploreBrowseCategory) => void;
   activeSearchQuery?: string;
+  filters?: TrainerFilters;
+  activeProfession?: string;
+  activeSpecialty?: string;
   className?: string;
   /** Compact block for Filters sheet (vs homepage-style section). */
   variant?: "page" | "drawer";
@@ -39,10 +44,12 @@ interface ExploreBrowseCategoriesProps {
 export function ExploreBrowseCategories({
   onSelect,
   activeSearchQuery = "",
+  filters,
+  activeProfession,
+  activeSpecialty,
   className,
   variant = "page",
 }: ExploreBrowseCategoriesProps) {
-  const active = activeSearchQuery.trim().toLowerCase();
   const isDrawer = variant === "drawer";
 
   return (
@@ -72,10 +79,12 @@ export function ExploreBrowseCategories({
       <div className="explore-browse__grid">
         {EXPLORE_BROWSE_CATEGORIES.map((category) => {
           const Icon = CATEGORY_ICONS[category.icon];
-          const isActive =
-            active.length > 0 &&
-            (active === category.searchQuery.toLowerCase() ||
-              active === category.label.toLowerCase());
+          const isActive = isExploreCategoryActive(category, {
+            activeSearchQuery,
+            filters,
+            activeProfession,
+            activeSpecialty,
+          });
 
           return (
             <button

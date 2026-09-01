@@ -8,6 +8,8 @@ import {
 } from "@/components/dashboard/shared";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { SPECIALIST_DASHBOARD_PROFILE_TAB_HREF } from "@/lib/auth-routes";
+import { AlertTriangleIcon, CheckIcon } from "@/components/ui/icons";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
 import type { Trainer } from "@/types";
 import { cn } from "@/lib/utils";
@@ -17,6 +19,7 @@ interface ProfileCompletionCardProps {
   trainer: Trainer | undefined;
   checklist: ProfileCompletionChecklistItem[];
   defaultOpen?: boolean;
+  onEditProfile?: (sectionId?: string) => void;
 }
 
 export function ProfileCompletionCard({
@@ -24,6 +27,7 @@ export function ProfileCompletionCard({
   trainer,
   checklist,
   defaultOpen = false,
+  onEditProfile,
 }: ProfileCompletionCardProps) {
   const profession = trainer
     ? resolveTrainerProfessionCategory(trainer)
@@ -55,17 +59,38 @@ export function ProfileCompletionCard({
           progress={profileCompletion}
         />
         <aside className="dashboard-profile-completion__aside">
-          <ProfileChecklist items={checklist} />
-          <DashboardButton inline href="/specialist-dashboard/edit-profile">
-            Edit Profile
-          </DashboardButton>
+          <ProfileChecklist
+            items={checklist}
+            onSelectItem={onEditProfile}
+          />
+          {onEditProfile ? (
+            <DashboardButton
+              inline
+              onClick={() => onEditProfile()}
+            >
+              Edit Profile
+            </DashboardButton>
+          ) : (
+            <DashboardButton
+              inline
+              href={SPECIALIST_DASHBOARD_PROFILE_TAB_HREF}
+            >
+              Edit Profile
+            </DashboardButton>
+          )}
         </aside>
       </div>
     </DashboardCollapsibleSection>
   );
 }
 
-function ProfileChecklist({ items }: { items: ProfileCompletionChecklistItem[] }) {
+function ProfileChecklist({
+  items,
+  onSelectItem,
+}: {
+  items: ProfileCompletionChecklistItem[];
+  onSelectItem?: (sectionId?: string) => void;
+}) {
   return (
     <ul className="dashboard-checklist">
       {items.map((item) => (
@@ -73,10 +98,33 @@ function ProfileChecklist({ items }: { items: ProfileCompletionChecklistItem[] }
           key={item.id}
           className={cn(
             "dashboard-checklist__item",
-            item.done && "dashboard-checklist__item--done"
+            item.done && "dashboard-checklist__item--done",
+            !item.done && onSelectItem && "dashboard-checklist__item--actionable"
           )}
         >
-          {item.label}
+          {!item.done && onSelectItem ? (
+            <button
+              type="button"
+              className="dashboard-checklist__btn"
+              onClick={() => onSelectItem(item.id)}
+              title={`Jump to ${item.label}`}
+            >
+              <span className="dashboard-checklist__btn-left">
+                <AlertTriangleIcon className="dashboard-checklist__warning-icon" />
+                <span className="dashboard-checklist__label">{item.label}</span>
+              </span>
+              <span className="dashboard-checklist__arrow" aria-hidden>
+                →
+              </span>
+            </button>
+          ) : item.done ? (
+            <span className="dashboard-checklist__done-row">
+              <CheckIcon className="dashboard-checklist__check-icon" />
+              <span className="dashboard-checklist__label">{item.label}</span>
+            </span>
+          ) : (
+            <span className="dashboard-checklist__label">{item.label}</span>
+          )}
         </li>
       ))}
     </ul>

@@ -100,11 +100,28 @@ export function validateCustomPriceRange(
 }
 
 function asStringArray(value: unknown): string[] {
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      return asStringArray(parsed);
+    } catch {
+      return value.trim() ? [value.trim()] : [];
+    }
+  }
   if (!Array.isArray(value)) return [];
   return value
     .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function asNullableNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
 }
 
 export function profileRowToClientFormState(
@@ -121,14 +138,8 @@ export function profileRowToClientFormState(
     );
   }
 
-  const priceMin =
-    typeof profile?.preferred_price_min === "number"
-      ? profile.preferred_price_min
-      : null;
-  const priceMax =
-    typeof profile?.preferred_price_max === "number"
-      ? profile.preferred_price_max
-      : null;
+  const priceMin = asNullableNumber(profile?.preferred_price_min);
+  const priceMax = asNullableNumber(profile?.preferred_price_max);
   const preset = resolvePricePreset(priceMin, priceMax);
 
   const firstName = profile?.first_name?.trim() ?? "";
@@ -149,10 +160,7 @@ export function profileRowToClientFormState(
     avatarUrl: profile?.avatar_url?.trim() ?? "",
     avatarPath: profile?.avatar_path?.trim() ?? "",
     goals,
-    preferredRadiusMiles:
-      typeof profile?.preferred_radius_miles === "number"
-        ? profile.preferred_radius_miles
-        : null,
+    preferredRadiusMiles: asNullableNumber(profile?.preferred_radius_miles),
     pricePreset: preset,
     customPriceMin:
       preset === "custom" && priceMin != null ? String(priceMin) : "",
@@ -161,7 +169,10 @@ export function profileRowToClientFormState(
     preferredProfessions: asStringArray(profile?.preferred_professions),
     preferredSpecialties: asStringArray(profile?.preferred_specialties),
     preferredGender: profile?.preferred_gender?.trim() ?? "",
-    preferredSessionFormat: profile?.preferred_session_format?.trim() ?? "",
+    preferredSessionFormat:
+      profile?.preferred_session_format?.trim() ||
+      profile?.client_training_style?.trim() ||
+      "",
     profileCompleted: isClientProfileMinimumComplete({
       firstName,
       postalCode,

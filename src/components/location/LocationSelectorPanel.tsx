@@ -12,6 +12,7 @@ import {
 import { loadSavedZipCode } from "@/lib/user-location-storage";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
+import { LocationMarkIcon } from "@/components/ui/icons";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +52,7 @@ export function LocationSelectorPanel({
   );
 
   const zipFieldId = useId();
+  const titleId = useId();
   const [zip, setZip] = useState("");
   const [zipTouched, setZipTouched] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -166,47 +168,58 @@ export function LocationSelectorPanel({
       )}
     >
       <header className="location-selector-panel__header">
-        {isGate ? (
-          <>
-            <h2 className="location-selector-panel__title">Search near you</h2>
-            <p className="location-selector-panel__lede">
-              Use precise location or a ZIP to rank specialists by how close
-              they are. You can skip — we’ll still show nearby results.
-            </p>
-          </>
-        ) : (
-          <>
-            {activeSummary ? (
-              <p className="location-selector-panel__active-location">
-                {activeSummary}
-              </p>
-            ) : null}
-            <h2 className="location-selector-panel__title">
-              Set your location for precise search
-            </h2>
-          </>
-        )}
+        <div className="location-selector-panel__pin" aria-hidden>
+          <LocationMarkIcon className="location-selector-panel__pin-icon" />
+        </div>
+        <h2 id={titleId} className="location-selector-panel__title">
+          {isGate ? "Search near you" : "Search your area"}
+        </h2>
+        <p className="location-selector-panel__lede">
+          {isGate
+            ? "Share your location or enter a ZIP — or skip for now."
+            : "For more accurate search results."}
+        </p>
       </header>
 
-      <button
-        type="button"
-        className="smoac-control location-selector-panel__btn location-selector-panel__btn--primary"
-        onClick={handleUseLocation}
-        disabled={busy}
-      >
-        {geoLoading
-          ? "Finding your location…"
-          : isGate
-            ? "Use my location"
-            : "Allow SMOAC to use your location"}
-      </button>
+      {!isGate ? (
+        <div className="location-selector-panel__current">
+          <span className="location-selector-panel__current-icon" aria-hidden>
+            <LocationMarkIcon className="location-selector-panel__current-mark" />
+          </span>
+          <span className="location-selector-panel__current-text">
+            {activeSummary ?? "No location set"}
+          </span>
+          <button
+            type="button"
+            className="smoac-control location-selector-panel__use-chip"
+            onClick={handleUseLocation}
+            disabled={busy}
+          >
+            {geoLoading ? "Finding…" : "Use my location"}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="smoac-control location-selector-panel__btn location-selector-panel__btn--gps"
+          onClick={handleUseLocation}
+          disabled={busy}
+        >
+          {geoLoading ? "Finding your location…" : "Use my location"}
+        </button>
+      )}
+
       {geoError ? (
         <p className="location-selector-panel__error" role="status">
           {geoError}
         </p>
       ) : null}
 
-      <div className="location-selector-panel__divider" aria-hidden />
+      <div className="location-selector-panel__or" aria-hidden>
+        <span className="location-selector-panel__or-line" />
+        <span className="location-selector-panel__or-label">OR</span>
+        <span className="location-selector-panel__or-line" />
+      </div>
 
       <form
         className="location-selector-panel__form"
@@ -216,36 +229,44 @@ export function LocationSelectorPanel({
           className="location-selector-panel__label"
           htmlFor={zipFieldId}
         >
-          Or enter ZIP code
+          Enter ZIP code
         </label>
-        <input
-          id={zipFieldId}
+        <div
           className={cn(
-            "location-selector-panel__input",
-            zipInvalid && "location-selector-panel__input--invalid"
+            "location-selector-panel__input-shell",
+            zipInvalid && "location-selector-panel__input-shell--invalid"
           )}
-          type="text"
-          inputMode="numeric"
-          autoComplete="postal-code"
-          placeholder="92101"
-          maxLength={5}
-          value={zip}
-          onChange={(event) => {
-            setZip(normalizeZipCode(event.target.value));
-            setZipResolveError(null);
-          }}
-          onBlur={() => setZipTouched(true)}
-          enterKeyHint="done"
-          autoCorrect="off"
-          autoCapitalize="off"
-          spellCheck={false}
-          aria-invalid={zipInvalid || Boolean(zipResolveError)}
-          aria-describedby={
-            zipInvalid || zipResolveError
-              ? `${zipFieldId}-feedback`
-              : undefined
-          }
-        />
+        >
+          <LocationMarkIcon className="location-selector-panel__input-icon" />
+          <input
+            id={zipFieldId}
+            className={cn(
+              "location-selector-panel__input",
+              zipInvalid && "location-selector-panel__input--invalid"
+            )}
+            type="text"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            placeholder="92101"
+            maxLength={5}
+            value={zip}
+            onChange={(event) => {
+              setZip(normalizeZipCode(event.target.value));
+              setZipResolveError(null);
+            }}
+            onBlur={() => setZipTouched(true)}
+            enterKeyHint="done"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            aria-invalid={zipInvalid || Boolean(zipResolveError)}
+            aria-describedby={
+              zipInvalid || zipResolveError
+                ? `${zipFieldId}-feedback`
+                : undefined
+            }
+          />
+        </div>
         {zipPreviewPlace ? (
           <p className="location-selector-panel__hint">
             Resolves to <span>{zipPreviewPlace}</span>
@@ -272,7 +293,7 @@ export function LocationSelectorPanel({
 
         <button
           type="submit"
-          className="smoac-control location-selector-panel__btn location-selector-panel__btn--secondary"
+          className="smoac-control location-selector-panel__btn location-selector-panel__btn--primary"
           disabled={!isValidZipCode(normalizeZipCode(zip)) || busy}
         >
           {zipSubmitting
@@ -294,7 +315,24 @@ export function LocationSelectorPanel({
         >
           Not now
         </button>
-      ) : null}
+      ) : (
+        <p className="location-selector-panel__privacy">
+          <svg
+            className="location-selector-panel__privacy-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            aria-hidden
+          >
+            <path
+              d="M12 3.5c-2.4 1.35-4.9 2-7.5 2v6.4c0 4.35 3.05 7.95 7.5 9.1 4.45-1.15 7.5-4.75 7.5-9.1V5.5c-2.6 0-5.1-.65-7.5-2z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+          </svg>
+          We never share your exact location
+        </p>
+      )}
 
       {geoLoading ? (
         <SmoacSavingOverlay label="Finding your location" />

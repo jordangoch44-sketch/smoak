@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { QuickClientAccountModal } from "@/components/auth/QuickClientAccountModal";
 import { Logo } from "@/components/ui/Logo";
@@ -19,7 +19,6 @@ import {
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useStableClientState } from "@/hooks/useStableClientState";
-import { isDashboardPath, LOGIN_PATH } from "@/lib/auth-routes";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import { DEMO_SPECIALIST_ID } from "@/constants/specialist-dashboard-mock";
 import { isDemoSpecialistDashboard } from "@/lib/managed-specialist-profile";
@@ -33,6 +32,7 @@ import {
   UTILITY_DRAWER_APP_VERSION,
   utilityDrawerCompanyLinks,
   utilityDrawerLegalLinks,
+  utilityDrawerSpecialistLinks,
   type UtilityDrawerAccountCard,
   type UtilityDrawerNavItem,
 } from "@/lib/utility-drawer-menu";
@@ -308,7 +308,6 @@ function DrawerSpecialistAnalytics({
 }
 
 export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps) {
-  const router = useRouter();
   const pathname = usePathname();
   const { isReady, session, signOut } = useAuthSession();
   const { clientReady } = useStableClientState();
@@ -332,17 +331,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
   function handleLogout() {
     void signOut().then(() => {
       onClose();
-      afterLogoutNavigation(() => {
-        if (
-          isDashboardPath(pathname) ||
-          pathname === LOGIN_PATH ||
-          pathname === "/profile"
-        ) {
-          router.push("/profile");
-        } else {
-          router.refresh();
-        }
-      });
+      afterLogoutNavigation("/profile");
     });
   }
 
@@ -430,6 +419,26 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
                 delayMs={nextDelay()}
                 onNavigate={onClose}
               />
+            ) : null}
+
+            {signedIn && role === "specialist" && utilityDrawerSpecialistLinks.length > 0 ? (
+              <section
+                className="mobile-utility-drawer__section"
+                aria-label="Shortlist"
+              >
+                <p className="mobile-utility-drawer__section-label">Shortlist</p>
+                <ul className="mobile-utility-drawer__list">
+                  {utilityDrawerSpecialistLinks.map((item) => (
+                    <DrawerCompanyRow
+                      key={item.id}
+                      item={item}
+                      animate={open}
+                      delayMs={nextDelay()}
+                      onNavigate={onClose}
+                    />
+                  ))}
+                </ul>
+              </section>
             ) : null}
 
             <section

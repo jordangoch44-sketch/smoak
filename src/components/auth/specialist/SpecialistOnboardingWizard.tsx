@@ -632,94 +632,94 @@ export function SpecialistOnboardingWizard({
               document.body
             )
           : null}
-        {awaitingEmailConfirm ? (
-          <div
-            className="wizard-incomplete-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="wizard-confirm-email-title"
-          >
-            <div className="wizard-incomplete-modal__panel">
-              <header className="wizard-incomplete-modal__header">
-                <h2
-                  id="wizard-confirm-email-title"
-                  className="wizard-incomplete-modal__title"
-                >
-                  Enter your verification code
-                </h2>
-                <p className="wizard-incomplete-modal__lead">
-                  We emailed a 6-digit code from SMOAC to{" "}
-                  <strong>{awaitingEmailConfirm}</strong>. Paste it below to
-                  unlock the rest of your application.
-                </p>
-              </header>
-              <label className="wizard-email-otp-label">
-                Verification code
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  name="specialist-email-otp"
-                  className="login-input wizard-email-otp-input"
-                  value={emailOtpCode}
-                  onChange={(e) => {
-                    setEmailOtpCode(
-                      e.target.value.replace(/[^\d]/g, "").slice(0, 6)
-                    );
-                    setError(null);
-                  }}
-                  placeholder="6-digit code"
-                  maxLength={6}
-                  disabled={submitting}
-                  autoFocus
-                />
-              </label>
-              <p className="wizard-submitted-modal__note">
-                Tip: check spam/junk. Wrong inbox? Change email and continue again.
-              </p>
-              {error ? (
-                <p
-                  className="login-card__message login-card__message--error login-card__message--error-visible"
-                  role="alert"
-                >
-                  {error}
-                </p>
-              ) : null}
-              <footer className="wizard-incomplete-modal__footer">
-                <button
-                  type="button"
-                  className="login-submit wizard-nav__continue wizard-incomplete-modal__btn"
-                  onClick={() => void handleVerifyEmailCode()}
-                  disabled={
-                    submitting || emailOtpCode.replace(/\s+/g, "").length !== 6
-                  }
-                >
-                  {submitting ? "Verifying…" : "Verify & continue"}
-                </button>
-                <button
-                  type="button"
-                  className="wizard-nav__back wizard-incomplete-modal__btn"
-                  onClick={() => void handleResendConfirmEmail()}
-                  disabled={resendingConfirm || submitting}
-                >
-                  {resendingConfirm ? "Sending…" : "Resend code"}
-                </button>
-                <button
-                  type="button"
-                  className="wizard-nav__back wizard-incomplete-modal__btn"
-                  onClick={() => {
-                    setAwaitingEmailConfirm(null);
-                    setEmailOtpCode("");
-                    setStep(2);
-                    setError(null);
-                  }}
-                >
-                  Change email
-                </button>
-              </footer>
-            </div>
-          </div>
-        ) : null}
+        {awaitingEmailConfirm
+          ? createPortal(
+              <div
+                className="wizard-incomplete-modal wizard-incomplete-modal--email-otp"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="wizard-confirm-email-title"
+              >
+                <div className="wizard-incomplete-modal__backdrop" aria-hidden />
+                <div className="wizard-email-otp-panel">
+                  <div className="wizard-email-otp-panel__glow" aria-hidden />
+                  <div className="wizard-email-otp-panel__sheen" aria-hidden />
+                  <header className="wizard-email-otp-panel__header">
+                    <h2
+                      id="wizard-confirm-email-title"
+                      className="wizard-email-otp-panel__title"
+                    >
+                      Check your email
+                    </h2>
+                    <p className="wizard-email-otp-panel__lead">
+                      Enter the 6-digit code we sent to{" "}
+                      <strong>{awaitingEmailConfirm}</strong>.
+                    </p>
+                  </header>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    name="specialist-email-otp"
+                    className="wizard-email-otp-panel__input"
+                    aria-label="6-digit verification code"
+                    value={emailOtpCode}
+                    onChange={(e) => {
+                      setEmailOtpCode(
+                        e.target.value.replace(/[^\d]/g, "").slice(0, 6)
+                      );
+                      setError(null);
+                    }}
+                    placeholder="000000"
+                    maxLength={6}
+                    disabled={submitting}
+                    autoFocus
+                  />
+                  {error ? (
+                    <p
+                      className="wizard-email-otp-panel__error"
+                      role="alert"
+                    >
+                      {error}
+                    </p>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="login-submit wizard-email-otp-panel__verify"
+                    onClick={() => void handleVerifyEmailCode()}
+                    disabled={
+                      submitting || emailOtpCode.replace(/\s+/g, "").length !== 6
+                    }
+                  >
+                    {submitting ? "Verifying…" : "Verify"}
+                  </button>
+                  <p className="wizard-email-otp-panel__links">
+                    <button
+                      type="button"
+                      onClick={() => void handleResendConfirmEmail()}
+                      disabled={resendingConfirm || submitting}
+                    >
+                      {resendingConfirm ? "Sending…" : "Resend code"}
+                    </button>
+                    <span aria-hidden>·</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAwaitingEmailConfirm(null);
+                        setEmailOtpCode("");
+                        setStep(2);
+                        setError(null);
+                      }}
+                      disabled={submitting}
+                    >
+                      Change email
+                    </button>
+                  </p>
+                </div>
+              </div>,
+              document.body
+            )
+          : null}
       </div>
 
       {profilePhotoCrop.cropModal}
