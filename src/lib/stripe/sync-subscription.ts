@@ -306,6 +306,26 @@ export async function clearSpecialistSubscription(input: {
   }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
+
+function monthlyAmountFromPrice(
+  amount: number,
+  qty: number,
+  interval: string | undefined,
+  intervalCount: number
+): number {
+  let monthly = amount * qty;
+  if (interval === "year") monthly = Math.round((amount * qty) / 12);
+  else if (interval === "week") monthly = Math.round((amount * qty * 52) / 12);
+  else if (interval === "day")
+    monthly = Math.round((amount * qty * 30) / intervalCount);
+  else if (interval === "month" && intervalCount > 1) {
+    monthly = Math.round((amount * qty) / intervalCount);
+  }
+  return monthly;
+}
+
 /**
  * Sum active/trialing SMOAC subscription amounts for admin MRR (cents).
  * Only counts subscriptions that resolve to a known SMOAC price / metadata —
@@ -313,15 +333,22 @@ export async function clearSpecialistSubscription(input: {
  */
 export async function fetchStripeMrrCents(): Promise<{
   mrrCents: number;
+  membershipCents: number;
+  addonCents: number;
   payingCount: number;
   dataSource: "stripe" | "unavailable";
 } | null> {
   const { getStripe } = await import("@/lib/stripe/config");
-  const { resolveProductKeyFromStripe } = await import("@/lib/stripe/products");
+  const {
+    isAddonProduct,
+    isMembershipProduct,
+    resolveProductKeyFromStripe,
+  } = await import("@/lib/stripe/products");
   const stripe = getStripe();
   if (!stripe) return null;
 
-  let mrrCents = 0;
+  let membershipCents = 0;
+  let addonCents = 0;
   let payingCount = 0;
   let startingAfter: string | undefined;
 
@@ -337,6 +364,8 @@ export async function fetchStripeMrrCents(): Promise<{
       if (!subscriptionGrantsPremium(sub.status)) continue;
 
       let subMonthly = 0;
+      let subMembership = 0;
+      let subAddon = 0;
       let hasSmoacItem = false;
 
       for (const item of sub.items.data) {
@@ -357,21 +386,25 @@ export async function fetchStripeMrrCents(): Promise<{
         const qty = item.quantity ?? 1;
         const interval = price?.recurring?.interval;
         const intervalCount = price?.recurring?.interval_count ?? 1;
-        let monthly = amount * qty;
-        if (interval === "year") monthly = Math.round((amount * qty) / 12);
-        else if (interval === "week")
-          monthly = Math.round((amount * qty * 52) / 12);
-        else if (interval === "day")
-          monthly = Math.round((amount * qty * 30) / intervalCount);
-        else if (interval === "month" && intervalCount > 1) {
-          monthly = Math.round((amount * qty) / intervalCount);
-        }
+        const monthly = monthlyAmountFromPrice(
+          amount,
+          qty,
+          interval,
+          intervalCount
+        );
         subMonthly += monthly;
+        if (isMembershipProduct(key)) subMembership += monthly;
+        else if (isAddonProduct(key)) subAddon += monthly;
       }
 
       if (!hasSmoacItem) continue;
       payingCount += 1;
-      mrrCents += subMonthly;
+      membershipCents += subMembership;
+      addonCents += subAddon;
+      /* Unclassified SMOAC items still count toward total MRR */
+      if (subMonthly > subMembership + subAddon) {
+        membershipCents += subMonthly - subMembership - subAddon;
+      }
     }
 
     if (!list.has_more) break;
@@ -379,5 +412,129 @@ export async function fetchStripeMrrCents(): Promise<{
     if (!startingAfter) break;
   }
 
-  return { mrrCents, payingCount, dataSource: "stripe" };
+  return {
+    mrrCents: membershipCents + addonCents,
+    membershipCents,
+    addonCents,
+    payingCount,
+    dataSource: "stripe",
+  };
+}
+
+function invoicePaidAtMs(invoice: Stripe.Invoice): number {
+  const paidAt = invoice.status_transitions?.paid_at;
+  const created = invoice.created;
+  const seconds = typeof paidAt === "number" ? paidAt : created;
+  return seconds * 1000;
+}
+
+function smoacCentsFromInvoice(
+  invoice: Stripe.Invoice,
+  resolveProductKeyFromStripe: (input: {
+    priceId?: string | null;
+    metadata?: Record<string, string> | null;
+  }) => string | null
+): number {
+  let matched = 0;
+  const lines = invoice.lines?.data ?? [];
+  for (const line of lines) {
+    const price =
+      "price" in line && line.price && typeof line.price === "object"
+        ? line.price
+        : null;
+    const priceId =
+      price && "id" in price && typeof price.id === "string" ? price.id : null;
+    const priceMeta =
+      price &&
+      "metadata" in price &&
+      price.metadata &&
+      typeof price.metadata === "object"
+        ? (price.metadata as Record<string, string>)
+        : {};
+    const key = resolveProductKeyFromStripe({
+      priceId,
+      metadata: {
+        ...priceMeta,
+        ...((invoice.metadata ?? {}) as Record<string, string>),
+      },
+    });
+    if (!key) continue;
+    const amount = "amount" in line && typeof line.amount === "number"
+      ? line.amount
+      : 0;
+    matched += amount;
+  }
+  if (matched > 0) return matched;
+  const invKey = resolveProductKeyFromStripe({
+    metadata: (invoice.metadata ?? {}) as Record<string, string>,
+  });
+  if (invKey) return invoice.amount_paid ?? 0;
+  return 0;
+}
+
+export interface StripeCollectedWeek {
+  thisWeekCents: number;
+  prevWeekCents: number;
+  /** 7 daily buckets, oldest first */
+  seriesCents: number[];
+}
+
+/**
+ * Paid SMOAC invoices over the last 14 days, bucketed into the current 7-day
+ * window vs the prior week. Filters to known SMOAC prices / metadata.
+ */
+export async function fetchStripeCollectedWeek(
+  now = Date.now()
+): Promise<StripeCollectedWeek | null> {
+  const { getStripe } = await import("@/lib/stripe/config");
+  const { resolveProductKeyFromStripe } = await import("@/lib/stripe/products");
+  const stripe = getStripe();
+  if (!stripe) return null;
+
+  const seriesCents = [0, 0, 0, 0, 0, 0, 0];
+  let prevWeekCents = 0;
+  let startingAfter: string | undefined;
+  const createdGte = Math.floor((now - 2 * WEEK_MS) / 1000);
+
+  try {
+    for (let page = 0; page < 10; page += 1) {
+      const list = await stripe.invoices.list({
+        status: "paid",
+        created: { gte: createdGte },
+        limit: 100,
+        starting_after: startingAfter,
+        expand: ["data.lines.data.price"],
+      });
+
+      for (const invoice of list.data) {
+        const cents = smoacCentsFromInvoice(
+          invoice,
+          resolveProductKeyFromStripe
+        );
+        if (cents <= 0) continue;
+        const paidAt = invoicePaidAtMs(invoice);
+        const age = now - paidAt;
+        if (age < 0) continue;
+        if (age < WEEK_MS) {
+          const bucket = Math.min(6, Math.max(0, 6 - Math.floor(age / DAY_MS)));
+          seriesCents[bucket] += cents;
+        } else if (age < 2 * WEEK_MS) {
+          prevWeekCents += cents;
+        }
+      }
+
+      if (!list.has_more) break;
+      startingAfter = list.data[list.data.length - 1]?.id;
+      if (!startingAfter) break;
+    }
+  } catch (err) {
+    console.warn("[SMOAC admin] Stripe collected-week fetch failed:", err);
+    return null;
+  }
+
+  return {
+    thisWeekCents: seriesCents.reduce((sum, value) => sum + value, 0),
+    prevWeekCents,
+    seriesCents,
+  };
 }

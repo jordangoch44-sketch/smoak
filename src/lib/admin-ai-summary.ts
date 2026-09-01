@@ -1,4 +1,5 @@
 import type { AdminPlatformPulse } from "@/types/admin-platform-pulse";
+import { smoacRevenueTotalCents } from "@/types/admin-platform-pulse";
 import { formatBillingCents } from "@/lib/admin-specialist-billing-service";
 
 export type AiSentiment = "positive" | "steady" | "attention";
@@ -99,7 +100,7 @@ export function generateJarvisGreetingBriefing(
   const topSource = pulse.traffic?.topSources?.[0]?.source ?? null;
   const pending = pulse.pendingApplications ?? 0;
   const specialists = pulse.specialists?.total ?? 0;
-  const mrrCents = pulse.earnings?.subscriberRevenueCents ?? 0;
+  const mrrCents = smoacRevenueTotalCents(pulse.earnings);
   const mrrFormatted = formatBillingCents(mrrCents, { decimals: 0 });
 
   const sentences: string[] = [];
@@ -232,7 +233,7 @@ export function generateAiExecutiveBriefing(
 
   const totalClients = clients.total;
 
-  const mrrCents = earnings?.subscriberRevenueCents ?? 0;
+  const mrrCents = smoacRevenueTotalCents(earnings);
   const adCents = earnings?.adRevenueCents ?? 0;
   const payingCount = earnings?.paidSubscriberCount ?? 0;
   const mrrFormatted = formatBillingCents(mrrCents, { decimals: 0 });

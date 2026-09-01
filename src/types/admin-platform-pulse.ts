@@ -46,12 +46,27 @@ export interface AdminTrafficWeek {
 
 export interface AdminLiveEarnings {
   paidSubscriberCount: number;
+  /** Membership (Pro / Platinum) monthly run-rate, cents */
   subscriberRevenueCents: number;
+  /** Paid placement add-ons (boosts / spotlights), cents */
   adRevenueCents: number;
   /** e.g. "July 2026" */
   periodLabel: string;
   /** Where the dollar amounts came from */
   source: "stripe" | "billing_table" | "none";
+  /** Collected SMOAC invoice payments in the current 7-day window */
+  collectedThisWeekCents: number;
+  collectedPrevWeekCents: number;
+  /** 7 daily buckets, oldest first. Empty when invoice history was unavailable. */
+  collectedWeekSeriesCents: number[];
+}
+
+/** Membership MRR + boost/add-on run-rate — all SMOAC payments. */
+export function smoacRevenueTotalCents(
+  earnings: AdminLiveEarnings | null | undefined
+): number {
+  if (!earnings) return 0;
+  return earnings.subscriberRevenueCents + earnings.adRevenueCents;
 }
 
 /** Site-wide specialist engagement (anonymous event totals — not per specialist). */
