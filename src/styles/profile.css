@@ -753,14 +753,14 @@
 }
 
 .profile-hero__avatar {
-  width: 4.4rem !important;
+  width: 4.85rem !important;
   height: 6.85rem !important;
   border-radius: 0.62rem !important;
 }
 
 @media (min-width: 640px) {
   .profile-hero__avatar {
-    width: 5.25rem !important;
+    width: 5.75rem !important;
     height: 8.1rem !important;
     border-radius: 0.72rem !important;
   }
