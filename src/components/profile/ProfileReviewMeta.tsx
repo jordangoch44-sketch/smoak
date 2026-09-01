@@ -11,6 +11,7 @@ import {
 import { resolveTrainerReviewDisplay } from "@/lib/trainer-reviews";
 import { formatTrainerRating } from "@/lib/utils";
 import type { Trainer } from "@/types";
+import type { MouseEvent } from "react";
 
 interface ProfileReviewMetaProps {
   trainer: Trainer;
@@ -76,7 +77,9 @@ export function ProfileReviewMeta({
     </>
   );
 
-  function scrollToSmoacReviews() {
+  function scrollToSmoacReviews(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
     const target = document.getElementById("smoac-reviews");
     if (!target) return;
     const scroller = target.closest(".profile-sheet__body");
@@ -85,11 +88,11 @@ export function ProfileReviewMeta({
         target.getBoundingClientRect().top -
         scroller.getBoundingClientRect().top +
         scroller.scrollTop -
-        12;
+        16;
       scroller.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
       return;
     }
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    target.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   return (

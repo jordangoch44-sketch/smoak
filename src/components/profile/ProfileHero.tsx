@@ -265,6 +265,10 @@ export function ProfileHero({
                     } in gallery`}
                     onClick={(event) => openGallery(event)}
                   >
+                    <span className="profile-hero__pinned-more-stack" aria-hidden>
+                      <span />
+                      <span />
+                    </span>
                     <span className="profile-hero__pinned-more-count">
                       +{extraPhotoCount}
                     </span>
