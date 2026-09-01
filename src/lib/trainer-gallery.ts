@@ -82,6 +82,21 @@ export function resolveGalleryIndexForUrl(
   return match >= 0 ? match : 0;
 }
 
+/** Remaining gallery images not shown in the Pro pinned row. */
+export function countExtraGalleryPhotos(
+  media: ProfileGalleryMedia[],
+  pinnedPhotos: readonly string[]
+): number {
+  if (pinnedPhotos.length === 0) return 0;
+  const pinned = new Set(pinnedPhotos);
+  return media.filter((item) => {
+    if (item.type !== "image") return false;
+    const url = item.url.trim();
+    const thumb = item.thumbnail?.trim() ?? "";
+    return !pinned.has(url) && (!thumb || !pinned.has(thumb));
+  }).length;
+}
+
 export function syncTrainerGalleryImages(trainer: Trainer): Trainer {
   const galleryImages = buildTrainerGalleryImages(
     trainer.gallery,

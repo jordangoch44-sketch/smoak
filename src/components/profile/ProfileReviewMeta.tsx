@@ -76,6 +76,22 @@ export function ProfileReviewMeta({
     </>
   );
 
+  function scrollToSmoacReviews() {
+    const target = document.getElementById("smoac-reviews");
+    if (!target) return;
+    const scroller = target.closest(".profile-sheet__body");
+    if (scroller instanceof HTMLElement) {
+      const nextTop =
+        target.getBoundingClientRect().top -
+        scroller.getBoundingClientRect().top +
+        scroller.scrollTop -
+        12;
+      scroller.scrollTo({ top: Math.max(0, nextTop), behavior: "smooth" });
+      return;
+    }
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   return (
     <div className="profile-hero__reviews shrink-0">
       {hasClassicReviews ? (
@@ -108,50 +124,56 @@ export function ProfileReviewMeta({
         </>
       ) : null}
 
-      <div className="profile-hero__reviews-smoac">
-        <Image
-          src={LOGO_SRC}
-          alt=""
-          width={14}
-          height={14}
-          className="profile-hero__reviews-mark"
-        />
-        <SmoacStarRating
-          reviewCount={smoacCount}
-          avgRating={smoacAvg}
-          onLeaveReview={
-            onLeaveReview && !hasOwnReview ? onLeaveReview : undefined
-          }
-        />
-      </div>
+      <div className="profile-hero__reviews-box">
+        <button
+          type="button"
+          className="smoac-control profile-hero__reviews-smoac"
+          aria-label="View SMOAC reviews"
+          onClick={scrollToSmoacReviews}
+        >
+          <Image
+            src={LOGO_SRC}
+            alt=""
+            width={14}
+            height={14}
+            className="profile-hero__reviews-mark"
+          />
+          <span aria-hidden>
+            <SmoacStarRating
+              reviewCount={smoacCount}
+              avgRating={smoacAvg}
+            />
+          </span>
+        </button>
 
-      {google.locked ? (
-        <div
-          className="profile-hero__reviews-google profile-hero__reviews-google--locked"
-          aria-label="Google Reviews — unlock with SMOAC Pro"
-          title="Google Reviews — unlock with SMOAC Pro"
-        >
-          {googleRow}
-        </div>
-      ) : google.mapsHref && google.connected ? (
-        <a
-          href={google.mapsHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="profile-hero__reviews-google"
-          aria-label="Open Google reviews for this specialist"
-          onClick={(event) => event.stopPropagation()}
-        >
-          {googleRow}
-        </a>
-      ) : (
-        <div
-          className="profile-hero__reviews-google profile-hero__reviews-google--muted"
-          aria-label="Google Reviews not connected yet"
-        >
-          {googleRow}
-        </div>
-      )}
+        {google.locked ? (
+          <div
+            className="profile-hero__reviews-google profile-hero__reviews-google--locked"
+            aria-label="Google Reviews — unlock with SMOAC Pro"
+            title="Google Reviews — unlock with SMOAC Pro"
+          >
+            {googleRow}
+          </div>
+        ) : google.mapsHref && google.connected ? (
+          <a
+            href={google.mapsHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="profile-hero__reviews-google"
+            aria-label="Open Google reviews for this specialist"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {googleRow}
+          </a>
+        ) : (
+          <div
+            className="profile-hero__reviews-google profile-hero__reviews-google--muted"
+            aria-label="Google Reviews not connected yet"
+          >
+            {googleRow}
+          </div>
+        )}
+      </div>
 
       {canLeaveReview && onLeaveReview ? (
         <button

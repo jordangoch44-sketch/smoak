@@ -9,6 +9,7 @@ import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 /** Demo review breakdowns — see `@/constants/trainer-reputation-demo` */
 import { TRAINER_DEMO_REVIEW_SOURCES } from "@/constants/trainer-reputation-demo";
 import { buildTrainerGalleryImages } from "@/lib/trainer-gallery";
+import { normalizePinnedPhotos } from "@/lib/specialist-media-limits";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import {
   getTrainerGallery,
@@ -459,6 +460,7 @@ const trainerRecords: TrainerRecord[] = [
     heroImage: "",
     bio: "Sports performance coach developing speed, strength, and athleticism for high school, collegiate, and adult athletes with periodized, data-informed programming.",
     featured: true,
+    isPremium: true,
     certifications: [
       { name: "CSCS", issuer: "NSCA", year: 2017 },
       { name: "USAW Level 1", issuer: "USA Weightlifting", year: 2019 },
@@ -466,7 +468,16 @@ const trainerRecords: TrainerRecord[] = [
     reviews: [
       { id: "r1", author: "Devon C.", rating: 5, text: "Explosive gains in speed and confidence on the field.", date: "2025-03-14" },
     ],
-    social: { instagram: "#", twitter: "#" },
+    social: {
+      instagram: "#",
+      twitter: "#",
+      googlePlaceId: "demo-anthony-brooks",
+      googleReviewsUrl:
+        "https://www.google.com/maps/search/?api=1&query=Perform+Athletic+Club+San+Diego",
+      googleRating: 4.9,
+      googleReviewCount: 62,
+      googleFetchedAt: "2026-09-01T00:00:00.000Z",
+    },
   },
 ];
 
@@ -480,6 +491,10 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
   const gallery = getTrainerGallery(trainer.id);
   const reviewSources = TRAINER_DEMO_REVIEW_SOURCES[trainer.id];
   const galleryImages = buildTrainerGalleryImages(gallery, heroImage);
+  const pinnedPhotos =
+    trainer.isPremium === true
+      ? normalizePinnedPhotos(galleryImages.slice(0, 3), galleryImages)
+      : undefined;
   const enriched = {
     ...trainer,
     ...curated,
@@ -487,6 +502,7 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
     heroImage,
     gallery,
     galleryImages,
+    ...(pinnedPhotos?.length ? { pinnedPhotos } : {}),
     reviewSources,
     clientTransformations: getTrainerTransformations(trainer.id),
   };

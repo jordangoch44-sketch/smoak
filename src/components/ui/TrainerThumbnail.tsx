@@ -100,7 +100,7 @@ export function TrainerThumbnail({
           size === "compact"
             ? "88px"
             : size === "square"
-              ? "128px"
+              ? "160px"
               : size === "hero"
                 ? "100vw"
                 : "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"

@@ -7,6 +7,7 @@ import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveSpecialistByline } from "@/lib/specialist-display-name";
 import {
   buildTrainerGalleryImages,
+  countExtraGalleryPhotos,
   getProfileGalleryMedia,
   resolveGalleryIndexForUrl,
 } from "@/lib/trainer-gallery";
@@ -39,7 +40,7 @@ interface ProfileHeroProps {
   onLeaveReview?: () => void;
   /** Specialist Live tab — same look, no client toolbar / review actions */
   variant?: "public" | "specialist-live";
-  /** Live tab — Edit chip on the circular profile photo */
+  /** Live tab — Edit chip on the profile photo */
   onEditProfilePhoto?: () => void;
 }
 
@@ -69,6 +70,7 @@ export function ProfileHero({
     trainer.isPremium === true
       ? normalizePinnedPhotos(trainer.pinnedPhotos, coverImages)
       : [];
+  const extraPhotoCount = countExtraGalleryPhotos(galleryMedia, pinnedPhotos);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
@@ -147,19 +149,21 @@ export function ProfileHero({
                 />
                 <div className="profile-hero__identity-copy min-w-0 flex-1">
                   <div className="profile-hero__name-row">
-                    {isTrainerVerified(trainer) ? (
-                      <VerifiedBadgeMark
-                        className="profile-verified-mark"
-                        iconClassName="profile-verified-mark__icon"
-                      />
-                    ) : null}
                     <h1
                       className={cn(
                         "profile-hero__name",
                         `profile-hero__name--font-${style.nameFont}`
                       )}
                     >
-                      {trainer.name}
+                      <span className="profile-hero__name-text">
+                        {trainer.name}
+                      </span>
+                      {isTrainerVerified(trainer) ? (
+                        <VerifiedBadgeMark
+                          className="profile-verified-mark"
+                          iconClassName="profile-verified-mark__icon"
+                        />
+                      ) : null}
                     </h1>
                   </div>
                   <TrainerProfessionLabel
@@ -234,7 +238,10 @@ export function ProfileHero({
 
             {pinnedPhotos.length > 0 ? (
               <div
-                className="profile-hero__pinned"
+                className={cn(
+                  "profile-hero__pinned",
+                  extraPhotoCount > 0 && "profile-hero__pinned--with-more"
+                )}
                 aria-label="Pinned photos"
               >
                 {pinnedPhotos.map((url, index) => (
@@ -249,6 +256,23 @@ export function ProfileHero({
                     <img src={url} alt="" />
                   </button>
                 ))}
+                {extraPhotoCount > 0 ? (
+                  <button
+                    type="button"
+                    className="profile-hero__pinned-tile profile-hero__pinned-more"
+                    aria-label={`View ${extraPhotoCount} more photo${
+                      extraPhotoCount === 1 ? "" : "s"
+                    } in gallery`}
+                    onClick={(event) => openGallery(event)}
+                  >
+                    <span className="profile-hero__pinned-more-count">
+                      +{extraPhotoCount}
+                    </span>
+                    <span className="profile-hero__pinned-more-label">
+                      {extraPhotoCount === 1 ? "photo" : "photos"}
+                    </span>
+                  </button>
+                ) : null}
               </div>
             ) : null}
           </div>

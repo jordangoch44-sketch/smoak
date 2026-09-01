@@ -472,30 +472,49 @@ body.review-modal-open .profile-toolbar {
   cursor: not-allowed;
 }
 
-/* Hero meta — SMOAC line under classic ★ / total reviews */
+/* Hero meta — SMOAC + Google inside a shared rounded box */
 .profile-hero__reviews-smoac {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.35rem;
+  margin: 0;
+  padding: 0.1rem 0.05rem;
   min-width: 0;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 0.4rem;
+}
+
+.profile-hero__reviews-smoac:focus-visible {
+  outline: 2px solid rgba(var(--smoac-color-violet-rgb), 0.55);
+  outline-offset: 2px;
 }
 
 .profile-hero__reviews-google {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  margin-top: 0.28rem;
+  margin: 0;
+  padding: 0.1rem 0.05rem;
   min-width: 0;
   text-decoration: none;
   color: inherit;
-  border-radius: 0.35rem;
-  width: fit-content;
+  border-radius: 0.4rem;
+  width: 100%;
   max-width: 100%;
 }
 
 a.profile-hero__reviews-google:hover .smoac-star-rating__count {
   color: rgba(255, 255, 255, 0.78);
+}
+
+.profile-hero__reviews-smoac:hover,
+a.profile-hero__reviews-google:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 a.profile-hero__reviews-google:focus-visible {
