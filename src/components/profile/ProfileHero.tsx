@@ -4,7 +4,6 @@ import { useCallback, useState, type CSSProperties, type MouseEvent } from "reac
 import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
-import { resolveSpecialistByline } from "@/lib/specialist-display-name";
 import {
   buildTrainerGalleryImages,
   countExtraGalleryPhotos,
@@ -74,7 +73,6 @@ export function ProfileHero({
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
-  const specialistByline = resolveSpecialistByline(trainer);
 
   const openGallery = useCallback(
     (event: MouseEvent<HTMLButtonElement>, startUrl?: string) => {
@@ -187,14 +185,9 @@ export function ProfileHero({
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
-            {specialistByline || bio ? (
+            {bio ? (
               <div className="profile-hero__intro">
-                {specialistByline ? (
-                  <p className="profile-hero__specialist-byline">
-                    {specialistByline}
-                  </p>
-                ) : null}
-                {bio ? <ProfileHeroBio bio={bio} /> : null}
+                <ProfileHeroBio bio={bio} />
               </div>
             ) : null}
 
