@@ -44,53 +44,43 @@ function ReviewModalForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
-  const actionsRef = useRef<HTMLDivElement | null>(null);
-  const [viewportLayout, setViewportLayout] = useState<{
-    height: number;
-    offsetTop: number;
-  } | null>(null);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     const previous = document.body.classList.contains("review-modal-open");
     document.body.classList.add("review-modal-open");
+    document.documentElement.classList.add("review-modal-open");
     return () => {
       if (!previous) {
         document.body.classList.remove("review-modal-open");
+        document.documentElement.classList.remove("review-modal-open");
       }
     };
   }, []);
 
   useEffect(() => {
-    function syncViewport() {
+    function syncKeyboardInset() {
       const viewport = window.visualViewport;
-      setViewportLayout({
-        height: viewport?.height ?? window.innerHeight,
-        offsetTop: viewport?.offsetTop ?? 0,
-      });
+      if (!viewport) {
+        setKeyboardHeight(0);
+        return;
+      }
+      const inset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop
+      );
+      setKeyboardHeight(inset > 80 ? inset : 0);
     }
 
-    syncViewport();
-    window.visualViewport?.addEventListener("resize", syncViewport);
-    window.visualViewport?.addEventListener("scroll", syncViewport);
-    window.addEventListener("resize", syncViewport);
+    syncKeyboardInset();
+    window.visualViewport?.addEventListener("resize", syncKeyboardInset);
+    window.visualViewport?.addEventListener("scroll", syncKeyboardInset);
 
     return () => {
-      window.visualViewport?.removeEventListener("resize", syncViewport);
-      window.visualViewport?.removeEventListener("scroll", syncViewport);
-      window.removeEventListener("resize", syncViewport);
+      window.visualViewport?.removeEventListener("resize", syncKeyboardInset);
+      window.visualViewport?.removeEventListener("scroll", syncKeyboardInset);
     };
   }, []);
-
-  const scrollActionsIntoView = useCallback(() => {
-    requestAnimationFrame(() => {
-      actionsRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-    });
-  }, []);
-
-  useEffect(() => {
-    if (rating < 1) return;
-    scrollActionsIntoView();
-  }, [rating, scrollActionsIntoView]);
 
   const trimmedLength = text.trim().length;
   const canSubmit =
@@ -150,35 +140,34 @@ function ReviewModalForm({
         ? `Write at least ${REVIEW_TEXT_MIN} characters to submit.`
         : null;
 
+  const sheetMaxHeight =
+    keyboardHeight > 0
+      ? `calc(100dvh - ${keyboardHeight + 12}px)`
+      : "min(92dvh, 40rem)";
+
   return (
     <div
       className="review-modal-root"
       role="presentation"
-      style={
-        viewportLayout
-          ? {
-              top: `${viewportLayout.offsetTop}px`,
-              height: `${viewportLayout.height}px`,
-            }
-          : undefined
-      }
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !submitting) {
           onClose();
         }
       }}
     >
-      <div className="review-modal__backdrop" aria-hidden />
+      <button
+        type="button"
+        className="review-modal__backdrop smoac-control"
+        aria-label="Close review"
+        disabled={submitting}
+        onClick={onClose}
+      />
       <div
         className="review-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        style={
-          viewportLayout
-            ? { maxHeight: `${Math.min(viewportLayout.height * 0.94, 640)}px` }
-            : undefined
-        }
+        style={{ maxHeight: sheetMaxHeight }}
       >
         <header className="review-modal__header">
           <h2 id={titleId} className="review-modal__title">
@@ -239,31 +228,8 @@ function ReviewModalForm({
             disabled={submitting}
             rows={4}
             enterKeyHint="send"
-            onFocus={scrollActionsIntoView}
             onChange={(event) => setText(event.target.value)}
           />
-
-          <div className="review-modal__actions" ref={actionsRef}>
-            <button
-              type="button"
-              className="smoac-control review-modal__submit review-modal__submit--primary"
-              disabled={!canSubmit}
-              onClick={() => void handleSubmit()}
-            >
-              {submitting ? "Submitting…" : "Submit Review"}
-            </button>
-            <button
-              type="button"
-              className="smoac-control review-modal__cancel"
-              disabled={submitting}
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-          </div>
-          {submitHint ? (
-            <p className="review-modal__submit-hint">{submitHint}</p>
-          ) : null}
 
           <div className="review-modal__count-row">
             <span className="review-modal__hint">
@@ -281,8 +247,31 @@ function ReviewModalForm({
             </span>
           </div>
 
+          {submitHint ? (
+            <p className="review-modal__submit-hint">{submitHint}</p>
+          ) : null}
+
           {error ? <p className="review-modal__error">{error}</p> : null}
         </div>
+
+        <footer className="review-modal__footer">
+          <button
+            type="button"
+            className="smoac-control review-modal__submit"
+            disabled={!canSubmit}
+            onClick={() => void handleSubmit()}
+          >
+            {submitting ? "Submitting…" : "Submit Review"}
+          </button>
+          <button
+            type="button"
+            className="smoac-control review-modal__cancel"
+            disabled={submitting}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+        </footer>
       </div>
     </div>
   );

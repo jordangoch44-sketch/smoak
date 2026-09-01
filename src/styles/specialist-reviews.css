@@ -11,13 +11,14 @@
 
 .review-modal-root {
   position: fixed;
-  left: 0;
-  right: 0;
+  inset: 0;
   z-index: var(--z-modal);
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
   pointer-events: auto;
+  overflow: hidden;
   padding: 0;
 }
 
@@ -33,24 +34,38 @@
   flex-shrink: 0;
   border: 1px solid rgba(var(--aurora-lavender-rgb), 0.28);
   border-radius: 1.25rem 1.25rem 0 0;
+  border-bottom: none;
+  /* Opaque base — avoids profile bleed-through on iOS */
   background:
     linear-gradient(
       165deg,
-      rgba(28, 18, 48, 0.97) 0%,
-      rgba(12, 10, 20, 0.98) 55%,
-      rgba(8, 6, 14, 0.99) 100%
+      rgba(var(--aurora-lavender-rgb), 0.1) 0%,
+      transparent 34%
+    ),
+    linear-gradient(
+      165deg,
+      rgb(26, 23, 38) 0%,
+      rgb(14, 12, 22) 46%,
+      rgb(10, 9, 16) 100%
     );
   box-shadow:
-    0 -12px 40px rgba(0, 0, 0, 0.45),
+    0 -12px 40px rgba(0, 0, 0, 0.55),
     0 0 40px rgba(var(--aurora-lavender-rgb), 0.18);
+  touch-action: pan-y;
 }
 
 .review-modal__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(4, 2, 10, 0.72);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  z-index: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(4, 4, 10, 0.84);
+  backdrop-filter: blur(10px) saturate(1.05);
+  -webkit-backdrop-filter: blur(10px) saturate(1.05);
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 @media (min-width: 640px) {
@@ -100,7 +115,7 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1rem 1.125rem max(1rem, env(safe-area-inset-bottom, 0px));
+  padding: 1rem 1.125rem 0.75rem;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -225,18 +240,26 @@
 }
 
 .review-modal__actions {
+  display: none;
+}
+
+.review-modal__footer {
   display: flex;
+  flex-shrink: 0;
   flex-direction: column;
   gap: 0.55rem;
-  margin-top: 0.85rem;
+  padding: 0.75rem 1.125rem max(0.875rem, env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(var(--aurora-lavender-rgb), 0.14);
+  background: rgb(10, 9, 16);
 }
 
 .review-modal__cancel {
   flex: 0 0 auto;
+  width: 100%;
   min-height: 2.75rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgb(18, 16, 26);
   color: rgba(255, 255, 255, 0.88);
   font-size: 0.9rem;
   font-weight: 500;
@@ -245,6 +268,7 @@
 
 .review-modal__submit {
   flex: 0 0 auto;
+  width: 100%;
   min-height: 3.15rem;
   border: 1px solid rgba(var(--aurora-lavender-rgb), 0.55);
   border-radius: 0.95rem;
@@ -275,11 +299,16 @@
 }
 
 .review-modal__submit-hint {
-  margin: 0.5rem 0 0;
+  margin: 0.65rem 0 0;
   font-size: 0.75rem;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.45);
   text-align: center;
+}
+
+body.review-modal-open .profile-sheet,
+html.review-modal-open .profile-sheet {
+  pointer-events: none;
 }
 
 body.review-modal-open .profile-toolbar {
