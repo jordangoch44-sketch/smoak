@@ -198,6 +198,11 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
   box-shadow: none;
 }
 
+.home-page--discovery .home-sponsored .home-section__title,
+.home-page--discovery .home-new .home-section__title {
+  color: #c4b5fd;
+}
+
 .home-page--discovery .home-featured,
 .home-page--discovery .home-top50 {
   margin-inline: 1rem;
@@ -247,7 +252,19 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
 
 .home-page--discovery .home-specialty__rankings:hover {
   border-color: rgba(255, 255, 255, 0.18);
-  color: #fff;
+}
+
+.home-page--discovery .home-specialty__rankings-icon {
+  color: #c4b5fd;
+}
+
+.home-page--discovery .home-specialty__rankings-label {
+  background-image: var(--smoac-color);
+  background-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 /* Category tiles — same hairline language as admin metric cards */

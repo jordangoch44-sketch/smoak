@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { TapLink } from "@/components/ui/TapLink";
-import { LocationMarkIcon } from "@/components/ui/icons";
+import { CityBuildingsIcon } from "@/components/ui/icons";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
   useMarketplacePersonalizationCity,
@@ -132,8 +132,10 @@ export function HomeRankingsCta({
       aria-label="Top rankings in your city"
     >
       <span className="home-specialty__rankings-copy">
-        <LocationMarkIcon className="home-specialty__rankings-pin" />
-        Top rankings in your city
+        <CityBuildingsIcon className="home-specialty__rankings-icon" />
+        <span className="home-specialty__rankings-label">
+          Top rankings in your city
+        </span>
       </span>
       <span className="home-specialty__rankings-cluster" aria-hidden>
         <RankingsFace trainer={topThree[0]} rank={1} />

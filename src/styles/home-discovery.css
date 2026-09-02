@@ -1187,11 +1187,21 @@
   gap: 0.4rem;
 }
 
-.home-specialty__rankings-pin {
+.home-specialty__rankings-icon {
   width: 0.95rem;
   height: 0.95rem;
   flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.78);
+  color: #c4b5fd;
+}
+
+.home-specialty__rankings-label {
+  min-width: 0;
+  background-image: var(--smoac-color);
+  background-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
 }
 
 .home-specialty__rankings-cluster {

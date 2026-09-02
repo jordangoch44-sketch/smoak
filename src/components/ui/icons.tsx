@@ -227,7 +227,7 @@ export function LayoutGridIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-/** Stacked photos — profile hero “more photos” / View Gallery */
+/** Stacked photos — profile hero remaining-gallery tile / View Gallery */
 export function PhotosStackIcon({ className = "h-4 w-4" }: IconProps) {
   return (
     <svg
@@ -323,6 +323,26 @@ export function HybridFormatIcon({ className = "h-[18px] w-[18px]" }: IconProps)
       aria-hidden
     >
       <path d="M8.25 6.75h7.5M8.25 12h7.5M8.25 17.25h7.5M5.25 4.5h13.5v15H5.25V4.5z" />
+    </svg>
+  );
+}
+
+/** Simple city skyline — three building blocks on a ground line. */
+export function CityBuildingsIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M4.5 20.25V12h4v8.25M8.5 20.25V6.75h7v13.5M15.5 20.25V13h4v7.25M3.75 20.25h16.5"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

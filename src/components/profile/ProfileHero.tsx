@@ -82,6 +82,14 @@ export function ProfileHero({
     url: photo.src,
     alt: photo.alt,
   }));
+  const pinnedPhotoSet = new Set(pinnedPhotos);
+  const remainingGalleryPhotos = galleryMedia.filter(
+    (item) => item.type === "image" && !pinnedPhotoSet.has(item.url)
+  );
+  const remainingPhotoCount = remainingGalleryPhotos.length;
+  const firstRemainingPhotoUrl = remainingGalleryPhotos[0]?.url;
+  const showMetaGalleryButton =
+    remainingPhotoCount > 0 && pinnedPhotos.length === 0;
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [transformOpen, setTransformOpen] = useState(false);
@@ -140,17 +148,6 @@ export function ProfileHero({
             className="profile-hero__scrim-fade absolute inset-x-0 bottom-0 z-[1] h-[72%]"
             aria-hidden
           />
-
-          {coverImages.length > 1 ? (
-            <button
-              type="button"
-              className="smoac-control profile-hero__more-photos"
-              aria-label="View more photos"
-              onClick={(event) => openGallery(event)}
-            >
-              <PhotosStackIcon className="profile-hero__more-photos-icon" />
-            </button>
-          ) : null}
 
           <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-10">
             <div className="mx-auto max-w-7xl profile-hero__identity-inner px-4 pb-5 sm:px-6 sm:pb-6">
@@ -215,17 +212,19 @@ export function ProfileHero({
             ) : null}
 
             {isSpecialistLive ? (
-              <div className="profile-hero__meta">
-                <button
-                  type="button"
-                  className="profile-hero__view-gallery"
-                  aria-label="View specialist gallery"
-                  onClick={(event) => openGallery(event)}
-                >
-                  <PhotosStackIcon className="profile-hero__view-gallery-icon" />
-                  View Gallery
-                </button>
-              </div>
+              showMetaGalleryButton ? (
+                <div className="profile-hero__meta">
+                  <button
+                    type="button"
+                    className="profile-hero__view-gallery"
+                    aria-label="View specialist gallery"
+                    onClick={(event) => openGallery(event)}
+                  >
+                    <PhotosStackIcon className="profile-hero__view-gallery-icon" />
+                    View Gallery
+                  </button>
+                </div>
+              ) : null
             ) : (
               <div className="profile-hero__meta">
                 <div className="profile-hero__meta-primary">
@@ -242,21 +241,26 @@ export function ProfileHero({
                     className="profile-hero__meta-price shrink-0"
                   />
                 </div>
-                <button
-                  type="button"
-                  className="profile-hero__view-gallery"
-                  aria-label="View specialist gallery"
-                  onClick={(event) => openGallery(event)}
-                >
-                  <PhotosStackIcon className="profile-hero__view-gallery-icon" />
-                  View Gallery
-                </button>
+                {showMetaGalleryButton ? (
+                  <button
+                    type="button"
+                    className="profile-hero__view-gallery"
+                    aria-label="View specialist gallery"
+                    onClick={(event) => openGallery(event)}
+                  >
+                    <PhotosStackIcon className="profile-hero__view-gallery-icon" />
+                    View Gallery
+                  </button>
+                ) : null}
               </div>
             )}
 
             {pinnedPhotos.length > 0 ? (
               <div
-                className="profile-hero__pinned"
+                className={cn(
+                  "profile-hero__pinned",
+                  remainingPhotoCount > 0 && "profile-hero__pinned--with-more"
+                )}
                 aria-label="Pinned photos"
               >
                 {pinnedPhotos.map((url, index) => (
@@ -271,6 +275,23 @@ export function ProfileHero({
                     <img src={url} alt="" />
                   </button>
                 ))}
+                {remainingPhotoCount > 0 ? (
+                  <button
+                    type="button"
+                    className="smoac-control profile-hero__more-photos"
+                    aria-label={`View ${remainingPhotoCount} more ${
+                      remainingPhotoCount === 1 ? "photo" : "photos"
+                    }`}
+                    onClick={(event) =>
+                      openGallery(event, firstRemainingPhotoUrl)
+                    }
+                  >
+                    <PhotosStackIcon className="profile-hero__more-photos-icon" />
+                    <span className="profile-hero__more-photos-count">
+                      +{remainingPhotoCount}
+                    </span>
+                  </button>
+                ) : null}
               </div>
             ) : null}
 
