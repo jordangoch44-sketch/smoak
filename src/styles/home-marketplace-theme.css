@@ -236,3 +236,29 @@ body:has(.home-page--discovery) .explore-search-overlay__field::before {
     rgba(8, 11, 16, 0.55) 100%
   );
 }
+
+/* Footer on Marketplace — no purple wash */
+body:has(.home-page--discovery) .site-footer {
+  background: #080b10;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body:has(.home-page--discovery) .site-footer__glow {
+  display: none;
+}
+
+body:has(.home-page--discovery) .site-header__signup {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+body:has(.home-page--discovery) .site-header__signup::before {
+  content: none !important;
+  display: none !important;
+}
+
+body:has(.home-page--discovery) .site-header__signup:active,
+body:has(.home-page--discovery) .site-header__signup:focus-visible {
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}

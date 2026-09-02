@@ -1,3 +1,5 @@
+import "@/styles/home-marketplace-theme.css";
+
 /** Rail shimmer only — used under Hero while catalog streams */
 export function HomeRailsLoading() {
   return (
