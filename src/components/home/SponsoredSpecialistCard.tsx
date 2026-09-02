@@ -8,6 +8,8 @@ import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
+import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
+import { cn } from "@/lib/utils";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -24,15 +26,13 @@ interface SponsoredSpecialistCardProps {
 export function SponsoredSpecialistCard({
   trainer,
   priority = false,
-  showSponsoredBadge = true,
   badgeLabel,
   impressionSurface = "home_sponsored",
 }: SponsoredSpecialistCardProps) {
   const router = useRouter();
   const href = `/trainers/${trainer.id}`;
-  const chip =
-    badgeLabel ??
-    (showSponsoredBadge && trainer.sponsored === true ? "Sponsored" : null);
+  const sponsored = isTrainerSponsored(trainer);
+  const chip = badgeLabel?.trim() || null;
 
   function warm() {
     warmTrainerProfileNavigation(trainer, router);
@@ -51,7 +51,12 @@ export function SponsoredSpecialistCard({
           onPointerDown={warm}
           onClick={warm}
         >
-          <div className="home-sponsored-card__media">
+          <div
+            className={cn(
+              "home-sponsored-card__media",
+              sponsored && "smoac-sponsored-ring"
+            )}
+          >
             <TrainerThumbnail
               src={trainer.image}
               name={trainer.name}

@@ -17,8 +17,7 @@ import { TrainerCardGrid } from "./TrainerCardGrid";
 import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "./TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
-import { getTrainerPlacementBadge } from "@/lib/trainer-placement-badge";
-import { isTrainerVerified } from "@/lib/trainer-sponsorship";
+import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 
 interface TrainerCardProps {
@@ -40,7 +39,7 @@ export const TrainerCard = memo(function TrainerCard({
 }: TrainerCardProps) {
   const router = useRouter();
   const href = `/trainers/${trainer.id}`;
-  const placementBadge = getTrainerPlacementBadge(trainer);
+  const sponsored = isTrainerSponsored(trainer);
   const verified = isTrainerVerified(trainer);
 
   useEffect(() => {
@@ -62,8 +61,13 @@ export const TrainerCard = memo(function TrainerCard({
         trainer={trainer}
         priority={priority}
         layout={compactLayout}
+        sponsored={sponsored}
       />
-      <TrainerCardGrid trainer={trainer} priority={priority} />
+      <TrainerCardGrid
+        trainer={trainer}
+        priority={priority}
+        sponsored={sponsored}
+      />
     </>
   );
 
@@ -73,12 +77,9 @@ export const TrainerCard = memo(function TrainerCard({
         specialistId={trainer.id}
         surface={impressionSurface}
       />
-      {verified || placementBadge ? (
+      {verified ? (
         <div className="trainer-card__top-left">
           <TrainerVerifiedCheck trainer={trainer} />
-          {placementBadge ? (
-            <span className="trainer-card__placement-badge">{placementBadge}</span>
-          ) : null}
         </div>
       ) : null}
       {linkDisabled ? (

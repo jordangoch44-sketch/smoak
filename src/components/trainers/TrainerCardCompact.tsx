@@ -11,6 +11,7 @@ interface TrainerCardCompactProps {
   trainer: Trainer;
   priority?: boolean;
   layout?: TrainerCardCompactLayout;
+  sponsored?: boolean;
 }
 
 /** Horizontal list row — visible only below md (768px). */
@@ -18,6 +19,7 @@ export function TrainerCardCompact({
   trainer,
   priority = false,
   layout = "default",
+  sponsored = false,
 }: TrainerCardCompactProps) {
   return (
     <article
@@ -31,7 +33,10 @@ export function TrainerCardCompact({
         name={trainer.name}
         size="compact"
         priority={priority}
-        className="trainer-card-compact__media"
+        className={cn(
+          "trainer-card-compact__media",
+          sponsored && "smoac-sponsored-ring"
+        )}
       />
       <TrainerCardDetails
         trainer={trainer}

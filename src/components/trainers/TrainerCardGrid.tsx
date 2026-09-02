@@ -3,20 +3,28 @@
 import type { Trainer } from "@/types";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { cn } from "@/lib/utils";
 
 interface TrainerCardGridProps {
   trainer: Trainer;
   priority?: boolean;
+  sponsored?: boolean;
 }
 
 /** Vertical premium card — visible from md (768px) and above only. */
 export function TrainerCardGrid({
   trainer,
   priority = false,
+  sponsored = false,
 }: TrainerCardGridProps) {
   return (
     <article className="trainer-card-grid hidden md:flex">
-      <div className="trainer-card-grid__media">
+      <div
+        className={cn(
+          "trainer-card-grid__media",
+          sponsored && "smoac-sponsored-ring"
+        )}
+      >
         <TrainerThumbnail
           src={trainer.image}
           name={trainer.name}

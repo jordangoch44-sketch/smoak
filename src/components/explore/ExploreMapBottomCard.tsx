@@ -25,8 +25,7 @@ import {
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
-import { isTrainerVerified } from "@/lib/trainer-sponsorship";
-import { getTrainerPlacementBadge } from "@/lib/trainer-placement-badge";
+import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { getTrainerDistanceMiles } from "@/lib/trainer-proximity-sort";
 
@@ -354,7 +353,7 @@ export function ExploreMapBottomCard({
             "Specialist";
           const priceLabel = formatSessionPricePlain(trainer.pricePerSession);
           const verified = isTrainerVerified(trainer);
-          const placementBadge = getTrainerPlacementBadge(trainer);
+          const sponsored = isTrainerSponsored(trainer);
           const specialties = (trainer.specialty || []).slice(0, 3);
           const ratingValue = trainer.rating;
           // Calculate distance from explicit user location if available
@@ -398,7 +397,12 @@ export function ExploreMapBottomCard({
             >
               {/* Left Photo Hero */}
               <div className="explore-bottom-card__photo-col">
-                <div className="explore-bottom-card__photo-wrap">
+                <div
+                  className={cn(
+                    "explore-bottom-card__photo-wrap",
+                    sponsored && "smoac-sponsored-ring"
+                  )}
+                >
                   {trainer.image ? (
                     <Image
                       src={trainer.image}
@@ -425,11 +429,6 @@ export function ExploreMapBottomCard({
                         className="explore-bottom-card__verified-badge"
                         title="Verified Specialist"
                       />
-                    ) : null}
-                    {placementBadge ? (
-                      <span className="explore-bottom-card__placement-tag">
-                        {placementBadge}
-                      </span>
                     ) : null}
                   </div>
                 </div>

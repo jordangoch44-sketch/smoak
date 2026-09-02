@@ -138,6 +138,7 @@ export function ExplorePageClient() {
         </button>
       </div>
       {(filters.profession || filters.specialty) &&
+      !filtered.some((t) => t.sponsored) &&
       filtered.some((t) => t.categorySpotlight) ? (
         <p className="explore-results-heading__note">
           Category spotlight specialists appear first in these results.

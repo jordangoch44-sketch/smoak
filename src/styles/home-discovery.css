@@ -1418,6 +1418,7 @@
 
 .home-portrait-card__media {
   position: relative;
+  isolation: isolate;
   flex: 0 0 auto;
   aspect-ratio: 4 / 5;
   overflow: hidden;

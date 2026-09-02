@@ -93,7 +93,6 @@ export function SponsoredSpecialists({
               trainer={trainer}
               priority={index < 2}
               impressionSurface="home_sponsored"
-              badgeLabel="Sponsored"
             />
           ))}
         </HorizontalCarousel>

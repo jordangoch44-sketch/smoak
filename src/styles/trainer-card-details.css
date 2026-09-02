@@ -94,6 +94,7 @@
 
 .trainer-card-grid__media {
   position: relative;
+  isolation: isolate;
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: rgb(28, 28, 34);

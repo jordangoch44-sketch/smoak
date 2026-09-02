@@ -7,6 +7,7 @@ import { TrainerList } from "@/components/trainers";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
+import { partitionSponsoredTrainers } from "@/lib/trainer-sponsorship";
 import { ExploreMap } from "./ExploreMap";
 import { ExploreSuggestedSpecialists } from "./ExploreSuggestedSpecialists";
 
@@ -37,6 +38,71 @@ interface ExploreResultsProps {
 }
 
 type ExploreViewMode = "list" | "map";
+
+function ExploreTrainerGroups({
+  trainers,
+  className,
+}: {
+  trainers: Trainer[];
+  className?: string;
+}) {
+  const { sponsored, organic } = partitionSponsoredTrainers(trainers);
+  const sponsoredPriority = Math.min(sponsored.length, 4);
+  const organicPriority = Math.max(0, 4 - sponsoredPriority);
+
+  if (sponsored.length === 0) {
+    return (
+      <TrainerList
+        trainers={organic}
+        variant="explore"
+        priorityCount={4}
+        className={className}
+      />
+    );
+  }
+
+  return (
+    <div className="explore-results-groups">
+      <section
+        className="explore-results-group"
+        aria-labelledby="explore-results-sponsored-heading"
+      >
+        <h3
+          id="explore-results-sponsored-heading"
+          className="explore-results-group__title"
+        >
+          Sponsored
+        </h3>
+        <TrainerList
+          trainers={sponsored}
+          variant="explore"
+          priorityCount={sponsoredPriority}
+          className={className}
+        />
+      </section>
+      {organic.length > 0 ? (
+        <>
+          <div className="explore-results-group__rule" role="separator">
+            <span className="explore-results-group__rule-label">
+              More specialists
+            </span>
+          </div>
+          <section
+            className="explore-results-group"
+            aria-label="More specialists"
+          >
+            <TrainerList
+              trainers={organic}
+              variant="explore"
+              priorityCount={organicPriority}
+              className={className}
+            />
+          </section>
+        </>
+      ) : null}
+    </div>
+  );
+}
 
 export const ExploreResults = memo(function ExploreResults({
   trainers,
@@ -160,7 +226,7 @@ export const ExploreResults = memo(function ExploreResults({
             {trainers.length} specialist{trainers.length === 1 ? "" : "s"} in
             this area
           </p>
-          <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
+          <ExploreTrainerGroups trainers={trainers} />
         </div>
       </div>
     );
@@ -170,10 +236,8 @@ export const ExploreResults = memo(function ExploreResults({
     return (
       <div className="explore-results-stack explore-results-stack--split">
         {expandedNote}
-        <TrainerList
+        <ExploreTrainerGroups
           trainers={trainers}
-          variant="explore"
-          priorityCount={4}
           className="trainer-card-list--split-rail"
         />
       </div>
@@ -226,7 +290,7 @@ export const ExploreResults = memo(function ExploreResults({
           variant="panel"
         />
       ) : (
-        <TrainerList trainers={trainers} variant="explore" priorityCount={4} />
+        <ExploreTrainerGroups trainers={trainers} />
       )}
     </div>
   );

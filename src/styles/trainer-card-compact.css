@@ -54,6 +54,28 @@
   border-radius: 0.75rem;
 }
 
+/* Smoke rim on paid boost photos — spectrum only, no outer glow */
+.smoac-sponsored-ring {
+  position: relative;
+  isolation: isolate;
+}
+
+.smoac-sponsored-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  padding: 2px;
+  background: var(--smoac-color);
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
 .trainer-card-compact__body {
   display: flex;
   flex: 1 1 0%;
