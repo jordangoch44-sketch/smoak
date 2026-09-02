@@ -68,6 +68,9 @@ export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
 /** Unfiltered Search — all specialist categories available there. */
 export const HOME_VIEW_ALL_SPECIALISTS_HREF = "/explore";
 
+/** City rankings board — SMOAC client reviews only. */
+export const HOME_RANKINGS_HREF = "/rankings";
+
 /** Revolving marketplace search hints — phrases the existing Explore pipeline understands. */
 export const HOME_SEARCH_PROMPTS = [
   "Personal trainer in Mission Valley...",

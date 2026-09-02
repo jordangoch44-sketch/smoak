@@ -4,10 +4,12 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { RANKINGS_PROFESSION_OPTIONS } from "@/data/city-rankings";
 import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
+import { HomePortraitSpecialistCard } from "@/components/home/HomePortraitSpecialistCard";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
+import { SITE_ROUTES } from "@/lib/navigation";
 import { selectTopRankedBoostForRankings } from "@/lib/paid-placements";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
@@ -18,7 +20,6 @@ import {
 } from "@/lib/smoac-rankings";
 import type { Trainer } from "@/types/trainer";
 import { RankingsFilters } from "./RankingsFilters";
-import { RankingsRow } from "./RankingsRow";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 interface RankingsPageClientProps {
@@ -102,8 +103,8 @@ export function RankingsPageClient({
 
       <div className="rankings-page__content">
         <div className="rankings-page__top">
-          <Link href="/explore" className="rankings-page__back">
-            ← Back to Explore
+          <Link href={SITE_ROUTES.home} className="rankings-page__back">
+            ← Back to Marketplace
           </Link>
         </div>
 
@@ -160,31 +161,23 @@ export function RankingsPageClient({
         ) : null}
 
         <div className="rankings-board" aria-live="polite">
-          <div className="rankings-board__header" aria-hidden>
-            <span className="rankings-board__col rankings-board__col--rank">
-              #
-            </span>
-            <span className="rankings-board__col rankings-board__col--specialist">
-              Specialist
-            </span>
-            <span className="rankings-board__col rankings-board__col--stats">
-              SMOAC reviews
-            </span>
-            <span className="rankings-board__col rankings-board__col--action">
-              Profile
-            </span>
-          </div>
-
           {rows.length > 0 ? (
-            <div className="rankings-board__list" role="list">
+            <HorizontalCarousel
+              className="rankings-board__carousel"
+              ariaLabel="City rankings"
+            >
               {rows.map((row, index) => (
-                <RankingsRow
+                <HomePortraitSpecialistCard
                   key={row.trainer.id}
-                  row={row}
+                  trainer={row.trainer}
                   priority={index < 3}
+                  avgRating={row.avgRating}
+                  reviewCount={row.reviewCount}
+                  badgeLabel={`#${row.displayRank}`}
+                  impressionSurface="rankings"
                 />
               ))}
-            </div>
+            </HorizontalCarousel>
           ) : (
             <div className="rankings-empty">
               <p className="rankings-empty__title">

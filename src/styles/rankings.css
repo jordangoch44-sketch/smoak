@@ -3,16 +3,39 @@
 .rankings-page {
   position: relative;
   min-height: 100dvh;
-  background: #030304;
+  background: #080b10;
   isolation: isolate;
 }
 
+body:has(.rankings-page) {
+  background-color: #080b10;
+  background-image: none;
+}
+
+body:has(.rankings-page) .site-page-backdrop,
+body:has(.rankings-page) .app-main {
+  background-color: #080b10;
+}
+
+body:has(.rankings-page) .site-page-backdrop__base,
+body:has(.rankings-page) .site-page-backdrop__stars,
+body:has(.rankings-page) .site-page-backdrop__mesh,
+body:has(.rankings-page) .site-page-backdrop__vignette {
+  opacity: 0;
+}
+
+body:has(.rankings-page) .site-footer {
+  background: #080b10;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body:has(.rankings-page) .site-footer__glow {
+  display: none;
+}
+
 .rankings-page__canvas {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  pointer-events: none;
+  display: none;
 }
 
 .rankings-page__canvas .atmosphere-mesh {
@@ -202,28 +225,33 @@
 }
 
 /* Board */
-.rankings-board__header {
-  display: none;
-  grid-template-columns: 3.5rem 1.4fr 2.2fr 7.5rem;
-  gap: 1rem;
-  padding: 0 1.25rem 0.75rem;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--silver-400);
+.rankings-board__carousel {
+  margin-top: 0.25rem;
 }
 
-@media (min-width: 1024px) {
-  .rankings-board__header {
-    display: grid;
+.rankings-board__carousel .home-portrait-card {
+  flex-basis: min(53vw, 12.3rem);
+}
+
+@media (min-width: 640px) {
+  .rankings-board__carousel .home-portrait-card {
+    flex-basis: 13.2rem;
   }
 }
 
-.rankings-board__list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+.rankings-board__carousel .home-portrait-card__article {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, #15151e 0%, #121218 100%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.rankings-board__header {
+  display: none;
 }
 
 /* Row */

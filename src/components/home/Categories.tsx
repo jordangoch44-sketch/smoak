@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/icons";
 import {
   HOME_BROWSE_CATEGORIES,
+  HOME_RANKINGS_HREF,
   HOME_VIEW_ALL_SPECIALISTS_HREF,
   type HomeBrowseCategoryIcon,
 } from "@/lib/home-browse-categories";
@@ -86,6 +87,13 @@ export function Categories() {
             className="home-specialty__view-all"
           >
             View all specialists
+            <span aria-hidden>→</span>
+          </TapLink>
+          <TapLink
+            href={HOME_RANKINGS_HREF}
+            className="home-specialty__rankings"
+          >
+            Top rankings in your city
             <span aria-hidden>→</span>
           </TapLink>
         </div>
