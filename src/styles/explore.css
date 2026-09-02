@@ -1404,10 +1404,6 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
-.explore-map-pin__avatar-ring.smoac-sponsored-ring {
-  border-color: transparent;
-}
-
 .explore-map-pin__avatar-img {
   width: 100%;
   height: 100%;
@@ -2440,6 +2436,14 @@ body.location-selector-open .explore-map__recenter--hero {
   align-items: center;
 }
 
+.explore-bottom-card-dock.smoac-sponsored-ring {
+  isolation: isolate;
+  border-color: transparent;
+  box-shadow:
+    0 24px 64px -8px rgba(0, 0, 0, 0.78),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+}
+
 .explore-bottom-card__photo-wrap {
   position: relative;
   isolation: isolate;
@@ -2450,10 +2454,6 @@ body.location-selector-open .explore-map__recenter--hero {
   border: 1.5px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
-}
-
-.explore-bottom-card__photo-wrap.smoac-sponsored-ring {
-  border-color: transparent;
 }
 
 @media (min-width: 400px) {
@@ -3426,6 +3426,12 @@ body.location-selector-open .explore-map__recenter--hero {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 10px 28px rgba(0, 0, 0, 0.28) !important;
+}
+
+.explore-page .trainer-card > a > article.smoac-sponsored-ring,
+.explore-page .trainer-card-compact.smoac-sponsored-ring,
+.explore-page .trainer-card-grid.smoac-sponsored-ring {
+  border-color: transparent !important;
 }
 
 .explore-page .trainer-card-compact {

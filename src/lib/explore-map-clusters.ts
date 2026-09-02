@@ -3,7 +3,6 @@ import { getTrainerCoordinates } from "@/lib/trainer-location";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { escapeExploreMapHtml, safeExploreMapImageSrc } from "@/lib/explore-map-popup";
-import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
 
 /**
  * Proximity threshold for grouping specialists at the exact same or adjacent facility.
@@ -261,7 +260,7 @@ export function buildExploreMapPinHtml(
 
     return `<div class="explore-map-pin explore-map-pin--single ${selectedClass}" data-cluster-id="${escapeExploreMapHtml(cluster.id)}" data-trainer-id="${escapeExploreMapHtml(trainer.id)}">
       <div class="explore-map-pin__single-body">
-        <div class="explore-map-pin__avatar-ring${isTrainerSponsored(trainer) ? " smoac-sponsored-ring" : ""}">
+        <div class="explore-map-pin__avatar-ring">
           ${avatarHtml}
         </div>
         ${price ? `<span class="explore-map-pin__price-tag">${escapeExploreMapHtml(price)}</span>` : '<span class="explore-map-pin__single-dot" aria-hidden="true"></span>'}
@@ -288,12 +287,12 @@ export function buildExploreMapPinHtml(
     <span class="explore-map-pin__glow" aria-hidden="true"></span>
     <div class="explore-map-pin__cluster-body">
       <div class="explore-map-pin__avatar-stack">
-        <div class="explore-map-pin__avatar-ring explore-map-pin__avatar-ring--primary${isTrainerSponsored(cluster.primaryTrainer) ? " smoac-sponsored-ring" : ""}">
+        <div class="explore-map-pin__avatar-ring explore-map-pin__avatar-ring--primary">
           ${primaryAvatar}
         </div>
         ${
           secondaryAvatar
-            ? `<div class="explore-map-pin__avatar-ring explore-map-pin__avatar-ring--secondary${cluster.secondaryTrainer && isTrainerSponsored(cluster.secondaryTrainer) ? " smoac-sponsored-ring" : ""}">
+            ? `<div class="explore-map-pin__avatar-ring explore-map-pin__avatar-ring--secondary">
                 ${secondaryAvatar}
               </div>`
             : ""

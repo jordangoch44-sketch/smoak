@@ -8,8 +8,6 @@ import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
-import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
-import { cn } from "@/lib/utils";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -33,7 +31,6 @@ export function HomePortraitSpecialistCard({
 }: HomePortraitSpecialistCardProps) {
   const router = useRouter();
   const href = `/trainers/${trainer.id}`;
-  const sponsored = isTrainerSponsored(trainer);
 
   function warm() {
     warmTrainerProfileNavigation(trainer, router);
@@ -52,12 +49,7 @@ export function HomePortraitSpecialistCard({
         onClick={warm}
       >
         <article className="home-portrait-card__article">
-          <div
-            className={cn(
-              "home-portrait-card__media",
-              sponsored && "smoac-sponsored-ring"
-            )}
-          >
+          <div className="home-portrait-card__media">
             <TrainerThumbnail
               src={trainer.image}
               name={trainer.name}

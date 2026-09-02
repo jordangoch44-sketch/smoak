@@ -18,13 +18,13 @@ export function TrainerCardGrid({
   sponsored = false,
 }: TrainerCardGridProps) {
   return (
-    <article className="trainer-card-grid hidden md:flex">
-      <div
-        className={cn(
-          "trainer-card-grid__media",
-          sponsored && "smoac-sponsored-ring"
-        )}
-      >
+    <article
+      className={cn(
+        "trainer-card-grid hidden md:flex",
+        sponsored && "smoac-sponsored-ring"
+      )}
+    >
+      <div className="trainer-card-grid__media">
         <TrainerThumbnail
           src={trainer.image}
           name={trainer.name}

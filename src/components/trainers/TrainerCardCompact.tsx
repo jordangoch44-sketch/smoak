@@ -25,7 +25,8 @@ export function TrainerCardCompact({
     <article
       className={cn(
         "trainer-card-compact md:hidden",
-        layout === "featured" && "trainer-card-compact--featured"
+        layout === "featured" && "trainer-card-compact--featured",
+        sponsored && "smoac-sponsored-ring"
       )}
     >
       <TrainerThumbnail
@@ -33,10 +34,7 @@ export function TrainerCardCompact({
         name={trainer.name}
         size="compact"
         priority={priority}
-        className={cn(
-          "trainer-card-compact__media",
-          sponsored && "smoac-sponsored-ring"
-        )}
+        className="trainer-card-compact__media"
       />
       <TrainerCardDetails
         trainer={trainer}

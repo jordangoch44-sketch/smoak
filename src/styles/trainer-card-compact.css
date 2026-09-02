@@ -54,10 +54,16 @@
   border-radius: 0.75rem;
 }
 
-/* Smoke rim on paid boost photos — spectrum only, no outer glow */
+/* Smoke rim on sponsored search / map preview cards — 1px spectrum, no glow */
 .smoac-sponsored-ring {
   position: relative;
   isolation: isolate;
+  border-color: transparent;
+}
+
+.trainer-card-compact.smoac-sponsored-ring:active,
+.trainer-card-grid.smoac-sponsored-ring:hover {
+  border-color: transparent;
 }
 
 .smoac-sponsored-ring::after {
@@ -66,13 +72,16 @@
   inset: 0;
   z-index: 2;
   border-radius: inherit;
-  padding: 2px;
+  padding: 1px;
   background: var(--smoac-color);
   pointer-events: none;
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
 }
 

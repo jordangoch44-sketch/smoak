@@ -179,6 +179,9 @@ export function ExploreMapBottomCard({
 
   const isMulti = cluster.isMulti && cluster.trainers.length > 1;
   const headerInfo = getClusterHeaderInfo(cluster);
+  const activeTrainer =
+    cluster.trainers[activeIndex] ?? cluster.primaryTrainer;
+  const activeSponsored = isTrainerSponsored(activeTrainer);
 
   return (
     <aside
@@ -186,6 +189,7 @@ export function ExploreMapBottomCard({
         "explore-bottom-card-dock",
         cluster && "explore-bottom-card-dock--open",
         dragOffset > 0 && "explore-bottom-card-dock--dragging",
+        activeSponsored && "smoac-sponsored-ring",
         className
       )}
       onPointerDown={(e) => e.stopPropagation()}
@@ -353,7 +357,6 @@ export function ExploreMapBottomCard({
             "Specialist";
           const priceLabel = formatSessionPricePlain(trainer.pricePerSession);
           const verified = isTrainerVerified(trainer);
-          const sponsored = isTrainerSponsored(trainer);
           const specialties = (trainer.specialty || []).slice(0, 3);
           const ratingValue = trainer.rating;
           // Calculate distance from explicit user location if available
@@ -397,12 +400,7 @@ export function ExploreMapBottomCard({
             >
               {/* Left Photo Hero */}
               <div className="explore-bottom-card__photo-col">
-                <div
-                  className={cn(
-                    "explore-bottom-card__photo-wrap",
-                    sponsored && "smoac-sponsored-ring"
-                  )}
-                >
+                <div className="explore-bottom-card__photo-wrap">
                   {trainer.image ? (
                     <Image
                       src={trainer.image}
