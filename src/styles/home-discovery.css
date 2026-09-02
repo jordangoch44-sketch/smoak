@@ -1478,6 +1478,28 @@
     padding-bottom: clamp(2.75rem, 9vw, 3.75rem);
   }
 
+  .home-page--discovery .home-hero__content--discovery {
+    align-items: flex-start;
+    text-align: left;
+    margin-inline: 0;
+    max-width: none;
+  }
+
+  .home-page--discovery .home-hero__headline {
+    text-align: left;
+  }
+
+  .home-page--discovery .rotating-headline__typed,
+  .home-page--discovery .rotating-headline__static {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .home-page--discovery .home-hero__lede {
+    margin-inline: 0;
+    text-align: left;
+  }
+
   .home-page--discovery > .home-hero__lede {
     display: block !important;
   }
