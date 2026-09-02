@@ -19,8 +19,6 @@ function MobileBottomNavShell() {
       aria-label="Mobile navigation"
       aria-hidden={hidden}
     >
-      <div className="mobile-bottom-nav__scrim" aria-hidden />
-
       <div className="mobile-bottom-nav__float">
         <SiteNavPill />
       </div>
