@@ -1,0 +1,206 @@
+/* Marketplace homepage — admin portal charcoal + hairline cards.
+   Scoped to `.home-page--discovery` so Explore / login / admin stay unchanged. */
+
+.home-page.home-page--discovery {
+  --home-smoke-canvas: none;
+  isolation: isolate;
+  overflow: hidden;
+  background-color: #080b10;
+  background-image: none;
+}
+
+.home-page--discovery::before,
+.home-page--discovery::after {
+  content: none !important;
+  display: none !important;
+}
+
+.home-page--discovery .home-page__sky,
+.home-page--discovery .home-page__stars,
+.home-page--discovery .home-page__cosmic,
+.home-page--discovery .home-hero__canvas,
+.home-page--discovery .home-hero__cosmic,
+.home-page--discovery .home-sponsored__cosmic,
+.home-page--discovery .home-sponsored__stars,
+.home-page--discovery .home-section-aurora::before {
+  display: none !important;
+}
+
+.home-page--discovery .home-hero--discovery,
+.home-page--discovery .home-hero--discovery::after {
+  background: none !important;
+}
+
+.home-page--discovery .home-hero--discovery::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Quiet the global nebula while Marketplace is mounted */
+body:has(.home-page--discovery) .site-page-backdrop {
+  background-color: #080b10;
+}
+
+body:has(.home-page--discovery) .site-page-backdrop__base,
+body:has(.home-page--discovery) .site-page-backdrop__stars,
+body:has(.home-page--discovery) .site-page-backdrop__mesh,
+body:has(.home-page--discovery) .site-page-backdrop__vignette {
+  opacity: 0;
+}
+
+/* Hero — same search + headline, no glow deck */
+.home-page--discovery .home-hero--discovery {
+  isolation: isolate;
+  background: #080b10 !important;
+}
+
+.home-page--discovery .home-hero__lede {
+  color: rgba(255, 255, 255, 0.62);
+  text-shadow: none;
+}
+
+.home-page--discovery .home-hero-search__field {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #15151e;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.home-page--discovery .home-hero-search__field::before {
+  content: none !important;
+  display: none !important;
+}
+
+.home-page--discovery .home-hero-search__field:focus-within {
+  border-color: rgba(139, 92, 246, 0.45);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+}
+
+@media (min-width: 1024px) {
+  .home-page--discovery > .home-hero.home-hero--discovery {
+    display: block;
+    grid-template-columns: none;
+  }
+}
+
+/* Clear-cut section blocks */
+.home-page--discovery .home-specialty {
+  margin-inline: 1rem;
+  margin-block: 0.75rem;
+  padding-block: 1.15rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(180deg, #15151e 0%, #121218 100%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.home-page--discovery .home-new,
+.home-page--discovery .home-featured,
+.home-page--discovery .home-sponsored,
+.home-page--discovery .home-top50 {
+  margin-inline: 1rem;
+  margin-block: 0.75rem;
+  padding-block: 1.15rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: linear-gradient(180deg, #15151e 0%, #121218 100%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  overflow: visible;
+}
+
+@media (min-width: 640px) {
+  .home-page--discovery .home-specialty,
+  .home-page--discovery .home-new,
+  .home-page--discovery .home-featured,
+  .home-page--discovery .home-sponsored,
+  .home-page--discovery .home-top50 {
+    margin-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-page--discovery .home-specialty,
+  .home-page--discovery .home-new,
+  .home-page--discovery .home-featured,
+  .home-page--discovery .home-sponsored,
+  .home-page--discovery .home-top50 {
+    max-width: 80rem;
+    margin-inline: auto;
+  }
+}
+
+.home-page--discovery .home-section__subtitle,
+.home-page--discovery .home-section__link,
+.home-page--discovery .home-specialty__view-all {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.home-page--discovery .home-section__link:hover,
+.home-page--discovery .home-specialty__view-all:hover {
+  color: #fff;
+}
+
+/* Category tiles — same hairline language as admin metric cards */
+.home-page--discovery .home-specialty-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.home-page--discovery .home-specialty-card:hover,
+.home-page--discovery .home-specialty-card:active {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.home-page--discovery .home-specialty-card__icon,
+.home-page--discovery .home-specialty-card__chevron {
+  color: rgba(167, 139, 250, 0.9);
+}
+
+/* Specialist cards on Marketplace only */
+.home-page--discovery .trainer-card > a > article,
+.home-page--discovery .home-portrait-card__article,
+.home-page--discovery .trainer-card-compact,
+.home-page--discovery .top50-card {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: linear-gradient(180deg, #15151e 0%, #121218 100%) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+@media (hover: hover) {
+  .home-page--discovery .trainer-card > a:hover > article,
+  .home-page--discovery .home-specialty-card:hover {
+    transform: none;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  }
+}
+
+.home-page--discovery .home-essence {
+  background: #080b10;
+}
+
+.home-page--discovery .home-essence__veil {
+  background: linear-gradient(
+    180deg,
+    rgba(8, 11, 16, 0.12) 0%,
+    transparent 35%,
+    rgba(8, 11, 16, 0.55) 100%
+  );
+}
