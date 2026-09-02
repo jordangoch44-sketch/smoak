@@ -240,7 +240,13 @@
   display: none;
 }
 
-body:has(.saved-page-auth-stage) .site-page-backdrop {
+body:has(.saved-page-auth-stage) {
+  background-color: #080b10;
+  background-image: none;
+}
+
+body:has(.saved-page-auth-stage) .site-page-backdrop,
+body:has(.saved-page-auth-stage) .app-main {
   background-color: #080b10;
 }
 
