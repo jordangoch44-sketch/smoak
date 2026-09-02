@@ -96,31 +96,43 @@
 .profile-section--panel {
   padding: 1.125rem 1rem 1.25rem;
   border-radius: 1.125rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(18, 21, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.22);
+    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .profile-section--featured {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(18, 21, 28, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.22);
+    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .profile-section--media {
   padding-bottom: 1rem;
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .profile-section--reviews {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(18, 21, 28, 0.72);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
 }
 
 .profile-google-reviews-link {
@@ -143,7 +155,6 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.72);
-  text-shadow: 0 0 24px rgba(var(--aurora-lavender-rgb), 0.18);
 }
 
 .profile-section-body {
@@ -326,75 +337,25 @@
   background: #080b10;
 }
 
-/* Page-scoped glass — wins over global aurora.css panel glow */
+/* Quiet admin-style glass — wins over global aurora.css panel glow */
 .profile-page--styled .profile-section--panel,
 .profile-page--styled .profile-section--featured,
 .profile-page--styled .profile-section--reviews,
 .profile-page--styled .profile-trust-card,
 .profile-page--styled .profile-stat-card,
-.profile-page--styled .profile-experience-card {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(18, 21, 28, 0.72);
+.profile-page--styled .profile-experience-card,
+.profile-page--styled .profile-trainer-specs__trigger {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.22);
-}
-
-.profile-page--styled::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.62;
-  background-image:
-    radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.9) 0 1px, transparent 1.2px),
-    radial-gradient(circle at 86% 24%, rgba(192, 214, 255, 0.78) 0 1px, transparent 1.2px),
-    radial-gradient(circle at 72% 82%, rgba(255, 255, 255, 0.68) 0 1px, transparent 1.2px),
-    radial-gradient(circle at 34% 72%, rgba(var(--profile-accent-rgb), 0.42) 0 1px, transparent 1.4px);
-  background-size:
-    190px 190px,
-    250px 250px,
-    310px 310px,
-    360px 360px;
-}
-
-.profile-page--styled::after {
-  content: "";
-  position: absolute;
-  inset: -18% -10% -8%;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.78;
-  filter: blur(24px);
-  background:
-    radial-gradient(
-      ellipse 58% 42% at 12% 18%,
-      rgba(var(--smoac-color-warm-rgb), 0.14) 0%,
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 52% 40% at 38% 12%,
-      rgba(var(--smoac-color-rose-rgb), 0.16) 0%,
-      transparent 72%
-    ),
-    radial-gradient(
-      ellipse 56% 44% at 72% 20%,
-      rgba(var(--smoac-color-violet-rgb), 0.2) 0%,
-      transparent 70%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 88% 42%,
-      rgba(var(--smoac-color-indigo-rgb), 0.16) 0%,
-      transparent 72%
-    ),
-    radial-gradient(
-      ellipse 58% 44% at 48% 72%,
-      rgba(var(--smoac-color-cool-rgb), 0.12) 0%,
-      transparent 74%
-    );
+    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .profile-page--styled > * {
@@ -1301,13 +1262,17 @@
   min-height: 4.5rem;
   padding: 0.75rem;
   border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(18, 21, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.22);
+    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .profile-stat-card__icon {
@@ -1384,13 +1349,17 @@ a.profile-tag-pill--grid {
   gap: 0.55rem;
   padding: 0.65rem 0.7rem;
   border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(18, 21, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.22);
+    0 4px 16px rgba(0, 0, 0, 0.25);
   text-align: left;
   touch-action: manipulation;
   transition:
@@ -1401,24 +1370,23 @@ a.profile-tag-pill--grid {
 }
 
 .profile-trust-card:hover {
-  border-color: rgba(var(--aurora-lavender-rgb), 0.34);
+  border-color: rgba(255, 255, 255, 0.14);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    0 0 22px rgba(var(--aurora-lavender-rgb), 0.14);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 4px 16px rgba(0, 0, 0, 0.28);
 }
 
 .profile-trust-card:active {
   transform: scale(0.985);
-  border-color: rgba(var(--aurora-lavender-rgb), 0.48);
-  background:
-    linear-gradient(
-      155deg,
-      rgba(var(--aurora-lavender-rgb), 0.16) 0%,
-      rgba(255, 255, 255, 0.04) 100%
-    );
+  border-color: rgba(255, 255, 255, 0.16);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 28px rgba(var(--aurora-lavender-rgb), 0.2);
+    0 4px 16px rgba(0, 0, 0, 0.28);
 }
 
 .profile-trust-card__icon {
@@ -1465,13 +1433,17 @@ a.profile-tag-pill--grid {
   min-height: 4.5rem;
   padding: 0.75rem;
   border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(18, 21, 28, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.22);
+    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .profile-experience-card__label {
@@ -2680,16 +2652,19 @@ body.profile-image-preview-open .profile-toolbar {
   gap: 0.85rem;
   padding: 1rem 1.1rem;
   border-radius: 1.125rem;
-  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.24);
-  background:
-    linear-gradient(
-      150deg,
-      rgba(var(--aurora-lavender-rgb), 0.12) 0%,
-      rgba(12, 12, 18, 0.72) 100%
-    );
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   text-align: left;
   touch-action: manipulation;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
 .profile-trainer-specs__eyebrow {
