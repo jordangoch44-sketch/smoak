@@ -5,6 +5,7 @@ import { HomeScrollReset } from "@/components/home/HomeScrollReset";
 import { HomeSeoSpecialistLinks } from "@/components/home/HomeSeoSpecialistLinks";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
+import "@/styles/home-marketplace-theme.css";
 
 export const metadata: Metadata = {
   title: {
