@@ -36,7 +36,7 @@ export interface ExploreMapProps {
   areaCenter?: ExploreMapArea | null;
   /**
    * Precise device GPS only. Never ZIP/city centroids, never Search-here center.
-   * Null → no purple “you are here” dot.
+   * Null → no “you are here” ME dot.
    */
   userLocationDot?: ExploreMapArea | null;
   /** Active area used for pins + list (default 12 mi around origin) */

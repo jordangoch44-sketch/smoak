@@ -1684,24 +1684,24 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
     0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* Precise location — purple “ME” */
+/* Precise location — charcoal “ME” + SMOAC Color (smoke) ring */
 .explore-map-me {
   background: transparent;
   border: none;
 }
 
 .explore-map-me__dot {
+  position: relative;
   display: flex;
   width: 32px;
   height: 32px;
   align-items: center;
   justify-content: center;
+  isolation: isolate;
   border-radius: 9999px;
-  background: #9b5cff;
-  border: 2.5px solid rgba(255, 255, 255, 0.96);
-  box-shadow:
-    0 0 0 4px rgba(155, 92, 255, 0.32),
-    0 2px 8px rgba(0, 0, 0, 0.4);
+  border: none;
+  background: #080b10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   color: #fff;
   font-size: 0.5625rem;
   font-weight: 750;
@@ -1709,6 +1709,22 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   line-height: 1;
   text-transform: uppercase;
   user-select: none;
+  pointer-events: none;
+}
+
+.explore-map-me__dot::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 2.5px;
+  background: var(--smoac-color);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   pointer-events: none;
 }
 

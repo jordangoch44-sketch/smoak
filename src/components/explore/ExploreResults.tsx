@@ -14,7 +14,7 @@ interface ExploreResultsProps {
   trainers: Trainer[];
   suggestedTrainers?: Trainer[];
   areaCenter?: UserGeoPoint | null;
-  /** Precise GPS only — purple map dot; null when ZIP-only / no device location */
+  /** Precise GPS only — “ME” map dot; null when ZIP-only / no device location */
   userLocationDot?: UserGeoPoint | null;
   /** Active default / map search radius for empty-state + expanded copy */
   searchRadiusMiles?: number;
