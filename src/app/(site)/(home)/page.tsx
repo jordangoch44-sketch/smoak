@@ -40,7 +40,7 @@ export default async function HomePage() {
       <div className="home-page__sky" aria-hidden />
       <Hero />
       <Categories initialCatalog={trainers} catalogMode={mode} />
-      <HomeDiscoveryClient />
+      <HomeDiscoveryClient initialCatalog={trainers} catalogMode={mode} />
       <HomeSeoSpecialistLinks trainers={trainers} />
       <HomeEssenceSlideshow />
     </div>

@@ -36,6 +36,22 @@ export function promoteMediaUrl(urls: string[], url: string): string[] {
 /** Max Instagram-style pins under the public profile hero (Pro / trial only). */
 export const PINNED_PHOTOS_MAX = 3;
 
+/** Pro Plus — client transformations carousel under pinned photos. */
+export const CLIENT_TRANSFORMATIONS_MAX = 8;
+
+export function normalizeTransformationUrls(urls: unknown): string[] {
+  if (!Array.isArray(urls)) return [];
+  const cleaned: string[] = [];
+  for (const item of urls) {
+    if (typeof item !== "string") continue;
+    const trimmed = item.trim();
+    if (!trimmed || cleaned.includes(trimmed)) continue;
+    cleaned.push(trimmed);
+    if (cleaned.length >= CLIENT_TRANSFORMATIONS_MAX) break;
+  }
+  return cleaned;
+}
+
 /** Keep up to 3 unique image URLs, optionally restricted to an allow-list. */
 export function normalizePinnedPhotos(
   urls: unknown,

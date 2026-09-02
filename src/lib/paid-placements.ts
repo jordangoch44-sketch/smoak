@@ -18,7 +18,7 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
-/** Homepage spotlight (featured / Platinum / homepage_spotlight add-on). */
+/** Homepage spotlight (featured / homepage_spotlight Boost add-on). */
 export function listPublicFeaturedTrainers(
   options: PublicCatalogOptions = {}
 ): Trainer[] {
@@ -87,6 +87,7 @@ export function selectFeaturedSpotlightTrainers(
     personalizationCity: string | null;
     userCoords: { latitude: number; longitude: number } | null;
     limit?: number;
+    shuffle?: boolean;
   }
 ): SponsoredRailResult {
   return selectPlacementRailTrainers(
@@ -95,6 +96,7 @@ export function selectFeaturedSpotlightTrainers(
       personalizationCity: opts.personalizationCity,
       userCoords: opts.userCoords,
       limit: opts.limit,
+      shuffle: opts.shuffle,
     }
   );
 }

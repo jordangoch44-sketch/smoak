@@ -69,8 +69,7 @@ export interface Trainer {
   name: string;
   /**
    * Personal first name (from onboarding full name / profiles.first_name).
-   * Display-only — used for the “SPECIALIST - FirstName” byline under the
-   * business name. Optional so seed/demo rows stay unchanged.
+   * Optional so seed/demo rows stay unchanged.
    */
   specialistFirstName?: string;
   /** Main profession category on cards — one of MAIN_PROFESSION_CATEGORIES */
@@ -161,6 +160,11 @@ export interface Trainer {
   topRanked?: boolean;
   /** Listing entitlement mirror (also on user_roles.is_premium) */
   isPremium?: boolean;
+  /**
+   * Highest paid membership. Stripe/DB key for Pro Plus is `platinum`.
+   * Independent of Boost placement flags.
+   */
+  membershipPlan?: "free" | "premium" | "platinum";
   /** Curated profile personalization (accent, avatar frame, name font) */
   profileStyle?: SpecialistProfileStyle;
   certifications: Certification[];

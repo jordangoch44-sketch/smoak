@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { CloseIcon } from "@/components/ui/icons";
-import { SMOAC_PRO_UPGRADE_MODAL } from "@/lib/specialist-premium";
+import { SMOAC_PRO_PLUS_PRICE_LABEL, SMOAC_PRO_UPGRADE_MODAL } from "@/lib/specialist-premium";
 import { DashboardButton } from "./DashboardButton";
 
 interface SmoacProUpgradeModalProps {
@@ -106,8 +106,12 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
             onClick={() => void startCheckout("platinum")}
             disabled={busy}
           >
-            Or Platinum · $19.99/mo (includes featured)
+            Or Pro Plus · {SMOAC_PRO_PLUS_PRICE_LABEL}
           </button>
+          <p className="dashboard-modal__note">
+            Pro Plus adds client transformations under your pins and 20% off
+            Boosts.
+          </p>
         </div>
       </div>
     </div>,

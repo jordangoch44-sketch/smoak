@@ -724,13 +724,19 @@
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
 }
 
-/* New specialists sit under category cards — compact gap after Browse */
+/* New + Sponsored sit under category cards — compact gap after Browse / rankings CTA */
 .home-page--discovery .home-hero + .home-specialty {
   padding-top: 0.35rem;
   padding-bottom: 1.15rem;
 }
 
-.home-page--discovery .home-specialty + .home-new {
+.home-page--discovery .home-specialty + .home-new,
+.home-page--discovery .home-specialty + .home-sponsored {
+  padding-top: 0.35rem;
+  padding-bottom: 1.15rem;
+}
+
+.home-page--discovery .home-sponsored + .home-new {
   padding-top: 0.35rem;
   padding-bottom: 1.15rem;
 }
@@ -750,10 +756,6 @@
 .home-page--discovery .home-new + .home-essence {
   margin-top: 0.5rem;
   margin-bottom: 0.75rem;
-}
-
-.home-page--discovery .home-sponsored {
-  padding-top: clamp(1.25rem, 3.5vw, 2rem);
 }
 
 .home-page--discovery .home-sponsored .horizontal-carousel__track,
@@ -1326,6 +1328,7 @@
   display: flex;
   flex: 0 0 min(62vw, 14.5rem);
   align-self: stretch;
+  min-width: 0;
 }
 
 @media (min-width: 640px) {

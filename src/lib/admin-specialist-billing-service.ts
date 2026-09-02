@@ -13,8 +13,11 @@ import type {
 
 function resolveTier(
   isPremium: boolean,
-  featured: boolean
+  featured: boolean,
+  membershipPlan?: string | null
 ): SpecialistBillingTier {
+  if (membershipPlan === "platinum") return "platinum";
+  if (membershipPlan === "premium") return "premium";
   if (isPremium && featured) return "platinum";
   if (isPremium) return "premium";
   return "free";
@@ -47,8 +50,13 @@ export function buildSpecialistBillingRecord(input: {
   featured: boolean;
   sponsored?: boolean;
   topRanked?: boolean;
+  membershipPlan?: string | null;
 }): SpecialistBillingRecord {
-  const tier = resolveTier(input.isPremium, input.featured);
+  const tier = resolveTier(
+    input.isPremium,
+    input.featured,
+    input.membershipPlan
+  );
   const tierMeta = SPECIALIST_TIER_CATALOG[tier];
   const addOnIds = resolveAddOnIdsFromFlags(input);
   const activeAddOns = buildAddOns(addOnIds);
@@ -69,15 +77,18 @@ export function buildSpecialistBillingRecord(input: {
   };
 }
 
+type SpecialistBillingRowInput = {
+  id: string;
+  name: string;
+  isPremium: boolean;
+  featured: boolean;
+  sponsored?: boolean;
+  topRanked?: boolean;
+  membershipPlan?: string | null;
+};
+
 export function listSpecialistBillingFromRows(
-  rows: readonly {
-    id: string;
-    name: string;
-    isPremium: boolean;
-    featured: boolean;
-    sponsored?: boolean;
-    topRanked?: boolean;
-  }[]
+  rows: readonly SpecialistBillingRowInput[]
 ): SpecialistBillingRecord[] {
   return rows
     .map((row) =>
@@ -88,6 +99,7 @@ export function listSpecialistBillingFromRows(
         featured: row.featured,
         sponsored: row.sponsored,
         topRanked: row.topRanked,
+        membershipPlan: row.membershipPlan,
       })
     )
     .sort((a, b) => b.totalMonthlyCents - a.totalMonthlyCents);
@@ -120,19 +132,12 @@ function computeOwnerMetrics(
 const OWNER_REVENUE_CACHE = new Map<string, AdminOwnerRevenueDashboard>();
 
 export function getAdminOwnerRevenueDashboard(
-  specialistRows: readonly {
-    id: string;
-    name: string;
-    isPremium: boolean;
-    featured: boolean;
-    sponsored?: boolean;
-    topRanked?: boolean;
-  }[]
+  specialistRows: readonly SpecialistBillingRowInput[]
 ): AdminOwnerRevenueDashboard {
   const key = specialistRows
     .map(
       (r) =>
-        `${r.id}:${r.isPremium}:${r.featured}:${Boolean(r.sponsored)}:${Boolean(r.topRanked)}`
+        `${r.id}:${r.isPremium}:${r.featured}:${Boolean(r.sponsored)}:${Boolean(r.topRanked)}:${r.membershipPlan ?? ""}`
     )
     .join("|");
   const cached = OWNER_REVENUE_CACHE.get(key);

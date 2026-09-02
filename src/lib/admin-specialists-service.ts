@@ -59,6 +59,7 @@ export interface AdminSpecialistRow {
   sponsored: boolean;
   topRanked: boolean;
   isPremium: boolean;
+  membershipPlan?: "free" | "premium" | "platinum";
   isProtected: boolean;
   accountKind: "real" | "test";
   inSeedCatalog: boolean;
@@ -194,6 +195,8 @@ function applicationAsTrainerRow(
       approved?.topRanked ?? directory?.topRanked ?? meta.topRanked ?? false,
     isPremium:
       approved?.isPremium ?? directory?.isPremium ?? meta.isPremium ?? false,
+    membershipPlan:
+      approved?.membershipPlan ?? directory?.membershipPlan ?? "free",
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? "test",
     inSeedCatalog: false,
@@ -225,6 +228,7 @@ function rowFromTrainer(
     sponsored: Boolean(trainer.sponsored) || Boolean(meta.sponsored),
     topRanked: Boolean(trainer.topRanked) || Boolean(meta.topRanked),
     isPremium: Boolean(trainer.isPremium) || Boolean(meta.isPremium),
+    membershipPlan: trainer.membershipPlan ?? (trainer.isPremium ? "premium" : "free"),
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? (inSeedCatalog ? "test" : "real"),
     inSeedCatalog,
@@ -336,6 +340,7 @@ export function listAdminSpecialists(): AdminSpecialistRow[] {
             sponsored: approved?.sponsored ?? merged.sponsored,
             topRanked: approved?.topRanked ?? false,
             isPremium: approved?.isPremium ?? false,
+            membershipPlan: approved?.membershipPlan ?? merged.membershipPlan,
           },
           visibility,
           true,

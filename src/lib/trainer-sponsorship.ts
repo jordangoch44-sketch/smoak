@@ -4,6 +4,7 @@ import type { Trainer } from "@/types";
 /**
  * Homepage Sponsored / paid placement boost.
  * Pro membership alone does NOT grant sponsored placement.
+ * If nobody is paying, the homepage rail stays hidden.
  */
 export function isTrainerSponsored(trainer: Trainer): boolean {
   if (trainer.sponsored === true) return true;

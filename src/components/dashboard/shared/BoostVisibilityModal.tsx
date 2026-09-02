@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useAuthSession } from "@/hooks/useAuthSession";
 import { CloseIcon } from "@/components/ui/icons";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
@@ -11,9 +12,15 @@ import {
   type BoostProductDetail,
 } from "@/lib/boost-product-details";
 import {
+  listPriceCents,
   productDescription,
   type SmoacAddonProduct,
 } from "@/lib/stripe/products";
+import {
+  formatBoostPriceLabel,
+  isProPlusPlan,
+  PRO_PLUS_BOOST_PERCENT_OFF,
+} from "@/lib/stripe/pro-plus-boost";
 
 interface BoostVisibilityModalProps {
   open: boolean;
@@ -41,11 +48,21 @@ export function BoostVisibilityModal({
   onClose,
   initialProduct = null,
 }: BoostVisibilityModalProps) {
+  const { session } = useAuthSession();
+  const isProPlus = isProPlusPlan(session?.membershipPlan);
   const [step, setStep] = useState<Step>("list");
   const [detail, setDetail] = useState<BoostProductDetail | null>(null);
   const [checkout, setCheckout] = useState<CheckoutPayload | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function priceFor(key: SmoacAddonProduct) {
+    const listCents = listPriceCents(key);
+    return {
+      listLabel: formatBoostPriceLabel(listCents, false),
+      payLabel: formatBoostPriceLabel(listCents, isProPlus),
+    };
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -164,10 +181,15 @@ export function BoostVisibilityModal({
                 Pick a placement to see exactly what you get, where it appears,
                 and what it will not change. Separate from Pro analytics —
                 billed monthly, cancel anytime.
+                {isProPlus
+                  ? ` Pro Plus saves ${PRO_PLUS_BOOST_PERCENT_OFF}% on every Boost.`
+                  : ""}
               </p>
 
               <ul className="dashboard-boost-list">
-                {BOOST_PRODUCT_DETAILS.map((option) => (
+                {BOOST_PRODUCT_DETAILS.map((option) => {
+                  const price = priceFor(option.key);
+                  return (
                   <li key={option.key} className="dashboard-boost-list__item">
                     <div className="dashboard-boost-list__copy">
                       <p className="dashboard-boost-list__label">
@@ -177,7 +199,16 @@ export function BoostVisibilityModal({
                         {option.tagline}
                       </p>
                       <p className="dashboard-boost-list__price">
-                        {option.priceLabel}
+                        {isProPlus ? (
+                          <>
+                            <span className="dashboard-boost-list__price-was">
+                              {price.listLabel}
+                            </span>
+                            {price.payLabel}
+                          </>
+                        ) : (
+                          price.payLabel
+                        )}
                       </p>
                     </div>
                     <DashboardButton
@@ -188,7 +219,8 @@ export function BoostVisibilityModal({
                       Details
                     </DashboardButton>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </>
           ) : null}
@@ -203,7 +235,9 @@ export function BoostVisibilityModal({
                 ← All boosts
               </button>
               <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
-                {activeDetail.priceLabel}
+                {isProPlus
+                  ? `${priceFor(activeDetail.key).payLabel} · Pro Plus 20% off`
+                  : activeDetail.priceLabel}
               </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
                 {activeDetail.label}
@@ -255,7 +289,7 @@ export function BoostVisibilityModal({
               >
                 {busy
                   ? "Loading…"
-                  : `Continue · ${activeDetail.priceLabel}`}
+                  : `Continue · ${priceFor(activeDetail.key).payLabel}`}
               </DashboardButton>
             </>
           ) : null}

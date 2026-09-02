@@ -16,6 +16,7 @@ import {
   listSpecialistApplications,
 } from "@/lib/specialist-application-storage";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
 import type { ProfileStatus } from "@/types/specialist-application";
 import type { Trainer } from "@/types/trainer";
 
@@ -219,9 +220,7 @@ export function listPublicMarketplaceTrainers(
 export function listPublicSponsoredTrainers(
   options: PublicCatalogOptions = {}
 ): Trainer[] {
-  return listPublicMarketplaceTrainers(options).filter(
-    (trainer) => trainer.sponsored === true
-  );
+  return listPublicMarketplaceTrainers(options).filter(isTrainerSponsored);
 }
 
 /**

@@ -28,9 +28,10 @@ export function getSpecialistSubscriptionForSession(
         isPremium: true,
       };
     }
-    /* Paid Pro — renew date comes from Stripe billing-summary, not a demo date */
+    /* Paid Pro / Pro Plus — renew date comes from Stripe billing-summary */
     return {
-      plan: "SMOAC Pro",
+      plan:
+        session.membershipPlan === "platinum" ? "SMOAC Pro Plus" : "SMOAC Pro",
       status: "Active",
       renewsOn: "—",
       isPremium: true,

@@ -11,11 +11,16 @@ import {
   ensureSpecialistStripeCustomer,
 } from "@/lib/stripe/ensure-customer";
 import {
+  isAddonProduct,
   isMembershipProduct,
   isSmoacStripeProductKey,
   productLabel,
   type SmoacStripeProductKey,
 } from "@/lib/stripe/products";
+import {
+  ensureProPlusBoostCoupon,
+  isProPlusPlan,
+} from "@/lib/stripe/pro-plus-boost";
 
 /**
  * Create a Stripe Checkout Session for membership or paid placement add-ons.
@@ -109,10 +114,23 @@ export async function POST(request: Request) {
 
   const siteUrl = getSiteUrlForStripe();
   const kind = isMembershipProduct(productKey) ? "plan" : "addon";
+  const applyBoostDiscount =
+    isAddonProduct(productKey) && isProPlusPlan(customer.billingPlan);
+  let couponId: string | null = null;
+  if (applyBoostDiscount) {
+    try {
+      couponId = await ensureProPlusBoostCoupon(stripe);
+    } catch (err) {
+      console.error("[stripe] Pro Plus boost coupon:", err);
+    }
+  }
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer: customer.customerId,
     line_items: [{ price: priceId, quantity: 1 }],
+    ...(couponId
+      ? { discounts: [{ coupon: couponId }] }
+      : { allow_promotion_codes: true }),
     subscription_data: {
       metadata: {
         supabase_user_id: user.id,
@@ -135,7 +153,6 @@ export async function POST(request: Request) {
     },
     success_url: `${siteUrl}/specialist-dashboard?billing=success&product=${productKey}`,
     cancel_url: `${siteUrl}/specialist-dashboard?billing=cancel`,
-    allow_promotion_codes: true,
   });
 
   if (!session.url) {

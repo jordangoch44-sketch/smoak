@@ -39,6 +39,7 @@ import {
 import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-subscription";
 import {
   formatProTrialBadgeLabel,
+  isProPlusPlan,
   SMOAC_FREE_PLAN_LABEL,
 } from "@/lib/specialist-premium";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
@@ -163,13 +164,16 @@ export function SpecialistEditProfilePageClient({
   });
 
   const isPremium = Boolean(session?.isPremium);
+  const isProPlus = isProPlusPlan(session?.membershipPlan);
   const onProTrial = Boolean(session?.premiumTrialActive);
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
   const profilePlanLabel = onProTrial
     ? formatProTrialBadgeLabel(session?.premiumTrialDaysRemaining)
-    : isPremium
-      ? "SMOAC Pro"
-      : SMOAC_FREE_PLAN_LABEL;
+    : isProPlus
+      ? "SMOAC Pro Plus"
+      : isPremium
+        ? "SMOAC Pro"
+        : SMOAC_FREE_PLAN_LABEL;
 
   const handleSignOut = useCallback(() => {
     void signOut().then(() => {
@@ -1306,6 +1310,17 @@ export function SpecialistEditProfilePageClient({
                   }
                   emptyLabel={isPremium ? "Pin from header photos" : "Pro"}
                 />
+                <ProfileEditViewField
+                  label="Transformations"
+                  value={
+                    savedForm.transformationNotes.trim()
+                      ? `${savedForm.transformationNotes
+                          .split("\n")
+                          .filter(Boolean).length} photo(s)`
+                      : ""
+                  }
+                  emptyLabel={isProPlus ? "Add under pinned photos" : "Pro Plus"}
+                />
                 <ProfileEditViewField label="Instagram" value={savedForm.instagram} />
                 <ProfileEditViewField label="TikTok" value={savedForm.tiktok} />
                 <ProfileEditViewField label="Website" value={savedForm.website} />
@@ -1320,7 +1335,9 @@ export function SpecialistEditProfilePageClient({
                   slideshowFramesJson={form.slideshowFramesJson}
                   videoNotes={form.videoNotes}
                   pinnedPhotos={form.pinnedPhotos}
+                  transformationNotes={form.transformationNotes}
                   isPremium={isPremium}
+                  isProPlus={isProPlus}
                   specialistId={trainerId}
                   onChange={(next) => {
                     setSectionDraft((prev) =>

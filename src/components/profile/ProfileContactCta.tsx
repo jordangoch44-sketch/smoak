@@ -19,7 +19,6 @@ export function ProfileContactCta({
       className={cn("profile-contact-cta", className)}
       aria-label={`Contact ${specialistName}`}
     >
-      <div className="profile-contact-cta__glow" aria-hidden />
       <p className="profile-contact-cta__eyebrow">Questions / Inquire</p>
       <h2 className="profile-contact-cta__title">
         Have a question for this specialist?

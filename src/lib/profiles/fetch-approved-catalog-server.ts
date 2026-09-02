@@ -47,7 +47,7 @@ async function fetchApprovedCatalogUncached(): Promise<Trainer[]> {
  */
 const loadApprovedCatalogCached = unstable_cache(
   fetchApprovedCatalogUncached,
-  ["approved-specialist-catalog-v3"],
+  ["approved-specialist-catalog-v5"],
   { revalidate: 45, tags: ["public-catalog"] }
 );
 

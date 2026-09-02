@@ -480,6 +480,7 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
   const gallery = getTrainerGallery(trainer.id);
   const reviewSources = TRAINER_DEMO_REVIEW_SOURCES[trainer.id];
   const galleryImages = buildTrainerGalleryImages(gallery, heroImage);
+  const clientTransformations = getTrainerTransformations(trainer.id);
   const enriched = {
     ...trainer,
     ...curated,
@@ -488,7 +489,10 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
     gallery,
     galleryImages,
     reviewSources,
-    clientTransformations: getTrainerTransformations(trainer.id),
+    clientTransformations,
+    membershipPlan: (clientTransformations.length > 0
+      ? "platinum"
+      : "premium") as Trainer["membershipPlan"],
   };
 
   return {

@@ -5,6 +5,7 @@
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 
 export const SMOAC_PRO_PRICE_LABEL = "$9.99/mo";
+export const SMOAC_PRO_PLUS_PRICE_LABEL = "$19.99/mo";
 
 /** Header badge for free specialists — Free details live on Live profile, not Plan tab. */
 export const SMOAC_FREE_PLAN_LABEL = "Current plan · Free";
@@ -59,6 +60,27 @@ export function isSpecialistPremium(
   subscription: SpecialistSubscription | undefined
 ): boolean {
   return subscription?.isPremium === true;
+}
+
+export type SpecialistMembershipPlan = "free" | "premium" | "platinum";
+
+export function parseMembershipPlan(
+  value: unknown
+): SpecialistMembershipPlan {
+  if (value === "premium" || value === "platinum") return value;
+  return "free";
+}
+
+export function isProPlusPlan(
+  plan: string | null | undefined
+): boolean {
+  return plan === "platinum";
+}
+
+export function isTrainerProPlus(trainer: {
+  membershipPlan?: string | null;
+}): boolean {
+  return trainer.membershipPlan === "platinum";
 }
 
 /** Header badge while complimentary Pro trial is active */

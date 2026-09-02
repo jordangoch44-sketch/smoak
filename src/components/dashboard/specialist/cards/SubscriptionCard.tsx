@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 import { SMOAC_PRO_PRICE_LABEL } from "@/lib/specialist-premium";
+import { membershipPlanLabel } from "@/lib/stripe/products";
 import { DashboardButton, DashboardSection } from "@/components/dashboard/shared";
 
 interface BillingLine {
@@ -112,10 +113,9 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
         <div className="dashboard-account-card__row">
           <span className="dashboard-account-card__label">Plan</span>
           <span className="dashboard-account-card__value">
-            {summary?.plan && summary.plan !== "free"
-              ? summary.plan === "premium"
-                ? "SMOAC Pro"
-                : "Platinum"
+            {summary?.plan &&
+            (summary.plan === "premium" || summary.plan === "platinum")
+              ? membershipPlanLabel(summary.plan)
               : subscription.plan}
           </span>
         </div>

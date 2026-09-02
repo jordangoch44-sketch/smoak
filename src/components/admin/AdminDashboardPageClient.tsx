@@ -124,6 +124,7 @@ export function AdminDashboardPageClient() {
         name: row.name,
         isPremium: row.isPremium,
         featured: row.featured,
+        membershipPlan: row.membershipPlan,
       }))
     );
     return new Map(

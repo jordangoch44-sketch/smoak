@@ -7,6 +7,7 @@ import {
   ensureSpecialistStripeCustomer,
 } from "@/lib/stripe/ensure-customer";
 import {
+  isAddonProduct,
   isMembershipProduct,
   isSmoacStripeProductKey,
   formatListPriceLabel,
@@ -15,6 +16,12 @@ import {
   productLabel,
   type SmoacStripeProductKey,
 } from "@/lib/stripe/products";
+import {
+  discountedBoostCents,
+  ensureProPlusBoostCoupon,
+  formatBoostPriceLabel,
+  isProPlusPlan,
+} from "@/lib/stripe/pro-plus-boost";
 
 /**
  * Create an incomplete subscription and return a PaymentIntent client secret
@@ -92,6 +99,17 @@ export async function POST(request: Request) {
 
   const priceId = getStripePriceId(productKey)!;
   const kind = isMembershipProduct(productKey) ? "plan" : "addon";
+  const applyBoostDiscount =
+    isAddonProduct(productKey) && isProPlusPlan(customer.billingPlan);
+  let discounts: Stripe.SubscriptionCreateParams.Discount[] | undefined;
+  if (applyBoostDiscount) {
+    try {
+      const coupon = await ensureProPlusBoostCoupon(stripe);
+      discounts = [{ coupon }];
+    } catch (err) {
+      console.error("[stripe] Pro Plus boost coupon:", err);
+    }
+  }
   const metadata = {
     supabase_user_id: user.id,
     specialist_profile_id: customer.specialistProfileId ?? "",
@@ -111,6 +129,7 @@ export async function POST(request: Request) {
       payment_method_types: ["card"],
     },
     metadata,
+    ...(discounts ? { discounts } : {}),
     expand: ["latest_invoice.payment_intent"],
   });
 
@@ -164,13 +183,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const listCents = listPriceCents(productKey);
   return NextResponse.json({
     clientSecret,
     subscriptionId: subscription.id,
     product: productKey,
     label: productLabel(productKey),
     description: productDescription(productKey),
-    priceLabel: formatListPriceLabel(listPriceCents(productKey)),
-    monthlyCents: listPriceCents(productKey),
+    priceLabel: formatBoostPriceLabel(listCents, applyBoostDiscount),
+    listPriceLabel: formatListPriceLabel(listCents),
+    monthlyCents: applyBoostDiscount
+      ? discountedBoostCents(listCents)
+      : listCents,
+    proPlusDiscount: applyBoostDiscount,
   });
 }

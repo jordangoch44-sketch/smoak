@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
-import { formatProTrialBadgeLabel, SMOAC_FREE_PLAN_LABEL } from "@/lib/specialist-premium";
+import { formatProTrialBadgeLabel, isProPlusPlan, SMOAC_FREE_PLAN_LABEL } from "@/lib/specialist-premium";
 import {
   profileStyleAccentLabel,
   profileStyleFontLabel,
@@ -137,12 +137,15 @@ export function SpecialistIgStyleProfileEditor({
   const { session } = useAuthSession();
   const onProTrial = Boolean(session?.premiumTrialActive);
   const isPremium = Boolean(session?.isPremium);
+  const isProPlus = isProPlusPlan(session?.membershipPlan);
   const resolvedPlanLabel =
     planBadgeLabel !== undefined
       ? planBadgeLabel
       : onProTrial
         ? formatProTrialBadgeLabel(session?.premiumTrialDaysRemaining)
-        : isPremium
+        : isProPlus
+          ? "SMOAC Pro Plus"
+          : isPremium
           ? "SMOAC Pro"
           : SMOAC_FREE_PLAN_LABEL;
 
@@ -383,9 +386,15 @@ export function SpecialistIgStyleProfileEditor({
           sectionKey="transformations"
           label="Transformations"
           value={
-            formDefaults.transformationNotes.trim() ? "Photos added" : "Add"
+            !isProPlus
+              ? "Pro Plus"
+              : formDefaults.transformationNotes.trim()
+                ? "Photos added"
+                : "Add"
           }
-          incomplete={!formDefaults.transformationNotes.trim()}
+          incomplete={
+            isProPlus ? !formDefaults.transformationNotes.trim() : false
+          }
           highlighted={isHighlighted("transformations")}
           onClick={() => onEditSection("transformations")}
         />

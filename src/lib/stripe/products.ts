@@ -2,7 +2,9 @@
  * SMOAC specialist Stripe products — membership vs paid placement add-ons.
  *
  * Rules:
- * - Pro (`premium` key) / Platinum set membership only (is_premium). Platinum also includes featured.
+ * - Pro (`premium` key) / Pro Plus (`platinum` key) set membership only
+ *   (`is_premium`). Pro Plus does not grant Featured — that is a Boost.
+ * - Pro Plus perks: richer listing (client transformations) + 20% off Boosts.
  * - Pro membership never grants sponsored placement by itself.
  * - Add-ons set placement flags independently and do not require Pro.
  */
@@ -96,9 +98,23 @@ export function formatListPriceLabel(cents: number): string {
   return `$${fixed}/mo`;
 }
 
+/** Specialist-facing membership name. Stripe/DB key for Pro Plus stays `platinum`. */
+export function membershipPlanLabel(
+  plan: "free" | "premium" | "platinum"
+): string {
+  switch (plan) {
+    case "premium":
+      return "SMOAC Pro";
+    case "platinum":
+      return "SMOAC Pro Plus";
+    default:
+      return "Free";
+  }
+}
+
 export function productLabel(key: SmoacStripeProductKey): string {
   if (isMembershipProduct(key)) {
-    return key === "premium" ? "SMOAC Pro" : SPECIALIST_TIER_CATALOG[key].label;
+    return membershipPlanLabel(key);
   }
   return SPECIALIST_AD_ADDON_CATALOG[key].label;
 }
@@ -108,7 +124,7 @@ export function productDescription(key: SmoacStripeProductKey): string {
     case "premium":
       return "Full analytics, ranking intelligence, and growth insights.";
     case "platinum":
-      return "Pro analytics plus Featured homepage spotlight placement.";
+      return "Everything in Pro, plus client transformations on your profile and 20% off Boosts.";
     case "boosted_profile":
       return "Homepage Sponsored rail near clients in your area.";
     case "category_spotlight":
@@ -165,8 +181,7 @@ export function entitlementsFromProducts(
       ? "premium"
       : "free";
 
-  const featured =
-    hasPlatinum || set.has("homepage_spotlight");
+  const featured = set.has("homepage_spotlight");
   const sponsored = set.has("boosted_profile");
   const topRanked = set.has("top_ranking_boost");
   const categorySpotlight = set.has("category_spotlight");

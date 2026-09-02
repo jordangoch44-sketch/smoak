@@ -26,6 +26,7 @@ import {
 import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
 import { cn } from "@/lib/utils";
 import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
+import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
 
 interface SpecialistProfileMediaEditorProps {
   profilePhotoUrl: string;
@@ -34,7 +35,9 @@ interface SpecialistProfileMediaEditorProps {
   slideshowFramesJson: string;
   videoNotes: string;
   pinnedPhotos: string[];
+  transformationNotes?: string;
   isPremium: boolean;
+  isProPlus?: boolean;
   specialistId?: string | null;
   onChange: (patch: {
     profilePhotoUrl?: string;
@@ -43,6 +46,7 @@ interface SpecialistProfileMediaEditorProps {
     slideshowFramesJson?: string;
     videoNotes?: string;
     pinnedPhotos?: string[];
+    transformationNotes?: string;
   }) => void;
 }
 
@@ -115,7 +119,9 @@ export function SpecialistProfileMediaEditor({
   slideshowFramesJson,
   videoNotes,
   pinnedPhotos,
+  transformationNotes = "",
   isPremium,
+  isProPlus = false,
   specialistId,
   onChange,
 }: SpecialistProfileMediaEditorProps) {
@@ -490,6 +496,13 @@ export function SpecialistProfileMediaEditor({
           </p>
         )}
       </div>
+
+      <SpecialistTransformationsEditor
+        transformationNotes={transformationNotes}
+        isProPlus={isProPlus}
+        specialistId={specialistId}
+        onChange={(next) => onChange({ transformationNotes: next })}
+      />
 
       {isPremium ? (
         <div className="specialist-media-editor__videos">

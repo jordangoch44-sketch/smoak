@@ -41,6 +41,7 @@ import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
   SMOAC_FREE_PLAN_LABEL,
   formatProTrialBadgeLabel,
+  isProPlusPlan,
   showProTrialLastChance,
   showSpecialistFreeTrialPromo,
   showSpecialistPaidUpgradePromo,
@@ -213,6 +214,7 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "pending" || dashboardMode === "rejected";
   const isFreeLive = dashboardMode === "approved-free";
   const onProTrial = Boolean(session.premiumTrialActive);
+  const isProPlus = isProPlusPlan(session.membershipPlan);
   const showLastChance = showProTrialLastChance(session);
 
   const headerSurface: SpecialistDashHeaderSurface = isPendingGate
@@ -262,9 +264,11 @@ export function SpecialistDashboardPageClient() {
     ? formatProTrialBadgeLabel(session.premiumTrialDaysRemaining)
     : isFreeLive
       ? SMOAC_FREE_PLAN_LABEL
-      : isPremium
-        ? "SMOAC Pro"
-        : "Specialist";
+      : isProPlus
+        ? "SMOAC Pro Plus"
+        : isPremium
+          ? "SMOAC Pro"
+          : "Specialist";
 
   /* Pro Trial days badge lives on Profile only — not Overview. */
   const roleLabel =
@@ -424,6 +428,7 @@ export function SpecialistDashboardPageClient() {
                       trainer={trainer!}
                       editable
                       isPremium={isPremium}
+                      isProPlus={isProPlus}
                       isLivePublished={isLivePublished}
                       planBadgeLabel={profilePlanLabel}
                       focusSection={focusSection}
@@ -502,6 +507,8 @@ export function SpecialistDashboardPageClient() {
                   <SpecialistDashboardProfilePreview
                     trainer={trainer!}
                     editable={false}
+                    isPremium={isPremium}
+                    isProPlus={isProPlus}
                   />
                 </div>
               </div>
@@ -621,6 +628,7 @@ export function SpecialistDashboardPageClient() {
                       trainer={trainer!}
                       editable
                       isPremium={isPremium}
+                      isProPlus={isProPlus}
                       isLivePublished={isLivePublished}
                       planBadgeLabel={profilePlanLabel}
                       focusSection={focusSection}

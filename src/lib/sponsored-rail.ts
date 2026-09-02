@@ -58,6 +58,8 @@ export function selectPlacementRailTrainers(
     personalizationCity: string | null;
     userCoords: UserGeoPoint | null;
     limit?: number;
+    /** False on the first paint so SSR and hydrate share a stable order. */
+    shuffle?: boolean;
   }
 ): SponsoredRailResult {
   const limit = options.limit ?? SPONSORED_RAIL_LIMIT;
@@ -65,9 +67,17 @@ export function selectPlacementRailTrainers(
     return { trainers: [], isLocal: false };
   }
 
+  const shuffle = options.shuffle !== false;
   const hasLocation = Boolean(
     options.userCoords || options.personalizationCity?.trim()
   );
+
+  if (!shuffle) {
+    return {
+      trainers: eligible.slice(0, limit),
+      isLocal: false,
+    };
+  }
 
   if (!hasLocation) {
     return {
@@ -115,6 +125,7 @@ export function selectSponsoredRailTrainers(
     personalizationCity: string | null;
     userCoords: UserGeoPoint | null;
     limit?: number;
+    shuffle?: boolean;
   }
 ): SponsoredRailResult {
   return selectPlacementRailTrainers(

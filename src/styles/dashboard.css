@@ -2962,6 +2962,14 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   text-shadow: 0 0 10px rgba(250, 230, 66, 0.25);
 }
 
+.dashboard-boost-list__price-was {
+  margin-right: 0.4rem;
+  text-decoration: line-through;
+  color: rgba(255, 255, 255, 0.38);
+  text-shadow: none;
+  font-weight: 400;
+}
+
 .dashboard-boost-detail {
   display: flex;
   flex-direction: column;

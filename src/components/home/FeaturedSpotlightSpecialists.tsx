@@ -51,6 +51,7 @@ export function FeaturedSpotlightSpecialists({
       selectFeaturedSpotlightTrainers(featuredPool, {
         personalizationCity: hydrated ? personalizationCity : null,
         userCoords: hydrated ? userCoords : null,
+        shuffle: hydrated,
       }),
     [featuredPool, hydrated, personalizationCity, coordsKey, userCoords]
   );

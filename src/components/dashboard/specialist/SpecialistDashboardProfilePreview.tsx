@@ -14,6 +14,7 @@ import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
+import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
 import { Bio } from "@/components/profile/Bio";
 import { Certifications } from "@/components/profile/Certifications";
 import { ProfileContactCta } from "@/components/profile/ProfileContactCta";
@@ -24,7 +25,6 @@ import { ProfileSection } from "@/components/profile/ProfileSection";
 import { ProfileSectionHeader } from "@/components/profile/ProfileSectionHeader";
 import { ProfileServiceArea } from "@/components/profile/ProfileServiceArea";
 import { ProfileSessionExperience } from "@/components/profile/ProfileSessionExperience";
-import { ProfileTransformationSlider } from "@/components/profile/ProfileTransformationSlider";
 import { ProfileTrustGrid } from "@/components/profile/ProfileTrustGrid";
 import { SocialLinks } from "@/components/profile/SocialLinks";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
@@ -109,6 +109,7 @@ interface SpecialistDashboardProfilePreviewProps {
   trainer: Trainer;
   editable?: boolean;
   isPremium?: boolean;
+  isProPlus?: boolean;
   isLivePublished?: boolean;
   planBadgeLabel?: string;
   focusSection?: string | null;
@@ -184,14 +185,6 @@ function nonEmptyStrings(items: string[] | null | undefined): string[] {
   return items.filter(
     (item) => typeof item === "string" && item.trim().length > 0
   );
-}
-
-function hasTransformationPhotos(trainer: Trainer): boolean {
-  if (!Array.isArray(trainer.clientTransformations)) return false;
-  return trainer.clientTransformations.some((photo) => {
-    if (!photo || typeof photo !== "object") return false;
-    return typeof photo.src === "string" && photo.src.trim().length > 0;
-  });
 }
 
 function hasCertifications(trainer: Trainer): boolean {
@@ -425,6 +418,7 @@ export function SpecialistDashboardProfilePreview({
   trainer: trainerProp,
   editable = false,
   isPremium = false,
+  isProPlus = false,
   isLivePublished = false,
   planBadgeLabel,
   focusSection = null,
@@ -440,7 +434,13 @@ export function SpecialistDashboardProfilePreview({
     trainer: managedTrainer,
   } = useManagedSpecialistProfile();
 
-  const trainer = managedTrainer ?? trainerProp;
+  const trainer = {
+    ...(managedTrainer ?? trainerProp),
+    isPremium: isPremium || Boolean((managedTrainer ?? trainerProp).isPremium),
+    membershipPlan: isProPlus
+      ? "platinum"
+      : (managedTrainer ?? trainerProp).membershipPlan,
+  } as Trainer;
   const isLiveListing = application?.profileStatus === "APPROVED";
 
   const [editing, setEditing] = useState<SectionId | null>(null);
@@ -541,7 +541,9 @@ export function SpecialistDashboardProfilePreview({
               slideshowFramesJson={form.slideshowFramesJson}
               videoNotes={form.videoNotes}
               pinnedPhotos={form.pinnedPhotos}
+              transformationNotes={form.transformationNotes}
               isPremium={isPremium}
+              isProPlus={isProPlus}
               specialistId={trainerId}
               onChange={(next) => {
                 setDraft((prev) => (prev ? { ...prev, ...next } : prev));
@@ -590,18 +592,14 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "transformations" ? (
-          <label className="login-field">
-            <span className="login-field__label">
-              Transformation photo URLs (one per line)
-            </span>
-            <textarea
-              className="login-field__input dashboard-edit-textarea profile-edit-input"
-              rows={6}
-              value={form.transformationNotes}
-              onChange={(e) => patch("transformationNotes", e.target.value)}
-              placeholder="https://…"
-            />
-          </label>
+          <SpecialistTransformationsEditor
+            transformationNotes={form.transformationNotes}
+            isProPlus={isProPlus}
+            specialistId={trainerId}
+            onChange={(transformationNotes) =>
+              patch("transformationNotes", transformationNotes)
+            }
+          />
         ) : null}
 
         {editing === "bio" ? (
@@ -1184,7 +1182,6 @@ export function SpecialistDashboardProfilePreview({
   const bestForItems = nonEmptyStrings(trainer.bestFor);
   const coachingStyleItems = nonEmptyStrings(trainer.coachingStyle);
   const hasWhy = whyItems.length > 0;
-  const hasTransformations = hasTransformationPhotos(trainer);
   const hasServiceArea = Boolean(buildServiceAreaDisplay(trainer));
   const hasBestFor = bestForItems.length > 0;
   const hasCoachingStyle = coachingStyleItems.length > 0;
@@ -1244,26 +1241,6 @@ export function SpecialistDashboardProfilePreview({
             </div>
           </ProfileSection>
         ) : null}
-
-        <OwnerOrClientSection
-          canEdit={false}
-          complete={hasTransformations}
-          title="Client transformations"
-          onEdit={() => startEdit("transformations")}
-        >
-          <ProfileSection
-            variant="panel"
-            className="profile-section--media"
-            aria-label="Client transformations"
-          >
-            <ProfileSectionHeader title="Client transformations" />
-            <div className="profile-section-body">
-              <ProfileTransformationSlider
-                photos={trainer.clientTransformations}
-              />
-            </div>
-          </ProfileSection>
-        </OwnerOrClientSection>
 
         <div className="specialist-live-details" aria-label="Full specialist profile">
           <OwnerOrClientSection

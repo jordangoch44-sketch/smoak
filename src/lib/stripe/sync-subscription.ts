@@ -6,6 +6,7 @@ import {
   resolveProductKeyFromStripe,
   type SmoacStripeProductKey,
 } from "@/lib/stripe/products";
+import { syncBoostCouponsForMembership } from "@/lib/stripe/pro-plus-boost";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
@@ -121,6 +122,20 @@ export async function syncSpecialistCustomerBilling(input: {
   ];
   const entitlements = entitlementsFromProducts(productKeys);
 
+  const productKeysBySubscription = new Map<
+    string,
+    readonly SmoacStripeProductKey[]
+  >();
+  for (const sub of refreshed) {
+    productKeysBySubscription.set(sub.id, productsFromSubscription(sub));
+  }
+  await syncBoostCouponsForMembership({
+    stripe,
+    subscriptions: refreshed,
+    productKeysBySubscription,
+    plan: entitlements.plan,
+  });
+
   const primarySub =
     refreshed.find((sub) =>
       productsFromSubscription(sub).some(isMembershipProduct)
@@ -181,6 +196,7 @@ export async function syncSpecialistCustomerBilling(input: {
 
   const profilePatch = {
     is_premium: isPremium,
+    membership_plan: entitlements.plan,
     featured: entitlements.featured,
     sponsored: entitlements.sponsored,
     top_ranked: entitlements.topRanked,

@@ -112,6 +112,8 @@ export interface SpecialistProfileRow {
   top_ranked: boolean;
   category_spotlight: boolean;
   is_premium: boolean;
+  /** free | premium (Pro) | platinum (Pro Plus) */
+  membership_plan?: "free" | "premium" | "platinum" | string;
   verified: boolean;
   rating: number;
   review_count: number;

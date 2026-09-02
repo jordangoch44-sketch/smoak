@@ -48,6 +48,7 @@ export function SponsoredSpecialists({
       selectSponsoredRailTrainers(sponsoredPool, {
         personalizationCity: hydrated ? personalizationCity : null,
         userCoords: hydrated ? userCoords : null,
+        shuffle: hydrated,
       }),
     [sponsoredPool, hydrated, personalizationCity, coordsKey, userCoords]
   );
@@ -73,12 +74,12 @@ export function SponsoredSpecialists({
       <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header">
           <h2 id="home-sponsored-heading" className="home-section__title">
-            {rail.isLocal ? "Sponsored near you" : "Sponsored on SMOAC"}
+            Sponsored Specialists
           </h2>
           <p className="home-section__subtitle">
             {rail.isLocal
-              ? "Paid sponsored placements from specialists boosting in your area."
-              : "Paid sponsored profile boosts. Enter your ZIP to see specialists near you."}
+              ? "Paid profile boosts from specialists in your area."
+              : "Paid profile boosts from specialists on SMOAC."}
           </p>
         </header>
 

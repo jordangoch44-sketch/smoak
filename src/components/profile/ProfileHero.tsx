@@ -4,13 +4,13 @@ import { useCallback, useState, type CSSProperties, type MouseEvent } from "reac
 import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
-import { resolveSpecialistByline } from "@/lib/specialist-display-name";
 import {
   buildTrainerGalleryImages,
   getProfileGalleryMedia,
   resolveGalleryIndexForUrl,
 } from "@/lib/trainer-gallery";
 import { normalizePinnedPhotos } from "@/lib/specialist-media-limits";
+import { isTrainerProPlus } from "@/lib/specialist-premium";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
@@ -20,11 +20,13 @@ import { SessionPrice } from "@/components/ui/SessionPrice";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
+import { PhotosStackIcon } from "@/components/ui/icons";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileHeroBio } from "./ProfileHeroBio";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
+import { ProfileHeroTransformations } from "./ProfileHeroTransformations";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileReviewMeta } from "./ProfileReviewMeta";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
@@ -69,10 +71,22 @@ export function ProfileHero({
     trainer.isPremium === true
       ? normalizePinnedPhotos(trainer.pinnedPhotos, coverImages)
       : [];
+  const transformationPhotos = isTrainerProPlus(trainer)
+    ? (trainer.clientTransformations ?? []).filter(
+        (photo) => typeof photo?.src === "string" && photo.src.trim().length > 0
+      )
+    : [];
+  const transformationMedia = transformationPhotos.map((photo) => ({
+    id: photo.id,
+    type: "image" as const,
+    url: photo.src,
+    alt: photo.alt,
+  }));
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [transformOpen, setTransformOpen] = useState(false);
+  const [transformIndex, setTransformIndex] = useState(0);
   const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
-  const specialistByline = resolveSpecialistByline(trainer);
 
   const openGallery = useCallback(
     (event: MouseEvent<HTMLButtonElement>, startUrl?: string) => {
@@ -126,6 +140,17 @@ export function ProfileHero({
             className="profile-hero__scrim-fade absolute inset-x-0 bottom-0 z-[1] h-[72%]"
             aria-hidden
           />
+
+          {coverImages.length > 1 ? (
+            <button
+              type="button"
+              className="smoac-control profile-hero__more-photos"
+              aria-label="View more photos"
+              onClick={(event) => openGallery(event)}
+            >
+              <PhotosStackIcon className="profile-hero__more-photos-icon" />
+            </button>
+          ) : null}
 
           <div className="profile-hero__identity absolute inset-x-0 bottom-0 z-10">
             <div className="mx-auto max-w-7xl profile-hero__identity-inner px-4 pb-5 sm:px-6 sm:pb-6">
@@ -183,14 +208,9 @@ export function ProfileHero({
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
-            {specialistByline || bio ? (
+            {bio ? (
               <div className="profile-hero__intro">
-                {specialistByline ? (
-                  <p className="profile-hero__specialist-byline">
-                    {specialistByline}
-                  </p>
-                ) : null}
-                {bio ? <ProfileHeroBio bio={bio} /> : null}
+                <ProfileHeroBio bio={bio} />
               </div>
             ) : null}
 
@@ -202,6 +222,7 @@ export function ProfileHero({
                   aria-label="View specialist gallery"
                   onClick={(event) => openGallery(event)}
                 >
+                  <PhotosStackIcon className="profile-hero__view-gallery-icon" />
                   View Gallery
                 </button>
               </div>
@@ -227,6 +248,7 @@ export function ProfileHero({
                   aria-label="View specialist gallery"
                   onClick={(event) => openGallery(event)}
                 >
+                  <PhotosStackIcon className="profile-hero__view-gallery-icon" />
                   View Gallery
                 </button>
               </div>
@@ -251,6 +273,21 @@ export function ProfileHero({
                 ))}
               </div>
             ) : null}
+
+            {transformationPhotos.length > 0 ? (
+              <ProfileHeroTransformations
+                photos={transformationPhotos}
+                onOpen={(event, src) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const index = transformationPhotos.findIndex(
+                    (photo) => photo.src === src
+                  );
+                  setTransformIndex(index >= 0 ? index : 0);
+                  setTransformOpen(true);
+                }}
+              />
+            ) : null}
           </div>
         </div>
       </section>
@@ -261,6 +298,13 @@ export function ProfileHero({
         initialIndex={galleryIndex}
         trainerName={trainer.name}
         onClose={closeGallery}
+      />
+      <ProfileGalleryModal
+        open={transformOpen}
+        media={transformationMedia}
+        initialIndex={transformIndex}
+        trainerName={`${trainer.name} transformations`}
+        onClose={() => setTransformOpen(false)}
       />
 
       {isSpecialistLive ? null : (

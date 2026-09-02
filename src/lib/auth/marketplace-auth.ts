@@ -94,6 +94,33 @@ function greetingFirstName(firstName: string, email: string): string {
   return email.split("@")[0] || "there";
 }
 
+async function resolveSpecialistMembershipPlan(
+  supabase: SupabaseClient,
+  userId: string,
+  isPremium: boolean
+): Promise<"free" | "premium" | "platinum"> {
+  const { data: billing } = await supabase
+    .from("specialist_billing")
+    .select("plan")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (billing?.plan === "platinum" || billing?.plan === "premium") {
+    return billing.plan;
+  }
+  const { data: profile } = await supabase
+    .from("specialist_profiles")
+    .select("membership_plan")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (
+    profile?.membership_plan === "platinum" ||
+    profile?.membership_plan === "premium"
+  ) {
+    return profile.membership_plan;
+  }
+  return isPremium ? "premium" : "free";
+}
+
 export async function buildAuthSessionFromSupabaseUser(
   supabase: SupabaseClient,
   user: User
@@ -155,6 +182,10 @@ export async function buildAuthSessionFromSupabaseUser(
     passwordSetupStatus:
       profile?.password_setup_status?.trim() || undefined,
     isPremium,
+    membershipPlan:
+      authRole === "specialist"
+        ? await resolveSpecialistMembershipPlan(supabase, user.id, isPremium)
+        : undefined,
     premiumIsPaid,
     premiumTrialUsed,
     premiumTrialEndsAt,

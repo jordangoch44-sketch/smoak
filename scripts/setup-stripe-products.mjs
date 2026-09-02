@@ -31,8 +31,8 @@ const CATALOG = [
   },
   {
     key: "platinum",
-    name: "SMOAC Platinum",
-    description: "Pro analytics plus featured marketplace placement.",
+    name: "SMOAC Pro Plus",
+    description: "Everything in Pro, plus featured marketplace placement.",
     unitAmount: 1999,
     env: "STRIPE_PRICE_PLATINUM",
     kind: "plan",
@@ -124,6 +124,13 @@ for (const item of CATALOG) {
     });
     console.log(`Created product ${item.key}: ${product.id}`);
   } else {
+    if (product.name !== item.name || product.description !== item.description) {
+      product = await stripe.products.update(product.id, {
+        name: item.name,
+        description: item.description,
+      });
+      console.log(`  Updated name → ${item.name}`);
+    }
     console.log(`Reusing product ${item.key}: ${product.id}`);
   }
 

@@ -30,10 +30,10 @@ export const SPECIALIST_TIER_CATEGORIES: readonly SpecialistTierCategoryMeta[] =
   },
   {
     id: "platinum",
-    label: "Platinum",
-    tierLabel: "Platinum",
+    label: "Pro Plus",
+    tierLabel: "Pro Plus",
     priceLabel: "$19.99/month",
-    description: "Platinum tier specialists",
+    description: "Pro Plus specialists",
   },
   {
     id: "addons",

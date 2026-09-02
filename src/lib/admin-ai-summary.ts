@@ -356,8 +356,8 @@ export function generateAiExecutiveBriefing(
       id: "action-monetization",
       priority: "medium",
       priorityLabel: "Revenue Unlock",
-      title: "Activate Pro & Platinum Tiers",
-      description: `Invite top-performing specialists to upgrade to Pro ($299/mo) or Platinum ($599/mo) for verified badges and priority ranking.`,
+      title: "Activate Pro & Pro Plus",
+      description: `Invite top-performing specialists to upgrade to Pro ($9.99/mo) or Pro Plus ($19.99/mo) for verified badges and ranking intelligence.`,
       category: "monetization",
     });
   } else if (inquiryCompletion < 35 && inquiryCompletion > 0) {

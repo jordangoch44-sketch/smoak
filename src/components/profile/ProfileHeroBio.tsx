@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+
+const BIO_CLAMP_LINES = 3;
+const BIO_OVERFLOW_SLACK_PX = 2;
 
 interface ProfileHeroBioProps {
   bio: string;
@@ -11,44 +14,54 @@ interface ProfileHeroBioProps {
 export function ProfileHeroBio({ bio }: ProfileHeroBioProps) {
   const text = bio.trim();
   const textId = useId();
-  const textRef = useRef<HTMLParagraphElement>(null);
+  const measureRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
   const [needsToggle, setNeedsToggle] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setExpanded(false);
   }, [text]);
 
-  useEffect(() => {
-    const node = textRef.current;
+  useLayoutEffect(() => {
+    const node = measureRef.current;
     if (!node) return;
 
     function measure() {
-      if (!textRef.current) return;
-      if (expanded) {
-        /* Keep toggle visible once we know the bio was long enough to clamp. */
-        return;
-      }
-      const el = textRef.current;
-      setNeedsToggle(el.scrollHeight > el.clientHeight + 2);
+      const el = measureRef.current;
+      if (!el) return;
+      const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight);
+      const maxHeight =
+        (Number.isFinite(lineHeight) && lineHeight > 0 ? lineHeight : 25) *
+        BIO_CLAMP_LINES;
+      setNeedsToggle(el.scrollHeight > maxHeight + BIO_OVERFLOW_SLACK_PX);
     }
 
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(node);
+    if (node.parentElement) ro.observe(node.parentElement);
     return () => ro.disconnect();
-  }, [text, expanded]);
+  }, [text]);
 
   if (!text) return null;
+
+  const clamp = !expanded && needsToggle;
 
   return (
     <div className="profile-hero__bio">
       <p
+        ref={measureRef}
+        className="profile-hero-bio__text profile-hero-bio__measure"
+        aria-hidden
+      >
+        {text}
+      </p>
+      <p
         id={textId}
-        ref={textRef}
         className={cn(
           "profile-hero-bio__text",
-          !expanded && "profile-hero-bio__text--clamped"
+          clamp && "profile-hero-bio__text--clamped",
+          clamp && "profile-hero-bio__text--faded"
         )}
       >
         {text}

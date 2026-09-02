@@ -227,6 +227,31 @@ export function LayoutGridIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+/** Stacked photos — profile hero “more photos” / View Gallery */
+export function PhotosStackIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 7.5h11.25A1.75 1.75 0 0120.5 9.25v9A1.75 1.75 0 0118.75 20H7.5A1.75 1.75 0 015.75 18.25v-9A1.75 1.75 0 017.5 7.5z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5.75 16.5H4.5A1.75 1.75 0 012.75 14.75v-9A1.75 1.75 0 014.5 4h11.25A1.75 1.75 0 0117.5 5.75V7.5"
+      />
+    </svg>
+  );
+}
+
 /** Travel radius — profile service area */
 export function TravelRangeIcon({ className = "h-[18px] w-[18px]" }: IconProps) {
   return (

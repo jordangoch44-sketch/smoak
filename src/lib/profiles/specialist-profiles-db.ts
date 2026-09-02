@@ -20,6 +20,7 @@ import { parseGallerySlideshowFrames } from "@/lib/media/slideshow-frame";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
+import { parseMembershipPlan } from "@/lib/specialist-premium";
 
 export type SpecialistProfilesMutationResult =
   | { ok: true }
@@ -266,6 +267,7 @@ function trainerFromProfileData(
     featured: Boolean(profileData.featured),
     topRanked: Boolean(profileData.topRanked),
     isPremium: Boolean(profileData.isPremium),
+    membershipPlan: parseMembershipPlan(profileData.membershipPlan),
     profileStyle:
       profileData.profileStyle &&
       typeof profileData.profileStyle === "object"
@@ -399,6 +401,9 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
         typeof row.is_premium === "boolean"
           ? row.is_premium
           : Boolean(trainer.isPremium),
+      membershipPlan: parseMembershipPlan(
+        row.membership_plan ?? trainer.membershipPlan
+      ),
       verified: trainer.verified ?? row.verified,
       rating: trainer.rating || Number(row.rating) || 0,
       reviewCount: trainer.reviewCount || row.review_count || 0,
@@ -443,6 +448,7 @@ export function specialistProfileToRow(input: {
     top_ranked: Boolean(trainer.topRanked),
     category_spotlight: Boolean(trainer.categorySpotlight),
     is_premium: Boolean(trainer.isPremium),
+    membership_plan: parseMembershipPlan(trainer.membershipPlan),
     verified: Boolean(trainer.verified),
     rating: trainer.rating ?? 0,
     review_count: trainer.reviewCount ?? 0,
