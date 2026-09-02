@@ -61,14 +61,16 @@ body:has(.home-page--discovery) .site-page-backdrop__vignette {
 
 .home-page--discovery .rotating-headline__word,
 .home-page--discovery .rotating-headline__static {
-  background: none;
-  -webkit-text-fill-color: #fff;
-  color: #fff;
+  background: var(--smoac-color);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
   filter: none;
 }
 
 .home-page--discovery .rotating-headline__cursor {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--smoac-color);
   box-shadow: none;
 }
 
@@ -78,7 +80,7 @@ body:has(.home-page--discovery) .explore-search-overlay__backdrop {
 
 body:has(.home-page--discovery) .explore-search-overlay__field,
 body:has(.home-page--discovery) .explore-search-overlay__field:focus-within {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: none;
   background: #15151e;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -87,15 +89,17 @@ body:has(.home-page--discovery) .explore-search-overlay__field:focus-within {
     0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
-body:has(.home-page--discovery) .explore-search-overlay__field:focus-within {
-  border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
-}
-
 body:has(.home-page--discovery) .explore-search-overlay__field::before,
 body:has(.home-page--discovery) .explore-search-overlay__field:focus-within::before {
-  content: none !important;
-  display: none !important;
+  content: "";
+  display: block;
+  padding: 1px;
+  background: var(--smoac-color);
+}
+
+body:has(.home-page--discovery) .explore-search-overlay__field:focus-within::before {
+  padding: 1.25px;
+  background: var(--smoac-color-bright);
 }
 
 body:has(.home-page--discovery) .explore-search-overlay__location-btn {
@@ -126,7 +130,7 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
 }
 
 .home-page--discovery .home-hero-search__field {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: none;
   background: #15151e;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -136,13 +140,21 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
 }
 
 .home-page--discovery .home-hero-search__field::before {
-  content: none !important;
-  display: none !important;
+  content: "";
+  display: block;
+  padding: 1px;
+  background: var(--smoac-color);
 }
 
 .home-page--discovery .home-hero-search__field:focus-within {
-  border-color: rgba(139, 92, 246, 0.45);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.home-page--discovery .home-hero-search__field:focus-within::before {
+  padding: 1.25px;
+  background: var(--smoac-color-bright);
 }
 
 @media (min-width: 1024px) {
