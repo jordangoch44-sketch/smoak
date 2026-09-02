@@ -230,6 +230,37 @@
   z-index: 1;
 }
 
+/* Logged-out Favorites — charcoal canvas (matches Marketplace + Profile) */
+.saved-page-route:has(.saved-page-auth-stage) {
+  background-color: #080b10;
+}
+
+.saved-page-route:has(.saved-page-auth-stage)::before,
+.saved-page-route:has(.saved-page-auth-stage) .saved-page-route__cosmic {
+  display: none;
+}
+
+body:has(.saved-page-auth-stage) .site-page-backdrop {
+  background-color: #080b10;
+}
+
+body:has(.saved-page-auth-stage) .site-page-backdrop__base,
+body:has(.saved-page-auth-stage) .site-page-backdrop__stars,
+body:has(.saved-page-auth-stage) .site-page-backdrop__mesh,
+body:has(.saved-page-auth-stage) .site-page-backdrop__vignette {
+  opacity: 0;
+}
+
+body:has(.saved-page-auth-stage) .site-footer {
+  background: #080b10;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body:has(.saved-page-auth-stage) .site-footer__glow {
+  display: none;
+}
+
 .saved-page-route__redirect {
   position: relative;
   z-index: 1;

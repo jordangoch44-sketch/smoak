@@ -8,6 +8,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #080b10;
+}
+
+.profile-hub__canvas,
+.profile-hub__cosmic {
+  display: none;
+}
+
+body:has(.profile-hub) .site-page-backdrop {
+  background-color: #080b10;
+}
+
+body:has(.profile-hub) .site-page-backdrop__base,
+body:has(.profile-hub) .site-page-backdrop__stars,
+body:has(.profile-hub) .site-page-backdrop__mesh,
+body:has(.profile-hub) .site-page-backdrop__vignette {
+  opacity: 0;
+}
+
+body:has(.profile-hub) .site-footer {
+  background: #080b10;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body:has(.profile-hub) .site-footer__glow {
+  display: none;
 }
 
 .profile-hub--loading {
