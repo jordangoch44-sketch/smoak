@@ -24,7 +24,7 @@ export const metadata: Metadata = {
  * Sync shell — discovery rails hydrate client-side; SSR specialist links aid crawl.
  */
 export default async function HomePage() {
-  const { trainers } = await loadPublicCatalogForServer();
+  const { trainers, mode } = await loadPublicCatalogForServer();
 
   return (
     <div className="home-page home-page--discovery">
@@ -39,7 +39,7 @@ export default async function HomePage() {
       />
       <div className="home-page__sky" aria-hidden />
       <Hero />
-      <Categories />
+      <Categories initialCatalog={trainers} catalogMode={mode} />
       <HomeDiscoveryClient />
       <HomeSeoSpecialistLinks trainers={trainers} />
       <HomeEssenceSlideshow />

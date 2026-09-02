@@ -10,12 +10,14 @@ import {
   RunningShoeIcon,
   StrengthArmIcon,
 } from "@/components/ui/icons";
+import { HomeRankingsCta } from "./HomeRankingsCta";
 import {
   HOME_BROWSE_CATEGORIES,
-  HOME_RANKINGS_HREF,
   HOME_VIEW_ALL_SPECIALISTS_HREF,
   type HomeBrowseCategoryIcon,
 } from "@/lib/home-browse-categories";
+import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
+import type { Trainer } from "@/types/trainer";
 
 const CATEGORY_ICONS: Record<
   HomeBrowseCategoryIcon,
@@ -46,7 +48,13 @@ function CategoryChevronIcon({ className = "h-4 w-4" }: { className?: string }) 
   );
 }
 
-export function Categories() {
+export function Categories({
+  initialCatalog,
+  catalogMode = "live",
+}: {
+  initialCatalog?: Trainer[];
+  catalogMode?: PublicCatalogMode;
+}) {
   return (
     <section
       id="categories"
@@ -89,13 +97,10 @@ export function Categories() {
             View all specialists
             <span aria-hidden>→</span>
           </TapLink>
-          <TapLink
-            href={HOME_RANKINGS_HREF}
-            className="home-specialty__rankings"
-          >
-            Top rankings in your city
-            <span aria-hidden>→</span>
-          </TapLink>
+          <HomeRankingsCta
+            initialCatalog={initialCatalog}
+            catalogMode={catalogMode}
+          />
         </div>
       </div>
     </section>

@@ -4,6 +4,7 @@
  */
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { toRankingMetroCity } from "@/lib/ranking-metro";
 import type { Trainer } from "@/types";
 
 export interface SmoacRankedSpecialist {
@@ -58,7 +59,10 @@ const PROFESSION_FILTER_MATCHERS: Record<string, (profession: string) => boolean
 
 function trainerMatchesCity(trainer: Trainer, cityFilter: string): boolean {
   if (!cityFilter.trim()) return true;
-  return normalize(trainer.city) === normalize(cityFilter);
+  const wanted =
+    toRankingMetroCity(cityFilter) ?? cityFilter.trim();
+  const got = toRankingMetroCity(trainer.city) ?? trainer.city.trim();
+  return normalize(got) === normalize(wanted);
 }
 
 function trainerMatchesProfession(
@@ -164,16 +168,17 @@ export function getLiveTrainerCityRanking(
   const city = trainer.city.trim();
   if (!city) return null;
 
+  const metro = toRankingMetroCity(city) ?? city;
   const board = buildSmoacRankingsBoard(catalog, aggregates, {
-    cityFilter: city,
+    cityFilter: metro,
   });
   const row = board.find((entry) => entry.trainer.id === trainer.id);
   if (!row) return null;
 
   return {
     rank: row.rank,
-    city,
-    listingTitle: `Top rated in ${city}`,
+    city: metro,
+    listingTitle: `Top rated in ${metro}`,
   };
 }
 

@@ -1159,22 +1159,94 @@
 }
 
 .home-specialty__rankings {
-  display: inline-flex;
-  min-height: 2.9rem;
+  display: flex;
+  width: 100%;
+  min-height: 3.15rem;
   align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0 1.2rem;
+  justify-content: space-between;
+  gap: 0.7rem;
+  padding: 0.3rem 0.55rem 0.3rem 0.9rem;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: linear-gradient(180deg, #15151e 0%, #121218 100%);
   color: #fff;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   text-decoration: none;
   touch-action: manipulation;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.home-specialty__rankings-copy {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.home-specialty__rankings-pin {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.home-specialty__rankings-cluster {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.home-specialty__rankings-face {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  width: 1.7rem;
+  height: 1.7rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-left: -0.42rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  border: 1.5px solid #080b10;
+  background: #121218;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.home-specialty__rankings-face:first-child {
+  margin-left: 0;
+  z-index: 4;
+}
+
+.home-specialty__rankings-face[data-rank="2"] {
+  z-index: 3;
+}
+
+.home-specialty__rankings-face[data-rank="3"] {
+  z-index: 2;
+}
+
+.home-specialty__rankings-face--more {
+  z-index: 1;
+  background: #1a1d26;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.home-specialty__rankings-face-img {
+  object-fit: cover;
+  object-position: 50% 18%;
+}
+
+.home-specialty__rankings-face-num {
+  transform: translateY(0.5px);
 }
 
 .home-specialty__rankings:hover {

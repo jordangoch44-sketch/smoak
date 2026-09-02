@@ -2,22 +2,29 @@
 
 import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
-import { RANKINGS_PROFESSION_OPTIONS } from "@/data/city-rankings";
+import {
+  RANKINGS_CITY_OPTIONS,
+  RANKINGS_PROFESSION_OPTIONS,
+} from "@/data/city-rankings";
 import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
 import { HomePortraitSpecialistCard } from "@/components/home/HomePortraitSpecialistCard";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
+import { useHydrated } from "@/hooks/useHydrated";
+import {
+  useMarketplacePersonalizationCity,
+  useMarketplaceUserCoordinates,
+  useMarketplaceUserCoordinatesKey,
+} from "@/hooks/useMarketplaceGeo";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { selectTopRankedBoostForRankings } from "@/lib/paid-placements";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
+import { resolveRankingMetro } from "@/lib/ranking-metro";
 import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
-import {
-  buildSmoacRankingsBoard,
-  listRankingCitiesFromCatalog,
-} from "@/lib/smoac-rankings";
+import { buildSmoacRankingsBoard } from "@/lib/smoac-rankings";
 import type { Trainer } from "@/types/trainer";
 import { RankingsFilters } from "./RankingsFilters";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
@@ -33,6 +40,10 @@ export function RankingsPageClient({
   catalogMode = "live",
   initialAggregates = [],
 }: RankingsPageClientProps) {
+  const hydrated = useHydrated();
+  const placeName = useMarketplacePersonalizationCity();
+  const userCoords = useMarketplaceUserCoordinates();
+  const coordsKey = useMarketplaceUserCoordinatesKey();
   const [cityTouched, setCityTouched] = useState(false);
   const [cityOverride, setCityOverride] = useState("");
   const [profession, setProfession] = useState("");
@@ -57,15 +68,18 @@ export function RankingsPageClient({
     [initialAggregates]
   );
 
-  const cityOptions = useMemo(() => {
-    const fromCatalog = listRankingCitiesFromCatalog(trainers);
-    return [
-      { value: "", label: "All Cities" },
-      ...fromCatalog.map((city) => ({ value: city, label: city })),
-    ];
-  }, [trainers]);
+  const metroFromLocation = useMemo(() => {
+    if (!hydrated) return null;
+    return resolveRankingMetro({
+      placeName,
+      latitude: userCoords?.latitude ?? null,
+      longitude: userCoords?.longitude ?? null,
+    });
+  }, [hydrated, placeName, coordsKey, userCoords]);
 
-  const city = cityTouched ? cityOverride : "";
+  const city = cityTouched ? cityOverride : (metroFromLocation ?? "");
+  const metroLabel =
+    cityTouched && cityOverride ? cityOverride : metroFromLocation;
 
   const rows = useMemo(
     () =>
@@ -111,6 +125,9 @@ export function RankingsPageClient({
         <header className="rankings-page__header">
           <p className="rankings-page__eyebrow">SMOAC</p>
           <h1 className="rankings-page__title">City Rankings</h1>
+          {metroLabel ? (
+            <p className="rankings-page__metro">{metroLabel}</p>
+          ) : null}
           <p className="rankings-page__subtitle">
             Ranked by SMOAC client reviews — rating and review count. Paid
             ranking boosts appear in a labeled strip and never change organic
@@ -121,7 +138,7 @@ export function RankingsPageClient({
         <RankingsFilters
           city={city}
           profession={profession}
-          cityOptions={cityOptions}
+          cityOptions={[...RANKINGS_CITY_OPTIONS]}
           professionOptions={[...RANKINGS_PROFESSION_OPTIONS]}
           onCityChange={(value) => {
             setCityTouched(true);
