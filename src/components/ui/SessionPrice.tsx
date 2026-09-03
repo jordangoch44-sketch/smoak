@@ -8,7 +8,7 @@ interface SessionPriceProps {
   className?: string;
 }
 
-/** Listing session rate — "From $120/session" with emphasized dollar amount */
+/** Listing session rate — "≈ $120 / session" with a soft-green dollar amount */
 export function SessionPrice({
   amount,
   variant = "grid",
@@ -18,9 +18,9 @@ export function SessionPrice({
     <span
       className={cn("session-price", `session-price--${variant}`, className)}
     >
-      <span className="session-price__prefix">From </span>
+      <span className="session-price__prefix">≈ </span>
       <span className="session-price__amount">{formatPrice(amount)}</span>
-      <span className="session-price__suffix">/session</span>
+      <span className="session-price__suffix"> / session</span>
     </span>
   );
 }

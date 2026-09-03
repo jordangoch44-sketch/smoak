@@ -10,7 +10,7 @@ export function formatPrice(amount: number): string {
 
 /** Plain-text session rate for labels, aria, and non-component contexts */
 export function formatSessionPricePlain(amount: number): string {
-  return `From ${formatPrice(amount)}/session`;
+  return `≈ ${formatPrice(amount)} / session`;
 }
 
 /** Trainer aggregate rating — always one decimal (e.g. 5 → 5.0) */

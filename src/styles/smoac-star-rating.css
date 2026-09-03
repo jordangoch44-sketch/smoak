@@ -102,11 +102,13 @@
 .home-sponsored-card__meta .smoac-star-rating,
 .top50-card__footer .smoac-star-rating {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: 100%;
 }
 
-.home-portrait-card__meta > span:last-child,
+.home-portrait-card__meta .session-price,
 .home-sponsored-card__price,
 .top50-card__price {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
 }

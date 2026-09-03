@@ -5,7 +5,7 @@ import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel
 import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { TrainerCardSmoacRating } from "@/components/trainers/TrainerCardSmoacRating";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
-import { formatTrainerPriceLabel } from "@/lib/home-discovery";
+import { SessionPrice } from "@/components/ui/SessionPrice";
 import { cn } from "@/lib/utils";
 
 export type TrainerCardMetaLayout = "stack" | "inline";
@@ -13,7 +13,7 @@ export type TrainerCardMetaLayout = "stack" | "inline";
 /**
  * Listing-card copy stack:
  * Name → category → location → distance → reviews → price
- * `inline` keeps reviews · price on one bottom row (portrait / sponsored rails).
+ * `inline` stacks reviews above price on portrait rails so they never overlap.
  */
 export function TrainerCardDetails({
   trainer,
@@ -51,9 +51,11 @@ export function TrainerCardDetails({
     />
   );
   const price = (
-    <span className={cn("trainer-card-details__price", priceClassName)}>
-      {formatTrainerPriceLabel(trainer.pricePerSession)}
-    </span>
+    <SessionPrice
+      amount={trainer.pricePerSession}
+      variant={metaLayout === "inline" ? "compact" : "grid"}
+      className={cn("trainer-card-details__price", priceClassName)}
+    />
   );
 
   return (

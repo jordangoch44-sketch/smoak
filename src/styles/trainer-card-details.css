@@ -44,7 +44,6 @@
   font-size: 0.75rem;
   line-height: 1.2;
   color: rgba(255, 255, 255, 0.55);
-  white-space: nowrap;
 }
 
 /* Search / list cards — reviews then price, evenly spaced under location */
@@ -52,27 +51,30 @@
   justify-content: flex-start;
 }
 
-/* Portrait / sponsored — reviews · price pinned to bottom as one row */
+/* Portrait rails — reviews above price so they never collide on narrow cards */
 .trainer-card-details--inline {
   flex: 1 1 auto;
 }
 
 .trainer-card-details__footer {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.18rem;
   margin-top: auto;
-  padding-top: 0.45rem;
+  padding-top: 0.35rem;
   min-width: 0;
 }
 
 .trainer-card-details__footer .trainer-card-details__rating {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
+  max-width: 100%;
 }
 
 .trainer-card-details__footer .trainer-card-details__price {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  max-width: 100%;
 }
 
 /* Desktop grid card */

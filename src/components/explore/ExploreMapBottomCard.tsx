@@ -25,9 +25,8 @@ import {
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
+import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
-import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
-import { getTrainerDistanceMiles } from "@/lib/trainer-proximity-sort";
 
 export interface ExploreMapBottomCardProps {
   cluster: ExploreMapCluster | null;
@@ -43,7 +42,6 @@ export function ExploreMapBottomCard({
   className,
 }: ExploreMapBottomCardProps) {
   const router = useRouter();
-  const userCoords = useExplicitUserCoordinates();
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevClusterId, setPrevClusterId] = useState(cluster?.id);
   if (cluster?.id !== prevClusterId) {
@@ -359,17 +357,6 @@ export function ExploreMapBottomCard({
           const verified = isTrainerVerified(trainer);
           const specialties = (trainer.specialty || []).slice(0, 3);
           const ratingValue = trainer.rating;
-          // Calculate distance from explicit user location if available
-          let distanceStr: string | null = null;
-          if (userCoords) {
-            const miles = getTrainerDistanceMiles(trainer, userCoords);
-            if (miles !== null) {
-              distanceStr =
-                miles < 20
-                  ? `${miles.toFixed(1)} mi away`
-                  : `${Math.round(miles)} mi away`;
-            }
-          }
 
           // Display format:
           // 1. Title = trainer.name ("Lili Carrillo")
@@ -465,15 +452,20 @@ export function ExploreMapBottomCard({
                       ★ {formatTrainerRating(ratingValue)}
                     </span>
                   ) : null}
-                  {ratingValue && (locationClean || distanceStr) ? (
+                  {ratingValue && locationClean ? (
                     <span className="explore-bottom-card__meta-dot" aria-hidden>
                       ·
                     </span>
                   ) : null}
-                  <span className="explore-bottom-card__location">
-                    {locationClean}
-                    {distanceStr ? ` · ${distanceStr}` : ""}
-                  </span>
+                  {locationClean ? (
+                    <span className="explore-bottom-card__location">
+                      {locationClean}
+                    </span>
+                  ) : null}
+                  <TrainerDistanceLabel
+                    trainer={trainer}
+                    className="explore-bottom-card__distance"
+                  />
                 </div>
 
                 {/* Price tag */}

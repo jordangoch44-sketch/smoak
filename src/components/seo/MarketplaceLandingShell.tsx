@@ -140,7 +140,7 @@ export function MarketplaceLandingShell({
                           ) : null}
                           {trainer.pricePerSession > 0 ? (
                             <p className="seo-landing-card__price">
-                              From ${trainer.pricePerSession}/session
+                              ≈ ${trainer.pricePerSession} / session
                             </p>
                           ) : null}
                         </div>
