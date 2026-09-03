@@ -30,6 +30,10 @@ import { ProfilePrimaryHighlights } from "./ProfilePrimaryHighlights";
 import { ProfileTrainerSpecs } from "./ProfileTrainerSpecs";
 import { ProfileDiscoveryRails } from "./ProfileDiscoveryRails";
 import { SmoacReviewsSection } from "./SmoacReviewsSection";
+import {
+  ProfileSheetTabs,
+  type ProfileSheetTabId,
+} from "./ProfileSheetTabs";
 import { TrainerProfileSheet } from "./TrainerProfileSheet";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +63,7 @@ export function TrainerProfilePageClient({
   const trainer = liveTrainer ?? initialTrainer;
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
   const [cityRanking, setCityRanking] = useState<TrainerCityRanking | null>(
     initialCityRanking
   );
@@ -74,10 +79,15 @@ export function TrainerProfilePageClient({
   } = useSpecialistReviews(trainerId);
 
   useEffect(() => {
+    setSheetTab("details");
+  }, [trainerId]);
+
+  useEffect(() => {
     if (!hydrated || !canLeaveReview) return;
     try {
       const params = new URLSearchParams(window.location.search);
       if (!isLeaveReviewQuery(params.get("review"))) return;
+      setSheetTab("reviews");
       setReviewModalOpen(true);
       params.delete("review");
       const next = `${window.location.pathname}${
@@ -174,41 +184,53 @@ export function TrainerProfilePageClient({
         cityRanking={cityRanking}
         canLeaveReview={canLeaveReview}
         hasOwnReview={Boolean(ownReview)}
-        onLeaveReview={() => setReviewModalOpen(true)}
+        onLeaveReview={() => {
+          setSheetTab("reviews");
+          setReviewModalOpen(true);
+        }}
       />
 
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-3 sm:px-6 sm:pb-20 sm:pt-5 lg:py-12">
         <div className="profile-content profile-content--streamlined min-w-0 max-w-3xl">
-          <ProfileContactCta
-            specialistName={trainer.name}
-            onContact={() => {
-              recordSpecialistEngagement({
-                event: "contact_click",
-                specialistId: trainer.id,
-                surface: "profile",
-                oncePerSession: true,
-              });
-              setInquiryOpen(true);
-            }}
+          <ProfileSheetTabs
+            value={sheetTab}
+            onChange={setSheetTab}
+            details={
+              <>
+                <ProfilePrimaryHighlights trainer={trainer} />
+                <ProfileTrainerSpecs trainer={trainer} />
+              </>
+            }
+            reviews={
+              <SmoacReviewsSection
+                specialistId={trainer.id}
+                specialistName={trainer.name}
+                aggregate={aggregate}
+                reviews={smoacReviews}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                onLoadMore={() => void loadMore()}
+                reviewModalOpen={reviewModalOpen}
+                onReviewModalOpenChange={setReviewModalOpen}
+                onSubmitted={applySubmittedReview}
+                canLeaveReview={canLeaveReview}
+              />
+            }
+            inquire={
+              <ProfileContactCta
+                specialistName={trainer.name}
+                onContact={() => {
+                  recordSpecialistEngagement({
+                    event: "contact_click",
+                    specialistId: trainer.id,
+                    surface: "profile",
+                    oncePerSession: true,
+                  });
+                  setInquiryOpen(true);
+                }}
+              />
+            }
           />
-
-          <ProfilePrimaryHighlights trainer={trainer} />
-
-          <SmoacReviewsSection
-            specialistId={trainer.id}
-            specialistName={trainer.name}
-            aggregate={aggregate}
-            reviews={smoacReviews}
-            hasMore={hasMore}
-            loadingMore={loadingMore}
-            onLoadMore={() => void loadMore()}
-            reviewModalOpen={reviewModalOpen}
-            onReviewModalOpenChange={setReviewModalOpen}
-            onSubmitted={applySubmittedReview}
-            canLeaveReview={canLeaveReview}
-          />
-
-          <ProfileTrainerSpecs trainer={trainer} />
 
           <ProfileDiscoveryRails trainer={trainer} />
         </div>

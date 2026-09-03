@@ -6,7 +6,7 @@ interface BioProps {
   trainer: Trainer;
 }
 
-/** Specialties under View full profile — bio lives in the hero with expand. */
+/** Specialties in the Details tab — bio lives in the hero with expand. */
 export function Bio({ trainer }: BioProps) {
   const specialties = Array.isArray(trainer.specialty)
     ? trainer.specialty.filter(

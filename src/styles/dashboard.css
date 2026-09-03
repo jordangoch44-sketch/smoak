@@ -5757,6 +5757,41 @@ body.specialist-full-editor-open .mobile-bottom-nav {
 }
 
 /* Live marketplace preview — full-bleed like the public profile (no card shell) */
+.specialist-live-mode {
+  display: flex;
+  gap: 0.28rem;
+  width: calc(100% - 2rem);
+  max-width: 22rem;
+  margin: 0.75rem auto 0.35rem;
+  padding: 0.28rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.specialist-live-mode__btn {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.4rem;
+  padding: 0.4rem 0.75rem;
+  border: none;
+  border-radius: 9999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8125rem;
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.specialist-live-mode__btn--active {
+  color: #fff;
+  background: rgba(var(--aurora-lavender-rgb), 0.2);
+  box-shadow: inset 0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.38);
+}
+
 .specialist-live-marketplace {
   display: flex;
   flex-direction: column;

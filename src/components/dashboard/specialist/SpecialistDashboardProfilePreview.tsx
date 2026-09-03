@@ -25,11 +25,17 @@ import { ProfileSection } from "@/components/profile/ProfileSection";
 import { ProfileSectionHeader } from "@/components/profile/ProfileSectionHeader";
 import { ProfileServiceArea } from "@/components/profile/ProfileServiceArea";
 import { ProfileSessionExperience } from "@/components/profile/ProfileSessionExperience";
+import {
+  ProfileSheetTabs,
+  type ProfileSheetTabId,
+} from "@/components/profile/ProfileSheetTabs";
 import { ProfileTrustGrid } from "@/components/profile/ProfileTrustGrid";
 import { SocialLinks } from "@/components/profile/SocialLinks";
+import { SmoacReviewsSection } from "@/components/profile/SmoacReviewsSection";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
+import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
 import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
 import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
@@ -410,6 +416,43 @@ function LiveEditSheet({
   );
 }
 
+function LivePreviewModeToggle({
+  value,
+  onChange,
+}: {
+  value: "edit" | "live";
+  onChange: (value: "edit" | "live") => void;
+}) {
+  return (
+    <div className="specialist-live-mode" role="tablist" aria-label="Profile mode">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={value === "edit"}
+        className={cn(
+          "smoac-control specialist-live-mode__btn",
+          value === "edit" && "specialist-live-mode__btn--active"
+        )}
+        onClick={() => onChange("edit")}
+      >
+        Edit
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={value === "live"}
+        className={cn(
+          "smoac-control specialist-live-mode__btn",
+          value === "live" && "specialist-live-mode__btn--active"
+        )}
+        onClick={() => onChange("live")}
+      >
+        Live
+      </button>
+    </div>
+  );
+}
+
 /**
  * Edit profile tab — Instagram-style list for owners; live preview for
  * read-only / pending views. Saves use the same managed profile path.
@@ -447,6 +490,17 @@ export function SpecialistDashboardProfilePreview({
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
+  const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"edit" | "live">("edit");
+  const {
+    aggregate,
+    reviews: smoacReviews,
+    hasMore,
+    loadingMore,
+    loadMore,
+    applySubmittedReview,
+  } = useSpecialistReviews(trainer.id);
 
   const canEdit = editable && Boolean(formDefaults && trainerId);
 
@@ -1156,9 +1210,10 @@ export function SpecialistDashboardProfilePreview({
     ) : null;
 
   /* Owner edit tab — Instagram-style list (does not change public profile layout). */
-  if (canEdit && formDefaults) {
+  if (canEdit && formDefaults && previewMode === "edit") {
     return (
       <div id={LIVE_PROFILE_ANCHOR_ID} className="ig-profile-edit-wrap">
+        <LivePreviewModeToggle value={previewMode} onChange={setPreviewMode} />
         <SpecialistIgStyleProfileEditor
           trainer={trainer}
           formDefaults={formDefaults}
@@ -1200,6 +1255,9 @@ export function SpecialistDashboardProfilePreview({
       data-profile-accent={profileStyle.accent}
       aria-label="Live marketplace profile"
     >
+      {canEdit ? (
+        <LivePreviewModeToggle value={previewMode} onChange={setPreviewMode} />
+      ) : null}
       <LiveEditZone
         label="Photos & identity"
         canEdit={canEdit}
@@ -1216,108 +1274,133 @@ export function SpecialistDashboardProfilePreview({
       </LiveEditZone>
 
       <div className="specialist-live-marketplace__stream profile-content profile-content--streamlined">
-        <div className="specialist-live-contact-preview" data-live-edit-ignore>
-          <ProfileContactCta
-            specialistName={trainer.name}
-            onContact={() => {
-              if (!canEdit) return;
-              showToast({
-                type: "info",
-                message: "Clients use this button to inquire — it isn’t editable.",
-              });
-            }}
-          />
-        </div>
+        <ProfileSheetTabs
+          value={sheetTab}
+          onChange={setSheetTab}
+          details={
+            <>
+              {hasWhy ? (
+                <ProfileSection
+                  variant="panel"
+                  className="profile-section--featured"
+                  aria-label="Why clients choose me"
+                >
+                  <ProfileSectionHeader title="Why clients choose me" />
+                  <div className="profile-section-body">
+                    <ProfileTrustGrid items={whyItems} />
+                  </div>
+                </ProfileSection>
+              ) : null}
 
-        {hasWhy ? (
-          <ProfileSection
-            variant="panel"
-            className="profile-section--featured"
-            aria-label="Why clients choose me"
-          >
-            <ProfileSectionHeader title="Why clients choose me" />
-            <div className="profile-section-body">
-              <ProfileTrustGrid items={whyItems} />
+              <div className="specialist-live-details" aria-label="Full specialist profile">
+                <OwnerOrClientSection
+                  canEdit={false}
+                  complete={hasServiceArea}
+                  title="Service area"
+                  onEdit={() => startEdit("service-area")}
+                >
+                  <ProfileServiceArea trainer={trainer} />
+                </OwnerOrClientSection>
+
+                <OwnerOrClientSection
+                  canEdit={false}
+                  complete={hasBestFor}
+                  title="Best for"
+                  onEdit={() => startEdit("ideal-clients")}
+                >
+                  <ProfileSection variant="panel" aria-label="Best for">
+                    <ProfileSectionHeader title="Best for" />
+                    <div className="profile-section-body">
+                      <ProfilePillGrid items={bestForItems} />
+                    </div>
+                  </ProfileSection>
+                </OwnerOrClientSection>
+
+                <OwnerOrClientSection
+                  canEdit={false}
+                  complete={hasCoachingStyle}
+                  title="Coaching style"
+                  onEdit={() => startEdit("philosophy")}
+                >
+                  <ProfileSection variant="panel" aria-label="Coaching style">
+                    <ProfileSectionHeader title="Coaching style" />
+                    <div className="profile-section-body">
+                      <ProfilePillGrid items={coachingStyleItems} />
+                    </div>
+                  </ProfileSection>
+                </OwnerOrClientSection>
+
+                <OwnerOrClientSection
+                  canEdit={false}
+                  complete={hasSessionExperience}
+                  title="Session experience"
+                  onEdit={() => startEdit("session-experience")}
+                >
+                  <ProfileSessionExperience trainer={trainer} />
+                </OwnerOrClientSection>
+
+                {hasResults ? <ProfileResultsSnapshot trainer={trainer} /> : null}
+
+                <OwnerOrClientSection
+                  canEdit={false}
+                  complete={hasCreds}
+                  title="Credentials"
+                  onEdit={() => startEdit("credentials")}
+                >
+                  <Certifications certifications={trainer.certifications} />
+                </OwnerOrClientSection>
+
+                <OwnerOrClientSection
+                  canEdit={false}
+                  complete={hasSpecialties}
+                  title="Specialties"
+                  onEdit={() => startEdit("specialties")}
+                >
+                  <Bio trainer={trainer} />
+                </OwnerOrClientSection>
+
+                <OwnerOrClientSection
+                  canEdit={false}
+                  complete={hasSocial}
+                  title="Connect"
+                  onEdit={() => startEdit("social")}
+                >
+                  <SocialLinks social={trainer.social} />
+                </OwnerOrClientSection>
+              </div>
+            </>
+          }
+          reviews={
+            <SmoacReviewsSection
+              specialistId={trainer.id}
+              specialistName={trainer.name}
+              aggregate={aggregate}
+              reviews={smoacReviews}
+              hasMore={hasMore}
+              loadingMore={loadingMore}
+              onLoadMore={() => void loadMore()}
+              reviewModalOpen={reviewModalOpen}
+              onReviewModalOpenChange={setReviewModalOpen}
+              onSubmitted={applySubmittedReview}
+              canLeaveReview={false}
+            />
+          }
+          inquire={
+            <div className="specialist-live-contact-preview" data-live-edit-ignore>
+              <ProfileContactCta
+                specialistName={trainer.name}
+                onContact={() => {
+                  if (!canEdit) return;
+                  showToast({
+                    type: "info",
+                    message:
+                      "Clients use this button to inquire — it isn’t editable.",
+                  });
+                }}
+              />
             </div>
-          </ProfileSection>
-        ) : null}
-
-        <div className="specialist-live-details" aria-label="Full specialist profile">
-          <OwnerOrClientSection
-            canEdit={false}
-            complete={hasServiceArea}
-            title="Service area"
-            onEdit={() => startEdit("service-area")}
-          >
-            <ProfileServiceArea trainer={trainer} />
-          </OwnerOrClientSection>
-
-          <OwnerOrClientSection
-            canEdit={false}
-            complete={hasBestFor}
-            title="Best for"
-            onEdit={() => startEdit("ideal-clients")}
-          >
-            <ProfileSection variant="panel" aria-label="Best for">
-              <ProfileSectionHeader title="Best for" />
-              <div className="profile-section-body">
-                <ProfilePillGrid items={bestForItems} />
-              </div>
-            </ProfileSection>
-          </OwnerOrClientSection>
-
-          <OwnerOrClientSection
-            canEdit={false}
-            complete={hasCoachingStyle}
-            title="Coaching style"
-            onEdit={() => startEdit("philosophy")}
-          >
-            <ProfileSection variant="panel" aria-label="Coaching style">
-              <ProfileSectionHeader title="Coaching style" />
-              <div className="profile-section-body">
-                <ProfilePillGrid items={coachingStyleItems} />
-              </div>
-            </ProfileSection>
-          </OwnerOrClientSection>
-
-          <OwnerOrClientSection
-            canEdit={false}
-            complete={hasSessionExperience}
-            title="Session experience"
-            onEdit={() => startEdit("session-experience")}
-          >
-            <ProfileSessionExperience trainer={trainer} />
-          </OwnerOrClientSection>
-
-          {hasResults ? <ProfileResultsSnapshot trainer={trainer} /> : null}
-
-          <OwnerOrClientSection
-            canEdit={false}
-            complete={hasCreds}
-            title="Credentials"
-            onEdit={() => startEdit("credentials")}
-          >
-            <Certifications certifications={trainer.certifications} />
-          </OwnerOrClientSection>
-
-          <OwnerOrClientSection
-            canEdit={false}
-            complete={hasSpecialties}
-            title="Specialties"
-            onEdit={() => startEdit("specialties")}
-          >
-            <Bio trainer={trainer} />
-          </OwnerOrClientSection>
-
-          <OwnerOrClientSection
-            canEdit={false}
-            complete={hasSocial}
-            title="Connect"
-            onEdit={() => startEdit("social")}
-          >
-            <SocialLinks social={trainer.social} />
-          </OwnerOrClientSection>
-        </div>
+          }
+        />
       </div>
 
       {editSheet}
