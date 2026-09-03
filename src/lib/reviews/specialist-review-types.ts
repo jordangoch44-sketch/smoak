@@ -44,7 +44,42 @@ export type SubmitSpecialistReviewResult =
 
 export const REVIEW_TEXT_MIN = 10;
 export const REVIEW_TEXT_MAX = 500;
-export const REVIEW_LIST_PREVIEW = 3;
+export const REVIEW_LIST_PREVIEW = 10;
+
+export type SpecialistReviewSort = "newest" | "highest" | "lowest";
+
+export function sortSpecialistReviews(
+  reviews: SpecialistReview[],
+  sort: SpecialistReviewSort
+): SpecialistReview[] {
+  const next = [...reviews];
+  if (sort === "highest") {
+    next.sort((a, b) => b.rating - a.rating || b.createdAt.localeCompare(a.createdAt));
+  } else if (sort === "lowest") {
+    next.sort((a, b) => a.rating - b.rating || b.createdAt.localeCompare(a.createdAt));
+  } else {
+    next.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  return next;
+}
+
+/** Google-style relative stamp: "a month ago", "3 days ago". */
+export function formatReviewRelativeTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const diffSec = Math.round((date.getTime() - Date.now()) / 1000);
+  const abs = Math.abs(diffSec);
+  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
+  if (abs < 60) return "just now";
+  if (abs < 3600) return rtf.format(Math.round(diffSec / 60), "minute");
+  if (abs < 86400) return rtf.format(Math.round(diffSec / 3600), "hour");
+  if (abs < 86400 * 7) return rtf.format(Math.round(diffSec / 86400), "day");
+  if (abs < 86400 * 30) return rtf.format(Math.round(diffSec / (86400 * 7)), "week");
+  if (abs < 86400 * 365) return rtf.format(Math.round(diffSec / (86400 * 30)), "month");
+  return rtf.format(Math.round(diffSec / (86400 * 365)), "year");
+}
 
 export function formatSmoacReviewCountLabel(count: number): string {
   return count === 1 ? "1 SMOAC Review" : `${count} SMOAC Reviews`;

@@ -16,6 +16,7 @@ import {
   mapReviewRow,
   type SpecialistReview,
   type SpecialistReviewAggregate,
+  type SpecialistReviewSort,
   type SubmitSpecialistReviewResult,
 } from "@/lib/reviews/specialist-review-types";
 
@@ -32,23 +33,36 @@ type ReviewRow = {
 
 export async function fetchPublishedSpecialistReviews(
   specialistId: string,
-  options?: { limit?: number; offset?: number }
+  options?: { limit?: number; offset?: number; sort?: SpecialistReviewSort }
 ): Promise<SpecialistReview[]> {
   const supabase = createSupabaseBrowserClient();
   if (!supabase || !specialistId) return [];
 
   const limit = options?.limit ?? 20;
   const offset = options?.offset ?? 0;
+  const sort = options?.sort ?? "newest";
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("specialist_reviews")
     .select(
       "id, specialist_id, rating, review_text, author_display_name, created_at, status"
     )
     .eq("specialist_id", specialistId)
-    .eq("status", "published")
-    .order("created_at", { ascending: false })
-    .range(offset, offset + limit - 1);
+    .eq("status", "published");
+
+  if (sort === "highest") {
+    query = query
+      .order("rating", { ascending: false })
+      .order("created_at", { ascending: false });
+  } else if (sort === "lowest") {
+    query = query
+      .order("rating", { ascending: true })
+      .order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
+
+  const { data, error } = await query.range(offset, offset + limit - 1);
 
   if (error || !data) return [];
   return (data as ReviewRow[]).map(mapReviewRow);

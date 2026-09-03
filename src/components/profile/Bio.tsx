@@ -1,4 +1,6 @@
 import type { Trainer } from "@/types";
+import { specialtyIconId } from "@/lib/profile-details-visual";
+import { ProfileSpecialtyIcon } from "./ProfileDetailsIcons";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
 
@@ -19,15 +21,19 @@ export function Bio({ trainer }: BioProps) {
   return (
     <ProfileSection variant="panel" aria-label="Specialties">
       <ProfileSectionHeader title="Specialties" />
-      <div className="profile-section-body profile-section-body--loose">
-        <ul className="profile-pill-grid">
-          {specialties.map((s) => (
-            <li key={s}>
-              <span className="profile-tag-pill profile-tag-pill--grid">{s}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ul className="profile-section-body profile-details-pills">
+        {specialties.map((s) => (
+          <li key={s}>
+            <span className="profile-tag-pill profile-tag-pill--fit">
+              <ProfileSpecialtyIcon
+                id={specialtyIconId(s)}
+                className="profile-tag-pill__icon"
+              />
+              {s}
+            </span>
+          </li>
+        ))}
+      </ul>
     </ProfileSection>
   );
 }

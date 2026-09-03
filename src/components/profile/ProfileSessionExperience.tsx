@@ -1,7 +1,11 @@
 import type { Trainer } from "@/types";
+import {
+  trainerTextureUrls,
+  trainingOptionCardsFromTrainer,
+} from "@/lib/profile-details-visual";
+import { ProfileTrainingKindIcon } from "./ProfileDetailsIcons";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
-import { ProfileSessionIcon } from "./ProfileSessionIcons";
 
 interface ProfileSessionExperienceProps {
   trainer: Trainer;
@@ -10,24 +14,34 @@ interface ProfileSessionExperienceProps {
 export function ProfileSessionExperience({
   trainer,
 }: ProfileSessionExperienceProps) {
-  const items = Array.isArray(trainer.sessionExperience)
-    ? trainer.sessionExperience.filter(
-        (item) => typeof item === "string" && item.trim().length > 0
-      )
-    : [];
-
-  if (items.length === 0) return null;
+  const cards = trainingOptionCardsFromTrainer(trainer);
+  if (cards.length === 0) return null;
+  const textures = trainerTextureUrls(trainer);
 
   return (
-    <ProfileSection variant="panel" aria-label="Session experience">
-      <ProfileSectionHeader title="Session experience" />
-      <ul className="profile-section-body profile-experience-grid">
-        {items.map((item) => (
-          <li key={item} className="profile-experience-card">
-            <ProfileSessionIcon label={item} />
-            <span className="profile-experience-card__label">{item}</span>
-          </li>
-        ))}
+    <ProfileSection variant="panel" aria-label="Training options">
+      <ProfileSectionHeader title="Training options" />
+      <ul className="profile-section-body profile-train-grid">
+        {cards.map((card, index) => {
+          const texture = textures[index % Math.max(textures.length, 1)];
+          return (
+            <li key={card.id} className="profile-train-card">
+              {texture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={texture} alt="" className="profile-train-card__photo" />
+              ) : null}
+              <span className="profile-train-card__wash" aria-hidden />
+              <span className="profile-train-card__icon" aria-hidden>
+                <ProfileTrainingKindIcon
+                  kind={card.kind}
+                  className="profile-train-card__glyph"
+                />
+              </span>
+              <p className="profile-train-card__title">{card.title}</p>
+              <p className="profile-train-card__copy">{card.description}</p>
+            </li>
+          );
+        })}
       </ul>
     </ProfileSection>
   );

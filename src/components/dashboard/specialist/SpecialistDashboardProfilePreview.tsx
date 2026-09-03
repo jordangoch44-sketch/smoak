@@ -15,29 +15,19 @@ import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
-import { Bio } from "@/components/profile/Bio";
-import { Certifications } from "@/components/profile/Certifications";
 import { ProfileContactCta } from "@/components/profile/ProfileContactCta";
 import { ProfileHero } from "@/components/profile/ProfileHero";
-import { ProfilePillGrid } from "@/components/profile/ProfilePillGrid";
-import { ProfileResultsSnapshot } from "@/components/profile/ProfileResultsSnapshot";
-import { ProfileSection } from "@/components/profile/ProfileSection";
-import { ProfileSectionHeader } from "@/components/profile/ProfileSectionHeader";
-import { ProfileServiceArea } from "@/components/profile/ProfileServiceArea";
-import { ProfileSessionExperience } from "@/components/profile/ProfileSessionExperience";
 import {
   ProfileSheetTabs,
   type ProfileSheetTabId,
 } from "@/components/profile/ProfileSheetTabs";
-import { ProfileTrustGrid } from "@/components/profile/ProfileTrustGrid";
-import { SocialLinks } from "@/components/profile/SocialLinks";
+import { ProfileTrainerSpecs } from "@/components/profile/ProfileTrainerSpecs";
 import { SmoacReviewsSection } from "@/components/profile/SmoacReviewsSection";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
 import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
-import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
   getProfileAccentRgb,
@@ -186,48 +176,6 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
   }
 }
 
-function nonEmptyStrings(items: string[] | null | undefined): string[] {
-  if (!Array.isArray(items)) return [];
-  return items.filter(
-    (item) => typeof item === "string" && item.trim().length > 0
-  );
-}
-
-function hasCertifications(trainer: Trainer): boolean {
-  return (
-    Array.isArray(trainer.certifications) &&
-    trainer.certifications.some(
-      (cert) => cert && typeof cert.name === "string" && cert.name.trim()
-    )
-  );
-}
-
-function hasSocialLinks(trainer: Trainer): boolean {
-  const social = trainer.social;
-  if (!social) return false;
-  return [social.instagram, social.twitter, social.linkedin, social.website, social.tiktok].some(
-    (url) => typeof url === "string" && url.trim().length > 0
-  );
-}
-
-function NeedsCompletionPanel({ title }: { title: string }) {
-  return (
-    <ProfileSection
-      variant="panel"
-      className="specialist-live-needs"
-      aria-label={`${title} — needs completion`}
-    >
-      <ProfileSectionHeader title={title} />
-      <div className="profile-section-body">
-        <p className="specialist-live-needs__label">Needs completion</p>
-        <p className="specialist-live-needs__hint">
-          Clients won’t see this section until you add it. Tap Edit to fill it in.
-        </p>
-      </div>
-    </ProfileSection>
-  );
-}
-
 function LiveEditZone({
   label,
   canEdit,
@@ -282,40 +230,6 @@ function LiveEditZone({
       </button>
       <div className="specialist-live-zone__content">{children}</div>
     </div>
-  );
-}
-
-/** Owner edit tab: always show section. Client-like: hide when empty. */
-function OwnerOrClientSection({
-  canEdit,
-  complete,
-  title,
-  onEdit,
-  children,
-  className,
-}: {
-  canEdit: boolean;
-  complete: boolean;
-  title: string;
-  onEdit: () => void;
-  children: ReactNode;
-  className?: string;
-}) {
-  if (!canEdit) {
-    if (!complete) return null;
-    return <div className={className}>{children}</div>;
-  }
-
-  return (
-    <LiveEditZone
-      label={title}
-      canEdit
-      onEdit={onEdit}
-      incomplete={!complete}
-      className={className}
-    >
-      {complete ? children : <NeedsCompletionPanel title={title} />}
-    </LiveEditZone>
   );
 }
 
@@ -499,6 +413,8 @@ export function SpecialistDashboardProfilePreview({
     hasMore,
     loadingMore,
     loadMore,
+    sort,
+    setSort,
     applySubmittedReview,
   } = useSpecialistReviews(trainer.id);
 
@@ -1233,20 +1149,6 @@ export function SpecialistDashboardProfilePreview({
     );
   }
 
-  const whyItems = nonEmptyStrings(trainer.whyClientsChoose);
-  const bestForItems = nonEmptyStrings(trainer.bestFor);
-  const coachingStyleItems = nonEmptyStrings(trainer.coachingStyle);
-  const hasWhy = whyItems.length > 0;
-  const hasServiceArea = Boolean(buildServiceAreaDisplay(trainer));
-  const hasBestFor = bestForItems.length > 0;
-  const hasCoachingStyle = coachingStyleItems.length > 0;
-  const hasSessionExperience =
-    nonEmptyStrings(trainer.sessionExperience).length > 0;
-  const hasResults = nonEmptyStrings(trainer.resultsSnapshot ?? []).length > 0;
-  const hasSpecialties = nonEmptyStrings(trainer.specialty).length > 0;
-  const hasCreds = hasCertifications(trainer);
-  const hasSocial = hasSocialLinks(trainer);
-
   return (
     <article
       id={LIVE_PROFILE_ANCHOR_ID}
@@ -1277,99 +1179,7 @@ export function SpecialistDashboardProfilePreview({
         <ProfileSheetTabs
           value={sheetTab}
           onChange={setSheetTab}
-          details={
-            <>
-              {hasWhy ? (
-                <ProfileSection
-                  variant="panel"
-                  className="profile-section--featured"
-                  aria-label="Why clients choose me"
-                >
-                  <ProfileSectionHeader title="Why clients choose me" />
-                  <div className="profile-section-body">
-                    <ProfileTrustGrid items={whyItems} />
-                  </div>
-                </ProfileSection>
-              ) : null}
-
-              <div className="specialist-live-details" aria-label="Full specialist profile">
-                <OwnerOrClientSection
-                  canEdit={false}
-                  complete={hasServiceArea}
-                  title="Service area"
-                  onEdit={() => startEdit("service-area")}
-                >
-                  <ProfileServiceArea trainer={trainer} />
-                </OwnerOrClientSection>
-
-                <OwnerOrClientSection
-                  canEdit={false}
-                  complete={hasBestFor}
-                  title="Best for"
-                  onEdit={() => startEdit("ideal-clients")}
-                >
-                  <ProfileSection variant="panel" aria-label="Best for">
-                    <ProfileSectionHeader title="Best for" />
-                    <div className="profile-section-body">
-                      <ProfilePillGrid items={bestForItems} />
-                    </div>
-                  </ProfileSection>
-                </OwnerOrClientSection>
-
-                <OwnerOrClientSection
-                  canEdit={false}
-                  complete={hasCoachingStyle}
-                  title="Coaching style"
-                  onEdit={() => startEdit("philosophy")}
-                >
-                  <ProfileSection variant="panel" aria-label="Coaching style">
-                    <ProfileSectionHeader title="Coaching style" />
-                    <div className="profile-section-body">
-                      <ProfilePillGrid items={coachingStyleItems} />
-                    </div>
-                  </ProfileSection>
-                </OwnerOrClientSection>
-
-                <OwnerOrClientSection
-                  canEdit={false}
-                  complete={hasSessionExperience}
-                  title="Session experience"
-                  onEdit={() => startEdit("session-experience")}
-                >
-                  <ProfileSessionExperience trainer={trainer} />
-                </OwnerOrClientSection>
-
-                {hasResults ? <ProfileResultsSnapshot trainer={trainer} /> : null}
-
-                <OwnerOrClientSection
-                  canEdit={false}
-                  complete={hasCreds}
-                  title="Credentials"
-                  onEdit={() => startEdit("credentials")}
-                >
-                  <Certifications certifications={trainer.certifications} />
-                </OwnerOrClientSection>
-
-                <OwnerOrClientSection
-                  canEdit={false}
-                  complete={hasSpecialties}
-                  title="Specialties"
-                  onEdit={() => startEdit("specialties")}
-                >
-                  <Bio trainer={trainer} />
-                </OwnerOrClientSection>
-
-                <OwnerOrClientSection
-                  canEdit={false}
-                  complete={hasSocial}
-                  title="Connect"
-                  onEdit={() => startEdit("social")}
-                >
-                  <SocialLinks social={trainer.social} />
-                </OwnerOrClientSection>
-              </div>
-            </>
-          }
+          details={<ProfileTrainerSpecs trainer={trainer} />}
           reviews={
             <SmoacReviewsSection
               specialistId={trainer.id}
@@ -1379,6 +1189,8 @@ export function SpecialistDashboardProfilePreview({
               hasMore={hasMore}
               loadingMore={loadingMore}
               onLoadMore={() => void loadMore()}
+              sort={sort}
+              onSortChange={setSort}
               reviewModalOpen={reviewModalOpen}
               onReviewModalOpenChange={setReviewModalOpen}
               onSubmitted={applySubmittedReview}

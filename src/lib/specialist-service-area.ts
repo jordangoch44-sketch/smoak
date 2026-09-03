@@ -1,5 +1,8 @@
 import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
-import { parseTravelToClients } from "@/types/specialist-service-area";
+import {
+  parseTravelToClients,
+  SPECIALIST_TRAVEL_RADIUS_OPTIONS,
+} from "@/types/specialist-service-area";
 import type { Trainer } from "@/types/trainer";
 
 export function parseTravelRadiusMiles(travelRadius: string): number {
@@ -139,6 +142,229 @@ export function buildServiceAreaDisplay(trainer: Trainer): SpecialistServiceArea
     serviceTypeIcon,
     description,
     showZip: Boolean(zip && city),
+  };
+}
+
+const TRAINING_LOCATION_PATTERN =
+  /in-home|in home|at home|online|virtual|gym|studio|facility|training at|hybrid|outdoor|park|beach|in person|in-person/i;
+
+function uniqueTrimmed(items: string[]): string[] {
+  const seen = new Set<string>();
+  const next: string[] = [];
+  for (const item of items) {
+    const value = item.trim();
+    if (!value) continue;
+    const key = value.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    next.push(value);
+  }
+  return next;
+}
+
+function friendlyTrainingOption(raw: string): string {
+  const value = raw.trim();
+  if (/^in-home sessions$/i.test(value) || /^in home sessions$/i.test(value)) {
+    return "At home";
+  }
+  if (/^online coaching$/i.test(value) || /^online$/i.test(value)) {
+    return "Online";
+  }
+  if (/^training at\s+/i.test(value)) {
+    return `At ${value.replace(/^training at\s+/i, "").trim()}`;
+  }
+  if (/^in person$/i.test(value) || /^in-person$/i.test(value)) {
+    return "In person";
+  }
+  return value;
+}
+
+/** Where sessions happen — from onboarding session flags, gym, and service type. */
+export function trainingOptionsFromTrainer(trainer: Trainer): string[] {
+  const session = Array.isArray(trainer.sessionExperience)
+    ? trainer.sessionExperience
+    : [];
+  const fromSession = session
+    .filter((item) => TRAINING_LOCATION_PATTERN.test(item))
+    .map(friendlyTrainingOption);
+
+  if (fromSession.length > 0) return uniqueTrimmed(fromSession);
+
+  const serviceType =
+    trainer.serviceType ??
+    inferServiceTypeFromFlags(
+      session.some((s) => /in-home/i.test(s)),
+      session.some((s) => /online/i.test(s))
+    );
+
+  const inferred: string[] = [];
+  if (serviceType === "in-person" || serviceType === "both") {
+    inferred.push("In person");
+  }
+  if (serviceType === "virtual" || serviceType === "both") {
+    inferred.push("Online");
+  }
+  return uniqueTrimmed(inferred);
+}
+
+export function formatTravelRadiusLabel(travelRadius: string | undefined): string | null {
+  const value = travelRadius?.trim() ?? "";
+  if (!value) return null;
+  const option = SPECIALIST_TRAVEL_RADIUS_OPTIONS.find((opt) => opt.value === value);
+  if (option) return option.label;
+  if (value === "50+") return "50+ miles";
+  const miles = parseTravelRadiusMiles(value);
+  return miles > 0 ? `${miles} miles` : null;
+}
+
+export interface LocationTravelFact {
+  label: string;
+  value: string;
+  hint?: string;
+  icon: "place" | "travel" | "radius";
+}
+
+export interface LocationTravelMap {
+  latitude: number;
+  longitude: number;
+  miles: number | null;
+}
+
+export interface LocationTravelDisplay {
+  facts: LocationTravelFact[];
+  description: string | null;
+  map: LocationTravelMap | null;
+}
+
+function formatCityZipLine(trainer: Trainer): string {
+  const city = trainer.city?.trim() ?? "";
+  const zip = trainer.zipCode?.trim() ?? "";
+  if (city && zip) return `${city} · ${zip}`;
+  if (city) return city;
+  if (zip) return `ZIP ${zip}`;
+  return "";
+}
+
+/** Public Details location: gym / area / anywhere, plus travel distance. */
+export function buildLocationTravelDisplay(
+  trainer: Trainer
+): LocationTravelDisplay | null {
+  const session = Array.isArray(trainer.sessionExperience)
+    ? trainer.sessionExperience
+    : [];
+  const serviceType =
+    trainer.serviceType ??
+    inferServiceTypeFromFlags(
+      session.some((s) => /in-home/i.test(s)),
+      session.some((s) => /online/i.test(s))
+    );
+  const cityZip = formatCityZipLine(trainer);
+  const workAddress = trainer.workAddress?.trim() ?? "";
+  const showPreciseAddress =
+    Boolean(workAddress) && trainer.locationPrecision === "address";
+  const travelToClients = resolveTravelToClients(trainer);
+  const radiusLabel = formatTravelRadiusLabel(trainer.travelRadius);
+  const isVirtualOnly = serviceType === "virtual";
+  const goesAnywhere =
+    travelToClients === "yes" &&
+    (trainer.travelRadius === "50+" || radiusLabel === "50+ Miles");
+
+  let placeValue = "";
+  let placeLabel = "Area";
+
+  if (showPreciseAddress) {
+    placeLabel = "Gym";
+    placeValue = cityZip && !workAddress.includes(cityZip.split(" · ")[0] ?? "")
+      ? `${workAddress}\n${cityZip}`
+      : workAddress;
+  } else if (isVirtualOnly && cityZip) {
+    placeLabel = "Area";
+    placeValue = goesAnywhere ? `Online · anywhere` : `Online from ${cityZip}`;
+  } else if (goesAnywhere && !cityZip) {
+    placeLabel = "Area";
+    placeValue = "Anywhere";
+  } else if (cityZip) {
+    placeLabel = "Based in";
+    placeValue = cityZip;
+  } else if (goesAnywhere) {
+    placeLabel = "Area";
+    placeValue = "Anywhere";
+  }
+
+  const facts: LocationTravelFact[] = [];
+  if (placeValue) {
+    facts.push({
+      label: placeLabel,
+      value: placeValue,
+      hint: placeLabel === "Gym"
+        ? "Sessions at this facility."
+        : isVirtualOnly
+          ? "Online sessions from this area."
+          : trainer.city.trim()
+            ? `Serving ${trainer.city.trim()}.`
+            : undefined,
+      icon: "place",
+    });
+  }
+
+  if (travelToClients === "yes") {
+    facts.push({
+      label: "Travel",
+      value: "Travels to clients",
+      hint: "Home, gym, or outdoors.",
+      icon: "travel",
+    });
+    if (radiusLabel) {
+      facts.push({
+        label: "Service area",
+        value: `Up to ${radiusLabel.toLowerCase()}`,
+        hint: trainer.city.trim()
+          ? `Around ${trainer.city.trim()}.`
+          : undefined,
+        icon: "radius",
+      });
+    }
+  } else if (travelToClients === "no") {
+    facts.push({
+      label: "Travel",
+      value: "Does not travel to clients",
+      hint: "You come to them.",
+      icon: "travel",
+    });
+  }
+
+  const description =
+    trainer.serviceAreaDescription?.trim() ||
+    (Array.isArray(trainer.serviceArea) && trainer.serviceArea.length > 0
+      ? trainer.serviceArea.filter(Boolean).join(", ")
+      : null);
+
+  const lat = trainer.latitude;
+  const lng = trainer.longitude;
+  const hasCoords =
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    !(lat === 0 && lng === 0);
+  const miles =
+    travelToClients === "yes"
+      ? parseTravelRadiusMiles(trainer.travelRadius ?? "") ||
+        (typeof trainer.serviceRadiusMiles === "number"
+          ? trainer.serviceRadiusMiles
+          : 0) ||
+        null
+      : null;
+
+  if (facts.length === 0 && !description) return null;
+  return {
+    facts,
+    description,
+    map: hasCoords
+      ? {
+          latitude: lat,
+          longitude: lng,
+          miles: miles && miles > 0 ? miles : null,
+        }
+      : null,
   };
 }
 

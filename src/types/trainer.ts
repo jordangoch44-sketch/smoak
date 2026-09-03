@@ -95,8 +95,8 @@ export interface Trainer {
   latitude: number;
   longitude: number;
   /**
-   * Optional work / studio address used to set precise lat/lng.
-   * Private to the specialist account — not rendered on public cards.
+   * Work / studio / gym address from onboarding. Shown on the Details tab
+   * when the specialist opted into a precise pin (`locationPrecision: address`).
    */
   workAddress?: string;
   /** zip = ZIP centroid (default for existing profiles); address = pinned street */

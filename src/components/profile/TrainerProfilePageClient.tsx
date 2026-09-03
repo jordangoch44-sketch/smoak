@@ -26,7 +26,6 @@ import {
 } from "@/lib/specialist-profile-style";
 import { ProfileHero } from "./ProfileHero";
 import { ProfileContactCta } from "./ProfileContactCta";
-import { ProfilePrimaryHighlights } from "./ProfilePrimaryHighlights";
 import { ProfileTrainerSpecs } from "./ProfileTrainerSpecs";
 import { ProfileDiscoveryRails } from "./ProfileDiscoveryRails";
 import { SmoacReviewsSection } from "./SmoacReviewsSection";
@@ -73,6 +72,8 @@ export function TrainerProfilePageClient({
     hasMore,
     loadingMore,
     loadMore,
+    sort,
+    setSort,
     ownReview,
     canLeaveReview,
     applySubmittedReview,
@@ -196,10 +197,7 @@ export function TrainerProfilePageClient({
             value={sheetTab}
             onChange={setSheetTab}
             details={
-              <>
-                <ProfilePrimaryHighlights trainer={trainer} />
-                <ProfileTrainerSpecs trainer={trainer} />
-              </>
+              <ProfileTrainerSpecs trainer={trainer} />
             }
             reviews={
               <SmoacReviewsSection
@@ -210,6 +208,8 @@ export function TrainerProfilePageClient({
                 hasMore={hasMore}
                 loadingMore={loadingMore}
                 onLoadMore={() => void loadMore()}
+                sort={sort}
+                onSortChange={setSort}
                 reviewModalOpen={reviewModalOpen}
                 onReviewModalOpenChange={setReviewModalOpen}
                 onSubmitted={applySubmittedReview}

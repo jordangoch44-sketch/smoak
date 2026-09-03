@@ -9,8 +9,10 @@ import {
 } from "@/lib/reviews/specialist-reviews-client";
 import {
   REVIEW_LIST_PREVIEW,
+  sortSpecialistReviews,
   type SpecialistReview,
   type SpecialistReviewAggregate,
+  type SpecialistReviewSort,
 } from "@/lib/reviews/specialist-review-types";
 
 export interface UseSpecialistReviewsResult {
@@ -20,6 +22,8 @@ export interface UseSpecialistReviewsResult {
   hasMore: boolean;
   loadingMore: boolean;
   loadMore: () => Promise<void>;
+  sort: SpecialistReviewSort;
+  setSort: (sort: SpecialistReviewSort) => void;
   ownReview: SpecialistReview | null;
   canLeaveReview: boolean;
   refresh: () => Promise<void>;
@@ -50,6 +54,7 @@ export function useSpecialistReviews(
     EMPTY_AGGREGATE(specialistId)
   );
   const [reviews, setReviews] = useState<SpecialistReview[]>([]);
+  const [sort, setSortState] = useState<SpecialistReviewSort>("newest");
   const [totalCount, setTotalCount] = useState(0);
   const [totalLoaded, setTotalLoaded] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -62,6 +67,7 @@ export function useSpecialistReviews(
       fetchPublishedSpecialistReviews(specialistId, {
         limit: REVIEW_LIST_PREVIEW,
         offset: 0,
+        sort,
       }),
     ]);
     const nextAgg = agg ?? EMPTY_AGGREGATE(specialistId);
@@ -76,7 +82,7 @@ export function useSpecialistReviews(
       setTotalLoaded(true);
       setOwnReview(mine);
     });
-  }, [specialistId, clientUserId]);
+  }, [specialistId, clientUserId, sort]);
 
   useEffect(() => {
     if (!isReady || !specialistId) return;
@@ -97,6 +103,10 @@ export function useSpecialistReviews(
     };
   }, [isReady, specialistId, refresh]);
 
+  const setSort = useCallback((next: SpecialistReviewSort) => {
+    setSortState((prev) => (prev === next ? prev : next));
+  }, []);
+
   const loadMore = useCallback(async () => {
     if (loadingMore || reviews.length >= totalCount) return;
     setLoadingMore(true);
@@ -104,6 +114,7 @@ export function useSpecialistReviews(
       const next = await fetchPublishedSpecialistReviews(specialistId, {
         limit: 10,
         offset: reviews.length,
+        sort,
       });
       setReviews((prev) => {
         const seen = new Set(prev.map((r) => r.id));
@@ -112,28 +123,36 @@ export function useSpecialistReviews(
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, reviews.length, specialistId, totalCount]);
+  }, [loadingMore, reviews.length, specialistId, totalCount, sort]);
 
-  const applySubmittedReview = useCallback((review: SpecialistReview) => {
-    setOwnReview(review);
-    setReviews((prev) => [review, ...prev.filter((r) => r.id !== review.id)]);
-    setAggregate((prev) => {
-      const nextCount = prev.reviewCount + 1;
-      const prevAvg = prev.avgRating ?? 0;
-      const nextAvg =
-        prev.reviewCount === 0
-          ? review.rating
-          : Math.round(
-              ((prevAvg * prev.reviewCount + review.rating) / nextCount) * 10
-            ) / 10;
-      return {
-        specialistId: prev.specialistId,
-        reviewCount: nextCount,
-        avgRating: nextAvg,
-      };
-    });
-    setTotalCount((c) => c + 1);
-  }, []);
+  const applySubmittedReview = useCallback(
+    (review: SpecialistReview) => {
+      setOwnReview(review);
+      setReviews((prev) =>
+        sortSpecialistReviews(
+          [review, ...prev.filter((r) => r.id !== review.id)],
+          sort
+        )
+      );
+      setAggregate((prev) => {
+        const nextCount = prev.reviewCount + 1;
+        const prevAvg = prev.avgRating ?? 0;
+        const nextAvg =
+          prev.reviewCount === 0
+            ? review.rating
+            : Math.round(
+                ((prevAvg * prev.reviewCount + review.rating) / nextCount) * 10
+              ) / 10;
+        return {
+          specialistId: prev.specialistId,
+          reviewCount: nextCount,
+          avgRating: nextAvg,
+        };
+      });
+      setTotalCount((c) => c + 1);
+    },
+    [sort]
+  );
 
   return {
     aggregate,
@@ -142,6 +161,8 @@ export function useSpecialistReviews(
     hasMore: reviews.length < totalCount,
     loadingMore,
     loadMore,
+    sort,
+    setSort,
     ownReview,
     canLeaveReview: Boolean(isReady && isClient && !ownReview),
     refresh,

@@ -368,7 +368,7 @@ body.review-modal-open .profile-toolbar {
 
 .smoac-leave-review-btn {
   display: inline-flex;
-  margin-top: 0.85rem;
+  margin-top: 0;
   min-height: 2.5rem;
   align-items: center;
   justify-content: center;
@@ -423,6 +423,197 @@ body.review-modal-open .profile-toolbar {
   color: rgba(255, 255, 255, 0.48);
 }
 
+.smoac-reviews-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.smoac-reviews-feed__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.smoac-reviews-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.smoac-reviews-sort__label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.smoac-reviews-sort__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.smoac-reviews-sort__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.smoac-reviews-sort__chip--active {
+  border-color: transparent;
+  background: #8ab4f8;
+  color: #0b1a33;
+}
+
+.smoac-reviews-sort__chip:focus-visible {
+  outline: 2px solid rgba(138, 180, 248, 0.75);
+  outline-offset: 2px;
+}
+
+.smoac-review-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem 1rem 1.05rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(45, 47, 54, 0.92);
+}
+
+.smoac-review-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.smoac-review-card__avatar {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: #fff;
+}
+
+.smoac-review-card__who {
+  min-width: 0;
+}
+
+.smoac-review-card__name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.smoac-review-card__meta {
+  margin: 0.12rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.smoac-review-card__rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.55rem;
+}
+
+.smoac-review-card__stars {
+  display: inline-flex;
+  gap: 0.08rem;
+}
+
+.smoac-review-card__star {
+  font-size: 0.95rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.smoac-review-card__star--on {
+  color: #fbbc04;
+}
+
+.smoac-review-card__when {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.smoac-review-card__body {
+  min-width: 0;
+}
+
+.smoac-review-card__text {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.smoac-review-card__text--clamp {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+.smoac-review-card__more {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #8ab4f8;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.smoac-reviews-view-all {
+  display: inline-flex;
+  margin-top: 0.25rem;
+  min-height: 2.4rem;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: #8ab4f8;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.smoac-reviews-view-all:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .smoac-review-item__top {
   display: flex;
   flex-wrap: wrap;
@@ -449,27 +640,6 @@ body.review-modal-open .profile-toolbar {
   font-size: 0.875rem;
   font-weight: 500;
   color: #fff;
-}
-
-.smoac-reviews-view-all {
-  display: inline-flex;
-  margin-top: 0.75rem;
-  min-height: 2.4rem;
-  align-items: center;
-  border: none;
-  background: transparent;
-  padding: 0;
-  color: rgba(var(--aurora-lavender-rgb), 0.95);
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
-}
-
-.smoac-reviews-view-all:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 /* Hero meta — SMOAC line under classic ★ / total reviews */

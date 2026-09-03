@@ -1,16 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
 import type { Trainer } from "@/types";
-import type { SpecialistServiceAreaDisplay } from "@/lib/specialist-service-area";
-import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
-import {
-  HybridFormatIcon,
-  InPersonFormatIcon,
-  LocationMarkIcon,
-  TravelRangeIcon,
-  VirtualFormatIcon,
-} from "@/components/ui/icons";
+import { buildLocationTravelDisplay } from "@/lib/specialist-service-area";
+import { ProfileLocationFactIcon } from "./ProfileDetailsIcons";
+import { ProfileDetailsRadiusMap } from "./ProfileDetailsRadiusMap";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
 
@@ -18,88 +11,49 @@ interface ProfileServiceAreaProps {
   trainer: Trainer;
 }
 
-function FormatIcon({
-  kind,
-}: {
-  kind: SpecialistServiceAreaDisplay["serviceTypeIcon"];
-}) {
-  const className = "profile-service-area__icon";
-  switch (kind) {
-    case "virtual":
-      return <VirtualFormatIcon className={className} />;
-    case "hybrid":
-      return <HybridFormatIcon className={className} />;
-    default:
-      return <InPersonFormatIcon className={className} />;
-  }
-}
-
-function formatBasedInValue(
-  trainer: Trainer,
-  display: SpecialistServiceAreaDisplay
-): string {
-  const city = trainer.city.trim();
-  const zip = trainer.zipCode?.trim() ?? "";
-  if (city && zip) {
-    return `${city} • ${zip}`;
-  }
-  if (zip) {
-    return zip;
-  }
-  return display.basedInLine;
-}
-
-interface ServiceAreaFactProps {
-  icon: ReactNode;
-  label: string;
-  value: string;
-}
-
-function ServiceAreaFact({ icon, label, value }: ServiceAreaFactProps) {
-  return (
-    <li className="profile-service-area__fact">
-      <span className="profile-service-area__icon-shell" aria-hidden>
-        {icon}
-      </span>
-      <div className="profile-service-area__meta">
-        <p className="profile-service-area__label">{label}</p>
-        <p className="profile-service-area__value">{value}</p>
-      </div>
-    </li>
-  );
-}
-
 export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
-  const display = buildServiceAreaDisplay(trainer);
+  const display = buildLocationTravelDisplay(trainer);
   if (!display) return null;
 
-  const basedInValue = formatBasedInValue(trainer, display);
-
   return (
-    <ProfileSection variant="panel" aria-label="Service area">
-      <ProfileSectionHeader title="Service area" />
-      <div className="profile-section-body profile-service-area">
-        <ul className="profile-service-area__facts">
-          <ServiceAreaFact
-            icon={<LocationMarkIcon className="profile-service-area__icon" />}
-            label="Based in"
-            value={basedInValue}
-          />
+    <ProfileSection variant="panel" aria-label="Location and travel">
+      <ProfileSectionHeader title="Location and travel" />
+      <div
+        className={
+          display.map
+            ? "profile-section-body profile-service-area profile-service-area--visual profile-service-area--with-map"
+            : "profile-section-body profile-service-area profile-service-area--visual"
+        }
+      >
+        {display.facts.length > 0 ? (
+          <ul className="profile-service-area__facts">
+            {display.facts.map((fact) => (
+              <li key={fact.label} className="profile-service-area__fact">
+                <span className="profile-service-area__icon-shell" aria-hidden>
+                  <ProfileLocationFactIcon
+                    kind={fact.icon}
+                    className="profile-service-area__icon"
+                  />
+                </span>
+                <div className="profile-service-area__meta">
+                  <p className="profile-service-area__label">{fact.label}</p>
+                  <p className="profile-service-area__value">
+                    {fact.value.split("\n").map((line) => (
+                      <span key={line} className="profile-service-area__value-line">
+                        {line}
+                      </span>
+                    ))}
+                  </p>
+                  {fact.hint ? (
+                    <p className="profile-service-area__hint">{fact.hint}</p>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
-          {display.travelRadiusLine ? (
-            <ServiceAreaFact
-              icon={<TravelRangeIcon className="profile-service-area__icon" />}
-              label="Travel"
-              value={display.travelRadiusLine}
-            />
-          ) : null}
-
-          <ServiceAreaFact
-            icon={<FormatIcon kind={display.serviceTypeIcon} />}
-            label="Format"
-            value={display.serviceTypeLine}
-          />
-        </ul>
+        {display.map ? <ProfileDetailsRadiusMap map={display.map} /> : null}
 
         {display.description ? (
           <p className="profile-service-area__description">{display.description}</p>
