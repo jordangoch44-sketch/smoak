@@ -7,7 +7,7 @@ import { SITE_ROUTES } from "@/lib/navigation";
  * Where the profile sheet should land when the user hits X.
  * Picks replace the specialist in-place and must not overwrite this.
  */
-let returnHref = SITE_ROUTES.explore;
+let returnHref: string = SITE_ROUTES.explore;
 
 function normalizeHref(pathname: string, search = ""): string {
   const path = pathname.trim() || SITE_ROUTES.home;
