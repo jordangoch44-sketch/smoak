@@ -1771,19 +1771,17 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   left: 0.75rem;
   bottom: 0.75rem;
   display: inline-flex;
-  min-height: 2.65rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-height: 2.75rem;
   align-items: center;
-  gap: 0.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  justify-content: center;
+  padding: 0;
+  border: none;
   border-radius: 9999px;
-  background: rgba(14, 12, 22, 0.88);
-  padding: 0.55rem 0.85rem;
-  color: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(16px) saturate(1.12);
-  -webkit-backdrop-filter: blur(16px) saturate(1.12);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.48);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -1807,20 +1805,14 @@ body.location-selector-open .explore-map__recenter--hero {
 
 .explore-map__recenter:active {
   transform: scale(0.97);
-  background: rgba(24, 20, 36, 0.94);
+  background: rgba(0, 0, 0, 0.62);
 }
 
 .explore-map__recenter-icon {
-  width: 1.05rem;
-  height: 1.05rem;
-  color: #c4a1ff;
+  width: 1.2rem;
+  height: 1.2rem;
+  color: #fff;
   flex-shrink: 0;
-}
-
-.explore-map__recenter-label {
-  font-size: 0.75rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
 }
 
 @media (min-width: 390px) {

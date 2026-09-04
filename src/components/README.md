@@ -19,7 +19,7 @@ Feature-first folders. **UI primitives** live in `ui/`; **global chrome** in `la
 | `auth/` | `/login`, `/create-account` — forms; `QuickClientAccountAuthUI` shared by save modal + inquiry sheet |
 | `dashboard/` | `/client-dashboard`, `/specialist-dashboard` |
 | `brand/` | `SmoacWelcomeIntro`, wordmark |
-| `rankings/` | `/rankings` |
+| `rankings/` | `/rankings` — `RankingsHero` + board |
 | `dev/` | Development-only — not used in production UX paths |
 
 ## Conventions

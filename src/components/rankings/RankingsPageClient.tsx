@@ -7,7 +7,6 @@ import {
   RANKINGS_PROFESSION_OPTIONS,
 } from "@/data/city-rankings";
 import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
-import { HomePortraitSpecialistCard } from "@/components/home/HomePortraitSpecialistCard";
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -21,12 +20,15 @@ import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog"
 import { SITE_ROUTES } from "@/lib/navigation";
 import { selectTopRankedBoostForRankings } from "@/lib/paid-placements";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
+import { resolveRankingsSelectedCity } from "@/lib/ranking-hero";
 import { resolveRankingMetro } from "@/lib/ranking-metro";
 import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 import { buildSmoacRankingsBoard } from "@/lib/smoac-rankings";
 import type { Trainer } from "@/types/trainer";
 import { RankingsFilters } from "./RankingsFilters";
+import { RankingsHero } from "./RankingsHero";
+import { RankingsRow } from "./RankingsRow";
 import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 interface RankingsPageClientProps {
@@ -77,9 +79,12 @@ export function RankingsPageClient({
     });
   }, [hydrated, placeName, coordsKey, userCoords]);
 
-  const city = cityTouched ? cityOverride : (metroFromLocation ?? "");
-  const metroLabel =
-    cityTouched && cityOverride ? cityOverride : metroFromLocation;
+  const city = resolveRankingsSelectedCity({
+    hydrated,
+    cityTouched,
+    cityOverride,
+    metroFromLocation,
+  });
 
   const rows = useMemo(
     () =>
@@ -101,7 +106,7 @@ export function RankingsPageClient({
   );
 
   return (
-    <div className="rankings-page">
+    <div className="rankings-page" data-rankings-ui="hero-v2">
       <div className="rankings-page__canvas" aria-hidden>
         <div className="atmosphere-mesh">
           <div className="atmosphere-blob atmosphere-blob--indigo" />
@@ -115,26 +120,7 @@ export function RankingsPageClient({
         <div className="atmosphere-grain" />
       </div>
 
-      <div className="rankings-page__content">
-        <div className="rankings-page__top">
-          <Link href={SITE_ROUTES.home} className="rankings-page__back">
-            ← Back to Marketplace
-          </Link>
-        </div>
-
-        <header className="rankings-page__header">
-          <p className="rankings-page__eyebrow">SMOAC</p>
-          <h1 className="rankings-page__title">City Rankings</h1>
-          {metroLabel ? (
-            <p className="rankings-page__metro">{metroLabel}</p>
-          ) : null}
-          <p className="rankings-page__subtitle">
-            Ranked by SMOAC client reviews — rating and review count. Paid
-            ranking boosts appear in a labeled strip and never change organic
-            ranks.
-          </p>
-        </header>
-
+      <RankingsHero city={city}>
         <RankingsFilters
           city={city}
           profession={profession}
@@ -146,6 +132,14 @@ export function RankingsPageClient({
           }}
           onProfessionChange={setProfession}
         />
+      </RankingsHero>
+
+      <div className="rankings-page__content">
+        <div className="rankings-page__top">
+          <Link href={SITE_ROUTES.home} className="rankings-page__back">
+            ← Back to Marketplace
+          </Link>
+        </div>
 
         {rankingBoosts.length > 0 ? (
           <section
@@ -179,22 +173,19 @@ export function RankingsPageClient({
 
         <div className="rankings-board" aria-live="polite">
           {rows.length > 0 ? (
-            <HorizontalCarousel
-              className="rankings-board__carousel"
-              ariaLabel="City rankings"
+            <div
+              className="rankings-board__list"
+              role="list"
+              aria-label="City rankings"
             >
               {rows.map((row, index) => (
-                <HomePortraitSpecialistCard
+                <RankingsRow
                   key={row.trainer.id}
-                  trainer={row.trainer}
-                  priority={index < 3}
-                  avgRating={row.avgRating}
-                  reviewCount={row.reviewCount}
-                  badgeLabel={`#${row.displayRank}`}
-                  impressionSurface="rankings"
+                  row={row}
+                  priority={index < 6}
                 />
               ))}
-            </HorizontalCarousel>
+            </div>
           ) : (
             <div className="rankings-empty">
               <p className="rankings-empty__title">

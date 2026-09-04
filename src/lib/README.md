@@ -39,6 +39,7 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 - `footer-nav.ts` — `FOOTER_NAV_GROUPS` for `Footer.tsx`
 - `legal-content.ts` — copy for `LegalDocumentPage` routes
 - `navigation.ts` — `SITE_ROUTES` canonical paths
+- `ranking-metro.ts`, `ranking-hero.ts`, `smoac-rankings.ts` — city rankings board + navy/skyline hero
 
 ## SMOAC client reviews (live Supabase)
 

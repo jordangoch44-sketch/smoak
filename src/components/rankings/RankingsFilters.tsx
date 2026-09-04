@@ -23,7 +23,7 @@ export function RankingsFilters({
   professionOptions = RANKINGS_PROFESSION_OPTIONS,
 }: RankingsFiltersProps) {
   return (
-    <div className="rankings-filters">
+    <div className="rankings-filters grid grid-cols-2 gap-3">
       <label className="rankings-filter">
         <span className="rankings-filter__label">City</span>
         <span className="rankings-filter__control-wrap">

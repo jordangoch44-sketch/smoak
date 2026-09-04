@@ -1416,9 +1416,9 @@
 .home-page--discovery .home-new .home-portrait-card__body,
 .home-page--discovery .home-featured .home-portrait-card__body,
 .home-page--discovery .home-sponsored .home-portrait-card__body {
-  height: 8.15rem;
-  min-height: 8.15rem;
-  max-height: 8.15rem;
+  height: 9.2rem;
+  min-height: 9.2rem;
+  max-height: 9.2rem;
   padding: 0.65rem 0.7rem 0.7rem;
 }
 
@@ -1547,9 +1547,9 @@
   flex: 1 1 auto;
   flex-direction: column;
   gap: 0;
-  height: 8.5rem;
-  min-height: 8.5rem;
-  max-height: 8.5rem;
+  height: 9.55rem;
+  min-height: 9.55rem;
+  max-height: 9.55rem;
   padding: 0.75rem 0.8rem 0.875rem;
   overflow: hidden;
 }
@@ -1562,6 +1562,7 @@
   height: 100%;
 }
 
+.home-portrait-card .trainer-card-details__name,
 .home-portrait-card__name {
   margin: 0;
   font-size: 0.875rem;
@@ -1571,7 +1572,11 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
+  white-space: normal;
+  overflow-wrap: break-word;
+  min-height: calc(1.25em * 2);
 }
 
 .home-portrait-card__profession {

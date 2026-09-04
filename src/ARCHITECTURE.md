@@ -136,6 +136,10 @@ Explore: ExploreSearchToolbar + ExploreFiltersDrawer
 
 Search entry on mobile is bottom-nav Search → `/explore?focus=search`.
 
+### City Rankings
+
+`/rankings` — `RankingsHero` (navy fade into the selected metro skyline; default **San Diego** when no ZIP/geo) + SMOAC review board. Skyline map: `lib/ranking-hero.ts`.
+
 ### Welcome intro
 
 ```

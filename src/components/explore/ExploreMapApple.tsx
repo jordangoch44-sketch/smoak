@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LocationMarkIcon } from "@/components/ui/icons";
+import { FoldedMapIcon } from "@/components/ui/icons";
 import {
   useProfileSheetOpen,
   useSiteLocationGateOpen,
@@ -743,8 +743,7 @@ export function ExploreMapApple({
               onClick={handleRecenter}
               aria-label="Recenter map to your 12-mile search area"
             >
-              <LocationMarkIcon className="explore-map__recenter-icon" />
-              <span className="explore-map__recenter-label">Recenter</span>
+              <FoldedMapIcon className="explore-map__recenter-icon" />
             </button>
             {showSearchHere ? (
               <button

@@ -21,6 +21,9 @@ export const RANKING_METRO_CITIES = [
 
 export type RankingMetroCity = (typeof RANKING_METRO_CITIES)[number];
 
+/** Rankings board + hero when no ZIP / geo is available yet. */
+export const DEFAULT_RANKING_CITY: RankingMetroCity = "San Diego";
+
 const RANKING_METRO_CENTERS: Record<
   RankingMetroCity,
   { lat: number; lng: number }
