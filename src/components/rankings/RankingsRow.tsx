@@ -39,22 +39,21 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
         specialistId={trainer.id}
         surface="rankings"
       />
+      <div className="rankings-row__rank" aria-hidden>
+        <span className="rankings-row__rank-num">#{displayRank}</span>
+      </div>
       <TapLink
         href={href}
-        className="rankings-row__link grid grid-cols-[4.75rem_minmax(0,1fr)] items-stretch"
+        className="rankings-row__link"
         aria-label={`Rank ${displayRank}: ${trainer.name}`}
         onPointerDown={warm}
         onClick={warm}
       >
-        <div className="rankings-row__rank" aria-hidden>
-          <span className="rankings-row__rank-num">#{displayRank}</span>
-        </div>
-
         <div className="rankings-row__avatar">
           <TrainerThumbnail
             src={trainer.image}
             name={trainer.name}
-            size="compact"
+            size="card"
             priority={priority}
             className="rankings-row__thumb"
             imageClassName="rankings-row__thumb-img"

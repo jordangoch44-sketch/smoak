@@ -416,11 +416,12 @@ body:has(.rankings-page) .site-footer__glow {
 
 .rankings-row__link {
   display: grid;
-  grid-template-columns: 4.75rem minmax(0, 1fr);
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-rows: minmax(6.75rem, auto);
   align-items: stretch;
-  gap: 0.7rem;
-  min-height: 4.75rem;
-  height: 4.75rem;
+  gap: 0;
+  width: 100%;
+  min-height: 6.75rem;
   padding: 0 2.7rem 0 0;
   border-radius: 1rem;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -430,7 +431,7 @@ body:has(.rankings-page) .site-footer__glow {
     0 4px 16px rgba(0, 0, 0, 0.25);
   color: inherit;
   text-decoration: none;
-  overflow: visible;
+  overflow: hidden;
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
@@ -491,12 +492,14 @@ body:has(.rankings-page) .site-footer__glow {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border-radius: 1rem 0 0 1rem;
 }
 
 .rankings-row__thumb {
+  position: absolute !important;
+  inset: 0;
   width: 100% !important;
   height: 100% !important;
+  max-width: none !important;
   border-radius: 0 !important;
   overflow: hidden;
 }
@@ -511,7 +514,7 @@ body:has(.rankings-page) .site-footer__glow {
   flex-direction: column;
   justify-content: center;
   gap: 0.12rem;
-  padding: 0.45rem 0;
+  padding: 0.55rem 0.15rem 0.55rem 0.8rem;
 }
 
 .rankings-row__identity,
@@ -522,7 +525,7 @@ body:has(.rankings-page) .site-footer__glow {
 .rankings-row__name-row {
   display: flex;
   min-width: 0;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.35rem;
 }
 
@@ -531,6 +534,7 @@ body:has(.rankings-page) .site-footer__glow {
   flex-shrink: 0;
   width: 0.95rem;
   height: 0.95rem;
+  margin-top: 0.18rem;
 }
 
 .rankings-row__name {
@@ -538,11 +542,16 @@ body:has(.rankings-page) .site-footer__glow {
   min-width: 0;
   font-size: 0.9375rem;
   font-weight: 600;
+  line-height: 1.25;
   letter-spacing: -0.02em;
   color: #fff;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .rankings-row__profession {
@@ -592,10 +601,9 @@ body:has(.rankings-page) .site-footer__glow {
 
 @media (min-width: 768px) {
   .rankings-row__link {
-    grid-template-columns: 5.15rem minmax(0, 1fr);
-    min-height: 5.15rem;
-    height: 5.15rem;
-    gap: 0.85rem;
+    grid-template-columns: 6.25rem minmax(0, 1fr);
+    grid-template-rows: minmax(6.75rem, auto);
+    min-height: 6.75rem;
     padding-right: 3rem;
   }
 
@@ -604,7 +612,7 @@ body:has(.rankings-page) .site-footer__glow {
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr) auto auto;
     align-items: center;
     gap: 0.65rem 1rem;
-    padding: 0.35rem 0;
+    padding: 0.45rem 0.15rem 0.45rem 0.9rem;
   }
 
   .rankings-row__name {
