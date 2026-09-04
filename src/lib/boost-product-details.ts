@@ -36,6 +36,7 @@ const BOOST_DETAILS: Record<SmoacAddonProduct, Omit<BoostProductDetail, "key" | 
       ],
       appearsOn: [
         "Homepage Sponsored specialists carousel",
+        "Profile sheet Picks for you rail",
         "Client-facing cards marked Sponsored",
       ],
       willNot: [

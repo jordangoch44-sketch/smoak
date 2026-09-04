@@ -1,8 +1,8 @@
 import type { Trainer } from "@/types";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
-import { sortTrainersByProximity } from "@/lib/trainer-proximity-sort";
 import { haversineMiles } from "@/lib/geo/haversine";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
 
 /** Adjacent marketplace professions for “Similar specialists” rails */
 const RELATED_PROFESSIONS: Record<string, readonly string[]> = {
@@ -136,17 +136,18 @@ function excludeSelf(trainers: Trainer[], trainerId: string): Trainer[] {
 }
 
 /**
- * Featured / sponsored specialists near the profile subject.
- * Sponsored first, then proximity / same city, excluding the current profile.
+ * Nearby Boosted Profile placements for the profile “Picks for you” rail.
+ * Paid `sponsored` only — no organic fillers. Hidden when nobody is boosting.
  */
-export function getFeaturedSpecialistsNearTrainer(
+export function getSponsoredPicksNearTrainer(
   trainer: Trainer,
   limit = 8
 ): Trainer[] {
   const catalog = excludeSelf(listPublicMarketplaceTrainers(), trainer.id);
   const nearbyRadiusMiles = 45;
 
-  const withDistance = catalog
+  return catalog
+    .filter((candidate) => isTrainerSponsored(candidate))
     .map((candidate) => {
       const sameCity =
         normalizeCity(candidate.city) === normalizeCity(trainer.city);
@@ -164,34 +165,12 @@ export function getFeaturedSpecialistsNearTrainer(
           candidate.longitude
         );
       }
-      const nearby = sameCity || miles <= nearbyRadiusMiles;
-      return { candidate, sameCity, miles, nearby };
+      return { candidate, sameCity, miles };
     })
-    .filter((row) => row.nearby);
-
-  const sponsored = withDistance
-    .filter((row) => row.candidate.sponsored || row.candidate.featured)
-    .sort((a, b) => {
-      const aSponsored = a.candidate.sponsored ? 1 : 0;
-      const bSponsored = b.candidate.sponsored ? 1 : 0;
-      if (aSponsored !== bSponsored) return bSponsored - aSponsored;
-      return a.miles - b.miles;
-    })
-    .map((row) => row.candidate);
-
-  if (sponsored.length >= limit) {
-    return sponsored.slice(0, limit);
-  }
-
-  const sponsoredIds = new Set(sponsored.map((t) => t.id));
-  const organic = sortTrainersByProximity(
-    withDistance
-      .map((row) => row.candidate)
-      .filter((t) => !sponsoredIds.has(t.id)),
-    { latitude: trainer.latitude, longitude: trainer.longitude }
-  );
-
-  return [...sponsored, ...organic].slice(0, limit);
+    .filter((row) => row.sameCity || row.miles <= nearbyRadiusMiles)
+    .sort((a, b) => a.miles - b.miles)
+    .map((row) => row.candidate)
+    .slice(0, limit);
 }
 
 /**

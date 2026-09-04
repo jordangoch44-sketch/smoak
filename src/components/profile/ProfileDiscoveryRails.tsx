@@ -12,7 +12,7 @@ import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpr
 import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
-  getFeaturedSpecialistsNearTrainer,
+  getSponsoredPicksNearTrainer,
   getSimilarSpecialists,
 } from "@/lib/related-trainers";
 
@@ -74,7 +74,7 @@ export function ProfileDiscoveryRails({ trainer }: ProfileDiscoveryRailsProps) {
 
   const featured = useMemo(() => {
     if (!hydrated) return [];
-    return getFeaturedSpecialistsNearTrainer(trainer, 8);
+    return getSponsoredPicksNearTrainer(trainer, 8);
   }, [hydrated, trainer]);
 
   const similar = useMemo(() => {
@@ -96,22 +96,22 @@ export function ProfileDiscoveryRails({ trainer }: ProfileDiscoveryRailsProps) {
         >
           <header className="profile-discovery__header">
             <h2 id="profile-featured-heading" className="profile-discovery__title">
-              Featured Specialists Near You
+              Picks for you
             </h2>
             <p className="profile-discovery__subtitle">
-              Featured listings in and around {trainer.city}.
+              Boosted specialists near {trainer.city}.
             </p>
           </header>
           <HorizontalCarousel
             className="profile-discovery__carousel"
-            ariaLabel="Featured specialists near you"
+            ariaLabel="Picks for you"
           >
             {featured.map((card, index) => (
               <SponsoredSpecialistCard
                 key={card.id}
                 trainer={card}
                 priority={index < 2}
-                showSponsoredBadge={Boolean(card.sponsored)}
+                badgeLabel="Sponsored"
                 impressionSurface="profile_rail"
               />
             ))}
