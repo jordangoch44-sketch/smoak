@@ -12,7 +12,7 @@ export function TrainerCardSmoacRating({
 }: {
   trainerId: string;
   className?: string;
-  /** Prefetched aggregate (e.g. Top 50) — skips a redundant fetch when provided */
+  /** Prefetched aggregate — skips a redundant fetch when provided */
   avgRating?: number | null;
   reviewCount?: number;
 }) {

@@ -10,7 +10,7 @@ Feature-first folders. **UI primitives** live in `ui/`; **global chrome** in `la
 | `layout/` | `SiteHeader`, `Footer`, `PageTransition`, mobile nav, saved panel, intro gate |
 | `legal/` | Footer-linked pages — `LegalDocumentPage` + `lib/legal-content.ts` |
 | `providers/` | `AppProviders` — wrap site layout only |
-| `home/` | `/` — `Hero`, Sponsored, Top50, Categories, NewSpecialists |
+| `home/` | `/` — `Hero`, Sponsored, Featured, Categories, NewSpecialists |
 | `explore/` | `/explore` — `ExplorePageClient`, toolbar, filters drawer, results |
 | `trainers/` | Cards + `SaveTrainerButton` / `TrainerCardSaveSlot` (used on home + explore) |
 | `profile/` | `/trainers/[id]` — hero, SMOAC + Google reviews (separate), inquiry, gallery, specs accordion |

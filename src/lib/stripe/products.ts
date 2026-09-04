@@ -132,7 +132,7 @@ export function productDescription(key: SmoacStripeProductKey): string {
     case "homepage_spotlight":
       return "Featured homepage spotlight rail across SMOAC.";
     case "top_ranking_boost":
-      return "Labeled ranking boost on homepage Top Rated and City Rankings.";
+      return "Labeled ranking boost on City Rankings.";
   }
 }
 

@@ -3,70 +3,12 @@
 import { useMemo } from "react";
 import type { Trainer } from "@/types";
 import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
-import { TapLink } from "@/components/ui/TapLink";
-import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
-import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
-import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
-import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
-import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
+import { HomePortraitSpecialistCard } from "@/components/home/HomePortraitSpecialistCard";
 import { useHydrated } from "@/hooks/useHydrated";
-import {
-  getSponsoredPicksNearTrainer,
-  getSimilarSpecialists,
-} from "@/lib/related-trainers";
+import { getSponsoredPicksNearTrainer } from "@/lib/related-trainers";
 
 interface ProfileDiscoveryRailsProps {
   trainer: Trainer;
-}
-
-function SimilarSpecialistCard({
-  trainer,
-  priority,
-}: {
-  trainer: Trainer;
-  priority?: boolean;
-}) {
-  const href = `/trainers/${trainer.id}`;
-  return (
-    <div className="home-portrait-card relative" role="listitem">
-      <SpecialistImpressionBeacon
-        specialistId={trainer.id}
-        surface="profile_rail"
-      />
-      <TapLink href={href} className="home-portrait-card__link">
-        <article className="home-portrait-card__article">
-          <div className="home-portrait-card__media">
-            <TrainerThumbnail
-              src={trainer.image}
-              name={trainer.name}
-              size="card"
-              priority={priority}
-              className="home-portrait-card__thumb"
-              imageClassName="home-portrait-card__thumb-img"
-            />
-            <div className="home-portrait-card__scrim" aria-hidden />
-            <TrainerVerifiedCheck
-              trainer={trainer}
-              className="home-portrait-card__verified"
-            />
-          </div>
-          <div className="home-portrait-card__body">
-            <TrainerCardDetails
-              trainer={trainer}
-              nameClassName="home-portrait-card__name"
-              professionClassName="home-portrait-card__profession"
-              locationClassName="home-portrait-card__location"
-              distanceClassName="home-portrait-card__distance"
-              footerClassName="home-portrait-card__meta"
-              metaLayout="inline"
-            />
-          </div>
-        </article>
-      </TapLink>
-      <TrainerCardSaveSlot trainerId={trainer.id} />
-    </div>
-  );
 }
 
 export function ProfileDiscoveryRails({ trainer }: ProfileDiscoveryRailsProps) {
@@ -77,75 +19,37 @@ export function ProfileDiscoveryRails({ trainer }: ProfileDiscoveryRailsProps) {
     return getSponsoredPicksNearTrainer(trainer, 8);
   }, [hydrated, trainer]);
 
-  const similar = useMemo(() => {
-    if (!hydrated) return [];
-    const featuredIds = new Set(featured.map((t) => t.id));
-    return getSimilarSpecialists(trainer, 10).filter(
-      (t) => !featuredIds.has(t.id)
-    );
-  }, [hydrated, trainer, featured]);
-
-  if (featured.length === 0 && similar.length === 0) return null;
+  if (featured.length === 0) return null;
 
   return (
     <div className="profile-discovery">
-      {featured.length > 0 ? (
-        <section
-          className="profile-discovery__section"
-          aria-labelledby="profile-featured-heading"
+      <section
+        className="profile-discovery__section"
+        aria-labelledby="profile-featured-heading"
+      >
+        <header className="profile-discovery__header">
+          <h2 id="profile-featured-heading" className="profile-discovery__title">
+            Picks for you
+          </h2>
+          <p className="profile-discovery__subtitle">
+            Boosted specialists near {trainer.city}.
+          </p>
+        </header>
+        <HorizontalCarousel
+          className="profile-discovery__carousel"
+          ariaLabel="Picks for you"
         >
-          <header className="profile-discovery__header">
-            <h2 id="profile-featured-heading" className="profile-discovery__title">
-              Picks for you
-            </h2>
-            <p className="profile-discovery__subtitle">
-              Boosted specialists near {trainer.city}.
-            </p>
-          </header>
-          <HorizontalCarousel
-            className="profile-discovery__carousel"
-            ariaLabel="Picks for you"
-          >
             {featured.map((card, index) => (
-              <SponsoredSpecialistCard
+              <HomePortraitSpecialistCard
                 key={card.id}
                 trainer={card}
                 priority={index < 2}
-                badgeLabel="Sponsored"
                 impressionSurface="profile_rail"
+                replaceCurrentProfile
               />
             ))}
-          </HorizontalCarousel>
-        </section>
-      ) : null}
-
-      {similar.length > 0 ? (
-        <section
-          className="profile-discovery__section"
-          aria-labelledby="profile-similar-heading"
-        >
-          <header className="profile-discovery__header">
-            <h2 id="profile-similar-heading" className="profile-discovery__title">
-              Similar Specialists
-            </h2>
-            <p className="profile-discovery__subtitle">
-              Related professions and specialties worth comparing.
-            </p>
-          </header>
-          <HorizontalCarousel
-            className="profile-discovery__carousel"
-            ariaLabel="Similar specialists"
-          >
-            {similar.map((card, index) => (
-              <SimilarSpecialistCard
-                key={card.id}
-                trainer={card}
-                priority={index < 2}
-              />
-            ))}
-          </HorizontalCarousel>
-        </section>
-      ) : null}
+        </HorizontalCarousel>
+      </section>
     </div>
   );
 }

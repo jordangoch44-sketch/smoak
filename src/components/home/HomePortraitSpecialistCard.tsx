@@ -18,9 +18,14 @@ interface HomePortraitSpecialistCardProps {
   badgeLabel?: string | null;
   avgRating?: number | null;
   reviewCount?: number;
+  /**
+   * Profile-sheet picks: swap the current specialist (replace + no prefetch)
+   * so X / back still returns to Explore / Home / Saved.
+   */
+  replaceCurrentProfile?: boolean;
 }
 
-/** Shared marketplace portrait card — New, Featured, Sponsored, Top rated rails. */
+/** Shared marketplace portrait card — New, Featured, Sponsored rails. */
 export function HomePortraitSpecialistCard({
   trainer,
   priority = false,
@@ -28,12 +33,15 @@ export function HomePortraitSpecialistCard({
   badgeLabel = null,
   avgRating,
   reviewCount,
+  replaceCurrentProfile = false,
 }: HomePortraitSpecialistCardProps) {
   const router = useRouter();
   const href = `/trainers/${trainer.id}`;
 
   function warm() {
-    warmTrainerProfileNavigation(trainer, router);
+    warmTrainerProfileNavigation(trainer, router, {
+      prefetch: replaceCurrentProfile ? false : undefined,
+    });
   }
 
   return (
@@ -44,6 +52,9 @@ export function HomePortraitSpecialistCard({
       />
       <TapLink
         href={href}
+        replace={replaceCurrentProfile}
+        prefetch={replaceCurrentProfile ? false : undefined}
+        scroll={replaceCurrentProfile ? false : undefined}
         className="home-portrait-card__link"
         onPointerDown={warm}
         onClick={warm}

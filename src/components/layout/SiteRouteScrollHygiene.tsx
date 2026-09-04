@@ -7,12 +7,16 @@ import {
   disarmExploreMapShellScrollLock,
   setBottomNavPanelBodyActive,
 } from "@/lib/mobile-chrome";
+import { trackProfileSheetReturnPath } from "@/lib/profile-sheet-return";
 
 /** Clears stale scroll locks when leaving Search or after interrupted tab transitions. */
 export function SiteRouteScrollHygiene() {
   const pathname = usePathname();
 
   useLayoutEffect(() => {
+    if (typeof window !== "undefined") {
+      trackProfileSheetReturnPath(pathname, window.location.search);
+    }
     if (!isExploreNavPath(pathname)) {
       disarmExploreMapShellScrollLock();
     }

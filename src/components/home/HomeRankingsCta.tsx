@@ -45,7 +45,7 @@ function RankingsFace({
           src={src}
           alt=""
           fill
-          sizes="32px"
+          sizes="72px"
           className="home-specialty__rankings-face-img"
         />
       ) : (
@@ -125,22 +125,39 @@ export function HomeRankingsCta({
     return [board[0]?.trainer, board[1]?.trainer, board[2]?.trainer] as const;
   }, [trainers, aggregates, metro]);
 
+  const title = metro
+    ? `Top rankings in ${metro}`
+    : "Top rankings in your city";
+
   return (
     <TapLink
       href={HOME_RANKINGS_HREF}
       className="home-specialty__rankings"
-      aria-label="Top rankings in your city"
+      aria-label={title}
     >
       <span className="home-specialty__rankings-copy">
-        <CityBuildingsIcon className="home-specialty__rankings-icon" />
-        <span className="home-specialty__rankings-label">
-          Top rankings in your city
+        <span className="home-specialty__rankings-kicker">
+          <CityBuildingsIcon className="home-specialty__rankings-icon" />
+          City rankings
+        </span>
+        <span className="home-specialty__rankings-label">{title}</span>
+        <span className="home-specialty__rankings-sub">
+          Highest-reviewed specialists near you
+          <span className="home-specialty__rankings-arrow" aria-hidden>
+            →
+          </span>
         </span>
       </span>
       <span className="home-specialty__rankings-cluster" aria-hidden>
-        <RankingsFace trainer={topThree[0]} rank={1} />
-        <RankingsFace trainer={topThree[1]} rank={2} />
-        <RankingsFace trainer={topThree[2]} rank={3} />
+        {topThree.map((trainer, index) =>
+          trainer ? (
+            <RankingsFace
+              key={trainer.id}
+              trainer={trainer}
+              rank={(index + 1) as 1 | 2 | 3}
+            />
+          ) : null
+        )}
         <span className="home-specialty__rankings-face home-specialty__rankings-face--more">
           +
         </span>

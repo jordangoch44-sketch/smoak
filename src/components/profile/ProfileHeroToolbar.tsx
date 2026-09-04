@@ -7,11 +7,10 @@ import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
 import { useToast } from "@/components/ui/toast";
 import { resolveInstagramProfileUrl } from "@/lib/instagram-profile-url";
 import { shareTrainerProfile } from "@/lib/profile-share";
+import { navigateToProfileSheetReturn } from "@/lib/profile-sheet-return";
 import { cn } from "@/lib/utils";
 import { useProfileSheetDismiss } from "./ProfileSheetDismissContext";
 import { useProfileSheetToolbarHost } from "./ProfileSheetToolbarHostContext";
-
-const EXPLORE_FALLBACK_PATH = "/explore";
 
 interface ProfileHeroToolbarProps {
   trainerId: string;
@@ -65,11 +64,7 @@ export function ProfileHeroToolbar({
       sheetDismiss();
       return;
     }
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push(EXPLORE_FALLBACK_PATH);
+    navigateToProfileSheetReturn(router);
   }
 
   async function handleShare() {

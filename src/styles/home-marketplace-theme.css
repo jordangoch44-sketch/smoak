@@ -198,13 +198,7 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
   box-shadow: none;
 }
 
-.home-page--discovery .home-sponsored .home-section__title,
-.home-page--discovery .home-new .home-section__title {
-  color: #c4b5fd;
-}
-
-.home-page--discovery .home-featured,
-.home-page--discovery .home-top50 {
+.home-page--discovery .home-featured {
   margin-inline: 1rem;
   margin-block: 0.75rem;
   padding-block: 1.15rem;
@@ -216,15 +210,13 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
 }
 
 @media (min-width: 640px) {
-  .home-page--discovery .home-featured,
-  .home-page--discovery .home-top50 {
+  .home-page--discovery .home-featured {
     margin-inline: 1.5rem;
   }
 }
 
 @media (min-width: 1024px) {
-  .home-page--discovery .home-featured,
-  .home-page--discovery .home-top50 {
+  .home-page--discovery .home-featured {
     max-width: 80rem;
     margin-inline: auto;
   }
@@ -242,19 +234,11 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
 }
 
 .home-page--discovery .home-specialty__rankings {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: linear-gradient(180deg, #15151e 0%, #121218 100%);
   color: #fff;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
-.home-page--discovery .home-specialty__rankings:hover {
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-.home-page--discovery .home-specialty__rankings-icon {
+.home-page--discovery .home-specialty__rankings-icon,
+.home-page--discovery .home-specialty__rankings-kicker {
   color: #c4b5fd;
 }
 
@@ -294,8 +278,7 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
 /* Specialist cards on Marketplace only */
 .home-page--discovery .trainer-card > a > article,
 .home-page--discovery .home-portrait-card__article,
-.home-page--discovery .trainer-card-compact,
-.home-page--discovery .top50-card {
+.home-page--discovery .trainer-card-compact {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   background: linear-gradient(180deg, #15151e 0%, #121218 100%) !important;
   backdrop-filter: none !important;

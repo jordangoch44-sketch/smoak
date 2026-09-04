@@ -37,7 +37,7 @@ const BOOST_DETAILS: Record<SmoacAddonProduct, Omit<BoostProductDetail, "key" | 
       appearsOn: [
         "Homepage Sponsored specialists carousel",
         "Profile sheet Picks for you rail",
-        "Client-facing cards marked Sponsored",
+        "Homepage cards marked Sponsored",
       ],
       willNot: [
         "Does not change organic SMOAC review ranks",
@@ -82,12 +82,11 @@ const BOOST_DETAILS: Record<SmoacAddonProduct, Omit<BoostProductDetail, "key" | 
     top_ranking_boost: {
       tagline: "Sit beside city rankings in a labeled boost strip — without faking a rank.",
       youGet: [
-        "A labeled Ranking boost placement on homepage Top Rated",
+        "A labeled Ranking boost placement on City Rankings",
         "Visibility on City Rankings in a clear paid strip",
         "Honest separation from competitive SMOAC review order",
       ],
       appearsOn: [
-        "Homepage Top Rated Near You (boost strip)",
         "City Rankings page (boost strip)",
         "Cards marked Ranking boost",
       ],

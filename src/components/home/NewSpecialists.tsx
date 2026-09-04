@@ -76,9 +76,6 @@ export function NewSpecialists({
           <h2 id="home-new-heading" className="home-section__title">
             New Specialists
           </h2>
-          <p className="home-section__subtitle">
-            Newest verified professionals joining SMOAC.
-          </p>
         </header>
 
         <HorizontalCarousel

@@ -19,6 +19,11 @@ interface SponsoredSpecialistCardProps {
   /** Override chip label — Sponsored / Featured / Boosted / Category spotlight */
   badgeLabel?: string;
   impressionSurface?: SpecialistEngagementSurface;
+  /**
+   * Profile-sheet picks: swap the current specialist (replace + no prefetch)
+   * so X / back still returns to Explore / Home / Saved.
+   */
+  replaceCurrentProfile?: boolean;
 }
 
 export function SponsoredSpecialistCard({
@@ -26,13 +31,16 @@ export function SponsoredSpecialistCard({
   priority = false,
   badgeLabel,
   impressionSurface = "home_sponsored",
+  replaceCurrentProfile = false,
 }: SponsoredSpecialistCardProps) {
   const router = useRouter();
   const href = `/trainers/${trainer.id}`;
   const chip = badgeLabel?.trim() || null;
 
   function warm() {
-    warmTrainerProfileNavigation(trainer, router);
+    warmTrainerProfileNavigation(trainer, router, {
+      prefetch: replaceCurrentProfile ? false : undefined,
+    });
   }
 
   return (
@@ -44,6 +52,9 @@ export function SponsoredSpecialistCard({
       <article className="home-sponsored-card__article">
         <TapLink
           href={href}
+          replace={replaceCurrentProfile}
+          prefetch={replaceCurrentProfile ? false : undefined}
+          scroll={replaceCurrentProfile ? false : undefined}
           className="home-sponsored-card__media-link"
           onPointerDown={warm}
           onClick={warm}
@@ -70,6 +81,9 @@ export function SponsoredSpecialistCard({
         <div className="home-sponsored-card__body">
           <TapLink
             href={href}
+            replace={replaceCurrentProfile}
+            prefetch={replaceCurrentProfile ? false : undefined}
+            scroll={replaceCurrentProfile ? false : undefined}
             className="home-sponsored-card__identity"
             onPointerDown={warm}
             onClick={warm}
@@ -89,6 +103,9 @@ export function SponsoredSpecialistCard({
 
           <TapLink
             href={href}
+            replace={replaceCurrentProfile}
+            prefetch={replaceCurrentProfile ? false : undefined}
+            scroll={replaceCurrentProfile ? false : undefined}
             className="home-sponsored-card__cta"
             onPointerDown={warm}
             onClick={warm}

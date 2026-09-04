@@ -1,134 +1,10 @@
 import type { Trainer } from "@/types";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import { haversineMiles } from "@/lib/geo/haversine";
-import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
-
-/** Adjacent marketplace professions for “Similar specialists” rails */
-const RELATED_PROFESSIONS: Record<string, readonly string[]> = {
-  "Personal Trainer": [
-    "Personal Trainer",
-    "Strength Coach",
-    "Running Coach",
-    "Wellness Coach",
-    "Nutritionist",
-    "Recovery Specialist",
-  ],
-  "Strength Coach": [
-    "Strength Coach",
-    "Personal Trainer",
-    "Running Coach",
-    "Recovery Specialist",
-  ],
-  "Physical Therapist": [
-    "Physical Therapist",
-    "Chiropractor",
-    "Massage Therapist",
-    "Recovery Specialist",
-    "Personal Trainer",
-  ],
-  Chiropractor: [
-    "Chiropractor",
-    "Physical Therapist",
-    "Massage Therapist",
-    "Recovery Specialist",
-  ],
-  Nutritionist: [
-    "Nutritionist",
-    "Wellness Coach",
-    "Personal Trainer",
-  ],
-  "Massage Therapist": [
-    "Massage Therapist",
-    "Recovery Specialist",
-    "Physical Therapist",
-    "Chiropractor",
-  ],
-  "Recovery Specialist": [
-    "Recovery Specialist",
-    "Massage Therapist",
-    "Physical Therapist",
-    "Personal Trainer",
-  ],
-  "Wellness Coach": [
-    "Wellness Coach",
-    "Yoga Instructor",
-    "Nutritionist",
-    "Personal Trainer",
-    "Recovery Specialist",
-  ],
-  "Yoga Instructor": [
-    "Yoga Instructor",
-    "Wellness Coach",
-    "Personal Trainer",
-    "Recovery Specialist",
-  ],
-  "Running Coach": [
-    "Running Coach",
-    "Personal Trainer",
-    "Strength Coach",
-    "Wellness Coach",
-  ],
-};
 
 function normalizeCity(city: string): string {
   return city.trim().toLowerCase();
-}
-
-function specialtyOverlap(a: Trainer, b: Trainer): number {
-  if (!a.specialty.length || !b.specialty.length) return 0;
-  const set = new Set(a.specialty.map((s) => s.toLowerCase()));
-  return b.specialty.reduce(
-    (count, s) => (set.has(s.toLowerCase()) ? count + 1 : count),
-    0
-  );
-}
-
-function relatedProfessionRank(source: Trainer, candidate: Trainer): number {
-  const sourceProfession = resolveTrainerProfessionCategory(source);
-  const candidateProfession = resolveTrainerProfessionCategory(candidate);
-  const related =
-    RELATED_PROFESSIONS[sourceProfession] ??
-    (sourceProfession ? [sourceProfession] : []);
-  const index = related.indexOf(candidateProfession);
-  if (index === -1) return -1;
-  return related.length - index;
-}
-
-function scoreSimilar(source: Trainer, candidate: Trainer): number {
-  const professionScore = relatedProfessionRank(source, candidate);
-  if (professionScore < 0) return -1;
-
-  let score = professionScore * 100;
-  score += specialtyOverlap(source, candidate) * 18;
-
-  if (normalizeCity(source.city) === normalizeCity(candidate.city)) {
-    score += 40;
-  }
-
-  if (
-    Number.isFinite(source.latitude) &&
-    Number.isFinite(source.longitude) &&
-    Number.isFinite(candidate.latitude) &&
-    Number.isFinite(candidate.longitude)
-  ) {
-    const miles = haversineMiles(
-      source.latitude,
-      source.longitude,
-      candidate.latitude,
-      candidate.longitude
-    );
-    if (miles <= 15) score += 30;
-    else if (miles <= 35) score += 18;
-    else if (miles <= 60) score += 8;
-  }
-
-  score += candidate.rating * 2;
-  if (candidate.sponsored) score += 6;
-  if (candidate.featured) score += 3;
-  if (candidate.verified) score += 2;
-
-  return score;
 }
 
 function excludeSelf(trainers: Trainer[], trainerId: string): Trainer[] {
@@ -169,27 +45,6 @@ export function getSponsoredPicksNearTrainer(
     })
     .filter((row) => row.sameCity || row.miles <= nearbyRadiusMiles)
     .sort((a, b) => a.miles - b.miles)
-    .map((row) => row.candidate)
-    .slice(0, limit);
-}
-
-/**
- * Specialists with related professions / overlapping specialties.
- * Prefers same city and proximity; never returns the current profile.
- */
-export function getSimilarSpecialists(
-  trainer: Trainer,
-  limit = 10
-): Trainer[] {
-  const catalog = excludeSelf(listPublicMarketplaceTrainers(), trainer.id);
-
-  return catalog
-    .map((candidate) => ({
-      candidate,
-      score: scoreSimilar(trainer, candidate),
-    }))
-    .filter((row) => row.score >= 0)
-    .sort((a, b) => b.score - a.score)
     .map((row) => row.candidate)
     .slice(0, limit);
 }

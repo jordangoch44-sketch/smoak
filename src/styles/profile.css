@@ -3124,65 +3124,44 @@ body.profile-image-preview-open .profile-toolbar {
   margin-inline: -1rem;
 }
 
-/* Picks for you — compact sponsored cards (~1/4 the homepage sponsored footprint) */
-.profile-discovery .home-sponsored-card {
-  flex: 0 0 min(38vw, 8.65rem);
+/* Picks for you — same footprint as Marketplace portrait rails */
+.profile-discovery .home-portrait-card {
+  flex-basis: min(53vw, 12.3rem);
 }
 
-.profile-discovery .home-sponsored-card__article {
-  border-radius: 0.85rem;
+.profile-discovery .home-portrait-card__article {
+  border: 1.5px solid transparent;
+  border-radius: 1rem;
+  background:
+    linear-gradient(rgba(30, 30, 38, 0.92), rgba(30, 30, 38, 0.92)) padding-box,
+    var(--smoac-color) border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
-.profile-discovery .home-sponsored-card__media {
-  aspect-ratio: 4 / 5;
+.profile-discovery .home-portrait-card__body {
+  height: 8.15rem;
+  min-height: 8.15rem;
+  max-height: 8.15rem;
+  padding: 0.65rem 0.7rem 0.7rem;
 }
 
-.profile-discovery .home-sponsored-card__top-left {
-  top: 0.4rem;
-  left: 0.4rem;
-  max-width: calc(100% - 2.4rem);
-  gap: 0.2rem;
+.profile-discovery .home-portrait-card__name {
+  font-size: 0.8125rem;
 }
 
-.profile-discovery .home-sponsored-card__sponsored {
-  padding: 0.12rem 0.4rem;
-  font-size: 0.5rem;
-  letter-spacing: 0.06em;
+.profile-discovery .home-portrait-card__profession {
+  font-size: 0.6875rem;
 }
 
-.profile-discovery .home-sponsored-card__body {
-  gap: 0.2rem;
-  padding: 0.45rem 0.5rem 0.5rem;
-}
-
-.profile-discovery .home-sponsored-card__name {
-  font-size: 0.75rem;
-}
-
-.profile-discovery .home-sponsored-card__profession {
+.profile-discovery .home-portrait-card__meta {
   font-size: 0.625rem;
+  padding-top: 0.3rem;
 }
 
-.profile-discovery .home-sponsored-card__location,
-.profile-discovery .home-sponsored-card__distance {
+.profile-discovery .home-portrait-card__chip {
   display: none;
-}
-
-.profile-discovery .home-sponsored-card__meta {
-  padding-top: 0.2rem;
-  font-size: 0.5625rem;
-  gap: 0.1rem;
-}
-
-.profile-discovery .home-sponsored-card__cta {
-  display: none;
-}
-
-.profile-discovery .home-sponsored-card .trainer-card-save {
-  top: 0.3rem !important;
-  right: 0.3rem !important;
-  transform: scale(0.82);
-  transform-origin: top right;
 }
 
 @media (min-width: 640px) {
@@ -3194,8 +3173,8 @@ body.profile-image-preview-open .profile-toolbar {
     margin-inline: -1.5rem;
   }
 
-  .profile-discovery .home-sponsored-card {
-    flex-basis: 9rem;
+  .profile-discovery .home-portrait-card {
+    flex-basis: 13.2rem;
   }
 }
 

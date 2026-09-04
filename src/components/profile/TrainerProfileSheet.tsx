@@ -18,7 +18,7 @@ import {
 } from "framer-motion";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
-import { SITE_ROUTES } from "@/lib/navigation";
+import { navigateToProfileSheetReturn } from "@/lib/profile-sheet-return";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
 import {
   ProfileSheetToolbarHostProvider,
@@ -41,7 +41,7 @@ const DISMISS_OVERFLOW_PX = 96;
 interface TrainerProfileSheetProps {
   children: ReactNode;
   label?: string;
-  /** Specialist id — reserved for callers; sheet open is route-driven. */
+  /** Specialist id — used to reset sheet scroll when Picks swap in-place. */
   trainerId?: string;
 }
 
@@ -103,6 +103,7 @@ function clearSheetDismissing() {
 export function TrainerProfileSheet({
   children,
   label = "Specialist profile",
+  trainerId,
 }: TrainerProfileSheetProps) {
   const router = useRouter();
   const hydrated = useHydrated();
@@ -124,11 +125,7 @@ export function TrainerProfileSheet({
 
   const navigateAway = useCallback(() => {
     programmaticNavRef.current = true;
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-      return;
-    }
-    router.push(SITE_ROUTES.explore);
+    navigateToProfileSheetReturn(router);
   }, [router]);
 
   const runDismissAnimation = useCallback(
@@ -240,6 +237,16 @@ export function TrainerProfileSheet({
       clearSheetDismissing();
     };
   }, [exited, isSheetViewport, reduceMotion, y]);
+
+  useLayoutEffect(() => {
+    if (!isSheetViewport || !trainerId || exited || dismissingRef.current) {
+      return;
+    }
+    const body = rootRef.current?.querySelector(".profile-sheet__body");
+    if (body instanceof HTMLElement) {
+      body.scrollTop = 0;
+    }
+  }, [exited, hydrated, isSheetViewport, trainerId]);
 
   useEffect(() => {
     if (!isSheetViewport) return;

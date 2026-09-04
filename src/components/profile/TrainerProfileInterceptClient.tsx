@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { TrainerProfilePageClient } from "@/components/profile/TrainerProfilePageClient";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
 import { refreshApprovedSpecialistProfilesFromRemote } from "@/lib/approved-specialist-profiles-store";
@@ -16,19 +17,35 @@ import type { Trainer } from "@/types/trainer";
 /**
  * Soft-nav profile sheet — opens from primed card / in-memory catalog
  * immediately, then slides up with the full profile.
+ *
+ * Reads `useParams()` so Picks replace-navigations swap the specialist
+ * without waiting on the intercept server page, and without stacking history.
  */
 export function TrainerProfileInterceptClient({
   trainerId,
 }: {
   trainerId: string;
 }) {
-  const fromCatalog = useTrainerWithOverrides(trainerId);
-  const [primed] = useState(() => peekPrimedTrainer(trainerId));
+  const params = useParams();
+  const routeId =
+    typeof params?.id === "string" && params.id.length > 0
+      ? params.id
+      : trainerId;
+
+  const fromCatalog = useTrainerWithOverrides(routeId);
+  const [handoff, setHandoff] = useState<Trainer | null>(() =>
+    peekPrimedTrainer(routeId)
+  );
   const [fetched, setFetched] = useState<Trainer | null>(null);
 
   useEffect(() => {
-    clearPrimedTrainer(trainerId);
-  }, [trainerId]);
+    const next = peekPrimedTrainer(routeId);
+    setHandoff(next?.id === routeId ? next : null);
+    setFetched(null);
+    clearPrimedTrainer(routeId);
+  }, [routeId]);
+
+  const primed = handoff?.id === routeId ? handoff : null;
 
   useEffect(() => {
     if (fromCatalog || primed) return;
@@ -44,7 +61,7 @@ export function TrainerProfileInterceptClient({
       const { data, error } = await supabase
         .from("specialist_profiles")
         .select("*")
-        .eq("id", trainerId)
+        .eq("id", routeId)
         .eq("status", "approved")
         .maybeSingle();
 
@@ -64,13 +81,13 @@ export function TrainerProfileInterceptClient({
     return () => {
       cancelled = true;
     };
-  }, [fromCatalog, primed, trainerId]);
+  }, [fromCatalog, primed, routeId]);
 
   const trainer = fromCatalog ?? primed ?? fetched;
 
   return (
     <TrainerProfilePageClient
-      trainerId={trainerId}
+      trainerId={routeId}
       initialTrainer={trainer ?? null}
     />
   );

@@ -24,7 +24,7 @@ src/
 │   ├── ui/                     # Primitives: Button, SaveButton, Logo, icons
 │   ├── layout/                 # SiteHeader, Footer, overlays, page transition
 │   ├── providers/              # AppProviders wrapper
-│   ├── home/                   # Hero, Sponsored, Top50, Categories, New
+│   ├── home/                   # Hero, Sponsored, Featured, Categories, New
 │   ├── explore/                # Explore page client + filters
 │   ├── trainers/               # Cards + SaveTrainerButton
 │   ├── profile/                # Trainer profile sections

@@ -1,12 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useParams } from "next/navigation";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from "react";
 import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
+import { peekPrimedTrainer } from "@/lib/primed-trainer-profile";
 import { AdminProfileModerationBar } from "@/components/admin/AdminProfileModerationBar";
 import { ProfileInquiryAction } from "@/components/inquiry";
 import {
@@ -58,14 +67,27 @@ export function TrainerProfilePageClient({
     getApprovedSpecialistProfilesHydratedSnapshot,
     getApprovedSpecialistProfilesHydratedServerSnapshot
   );
-  const liveTrainer = useTrainerWithOverrides(trainerId);
-  const trainer = liveTrainer ?? initialTrainer;
+  const params = useParams();
+  const routeId =
+    typeof params?.id === "string" && params.id.length > 0
+      ? params.id
+      : trainerId;
+  const liveTrainer = useTrainerWithOverrides(routeId);
+  const primed = peekPrimedTrainer(routeId);
+  const trainer =
+    liveTrainer ??
+    (initialTrainer?.id === routeId ? initialTrainer : null) ??
+    primed;
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
-  const [cityRanking, setCityRanking] = useState<TrainerCityRanking | null>(
-    initialCityRanking
-  );
+  const [sheetRouteId, setSheetRouteId] = useState(routeId);
+  if (sheetRouteId !== routeId) {
+    setSheetRouteId(routeId);
+    setSheetTab("details");
+    setInquiryOpen(false);
+    setReviewModalOpen(false);
+  }
   const {
     aggregate,
     reviews: smoacReviews,
@@ -77,11 +99,53 @@ export function TrainerProfilePageClient({
     ownReview,
     canLeaveReview,
     applySubmittedReview,
-  } = useSpecialistReviews(trainerId);
+  } = useSpecialistReviews(routeId);
 
-  useEffect(() => {
-    setSheetTab("details");
-  }, [trainerId]);
+  const cityRanking = useMemo(() => {
+    const current =
+      liveTrainer ??
+      (initialTrainer?.id === routeId ? initialTrainer : null);
+    if (!current) return null;
+
+    const peers =
+      initialCatalog.length > 0
+        ? initialCatalog
+        : initialTrainer
+          ? [initialTrainer]
+          : [];
+    const map = reviewAggregatesFromSerialized(initialAggregates);
+    if (aggregate) {
+      map.set(current.id, {
+        specialistId: current.id,
+        reviewCount: aggregate.reviewCount,
+        avgRating: aggregate.avgRating,
+      });
+    } else if (
+      initialCityRanking &&
+      current.id === routeId &&
+      current.id === initialTrainer?.id
+    ) {
+      return initialCityRanking;
+    }
+    return getLiveTrainerCityRanking(current, peers, map);
+  }, [
+    routeId,
+    liveTrainer,
+    initialTrainer,
+    initialCatalog,
+    initialAggregates,
+    initialCityRanking,
+    aggregate,
+  ]);
+
+  useLayoutEffect(() => {
+    const sheetBody = document.querySelector(".profile-sheet__body");
+    if (sheetBody instanceof HTMLElement) {
+      sheetBody.scrollTop = 0;
+      return;
+    }
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [routeId]);
 
   useEffect(() => {
     if (!hydrated || !canLeaveReview) return;
@@ -98,40 +162,7 @@ export function TrainerProfilePageClient({
     } catch {
       /* ignore malformed URL */
     }
-  }, [hydrated, canLeaveReview, trainerId]);
-
-  useEffect(() => {
-    const current = liveTrainer ?? initialTrainer;
-    if (!current) {
-      setCityRanking(null);
-      return;
-    }
-
-    const peers =
-      initialCatalog.length > 0
-        ? initialCatalog
-        : initialTrainer
-          ? [initialTrainer]
-          : [];
-    const map = reviewAggregatesFromSerialized(initialAggregates);
-    // Refresh when this specialist's SMOAC aggregate changes (new review).
-    if (aggregate) {
-      map.set(current.id, {
-        specialistId: current.id,
-        reviewCount: aggregate.reviewCount,
-        avgRating: aggregate.avgRating,
-      });
-    }
-    setCityRanking(getLiveTrainerCityRanking(current, peers, map));
-  }, [
-    trainerId,
-    liveTrainer,
-    initialTrainer,
-    initialCatalog,
-    initialAggregates,
-    aggregate?.reviewCount,
-    aggregate?.avgRating,
-  ]);
+  }, [hydrated, canLeaveReview, routeId]);
 
   if (!trainer && hydrated && catalogReady) {
     return (
@@ -171,6 +202,7 @@ export function TrainerProfilePageClient({
       trainerId={trainer.id}
     >
       <div
+        key={trainer.id}
         className={cn("profile-page--styled")}
         style={pageStyle}
         data-profile-accent={profileStyle.accent}

@@ -5,10 +5,11 @@ import type { Trainer } from "@/types/trainer";
 /** Prime sheet data + prefetch route as early as pointer-down (before click). */
 export function warmTrainerProfileNavigation(
   trainer: Trainer,
-  router?: Pick<AppRouterInstance, "prefetch"> | null
+  router?: Pick<AppRouterInstance, "prefetch"> | null,
+  options?: { prefetch?: boolean }
 ): void {
   primeTrainerProfile(trainer);
-  if (!router) return;
+  if (!router || options?.prefetch === false) return;
   try {
     router.prefetch(`/trainers/${trainer.id}`);
   } catch {

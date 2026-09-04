@@ -76,11 +76,6 @@ export function SponsoredSpecialists({
           <h2 id="home-sponsored-heading" className="home-section__title">
             Sponsored Specialists
           </h2>
-          <p className="home-section__subtitle">
-            {rail.isLocal
-              ? "Paid profile boosts from specialists in your area."
-              : "Paid profile boosts from specialists on SMOAC."}
-          </p>
         </header>
 
         <HorizontalCarousel
