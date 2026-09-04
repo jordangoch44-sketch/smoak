@@ -41,6 +41,10 @@
   padding-inline: max(0.875rem, env(safe-area-inset-left, 0px))
     max(0.875rem, env(safe-area-inset-right, 0px));
   padding-bottom: max(0.625rem, env(safe-area-inset-bottom, 0px));
+  /* Same compositing as the site header — iOS otherwise scrolls fixed bars. */
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
   transition:
     opacity 0.22s ease,
     transform 0.22s ease;
@@ -54,7 +58,7 @@
 
 .mobile-bottom-nav--hidden {
   opacity: 0;
-  transform: translateY(calc(100% + 1rem));
+  transform: translateZ(0) translateY(calc(100% + 1rem));
   pointer-events: none !important;
 }
 

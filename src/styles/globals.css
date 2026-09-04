@@ -173,6 +173,8 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  /* visible — overflow-x:clip on body traps position:fixed chrome on iOS */
+  overflow-x: visible;
   background-color: #050506;
   background-image:
     radial-gradient(
@@ -196,7 +198,6 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: clip;
 }
 
 /* Scroll lock — avoid touch-action:none (blocks taps on iOS Safari) */

@@ -44,9 +44,10 @@ html {
     font-size: 16px !important;
   }
 
-  /* Fixed chrome — cheaper compositing under pinch-zoom / scroll */
+  /* Fixed chrome — cheaper compositing under pinch-zoom / scroll.
+   * Do not contain:layout the bottom nav itself — Safari then treats
+   * position:fixed as document-relative and the bar scrolls with the page. */
   #site-header.site-header,
-  .mobile-bottom-nav,
   .mobile-bottom-nav__pill {
     contain: layout style;
     backface-visibility: hidden;
