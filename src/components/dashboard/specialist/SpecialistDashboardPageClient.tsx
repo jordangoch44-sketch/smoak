@@ -12,6 +12,7 @@ import {
 } from "@/components/dashboard/shared";
 import {
   AnalyticsCard,
+  BoostProfileCard,
   LeadsCard,
   ProfileCompletionCard,
   ReviewsCard,
@@ -442,6 +443,8 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
+                  <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
+
                   <LeadsCard
                     leads={data.newLeads}
                     onOpenLead={handleOpenInquiryLead}
@@ -607,6 +610,7 @@ export function SpecialistDashboardPageClient() {
                           ? resolveTrainerProfessionCategory(trainer)
                           : undefined
                       }
+                      onOpenBoost={() => setBoostOpen(true)}
                     />
                     <ReviewsCard
                       trainer={trainer}
@@ -642,8 +646,13 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
+                  <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
+
                   <div className="specialist-dash-panel__footer-card">
-                    <SubscriptionCard subscription={data.subscription} />
+                    <SubscriptionCard
+                      subscription={data.subscription}
+                      onOpenBoost={() => setBoostOpen(true)}
+                    />
                   </div>
                 </div>
               ) : null}

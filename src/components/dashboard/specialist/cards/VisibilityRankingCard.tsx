@@ -1,5 +1,8 @@
+"use client";
+
 import type { SpecialistDashboardRanking } from "@/types/specialist-dashboard";
 import {
+  DashboardButton,
   DashboardCollapsibleSection,
   DashboardMetricCard,
   DashboardSectionIcon,
@@ -14,6 +17,7 @@ interface VisibilityRankingCardProps {
   /** Profession / category label for secondary rank context */
   categoryLabel?: string;
   defaultOpen?: boolean;
+  onOpenBoost?: () => void;
 }
 
 export function VisibilityRankingCard({
@@ -23,6 +27,7 @@ export function VisibilityRankingCard({
   smoacReviewCount = 0,
   categoryLabel,
   defaultOpen = false,
+  onOpenBoost,
 }: VisibilityRankingCardProps) {
   const hasSmoacReviews =
     smoacReviewCount > 0 && smoacRating != null && smoacRating > 0;
@@ -74,6 +79,21 @@ export function VisibilityRankingCard({
           lockValues={!isPremium}
         />
       </div>
+      {onOpenBoost ? (
+        <div className="dashboard-rankings-boost">
+          <p className="dashboard-rankings-boost__copy">
+            Boost does not buy your rank number. It puts a labeled ad on
+            Marketplace, Search, or City Rankings.
+          </p>
+          <DashboardButton
+            variant="link"
+            className="dashboard-rankings-boost__btn"
+            onClick={onOpenBoost}
+          >
+            Boost placement
+          </DashboardButton>
+        </div>
+      ) : null}
     </DashboardCollapsibleSection>
   );
 }

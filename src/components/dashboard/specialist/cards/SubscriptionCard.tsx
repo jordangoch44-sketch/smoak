@@ -27,6 +27,7 @@ interface BillingSummary {
 
 interface SubscriptionCardProps {
   subscription: SpecialistSubscription;
+  onOpenBoost?: () => void;
 }
 
 function formatUsd(cents: number): string {
@@ -48,7 +49,10 @@ function formatPeriodEnd(iso: string | null): string {
   }).format(ms);
 }
 
-export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
+export function SubscriptionCard({
+  subscription,
+  onOpenBoost,
+}: SubscriptionCardProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
@@ -200,10 +204,19 @@ export function SubscriptionCard({ subscription }: SubscriptionCardProps) {
                 </ul>
               ) : (
                 <p className="dashboard-ad-spend__empty">
-                  No active placement ads yet. Boost from Profile Analytics when
-                  you’re ready.
+                  No active placement ads yet.
                 </p>
               )}
+
+              {onOpenBoost ? (
+                <DashboardButton
+                  variant="link"
+                  className="dashboard-ad-spend__boost"
+                  onClick={onOpenBoost}
+                >
+                  {adLines.length > 0 ? "Add a placement" : "Boost your profile"}
+                </DashboardButton>
+              ) : null}
 
               {planLines.length > 0 ? (
                 <ul className="dashboard-ad-spend__list dashboard-ad-spend__list--plan">

@@ -3066,6 +3066,86 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     ) !important;
 }
 
+.dashboard-boost-cta {
+  margin: 1.15rem 0 0;
+  padding: 1.1rem 1.15rem 1.05rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(250, 230, 66, 0.28);
+  background:
+    linear-gradient(
+      145deg,
+      rgba(250, 230, 66, 0.1) 0%,
+      rgba(14, 14, 20, 0.55) 100%
+    );
+  box-shadow:
+    0 0 0 1px rgba(250, 230, 66, 0.08) inset,
+    0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+.dashboard-boost-cta__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(254, 243, 140, 0.92);
+}
+
+.dashboard-boost-cta__title {
+  margin: 0.28rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.dashboard-boost-cta__body {
+  margin: 0.4rem 0 0;
+  max-width: 36rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.dashboard-boost-cta__btn {
+  margin-top: 0.85rem;
+  width: 100%;
+}
+
+.dashboard-boost-cta__note {
+  margin: 0.55rem 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.dashboard-rankings-boost {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin-top: 0.95rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-rankings-boost__copy {
+  margin: 0;
+  flex: 1 1 14rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.dashboard-rankings-boost__btn {
+  flex-shrink: 0;
+}
+
+.dashboard-ad-spend__boost {
+  margin-top: 0.65rem;
+}
+
 .dashboard-boost-checkout {
   margin-top: 0.75rem;
   padding: 0.85rem 0.9rem;
