@@ -4,11 +4,11 @@ import type { ComponentType } from "react";
 import { TapLink } from "@/components/ui/TapLink";
 import {
   AppleFruitIcon,
-  AthleticBallIcon,
   DumbbellIcon,
+  MedicalCrossIcon,
   MeditationIcon,
   RunningShoeIcon,
-  StrengthArmIcon,
+  SpineIcon,
 } from "@/components/ui/icons";
 import { HomeRankingsCta } from "./HomeRankingsCta";
 import {
@@ -24,10 +24,10 @@ const CATEGORY_ICONS: Record<
   ComponentType<{ className?: string }>
 > = {
   dumbbell: DumbbellIcon,
-  strength: StrengthArmIcon,
-  leaf: AppleFruitIcon,
+  medical: MedicalCrossIcon,
+  spine: SpineIcon,
   yoga: MeditationIcon,
-  sports: AthleticBallIcon,
+  leaf: AppleFruitIcon,
   running: RunningShoeIcon,
 };
 
@@ -64,7 +64,7 @@ export function Categories({
       <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header home-specialty__header">
           <h2 id="home-specialty-heading" className="home-section__title">
-            Browse by category
+            Popular categories
           </h2>
         </header>
 

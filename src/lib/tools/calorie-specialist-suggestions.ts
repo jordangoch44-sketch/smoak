@@ -12,14 +12,24 @@ import type { Trainer } from "@/types/trainer";
 import type { CalorieGoalId } from "@/lib/tools/calorie-calculator";
 
 const GOAL_PROFESSIONS: Record<CalorieGoalId, readonly string[]> = {
-  lose: ["Nutritionist", "Wellness Coach", "Personal Trainer", "Strength Coach"],
-  maintain: [
-    "Personal Trainer",
-    "Nutritionist",
-    "Strength Coach",
-    "Wellness Coach",
+  lose: [
+    "Nutrition & Dietetics",
+    "Personal Training",
+    "Sports/Endurance Coaching",
+    "Mental Health & Therapy",
   ],
-  gain: ["Strength Coach", "Personal Trainer", "Nutritionist", "Wellness Coach"],
+  maintain: [
+    "Personal Training",
+    "Nutrition & Dietetics",
+    "Sports/Endurance Coaching",
+    "Mental Health & Therapy",
+  ],
+  gain: [
+    "Sports/Endurance Coaching",
+    "Personal Training",
+    "Nutrition & Dietetics",
+    "Mental Health & Therapy",
+  ],
 };
 
 export type CalorieSuggestionKind = "sponsored" | "suggested";

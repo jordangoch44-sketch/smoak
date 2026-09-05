@@ -1,3 +1,5 @@
+import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
+
 export const CLIENT_ACCOUNT_OPTION = {
   id: "client" as const,
   title: "Client",
@@ -22,16 +24,7 @@ export const CLIENT_GOAL_OPTIONS = [
   "Other",
 ] as const;
 
-export const SPECIALIST_TYPE_OPTIONS = [
-  "Personal Trainer",
-  "Physical Therapist",
-  "Nutrition Coach",
-  "Recovery Specialist",
-  "Strength Coach",
-  "Run Coach",
-  "Wellness Coach",
-  "Other",
-] as const;
+export const SPECIALIST_TYPE_OPTIONS = MAIN_PROFESSION_CATEGORIES;
 
 export const BUDGET_RANGE_OPTIONS = [
   "Under $75 / session",

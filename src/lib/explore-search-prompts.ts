@@ -14,13 +14,13 @@ export const EXPLORE_SEARCH_SPECIALIST_PROMPTS: readonly ExploreSearchPrompt[] =
   [
     {
       id: "personal-trainer",
-      label: "Personal Trainer",
-      searchQuery: "Personal Trainer",
+      label: "Personal Training",
+      searchQuery: "Personal Training",
     },
     {
       id: "nutritionist",
-      label: "Nutritionist",
-      searchQuery: "Nutritionist",
+      label: "Nutrition & Dietetics",
+      searchQuery: "Nutrition & Dietetics",
     },
   ] as const;
 

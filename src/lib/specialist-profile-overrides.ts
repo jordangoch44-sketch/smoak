@@ -14,6 +14,7 @@ import {
   travelToClientsFromLegacyRadius,
 } from "@/lib/specialist-service-area";
 import { parseTravelToClients } from "@/types/specialist-service-area";
+import { parseTrainingOptions } from "@/types/specialist-training-options";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import type { Certification, Trainer } from "@/types";
@@ -46,6 +47,7 @@ export function cloneSpecialistProfileEditForm(
     homepageSpecialties: [...form.homepageSpecialties],
     serviceArea: [...form.serviceArea],
     pinnedPhotos: [...form.pinnedPhotos],
+    trainingOptions: [...form.trainingOptions],
     certifications: form.certifications.map((cert) => ({ ...cert })),
   };
 }
@@ -119,6 +121,12 @@ export function applySpecialistProfileOverrides(
   if (overrides.travelToClients) {
     merged.travelToClients = overrides.travelToClients;
     merged.willingToTravel = overrides.travelToClients === "yes";
+  }
+
+  if (overrides.trainingOptions) {
+    merged.trainingOptions = parseTrainingOptions(overrides.trainingOptions, {
+      sessionExperience: merged.sessionExperience,
+    });
   }
 
   merged.homepageSpecialties = sanitizeHomepageSpecialties(
@@ -330,6 +338,10 @@ export function overridesFromTrainer(
     neighborhood: stored?.neighborhood ?? trainer.neighborhood,
     zipCode: stored?.zipCode ?? trainer.zipCode ?? "",
     serviceType: stored?.serviceType ?? trainer.serviceType ?? "both",
+    trainingOptions: parseTrainingOptions(
+      stored?.trainingOptions ?? trainer.trainingOptions,
+      { sessionExperience: trainer.sessionExperience }
+    ),
     travelRadius:
       stored?.travelRadius ??
       (stored?.serviceRadiusMiles != null
@@ -447,6 +459,7 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     neighborhood: form.neighborhood.trim(),
     zipCode: form.zipCode.trim(),
     serviceType: form.serviceType,
+    trainingOptions: parseTrainingOptions(form.trainingOptions),
     travelToClients: form.travelToClients || undefined,
     travelRadius: travel || undefined,
     serviceRadiusMiles: form.travelToClients === "yes" ? radiusMiles : 0,

@@ -24,6 +24,7 @@ import {
 import { ProfileTrainerSpecs } from "@/components/profile/ProfileTrainerSpecs";
 import { SmoacReviewsSection } from "@/components/profile/SmoacReviewsSection";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
+import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
@@ -140,6 +141,7 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
     case "booking":
     case "session-experience":
     case "experience-booking":
+    case "training-options":
       return "session-experience";
     case "specialties":
     case "specialty":
@@ -745,6 +747,12 @@ export function SpecialistDashboardProfilePreview({
                 ))}
               </select>
             </label>
+            <SpecialistTrainingOptionsFields
+              value={form.trainingOptions}
+              onChange={(trainingOptions) =>
+                patch("trainingOptions", trainingOptions)
+              }
+            />
             <label className="login-field">
               <span className="login-field__label">
                 Are you willing to travel to clients?
@@ -786,18 +794,26 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "session-experience" ? (
-          <label className="login-field">
-            <span className="login-field__label">
-              Session experience (comma-separated)
-            </span>
-            <textarea
-              className="login-field__input dashboard-edit-textarea profile-edit-input"
-              rows={4}
-              value={form.bookingAvailability}
-              onChange={(e) => patch("bookingAvailability", e.target.value)}
-              placeholder="In-home sessions, Online coaching, Free consultation"
+          <div className="specialist-dash-profile__fields">
+            <SpecialistTrainingOptionsFields
+              value={form.trainingOptions}
+              onChange={(trainingOptions) =>
+                patch("trainingOptions", trainingOptions)
+              }
             />
-          </label>
+            <label className="login-field">
+              <span className="login-field__label">
+                Session experience (comma-separated)
+              </span>
+              <textarea
+                className="login-field__input dashboard-edit-textarea profile-edit-input"
+                rows={4}
+                value={form.bookingAvailability}
+                onChange={(e) => patch("bookingAvailability", e.target.value)}
+                placeholder="In-home sessions, Online coaching, Free consultation"
+              />
+            </label>
+          </div>
         ) : null}
 
         {editing === "credentials" ? (

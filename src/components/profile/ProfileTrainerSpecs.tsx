@@ -3,10 +3,8 @@ import { Bio } from "./Bio";
 import { Certifications } from "./Certifications";
 import { ProfileServiceArea } from "./ProfileServiceArea";
 import { ProfileSessionExperience } from "./ProfileSessionExperience";
-import {
-  buildLocationTravelDisplay,
-  trainingOptionsFromTrainer,
-} from "@/lib/specialist-service-area";
+import { trainingOptionCardsFromTrainer } from "@/lib/profile-details-visual";
+import { buildLocationTravelDisplay } from "@/lib/specialist-service-area";
 
 interface ProfileTrainerSpecsProps {
   trainer: Trainer;
@@ -19,7 +17,7 @@ function nonEmptyStrings(items: string[] | null | undefined): string[] {
 
 export function ProfileTrainerSpecs({ trainer }: ProfileTrainerSpecsProps) {
   const specialties = nonEmptyStrings(trainer.specialty);
-  const trainingOptions = trainingOptionsFromTrainer(trainer);
+  const trainingOptions = trainingOptionCardsFromTrainer(trainer);
   const location = buildLocationTravelDisplay(trainer);
   const accolades = nonEmptyStrings(trainer.resultsSnapshot ?? []);
   const hasCreds =

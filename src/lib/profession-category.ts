@@ -12,70 +12,92 @@ function normalizeKey(value: string): string {
 
 /** Onboarding / alias labels → canonical MAIN_PROFESSION_CATEGORIES */
 const PROFESSION_ALIASES: Record<string, MainProfession> = {
-  "personal trainer": "Personal Trainer",
-  "certified personal trainer": "Personal Trainer",
-  cpt: "Personal Trainer",
-  "fitness coach": "Personal Trainer",
-  "hybrid coach": "Personal Trainer",
-  "sports performance coach": "Personal Trainer",
-  "performance coach": "Personal Trainer",
-  "strength coach": "Strength Coach",
-  "physical therapist": "Physical Therapist",
-  physiotherapist: "Physical Therapist",
-  "physical therapy": "Physical Therapist",
-  chiropractor: "Chiropractor",
-  chiropractic: "Chiropractor",
-  nutritionist: "Nutritionist",
-  "nutrition coach": "Nutritionist",
-  dietitian: "Nutritionist",
-  "registered dietitian": "Nutritionist",
-  "massage therapist": "Massage Therapist",
-  lmt: "Massage Therapist",
-  "recovery specialist": "Recovery Specialist",
-  "recovery coach": "Recovery Specialist",
-  "wellness coach": "Wellness Coach",
-  "mental performance coach": "Wellness Coach",
-  "yoga instructor": "Yoga Instructor",
-  "yoga teacher": "Yoga Instructor",
-  "pilates instructor": "Yoga Instructor",
-  "running coach": "Running Coach",
-  "run coach": "Running Coach",
-  "marathon coach": "Running Coach",
+  "personal training": "Personal Training",
+  "personal trainer": "Personal Training",
+  "certified personal trainer": "Personal Training",
+  cpt: "Personal Training",
+  "fitness coach": "Personal Training",
+  "hybrid coach": "Personal Training",
+  "physical therapy": "Physical Therapy",
+  "physical therapist": "Physical Therapy",
+  physiotherapist: "Physical Therapy",
+  "massage therapy": "Massage Therapy",
+  "massage therapist": "Massage Therapy",
+  lmt: "Massage Therapy",
+  bodywork: "Bodywork",
+  "recovery specialist": "Bodywork",
+  "recovery coach": "Bodywork",
+  chiropractic: "Chiropractic",
+  chiropractor: "Chiropractic",
+  "nutrition & dietetics": "Nutrition & Dietetics",
+  "nutrition and dietetics": "Nutrition & Dietetics",
+  nutritionist: "Nutrition & Dietetics",
+  "nutrition coach": "Nutrition & Dietetics",
+  dietitian: "Nutrition & Dietetics",
+  "registered dietitian": "Nutrition & Dietetics",
+  yoga: "Yoga",
+  "yoga instructor": "Yoga",
+  "yoga teacher": "Yoga",
+  pilates: "Pilates",
+  "pilates instructor": "Pilates",
+  "mental health & therapy": "Mental Health & Therapy",
+  "mental health and therapy": "Mental Health & Therapy",
+  "wellness coach": "Mental Health & Therapy",
+  "mental performance coach": "Mental Health & Therapy",
+  "medical & iv wellness": "Medical & IV Wellness",
+  "medical and iv wellness": "Medical & IV Wellness",
+  "iv wellness": "Medical & IV Wellness",
+  "iv therapy": "Medical & IV Wellness",
+  "sports/endurance coaching": "Sports/Endurance Coaching",
+  "sports endurance coaching": "Sports/Endurance Coaching",
+  "sports coaching": "Sports/Endurance Coaching",
+  "strength coach": "Sports/Endurance Coaching",
+  "running coach": "Sports/Endurance Coaching",
+  "run coach": "Sports/Endurance Coaching",
+  "marathon coach": "Sports/Endurance Coaching",
+  "endurance coach": "Sports/Endurance Coaching",
+  "sports performance coach": "Sports/Endurance Coaching",
+  "performance coach": "Sports/Endurance Coaching",
 };
 
 /** Title / credential hints when profession is missing or “Specialist” */
 const TITLE_HINTS: { pattern: RegExp; profession: MainProfession }[] = [
   {
-    pattern: /\bcpt\b|certified personal trainer|personal trainer/i,
-    profession: "Personal Trainer",
+    pattern: /\bcpt\b|certified personal trainer|personal trainer|personal training/i,
+    profession: "Personal Training",
   },
   {
-    pattern: /\bdpt\b|physical therapist|physiotherapist/i,
-    profession: "Physical Therapist",
+    pattern: /\bdpt\b|physical therapist|physiotherapist|physical therapy/i,
+    profession: "Physical Therapy",
   },
   {
-    pattern: /\brd\b|r\.d\.|dietitian|nutritionist|nutrition coach/i,
-    profession: "Nutritionist",
+    pattern: /\blmt\b|massage therapist|massage therapy/i,
+    profession: "Massage Therapy",
+  },
+  { pattern: /bodywork|recovery specialist/i, profession: "Bodywork" },
+  { pattern: /chiropractor|chiropractic/i, profession: "Chiropractic" },
+  {
+    pattern: /\brd\b|r\.d\.|dietitian|nutritionist|nutrition coach|dietetics/i,
+    profession: "Nutrition & Dietetics",
+  },
+  { pattern: /\bpilates\b/i, profession: "Pilates" },
+  { pattern: /\byoga\b/i, profession: "Yoga" },
+  {
+    pattern: /mental health|therapist|wellness coach|mental performance/i,
+    profession: "Mental Health & Therapy",
   },
   {
-    pattern: /\blmt\b|massage therapist/i,
-    profession: "Massage Therapist",
+    pattern: /\biv\b|medical wellness/i,
+    profession: "Medical & IV Wellness",
   },
-  { pattern: /chiropractor|chiropractic/i, profession: "Chiropractor" },
-  { pattern: /strength coach/i, profession: "Strength Coach" },
-  { pattern: /running coach|run coach/i, profession: "Running Coach" },
-  { pattern: /yoga/i, profession: "Yoga Instructor" },
-  { pattern: /wellness coach/i, profession: "Wellness Coach" },
-  { pattern: /recovery/i, profession: "Recovery Specialist" },
+  {
+    pattern: /strength coach|running coach|run coach|endurance|sports performance coach/i,
+    profession: "Sports/Endurance Coaching",
+  },
 ];
 
-/** Searching “Personal Trainer” should also surface related coaching roles */
-const PERSONAL_TRAINER_FAMILY = new Set(
-  ["Personal Trainer", "Strength Coach", "Running Coach"].map(normalizeKey)
-);
-
 /** Map a raw profession / onboarding type to a main category, or null if unknown. */
-function canonicalizeProfessionLabel(
+export function canonicalizeProfessionLabel(
   raw: string | null | undefined
 ): MainProfession | null {
   const key = normalizeKey(raw ?? "");
@@ -119,7 +141,6 @@ export function resolveTrainerProfessionCategory(
 
 /**
  * Explore / category browse: filter profession vs trainer category.
- * “Personal Trainer” also matches Strength Coach and Running Coach.
  */
 export function trainerMatchesProfessionCategory(
   trainer: ProfessionSource,
@@ -132,7 +153,6 @@ export function trainerMatchesProfessionCategory(
     canonicalizeProfessionLabel(filterRaw) ?? filterRaw;
   const trainerCategory = resolveTrainerProfessionCategory(trainer);
   if (!trainerCategory) {
-    /* Soft fallback — title / specialties often carry category language */
     const target = normalizeKey(filterRaw);
     if (normalizeKey(trainer.title ?? "").includes(target)) return true;
     return (trainer.specialty ?? []).some((s) =>
@@ -140,16 +160,5 @@ export function trainerMatchesProfessionCategory(
     );
   }
 
-  const filterKey = normalizeKey(filterCategory);
-  const trainerKey = normalizeKey(trainerCategory);
-  if (filterKey === trainerKey) return true;
-
-  if (
-    filterKey === "personal trainer" &&
-    PERSONAL_TRAINER_FAMILY.has(trainerKey)
-  ) {
-    return true;
-  }
-
-  return false;
+  return normalizeKey(filterCategory) === normalizeKey(trainerCategory);
 }

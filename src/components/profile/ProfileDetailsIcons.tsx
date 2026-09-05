@@ -2,16 +2,16 @@ import type { ComponentType } from "react";
 import {
   AppleFruitIcon,
   BoxingGloveIcon,
-  CityBuildingsIcon,
   DumbbellIcon,
-  HomeIcon,
+  LayoutGridIcon,
   LocationMarkIcon,
   MeditationIcon,
   MedicalCrossIcon,
   RunningFigureIcon,
-  StrengthArmIcon,
   TravelRangeIcon,
   TrophyIcon,
+  UserIcon,
+  UsersIcon,
 } from "@/components/ui/icons";
 import type {
   ProfileSpecialtyIconId,
@@ -70,34 +70,6 @@ export function HexGlyph({ className = "h-4 w-4" }: GlyphProps) {
   );
 }
 
-export function LaptopGlyph({ className = "h-4 w-4" }: GlyphProps) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden>
-      <path
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 17.25H4.5A1.5 1.5 0 013 15.75V6.75A1.5 1.5 0 014.5 5.25h15A1.5 1.5 0 0121 6.75v9a1.5 1.5 0 01-1.5 1.5H15M9 17.25h6M9 17.25l-1.5 2.25h9L15 17.25"
-      />
-    </svg>
-  );
-}
-
-export function CircularArrowsGlyph({ className = "h-4 w-4" }: GlyphProps) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden>
-      <path
-        stroke="currentColor"
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"
-      />
-    </svg>
-  );
-}
-
 export function CarGlyph({ className = "h-4 w-4" }: GlyphProps) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" aria-hidden>
@@ -143,13 +115,9 @@ const TRAINING_ICONS: Record<
   TrainingOptionKind,
   ComponentType<{ className?: string }>
 > = {
-  home: HomeIcon,
-  gym: CityBuildingsIcon,
-  online: LaptopGlyph,
-  hybrid: CircularArrowsGlyph,
-  "in-person": StrengthArmIcon,
-  outdoor: RunningFigureIcon,
-  other: DumbbellIcon,
+  "one-on-one": UserIcon,
+  "semi-private": UsersIcon,
+  class: LayoutGridIcon,
 };
 
 export function ProfileTrainingKindIcon({

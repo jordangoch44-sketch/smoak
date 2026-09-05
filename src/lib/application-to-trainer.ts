@@ -3,6 +3,7 @@ import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
 import { firstNameFromPersonName } from "@/lib/specialist-display-name";
 import { parseTravelToClients } from "@/types/specialist-service-area";
+import { parseTrainingOptions } from "@/types/specialist-training-options";
 import {
   parseTravelRadiusMiles,
   travelToClientsFromLegacyRadius,
@@ -58,7 +59,6 @@ function buildSessionExperience(
     : [];
   items.push(...days);
   items.push(...blocks);
-  if (state.pricing?.groupTrainingAvailable) items.push("Small group training");
   if (state.pricing?.freeConsultationAvailable) items.push("Free consultation");
   return [...new Set(items)];
 }
@@ -116,7 +116,7 @@ export function applicationToTrainer(
       specialty: specialties,
     }) ||
     app.professionalType?.trim() ||
-    "Personal Trainer";
+    "Personal Training";
   const coachingPhilosophy = app.coachingPhilosophy?.trim() ?? "";
   const bestClientTypes = app.bestClientTypes ?? "";
 
@@ -163,6 +163,10 @@ export function applicationToTrainer(
     travelRadius: app.travelRadius ?? "",
     travelToClients,
     serviceType,
+    trainingOptions: parseTrainingOptions(app.trainingOptions, {
+      groupTrainingAvailable: Boolean(app.pricing?.groupTrainingAvailable),
+      sessionExperience: buildSessionExperience(app),
+    }),
     sponsored: false,
     verified: app.profileStatus === "APPROVED",
     specialty: specialties,
@@ -286,6 +290,9 @@ export function applicationToProfileOverrides(
     neighborhood,
     zipCode: zip,
     serviceType: app.serviceType || undefined,
+    trainingOptions: parseTrainingOptions(app.trainingOptions, {
+      groupTrainingAvailable: Boolean(app.pricing?.groupTrainingAvailable),
+    }),
     travelRadius: app.travelRadius ?? "",
     travelToClients:
       parseTravelToClients(app.travelToClients) ||

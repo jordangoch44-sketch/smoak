@@ -2809,12 +2809,81 @@
     width: 100%;
   }
 
-  .admin-app-card__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .admin-app-cards-list {
+    gap: 1rem;
+    padding-bottom: 5.75rem;
+  }
+
+  .admin-app-card {
+    padding: 1.15rem 1.15rem 1.25rem;
+    border-radius: 1.1rem;
+    gap: 1rem;
+  }
+
+  .admin-app-card__header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.7rem;
+    margin-bottom: 0;
+  }
+
+  .admin-app-card__identity-group {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-app-card__identity {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-app-card__sub-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+  }
+
+  .admin-app-card__dot {
+    display: none;
+  }
+
+  .admin-app-card__status-stack {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.4rem;
   }
 
   .admin-app-card__headline {
-    max-width: 180px;
+    max-width: none;
+    white-space: normal;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .admin-app-card__grid {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+  }
+
+  .admin-app-card__footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding-right: 3.25rem;
+  }
+
+  .admin-app-card__action {
+    margin-left: 0;
+  }
+
+  .admin-app-card__review-btn {
+    justify-content: center;
+    width: 100%;
   }
 }
 
@@ -6542,9 +6611,17 @@ body.admin-review-open .app-shell > footer {
   }
 
   .jarvis-fab-trigger {
-    bottom: 1rem;
+    bottom: calc(1.15rem + env(safe-area-inset-bottom, 0px));
     right: 1rem;
-    padding: 0.55rem 1rem;
+    padding: 0.7rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    justify-content: center;
+    gap: 0;
+  }
+
+  .jarvis-fab-label {
+    display: none;
   }
 }
 

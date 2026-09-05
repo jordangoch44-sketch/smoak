@@ -7,6 +7,8 @@ import {
   useProfileSheetOpen,
   useSiteLocationGateOpen,
 } from "@/hooks/useProfileSheetOpen";
+import { useExploreMapLayoutEpoch } from "@/hooks/useExploreMapLayoutEpoch";
+import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import {
   exploreSearchAreasDiffer,
@@ -213,6 +215,8 @@ export function ExploreMapApple({
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
   const mapPaused = profileSheetOpen || locationGateOpen;
+  const layoutEpoch = useExploreMapLayoutEpoch();
+  const wasPausedRef = useRef(false);
 
   const clusters = useMemo(() => {
     return clusterTrainersForMap(trainers);
@@ -456,13 +460,12 @@ export function ExploreMapApple({
     let map: MapKitMap | null = null;
 
     async function mountMap() {
-      if (mapPaused) return;
       const el = containerRef.current;
       if (!el) return;
 
       try {
         const mapkit = await loadAppleMapKit();
-        if (cancelled || mapPaused || !containerRef.current) return;
+        if (cancelled || !containerRef.current) return;
         mapkitRef.current = mapkit;
         setLoadError(null);
 
@@ -486,8 +489,8 @@ export function ExploreMapApple({
         map = new mapkit.Map(el, {
           center: new mapkit.Coordinate(start.latitude, start.longitude),
           colorScheme: mapkit.ColorScheme.Dark,
-          isScrollEnabled: !locked,
-          isZoomEnabled: !locked,
+          isScrollEnabled: !locked && !mapPaused,
+          isZoomEnabled: !locked && !mapPaused,
           isRotationEnabled: false,
           showsZoomControl: !locked,
           showsMapTypeControl: false,
@@ -543,9 +546,20 @@ export function ExploreMapApple({
     clearSelection,
     emitPendingFromMap,
     locked,
-    mapPaused,
     variant,
   ]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const enable = !locked && !mapPaused;
+    map.isScrollEnabled = enable;
+    map.isZoomEnabled = enable;
+    if (wasPausedRef.current && !mapPaused) {
+      notifyExploreMapLayout();
+    }
+    wasPausedRef.current = mapPaused;
+  }, [locked, mapPaused, mapEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -564,6 +578,7 @@ export function ExploreMapApple({
     activeSearchArea?.radiusMiles,
     mapPaused,
     mapEpoch,
+    layoutEpoch,
     applyLiveCamera,
     suppressMoves,
   ]);
@@ -571,7 +586,7 @@ export function ExploreMapApple({
   useEffect(() => {
     const map = mapRef.current;
     const mapkit = mapkitRef.current;
-    if (!map || !mapkit || mapPaused) return;
+    if (!map || !mapkit) return;
 
     if (pinAnnotationsRef.current.length > 0) {
       map.removeAnnotations(pinAnnotationsRef.current);
@@ -681,8 +696,8 @@ export function ExploreMapApple({
   }, [
     clusters,
     userLocationDot,
-    mapPaused,
     mapEpoch,
+    layoutEpoch,
     selectCluster,
     clearSelection,
   ]);

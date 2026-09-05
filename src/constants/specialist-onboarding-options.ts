@@ -1,22 +1,9 @@
+import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
+
 /** Specialist onboarding — short signup path; depth deferred to dashboard after approval */
 export const SPECIALIST_ONBOARDING_TOTAL_STEPS = 6;
 
-export const PROFESSIONAL_TYPE_OPTIONS = [
-  "Personal Trainer",
-  "Strength Coach",
-  "Physical Therapist",
-  "Massage Therapist",
-  "Nutrition Coach",
-  "Hybrid Coach",
-  "Running Coach",
-  "Sports Performance Coach",
-  "Chiropractor",
-  "Pilates Instructor",
-  "Yoga Instructor",
-  "Recovery Specialist",
-  "Mental Performance Coach",
-  "Other",
-] as const;
+export const PROFESSIONAL_TYPE_OPTIONS = MAIN_PROFESSION_CATEGORIES;
 
 export const SPECIALIST_SPECIALTY_OPTIONS = [
   "Fat Loss",

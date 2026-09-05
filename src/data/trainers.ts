@@ -6,6 +6,7 @@ import {
 import { trainerCuratedById } from "@/data/trainer-curated";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
+import { defaultTrainingOptionsForProfession } from "@/types/specialist-training-options";
 /** Demo review breakdowns — see `@/constants/trainer-reputation-demo` */
 import { TRAINER_DEMO_REVIEW_SOURCES } from "@/constants/trainer-reputation-demo";
 import { buildTrainerGalleryImages } from "@/lib/trainer-gallery";
@@ -82,7 +83,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "marcus-chen",
     name: "Marcus Chen",
-    profession: "Personal Trainer",
+    profession: "Personal Training",
     title: "Elite performance & HYROX prep",
     ...loc("Los Angeles", "West Hollywood", {
       zipCode: "90046",
@@ -114,7 +115,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "elena-vasquez",
     name: "Elena Vasquez",
-    profession: "Wellness Coach",
+    profession: "Mental Health & Therapy",
     title: "Mind-body integration & recovery",
     ...loc("New York", "Manhattan", {
       zipCode: "10001",
@@ -144,7 +145,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "david-okonkwo",
     name: "David Okonkwo",
-    profession: "Personal Trainer",
+    profession: "Personal Training",
     title: "Combat sports & conditioning",
     ...loc("Miami", "South Beach", {
       zipCode: "33139",
@@ -174,7 +175,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "sophia-laurent",
     name: "Sophia Laurent",
-    profession: "Nutritionist",
+    profession: "Nutrition & Dietetics",
     title: "Holistic wellness & performance nutrition",
     ...loc("San Francisco", "SoMa", {
       zipCode: "94102",
@@ -204,7 +205,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "james-morrison",
     name: "James Morrison",
-    profession: "Personal Trainer",
+    profession: "Personal Training",
     title: "Endurance & marathon programming",
     ...loc("Chicago", "Loop", {
       zipCode: "60601",
@@ -232,7 +233,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "amara-johnson",
     name: "Amara Johnson",
-    profession: "Personal Trainer",
+    profession: "Personal Training",
     title: "Powerlifting & strength for all levels",
     ...loc("Austin", "Downtown", {
       zipCode: "78701",
@@ -261,7 +262,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "kai-nakamura",
     name: "Kai Nakamura",
-    profession: "Wellness Coach",
+    profession: "Mental Health & Therapy",
     title: "Movement quality & pain-free training",
     ...loc("Seattle", "Capitol Hill", {
       zipCode: "98102",
@@ -288,7 +289,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "isabella-romano",
     name: "Isabella Romano",
-    profession: "Personal Trainer",
+    profession: "Personal Training",
     title: "Pilates & postural strength",
     ...loc("Los Angeles", "Santa Monica", {
       zipCode: "90401",
@@ -317,7 +318,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "elena-ramirez",
     name: "Dr. Elena Ramirez",
-    profession: "Physical Therapist",
+    profession: "Physical Therapy",
     title: "Sports rehab & return-to-training",
     ...loc("San Diego", "Mission Valley", {
       zipCode: "92108",
@@ -349,7 +350,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "marcus-lee",
     name: "Dr. Marcus Lee",
-    profession: "Chiropractor",
+    profession: "Chiropractic",
     title: "Back pain, posture & athletic recovery",
     ...loc("San Diego", "La Jolla", {
       zipCode: "92037",
@@ -379,7 +380,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "sophia-bennett",
     name: "Sophia Bennett",
-    profession: "Nutritionist",
+    profession: "Nutrition & Dietetics",
     title: "Fat loss & performance nutrition",
     ...loc("San Diego", "Encinitas", {
       zipCode: "92024",
@@ -409,7 +410,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "jordan-kim",
     name: "Jordan Kim",
-    profession: "Massage Therapist",
+    profession: "Massage Therapy",
     title: "Stretch therapy, mobility & soft tissue",
     ...loc("San Diego", "Carlsbad", {
       zipCode: "92008",
@@ -439,7 +440,7 @@ const trainerRecords: TrainerRecord[] = [
   {
     id: "anthony-brooks",
     name: "Anthony Brooks",
-    profession: "Personal Trainer",
+    profession: "Personal Training",
     title: "Speed, strength & athletic development",
     ...loc("San Diego", "Mission Valley", {
       zipCode: "92108",
@@ -484,6 +485,7 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
   const enriched = {
     ...trainer,
     ...curated,
+    trainingOptions: defaultTrainingOptionsForProfession(trainer.profession),
     image: getTrainerCardPlaceholder(trainer.id),
     heroImage,
     gallery,

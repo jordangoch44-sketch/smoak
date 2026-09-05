@@ -3,6 +3,7 @@
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import { applicationToPreviewTrainer } from "@/lib/application-to-trainer";
 import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
+import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
 
 interface SpecialistApplicationPreviewProps {
   state: SpecialistOnboardingState;
@@ -78,6 +79,13 @@ export function SpecialistApplicationPreview({
             </span>
           ))}
         </div>
+      </div>
+
+      <div className="wizard-profile-preview__row">
+        <span className="wizard-profile-preview__label">Training options</span>
+        <span className="wizard-profile-preview__value">
+          {formatTrainingOptionsLabel(state.trainingOptions) || "One-on-one"}
+        </span>
       </div>
 
       <div className="wizard-profile-preview__row">

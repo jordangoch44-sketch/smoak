@@ -16,7 +16,7 @@ export interface PendingMarketplaceSignup {
   lastName?: string;
   clientProfile?: CreateAccountProfile;
   specialistProfile?: CreateAccountProfile;
-  /** When true, submit specialist application after first successful specialist session */
+  /** Interrupted last-step Submit only — never set for an in-progress wizard draft */
   submitSpecialistApplication?: boolean;
   createdAt: string;
 }

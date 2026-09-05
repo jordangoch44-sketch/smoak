@@ -1,5 +1,9 @@
 import type { Trainer } from "@/types/trainer";
-import { trainingOptionsFromTrainer } from "@/lib/specialist-service-area";
+import {
+  parseTrainingOptions,
+  SPECIALIST_TRAINING_OPTIONS,
+  type SpecialistTrainingOptionId,
+} from "@/types/specialist-training-options";
 
 export type ProfileSpecialtyIconId =
   | "flame"
@@ -13,14 +17,7 @@ export type ProfileSpecialtyIconId =
   | "medical"
   | "trophy";
 
-export type TrainingOptionKind =
-  | "home"
-  | "gym"
-  | "online"
-  | "hybrid"
-  | "in-person"
-  | "outdoor"
-  | "other";
+export type TrainingOptionKind = SpecialistTrainingOptionId;
 
 export interface TrainingOptionCard {
   id: string;
@@ -45,90 +42,20 @@ export function specialtyIconId(label: string): ProfileSpecialtyIconId {
   return "dumbbell";
 }
 
-function classifyTrainingOption(label: string): TrainingOptionKind {
-  const value = label.trim().toLowerCase();
-  if (/at home|in-home|in home/.test(value)) return "home";
-  if (/online|virtual/.test(value)) return "online";
-  if (/hybrid/.test(value)) return "hybrid";
-  if (/outdoor|park|beach/.test(value)) return "outdoor";
-  if (/^at |gym|studio|facility/.test(value)) return "gym";
-  if (/in person|in-person/.test(value)) return "in-person";
-  return "other";
-}
-
-function trainingCopy(
-  kind: TrainingOptionKind,
-  title: string
-): { title: string; description: string } {
-  switch (kind) {
-    case "home":
-      return {
-        title: "In-home training",
-        description: "They come to you with what you need for a focused session.",
-      };
-    case "gym":
-      return {
-        title: title.replace(/^At\s+/i, "") || "Private gym",
-        description: "Train in a private facility with one-on-one attention.",
-      };
-    case "online":
-      return {
-        title: "Online coaching",
-        description: "Custom programs, check-ins, and support from anywhere.",
-      };
-    case "hybrid":
-      return {
-        title: "Hybrid approach",
-        description: "A blend of in-person sessions and online coaching.",
-      };
-    case "in-person":
-      return {
-        title: "In person",
-        description: "Face-to-face sessions at a gym, studio, or agreed location.",
-      };
-    case "outdoor":
-      return {
-        title: title,
-        description: "Train outside — parks, trails, or open space.",
-      };
-    default:
-      return {
-        title,
-        description: "Available as part of their training offering.",
-      };
-  }
-}
-
 export function trainingOptionCardsFromTrainer(
   trainer: Trainer
 ): TrainingOptionCard[] {
-  const labels = trainingOptionsFromTrainer(trainer);
-  const cards: TrainingOptionCard[] = labels.map((label) => {
-    const kind = classifyTrainingOption(label);
-    const copy = trainingCopy(kind, label);
-    return {
-      id: label,
-      kind,
-      title: copy.title,
-      description: copy.description,
-    };
+  const selected = parseTrainingOptions(trainer.trainingOptions, {
+    sessionExperience: trainer.sessionExperience,
   });
-
-  const kinds = new Set(cards.map((card) => card.kind));
-  const hasInPerson = ["home", "gym", "in-person", "outdoor"].some((kind) =>
-    kinds.has(kind as TrainingOptionKind)
-  );
-  if (hasInPerson && kinds.has("online") && !kinds.has("hybrid")) {
-    const hybrid = trainingCopy("hybrid", "Hybrid");
-    cards.push({
-      id: "hybrid",
-      kind: "hybrid",
-      title: hybrid.title,
-      description: hybrid.description,
-    });
-  }
-
-  return cards;
+  return SPECIALIST_TRAINING_OPTIONS.filter((option) =>
+    selected.includes(option.id)
+  ).map((option) => ({
+    id: option.id,
+    kind: option.id,
+    title: option.label,
+    description: option.description,
+  }));
 }
 
 export function credentialInitials(name: string, issuer: string): string {

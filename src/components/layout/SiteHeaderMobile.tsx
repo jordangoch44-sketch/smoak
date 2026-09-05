@@ -47,7 +47,7 @@ export function SiteHeaderMobile({ onLogoClick }: SiteHeaderMobileProps) {
 
           {showSignUp ? (
             <Link
-              href={SITE_ROUTES.profile}
+              href={SITE_ROUTES.join}
               data-header-btn="signup"
               className="smoac-control site-header__signup"
             >

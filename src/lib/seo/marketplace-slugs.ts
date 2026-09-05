@@ -27,87 +27,73 @@ export type MarketplaceProfessionLanding = {
   searchPhrase: string;
 };
 
-/** Profession landing pages — plural slugs for SEO URLs. */
+function landing(
+  slug: string,
+  profession: MainProfession,
+  searchPhrase: string
+): MarketplaceProfessionLanding {
+  return {
+    slug,
+    profession,
+    pluralLabel: profession,
+    singularLabel: profession,
+    searchPhrase,
+  };
+}
+
+/** Profession landing pages — canonical slugs for SEO URLs. */
 export const MARKETPLACE_PROFESSION_LANDINGS: readonly MarketplaceProfessionLanding[] =
   [
-    {
-      slug: "personal-trainers",
-      profession: "Personal Trainer",
-      pluralLabel: "Personal Trainers",
-      singularLabel: "Personal Trainer",
-      searchPhrase: "personal training",
-    },
-    {
-      slug: "strength-coaches",
-      profession: "Strength Coach",
-      pluralLabel: "Strength Coaches",
-      singularLabel: "Strength Coach",
-      searchPhrase: "strength coaching",
-    },
-    {
-      slug: "physical-therapists",
-      profession: "Physical Therapist",
-      pluralLabel: "Physical Therapists",
-      singularLabel: "Physical Therapist",
-      searchPhrase: "physical therapy",
-    },
-    {
-      slug: "chiropractors",
-      profession: "Chiropractor",
-      pluralLabel: "Chiropractors",
-      singularLabel: "Chiropractor",
-      searchPhrase: "chiropractic care",
-    },
-    {
-      slug: "nutritionists",
-      profession: "Nutritionist",
-      pluralLabel: "Nutritionists",
-      singularLabel: "Nutritionist",
-      searchPhrase: "nutrition coaching",
-    },
-    {
-      slug: "massage-therapists",
-      profession: "Massage Therapist",
-      pluralLabel: "Massage Therapists",
-      singularLabel: "Massage Therapist",
-      searchPhrase: "massage therapy",
-    },
-    {
-      slug: "recovery-specialists",
-      profession: "Recovery Specialist",
-      pluralLabel: "Recovery Specialists",
-      singularLabel: "Recovery Specialist",
-      searchPhrase: "recovery and rehab",
-    },
-    {
-      slug: "wellness-coaches",
-      profession: "Wellness Coach",
-      pluralLabel: "Wellness Coaches",
-      singularLabel: "Wellness Coach",
-      searchPhrase: "wellness coaching",
-    },
-    {
-      slug: "yoga-instructors",
-      profession: "Yoga Instructor",
-      pluralLabel: "Yoga Instructors",
-      singularLabel: "Yoga Instructor",
-      searchPhrase: "yoga instruction",
-    },
-    {
-      slug: "running-coaches",
-      profession: "Running Coach",
-      pluralLabel: "Running Coaches",
-      singularLabel: "Running Coach",
-      searchPhrase: "running coaching",
-    },
+    landing("personal-training", "Personal Training", "personal training"),
+    landing("physical-therapy", "Physical Therapy", "physical therapy"),
+    landing("massage-therapy", "Massage Therapy", "massage therapy"),
+    landing("bodywork", "Bodywork", "bodywork"),
+    landing("chiropractic", "Chiropractic", "chiropractic care"),
+    landing(
+      "nutrition-dietetics",
+      "Nutrition & Dietetics",
+      "nutrition and dietetics"
+    ),
+    landing("yoga", "Yoga", "yoga"),
+    landing("pilates", "Pilates", "pilates"),
+    landing(
+      "mental-health-therapy",
+      "Mental Health & Therapy",
+      "mental health and therapy"
+    ),
+    landing(
+      "medical-iv-wellness",
+      "Medical & IV Wellness",
+      "medical and IV wellness"
+    ),
+    landing(
+      "sports-endurance-coaching",
+      "Sports/Endurance Coaching",
+      "sports and endurance coaching"
+    ),
   ] as const;
+
+/** Legacy SEO slugs → canonical landing slug. */
+const PROFESSION_SLUG_ALIASES: Record<string, string> = {
+  "personal-trainers": "personal-training",
+  "strength-coaches": "sports-endurance-coaching",
+  "physical-therapists": "physical-therapy",
+  chiropractors: "chiropractic",
+  nutritionists: "nutrition-dietetics",
+  "massage-therapists": "massage-therapy",
+  "recovery-specialists": "bodywork",
+  "wellness-coaches": "mental-health-therapy",
+  "yoga-instructors": "yoga",
+  "running-coaches": "sports-endurance-coaching",
+};
 
 export function slugToProfessionLanding(
   slug: string
 ): MarketplaceProfessionLanding | null {
   const normalized = slug.trim().toLowerCase();
+  const canonical = PROFESSION_SLUG_ALIASES[normalized] ?? normalized;
   return (
-    MARKETPLACE_PROFESSION_LANDINGS.find((entry) => entry.slug === normalized) ??
+    MARKETPLACE_PROFESSION_LANDINGS.find((entry) => entry.slug === canonical) ??
     null
   );
 }

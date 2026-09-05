@@ -16,6 +16,7 @@ import { SpecialistLinkInBioCard } from "./SpecialistLinkInBioCard";
 import { cn } from "@/lib/utils";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 import type { Gender, Trainer } from "@/types/trainer";
+import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
 
 export type IgEditRowId =
   | "hero"
@@ -366,9 +367,11 @@ export function SpecialistIgStyleProfileEditor({
         <IgEditRow
           id="ig-edit-row-session-experience"
           sectionKey="session-experience"
-          label="Session experience"
-          value={previewOrAdd(formDefaults.bookingAvailability)}
-          incomplete={!formDefaults.bookingAvailability.trim()}
+          label="Training options"
+          value={previewOrAdd(
+            formatTrainingOptionsLabel(formDefaults.trainingOptions)
+          )}
+          incomplete={formDefaults.trainingOptions.length === 0}
           highlighted={isHighlighted("session-experience")}
           onClick={() => onEditSection("session-experience")}
         />

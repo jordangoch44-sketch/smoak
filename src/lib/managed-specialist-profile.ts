@@ -43,6 +43,10 @@ import type {
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
 import type { Trainer } from "@/types/trainer";
+import {
+  groupTrainingAvailableFromOptions,
+  parseTrainingOptions,
+} from "@/types/specialist-training-options";
 
 export type ManagedProfileSaveResult =
   | { ok: true; source: string }
@@ -242,6 +246,9 @@ export function mergeProfileEditsIntoApplication(
     neighborhood: form.neighborhood.trim(),
     zipCode: form.zipCode.trim() || app.zipCode,
     serviceType: form.serviceType || app.serviceType || "",
+    trainingOptions: parseTrainingOptions(form.trainingOptions, {
+      groupTrainingAvailable: Boolean(app.pricing?.groupTrainingAvailable),
+    }),
     travelToClients: form.travelToClients,
     travelRadius: form.travelRadius.trim() || app.travelRadius,
     facilityAddress:
@@ -276,6 +283,11 @@ export function mergeProfileEditsIntoApplication(
         form.pricePerSession > 0
           ? String(form.pricePerSession)
           : app.pricing.oneOnOnePrice,
+      groupTrainingAvailable: groupTrainingAvailableFromOptions(
+        parseTrainingOptions(form.trainingOptions, {
+          groupTrainingAvailable: Boolean(app.pricing?.groupTrainingAvailable),
+        })
+      ),
     },
     social: {
       ...app.social,

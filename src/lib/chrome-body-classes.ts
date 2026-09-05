@@ -31,3 +31,24 @@ export function isChromeBodyOverlayActive(): boolean {
     document.body.classList.contains(className)
   );
 }
+
+/** Overlay class → live root. Missing root means the class was left behind. */
+const STALE_OVERLAY_ROOTS: ReadonlyArray<readonly [string, string]> = [
+  ["profile-sheet-open", ".profile-sheet-root"],
+  ["profile-sheet-dismissing", ".profile-sheet-root"],
+  ["site-intro-open", ".smoac-welcome-intro"],
+  ["login-gate-open", ".login-gate"],
+  ["site-location-gate-open", ".site-location-gate"],
+  ["complete-account-lock", ".complete-account-lock-shell, .login-page--complete-account"],
+];
+
+/** Drop overlay body classes whose UI is gone — leftover classes eat Search taps. */
+export function scrubStaleChromeBodyOverlays(): void {
+  if (typeof document === "undefined") return;
+  for (const [className, selector] of STALE_OVERLAY_ROOTS) {
+    if (!document.body.classList.contains(className)) continue;
+    if (document.querySelector(selector)) continue;
+    document.body.classList.remove(className);
+    document.documentElement.classList.remove(className);
+  }
+}

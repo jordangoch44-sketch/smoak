@@ -1,14 +1,14 @@
 /**
- * Homepage “Browse by category” — display labels map onto existing Explore
- * profession / specialty filters (no separate category system).
+ * Homepage “Popular categories” — six marketplace browse targets.
+ * Labels match canonical profession lanes (no extra category system).
  */
 
 export type HomeBrowseCategoryIcon =
   | "dumbbell"
-  | "strength"
-  | "leaf"
+  | "medical"
+  | "spine"
   | "yoga"
-  | "sports"
+  | "leaf"
   | "running";
 
 interface HomeBrowseCategory {
@@ -23,44 +23,46 @@ interface HomeBrowseCategory {
   icon: HomeBrowseCategoryIcon;
 }
 
-/** Six primary browse targets — closest existing filter values. */
+function professionHref(profession: string): string {
+  return `/explore?profession=${encodeURIComponent(profession)}`;
+}
+
+/** Six popular browse targets — do not add more here. */
 export const HOME_BROWSE_CATEGORIES: readonly HomeBrowseCategory[] = [
   {
-    id: "personal-trainer",
-    label: "Personal Trainer",
-    href: "/explore?profession=Personal+Trainer",
+    id: "personal-training",
+    label: "Personal Training",
+    href: professionHref("Personal Training"),
     icon: "dumbbell",
   },
   {
-    id: "strength-coach",
-    label: "Strength Coach",
-    href: "/explore?profession=Strength+Coach",
-    icon: "strength",
+    id: "physical-therapy",
+    label: "Physical Therapy",
+    href: professionHref("Physical Therapy"),
+    icon: "medical",
   },
   {
-    id: "nutrition-coach",
-    label: "Nutrition Coach",
-    /* Canonical profession is Nutritionist; “Nutrition Coach” aliases there. */
-    href: "/explore?profession=Nutritionist",
-    icon: "leaf",
+    id: "bodywork",
+    label: "Bodywork",
+    href: professionHref("Bodywork"),
+    icon: "spine",
   },
   {
-    id: "yoga-pilates",
-    label: "Yoga & Pilates",
-    /* Pilates Instructor already normalizes to Yoga Instructor. */
-    href: "/explore?profession=Yoga+Instructor",
+    id: "pilates",
+    label: "Pilates",
+    href: professionHref("Pilates"),
     icon: "yoga",
   },
   {
-    id: "sports-performance",
-    label: "Sports Performance",
-    href: "/explore?specialty=Sports+Performance",
-    icon: "sports",
+    id: "nutrition-dietetics",
+    label: "Nutrition & Dietetics",
+    href: professionHref("Nutrition & Dietetics"),
+    icon: "leaf",
   },
   {
-    id: "running-endurance",
-    label: "Running & Endurance",
-    href: "/explore?profession=Running+Coach",
+    id: "sports-endurance-coaching",
+    label: "Sports/Endurance Coaching",
+    href: professionHref("Sports/Endurance Coaching"),
     icon: "running",
   },
 ] as const;
@@ -73,12 +75,12 @@ export const HOME_RANKINGS_HREF = "/rankings";
 
 /** Revolving marketplace search hints — phrases the existing Explore pipeline understands. */
 export const HOME_SEARCH_PROMPTS = [
-  "Personal trainer in Mission Valley...",
+  "Personal training in Mission Valley...",
   "Female nutrition coach under $120...",
-  "Yoga in Encinitas...",
-  "Male strength coach in Pacific Beach...",
-  "Running coach in Carlsbad...",
-  "Sports performance between $80 and $150...",
+  "Pilates in Encinitas...",
+  "Physical therapy in Pacific Beach...",
+  "Sports coaching in Carlsbad...",
+  "Bodywork between $80 and $150...",
 ] as const;
 
 export function buildHomeSearchHref(query: string): string {

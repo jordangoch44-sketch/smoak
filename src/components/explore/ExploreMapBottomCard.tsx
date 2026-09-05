@@ -360,7 +360,7 @@ export function ExploreMapBottomCard({
 
           // Display format:
           // 1. Title = trainer.name ("Lili Carrillo")
-          // 2. Profession / Category in smoke color ("Personal Trainer")
+          // 2. Profession / Category in smoke color ("Personal Training")
           // 3. Location = Neighborhood / City without raw ZIP ("Bay Park") + distance
           const displayName = trainer.name;
 

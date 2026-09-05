@@ -1,17 +1,17 @@
 import type { TrainerFilters } from "@/types";
+import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 
 /**
- * Popular categories on Explore — labels for UI; `searchQuery` hits existing
- * natural-language → profession/specialty mappings in search-query-mappings.
+ * Popular categories on Explore — same six lanes as the marketplace homepage.
  */
 
 export type ExploreBrowseCategoryIcon =
   | "dumbbell"
-  | "leaf"
-  | "running"
-  | "strength"
   | "medical"
-  | "yoga";
+  | "spine"
+  | "yoga"
+  | "leaf"
+  | "running";
 
 export interface ExploreBrowseCategory {
   id: string;
@@ -25,48 +25,46 @@ export interface ExploreBrowseCategory {
 
 export const EXPLORE_BROWSE_CATEGORIES: readonly ExploreBrowseCategory[] = [
   {
-    id: "personal-trainer",
-    label: "Personal Trainer",
-    searchQuery: "Personal Trainer",
-    profession: "Personal Trainer",
+    id: "personal-training",
+    label: "Personal Training",
+    searchQuery: "Personal Training",
+    profession: "Personal Training",
     icon: "dumbbell",
   },
   {
-    id: "nutritionist",
-    label: "Nutritionist",
-    searchQuery: "Nutritionist",
-    profession: "Nutritionist",
-    icon: "leaf",
-  },
-  {
-    id: "running-coach",
-    label: "Running Coach",
-    searchQuery: "Running Coach",
-    profession: "Running Coach",
-    icon: "running",
-  },
-  {
-    id: "strength-coach",
-    label: "Strength Coach",
-    searchQuery: "Strength Coaching",
-    profession: "Strength Coach",
-    specialty: "Strength Coaching",
-    icon: "strength",
-  },
-  {
-    id: "physical-therapist",
-    label: "Physical Therapist",
-    searchQuery: "Physical Therapist",
-    profession: "Physical Therapist",
+    id: "physical-therapy",
+    label: "Physical Therapy",
+    searchQuery: "Physical Therapy",
+    profession: "Physical Therapy",
     icon: "medical",
   },
   {
-    id: "yoga-instructor",
-    label: "Yoga Instructor",
-    searchQuery: "Yoga",
-    profession: "Yoga Instructor",
-    specialty: "Yoga",
+    id: "bodywork",
+    label: "Bodywork",
+    searchQuery: "Bodywork",
+    profession: "Bodywork",
+    icon: "spine",
+  },
+  {
+    id: "pilates",
+    label: "Pilates",
+    searchQuery: "Pilates",
+    profession: "Pilates",
     icon: "yoga",
+  },
+  {
+    id: "nutrition-dietetics",
+    label: "Nutrition & Dietetics",
+    searchQuery: "Nutrition & Dietetics",
+    profession: "Nutrition & Dietetics",
+    icon: "leaf",
+  },
+  {
+    id: "sports-endurance-coaching",
+    label: "Sports/Endurance Coaching",
+    searchQuery: "Sports/Endurance Coaching",
+    profession: "Sports/Endurance Coaching",
+    icon: "running",
   },
 ] as const;
 
@@ -83,7 +81,10 @@ export function isExploreCategoryActive(
 ): boolean {
   if (!options) return false;
   const { activeSearchQuery = "", filters, activeProfession, activeSpecialty } = options;
-  const profession = (activeProfession ?? filters?.profession ?? "").trim().toLowerCase();
+  const professionRaw = (activeProfession ?? filters?.profession ?? "").trim();
+  const profession = (
+    canonicalizeProfessionLabel(professionRaw) ?? professionRaw
+  ).toLowerCase();
   const specialty = (activeSpecialty ?? filters?.specialty ?? "").trim().toLowerCase();
   const query = activeSearchQuery.trim().toLowerCase();
 
@@ -92,7 +93,6 @@ export function isExploreCategoryActive(
   const targetQuery = category.searchQuery.toLowerCase();
   const targetLabel = category.label.toLowerCase();
 
-  // 1. Profession filter match
   if (profession) {
     if (targetProfession && profession === targetProfession) {
       return true;
@@ -102,7 +102,6 @@ export function isExploreCategoryActive(
     }
   }
 
-  // 2. Specialty filter match
   if (specialty) {
     if (targetSpecialty && specialty === targetSpecialty) {
       return true;
@@ -110,15 +109,8 @@ export function isExploreCategoryActive(
     if (specialty === targetQuery || specialty === targetLabel) {
       return true;
     }
-    if (
-      category.id === "strength-coach" &&
-      (specialty === "strength coaching" || specialty === "strength training")
-    ) {
-      return true;
-    }
   }
 
-  // 3. Search query match
   if (query) {
     if (
       query === targetQuery ||

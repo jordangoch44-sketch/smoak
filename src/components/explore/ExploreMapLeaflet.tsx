@@ -9,6 +9,8 @@ import {
   useProfileSheetOpen,
   useSiteLocationGateOpen,
 } from "@/hooks/useProfileSheetOpen";
+import { useExploreMapLayoutEpoch } from "@/hooks/useExploreMapLayoutEpoch";
+import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import {
   exploreSearchAreasDiffer,
@@ -202,6 +204,8 @@ export function ExploreMapLeaflet({
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
   const mapPaused = profileSheetOpen || locationGateOpen;
+  const layoutEpoch = useExploreMapLayoutEpoch();
+  const wasPausedRef = useRef(false);
 
   const clearSelection = useCallback(() => {
     selectedClusterIdRef.current = null;
@@ -394,13 +398,11 @@ export function ExploreMapLeaflet({
     const invalidateTimeouts: number[] = [];
 
     async function mountMap() {
-      if (mapPaused) return;
-
       const el = containerRef.current;
       if (!el) return;
 
       const L = (await import("leaflet")).default;
-      if (cancelled || mapPaused || !containerRef.current) return;
+      if (cancelled || !containerRef.current) return;
 
       if (mapRef.current) {
         mapRef.current.remove();
@@ -506,10 +508,35 @@ export function ExploreMapLeaflet({
         map.remove();
       }
     };
-  }, [applyLiveCamera, emitPendingFromMap, locked, mapPaused, variant]);
+  }, [applyLiveCamera, emitPendingFromMap, locked, variant]);
 
   useEffect(() => {
-    if (mapPaused) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const enable = !locked && !mapPaused;
+    if (enable) {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+    } else {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+    }
+    if (wasPausedRef.current && !mapPaused) {
+      safeInvalidateMapSize(map);
+      notifyExploreMapLayout();
+    }
+    wasPausedRef.current = mapPaused;
+  }, [locked, mapPaused, mapEpoch]);
+
+  useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
@@ -518,7 +545,7 @@ export function ExploreMapLeaflet({
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [mapPaused, mapEpoch, variant]);
+  }, [mapEpoch, variant, layoutEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -539,6 +566,7 @@ export function ExploreMapLeaflet({
     activeSearchArea?.radiusMiles,
     mapPaused,
     mapEpoch,
+    layoutEpoch,
     applyLiveCamera,
     suppressMoves,
   ]);
@@ -547,7 +575,7 @@ export function ExploreMapLeaflet({
     const map = mapRef.current;
     const L = leafletRef.current;
     const layer = markersLayerRef.current;
-    if (!map || !L || !layer || mapPaused) return;
+    if (!map || !L || !layer) return;
 
     layer.clearLayers();
     if (areaDotRef.current) {
@@ -624,7 +652,11 @@ export function ExploreMapLeaflet({
 
       layer.addLayer(marker);
     }
-  }, [clusters, userLocationDot, mapPaused, mapEpoch, selectCluster]);
+  }, [clusters, userLocationDot, mapEpoch, selectCluster]);
+
+  useEffect(() => {
+    safeInvalidateMapSize(mapRef.current);
+  }, [layoutEpoch]);
 
   const handleRecenter = useCallback(() => {
     if (mapPaused) return;

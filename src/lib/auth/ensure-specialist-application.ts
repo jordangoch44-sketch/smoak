@@ -6,17 +6,12 @@ import {
   fetchSpecialistApplicationByEmail,
   fetchSpecialistApplicationByUserId,
 } from "@/lib/applications/specialist-applications-db";
-import { submitSpecialistApplication } from "@/lib/specialist-application-submit";
 import {
   findSpecialistApplicationByEmail,
   findSpecialistApplicationByUserId,
-  loadSpecialistOnboardingDraft,
   saveSpecialistApplication,
 } from "@/lib/specialist-application-storage";
-import type {
-  SpecialistApplication,
-  SpecialistOnboardingState,
-} from "@/types/specialist-application";
+import type { SpecialistApplication } from "@/types/specialist-application";
 
 export type EnsureSpecialistApplicationResult = {
   application: SpecialistApplication | null;
@@ -26,8 +21,9 @@ export type EnsureSpecialistApplicationResult = {
 
 /**
  * Loads an existing specialist application for a signed-in specialist.
- * Only recovers a mid-submit draft when one matches this email — never invents
- * an empty PENDING row that would stall admin go-live.
+ * Does not submit onboarding drafts — those stay local until the wizard's
+ * last step. Interrupted submits recover via
+ * `completePendingSpecialistApplicationAfterAuth`.
  */
 export async function ensurePendingSpecialistApplicationForAuthUser(input: {
   userId: string;
@@ -65,26 +61,5 @@ export async function ensurePendingSpecialistApplicationForAuthUser(input: {
     }
   }
 
-  const draft = loadSpecialistOnboardingDraft();
-  const draftMatches =
-    Boolean(draft) && draft!.email.trim().toLowerCase() === email;
-
-  if (!draftMatches) {
-    return {
-      application: null,
-      created: false,
-      message: "No specialist application found for this account.",
-    };
-  }
-
-  const state: SpecialistOnboardingState = { ...draft!, email, password: "" };
-
-  try {
-    const result = await submitSpecialistApplication(state, { userId });
-    return { application: result.application, created: true };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Could not create application.";
-    return { application: null, created: false, message };
-  }
+  return { application: null, created: false };
 }

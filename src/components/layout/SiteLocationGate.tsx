@@ -17,6 +17,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { getProfileZipFromSession } from "@/lib/client-profile-location";
 import { isExploreNavPath } from "@/lib/mobile-bottom-nav";
 import { skipLocationPrompt } from "@/lib/user-location-store";
+import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import {
   needsSiteLocationGate,
   USER_LOCATION_CHANGE_EVENT,
@@ -64,12 +65,14 @@ export function SiteLocationGate() {
   const handleUpdated = useCallback(() => {
     if (!needsSiteLocationGate()) {
       setDismissed(true);
+      window.setTimeout(() => notifyExploreMapLayout(), 40);
     }
   }, []);
 
   const handleSkip = useCallback(() => {
     skipLocationPrompt();
     setDismissed(true);
+    window.setTimeout(() => notifyExploreMapLayout(), 40);
   }, []);
 
   useLayoutEffect(() => {

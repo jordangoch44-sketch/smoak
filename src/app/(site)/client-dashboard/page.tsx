@@ -1,15 +1,8 @@
-import dynamic from "next/dynamic";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { ClientDashboardPageClient } from "@/components/dashboard/ClientDashboardPageClient";
+import { DashboardLoadingState } from "@/components/dashboard/shared";
 import { NOINDEX_FOLLOW_NONE } from "@/lib/seo/noindex";
-
-const ClientDashboardPageClient = dynamic(
-  () =>
-    import("@/components/dashboard/ClientDashboardPageClient").then(
-      (mod) => mod.ClientDashboardPageClient
-    ),
-  { ssr: true }
-);
 
 export const metadata: Metadata = {
   title: "Client Dashboard",
@@ -19,15 +12,7 @@ export const metadata: Metadata = {
 
 export default function ClientDashboardPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="dashboard-page dashboard-page--loading">
-          <div className="dashboard-page__content">
-            <p className="dashboard-page__subtitle">Loading your dashboard…</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<DashboardLoadingState />}>
       <ClientDashboardPageClient />
     </Suspense>
   );

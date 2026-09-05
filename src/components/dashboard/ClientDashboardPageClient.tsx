@@ -30,7 +30,6 @@ import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiri
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
 import { cn, getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
-import "@/styles/client-dashboard.css";
 
 type ClientDashboardTab = "profile" | "saved" | "messages";
 
@@ -271,6 +270,10 @@ export function ClientDashboardPageClient() {
                 "client-dash-tabs__btn",
                 activeTab === tab.id && "client-dash-tabs__btn--active"
               )}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                setActiveTab(tab.id);
+              }}
               onClick={() => setActiveTab(tab.id)}
             >
               {tab.label}

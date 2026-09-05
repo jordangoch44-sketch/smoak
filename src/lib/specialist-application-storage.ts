@@ -22,6 +22,7 @@ import {
   type SpecialistApplication,
   type SpecialistOnboardingState,
 } from "@/types/specialist-application";
+import { parseTrainingOptions } from "@/types/specialist-training-options";
 
 function normalizeApplication(app: SpecialistApplication): SpecialistApplication {
   const shaped = normalizeSpecialistApplicationShape(app);
@@ -255,6 +256,9 @@ export function loadSpecialistOnboardingDraft(): SpecialistOnboardingState | nul
   return {
     ...INITIAL_SPECIALIST_ONBOARDING_STATE,
     ...parsed,
+    trainingOptions: parseTrainingOptions(parsed.trainingOptions, {
+      groupTrainingAvailable: Boolean(parsed.pricing?.groupTrainingAvailable),
+    }),
     pricing: { ...INITIAL_SPECIALIST_ONBOARDING_STATE.pricing, ...parsed.pricing },
     availability: {
       ...INITIAL_SPECIALIST_ONBOARDING_STATE.availability,

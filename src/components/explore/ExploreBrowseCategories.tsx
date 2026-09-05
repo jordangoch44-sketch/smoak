@@ -7,7 +7,7 @@ import {
   MedicalCrossIcon,
   MeditationIcon,
   RunningFigureIcon,
-  StrengthArmIcon,
+  SpineIcon,
 } from "@/components/ui/icons";
 import {
   EXPLORE_BROWSE_CATEGORIES,
@@ -23,11 +23,11 @@ const CATEGORY_ICONS: Record<
   ComponentType<{ className?: string }>
 > = {
   dumbbell: DumbbellIcon,
+  medical: MedicalCrossIcon,
+  spine: SpineIcon,
+  yoga: MeditationIcon,
   leaf: LeafIcon,
   running: RunningFigureIcon,
-  strength: StrengthArmIcon,
-  medical: MedicalCrossIcon,
-  yoga: MeditationIcon,
 };
 
 interface ExploreBrowseCategoriesProps {

@@ -1,6 +1,7 @@
 import type { SpecialistProfileStyle } from "@/lib/specialist-profile-style";
 import type { Certification, Gender, SocialLinks } from "@/types/trainer";
 import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
+import type { SpecialistTrainingOptionId } from "@/types/specialist-training-options";
 
 export type ProfileStatus =
   | "DRAFT"
@@ -100,6 +101,8 @@ export interface SpecialistApplication {
   inHomeAvailable: boolean;
   onlineCoachingAvailable: boolean;
   gymName: string;
+  /** One-on-one, semi-private, class — shown on the public profile */
+  trainingOptions: SpecialistTrainingOptionId[];
   /**
    * Optional street / studio address for precise distance.
    * Not shown on public marketplace cards — lat/lng only.
@@ -168,6 +171,7 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   inHomeAvailable: false,
   onlineCoachingAvailable: false,
   gymName: "",
+  trainingOptions: ["one-on-one"],
   facilityAddress: "",
   locationPrecision: "zip",
   specialties: [],

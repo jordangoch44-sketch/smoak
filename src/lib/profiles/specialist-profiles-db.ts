@@ -20,6 +20,7 @@ import { parseGallerySlideshowFrames } from "@/lib/media/slideshow-frame";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
+import { parseTrainingOptions } from "@/types/specialist-training-options";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
 
 export type SpecialistProfilesMutationResult =
@@ -230,6 +231,9 @@ function trainerFromProfileData(
       profileData.serviceType === "both"
         ? profileData.serviceType
         : undefined,
+    trainingOptions: parseTrainingOptions(profileData.trainingOptions, {
+      sessionExperience: asStringArray(profileData.sessionExperience),
+    }),
     sponsored: Boolean(profileData.sponsored),
     categorySpotlight: Boolean(profileData.categorySpotlight),
     verified:

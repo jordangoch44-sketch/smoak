@@ -1,5 +1,7 @@
 /** Inquiry actions + profession-aware topic options for specialist profile composer */
 
+import { canonicalizeProfessionLabel } from "@/lib/profession-category";
+
 export const INQUIRY_ACTIONS = [
   { id: "ask_question", label: "Ask a Question" },
   { id: "book_call", label: "Book a Call" },
@@ -28,7 +30,7 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
   string,
   readonly InquiryTopicOption[]
 > = {
-  "Personal Trainer": [
+  "Personal Training": [
     { id: "training_programs", label: "Training Programs" },
     { id: "pricing", label: "Pricing" },
     { id: "availability", label: "Availability" },
@@ -36,7 +38,7 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
     { id: "online_coaching", label: "Online Coaching" },
     { id: "other", label: "Other" },
   ],
-  "Physical Therapist": [
+  "Physical Therapy": [
     { id: "injury_assessment", label: "Injury Assessment" },
     { id: "rehab_plan", label: "Rehab Plan" },
     { id: "pricing", label: "Pricing" },
@@ -44,7 +46,7 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
     { id: "insurance_payment", label: "Insurance / Payment" },
     { id: "return_to_sport", label: "Return to Sport" },
   ],
-  Chiropractor: [
+  Chiropractic: [
     { id: "adjustment_care", label: "Adjustment Care" },
     { id: "pain_relief", label: "Pain Relief" },
     { id: "pricing", label: "Pricing" },
@@ -52,7 +54,7 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
     { id: "ongoing_care", label: "Ongoing Care" },
     { id: "other", label: "Other" },
   ],
-  Nutritionist: [
+  "Nutrition & Dietetics": [
     { id: "meal_planning", label: "Meal Planning" },
     { id: "pricing", label: "Pricing" },
     { id: "availability", label: "Availability" },
@@ -60,7 +62,7 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
     { id: "sports_nutrition", label: "Sports Nutrition" },
     { id: "other", label: "Other" },
   ],
-  "Massage Therapist": [
+  "Massage Therapy": [
     { id: "massage_styles", label: "Massage Styles" },
     { id: "pricing", label: "Pricing" },
     { id: "availability", label: "Availability" },
@@ -68,7 +70,7 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
     { id: "in_person_options", label: "In-Person Options" },
     { id: "other", label: "Other" },
   ],
-  "Recovery Specialist": [
+  Bodywork: [
     { id: "recovery_protocols", label: "Recovery Protocols" },
     { id: "pricing", label: "Pricing" },
     { id: "availability", label: "Availability" },
@@ -76,12 +78,20 @@ const INQUIRY_TOPICS_BY_PROFESSION: Record<
     { id: "online_options", label: "Online Options" },
     { id: "other", label: "Other" },
   ],
-  "Wellness Coach": [
+  "Mental Health & Therapy": [
     { id: "coaching_programs", label: "Coaching Programs" },
     { id: "pricing", label: "Pricing" },
     { id: "availability", label: "Availability" },
     { id: "habits_mindset", label: "Habits & Mindset" },
     { id: "online_options", label: "Online Options" },
+    { id: "other", label: "Other" },
+  ],
+  "Sports/Endurance Coaching": [
+    { id: "training_programs", label: "Training Programs" },
+    { id: "pricing", label: "Pricing" },
+    { id: "availability", label: "Availability" },
+    { id: "return_to_sport", label: "Return to Sport" },
+    { id: "online_coaching", label: "Online Coaching" },
     { id: "other", label: "Other" },
   ],
 };
@@ -105,7 +115,7 @@ ALL_TOPIC_LABELS.set("in_person_training", "In-Person Training");
 export function getInquiryTopicsForProfession(
   profession: string
 ): InquiryTopicOption[] {
-  const key = profession.trim();
+  const key = canonicalizeProfessionLabel(profession) ?? profession.trim();
   const topics = INQUIRY_TOPICS_BY_PROFESSION[key] ?? INQUIRY_TOPICS_DEFAULT;
   return [...topics];
 }

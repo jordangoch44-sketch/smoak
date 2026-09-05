@@ -1,6 +1,10 @@
 import { parseGender } from "@/lib/gender";
 import { travelToClientsFromLegacyRadius } from "@/lib/specialist-service-area";
 import { parseTravelToClients } from "@/types/specialist-service-area";
+import {
+  groupTrainingAvailableFromOptions,
+  parseTrainingOptions,
+} from "@/types/specialist-training-options";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
@@ -54,6 +58,12 @@ export function normalizeSpecialistApplicationShape(
       }))
     : defaults.certifications;
 
+  const trainingOptions = parseTrainingOptions(app.trainingOptions, {
+    groupTrainingAvailable: Boolean(
+      pricing?.groupTrainingAvailable ?? defaults.pricing.groupTrainingAvailable
+    ),
+  });
+
   return {
     ...defaults,
     ...app,
@@ -76,6 +86,7 @@ export function normalizeSpecialistApplicationShape(
     travelToClients: parseTravelToClients(app.travelToClients),
     serviceAreaDescription: asString(app.serviceAreaDescription),
     gymName: asString(app.gymName),
+    trainingOptions,
     facilityAddress: asString(app.facilityAddress),
     specialties: asStringArray(app.specialties),
     certifications,
@@ -112,9 +123,7 @@ export function normalizeSpecialistApplicationShape(
         defaults.pricing.subscriptionOptions
       ),
       introOffer: asString(pricing?.introOffer, defaults.pricing.introOffer),
-      groupTrainingAvailable: Boolean(
-        pricing?.groupTrainingAvailable ?? defaults.pricing.groupTrainingAvailable
-      ),
+      groupTrainingAvailable: groupTrainingAvailableFromOptions(trainingOptions),
       freeConsultationAvailable: Boolean(
         pricing?.freeConsultationAvailable ??
           defaults.pricing.freeConsultationAvailable

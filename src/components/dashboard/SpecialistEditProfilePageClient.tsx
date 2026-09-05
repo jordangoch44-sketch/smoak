@@ -51,6 +51,8 @@ import {
   TRAVEL_TO_CLIENTS_OPTIONS,
 } from "@/types/specialist-service-area";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
+import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
+import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import { formatTravelToClientsEditorLabel } from "@/lib/specialist-service-area";
 import {
   PROFILE_ACCENT_OPTIONS,
@@ -1013,6 +1015,11 @@ export function SpecialistEditProfilePageClient({
                   }
                 />
                 <ProfileEditViewField
+                  label="Training options"
+                  value={formatTrainingOptionsLabel(savedForm.trainingOptions)}
+                  emptyLabel="Add training options"
+                />
+                <ProfileEditViewField
                   label="Willing to travel to clients"
                   value={formatTravelToClientsEditorLabel(
                     savedForm.travelToClients
@@ -1156,6 +1163,12 @@ export function SpecialistEditProfilePageClient({
                     ))}
                   </select>
                 </ProfileEditInputField>
+                <SpecialistTrainingOptionsFields
+                  value={form.trainingOptions}
+                  onChange={(trainingOptions) =>
+                    updateField("trainingOptions", trainingOptions)
+                  }
+                />
                 <ProfileEditInputField label="Are you willing to travel to clients?">
                   <select
                     className="login-field__input profile-edit-input"

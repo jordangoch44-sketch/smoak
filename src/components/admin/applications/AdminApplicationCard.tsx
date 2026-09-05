@@ -3,6 +3,7 @@
 import { memo } from "react";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
+import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 import { isSpecialistReadyToGoLive } from "@/lib/specialist-go-live-gate";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
@@ -120,7 +121,9 @@ export const AdminApplicationCard = memo(function AdminApplicationCard({
 
               <div className="admin-app-card__sub-row">
                 <span className="admin-app-card__profession">
-                  {application.professionalType || "Specialist"}
+                  {canonicalizeProfessionLabel(application.professionalType) ||
+                    application.professionalType ||
+                    "Specialist"}
                 </span>
                 {application.headline ? (
                   <>
@@ -150,16 +153,16 @@ export const AdminApplicationCard = memo(function AdminApplicationCard({
             ) : (
               <span
                 className="admin-app-card__readiness admin-app-card__readiness--pending"
-                title="Profile still missing required info before publishing"
+                title="Submitted, but still missing info required to go live"
               >
                 <span className="admin-app-card__readiness-dot" />
-                Draft Details
+                Needs info
               </span>
             )}
           </div>
         </div>
 
-        {/* Metadata Grid (Clean 4-col on desktop / 2-col on mobile) */}
+        {/* Metadata Grid (4-col desktop / 1-col on small phones) */}
         <div className="admin-app-card__grid">
           <div className="admin-app-card__cell">
             <span className="admin-app-card__label">Location</span>

@@ -20,6 +20,8 @@ import {
   parseTravelToClients,
   TRAVEL_TO_CLIENTS_OPTIONS,
 } from "@/types/specialist-service-area";
+import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
+import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import {
   ADMIN_REJECTION_PRESETS,
   findRejectionPresetByReason,
@@ -708,9 +710,10 @@ export function AdminApplicationReviewPanel({
                     </span>
                   </div>
                   <div className="admin-review-kv">
-                    <span className="admin-review-kv__label">Group Training</span>
+                    <span className="admin-review-kv__label">Training options</span>
                     <span className="admin-review-kv__value">
-                      {draft.pricing?.groupTrainingAvailable ? "✓ Available" : "No"}
+                      {formatTrainingOptionsLabel(draft.trainingOptions) ||
+                        "One-on-one"}
                     </span>
                   </div>
                   {draft.pricing?.introOffer && (
@@ -1355,6 +1358,12 @@ export function AdminApplicationReviewPanel({
                       placeholder="e.g. First session 50% off"
                     />
                   </label>
+                  <SpecialistTrainingOptionsFields
+                    value={draft.trainingOptions}
+                    onChange={(trainingOptions) =>
+                      patch("trainingOptions", trainingOptions)
+                    }
+                  />
                   <label className="admin-field-label">
                     Packages & Pricing Description
                     <textarea

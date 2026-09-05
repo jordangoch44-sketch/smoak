@@ -1,4 +1,5 @@
 /** Goals shown in the client profile editor (multi-select chips). */
+import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 export const CLIENT_PROFILE_GOAL_OPTIONS = [
   "Lose weight",
   "Build muscle",
@@ -48,17 +49,7 @@ export const CLIENT_PRICE_PRESET_OPTIONS: ReadonlyArray<{
   { id: "custom", label: "Custom range", min: null, max: null },
 ];
 
-export const CLIENT_PROFESSION_OPTIONS = [
-  "Personal Trainer",
-  "Physical Therapist",
-  "Nutrition Coach",
-  "Recovery Specialist",
-  "Strength Coach",
-  "Run Coach",
-  "Wellness Coach",
-  "Boxing Coach",
-  "Other",
-] as const;
+export const CLIENT_PROFESSION_OPTIONS = MAIN_PROFESSION_CATEGORIES;
 
 export const CLIENT_SPECIALTY_OPTIONS = [
   "Weight Loss",

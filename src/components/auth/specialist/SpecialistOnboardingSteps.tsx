@@ -12,6 +12,7 @@ import type { Certification } from "@/types/trainer";
 import { cn } from "@/lib/utils";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
 import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
+import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import type { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
 
 function toggleInList(list: string[], value: string): string[] {
@@ -251,14 +252,14 @@ export function SpecialistOnboardingSteps({
             </label>
             <label className="login-field">
               <span className="login-field__label">
-                Profile headline
+                Professional title
                 <RequiredMark />
               </span>
               <input
                 className="login-field__input"
                 value={state.headline}
                 onChange={(e) => onPatch({ headline: e.target.value })}
-                placeholder="Hybrid Performance Coach"
+                placeholder="e.g. Strength coach, Mobility and recovery, Hyrox Coach, Boxing coach"
                 required
                 aria-required="true"
               />
@@ -513,6 +514,10 @@ export function SpecialistOnboardingSteps({
             <p className="wizard-field-hint">
               About 40+ characters · {state.bio.trim().length} entered
             </p>
+            <SpecialistTrainingOptionsFields
+              value={state.trainingOptions}
+              onChange={(trainingOptions) => onPatch({ trainingOptions })}
+            />
             <label className="login-field">
               <span className="login-field__label">
                 1:1 session price

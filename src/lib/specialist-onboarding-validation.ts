@@ -21,7 +21,7 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       if (!state.fullName.trim()) missing.push("Full name");
       if (!isListedGender(state.gender)) missing.push("Gender");
       if (!state.displayName.trim()) missing.push("Business name");
-      if (!state.headline.trim()) missing.push("Headline");
+      if (!state.headline.trim()) missing.push("Professional title");
       if (!isValidEmail(state.email)) missing.push("Valid email");
       if (state.password.trim().length < 8) missing.push("Password (8+ characters)");
       if (!state.phone.trim()) missing.push("Phone number");
@@ -45,6 +45,9 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       const price = Number.parseFloat(priceDigits);
       if (!Number.isFinite(price) || price <= 0) {
         missing.push("Session price (e.g. $120)");
+      }
+      if (state.trainingOptions.length === 0) {
+        missing.push("Training options");
       }
       break;
     }

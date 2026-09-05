@@ -8,7 +8,7 @@ interface TrainerProfessionLabelProps {
   as?: "p" | "span";
 }
 
-/** Category under the name — Personal Trainer, etc. Hidden when unknown. */
+/** Category under the name — Personal Training, etc. Hidden when unknown. */
 export function TrainerProfessionLabel({
   trainer,
   className,

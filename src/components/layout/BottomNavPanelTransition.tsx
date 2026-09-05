@@ -4,6 +4,7 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { BottomNavPanelTransitionState } from "@/contexts/MobileBottomNavTransitionContext";
 import { useMobileMotionProfile } from "@/hooks/useMobileMotionProfile";
+import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import {
   bottomNavPanelReducedTransition,
   bottomNavPanelReducedVariants,
@@ -53,6 +54,7 @@ function BottomNavPanelTransitionInner({
       if (name === "animate") {
         setAnimating(false);
         onEnterComplete();
+        notifyExploreMapLayout();
       }
       if (name === "exit") {
         setAnimating(false);

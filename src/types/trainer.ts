@@ -1,4 +1,5 @@
 import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
+import type { SpecialistTrainingOptionId } from "@/types/specialist-training-options";
 import type { SpecialistProfileStyle } from "@/lib/specialist-profile-style";
 
 export type Gender = "male" | "female" | "non-binary";
@@ -111,6 +112,8 @@ export interface Trainer {
   travelRadius?: string;
   /** In-person, virtual, or both — drives matching */
   serviceType?: SpecialistServiceType;
+  /** One-on-one / semi-private / class — public “Training options” */
+  trainingOptions?: SpecialistTrainingOptionId[];
   /** Paid placement — stays above organic results when sorting by user ZIP */
   sponsored?: boolean;
   /**

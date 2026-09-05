@@ -9,8 +9,8 @@ import {
 import { findSpecialistApplicationByEmail } from "@/lib/specialist-application-storage";
 
 /**
- * After email confirm + specialist login, submit the onboarding draft once
- * if signup was interrupted before application persistence.
+ * After specialist login, recover an interrupted last-step Submit.
+ * In-progress wizard drafts stay local — do not submit from email verify.
  */
 export async function completePendingSpecialistApplicationAfterAuth(
   email: string
@@ -27,8 +27,8 @@ export async function completePendingSpecialistApplicationAfterAuth(
     pending!.role === "specialist" &&
     Boolean(pending!.submitSpecialistApplication);
 
-  /* Recover when the user tried multiple emails: draft for this login still counts. */
-  if (!pendingMatches && !draftMatches) {
+  /* Only recover an interrupted Submit — in-progress wizard drafts stay local. */
+  if (!pendingMatches) {
     return { submitted: false };
   }
 
