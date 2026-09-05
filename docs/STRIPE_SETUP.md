@@ -61,11 +61,23 @@ Safe to re-run — reuses products matched by `metadata.smoac_product`.
 
 ## 6. Specialist UX
 
-- **Pro upgrade** → Checkout Session or modal
-- **Boost modal** → in-app Payment Element (`POST /api/stripe/subscription-intent`) — description + card on SMOAC
+- **Pro / Pro Plus** → in-dashboard checkout (`POST /api/stripe/subscription-intent`) — Apple Pay, Google Pay, Link, or card
+- **Boost modal** → same in-app checkout — wallets + card on SMOAC
 - **Ad spend** → Subscription / account settings via `GET /api/stripe/billing-summary`
 - **Manage billing** → `POST /api/stripe/portal`
+- **Hosted Checkout** (`POST /api/stripe/checkout`) remains as a fallback API; the dashboard no longer redirects off-site
 
-## Test card
+## 7. Apple Pay / Google Pay / Link (one-tap)
 
-`4242 4242 4242 4242`, any future expiry, any CVC.
+Wallets show automatically in the Express Checkout row when the browser supports them. Card stays as fallback.
+
+| Requirement | Notes |
+|-------------|--------|
+| HTTPS | Live site (`smoac.com`) already qualifies. `localhost` usually will not show Apple Pay. |
+| Stripe Dashboard | Settings → Payment methods → enable **Apple Pay**, **Google Pay**, and **Link** |
+| Payment method domains | Register `smoac.com` (and `www.smoac.com` if you use it) under Payment method domains. Stripe handles Apple merchant validation — no association file on our origin. |
+| Safari + Wallet | Apple Pay only appears in Safari (or an iOS in-app browser) with a card in Wallet |
+| Google Pay | Chrome / Android when a Google account has a card |
+| Link | Stripe remembers returning specialists by email |
+
+Test wallets with Stripe test mode keys. Card fallback: `4242 4242 4242 4242`, any future expiry, any CVC.

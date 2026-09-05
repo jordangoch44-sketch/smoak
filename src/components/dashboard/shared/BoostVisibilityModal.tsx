@@ -21,6 +21,7 @@ import {
   isProPlusPlan,
   PRO_PLUS_BOOST_PERCENT_OFF,
 } from "@/lib/stripe/pro-plus-boost";
+import { createEmbeddedSubscriptionCheckout } from "@/lib/stripe/subscription-checkout";
 
 interface BoostVisibilityModalProps {
   open: boolean;
@@ -40,7 +41,7 @@ type CheckoutPayload = {
 type Step = "list" | "detail" | "checkout" | "paid";
 
 /**
- * Boost flow: pick placement → full details → card in-modal (Stripe).
+ * Boost flow: pick placement → full details → wallets + card in-modal (Stripe).
  * Neon yellow theme — distinct from Pro (purple) and Pro trial (blue).
  */
 export function BoostVisibilityModal({
@@ -96,30 +97,21 @@ export function BoostVisibilityModal({
     setBusy(true);
     setError(null);
     setCheckout(null);
-    try {
-      const res = await fetch("/api/stripe/subscription-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product }),
-      });
-      const data = (await res.json()) as CheckoutPayload & { error?: string };
-      if (!res.ok || !data.clientSecret) {
-        setError(data.error ?? "Checkout is not available yet.");
-        return;
-      }
-      setCheckout({
-        clientSecret: data.clientSecret,
-        product: data.product,
-        label: data.label,
-        description: data.description,
-        priceLabel: data.priceLabel,
-      });
-      setStep("checkout");
-    } catch {
-      setError("Could not start checkout. Try again.");
-    } finally {
+    const result = await createEmbeddedSubscriptionCheckout(product);
+    if (!result.ok) {
+      setError(result.error);
       setBusy(false);
+      return;
     }
+    setCheckout({
+      clientSecret: result.checkout.clientSecret,
+      product,
+      label: result.checkout.label,
+      description: result.checkout.description,
+      priceLabel: result.checkout.priceLabel,
+    });
+    setStep("checkout");
+    setBusy(false);
   }
 
   function openDetail(item: BoostProductDetail) {
@@ -322,7 +314,7 @@ export function BoostVisibilityModal({
 
               <div className="dashboard-boost-checkout">
                 <p className="dashboard-boost-checkout__label">
-                  Payment details
+                  Pay in one tap or with a card
                 </p>
                 <StripeEmbeddedCheckout
                   clientSecret={checkout.clientSecret}

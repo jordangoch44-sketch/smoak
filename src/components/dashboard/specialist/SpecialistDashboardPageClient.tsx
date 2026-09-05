@@ -351,6 +351,7 @@ export function SpecialistDashboardPageClient() {
         {showLastChance ? (
           <ProTrialLastChanceBanner
             daysRemaining={session.premiumTrialDaysRemaining}
+            onUpgrade={() => setUpgradeOpen(true)}
           />
         ) : null}
 

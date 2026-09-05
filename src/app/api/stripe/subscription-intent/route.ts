@@ -25,7 +25,7 @@ import {
 
 /**
  * Create an incomplete subscription and return a PaymentIntent client secret
- * for in-modal Stripe Payment Element checkout.
+ * for in-modal Stripe checkout (Apple Pay, Google Pay, Link, or card).
  */
 export async function POST(request: Request) {
   if (!isStripeConfigured()) {
@@ -123,10 +123,13 @@ export async function POST(request: Request) {
   const subscription = await stripe.subscriptions.create({
     customer: customer.customerId,
     items: [{ price: priceId, quantity: 1 }],
-    payment_behavior: "default_incomplete",
+/**
+ * Create an incomplete subscription and return a PaymentIntent client secret
+ * for in-modal Stripe checkout (Apple Pay, Google Pay, Link, or card).
+ */
     payment_settings: {
       save_default_payment_method: "on_subscription",
-      payment_method_types: ["card"],
+      payment_method_types: ["card", "link"],
     },
     metadata,
     ...(discounts ? { discounts } : {}),

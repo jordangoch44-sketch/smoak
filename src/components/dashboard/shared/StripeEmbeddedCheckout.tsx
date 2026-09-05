@@ -3,11 +3,16 @@
 import { useMemo, useState } from "react";
 import {
   Elements,
+  ExpressCheckoutElement,
   PaymentElement,
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { loadStripe, type StripeElementsOptions } from "@stripe/stripe-js";
+import {
+  loadStripe,
+  type StripeElementsOptions,
+  type StripeExpressCheckoutElementConfirmEvent,
+} from "@stripe/stripe-js";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
 
 const publishableKey =
@@ -29,6 +34,32 @@ const ELEMENTS_OPTIONS: StripeElementsOptions["appearance"] = {
   },
 };
 
+const EXPRESS_OPTIONS = {
+  buttonHeight: 44,
+  buttonType: {
+    applePay: "subscribe" as const,
+    googlePay: "subscribe" as const,
+  },
+  layout: {
+    maxColumns: 2,
+    maxRows: 2,
+    overflow: "auto" as const,
+  },
+  paymentMethods: {
+    applePay: "auto" as const,
+    googlePay: "auto" as const,
+    link: "auto" as const,
+    paypal: "never" as const,
+    amazonPay: "never" as const,
+    klarna: "never" as const,
+  },
+  business: { name: "SMOAC" },
+};
+
+function billingReturnUrl(): string {
+  return `${window.location.origin}/specialist-dashboard?billing=success`;
+}
+
 interface StripeEmbeddedPayFormProps {
   productLabel: string;
   priceLabel: string;
@@ -45,8 +76,11 @@ function StripeEmbeddedPayForm({
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
+  const [walletState, setWalletState] = useState<"pending" | "ready" | "empty">(
+    "pending"
+  );
 
-  async function handlePay() {
+  async function confirm(event?: StripeExpressCheckoutElementConfirmEvent) {
     if (!stripe || !elements) return;
     setBusy(true);
     onError("");
@@ -55,15 +89,20 @@ function StripeEmbeddedPayForm({
         elements,
         redirect: "if_required",
         confirmParams: {
-          return_url: `${window.location.origin}/specialist-dashboard?billing=success`,
+          return_url: billingReturnUrl(),
         },
       });
       if (result.error) {
+        event?.paymentFailed({
+          reason: "fail",
+          message: result.error.message,
+        });
         onError(result.error.message ?? "Payment failed. Try again.");
         return;
       }
       onPaid();
     } catch {
+      event?.paymentFailed({ reason: "fail" });
       onError("Payment could not be completed. Try again.");
     } finally {
       setBusy(false);
@@ -72,20 +111,50 @@ function StripeEmbeddedPayForm({
 
   return (
     <div className="stripe-pay">
+      <div
+        className={
+          walletState === "empty"
+            ? "stripe-pay__express stripe-pay__express--idle"
+            : "stripe-pay__express"
+        }
+      >
+        <ExpressCheckoutElement
+          options={EXPRESS_OPTIONS}
+          onReady={(event) => {
+            const methods = event.availablePaymentMethods;
+            setWalletState(
+              methods && (methods.applePay || methods.googlePay || methods.link)
+                ? "ready"
+                : "empty"
+            );
+          }}
+          onConfirm={(event) => void confirm(event)}
+          onCancel={() => setBusy(false)}
+        />
+      </div>
+      {walletState === "ready" ? (
+        <p className="stripe-pay__divider">
+          <span>Or pay with card</span>
+        </p>
+      ) : null}
       <PaymentElement
         options={{
           layout: "tabs",
+          wallets: {
+            applePay: "never",
+            googlePay: "never",
+          },
         }}
       />
       <DashboardButton
         className="stripe-pay__submit"
-        onClick={() => void handlePay()}
+        onClick={() => void confirm()}
         disabled={!stripe || !elements || busy}
       >
         {busy ? "Processing…" : `Subscribe · ${priceLabel}`}
       </DashboardButton>
       <p className="stripe-pay__secure">
-        Secure card processing by Stripe · {productLabel}
+        Apple Pay, Google Pay, Link, or card · Stripe · {productLabel}
       </p>
     </div>
   );

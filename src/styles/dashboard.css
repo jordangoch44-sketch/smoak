@@ -2805,6 +2805,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .dashboard-modal__dialog--pro {
+  width: min(100%, 24.5rem);
   border-color: rgba(var(--accent-glow-rgb), 0.22);
 }
 
@@ -3086,6 +3087,37 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+.stripe-pay__express {
+  min-height: 2.75rem;
+}
+
+.stripe-pay__express--idle {
+  min-height: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stripe-pay__divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.stripe-pay__divider::before,
+.stripe-pay__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .stripe-pay__submit {
