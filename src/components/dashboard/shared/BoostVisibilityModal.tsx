@@ -1,86 +1,101 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { CloseIcon } from "@/components/ui/icons";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
+import { BoostPlacementChoice } from "@/components/dashboard/shared/BoostPlacementChoice";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
+import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
 import {
-  BOOST_PURCHASABLE_DETAILS,
-  getBoostProductDetail,
-  type BoostProductDetail,
-} from "@/lib/boost-product-details";
-import {
-  listPriceCents,
-  productDescription,
-  type SmoacAddonProduct,
-} from "@/lib/stripe/products";
-import {
-  formatBoostPriceLabel,
-  isProPlusPlan,
-  PRO_PLUS_BOOST_PERCENT_OFF,
-} from "@/lib/stripe/pro-plus-boost";
-import { createEmbeddedSubscriptionCheckout } from "@/lib/stripe/subscription-checkout";
+  BOOST_CAMPAIGN_DAILY_STEP_CENTS,
+  BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS,
+  BOOST_CAMPAIGN_DEFAULT_DAYS,
+  BOOST_CAMPAIGN_MAX_DAILY_CENTS,
+  BOOST_CAMPAIGN_MAX_DAYS,
+  BOOST_CAMPAIGN_MIN_DAILY_CENTS,
+  BOOST_CAMPAIGN_MIN_DAYS,
+  boostCampaignSummary,
+  getBoostCampaignPlacement,
+  isBoostCampaignProduct,
+  type BoostCampaignProduct,
+} from "@/lib/boost-campaign";
+import { createBoostCampaignCheckout } from "@/lib/stripe/boost-campaign-checkout";
+import { isProPlusPlan } from "@/lib/stripe/pro-plus-boost";
+import type { SmoacAddonProduct } from "@/lib/stripe/products";
 
 interface BoostVisibilityModalProps {
   open: boolean;
   onClose: () => void;
-  /** Optional: land on a specific boost detail */
+  /** Optional: preselect a placement on the first step */
   initialProduct?: SmoacAddonProduct | null;
 }
 
 type CheckoutPayload = {
   clientSecret: string;
-  product: SmoacAddonProduct;
+  product: BoostCampaignProduct;
   label: string;
-  description: string;
   priceLabel: string;
+  days: number;
 };
 
-type Step = "list" | "detail" | "checkout" | "paid";
+type Step = "place" | "budget" | "checkout" | "paid";
 
-/**
- * Boost flow: pick placement → full details → wallets + card in-modal (Stripe).
- * Neon yellow theme — distinct from Pro (purple) and Pro trial (blue).
- */
 export function BoostVisibilityModal({
   open,
   onClose,
   initialProduct = null,
 }: BoostVisibilityModalProps) {
   const { session } = useAuthSession();
+  const { trainer, formDefaults } = useManagedSpecialistProfile();
   const isProPlus = isProPlusPlan(session?.membershipPlan);
-  const [step, setStep] = useState<Step>("list");
-  const [detail, setDetail] = useState<BoostProductDetail | null>(null);
+  const [step, setStep] = useState<Step>("place");
+  const [product, setProduct] = useState<BoostCampaignProduct | null>(null);
+  const [days, setDays] = useState(BOOST_CAMPAIGN_DEFAULT_DAYS);
+  const [dailyCents, setDailyCents] = useState(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
   const [checkout, setCheckout] = useState<CheckoutPayload | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  function priceFor(key: SmoacAddonProduct) {
-    const listCents = listPriceCents(key);
-    return {
-      listLabel: formatBoostPriceLabel(listCents, false),
-      payLabel: formatBoostPriceLabel(listCents, isProPlus),
-    };
-  }
+  const photoUrl =
+    formDefaults?.profilePhotoUrl?.trim() ||
+    trainer?.image?.trim() ||
+    trainer?.heroImage?.trim() ||
+    session?.avatarUrl?.trim() ||
+    "";
+  const displayName =
+    trainer?.name?.trim() ||
+    session?.displayName?.trim() ||
+    session?.firstName?.trim() ||
+    session?.email?.split("@")[0]?.trim() ||
+    "You";
+
+  const summary = useMemo(() => {
+    if (!product) return null;
+    return boostCampaignSummary({
+      product,
+      days,
+      dailyCents,
+      proPlus: isProPlus,
+    });
+  }, [product, days, dailyCents, isProPlus]);
 
   useEffect(() => {
     if (!open) return;
 
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.classList.add(MODAL_OPEN_BODY_CLASS);
+    document.documentElement.classList.add(MODAL_OPEN_BODY_CLASS);
     setCheckout(null);
     setError(null);
     setBusy(false);
-
-    if (initialProduct) {
-      setDetail(getBoostProductDetail(initialProduct));
-      setStep("detail");
-    } else {
-      setDetail(null);
-      setStep("list");
-    }
+    setDays(BOOST_CAMPAIGN_DEFAULT_DAYS);
+    setDailyCents(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
+    setStep("place");
+    setProduct(
+      isBoostCampaignProduct(initialProduct) ? initialProduct : null
+    );
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -88,16 +103,22 @@ export function BoostVisibilityModal({
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
+      document.body.classList.remove(MODAL_OPEN_BODY_CLASS);
+      document.documentElement.classList.remove(MODAL_OPEN_BODY_CLASS);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open, onClose, initialProduct]);
 
-  async function startEmbeddedCheckout(product: SmoacAddonProduct) {
+  async function startCheckout() {
+    if (!product || !summary) return;
     setBusy(true);
     setError(null);
     setCheckout(null);
-    const result = await createEmbeddedSubscriptionCheckout(product);
+    const result = await createBoostCampaignCheckout({
+      product,
+      days: summary.days,
+      dailyCents: summary.dailyCents,
+    });
     if (!result.ok) {
       setError(result.error);
       setBusy(false);
@@ -105,39 +126,18 @@ export function BoostVisibilityModal({
     }
     setCheckout({
       clientSecret: result.checkout.clientSecret,
-      product,
+      product: result.checkout.product,
       label: result.checkout.label,
-      description: result.checkout.description,
       priceLabel: result.checkout.priceLabel,
+      days: result.checkout.days,
     });
     setStep("checkout");
     setBusy(false);
   }
 
-  function openDetail(item: BoostProductDetail) {
-    setDetail(item);
-    setError(null);
-    setStep("detail");
-  }
-
-  function backToList() {
-    setCheckout(null);
-    setDetail(null);
-    setError(null);
-    setStep("list");
-  }
-
-  function backToDetail() {
-    setCheckout(null);
-    setError(null);
-    setStep("detail");
-  }
-
   if (!open || typeof document === "undefined") return null;
 
-  const activeDetail =
-    detail ??
-    (checkout ? getBoostProductDetail(checkout.product) : null);
+  const placement = product ? getBoostCampaignPlacement(product) : null;
 
   return createPortal(
     <div className="dashboard-modal" role="presentation" onClick={onClose}>
@@ -146,7 +146,6 @@ export function BoostVisibilityModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="boost-modal-title"
-        aria-describedby="boost-modal-desc"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="dashboard-modal__glow dashboard-modal__glow--boost" aria-hidden />
@@ -161,127 +160,108 @@ export function BoostVisibilityModal({
         </button>
 
         <div className="dashboard-modal__content">
-          {step === "list" ? (
+          {step === "place" ? (
             <>
-              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
-                Paid placement
-              </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
-                Boost profile & ads
+                Where you'll be seen
               </h2>
-              <p id="boost-modal-desc" className="dashboard-modal__body">
-                Pick a placement to see exactly what you get, where it appears,
-                and what it will not change. Separate from Pro analytics —
-                billed monthly, cancel anytime.
-                {isProPlus
-                  ? ` Pro Plus saves ${PRO_PLUS_BOOST_PERCENT_OFF}% on every Boost.`
-                  : ""}
-              </p>
-
-              <ul className="dashboard-boost-list">
-                {BOOST_PURCHASABLE_DETAILS.map((option) => {
-                  const price = priceFor(option.key);
-                  return (
-                  <li key={option.key} className="dashboard-boost-list__item">
-                    <div className="dashboard-boost-list__copy">
-                      <p className="dashboard-boost-list__label">
-                        {option.label}
-                      </p>
-                      <p className="dashboard-boost-list__desc">
-                        {option.tagline}
-                      </p>
-                      <p className="dashboard-boost-list__price">
-                        {isProPlus ? (
-                          <>
-                            <span className="dashboard-boost-list__price-was">
-                              {price.listLabel}
-                            </span>
-                            {price.payLabel}
-                          </>
-                        ) : (
-                          price.payLabel
-                        )}
-                      </p>
-                    </div>
-                    <DashboardButton
-                      inline
-                      className="dashboard-boost-select-btn"
-                      onClick={() => openDetail(option)}
-                    >
-                      Details
-                    </DashboardButton>
-                  </li>
-                  );
-                })}
-              </ul>
+              <BoostPlacementChoice
+                photoUrl={photoUrl}
+                name={displayName}
+                selected={product}
+                onSelect={(key) => {
+                  setProduct(key);
+                  setError(null);
+                }}
+              />
+              <DashboardButton
+                className="dashboard-boost-select-btn"
+                onClick={() => setStep("budget")}
+                disabled={!product}
+              >
+                Next
+              </DashboardButton>
             </>
           ) : null}
 
-          {step === "detail" && activeDetail ? (
+          {step === "budget" && summary && placement ? (
             <>
               <button
                 type="button"
                 className="dashboard-modal__secondary"
-                onClick={backToList}
+                onClick={() => {
+                  setCheckout(null);
+                  setError(null);
+                  setStep("place");
+                }}
               >
-                ← All boosts
+                ← {placement.caption}
               </button>
-              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
-                {isProPlus
-                  ? `${priceFor(activeDetail.key).payLabel} · Pro Plus 20% off`
-                  : activeDetail.priceLabel}
-              </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
-                {activeDetail.label}
+                Budget
               </h2>
-              <p id="boost-modal-desc" className="dashboard-modal__body">
-                {activeDetail.tagline}
-              </p>
 
-              <div className="dashboard-boost-detail">
-                <section className="dashboard-boost-detail__block">
-                  <h3 className="dashboard-boost-detail__heading">You get</h3>
-                  <ul className="dashboard-boost-detail__list">
-                    {activeDetail.youGet.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                </section>
-                <section className="dashboard-boost-detail__block">
-                  <h3 className="dashboard-boost-detail__heading">
-                    Where it appears
-                  </h3>
-                  <ul className="dashboard-boost-detail__list">
-                    {activeDetail.appearsOn.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                </section>
-                <section className="dashboard-boost-detail__block dashboard-boost-detail__block--wont">
-                  <h3 className="dashboard-boost-detail__heading">
-                    What it will not do
-                  </h3>
-                  <ul className="dashboard-boost-detail__list">
-                    {activeDetail.willNot.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                </section>
+              <dl className="boost-budget__totals">
+                <div>
+                  <dt>Ad budget</dt>
+                  <dd>
+                    {summary.dailyLabel} · {summary.durationLabel}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Est. views</dt>
+                  <dd>{summary.viewsLabel}</dd>
+                </div>
+                {summary.discountPercent > 0 ? (
+                  <div>
+                    <dt>Pro Plus</dt>
+                    <dd>−{summary.discountPercent}%</dd>
+                  </div>
+                ) : null}
+                <div className="boost-budget__total">
+                  <dt>Total</dt>
+                  <dd>{summary.payLabel}</dd>
+                </div>
+              </dl>
+
+              <div className="boost-budget__sliders">
+                <label className="boost-budget__slider">
+                  <span>
+                    Duration
+                    <strong>{summary.durationLabel}</strong>
+                  </span>
+                  <input
+                    type="range"
+                    min={BOOST_CAMPAIGN_MIN_DAYS}
+                    max={BOOST_CAMPAIGN_MAX_DAYS}
+                    value={days}
+                    onChange={(event) => setDays(Number(event.target.value))}
+                  />
+                </label>
+                <label className="boost-budget__slider">
+                  <span>
+                    Daily budget
+                    <strong>{summary.dailyLabel}</strong>
+                  </span>
+                  <input
+                    type="range"
+                    min={BOOST_CAMPAIGN_MIN_DAILY_CENTS}
+                    max={BOOST_CAMPAIGN_MAX_DAILY_CENTS}
+                    step={BOOST_CAMPAIGN_DAILY_STEP_CENTS}
+                    value={dailyCents}
+                    onChange={(event) =>
+                      setDailyCents(Number(event.target.value))
+                    }
+                  />
+                </label>
               </div>
-
-              <p className="dashboard-modal__note">
-                Billed monthly. Placement turns on after payment succeeds.
-                Manage billing anytime in Subscription settings.
-              </p>
 
               <DashboardButton
                 className="dashboard-boost-select-btn"
-                onClick={() => void startEmbeddedCheckout(activeDetail.key)}
+                onClick={() => void startCheckout()}
                 disabled={busy}
               >
-                {busy
-                  ? "Loading…"
-                  : `Continue · ${priceFor(activeDetail.key).payLabel}`}
+                {busy ? "Loading…" : `Process · ${summary.payLabel}`}
               </DashboardButton>
             </>
           ) : null}
@@ -291,35 +271,24 @@ export function BoostVisibilityModal({
               <button
                 type="button"
                 className="dashboard-modal__secondary"
-                onClick={backToDetail}
+                onClick={() => {
+                  setCheckout(null);
+                  setError(null);
+                  setStep("budget");
+                }}
               >
-                ← Back to details
+                ← Budget
               </button>
-              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
-                You’re subscribing to
-              </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
-                {checkout.label}
+                Pay {checkout.priceLabel}
               </h2>
-              <p id="boost-modal-desc" className="dashboard-modal__body">
-                {checkout.description ||
-                  productDescription(checkout.product) ||
-                  activeDetail?.tagline}
-              </p>
-              <p className="dashboard-modal__price">{checkout.priceLabel}</p>
-              <p className="dashboard-modal__note">
-                Billed monthly. Cancel anytime from Subscription / account
-                settings. Placement turns on after payment succeeds.
-              </p>
-
               <div className="dashboard-boost-checkout">
-                <p className="dashboard-boost-checkout__label">
-                  Pay in one tap or with a card
-                </p>
                 <StripeEmbeddedCheckout
                   clientSecret={checkout.clientSecret}
                   productLabel={checkout.label}
                   priceLabel={checkout.priceLabel}
+                  submitLabel={`Pay · ${checkout.priceLabel}`}
+                  walletMode="pay"
                   onPaid={() => setStep("paid")}
                   onError={(message) => setError(message || null)}
                 />
@@ -329,15 +298,13 @@ export function BoostVisibilityModal({
 
           {step === "paid" ? (
             <>
-              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
-                You’re live
-              </p>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
-                {checkout?.label ?? detail?.label ?? "Boost"} is active
+                You're live
               </h2>
               <p id="boost-modal-desc" className="dashboard-modal__body">
-                Your placement will appear on SMOAC shortly. Track ad spend and
-                manage billing anytime in Subscription / account settings.
+                {checkout?.label ?? placement?.caption} ·{" "}
+                {checkout?.days ?? days}{" "}
+                {(checkout?.days ?? days) === 1 ? "day" : "days"}
               </p>
               <DashboardButton
                 className="dashboard-boost-select-btn"

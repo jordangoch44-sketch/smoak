@@ -34,7 +34,7 @@ const ELEMENTS_OPTIONS: StripeElementsOptions["appearance"] = {
   },
 };
 
-const EXPRESS_OPTIONS = {
+const EXPRESS_SUBSCRIBE = {
   buttonHeight: 44,
   buttonType: {
     applePay: "subscribe" as const,
@@ -56,6 +56,14 @@ const EXPRESS_OPTIONS = {
   business: { name: "SMOAC" },
 };
 
+const EXPRESS_PAY = {
+  ...EXPRESS_SUBSCRIBE,
+  buttonType: {
+    applePay: "buy" as const,
+    googlePay: "buy" as const,
+  },
+};
+
 function billingReturnUrl(): string {
   return `${window.location.origin}/specialist-dashboard?billing=success`;
 }
@@ -63,6 +71,8 @@ function billingReturnUrl(): string {
 interface StripeEmbeddedPayFormProps {
   productLabel: string;
   priceLabel: string;
+  submitLabel?: string;
+  walletMode?: "subscribe" | "pay";
   onPaid: () => void;
   onError: (message: string) => void;
 }
@@ -70,6 +80,8 @@ interface StripeEmbeddedPayFormProps {
 function StripeEmbeddedPayForm({
   productLabel,
   priceLabel,
+  submitLabel,
+  walletMode = "subscribe",
   onPaid,
   onError,
 }: StripeEmbeddedPayFormProps) {
@@ -119,7 +131,7 @@ function StripeEmbeddedPayForm({
         }
       >
         <ExpressCheckoutElement
-          options={EXPRESS_OPTIONS}
+          options={walletMode === "pay" ? EXPRESS_PAY : EXPRESS_SUBSCRIBE}
           onReady={(event) => {
             const methods = event.availablePaymentMethods;
             setWalletState(
@@ -151,7 +163,7 @@ function StripeEmbeddedPayForm({
         onClick={() => void confirm()}
         disabled={!stripe || !elements || busy}
       >
-        {busy ? "Processing…" : `Subscribe · ${priceLabel}`}
+        {busy ? "Processing…" : submitLabel ?? `Subscribe · ${priceLabel}`}
       </DashboardButton>
       <p className="stripe-pay__secure">
         Apple Pay, Google Pay, Link, or card · Stripe · {productLabel}
@@ -164,6 +176,8 @@ interface StripeEmbeddedCheckoutProps {
   clientSecret: string;
   productLabel: string;
   priceLabel: string;
+  submitLabel?: string;
+  walletMode?: "subscribe" | "pay";
   onPaid: () => void;
   onError: (message: string) => void;
 }
@@ -172,6 +186,8 @@ export function StripeEmbeddedCheckout({
   clientSecret,
   productLabel,
   priceLabel,
+  submitLabel,
+  walletMode = "subscribe",
   onPaid,
   onError,
 }: StripeEmbeddedCheckoutProps) {
@@ -196,6 +212,8 @@ export function StripeEmbeddedCheckout({
       <StripeEmbeddedPayForm
         productLabel={productLabel}
         priceLabel={priceLabel}
+        submitLabel={submitLabel}
+        walletMode={walletMode}
         onPaid={onPaid}
         onError={onError}
       />

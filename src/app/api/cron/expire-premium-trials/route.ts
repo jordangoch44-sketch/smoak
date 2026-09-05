@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { processPremiumTrialLifecycle } from "@/lib/specialist-premium-trial";
+import { expireEndedBoostCampaigns } from "@/lib/stripe/activate-boost-campaign";
 
 export const runtime = "nodejs";
 
@@ -17,5 +18,6 @@ export async function GET(request: Request) {
   }
 
   const { reminders, expired } = await processPremiumTrialLifecycle();
-  return NextResponse.json({ ok: true, reminders, expired });
+  const boostExpired = await expireEndedBoostCampaigns();
+  return NextResponse.json({ ok: true, reminders, expired, boostExpired });
 }

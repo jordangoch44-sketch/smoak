@@ -9,6 +9,8 @@ import {
   clearSpecialistSubscription,
   syncSpecialistSubscription,
 } from "@/lib/stripe/sync-subscription";
+import { activateBoostCampaign } from "@/lib/stripe/activate-boost-campaign";
+import { isBoostCampaignProduct } from "@/lib/boost-campaign";
 
 export const runtime = "nodejs";
 
@@ -124,6 +126,32 @@ export async function POST(request: Request) {
           userId: resolved.userId,
           specialistProfileId: resolved.profileId,
           customerId: customerId ?? null,
+        });
+        break;
+      }
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        if (paymentIntent.metadata?.smoac_kind !== "boost_campaign") break;
+        const userId = paymentIntent.metadata.supabase_user_id;
+        const product = paymentIntent.metadata.smoac_product;
+        if (!userId || !isBoostCampaignProduct(product)) break;
+        const days = Number(paymentIntent.metadata.boost_days);
+        const dailyCents = Number(paymentIntent.metadata.boost_daily_cents);
+        const endsAt =
+          paymentIntent.metadata.boost_ends_at ||
+          new Date(
+            Date.now() +
+              (Number.isFinite(days) ? days : 7) * 24 * 60 * 60 * 1000
+          ).toISOString();
+        await activateBoostCampaign({
+          userId,
+          specialistProfileId:
+            paymentIntent.metadata.specialist_profile_id || null,
+          product,
+          days: Number.isFinite(days) ? days : 7,
+          dailyCents: Number.isFinite(dailyCents) ? dailyCents : 1000,
+          paymentIntentId: paymentIntent.id,
+          endsAt,
         });
         break;
       }

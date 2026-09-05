@@ -2,6 +2,13 @@
 
 ## Product model
 
+### Paid placement (Boost campaigns)
+Timed campaigns — specialist picks a surface, days, and daily budget, then pays the total up front. Not a monthly add-on. Pro Plus still gets 20% off the campaign total.
+
+Webhook `payment_intent.succeeded` (metadata `smoac_kind=boost_campaign`) turns the placement on until `boost_campaign_ends_at`.
+
+Legacy monthly add-on price IDs still exist for existing subscribers; new Boost checkout does not use them.
+
 ### Membership (analytics) — display names: Free · Pro · Pro Plus
 1. **Specialist approved** → automatic **30-day free Pro trial** (no card)
 2. **Day 30** → Free + option to continue **Pro ($9.99/mo)** (Stripe product key: `premium`)
@@ -48,11 +55,12 @@ Safe to re-run — reuses products matched by `metadata.smoac_product`.
 1. `supabase/migrations/20260725180000_specialist_billing_stripe.sql`
 2. `supabase/migrations/20260725190000_specialist_premium_trial.sql`
 3. `supabase/migrations/20260731020000_specialist_billing_products.sql`
+4. `supabase/migrations/20260905180000_boost_campaigns.sql`
 
 ## 4. Webhook
 
 - URL: `https://smoac.com/api/stripe/webhook`
-- Events: `checkout.session.completed`, `customer.subscription.created|updated|deleted`
+- Events: `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `payment_intent.succeeded`
 - Secret → `STRIPE_WEBHOOK_SECRET`
 
 ## 5. Cron (expire complimentary trials)
@@ -62,7 +70,7 @@ Safe to re-run — reuses products matched by `metadata.smoac_product`.
 ## 6. Specialist UX
 
 - **Pro / Pro Plus** → in-dashboard checkout (`POST /api/stripe/subscription-intent`) — Apple Pay, Google Pay, Link, or card
-- **Boost modal** → same in-app checkout — wallets + card on SMOAC
+- **Boost modal** → where you'll be seen → days + budget → wallets / card (`POST /api/stripe/boost-campaign-intent`)
 - **Ad spend** → Subscription / account settings via `GET /api/stripe/billing-summary`
 - **Manage billing** → `POST /api/stripe/portal`
 - **Hosted Checkout** (`POST /api/stripe/checkout`) remains as a fallback API; the dashboard no longer redirects off-site

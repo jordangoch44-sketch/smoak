@@ -22,6 +22,7 @@ import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
 import { parseTrainingOptions } from "@/types/specialist-training-options";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
+import { applyCampaignExpiryToTrainerFlags } from "@/lib/stripe/activate-boost-campaign";
 
 export type SpecialistProfilesMutationResult =
   | { ok: true }
@@ -389,18 +390,26 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
       pricePerSession: trainer.pricePerSession || row.price_per_session || 0,
       /* Columns are the source of truth for admin placement flags —
        * profile_data snapshots go stale when admins toggle featured/sponsored. */
-      featured:
-        typeof row.featured === "boolean" ? row.featured : Boolean(trainer.featured),
-      sponsored:
-        typeof row.sponsored === "boolean" ? row.sponsored : Boolean(trainer.sponsored),
       topRanked:
         typeof row.top_ranked === "boolean"
           ? row.top_ranked
           : Boolean(trainer.topRanked),
-      categorySpotlight:
-        typeof row.category_spotlight === "boolean"
-          ? row.category_spotlight
-          : Boolean(trainer.categorySpotlight),
+      ...applyCampaignExpiryToTrainerFlags({
+        featured:
+          typeof row.featured === "boolean"
+            ? row.featured
+            : Boolean(trainer.featured),
+        sponsored:
+          typeof row.sponsored === "boolean"
+            ? row.sponsored
+            : Boolean(trainer.sponsored),
+        categorySpotlight:
+          typeof row.category_spotlight === "boolean"
+            ? row.category_spotlight
+            : Boolean(trainer.categorySpotlight),
+        campaignProduct: row.boost_campaign_product,
+        campaignEndsAt: row.boost_campaign_ends_at,
+      }),
       isPremium:
         typeof row.is_premium === "boolean"
           ? row.is_premium

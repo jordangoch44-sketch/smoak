@@ -2,9 +2,7 @@
 
 import { DashboardButton } from "@/components/dashboard/shared";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { listPriceCents } from "@/lib/stripe/products";
 import {
-  formatBoostPriceLabel,
   isProPlusPlan,
   PRO_PLUS_BOOST_PERCENT_OFF,
 } from "@/lib/stripe/pro-plus-boost";
@@ -16,10 +14,6 @@ interface BoostProfileCardProps {
 export function BoostProfileCard({ onOpenBoost }: BoostProfileCardProps) {
   const { session } = useAuthSession();
   const isProPlus = isProPlusPlan(session?.membershipPlan);
-  const fromPrice = formatBoostPriceLabel(
-    listPriceCents("boosted_profile"),
-    isProPlus
-  );
 
   return (
     <section className="dashboard-boost-cta" aria-labelledby="boost-profile-cta-title">
@@ -28,8 +22,7 @@ export function BoostProfileCard({ onOpenBoost }: BoostProfileCardProps) {
         Boost your profile
       </h2>
       <p className="dashboard-boost-cta__body">
-        This is what clients see. Put it on Marketplace Sponsored, in Search,
-        or as Featured — labeled ads, separate from Pro.
+        Pick where you show up, set days and budget, then pay.
       </p>
       <DashboardButton
         className="dashboard-boost-select-btn dashboard-boost-cta__btn"
@@ -38,10 +31,10 @@ export function BoostProfileCard({ onOpenBoost }: BoostProfileCardProps) {
         Boost profile
       </DashboardButton>
       <p className="dashboard-boost-cta__note">
-        From {fromPrice}
-        {isProPlus ? ` · Pro Plus ${PRO_PLUS_BOOST_PERCENT_OFF}% off` : ""}
-        {" · "}
-        billed monthly · cancel anytime
+        {isProPlus
+          ? `Pro Plus ${PRO_PLUS_BOOST_PERCENT_OFF}% off · `
+          : ""}
+        pay for the days you choose
       </p>
     </section>
   );

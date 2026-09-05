@@ -7,6 +7,10 @@ import {
   type SmoacStripeProductKey,
 } from "@/lib/stripe/products";
 import { syncBoostCouponsForMembership } from "@/lib/stripe/pro-plus-boost";
+import {
+  campaignFromBillingRow,
+  mergeCampaignPlacementFlags,
+} from "@/lib/stripe/activate-boost-campaign";
 
 const ACTIVE_STATUSES = new Set(["active", "trialing"]);
 
@@ -122,6 +126,21 @@ export async function syncSpecialistCustomerBilling(input: {
   ];
   const entitlements = entitlementsFromProducts(productKeys);
 
+  const { data: campaignRow } = await supabase
+    .from("specialist_billing")
+    .select(
+      "boost_campaign_product, boost_campaign_ends_at, boost_campaign_payment_intent_id"
+    )
+    .eq("user_id", input.userId)
+    .maybeSingle();
+  const campaignFlags = mergeCampaignPlacementFlags({
+    featured: entitlements.featured,
+    sponsored: entitlements.sponsored,
+    categorySpotlight: entitlements.categorySpotlight,
+    topRanked: entitlements.topRanked,
+    campaign: campaignFromBillingRow(campaignRow),
+  });
+
   const productKeysBySubscription = new Map<
     string,
     readonly SmoacStripeProductKey[]
@@ -197,10 +216,10 @@ export async function syncSpecialistCustomerBilling(input: {
   const profilePatch = {
     is_premium: isPremium,
     membership_plan: entitlements.plan,
-    featured: entitlements.featured,
-    sponsored: entitlements.sponsored,
-    top_ranked: entitlements.topRanked,
-    category_spotlight: entitlements.categorySpotlight,
+    featured: campaignFlags.featured,
+    sponsored: campaignFlags.sponsored,
+    top_ranked: campaignFlags.topRanked,
+    category_spotlight: campaignFlags.categorySpotlight,
     updated_at: new Date().toISOString(),
   };
 
