@@ -1378,17 +1378,12 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.32rem;
-  background: rgba(14, 12, 22, 0.94);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  justify-content: center;
+  padding: 0;
+  background: transparent;
+  border: none;
   border-radius: 9999px;
-  padding: 2px 7px 2px 2px;
-  box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  box-shadow: none;
 }
 
 .explore-map-pin__avatar-ring {
@@ -1401,7 +1396,10 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .explore-map-pin__avatar-img {
@@ -1422,28 +1420,6 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   font-size: 0.625rem;
   font-weight: 750;
   letter-spacing: -0.01em;
-}
-
-.explore-map-pin__price-tag {
-  position: relative;
-  z-index: 1;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: #f5f5f7;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  line-height: 1;
-}
-
-.explore-map-pin__single-dot {
-  position: relative;
-  z-index: 1;
-  width: 8px;
-  height: 8px;
-  border-radius: 9999px;
-  background: #e11d48;
-  box-shadow: 0 0 6px rgba(225, 29, 72, 0.6);
-  flex-shrink: 0;
 }
 
 /* Multi-Trainer Facility / Hub Cluster (Option B) */
@@ -1584,15 +1560,33 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   background: rgba(14, 12, 22, 0.93);
 }
 
+.explore-map-pin--single .explore-map-pin__caret {
+  bottom: -5px;
+  background: rgba(14, 12, 22, 0.96);
+  border-right: 1.5px solid rgba(255, 255, 255, 0.92);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.92);
+}
+
 /* Hover refinement */
-.explore-map-pin:hover .explore-map-pin__single-body,
 .explore-map-pin:hover .explore-map-pin__hub-pill {
   border-color: rgba(255, 255, 255, 0.32);
 }
 
-.explore-map-pin:hover .explore-map-pin__caret {
+.explore-map-pin--single:hover .explore-map-pin__avatar-ring {
+  border-color: #ffffff;
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(0, 0, 0, 0.18);
+}
+
+.explore-map-pin:hover .explore-map-pin__hub-pill .explore-map-pin__caret {
   border-right-color: rgba(255, 255, 255, 0.32);
   border-bottom-color: rgba(255, 255, 255, 0.32);
+}
+
+.explore-map-pin--single:hover .explore-map-pin__caret {
+  border-right-color: #ffffff;
+  border-bottom-color: #ffffff;
 }
 
 /* Fallback CSS pseudo-element tail for pill pins if custom HTML is used */
@@ -1683,7 +1677,6 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   z-index: 100 !important;
 }
 
-.explore-map-pin--selected .explore-map-pin__single-body,
 .explore-map-pin--selected .explore-map-pin__hub-pill {
   border-color: rgba(196, 161, 255, 0.85);
   background: rgba(26, 20, 38, 0.98);

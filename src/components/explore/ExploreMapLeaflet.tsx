@@ -22,6 +22,8 @@ import { getExploreMapBasemap } from "@/lib/explore-map-tiles";
 import {
   clusterTrainersForMap,
   buildExploreMapPinHtml,
+  EXPLORE_MAP_CLUSTER_PIN_SIZE,
+  EXPLORE_MAP_SINGLE_PIN_SIZE,
   type ExploreMapCluster,
 } from "@/lib/explore-map-clusters";
 import { ExploreMapBottomCard } from "./ExploreMapBottomCard";
@@ -604,8 +606,11 @@ export function ExploreMapLeaflet({
     for (const cluster of clusters) {
       const isMulti = cluster.isMulti;
       const pinHtml = buildExploreMapPinHtml(cluster, false);
-      const iconSize: [number, number] = isMulti ? [88, 56] : [68, 38];
-      const iconAnchor: [number, number] = isMulti ? [44, 56] : [34, 38];
+      const pinSize = isMulti
+        ? EXPLORE_MAP_CLUSTER_PIN_SIZE
+        : EXPLORE_MAP_SINGLE_PIN_SIZE;
+      const iconSize: [number, number] = [pinSize.width, pinSize.height];
+      const iconAnchor: [number, number] = [pinSize.width / 2, pinSize.height];
 
       const pinIcon = L.divIcon({
         className: `explore-map-marker-container ${isMulti ? "explore-map-marker--cluster" : "explore-map-marker--single"}`,

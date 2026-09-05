@@ -23,6 +23,8 @@ import {
 import {
   clusterTrainersForMap,
   buildExploreMapPinHtml,
+  EXPLORE_MAP_CLUSTER_PIN_SIZE,
+  EXPLORE_MAP_SINGLE_PIN_SIZE,
   type ExploreMapCluster,
 } from "@/lib/explore-map-clusters";
 import { cn } from "@/lib/utils";
@@ -660,8 +662,12 @@ export function ExploreMapApple({
             : cluster.primaryTrainer.name,
           data: { clusterId: cluster.id },
           animates: false,
-          size: isMulti ? { width: 88, height: 56 } : { width: 68, height: 38 },
-          anchorOffset: isMulti ? new DOMPoint(0, -28) : new DOMPoint(0, -19),
+          size: isMulti
+            ? EXPLORE_MAP_CLUSTER_PIN_SIZE
+            : EXPLORE_MAP_SINGLE_PIN_SIZE,
+          anchorOffset: isMulti
+            ? new DOMPoint(0, -EXPLORE_MAP_CLUSTER_PIN_SIZE.height / 2)
+            : new DOMPoint(0, -EXPLORE_MAP_SINGLE_PIN_SIZE.height / 2),
           calloutEnabled: false,
         }
       );

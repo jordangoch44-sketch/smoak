@@ -1,7 +1,6 @@
 import type { Trainer } from "@/types";
 import { getTrainerCoordinates } from "@/lib/trainer-location";
 import { formatProviderLocation } from "@/lib/provider-location";
-import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { escapeExploreMapHtml, safeExploreMapImageSrc } from "@/lib/explore-map-popup";
 
 /**
@@ -242,9 +241,13 @@ export function buildTrainerAvatarHtml(
   return `<span class="${sizeClass} ${sizeClass}--fallback" aria-hidden="true">${escapeExploreMapHtml(initials)}</span>`;
 }
 
+/** Leaflet / MapKit hit box for a single specialist pin (photo circle + caret). */
+export const EXPLORE_MAP_SINGLE_PIN_SIZE = { width: 36, height: 40 } as const;
+export const EXPLORE_MAP_CLUSTER_PIN_SIZE = { width: 88, height: 56 } as const;
+
 /**
  * Option B Map Pin HTML:
- * - Single trainer: Avatar with luxury border + price tag pill
+ * - Single trainer: Circular avatar + location caret
  * - Multi-trainer (2+): Overlapping avatar stack + count badge (+1, +2, etc.) + pulsing hub ring + count pill
  */
 export function buildExploreMapPinHtml(
@@ -255,7 +258,6 @@ export function buildExploreMapPinHtml(
 
   if (!cluster.isMulti) {
     const trainer = cluster.primaryTrainer;
-    const price = formatTrainerPriceLabel(trainer.pricePerSession);
     const avatarHtml = buildTrainerAvatarHtml(trainer, "explore-map-pin__avatar-img");
 
     return `<div class="explore-map-pin explore-map-pin--single ${selectedClass}" data-cluster-id="${escapeExploreMapHtml(cluster.id)}" data-trainer-id="${escapeExploreMapHtml(trainer.id)}">
@@ -263,7 +265,6 @@ export function buildExploreMapPinHtml(
         <div class="explore-map-pin__avatar-ring">
           ${avatarHtml}
         </div>
-        ${price ? `<span class="explore-map-pin__price-tag">${escapeExploreMapHtml(price)}</span>` : '<span class="explore-map-pin__single-dot" aria-hidden="true"></span>'}
         <span class="explore-map-pin__caret" aria-hidden="true"></span>
       </div>
     </div>`;
