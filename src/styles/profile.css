@@ -582,9 +582,9 @@
 .profile-hero__avatar--frame-none,
 .profile-hero__avatar--frame-ring,
 .profile-hero__avatar--frame-glow {
-  border: none;
-  box-shadow: none;
-  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .profile-hero__avatar-wrap--glow::before {
@@ -826,7 +826,7 @@
   background: transparent;
   cursor: zoom-in;
   -webkit-tap-highlight-color: transparent;
-  border-radius: 1rem;
+  border-radius: 50%;
   transform-origin: center center;
 }
 
@@ -942,36 +942,12 @@
   width: 7.75rem !important;
   height: 7.75rem !important;
   border-radius: 50% !important;
-  background: transparent !important;
   overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   -webkit-mask-image: none;
   mask-image: none;
-}
-
-/* Smoke the crop into the sheet color so the cover photo never shows through. */
-.profile-hero__avatar::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background:
-    linear-gradient(
-      180deg,
-      #080b10 0%,
-      rgba(8, 11, 16, 0.55) 10%,
-      transparent 22%,
-      transparent 54%,
-      rgba(8, 11, 16, 0.35) 72%,
-      rgba(8, 11, 16, 0.78) 88%,
-      #080b10 100%
-    ),
-    radial-gradient(
-      circle at 50% 44%,
-      transparent 56%,
-      rgba(8, 11, 16, 0.45) 78%,
-      #080b10 100%
-    );
 }
 
 @media (min-width: 640px) {
@@ -1205,7 +1181,6 @@
   opacity: 0;
   overflow: hidden;
   transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: opacity;
 }
 
 .profile-hero-cover__slide--active {

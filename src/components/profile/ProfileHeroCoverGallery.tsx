@@ -61,28 +61,37 @@ export function ProfileHeroCoverGallery({
       aria-label={`${trainerName} photos`}
     >
       <div className="profile-hero-cover__track">
-        {slides.map((src, slideIndex) => (
-          <div
-            key={`${src}-${slideIndex}`}
-            className={cn(
-              "profile-hero-cover__slide",
-              slideIndex === index && "profile-hero-cover__slide--active"
-            )}
-            aria-hidden={slideIndex !== index}
-          >
-            <Image
-              src={src}
-              alt=""
-              fill
-              sizes="100vw"
-              className="object-cover"
-              style={slideshowFrameToImageStyle(
-                resolveSlideshowFrame(slideshowFrames ?? {}, src)
+        {slides.map((src, slideIndex) => {
+          const isActive = slideIndex === index;
+          const isNeighbor =
+            canSlide &&
+            (slideIndex === (index + slides.length - 1) % slides.length ||
+              slideIndex === (index + 1) % slides.length);
+          if (!isActive && !isNeighbor) return null;
+
+          return (
+            <div
+              key={`${src}-${slideIndex}`}
+              className={cn(
+                "profile-hero-cover__slide",
+                isActive && "profile-hero-cover__slide--active"
               )}
-              priority={slideIndex === 0}
-            />
-          </div>
-        ))}
+              aria-hidden={!isActive}
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="100vw"
+                className="object-cover"
+                style={slideshowFrameToImageStyle(
+                  resolveSlideshowFrame(slideshowFrames ?? {}, src)
+                )}
+                priority={slideIndex === 0}
+              />
+            </div>
+          );
+        })}
       </div>
     </div>
   );

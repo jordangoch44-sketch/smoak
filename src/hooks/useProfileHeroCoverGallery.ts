@@ -45,6 +45,8 @@ export function useProfileHeroCoverGallery({
 
     const timer = window.setInterval(() => {
       if (Date.now() < pauseUntilRef.current) return;
+      const scale = window.visualViewport?.scale ?? 1;
+      if (scale > 1.05) return;
       setIndex((current) => (current + 1) % count);
     }, AUTOPLAY_MS);
 
