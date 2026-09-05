@@ -941,25 +941,37 @@
 .profile-hero__avatar {
   width: 7.75rem !important;
   height: 7.75rem !important;
-  border-radius: 1.35rem !important;
+  border-radius: 50% !important;
   background: transparent !important;
-  overflow: visible !important;
-  -webkit-mask-image: radial-gradient(
-    ellipse 56% 64% at 50% 38%,
-    #000 0%,
-    #000 34%,
-    rgba(0, 0, 0, 0.55) 58%,
-    rgba(0, 0, 0, 0.18) 80%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    ellipse 56% 64% at 50% 38%,
-    #000 0%,
-    #000 34%,
-    rgba(0, 0, 0, 0.55) 58%,
-    rgba(0, 0, 0, 0.18) 80%,
-    transparent 100%
-  );
+  overflow: hidden !important;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Smoke the crop into the sheet color so the cover photo never shows through. */
+.profile-hero__avatar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      #080b10 0%,
+      rgba(8, 11, 16, 0.55) 10%,
+      transparent 22%,
+      transparent 54%,
+      rgba(8, 11, 16, 0.35) 72%,
+      rgba(8, 11, 16, 0.78) 88%,
+      #080b10 100%
+    ),
+    radial-gradient(
+      circle at 50% 44%,
+      transparent 56%,
+      rgba(8, 11, 16, 0.45) 78%,
+      #080b10 100%
+    );
 }
 
 @media (min-width: 640px) {
