@@ -7,8 +7,7 @@ export type SitePromoSlotId =
   | "specialist_dashboard_hero"
   | "specialist_dashboard_pro_upgrade"
   | "specialist_dashboard_boost"
-  | "explore_results_rail"
-  | "rankings_footer_promo";
+  | "explore_results_rail";
 
 export type SitePromoAudience = "specialist" | "client" | "guest" | "all";
 

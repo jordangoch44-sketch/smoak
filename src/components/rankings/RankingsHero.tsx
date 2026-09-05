@@ -44,8 +44,7 @@ export function RankingsHero({ city, children }: RankingsHeroProps) {
             {title}
           </h1>
           <p className="rankings-hero__lede">
-            Ranked by SMOAC client reviews — rating and review count. Paid
-            ranking boosts never change organic ranks.
+            Ranked by SMOAC client reviews — rating and review count.
           </p>
         </div>
       </div>

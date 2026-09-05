@@ -6,9 +6,6 @@ import {
   RANKINGS_CITY_OPTIONS,
   RANKINGS_PROFESSION_OPTIONS,
 } from "@/data/city-rankings";
-import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
-import { SponsoredSpecialistCard } from "@/components/home/SponsoredSpecialistCard";
-import { HorizontalCarousel } from "@/components/ui/HorizontalCarousel";
 import { useHydrated } from "@/hooks/useHydrated";
 import {
   useMarketplacePersonalizationCity,
@@ -18,7 +15,6 @@ import {
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import { SITE_ROUTES } from "@/lib/navigation";
-import { selectTopRankedBoostForRankings } from "@/lib/paid-placements";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import { resolveRankingsSelectedCity } from "@/lib/ranking-hero";
 import { resolveRankingMetro } from "@/lib/ranking-metro";
@@ -29,7 +25,6 @@ import type { Trainer } from "@/types/trainer";
 import { RankingsFilters } from "./RankingsFilters";
 import { RankingsHero } from "./RankingsHero";
 import { RankingsRow } from "./RankingsRow";
-import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 interface RankingsPageClientProps {
   initialCatalog?: Trainer[];
@@ -49,7 +44,6 @@ export function RankingsPageClient({
   const [cityTouched, setCityTouched] = useState(false);
   const [cityOverride, setCityOverride] = useState("");
   const [profession, setProfession] = useState("");
-  const [boostOpen, setBoostOpen] = useState(false);
 
   useEffect(() => {
     primePublicCatalogFromSSR(initialCatalog, catalogMode);
@@ -95,16 +89,6 @@ export function RankingsPageClient({
     [trainers, aggregates, city, profession]
   );
 
-  const rankingBoosts = useMemo(
-    () =>
-      selectTopRankedBoostForRankings(trainers, {
-        city,
-        profession,
-        limit: 6,
-      }),
-    [trainers, city, profession]
-  );
-
   return (
     <div className="rankings-page" data-rankings-ui="hero-v2">
       <div className="rankings-page__canvas" aria-hidden>
@@ -140,36 +124,6 @@ export function RankingsPageClient({
             ← Back to Marketplace
           </Link>
         </div>
-
-        {rankingBoosts.length > 0 ? (
-          <section
-            className="rankings-boost"
-            aria-labelledby="rankings-boost-heading"
-          >
-            <header className="rankings-boost__header">
-              <h2 id="rankings-boost-heading" className="rankings-boost__title">
-                Ranking boosts
-              </h2>
-              <p className="rankings-boost__subtitle">
-                Paid placement — separate from the review board below.
-              </p>
-            </header>
-            <HorizontalCarousel
-              className="rankings-boost__carousel"
-              ariaLabel="Ranking boost specialists"
-            >
-              {rankingBoosts.map((trainer, index) => (
-                <SponsoredSpecialistCard
-                  key={trainer.id}
-                  trainer={trainer}
-                  priority={index < 2}
-                  badgeLabel="Ranking boost"
-                  impressionSurface="rankings_boost"
-                />
-              ))}
-            </HorizontalCarousel>
-          </section>
-        ) : null}
 
         <div className="rankings-board" aria-live="polite">
           {rows.length > 0 ? (
@@ -209,19 +163,7 @@ export function RankingsPageClient({
             </div>
           )}
         </div>
-
-        <SitePromoSlot
-          slotId="rankings_footer_promo"
-          variant="banner"
-          onOpenBoost={() => setBoostOpen(true)}
-        />
       </div>
-
-      <BoostVisibilityModal
-        open={boostOpen}
-        onClose={() => setBoostOpen(false)}
-        initialProduct="top_ranking_boost"
-      />
     </div>
   );
 }

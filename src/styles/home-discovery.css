@@ -322,6 +322,94 @@
   margin-inline: auto;
 }
 
+.home-boost-ribbon {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 32rem;
+  margin: 0.5rem auto 0;
+}
+
+.home-boost-ribbon__btn {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: 2.25rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.home-boost-ribbon__mark {
+  z-index: 1;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.55rem;
+  height: 1.55rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(16, 16, 22, 0.55);
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  color: rgba(221, 214, 254, 0.92);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+}
+
+.home-boost-ribbon__glyph {
+  width: 0.78rem;
+  height: 0.78rem;
+}
+
+.home-boost-ribbon__flag {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: -0.12rem;
+  padding: 0.22rem 0.95rem 0.22rem 0.62rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-left: 0;
+  background: rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px) saturate(1.15);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 7px) 0,
+    100% 50%,
+    calc(100% - 7px) 100%,
+    0 100%
+  );
+}
+
+.home-boost-ribbon__btn:hover .home-boost-ribbon__flag,
+.home-boost-ribbon__btn:focus-visible .home-boost-ribbon__flag {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.home-boost-ribbon__btn:hover .home-boost-ribbon__mark,
+.home-boost-ribbon__btn:focus-visible .home-boost-ribbon__mark {
+  color: rgba(237, 233, 254, 1);
+}
+
+.home-boost-ribbon__btn:focus-visible {
+  outline: none;
+}
+
+.home-boost-ribbon__btn:focus-visible .home-boost-ribbon__mark {
+  box-shadow: 0 0 0 2px rgba(196, 181, 253, 0.55);
+}
+
 .home-hero-search--ghost {
   opacity: 0;
   pointer-events: none;
@@ -1830,8 +1918,13 @@
   top: 0.5rem;
   left: 0.5rem;
   z-index: 3;
-  width: 1.55rem;
-  height: 1.55rem;
+  width: auto;
+  height: auto;
+}
+
+.home-portrait-card__verified .trainer-verified__mark {
+  width: 1.35rem;
+  height: 1.35rem;
 }
 
 .home-portrait-card__badges {

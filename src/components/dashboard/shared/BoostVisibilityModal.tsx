@@ -7,7 +7,7 @@ import { CloseIcon } from "@/components/ui/icons";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
 import {
-  BOOST_PRODUCT_DETAILS,
+  BOOST_PURCHASABLE_DETAILS,
   getBoostProductDetail,
   type BoostProductDetail,
 } from "@/lib/boost-product-details";
@@ -26,7 +26,7 @@ import { createEmbeddedSubscriptionCheckout } from "@/lib/stripe/subscription-ch
 interface BoostVisibilityModalProps {
   open: boolean;
   onClose: () => void;
-  /** Optional: land on a specific boost detail (e.g. rankings promo) */
+  /** Optional: land on a specific boost detail */
   initialProduct?: SmoacAddonProduct | null;
 }
 
@@ -179,7 +179,7 @@ export function BoostVisibilityModal({
               </p>
 
               <ul className="dashboard-boost-list">
-                {BOOST_PRODUCT_DETAILS.map((option) => {
+                {BOOST_PURCHASABLE_DETAILS.map((option) => {
                   const price = priceFor(option.key);
                   return (
                   <li key={option.key} className="dashboard-boost-list__item">

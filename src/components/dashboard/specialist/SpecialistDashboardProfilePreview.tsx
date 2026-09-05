@@ -108,7 +108,6 @@ interface SpecialistDashboardProfilePreviewProps {
   isPremium?: boolean;
   isProPlus?: boolean;
   isLivePublished?: boolean;
-  planBadgeLabel?: string;
   focusSection?: string | null;
   onClearFocus?: () => void;
 }
@@ -335,9 +334,11 @@ function LiveEditSheet({
 function LivePreviewModeToggle({
   value,
   onChange,
+  isLivePublished = false,
 }: {
   value: "edit" | "live";
   onChange: (value: "edit" | "live") => void;
+  isLivePublished?: boolean;
 }) {
   return (
     <div className="specialist-live-mode" role="tablist" aria-label="Profile mode">
@@ -364,6 +365,15 @@ function LivePreviewModeToggle({
         onClick={() => onChange("live")}
       >
         Live
+        {isLivePublished ? (
+          <span
+            className="dashboard-live-indicator"
+            title="Live on Marketplace"
+            aria-label="Live on Marketplace"
+          >
+            <span className="dashboard-live-indicator__dot" aria-hidden />
+          </span>
+        ) : null}
       </button>
     </div>
   );
@@ -379,7 +389,6 @@ export function SpecialistDashboardProfilePreview({
   isPremium = false,
   isProPlus = false,
   isLivePublished = false,
-  planBadgeLabel,
   focusSection = null,
   onClearFocus,
 }: SpecialistDashboardProfilePreviewProps) {
@@ -1145,14 +1154,16 @@ export function SpecialistDashboardProfilePreview({
   if (canEdit && formDefaults && previewMode === "edit") {
     return (
       <div id={LIVE_PROFILE_ANCHOR_ID} className="ig-profile-edit-wrap">
-        <LivePreviewModeToggle value={previewMode} onChange={setPreviewMode} />
+        <LivePreviewModeToggle
+          value={previewMode}
+          onChange={setPreviewMode}
+          isLivePublished={isLivePublished}
+        />
         <SpecialistIgStyleProfileEditor
           trainer={trainer}
           formDefaults={formDefaults}
           onEditSection={(id) => startEdit(id)}
           highlightedSection={highlightedRow}
-          planBadgeLabel={planBadgeLabel}
-          isLivePublished={isLivePublished}
           footer={
             <p className="ig-profile-edit__hint">
               Changes go live on Marketplace when you save. Clients still see
@@ -1174,7 +1185,11 @@ export function SpecialistDashboardProfilePreview({
       aria-label="Live marketplace profile"
     >
       {canEdit ? (
-        <LivePreviewModeToggle value={previewMode} onChange={setPreviewMode} />
+        <LivePreviewModeToggle
+          value={previewMode}
+          onChange={setPreviewMode}
+          isLivePublished={isLivePublished}
+        />
       ) : null}
       <LiveEditZone
         label="Photos & identity"

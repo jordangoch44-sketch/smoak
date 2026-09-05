@@ -1,4 +1,5 @@
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
+import { HomeBoostRibbon } from "./HomeBoostRibbon";
 import { HomeSearchBar } from "./HomeSearchBar";
 import { RotatingSpecialistHeadline } from "./RotatingSpecialistHeadline";
 
@@ -35,6 +36,7 @@ export function Hero() {
           </p>
         </div>
         <HomeSearchBar />
+        <HomeBoostRibbon />
       </div>
     </section>
   );

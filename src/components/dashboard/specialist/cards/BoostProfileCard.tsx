@@ -29,7 +29,7 @@ export function BoostProfileCard({ onOpenBoost }: BoostProfileCardProps) {
       </h2>
       <p className="dashboard-boost-cta__body">
         This is what clients see. Put it on Marketplace Sponsored, in Search,
-        as Featured, or on City Rankings — labeled ads, separate from Pro.
+        or as Featured — labeled ads, separate from Pro.
       </p>
       <DashboardButton
         className="dashboard-boost-select-btn dashboard-boost-cta__btn"

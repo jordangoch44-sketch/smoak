@@ -92,6 +92,18 @@ export function formatProTrialBadgeLabel(
   return `Pro Trial · ${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left`;
 }
 
+/** Short membership chip on Edit profile — Pro Trial / Pro / Pro Plus / Free. */
+export function formatMembershipShortLabel(session: {
+  premiumTrialActive?: boolean;
+  isPremium?: boolean;
+  membershipPlan?: string | null;
+} | null | undefined): string {
+  if (session?.premiumTrialActive) return "Pro Trial";
+  if (isProPlusPlan(session?.membershipPlan)) return "Pro Plus";
+  if (session?.isPremium) return "Pro";
+  return "Free";
+}
+
 /** Neon free-trial bubble — once per specialist, gone after trial starts. */
 export function showSpecialistFreeTrialPromo(session: {
   role?: string | null;

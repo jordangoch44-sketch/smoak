@@ -106,6 +106,10 @@ export const BOOST_PRODUCT_DETAILS: readonly BoostProductDetail[] =
     ...BOOST_DETAILS[key],
   }));
 
+/** Buyable Boosts in the modal — ranking placement is no longer a live surface. */
+export const BOOST_PURCHASABLE_DETAILS: readonly BoostProductDetail[] =
+  BOOST_PRODUCT_DETAILS.filter((item) => item.key !== "top_ranking_boost");
+
 export function getBoostProductDetail(
   key: SmoacAddonProduct
 ): BoostProductDetail {

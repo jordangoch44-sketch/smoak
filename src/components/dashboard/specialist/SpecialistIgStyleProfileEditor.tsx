@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
-import { formatProTrialBadgeLabel, isProPlusPlan, SMOAC_FREE_PLAN_LABEL } from "@/lib/specialist-premium";
+import { formatMembershipShortLabel, isProPlusPlan } from "@/lib/specialist-premium";
 import {
   profileStyleAccentLabel,
   profileStyleFontLabel,
@@ -120,8 +120,6 @@ interface SpecialistIgStyleProfileEditorProps {
   formDefaults: SpecialistProfileEditForm;
   onEditSection: (id: IgEditRowId) => void;
   highlightedSection?: string | null;
-  planBadgeLabel?: string;
-  isLivePublished?: boolean;
   footer?: ReactNode;
 }
 
@@ -131,24 +129,13 @@ export function SpecialistIgStyleProfileEditor({
   formDefaults,
   onEditSection,
   highlightedSection,
-  planBadgeLabel,
-  isLivePublished = false,
   footer,
 }: SpecialistIgStyleProfileEditorProps) {
   const { session } = useAuthSession();
   const onProTrial = Boolean(session?.premiumTrialActive);
   const isPremium = Boolean(session?.isPremium);
   const isProPlus = isProPlusPlan(session?.membershipPlan);
-  const resolvedPlanLabel =
-    planBadgeLabel !== undefined
-      ? planBadgeLabel
-      : onProTrial
-        ? formatProTrialBadgeLabel(session?.premiumTrialDaysRemaining)
-        : isProPlus
-          ? "SMOAC Pro Plus"
-          : isPremium
-          ? "SMOAC Pro"
-          : SMOAC_FREE_PLAN_LABEL;
+  const resolvedPlanLabel = formatMembershipShortLabel(session);
 
   const hasPhoto = Boolean(formDefaults.profilePhotoUrl.trim());
   const photo = formDefaults.profilePhotoUrl.trim() || trainer.image;
@@ -253,37 +240,16 @@ export function SpecialistIgStyleProfileEditor({
           >
             Edit pictures/slideshow
           </button>
+          <span
+            className={cn(
+              "dashboard-role-badge ig-profile-edit__plan-badge",
+              (onProTrial || isPremium) && "dashboard-role-badge--pro-trial"
+            )}
+            aria-label={`Current plan: ${resolvedPlanLabel}`}
+          >
+            {resolvedPlanLabel}
+          </span>
         </div>
-      </div>
-
-      <div className="ig-profile-edit__title-card">
-        {resolvedPlanLabel ? (
-          <div className="ig-profile-edit__badge-wrap">
-            <span
-              className={cn(
-                "dashboard-role-badge",
-                (onProTrial || isPremium) && "dashboard-role-badge--pro-trial"
-              )}
-            >
-              {resolvedPlanLabel}
-            </span>
-          </div>
-        ) : null}
-        <h2 className="ig-profile-edit__title">
-          Edit your profile
-          {isLivePublished ? (
-            <span
-              className="dashboard-live-indicator"
-              title="Live on Marketplace"
-              aria-label="Live on Marketplace"
-            >
-              <span className="dashboard-live-indicator__dot" aria-hidden />
-            </span>
-          ) : null}
-        </h2>
-        <p className="ig-profile-edit__subtitle">
-          Tap a row to update. Saves go live on Marketplace.
-        </p>
       </div>
 
       <SpecialistLinkInBioCard

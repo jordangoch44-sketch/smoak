@@ -83,7 +83,7 @@ export function VisibilityRankingCard({
         <div className="dashboard-rankings-boost">
           <p className="dashboard-rankings-boost__copy">
             Boost does not buy your rank number. It puts a labeled ad on
-            Marketplace, Search, or City Rankings.
+            Marketplace or Search.
           </p>
           <DashboardButton
             variant="link"

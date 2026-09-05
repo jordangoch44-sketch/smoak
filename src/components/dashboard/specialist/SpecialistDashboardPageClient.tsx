@@ -432,7 +432,6 @@ export function SpecialistDashboardPageClient() {
                       isPremium={isPremium}
                       isProPlus={isProPlus}
                       isLivePublished={isLivePublished}
-                      planBadgeLabel={profilePlanLabel}
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
                     />
@@ -635,7 +634,6 @@ export function SpecialistDashboardPageClient() {
                       isPremium={isPremium}
                       isProPlus={isProPlus}
                       isLivePublished={isLivePublished}
-                      planBadgeLabel={profilePlanLabel}
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
                     />

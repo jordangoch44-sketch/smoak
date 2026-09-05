@@ -66,6 +66,7 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
               <TrainerVerifiedCheck
                 trainer={trainer}
                 className="rankings-row__verified"
+                showLabel={false}
               />
               <h3 className="rankings-row__name">{trainer.name}</h3>
             </div>
