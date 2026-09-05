@@ -7,3 +7,4 @@ export { SponsoredSpecialists } from "./SponsoredSpecialists";
 export { FeaturedSpotlightSpecialists } from "./FeaturedSpotlightSpecialists";
 export { Categories } from "./Categories";
 export { NewSpecialists } from "./NewSpecialists";
+export { HomeCalorieCalculatorCta } from "./HomeCalorieCalculatorCta";

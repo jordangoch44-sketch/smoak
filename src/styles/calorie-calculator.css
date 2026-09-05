@@ -49,6 +49,22 @@ body:has(.calorie-tool) .app-main {
   margin-bottom: 1.5rem;
 }
 
+.calorie-tool__back {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+  color: var(--silver-400, rgba(199, 199, 204, 0.88));
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.calorie-tool__back:hover {
+  color: #fff;
+}
+
 .calorie-tool__eyebrow {
   margin: 0;
   font-size: 0.6875rem;

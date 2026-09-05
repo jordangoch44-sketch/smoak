@@ -722,7 +722,8 @@
 .home-page--discovery .home-sponsored,
 .home-page--discovery .home-specialty,
 .home-page--discovery .home-new,
-.home-page--discovery .home-featured {
+.home-page--discovery .home-featured,
+.home-page--discovery .home-calorie-cta {
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
 }
 
@@ -738,6 +739,17 @@
 }
 
 .home-page--discovery .home-sponsored + .home-new {
+  padding-top: 2rem;
+  padding-bottom: 1.65rem;
+}
+
+.home-page--discovery .home-sponsored + .home-calorie-cta,
+.home-page--discovery .home-specialty + .home-calorie-cta {
+  padding-top: 0.35rem;
+  padding-bottom: 0.35rem;
+}
+
+.home-page--discovery .home-calorie-cta + .home-new {
   padding-top: 2rem;
   padding-bottom: 1.65rem;
 }
@@ -1261,6 +1273,11 @@
 
 .home-specialty__rankings-face-num {
   transform: translateY(0.5px);
+}
+
+.home-specialty__rankings-face-mark {
+  width: 1.05rem;
+  height: 1.05rem;
 }
 
 .home-specialty__rankings:hover {

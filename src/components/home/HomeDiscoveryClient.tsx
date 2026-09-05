@@ -4,6 +4,7 @@ import {
   SponsoredSpecialists,
   FeaturedSpotlightSpecialists,
   NewSpecialists,
+  HomeCalorieCalculatorCta,
 } from "@/components/home";
 import { HomeRailsLoading } from "@/components/home/HomeRouteLoading";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
@@ -12,7 +13,8 @@ import type { Trainer } from "@/types/trainer";
 
 /**
  * Marketplace discovery rails — catalog from the session store.
- * Categories (and the city-rankings CTA) sit above; essence photo strip sits below.
+ * Categories (and the city-rankings CTA) sit above; calorie calculator sits
+ * between Sponsored and New; essence photo strip sits below.
  * Sponsored leads when anyone is paying for a boost; otherwise that rail is omitted.
  */
 export function HomeDiscoveryClient({
@@ -41,6 +43,7 @@ export function HomeDiscoveryClient({
         initialCatalog={resolvedCatalog}
         catalogMode={resolvedMode}
       />
+      <HomeCalorieCalculatorCta />
       <NewSpecialists
         initialCatalog={resolvedCatalog}
         catalogMode={resolvedMode}

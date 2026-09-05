@@ -73,6 +73,9 @@ export const HOME_VIEW_ALL_SPECIALISTS_HREF = "/explore";
 /** City rankings board — SMOAC client reviews only. */
 export const HOME_RANKINGS_HREF = "/rankings";
 
+/** Marketplace acquisition tool — same card language as city rankings. */
+export const HOME_CALORIE_CALCULATOR_HREF = "/calorie-calculator";
+
 /** Revolving marketplace search hints — phrases the existing Explore pipeline understands. */
 export const HOME_SEARCH_PROMPTS = [
   "Personal training in Mission Valley...",

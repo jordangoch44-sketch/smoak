@@ -157,6 +157,9 @@ export function CalorieCalculatorPageClient({
       <div className="calorie-tool__sky" aria-hidden />
       <div className="calorie-tool__inner">
         <header className="calorie-tool__header">
+          <Link href={SITE_ROUTES.home} className="calorie-tool__back">
+            ← Back to Marketplace
+          </Link>
           <p className="calorie-tool__eyebrow">smoac.com</p>
           <h1 className="calorie-tool__title">
             {result ? "Your calorie plan" : "Calorie calculator"}
