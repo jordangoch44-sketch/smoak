@@ -3,13 +3,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/config";
 import { ensureSpecialistStripeCustomer } from "@/lib/stripe/ensure-customer";
 import {
+  BOOST_CAMPAIGN_ALL,
+  BOOST_CAMPAIGN_LABEL,
   boostCampaignListCents,
   boostCampaignPayCents,
   clampBoostDailyCents,
   clampBoostDays,
   formatBoostUsd,
-  getBoostCampaignPlacement,
-  isBoostCampaignProduct,
 } from "@/lib/boost-campaign";
 import { isProPlusPlan } from "@/lib/stripe/pro-plus-boost";
 
@@ -26,24 +26,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Stripe unavailable." }, { status: 503 });
   }
 
-  let productKey: string | null = null;
   let days = 7;
   let dailyCents = 1000;
   try {
     const body = (await request.json()) as {
-      product?: string;
       days?: number;
       dailyCents?: number;
     };
-    productKey = body.product ?? null;
     days = clampBoostDays(Number(body.days));
     dailyCents = clampBoostDailyCents(Number(body.dailyCents));
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
-  }
-
-  if (!isBoostCampaignProduct(productKey)) {
-    return NextResponse.json({ error: "Unknown placement." }, { status: 400 });
   }
 
   const supabase = await createSupabaseServerClient();
@@ -82,19 +75,18 @@ export async function POST(request: Request) {
   const proPlus = isProPlusPlan(customer.billingPlan);
   const listCents = boostCampaignListCents(dailyCents, days);
   const payCents = boostCampaignPayCents(dailyCents, days, proPlus);
-  const placement = getBoostCampaignPlacement(productKey);
   const endsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: payCents,
     currency: "usd",
     customer: customer.customerId,
-    description: `SMOAC Boost · ${placement.caption} · ${days} days`,
+    description: `SMOAC Boost · ${days} days`,
     automatic_payment_methods: { enabled: true },
     metadata: {
       smoac_kind: "boost_campaign",
-      smoac_product: productKey,
-      smoac_addon: productKey,
+      smoac_product: BOOST_CAMPAIGN_ALL,
+      smoac_addon: BOOST_CAMPAIGN_ALL,
       boost_days: String(days),
       boost_daily_cents: String(dailyCents),
       boost_list_cents: String(listCents),
@@ -114,8 +106,8 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     clientSecret: paymentIntent.client_secret,
-    product: productKey,
-    label: placement.caption,
+    product: BOOST_CAMPAIGN_ALL,
+    label: BOOST_CAMPAIGN_LABEL,
     days,
     dailyCents,
     listCents,

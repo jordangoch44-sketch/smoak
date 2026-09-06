@@ -3,9 +3,9 @@
 ## Product model
 
 ### Paid placement (Boost campaigns)
-Timed campaigns — specialist picks a surface, days, and daily budget, then pays the total up front. Not a monthly add-on. Pro Plus still gets 20% off the campaign total.
+Timed campaigns — specialist sets days and daily budget, then pays the total up front. One campaign covers Marketplace (Sponsored), Search (Spotlight), and Homepage (Featured). Not a monthly add-on. Pro Plus still gets 20% off the campaign total.
 
-Webhook `payment_intent.succeeded` (metadata `smoac_kind=boost_campaign`) turns the placement on until `boost_campaign_ends_at`.
+Webhook `payment_intent.succeeded` (metadata `smoac_kind=boost_campaign`) turns those placements on until `boost_campaign_ends_at`.
 
 Legacy monthly add-on price IDs still exist for existing subscribers; new Boost checkout does not use them.
 
@@ -70,7 +70,7 @@ Safe to re-run — reuses products matched by `metadata.smoac_product`.
 ## 6. Specialist UX
 
 - **Pro / Pro Plus** → in-dashboard checkout (`POST /api/stripe/subscription-intent`) — Apple Pay, Google Pay, Link, or card
-- **Boost modal** → where you'll be seen → days + budget → wallets / card (`POST /api/stripe/boost-campaign-intent`)
+- **Boost modal** → preview where you'll be seen → days + budget → wallets / card (`POST /api/stripe/boost-campaign-intent`)
 - **Ad spend** → Subscription / account settings via `GET /api/stripe/billing-summary`
 - **Manage billing** → `POST /api/stripe/portal`
 - **Hosted Checkout** (`POST /api/stripe/checkout`) remains as a fallback API; the dashboard no longer redirects off-site

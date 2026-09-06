@@ -7,7 +7,6 @@ import {
   discountedBoostCents,
   PRO_PLUS_BOOST_PERCENT_OFF,
 } from "@/lib/stripe/pro-plus-boost";
-import type { SmoacAddonProduct } from "@/lib/stripe/products";
 
 export const BOOST_CAMPAIGN_MIN_DAYS = 1;
 export const BOOST_CAMPAIGN_MAX_DAYS = 30;
@@ -18,13 +17,21 @@ export const BOOST_CAMPAIGN_MAX_DAILY_CENTS = 5000;
 export const BOOST_CAMPAIGN_DAILY_STEP_CENTS = 100;
 export const BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS = 1000;
 
-export type BoostCampaignProduct = Exclude<
-  SmoacAddonProduct,
-  "top_ranking_boost"
->;
+/** One campaign covers Marketplace + Search + Homepage. */
+export const BOOST_CAMPAIGN_ALL = "boost";
+
+const LEGACY_BOOST_PRODUCTS = [
+  "boosted_profile",
+  "category_spotlight",
+  "homepage_spotlight",
+] as const;
+
+export type BoostCampaignProduct =
+  | typeof BOOST_CAMPAIGN_ALL
+  | (typeof LEGACY_BOOST_PRODUCTS)[number];
 
 export interface BoostCampaignPlacement {
-  key: BoostCampaignProduct;
+  key: (typeof LEGACY_BOOST_PRODUCTS)[number];
   /** Short label on the picture */
   chip: string;
   /** Caption under the picture */
@@ -49,20 +56,34 @@ export const BOOST_CAMPAIGN_PLACEMENTS: readonly BoostCampaignPlacement[] = [
   },
 ];
 
+export const BOOST_CAMPAIGN_LABEL = "Marketplace, Search & Homepage";
+
 export function isBoostCampaignProduct(
   value: string | null | undefined
 ): value is BoostCampaignProduct {
-  return BOOST_CAMPAIGN_PLACEMENTS.some((item) => item.key === value);
+  if (value === BOOST_CAMPAIGN_ALL) return true;
+  return LEGACY_BOOST_PRODUCTS.some((item) => item === value);
 }
 
-export function getBoostCampaignPlacement(
-  key: BoostCampaignProduct
-): BoostCampaignPlacement {
-  const found = BOOST_CAMPAIGN_PLACEMENTS.find((item) => item.key === key);
-  if (!found) {
-    throw new Error(`Unknown boost placement: ${key}`);
+export function boostCampaignLabel(product: BoostCampaignProduct): string {
+  if (product === BOOST_CAMPAIGN_ALL) return BOOST_CAMPAIGN_LABEL;
+  const found = BOOST_CAMPAIGN_PLACEMENTS.find((item) => item.key === product);
+  return found?.caption ?? BOOST_CAMPAIGN_LABEL;
+}
+
+export function campaignPlacementFlags(product: BoostCampaignProduct): {
+  featured: boolean;
+  sponsored: boolean;
+  categorySpotlight: boolean;
+} {
+  if (product === BOOST_CAMPAIGN_ALL) {
+    return { featured: true, sponsored: true, categorySpotlight: true };
   }
-  return found;
+  return {
+    featured: product === "homepage_spotlight",
+    sponsored: product === "boosted_profile",
+    categorySpotlight: product === "category_spotlight",
+  };
 }
 
 export function clampBoostDays(days: number): number {
@@ -116,6 +137,7 @@ const DAILY_VIEW_BAND: Record<
   BoostCampaignProduct,
   { low: number; high: number }
 > = {
+  boost: { low: 175, high: 390 },
   boosted_profile: { low: 40, high: 90 },
   category_spotlight: { low: 55, high: 120 },
   homepage_spotlight: { low: 80, high: 180 },

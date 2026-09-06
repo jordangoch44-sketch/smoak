@@ -1,9 +1,10 @@
 import {
+  BOOST_CAMPAIGN_ALL,
+  BOOST_CAMPAIGN_LABEL,
   boostCampaignPayCents,
   clampBoostDailyCents,
   clampBoostDays,
   formatBoostUsd,
-  getBoostCampaignPlacement,
   isBoostCampaignProduct,
   type BoostCampaignProduct,
 } from "@/lib/boost-campaign";
@@ -21,7 +22,6 @@ export type BoostCampaignCheckout = {
 };
 
 export async function createBoostCampaignCheckout(input: {
-  product: string;
   days: number;
   dailyCents: number;
 }): Promise<
@@ -33,7 +33,6 @@ export async function createBoostCampaignCheckout(input: {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        product: input.product,
         days: clampBoostDays(input.days),
         dailyCents: clampBoostDailyCents(input.dailyCents),
       }),
@@ -47,24 +46,28 @@ export async function createBoostCampaignCheckout(input: {
         error: data.error ?? "Checkout is not available yet.",
       };
     }
-    if (!isBoostCampaignProduct(data.product)) {
-      return { ok: false, error: "Unknown placement." };
-    }
+    const product = isBoostCampaignProduct(data.product)
+      ? data.product
+      : BOOST_CAMPAIGN_ALL;
     return {
       ok: true,
       checkout: {
         clientSecret: data.clientSecret,
-        product: data.product,
-        label: data.label || getBoostCampaignPlacement(data.product).caption,
+        product,
+        label: data.label || BOOST_CAMPAIGN_LABEL,
         days: data.days,
         dailyCents: data.dailyCents,
         listCents: data.listCents,
         payCents: data.payCents,
-        priceLabel: data.priceLabel || formatBoostUsd(boostCampaignPayCents(
-          data.dailyCents,
-          data.days,
-          Boolean(data.proPlusDiscount)
-        )),
+        priceLabel:
+          data.priceLabel ||
+          formatBoostUsd(
+            boostCampaignPayCents(
+              data.dailyCents,
+              data.days,
+              Boolean(data.proPlusDiscount)
+            )
+          ),
         proPlusDiscount: Boolean(data.proPlusDiscount),
       },
     };

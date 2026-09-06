@@ -22,7 +22,7 @@ export function BoostProfileCard({ onOpenBoost }: BoostProfileCardProps) {
         Boost your profile
       </h2>
       <p className="dashboard-boost-cta__body">
-        Pick where you show up, set days and budget, then pay.
+        Show up on Marketplace, Search, and the homepage. Set days and budget, then pay.
       </p>
       <DashboardButton
         className="dashboard-boost-select-btn dashboard-boost-cta__btn"

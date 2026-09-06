@@ -12,7 +12,7 @@ alter table public.specialist_profiles
   add column if not exists boost_campaign_ends_at timestamptz;
 
 comment on column public.specialist_billing.boost_campaign_product is
-  'Active timed Boost placement key (boosted_profile | category_spotlight | homepage_spotlight)';
+  'Active timed Boost key (boost = all surfaces; legacy: boosted_profile | category_spotlight | homepage_spotlight)';
 comment on column public.specialist_billing.boost_campaign_ends_at is
   'When the timed Boost campaign stops appearing';
 comment on column public.specialist_profiles.boost_campaign_product is

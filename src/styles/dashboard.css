@@ -2886,19 +2886,88 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     ) !important;
 }
 
-/* Boost modal — neon yellow (vs Pro purple / Pro trial blue) */
+/* Boost sheet — slides up from the bottom; no horizontal pan */
+.dashboard-modal--boost {
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  overflow-x: hidden;
+}
+
 .dashboard-modal__dialog--boost {
-  max-width: 32rem;
-  max-height: min(92dvh, 40rem);
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 32rem);
+  height: min(92dvh, 52rem);
+  max-height: min(94dvh, 52rem);
+  margin: 0 auto;
+  overflow: hidden;
+  padding: 0.45rem 1.15rem max(1.1rem, env(safe-area-inset-bottom, 0px));
+  border-radius: 1.35rem 1.35rem 0 0;
   border-color: rgba(250, 230, 66, 0.42);
+  border-bottom: none;
   box-shadow:
     0 0 0 1px rgba(250, 230, 66, 0.12) inset,
-    0 24px 64px rgba(0, 0, 0, 0.55),
+    0 -24px 64px rgba(0, 0, 0, 0.55),
     0 0 32px rgba(250, 204, 21, 0.16);
+  animation: boost-sheet-up 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+  touch-action: pan-y;
+}
+
+.dashboard-modal__sheet-handle {
+  display: block;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 0.28rem;
+  margin: 0.15rem auto 0.55rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.dashboard-modal__dialog--boost .dashboard-modal__close {
+  top: 0.85rem;
+}
+
+.dashboard-modal__content--boost {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 0.1rem;
+}
+
+.dashboard-modal__dialog--boost .dashboard-modal__secondary {
+  width: auto;
+  align-self: flex-start;
+  margin-top: 0.15rem;
+}
+
+.dashboard-modal__dialog--boost .dashboard-boost-select-btn {
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: 0.85rem;
+}
+
+@keyframes boost-sheet-up {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-modal__dialog--boost {
+    animation: none;
+  }
 }
 
 .dashboard-modal__glow--boost {
+  overflow: hidden;
   background: radial-gradient(
     ellipse 80% 100% at 50% 0%,
     rgba(250, 230, 66, 0.34) 0%,
@@ -2915,9 +2984,14 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
+  min-width: 0;
   margin: 0.15rem 0 0.15rem;
   padding: 0;
   list-style: none;
+}
+
+.boost-place > li {
+  min-width: 0;
 }
 
 .boost-place__card {
@@ -2925,49 +2999,47 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   flex-direction: column;
   gap: 0.4rem;
   width: 100%;
+  min-width: 0;
   padding: 0.4rem 0.35rem 0.5rem;
   border-radius: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-  color: inherit;
-  cursor: pointer;
-  text-align: center;
-}
-
-.boost-place__card--on {
-  border-color: rgba(250, 230, 66, 0.7);
+  border: 1px solid rgba(250, 230, 66, 0.7);
   background: rgba(250, 230, 66, 0.08);
   box-shadow: 0 0 0 1px rgba(250, 230, 66, 0.2) inset;
+  color: inherit;
+  text-align: center;
 }
 
 .boost-place__caption {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.78);
-}
-
-.boost-place__card--on .boost-place__caption {
   color: rgba(254, 243, 140, 0.95);
 }
 
 .boost-place__stage {
   display: block;
-  height: 7.25rem;
+  flex-shrink: 0;
+  width: 100%;
+  min-width: 0;
+  height: 7.6rem;
+  overflow: hidden;
 }
 
 .boost-sketch {
   display: flex;
   flex-direction: column;
   gap: 0.28rem;
+  width: 100%;
+  min-width: 0;
   height: 100%;
-  padding: 0.3rem;
+  overflow: hidden;
+  padding: 0.35rem;
   border-radius: 0.55rem;
   background: rgba(0, 0, 0, 0.35);
 }
 
 .boost-sketch__kicker {
-  font-size: 0.5rem;
+  font-size: 0.5625rem;
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2978,20 +3050,23 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 .boost-sketch__rail {
   display: flex;
   gap: 0.28rem;
+  min-width: 0;
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .boost-sketch__tile {
   position: relative;
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
   overflow: hidden;
   border-radius: 0.4rem;
   background: rgba(255, 255, 255, 0.08);
 }
 
 .boost-sketch__tile--you {
-  flex: 1.35;
+  flex: 1.35 1 0;
 }
 
 .boost-sketch__photo,
@@ -2999,6 +3074,8 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
   overflow: hidden;
   border-radius: inherit;
 }
@@ -3031,6 +3108,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   display: flex;
   align-items: center;
   gap: 0.3rem;
+  min-width: 0;
   min-height: 1.55rem;
   padding: 0.15rem;
   border-radius: 0.35rem;
@@ -3049,6 +3127,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 .boost-sketch__row-photo {
   width: 1.35rem !important;
   height: 1.35rem !important;
+  min-width: 1.35rem !important;
   flex-shrink: 0;
   border-radius: 0.28rem;
 }
@@ -3074,6 +3153,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 .boost-sketch--feature .boost-sketch__hero {
   position: relative;
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   border-radius: 0.45rem;
 }
@@ -3145,10 +3225,6 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   margin: 0;
   accent-color: #fae642;
   cursor: pointer;
-}
-
-.dashboard-modal__dialog--boost .dashboard-boost-select-btn {
-  margin-top: 0.15rem;
 }
 
 .dashboard-boost-list {

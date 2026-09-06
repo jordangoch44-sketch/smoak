@@ -10,6 +10,7 @@ import { BoostPlacementChoice } from "@/components/dashboard/shared/BoostPlaceme
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
 import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
 import {
+  BOOST_CAMPAIGN_ALL,
   BOOST_CAMPAIGN_DAILY_STEP_CENTS,
   BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS,
   BOOST_CAMPAIGN_DEFAULT_DAYS,
@@ -17,25 +18,19 @@ import {
   BOOST_CAMPAIGN_MAX_DAYS,
   BOOST_CAMPAIGN_MIN_DAILY_CENTS,
   BOOST_CAMPAIGN_MIN_DAYS,
+  boostCampaignLabel,
   boostCampaignSummary,
-  getBoostCampaignPlacement,
-  isBoostCampaignProduct,
-  type BoostCampaignProduct,
 } from "@/lib/boost-campaign";
 import { createBoostCampaignCheckout } from "@/lib/stripe/boost-campaign-checkout";
 import { isProPlusPlan } from "@/lib/stripe/pro-plus-boost";
-import type { SmoacAddonProduct } from "@/lib/stripe/products";
 
 interface BoostVisibilityModalProps {
   open: boolean;
   onClose: () => void;
-  /** Optional: preselect a placement on the first step */
-  initialProduct?: SmoacAddonProduct | null;
 }
 
 type CheckoutPayload = {
   clientSecret: string;
-  product: BoostCampaignProduct;
   label: string;
   priceLabel: string;
   days: number;
@@ -46,13 +41,11 @@ type Step = "place" | "budget" | "checkout" | "paid";
 export function BoostVisibilityModal({
   open,
   onClose,
-  initialProduct = null,
 }: BoostVisibilityModalProps) {
   const { session } = useAuthSession();
   const { trainer, formDefaults } = useManagedSpecialistProfile();
   const isProPlus = isProPlusPlan(session?.membershipPlan);
   const [step, setStep] = useState<Step>("place");
-  const [product, setProduct] = useState<BoostCampaignProduct | null>(null);
   const [days, setDays] = useState(BOOST_CAMPAIGN_DEFAULT_DAYS);
   const [dailyCents, setDailyCents] = useState(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
   const [checkout, setCheckout] = useState<CheckoutPayload | null>(null);
@@ -72,15 +65,16 @@ export function BoostVisibilityModal({
     session?.email?.split("@")[0]?.trim() ||
     "You";
 
-  const summary = useMemo(() => {
-    if (!product) return null;
-    return boostCampaignSummary({
-      product,
-      days,
-      dailyCents,
-      proPlus: isProPlus,
-    });
-  }, [product, days, dailyCents, isProPlus]);
+  const summary = useMemo(
+    () =>
+      boostCampaignSummary({
+        product: BOOST_CAMPAIGN_ALL,
+        days,
+        dailyCents,
+        proPlus: isProPlus,
+      }),
+    [days, dailyCents, isProPlus]
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -93,9 +87,6 @@ export function BoostVisibilityModal({
     setDays(BOOST_CAMPAIGN_DEFAULT_DAYS);
     setDailyCents(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
     setStep("place");
-    setProduct(
-      isBoostCampaignProduct(initialProduct) ? initialProduct : null
-    );
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
@@ -107,15 +98,13 @@ export function BoostVisibilityModal({
       document.documentElement.classList.remove(MODAL_OPEN_BODY_CLASS);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, onClose, initialProduct]);
+  }, [open, onClose]);
 
   async function startCheckout() {
-    if (!product || !summary) return;
     setBusy(true);
     setError(null);
     setCheckout(null);
     const result = await createBoostCampaignCheckout({
-      product,
       days: summary.days,
       dailyCents: summary.dailyCents,
     });
@@ -126,7 +115,6 @@ export function BoostVisibilityModal({
     }
     setCheckout({
       clientSecret: result.checkout.clientSecret,
-      product: result.checkout.product,
       label: result.checkout.label,
       priceLabel: result.checkout.priceLabel,
       days: result.checkout.days,
@@ -136,8 +124,6 @@ export function BoostVisibilityModal({
   }
 
   if (!open || typeof document === "undefined") return null;
-
-  const placement = product ? getBoostCampaignPlacement(product) : null;
 
   return createPortal(
     <div className="dashboard-modal" role="presentation" onClick={onClose}>
@@ -165,26 +151,17 @@ export function BoostVisibilityModal({
               <h2 id="boost-modal-title" className="dashboard-modal__title">
                 Where you'll be seen
               </h2>
-              <BoostPlacementChoice
-                photoUrl={photoUrl}
-                name={displayName}
-                selected={product}
-                onSelect={(key) => {
-                  setProduct(key);
-                  setError(null);
-                }}
-              />
+              <BoostPlacementChoice photoUrl={photoUrl} name={displayName} />
               <DashboardButton
                 className="dashboard-boost-select-btn"
                 onClick={() => setStep("budget")}
-                disabled={!product}
               >
                 Next
               </DashboardButton>
             </>
           ) : null}
 
-          {step === "budget" && summary && placement ? (
+          {step === "budget" ? (
             <>
               <button
                 type="button"
@@ -195,7 +172,7 @@ export function BoostVisibilityModal({
                   setStep("place");
                 }}
               >
-                ← {placement.caption}
+                ← Where you'll be seen
               </button>
               <h2 id="boost-modal-title" className="dashboard-modal__title">
                 Budget
@@ -302,7 +279,7 @@ export function BoostVisibilityModal({
                 You're live
               </h2>
               <p id="boost-modal-desc" className="dashboard-modal__body">
-                {checkout?.label ?? placement?.caption} ·{" "}
+                {checkout?.label ?? boostCampaignLabel(BOOST_CAMPAIGN_ALL)} ·{" "}
                 {checkout?.days ?? days}{" "}
                 {(checkout?.days ?? days) === 1 ? "day" : "days"}
               </p>

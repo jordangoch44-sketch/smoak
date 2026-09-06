@@ -1,8 +1,13 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
+  campaignPlacementFlags,
   isBoostCampaignProduct,
   type BoostCampaignProduct,
 } from "@/lib/boost-campaign";
+import {
+  entitlementsFromProducts,
+  isSmoacStripeProductKey,
+} from "@/lib/stripe/products";
 
 export type StoredBoostCampaign = {
   product: BoostCampaignProduct;
@@ -46,32 +51,21 @@ export function mergeCampaignPlacementFlags(input: {
   categorySpotlight: boolean;
   topRanked: boolean;
 } {
-  const next = { ...input };
   const campaign = input.campaign;
   if (!campaign || !isLiveCampaign(campaign)) {
     return {
-      featured: next.featured,
-      sponsored: next.sponsored,
-      categorySpotlight: next.categorySpotlight,
-      topRanked: next.topRanked,
+      featured: input.featured,
+      sponsored: input.sponsored,
+      categorySpotlight: input.categorySpotlight,
+      topRanked: input.topRanked,
     };
   }
-  switch (campaign.product) {
-    case "boosted_profile":
-      next.sponsored = true;
-      break;
-    case "category_spotlight":
-      next.categorySpotlight = true;
-      break;
-    case "homepage_spotlight":
-      next.featured = true;
-      break;
-  }
+  const granted = campaignPlacementFlags(campaign.product);
   return {
-    featured: next.featured,
-    sponsored: next.sponsored,
-    categorySpotlight: next.categorySpotlight,
-    topRanked: next.topRanked,
+    featured: input.featured || granted.featured,
+    sponsored: input.sponsored || granted.sponsored,
+    categorySpotlight: input.categorySpotlight || granted.categorySpotlight,
+    topRanked: input.topRanked,
   };
 }
 
@@ -98,15 +92,13 @@ export function applyCampaignExpiryToTrainerFlags(input: {
       categorySpotlight: input.categorySpotlight,
     };
   }
+  const granted = campaignPlacementFlags(campaign.product);
   return {
-    featured:
-      campaign.product === "homepage_spotlight" ? false : input.featured,
-    sponsored:
-      campaign.product === "boosted_profile" ? false : input.sponsored,
-    categorySpotlight:
-      campaign.product === "category_spotlight"
-        ? false
-        : input.categorySpotlight,
+    featured: granted.featured ? false : input.featured,
+    sponsored: granted.sponsored ? false : input.sponsored,
+    categorySpotlight: granted.categorySpotlight
+      ? false
+      : input.categorySpotlight,
   };
 }
 
@@ -252,12 +244,33 @@ export async function expireEndedBoostCampaigns(): Promise<number> {
       campaignProduct: row.boost_campaign_product,
       campaignEndsAt: row.boost_campaign_ends_at,
     });
+    let featured = flags.featured;
+    let sponsored = flags.sponsored;
+    let categorySpotlight = flags.categorySpotlight;
+    if (row.user_id) {
+      const { data: billing } = await supabase
+        .from("specialist_billing")
+        .select("active_addons")
+        .eq("user_id", row.user_id)
+        .maybeSingle();
+      const addons = Array.isArray(billing?.active_addons)
+        ? billing.active_addons.filter(
+            (item): item is string => typeof item === "string"
+          )
+        : [];
+      const monthly = entitlementsFromProducts(
+        addons.filter(isSmoacStripeProductKey)
+      );
+      featured = featured || monthly.featured;
+      sponsored = sponsored || monthly.sponsored;
+      categorySpotlight = categorySpotlight || monthly.categorySpotlight;
+    }
     const { error: profileError } = await supabase
       .from("specialist_profiles")
       .update({
-        featured: flags.featured,
-        sponsored: flags.sponsored,
-        category_spotlight: flags.categorySpotlight,
+        featured,
+        sponsored,
+        category_spotlight: categorySpotlight,
         boost_campaign_product: null,
         boost_campaign_ends_at: null,
         updated_at: now,

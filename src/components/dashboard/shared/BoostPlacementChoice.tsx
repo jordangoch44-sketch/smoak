@@ -1,56 +1,49 @@
 "use client";
 
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
-import {
-  BOOST_CAMPAIGN_PLACEMENTS,
-  type BoostCampaignProduct,
-} from "@/lib/boost-campaign";
+import { BOOST_CAMPAIGN_PLACEMENTS } from "@/lib/boost-campaign";
 
 interface BoostPlacementChoiceProps {
   photoUrl: string;
   name: string;
-  selected: BoostCampaignProduct | null;
-  onSelect: (key: BoostCampaignProduct) => void;
 }
 
 export function BoostPlacementChoice({
   photoUrl,
   name,
-  selected,
-  onSelect,
 }: BoostPlacementChoiceProps) {
   return (
     <ul className="boost-place">
-      {BOOST_CAMPAIGN_PLACEMENTS.map((place) => {
-        const active = selected === place.key;
-        return (
-          <li key={place.key}>
-            <button
-              type="button"
-              className={
-                active
-                  ? "boost-place__card boost-place__card--on"
-                  : "boost-place__card"
-              }
-              aria-pressed={active}
-              onClick={() => onSelect(place.key)}
-            >
-              <span className="boost-place__stage" aria-hidden>
-                {place.key === "boosted_profile" ? (
-                  <MarketplaceSketch photoUrl={photoUrl} name={name} chip={place.chip} />
-                ) : null}
-                {place.key === "category_spotlight" ? (
-                  <SearchSketch photoUrl={photoUrl} name={name} chip={place.chip} />
-                ) : null}
-                {place.key === "homepage_spotlight" ? (
-                  <FeaturedSketch photoUrl={photoUrl} name={name} chip={place.chip} />
-                ) : null}
-              </span>
-              <span className="boost-place__caption">{place.caption}</span>
-            </button>
-          </li>
-        );
-      })}
+      {BOOST_CAMPAIGN_PLACEMENTS.map((place) => (
+        <li key={place.key}>
+          <div className="boost-place__card">
+            <span className="boost-place__stage" aria-hidden>
+              {place.key === "boosted_profile" ? (
+                <MarketplaceSketch
+                  photoUrl={photoUrl}
+                  name={name}
+                  chip={place.chip}
+                />
+              ) : null}
+              {place.key === "category_spotlight" ? (
+                <SearchSketch
+                  photoUrl={photoUrl}
+                  name={name}
+                  chip={place.chip}
+                />
+              ) : null}
+              {place.key === "homepage_spotlight" ? (
+                <FeaturedSketch
+                  photoUrl={photoUrl}
+                  name={name}
+                  chip={place.chip}
+                />
+              ) : null}
+            </span>
+            <span className="boost-place__caption">{place.caption}</span>
+          </div>
+        </li>
+      ))}
     </ul>
   );
 }
