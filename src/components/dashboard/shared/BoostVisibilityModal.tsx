@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { CloseIcon } from "@/components/ui/icons";
+import { Logo } from "@/components/ui/Logo";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
 import { BoostPlacementChoice } from "@/components/dashboard/shared/BoostPlacementChoice";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
@@ -43,8 +44,12 @@ export function BoostVisibilityModal({
   onClose,
 }: BoostVisibilityModalProps) {
   const { session } = useAuthSession();
-  const { trainer, formDefaults } = useManagedSpecialistProfile();
+  const { trainer, formDefaults, application } = useManagedSpecialistProfile();
   const isProPlus = isProPlusPlan(session?.membershipPlan);
+  const showPro =
+    Boolean(session?.isPremium) ||
+    session?.membershipPlan === "premium" ||
+    session?.membershipPlan === "platinum";
   const [step, setStep] = useState<Step>("place");
   const [days, setDays] = useState(BOOST_CAMPAIGN_DEFAULT_DAYS);
   const [dailyCents, setDailyCents] = useState(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
@@ -52,18 +57,28 @@ export function BoostVisibilityModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const photoUrl =
-    formDefaults?.profilePhotoUrl?.trim() ||
-    trainer?.image?.trim() ||
-    trainer?.heroImage?.trim() ||
-    session?.avatarUrl?.trim() ||
-    "";
+  const photoUrl = firstPhoto(
+    formDefaults?.profilePhotoUrl,
+    formDefaults?.coverImageUrl,
+    application?.media.profilePhotoUrl,
+    application?.media.profilePhotoOriginalUrl,
+    trainer?.image,
+    trainer?.heroImage,
+    trainer?.galleryImages?.[0],
+    trainer?.gallery?.find((item) => item.type === "image")?.src,
+    trainer?.pinnedPhotos?.[0],
+    session?.avatarUrl
+  );
   const displayName =
     trainer?.name?.trim() ||
     session?.displayName?.trim() ||
     session?.firstName?.trim() ||
     session?.email?.split("@")[0]?.trim() ||
     "You";
+  const profession =
+    trainer?.profession?.trim() ||
+    formDefaults?.profession?.trim() ||
+    "Personal Training";
 
   const summary = useMemo(
     () =>
@@ -126,7 +141,11 @@ export function BoostVisibilityModal({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="dashboard-modal" role="presentation" onClick={onClose}>
+    <div
+      className="dashboard-modal dashboard-modal--boost"
+      role="presentation"
+      onClick={onClose}
+    >
       <div
         className="dashboard-modal__dialog dashboard-modal__dialog--boost"
         role="dialog"
@@ -145,18 +164,30 @@ export function BoostVisibilityModal({
           <CloseIcon className="h-4 w-4" />
         </button>
 
-        <div className="dashboard-modal__content">
+        <div className="dashboard-modal__content dashboard-modal__content--boost">
           {step === "place" ? (
             <>
-              <h2 id="boost-modal-title" className="dashboard-modal__title">
-                Where you'll be seen
+              <div className="boost-modal__chrome">
+                <Logo href={null} size="sm" markOnly className="boost-modal__mark" />
+                {showPro ? <span className="boost-modal__pro">Pro</span> : null}
+              </div>
+              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
+                Boost your profile
+              </p>
+              <h2 id="boost-modal-title" className="dashboard-modal__title dashboard-modal__title--boost">
+                Where you'll <em>be seen</em>
               </h2>
-              <BoostPlacementChoice photoUrl={photoUrl} name={displayName} />
+              <BoostPlacementChoice
+                photoUrl={photoUrl}
+                name={displayName}
+                profession={profession}
+              />
               <DashboardButton
                 className="dashboard-boost-select-btn"
                 onClick={() => setStep("budget")}
               >
                 Next
+                <span aria-hidden>→</span>
               </DashboardButton>
             </>
           ) : null}
@@ -302,4 +333,12 @@ export function BoostVisibilityModal({
     </div>,
     document.body
   );
+}
+
+function firstPhoto(...values: (string | null | undefined)[]): string {
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (trimmed) return trimmed;
+  }
+  return "";
 }
