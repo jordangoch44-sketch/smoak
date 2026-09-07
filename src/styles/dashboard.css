@@ -7195,13 +7195,21 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   }
 }
 
-/* Live marketplace preview — full-bleed like the public profile (no card shell) */
+.specialist-profile-mode {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Same content-column width in Edit and Live — not inside the full-bleed hero. */
 .specialist-live-mode {
   display: flex;
+  box-sizing: border-box;
   gap: 0.28rem;
-  width: calc(100% - 1.5rem);
-  max-width: 28rem;
-  margin: 0.15rem auto 2.5rem;
+  width: 100%;
+  max-width: none;
+  margin: 0 0 1rem;
   padding: 0.28rem;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -7582,7 +7590,7 @@ body.specialist-live-edit-open .mobile-bottom-nav {
 
 /* Instagram-style Edit profile list (dashboard only — public profile unchanged) */
 .ig-profile-edit-wrap {
-  margin-top: 0.15rem;
+  margin-top: 0;
 }
 
 .ig-profile-edit {

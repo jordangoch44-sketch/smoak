@@ -1201,50 +1201,49 @@ export function SpecialistDashboardProfilePreview({
       </LiveEditSheet>
     ) : null;
 
+  const modeToggle = canEdit ? (
+    <LivePreviewModeToggle
+      value={previewMode}
+      onChange={setPreviewMode}
+      isLivePublished={isLivePublished}
+      onSignOut={onSignOut}
+    />
+  ) : null;
+
   /* Owner edit tab — Instagram-style list (does not change public profile layout). */
   if (canEdit && formDefaults && previewMode === "edit") {
     return (
-      <div id={LIVE_PROFILE_ANCHOR_ID} className="ig-profile-edit-wrap">
-        <LivePreviewModeToggle
-          value={previewMode}
-          onChange={setPreviewMode}
-          isLivePublished={isLivePublished}
-          onSignOut={onSignOut}
-        />
-        <SpecialistIgStyleProfileEditor
-          trainer={trainer}
-          formDefaults={formDefaults}
-          onEditSection={(id) => startEdit(id)}
-          highlightedSection={highlightedRow}
-          onUpgrade={onUpgrade}
-          footer={
-            <p className="ig-profile-edit__hint">
-              Changes go live on Marketplace when you save. Clients still see
-              your normal SMOAC profile layout.
-            </p>
-          }
-        />
+      <div id={LIVE_PROFILE_ANCHOR_ID} className="specialist-profile-mode">
+        {modeToggle}
+        <div className="ig-profile-edit-wrap">
+          <SpecialistIgStyleProfileEditor
+            trainer={trainer}
+            formDefaults={formDefaults}
+            onEditSection={(id) => startEdit(id)}
+            highlightedSection={highlightedRow}
+            onUpgrade={onUpgrade}
+            footer={
+              <p className="ig-profile-edit__hint">
+                Changes go live on Marketplace when you save. Clients still see
+                your normal SMOAC profile layout.
+              </p>
+            }
+          />
+        </div>
         {editSheet}
       </div>
     );
   }
 
   return (
-    <article
-      id={LIVE_PROFILE_ANCHOR_ID}
-      className="specialist-live-marketplace profile-page--styled"
-      style={pageStyle}
-      data-profile-accent={profileStyle.accent}
-      aria-label="Live marketplace profile"
-    >
-      {canEdit ? (
-        <LivePreviewModeToggle
-          value={previewMode}
-          onChange={setPreviewMode}
-          isLivePublished={isLivePublished}
-          onSignOut={onSignOut}
-        />
-      ) : null}
+    <div id={LIVE_PROFILE_ANCHOR_ID} className="specialist-profile-mode">
+      {modeToggle}
+      <article
+        className="specialist-live-marketplace profile-page--styled"
+        style={pageStyle}
+        data-profile-accent={profileStyle.accent}
+        aria-label="Live marketplace profile"
+      >
       <LiveEditZone
         label="Photos & identity"
         canEdit={canEdit}
@@ -1301,6 +1300,7 @@ export function SpecialistDashboardProfilePreview({
       </div>
 
       {editSheet}
-    </article>
+      </article>
+    </div>
   );
 }
