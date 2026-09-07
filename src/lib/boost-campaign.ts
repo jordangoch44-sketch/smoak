@@ -173,6 +173,8 @@ export function boostCampaignSummary(input: {
   payCents: number;
   discountCents: number;
   viewsLabel: string;
+  viewsRangeLabel: string;
+  dailyDollars: number;
   dailyLabel: string;
   durationLabel: string;
   listLabel: string;
@@ -191,6 +193,8 @@ export function boostCampaignSummary(input: {
     payCents,
     discountCents: Math.max(0, listCents - payCents),
     viewsLabel: views.label,
+    viewsRangeLabel: `${views.low.toLocaleString("en-US")} – ${views.high.toLocaleString("en-US")}`,
+    dailyDollars: dailyCents / 100,
     dailyLabel: `${formatBoostUsd(dailyCents)}/day`,
     durationLabel: days === 1 ? "1 day" : `${days} days`,
     listLabel: formatBoostUsd(listCents),

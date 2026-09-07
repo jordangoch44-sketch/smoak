@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
-import { CloseIcon } from "@/components/ui/icons";
-import { Logo } from "@/components/ui/Logo";
-import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
+import { CloseIcon, InfoIcon } from "@/components/ui/icons";
 import { BoostPlacementChoice } from "@/components/dashboard/shared/BoostPlacementChoice";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
 import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
+import "@/styles/dashboard.css";
 import {
   BOOST_CAMPAIGN_ALL,
   BOOST_CAMPAIGN_DAILY_STEP_CENTS,
@@ -39,6 +38,15 @@ type CheckoutPayload = {
 
 type Step = "place" | "budget" | "checkout" | "paid";
 
+const STEPS: readonly Step[] = ["place", "budget", "checkout", "paid"];
+
+const STEP_TITLE: Record<Step, string> = {
+  place: "Boost",
+  budget: "Budget & duration",
+  checkout: "Checkout",
+  paid: "Boost",
+};
+
 export function BoostVisibilityModal({
   open,
   onClose,
@@ -46,16 +54,13 @@ export function BoostVisibilityModal({
   const { session } = useAuthSession();
   const { trainer, formDefaults, application } = useManagedSpecialistProfile();
   const isProPlus = isProPlusPlan(session?.membershipPlan);
-  const showPro =
-    Boolean(session?.isPremium) ||
-    session?.membershipPlan === "premium" ||
-    session?.membershipPlan === "platinum";
   const [step, setStep] = useState<Step>("place");
   const [days, setDays] = useState(BOOST_CAMPAIGN_DEFAULT_DAYS);
   const [dailyCents, setDailyCents] = useState(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
   const [checkout, setCheckout] = useState<CheckoutPayload | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showViewsHint, setShowViewsHint] = useState(false);
 
   const photoUrl = firstPhoto(
     formDefaults?.profilePhotoUrl,
@@ -91,6 +96,18 @@ export function BoostVisibilityModal({
     [days, dailyCents, isProPlus]
   );
 
+  const dailyPct = sliderPercent(
+    dailyCents,
+    BOOST_CAMPAIGN_MIN_DAILY_CENTS,
+    BOOST_CAMPAIGN_MAX_DAILY_CENTS
+  );
+  const daysPct = sliderPercent(
+    days,
+    BOOST_CAMPAIGN_MIN_DAYS,
+    BOOST_CAMPAIGN_MAX_DAYS
+  );
+  const stepIndex = STEPS.indexOf(step);
+
   useEffect(() => {
     if (!open) return;
 
@@ -99,6 +116,7 @@ export function BoostVisibilityModal({
     setCheckout(null);
     setError(null);
     setBusy(false);
+    setShowViewsHint(false);
     setDays(BOOST_CAMPAIGN_DEFAULT_DAYS);
     setDailyCents(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
     setStep("place");
@@ -114,6 +132,19 @@ export function BoostVisibilityModal({
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open, onClose]);
+
+  function goBack() {
+    setError(null);
+    if (step === "budget") {
+      setCheckout(null);
+      setStep("place");
+      return;
+    }
+    if (step === "checkout") {
+      setCheckout(null);
+      setStep("budget");
+    }
+  }
 
   async function startCheckout() {
     setBusy(true);
@@ -140,6 +171,8 @@ export function BoostVisibilityModal({
 
   if (!open || typeof document === "undefined") return null;
 
+  const canGoBack = step === "budget" || step === "checkout";
+
   return createPortal(
     <div
       className="dashboard-modal dashboard-modal--boost"
@@ -153,72 +186,136 @@ export function BoostVisibilityModal({
         aria-labelledby="boost-modal-title"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="dashboard-modal__glow dashboard-modal__glow--boost" aria-hidden />
+        <header className="boost-ig-top">
+          {canGoBack ? (
+            <button
+              type="button"
+              className="boost-ig-icon-btn"
+              onClick={goBack}
+              aria-label="Back"
+            >
+              <BackChevron />
+            </button>
+          ) : (
+            <span className="boost-ig-icon-btn boost-ig-icon-btn--ghost" />
+          )}
+          <h2 id="boost-modal-title" className="boost-ig-top__title">
+            {STEP_TITLE[step]}
+          </h2>
+          <button
+            type="button"
+            className="boost-ig-icon-btn"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <CloseIcon className="h-5 w-5" />
+          </button>
+        </header>
 
-        <button
-          type="button"
-          className="dashboard-modal__close"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <div className="boost-ig-progress" aria-hidden>
+          {STEPS.map((id, index) => (
+            <span
+              key={id}
+              className={index <= stepIndex ? "boost-ig-progress__seg is-on" : "boost-ig-progress__seg"}
+            />
+          ))}
+        </div>
 
         <div className="dashboard-modal__content dashboard-modal__content--boost">
           {step === "place" ? (
             <>
-              <div className="boost-modal__chrome">
-                <Logo href={null} size="sm" markOnly className="boost-modal__mark" />
-                {showPro ? <span className="boost-modal__pro">Pro</span> : null}
+              <div className="boost-ig-hero">
+                <h3 className="boost-ig-hero__title">Where you'll be seen</h3>
+                <p className="boost-ig-hero__sub">
+                  One boost places you in Marketplace, Search, and Homepage.
+                </p>
               </div>
-              <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--boost">
-                Boost your profile
-              </p>
-              <h2 id="boost-modal-title" className="dashboard-modal__title dashboard-modal__title--boost">
-                Where you'll <em>be seen</em>
-              </h2>
               <BoostPlacementChoice
                 photoUrl={photoUrl}
                 name={displayName}
                 profession={profession}
               />
-              <DashboardButton
-                className="dashboard-boost-select-btn"
+              <button
+                type="button"
+                className="boost-ig-next"
                 onClick={() => setStep("budget")}
               >
                 Next
-                <span aria-hidden>→</span>
-              </DashboardButton>
+              </button>
             </>
           ) : null}
 
           {step === "budget" ? (
             <>
-              <button
-                type="button"
-                className="dashboard-modal__secondary"
-                onClick={() => {
-                  setCheckout(null);
-                  setError(null);
-                  setStep("place");
-                }}
-              >
-                ← Where you'll be seen
-              </button>
-              <h2 id="boost-modal-title" className="dashboard-modal__title">
-                Budget
-              </h2>
+              <div className="boost-ig-hero">
+                <h3 className="boost-ig-hero__title">What's your ad budget?</h3>
+                <p className="boost-ig-hero__sub">
+                  Excludes processing fees and applicable taxes.
+                </p>
+              </div>
 
-              <dl className="boost-budget__totals">
+              <label className="boost-ig-field">
+                <span className="boost-ig-field__row">
+                  <span>Daily budget</span>
+                  <span className="boost-ig-field__value">
+                    <span className="boost-ig-field__prefix">$</span>
+                    <span className="boost-ig-field__box">{summary.dailyDollars}</span>
+                  </span>
+                </span>
+                <input
+                  className="boost-ig-slider"
+                  type="range"
+                  min={BOOST_CAMPAIGN_MIN_DAILY_CENTS}
+                  max={BOOST_CAMPAIGN_MAX_DAILY_CENTS}
+                  step={BOOST_CAMPAIGN_DAILY_STEP_CENTS}
+                  value={dailyCents}
+                  style={{ "--pct": `${dailyPct}%` } as CSSProperties}
+                  onChange={(event) =>
+                    setDailyCents(Number(event.target.value))
+                  }
+                  aria-label="Daily budget"
+                />
+              </label>
+
+              <label className="boost-ig-field">
+                <span className="boost-ig-field__row">
+                  <span>Duration</span>
+                  <span className="boost-ig-field__value">
+                    <span className="boost-ig-field__box">{summary.days}</span>
+                  </span>
+                </span>
+                <input
+                  className="boost-ig-slider"
+                  type="range"
+                  min={BOOST_CAMPAIGN_MIN_DAYS}
+                  max={BOOST_CAMPAIGN_MAX_DAYS}
+                  value={days}
+                  style={{ "--pct": `${daysPct}%` } as CSSProperties}
+                  onChange={(event) => setDays(Number(event.target.value))}
+                  aria-label="Duration in days"
+                />
+              </label>
+
+              <dl className="boost-ig-summary">
                 <div>
                   <dt>Ad budget</dt>
                   <dd>
-                    {summary.dailyLabel} · {summary.durationLabel}
+                    {summary.payLabel} over {summary.durationLabel}
                   </dd>
                 </div>
                 <div>
-                  <dt>Est. views</dt>
-                  <dd>{summary.viewsLabel}</dd>
+                  <dt>
+                    Estimated views
+                    <button
+                      type="button"
+                      className="boost-ig-info"
+                      aria-label="About estimated views"
+                      onClick={() => setShowViewsHint((openHint) => !openHint)}
+                    >
+                      <InfoIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </dt>
+                  <dd>{summary.viewsRangeLabel}</dd>
                 </div>
                 {summary.discountPercent > 0 ? (
                   <div>
@@ -226,70 +323,34 @@ export function BoostVisibilityModal({
                     <dd>−{summary.discountPercent}%</dd>
                   </div>
                 ) : null}
-                <div className="boost-budget__total">
-                  <dt>Total</dt>
-                  <dd>{summary.payLabel}</dd>
-                </div>
               </dl>
+              {showViewsHint ? (
+                <p className="boost-ig-hint">
+                  A projected range of profile views over this campaign. Actual
+                  results vary with demand in your area.
+                </p>
+              ) : null}
 
-              <div className="boost-budget__sliders">
-                <label className="boost-budget__slider">
-                  <span>
-                    Duration
-                    <strong>{summary.durationLabel}</strong>
-                  </span>
-                  <input
-                    type="range"
-                    min={BOOST_CAMPAIGN_MIN_DAYS}
-                    max={BOOST_CAMPAIGN_MAX_DAYS}
-                    value={days}
-                    onChange={(event) => setDays(Number(event.target.value))}
-                  />
-                </label>
-                <label className="boost-budget__slider">
-                  <span>
-                    Daily budget
-                    <strong>{summary.dailyLabel}</strong>
-                  </span>
-                  <input
-                    type="range"
-                    min={BOOST_CAMPAIGN_MIN_DAILY_CENTS}
-                    max={BOOST_CAMPAIGN_MAX_DAILY_CENTS}
-                    step={BOOST_CAMPAIGN_DAILY_STEP_CENTS}
-                    value={dailyCents}
-                    onChange={(event) =>
-                      setDailyCents(Number(event.target.value))
-                    }
-                  />
-                </label>
-              </div>
-
-              <DashboardButton
-                className="dashboard-boost-select-btn"
+              <button
+                type="button"
+                className="boost-ig-next"
                 onClick={() => void startCheckout()}
                 disabled={busy}
               >
-                {busy ? "Loading…" : `Process · ${summary.payLabel}`}
-              </DashboardButton>
+                {busy ? "Loading…" : "Next"}
+              </button>
             </>
           ) : null}
 
           {step === "checkout" && checkout ? (
             <>
-              <button
-                type="button"
-                className="dashboard-modal__secondary"
-                onClick={() => {
-                  setCheckout(null);
-                  setError(null);
-                  setStep("budget");
-                }}
-              >
-                ← Budget
-              </button>
-              <h2 id="boost-modal-title" className="dashboard-modal__title">
-                Pay {checkout.priceLabel}
-              </h2>
+              <div className="boost-ig-hero">
+                <h3 className="boost-ig-hero__title">Pay {checkout.priceLabel}</h3>
+                <p className="boost-ig-hero__sub">
+                  {checkout.label} · {checkout.days}{" "}
+                  {checkout.days === 1 ? "day" : "days"}
+                </p>
+              </div>
               <div className="dashboard-boost-checkout">
                 <StripeEmbeddedCheckout
                   clientSecret={checkout.clientSecret}
@@ -306,20 +367,17 @@ export function BoostVisibilityModal({
 
           {step === "paid" ? (
             <>
-              <h2 id="boost-modal-title" className="dashboard-modal__title">
-                You're live
-              </h2>
-              <p id="boost-modal-desc" className="dashboard-modal__body">
-                {checkout?.label ?? boostCampaignLabel(BOOST_CAMPAIGN_ALL)} ·{" "}
-                {checkout?.days ?? days}{" "}
-                {(checkout?.days ?? days) === 1 ? "day" : "days"}
-              </p>
-              <DashboardButton
-                className="dashboard-boost-select-btn"
-                onClick={onClose}
-              >
+              <div className="boost-ig-hero boost-ig-hero--center">
+                <h3 className="boost-ig-hero__title">You're live</h3>
+                <p className="boost-ig-hero__sub">
+                  {checkout?.label ?? boostCampaignLabel(BOOST_CAMPAIGN_ALL)} ·{" "}
+                  {checkout?.days ?? days}{" "}
+                  {(checkout?.days ?? days) === 1 ? "day" : "days"}
+                </p>
+              </div>
+              <button type="button" className="boost-ig-next" onClick={onClose}>
                 Done
-              </DashboardButton>
+              </button>
             </>
           ) : null}
 
@@ -332,6 +390,30 @@ export function BoostVisibilityModal({
       </div>
     </div>,
     document.body
+  );
+}
+
+function sliderPercent(value: number, min: number, max: number): number {
+  if (max <= min) return 0;
+  return Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+}
+
+function BackChevron() {
+  return (
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 19.5 8.25 12l7.5-7.5"
+      />
+    </svg>
   );
 }
 

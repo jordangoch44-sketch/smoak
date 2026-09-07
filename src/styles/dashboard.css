@@ -2886,13 +2886,13 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     ) !important;
 }
 
-/* Boost — full-screen dark, phone frames of Marketplace / Search / Homepage */
+/* Boost — Instagram-style dark chrome, phone frames of Marketplace / Search / Homepage */
 .dashboard-modal--boost {
   align-items: stretch;
   justify-content: center;
   padding: 0;
   overflow: hidden;
-  background: #050506;
+  background: #000;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -2905,11 +2905,12 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   max-height: 100%;
   margin: 0 auto;
   overflow: hidden;
-  padding: 0.7rem 1.05rem max(1.15rem, env(safe-area-inset-bottom, 0px));
+  padding: 0.55rem 1.15rem max(1.15rem, env(safe-area-inset-bottom, 0px));
   border: none;
   border-radius: 0;
-  background: #050506;
+  background: #000;
   box-shadow: none;
+  color: #fff;
   touch-action: pan-y;
 }
 
@@ -2927,7 +2928,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  gap: 0.55rem;
+  gap: 0;
 }
 
 .dashboard-modal__dialog--boost .dashboard-modal__secondary {
@@ -3011,10 +3012,290 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   text-transform: uppercase;
 }
 
+.boost-ig-top {
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) 2.2rem;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 2.4rem;
+  padding: 0.15rem 0 0.55rem;
+}
+
+.boost-ig-top__title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.boost-ig-icon-btn {
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.boost-ig-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.boost-ig-icon-btn--ghost {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.boost-ig-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.28rem;
+  flex-shrink: 0;
+  margin: 0 0 1.05rem;
+}
+
+.boost-ig-progress__seg {
+  height: 0.2rem;
+  border-radius: 999px;
+  background: #262626;
+}
+
+.boost-ig-progress__seg.is-on:nth-child(1) {
+  background: #f77737;
+}
+
+.boost-ig-progress__seg.is-on:nth-child(2) {
+  background: #e1306c;
+}
+
+.boost-ig-progress__seg.is-on:nth-child(3) {
+  background: #833ab4;
+}
+
+.boost-ig-progress__seg.is-on:nth-child(4) {
+  background: #5851db;
+}
+
+.boost-ig-hero {
+  margin: 0.15rem 0 1.15rem;
+}
+
+.boost-ig-hero--center {
+  margin-top: auto;
+  text-align: center;
+}
+
+.boost-ig-hero__title {
+  margin: 0;
+  color: #fff;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+}
+
+.boost-ig-hero__sub {
+  margin: 0.4rem 0 0;
+  color: #a8a8a8;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.boost-ig-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0 0 1.35rem;
+}
+
+.boost-ig-field__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.boost-ig-field__value {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.boost-ig-field__prefix {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.boost-ig-field__box {
+  min-width: 3.35rem;
+  padding: 0.42rem 0.7rem;
+  border: 1px solid #363636;
+  border-radius: 10px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.boost-ig-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 1.35rem;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.boost-ig-slider::-webkit-slider-runnable-track {
+  height: 0.22rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    #0095f6 0,
+    #0095f6 var(--pct, 0%),
+    #363636 var(--pct, 0%),
+    #363636 100%
+  );
+}
+
+.boost-ig-slider::-moz-range-track {
+  height: 0.22rem;
+  border-radius: 999px;
+  background: #363636;
+}
+
+.boost-ig-slider::-moz-range-progress {
+  height: 0.22rem;
+  border-radius: 999px;
+  background: #0095f6;
+}
+
+.boost-ig-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.7rem;
+  height: 1.05rem;
+  margin-top: calc((0.22rem - 1.05rem) / 2);
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+.boost-ig-slider::-moz-range-thumb {
+  width: 1.7rem;
+  height: 1.05rem;
+  border: none;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+.boost-ig-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0.15rem 0 0;
+  padding: 1.05rem 0 0;
+  border-top: 1px solid #262626;
+}
+
+.boost-ig-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.boost-ig-summary dt,
+.boost-ig-summary dd {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.boost-ig-summary dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  color: #a8a8a8;
+}
+
+.boost-ig-summary dd {
+  color: #fff;
+  font-weight: 550;
+  text-align: right;
+}
+
+.boost-ig-summary > div:first-child dt,
+.boost-ig-summary > div:first-child dd {
+  color: #fff;
+  font-weight: 650;
+}
+
+.boost-ig-info {
+  display: grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #8e8e8e;
+  cursor: pointer;
+}
+
+.boost-ig-hint {
+  margin: 0.15rem 0 0;
+  color: #8e8e8e;
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.boost-ig-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: auto;
+  padding: 0.95rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: #0095f6;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+}
+
+.boost-ig-next:hover:not(:disabled) {
+  background: #1877f2;
+}
+
+.boost-ig-next:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
 .boost-place {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.45rem;
+  align-items: start;
+  gap: 0.5rem;
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
@@ -3025,24 +3306,24 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 
 .boost-place > li {
   min-width: 0;
-  min-height: 0;
 }
 
 .boost-phone {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.35rem;
-  height: 100%;
-  min-height: 0;
+  gap: 0.32rem;
+  width: 100%;
 }
 
 .boost-phone__index {
   display: grid;
   place-items: center;
+  flex: 0 0 auto;
   width: 1.35rem;
   height: 1.35rem;
-  border-radius: 999px;
+  aspect-ratio: 1;
+  border-radius: 50%;
   background: #fae642;
   color: #141000;
   font-size: 0.7rem;
@@ -3051,6 +3332,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .boost-phone__label {
+  flex: 0 0 auto;
   font-size: 0.58rem;
   font-weight: 750;
   letter-spacing: 0.08em;
@@ -3059,10 +3341,13 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .boost-phone__screen {
-  display: block;
-  flex: 1 1 auto;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
   width: 100%;
-  min-height: 14.5rem;
+  aspect-ratio: 9 / 18;
+  height: auto;
+  min-height: 0;
   overflow: hidden;
   border-radius: 0.95rem;
   border: 1.5px solid rgba(250, 230, 66, 0.72);
@@ -3071,12 +3356,15 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .boost-photo {
+  position: relative;
   display: block;
   overflow: hidden;
   background: #1a1a22;
 }
 
 .boost-photo img {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
@@ -3117,11 +3405,12 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 
 .boost-ui {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 0.28rem;
   width: 100%;
-  height: 100%;
   min-width: 0;
+  min-height: 0;
   overflow: hidden;
   padding: 0.4rem 0.32rem 0.35rem;
 }
@@ -3129,6 +3418,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 .boost-ui__tabs,
 .boost-ui__chips {
   display: flex;
+  flex: 0 0 auto;
   gap: 0.18rem;
   min-width: 0;
 }
@@ -3167,27 +3457,54 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 
 .boost-ui__card--you {
   flex: 1.35 1 0;
-  min-height: 5.4rem;
+  min-height: 0;
   border: 1px solid rgba(250, 230, 66, 0.85);
   box-shadow: 0 0 10px rgba(250, 204, 21, 0.35);
 }
 
 .boost-ui__card--ghost {
   flex: 0.7 1 0;
-  min-height: 2.1rem;
+  min-height: 0;
   opacity: 0.38;
 }
 
-.boost-ui__card-photo {
-  width: 100%;
-  height: 100%;
+.boost-ui__card-photo,
+.boost-ui__hero-photo {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
 }
 
-.boost-ui__card--you .boost-stars {
+.boost-ui__card-meta {
   position: absolute;
-  left: 0.22rem;
+  right: 0.22rem;
   bottom: 0.22rem;
+  left: 0.22rem;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+}
+
+.boost-ui__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  width: 100%;
+}
+
+.boost-ui__line {
+  display: block;
+  width: 62%;
+  height: 0.22rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.boost-ui__line--wide {
+  width: 82%;
 }
 
 .boost-ui__chip {
@@ -3207,6 +3524,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 
 .boost-ui__query {
   display: block;
+  flex: 0 0 auto;
   min-width: 0;
   overflow: hidden;
   padding: 0.22rem 0.32rem;
@@ -3231,6 +3549,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .boost-ui__hit--you {
+  flex: 0 0 auto;
   min-height: 2.55rem;
   border: 1px solid rgba(250, 230, 66, 0.85);
   background: rgba(250, 230, 66, 0.1);
@@ -3238,11 +3557,13 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .boost-ui__hit--ghost {
+  flex: 1 1 0;
   min-height: 1.55rem;
   opacity: 0.38;
 }
 
 .boost-ui__hit-photo {
+  position: relative;
   width: 1.7rem;
   height: 1.7rem;
   flex-shrink: 0;
@@ -3252,22 +3573,18 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 .boost-ui__hit-copy {
   display: flex;
   min-width: 0;
+  flex: 1 1 auto;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.12rem;
 }
 
-.boost-ui__hit-name {
-  max-width: 100%;
-  overflow: hidden;
-  color: #fff;
-  font-size: 0.48rem;
-  font-weight: 650;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.boost-ui__hit-copy .boost-ui__line--wide {
+  width: 88%;
 }
 
 .boost-ui__kicker {
+  flex: 0 0 auto;
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.42rem;
   font-weight: 750;
@@ -3279,7 +3596,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   position: relative;
   display: flex;
   flex: 1 1 auto;
-  min-height: 6.5rem;
+  min-height: 0;
   overflow: hidden;
   border-radius: 0.45rem;
   background: rgba(255, 255, 255, 0.07);
@@ -3290,16 +3607,8 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   box-shadow: 0 0 12px rgba(250, 204, 21, 0.32);
 }
 
-.boost-ui__hero-photo {
-  width: 100%;
-  height: 100%;
-}
-
-.boost-ui__hero .boost-stars {
-  position: absolute;
-  left: 0.28rem;
-  bottom: 0.85rem;
-  z-index: 1;
+.boost-ui__hero .boost-ui__card-meta {
+  bottom: 0.72rem;
 }
 
 .boost-ui__dots {
@@ -3326,8 +3635,9 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 
 .boost-ui__mini {
   display: flex;
+  flex: 0 0 auto;
   gap: 0.22rem;
-  min-height: 1.7rem;
+  height: 1.7rem;
 }
 
 .boost-ui__mini-tile {

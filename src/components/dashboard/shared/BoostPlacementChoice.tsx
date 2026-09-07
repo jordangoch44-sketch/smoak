@@ -78,6 +78,15 @@ function Stars() {
   );
 }
 
+function Lines() {
+  return (
+    <span className="boost-ui__lines">
+      <span className="boost-ui__line boost-ui__line--wide" />
+      <span className="boost-ui__line" />
+    </span>
+  );
+}
+
 function MarketplaceSketch({
   photoUrl,
   name,
@@ -95,7 +104,10 @@ function MarketplaceSketch({
       <span className="boost-ui__card boost-ui__card--you">
         <Photo photoUrl={photoUrl} name={name} className="boost-ui__card-photo" />
         <span className="boost-ui__chip">Sponsored</span>
-        <Stars />
+        <span className="boost-ui__card-meta">
+          <Stars />
+          <Lines />
+        </span>
       </span>
       <span className="boost-ui__card boost-ui__card--ghost" />
       <span className="boost-ui__card boost-ui__card--ghost" />
@@ -123,7 +135,7 @@ function SearchSketch({
       <span className="boost-ui__hit boost-ui__hit--you">
         <Photo photoUrl={photoUrl} name={name} className="boost-ui__hit-photo" />
         <span className="boost-ui__hit-copy">
-          <span className="boost-ui__hit-name">{name}</span>
+          <Lines />
           <Stars />
         </span>
       </span>
@@ -145,7 +157,10 @@ function FeaturedSketch({
       <span className="boost-ui__kicker">Featured</span>
       <span className="boost-ui__hero boost-ui__hero--you">
         <Photo photoUrl={photoUrl} name={name} className="boost-ui__hero-photo" />
-        <Stars />
+        <span className="boost-ui__card-meta">
+          <Stars />
+          <Lines />
+        </span>
         <span className="boost-ui__dots">
           <span className="boost-ui__dot boost-ui__dot--on" />
           <span className="boost-ui__dot" />
