@@ -62,6 +62,7 @@ export function BoostVisibilityModal({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showViewsHint, setShowViewsHint] = useState(false);
+  const [payingWithCard, setPayingWithCard] = useState(false);
 
   const photoUrl = firstPhoto(
     formDefaults?.profilePhotoUrl,
@@ -118,6 +119,7 @@ export function BoostVisibilityModal({
     setError(null);
     setBusy(false);
     setShowViewsHint(false);
+    setPayingWithCard(false);
     setDays(BOOST_CAMPAIGN_DEFAULT_DAYS);
     setDailyCents(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
     setStep("place");
@@ -143,6 +145,7 @@ export function BoostVisibilityModal({
     }
     if (step === "checkout") {
       setCheckout(null);
+      setPayingWithCard(false);
       setStep("budget");
     }
   }
@@ -222,7 +225,16 @@ export function BoostVisibilityModal({
           ))}
         </div>
 
-        <div className="dashboard-modal__content dashboard-modal__content--boost">
+        <div
+          className={[
+            "dashboard-modal__content dashboard-modal__content--boost",
+            step === "checkout" ? "dashboard-modal__content--boost-pay" : "",
+            step === "paid" ? "dashboard-modal__content--boost-live" : "",
+            payingWithCard ? "is-card-open" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        >
           {step === "place" ? (
             <>
               <div className="boost-ig-hero">
@@ -353,15 +365,10 @@ export function BoostVisibilityModal({
                 </p>
               </div>
               <div className="boost-checkout-spotlight">
-                {photoUrl ? (
-                  <span className="boost-checkout-spotlight__photo">
-                    <img src={photoUrl} alt="" />
-                  </span>
-                ) : (
-                  <span className="boost-checkout-spotlight__photo boost-checkout-spotlight__photo--fallback">
-                    {getInitials(displayName)}
-                  </span>
-                )}
+                <BoostCheckoutCharge
+                  photoUrl={photoUrl}
+                  displayName={displayName}
+                />
                 <p className="boost-checkout-spotlight__word">Boost</p>
                 <dl className="boost-checkout-spotlight__stats">
                   <div>
@@ -386,6 +393,7 @@ export function BoostVisibilityModal({
                   submitLabel={`Pay · ${checkout.priceLabel}`}
                   walletMode="pay"
                   foldCard
+                  onFoldChange={setPayingWithCard}
                   onPaid={() => setStep("paid")}
                   onError={(message) => setError(message || null)}
                 />
@@ -395,6 +403,14 @@ export function BoostVisibilityModal({
 
           {step === "paid" ? (
             <>
+              <div className="boost-checkout-spotlight boost-checkout-spotlight--live">
+                <BoostCheckoutCharge
+                  photoUrl={photoUrl}
+                  displayName={displayName}
+                  live
+                />
+                <p className="boost-checkout-spotlight__word">Boost</p>
+              </div>
               <div className="boost-ig-hero boost-ig-hero--center">
                 <h3 className="boost-ig-hero__title">You're live</h3>
                 <p className="boost-ig-hero__sub">
@@ -418,6 +434,101 @@ export function BoostVisibilityModal({
       </div>
     </div>,
     document.body
+  );
+}
+
+function BoostCheckoutCharge({
+  photoUrl,
+  displayName,
+  live = false,
+}: {
+  photoUrl: string;
+  displayName: string;
+  live?: boolean;
+}) {
+  return (
+    <div
+      className={
+        live ? "boost-checkout-charge boost-checkout-charge--live" : "boost-checkout-charge"
+      }
+    >
+      <span className="boost-checkout-charge__halo" aria-hidden />
+      <span className="boost-checkout-charge__pulse" aria-hidden />
+      <span className="boost-checkout-charge__pulse boost-checkout-charge__pulse--lag" aria-hidden />
+      <svg
+        className="boost-checkout-charge__bolts"
+        viewBox="0 0 200 200"
+        aria-hidden
+      >
+        <defs>
+          <linearGradient id="boost-charge-bolt" x1="0.2" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stopColor="#fffce8" />
+            <stop offset="40%" stopColor="#fae642" />
+            <stop offset="100%" stopColor="#f59e0b" />
+          </linearGradient>
+          <mask id="boost-charge-bolt-mask">
+            <rect width="200" height="200" fill="#fff" />
+            <circle cx="100" cy="100" r="49" fill="#000" />
+          </mask>
+        </defs>
+        <g mask="url(#boost-charge-bolt-mask)">
+        <g transform="translate(100 100) rotate(-128) translate(0 -92) scale(1.7)">
+          <g className="boost-checkout-charge__bolt-g boost-checkout-charge__bolt-g--1">
+            <path
+              fill="url(#boost-charge-bolt)"
+              d="M12 0 3 26h10L0 56l22-30H11z"
+            />
+          </g>
+        </g>
+        <g transform="translate(100 100) rotate(-42) translate(0 -92) scale(1.7)">
+          <g className="boost-checkout-charge__bolt-g boost-checkout-charge__bolt-g--2">
+            <path
+              fill="url(#boost-charge-bolt)"
+              d="M12 0 3 26h10L0 56l22-30H11z"
+            />
+          </g>
+        </g>
+        <g transform="translate(100 100) rotate(38) translate(0 -90) scale(1.7)">
+          <g className="boost-checkout-charge__bolt-g boost-checkout-charge__bolt-g--3">
+            <path
+              fill="url(#boost-charge-bolt)"
+              d="M12 0 3 26h10L0 56l22-30H11z"
+            />
+          </g>
+        </g>
+        <g transform="translate(100 100) rotate(132) translate(0 -92) scale(1.7)">
+          <g className="boost-checkout-charge__bolt-g boost-checkout-charge__bolt-g--4">
+            <path
+              fill="url(#boost-charge-bolt)"
+              d="M12 0 3 26h10L0 56l22-30H11z"
+            />
+          </g>
+        </g>
+        <g transform="translate(100 100) rotate(188) translate(0 -88) scale(1.45)">
+          <g className="boost-checkout-charge__bolt-g boost-checkout-charge__bolt-g--5">
+            <path
+              fill="url(#boost-charge-bolt)"
+              d="M10 0 2 22h8L0 48l18-26H9z"
+            />
+          </g>
+        </g>
+        </g>
+      </svg>
+      <span
+        className={
+          photoUrl
+            ? "boost-checkout-charge__core"
+            : "boost-checkout-charge__core boost-checkout-charge__core--fallback"
+        }
+      >
+        {photoUrl ? (
+          <img src={photoUrl} alt="" />
+        ) : (
+          getInitials(displayName)
+        )}
+        <span className="boost-checkout-charge__energy" aria-hidden />
+      </span>
+    </div>
   );
 }
 

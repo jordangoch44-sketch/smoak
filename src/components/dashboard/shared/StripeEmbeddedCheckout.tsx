@@ -76,6 +76,7 @@ interface StripeEmbeddedPayFormProps {
   walletMode?: "subscribe" | "pay";
   /** Collapse Card / Bank / Link fields until the specialist opens them. */
   foldCard?: boolean;
+  onFoldChange?: (open: boolean) => void;
   onPaid: () => void;
   onError: (message: string) => void;
 }
@@ -86,6 +87,7 @@ function StripeEmbeddedPayForm({
   submitLabel,
   walletMode = "subscribe",
   foldCard = false,
+  onFoldChange,
   onPaid,
   onError,
 }: StripeEmbeddedPayFormProps) {
@@ -101,6 +103,10 @@ function StripeEmbeddedPayForm({
     if (!foldCard || walletState !== "empty") return;
     setCardOpen(true);
   }, [foldCard, walletState]);
+
+  useEffect(() => {
+    onFoldChange?.(cardOpen);
+  }, [cardOpen, onFoldChange]);
 
   async function confirm(event?: StripeExpressCheckoutElementConfirmEvent) {
     if (!stripe || !elements) return;
@@ -159,7 +165,11 @@ function StripeEmbeddedPayForm({
           type="button"
           className="stripe-pay__fold"
           aria-expanded={cardOpen}
-          onClick={() => setCardOpen((open) => !open)}
+          onClick={() => {
+            const next = !cardOpen;
+            setCardOpen(next);
+            onFoldChange?.(next);
+          }}
         >
           <span className="stripe-pay__fold-label">
             Or pay with card
@@ -172,7 +182,7 @@ function StripeEmbeddedPayForm({
         </p>
       ) : null}
       {cardOpen ? (
-        <>
+        <div className="stripe-pay__card">
           <PaymentElement
             options={{
               layout: "tabs",
@@ -189,7 +199,7 @@ function StripeEmbeddedPayForm({
           >
             {busy ? "Processing…" : submitLabel ?? `Subscribe · ${priceLabel}`}
           </DashboardButton>
-        </>
+        </div>
       ) : null}
       <p className="stripe-pay__secure">
         Apple Pay, Google Pay, Link, or card · Stripe · {productLabel}
@@ -205,6 +215,7 @@ interface StripeEmbeddedCheckoutProps {
   submitLabel?: string;
   walletMode?: "subscribe" | "pay";
   foldCard?: boolean;
+  onFoldChange?: (open: boolean) => void;
   onPaid: () => void;
   onError: (message: string) => void;
 }
@@ -216,6 +227,7 @@ export function StripeEmbeddedCheckout({
   submitLabel,
   walletMode = "subscribe",
   foldCard = false,
+  onFoldChange,
   onPaid,
   onError,
 }: StripeEmbeddedCheckoutProps) {
@@ -243,6 +255,7 @@ export function StripeEmbeddedCheckout({
         submitLabel={submitLabel}
         walletMode={walletMode}
         foldCard={foldCard}
+        onFoldChange={onFoldChange}
         onPaid={onPaid}
         onError={onError}
       />
