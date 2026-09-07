@@ -237,7 +237,7 @@ export function ProfileHero({
                     onLeaveReview={onLeaveReview}
                   />
                   <SessionPrice
-                    amount={trainer.pricePerSession}
+                    trainer={trainer}
                     variant="hero"
                     className="profile-hero__meta-price shrink-0"
                   />

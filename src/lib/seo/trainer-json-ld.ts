@@ -2,6 +2,10 @@ import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { absoluteUrl } from "@/lib/seo/site-url";
 import { getTrainerCoordinates } from "@/lib/trainer-location";
+import {
+  hasSessionPrice,
+  resolveTrainerSessionPriceRange,
+} from "@/lib/session-price";
 import type { Trainer } from "@/types/trainer";
 
 export function buildTrainerProfileJsonLd(trainer: Trainer): Record<string, unknown> {
@@ -57,13 +61,23 @@ export function buildTrainerProfileJsonLd(trainer: Trainer): Record<string, unkn
     };
   }
 
-  if (trainer.pricePerSession > 0) {
-    jsonLd.makesOffer = {
-      "@type": "Offer",
-      price: trainer.pricePerSession,
-      priceCurrency: "USD",
-      description: "Per session",
-    };
+  const sessionPrice = resolveTrainerSessionPriceRange(trainer);
+  if (hasSessionPrice(sessionPrice)) {
+    jsonLd.makesOffer =
+      sessionPrice.min === sessionPrice.max
+        ? {
+            "@type": "Offer",
+            price: sessionPrice.max,
+            priceCurrency: "USD",
+            description: "Per session",
+          }
+        : {
+            "@type": "AggregateOffer",
+            lowPrice: sessionPrice.min,
+            highPrice: sessionPrice.max,
+            priceCurrency: "USD",
+            description: "Per session",
+          };
   }
 
   if (trainer.reviewCount > 0 && trainer.rating > 0) {

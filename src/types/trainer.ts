@@ -130,7 +130,15 @@ export interface Trainer {
    */
   homepageSpecialties?: string[];
   gender: Gender | "";
+  /**
+   * High end of the advertised 1:1 session range (USD). Also the legacy
+   * single listing rate and `specialist_profiles.price_per_session`.
+   */
   pricePerSession: number;
+  /** Low end of the advertised 1:1 session range (USD). */
+  pricePerSessionMin?: number;
+  /** High end of the advertised 1:1 session range (USD). */
+  pricePerSessionMax?: number;
   rating: number;
   /** Sum of `reviewSources` when set; otherwise legacy total */
   reviewCount: number;

@@ -82,13 +82,16 @@ function normalizeApplicationEdits(
   ) as SpecialistApplication;
 
   const oneOnOne = String(enriched.pricing.oneOnOnePrice ?? "").trim();
+  const oneOnOneMin = String(enriched.pricing.oneOnOnePriceMin ?? "").trim();
+  const oneOnOneMax = String(enriched.pricing.oneOnOnePriceMax ?? "").trim();
   const online = String(enriched.pricing.onlineCoachingPrice ?? "").trim();
-  if (!oneOnOne && online) {
+  if (!oneOnOne && !oneOnOneMin && !oneOnOneMax && online) {
     return {
       ...enriched,
       pricing: {
         ...enriched.pricing,
         oneOnOnePrice: online,
+        oneOnOnePriceMax: online,
       },
     };
   }

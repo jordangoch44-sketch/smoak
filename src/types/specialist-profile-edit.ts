@@ -35,6 +35,8 @@ export interface SpecialistProfileOverrides {
   latitude?: number;
   longitude?: number;
   pricePerSession?: number;
+  pricePerSessionMin?: number;
+  pricePerSessionMax?: number;
   bio?: string;
   photoNotes?: string;
   /** JSON map of slideshow image URL → { x, y, zoom } framing for hero cover */
@@ -82,6 +84,8 @@ export type SpecialistProfileEditForm = Required<
     | "workAddress"
     | "locationPrecision"
     | "pricePerSession"
+    | "pricePerSessionMin"
+    | "pricePerSessionMax"
     | "bio"
     | "photoNotes"
     | "slideshowFramesJson"

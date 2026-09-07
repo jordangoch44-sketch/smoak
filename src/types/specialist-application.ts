@@ -13,7 +13,12 @@ export type ProfileStatus =
 export type SpecialistMembershipTier = "free" | "premium";
 
 export interface SpecialistApplicationPricing {
+  /** Legacy / high-end 1:1 rate (kept in sync with `oneOnOnePriceMax`). */
   oneOnOnePrice: string;
+  /** Low end of advertised 1:1 session range. */
+  oneOnOnePriceMin: string;
+  /** High end of advertised 1:1 session range. */
+  oneOnOnePriceMax: string;
   onlineCoachingPrice: string;
   groupTrainingAvailable: boolean;
   freeConsultationAvailable: boolean;
@@ -187,6 +192,8 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   motivationStyle: "",
   pricing: {
     oneOnOnePrice: "",
+    oneOnOnePriceMin: "",
+    oneOnOnePriceMax: "",
     onlineCoachingPrice: "",
     groupTrainingAvailable: false,
     freeConsultationAvailable: false,

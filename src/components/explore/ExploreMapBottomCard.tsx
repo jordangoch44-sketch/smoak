@@ -17,11 +17,11 @@ import {
 } from "@/lib/explore-map-clusters";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
-  formatSessionPricePlain,
   formatTrainerRating,
   getInitials,
   cn,
 } from "@/lib/utils";
+import { formatTrainerSessionPrice } from "@/lib/session-price";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
@@ -353,7 +353,7 @@ export function ExploreMapBottomCard({
             resolveTrainerProfessionCategory(trainer) ||
             trainer.profession ||
             "Specialist";
-          const priceLabel = formatSessionPricePlain(trainer.pricePerSession);
+          const priceLabel = formatTrainerSessionPrice(trainer);
           const verified = isTrainerVerified(trainer);
           const specialties = (trainer.specialty || []).slice(0, 3);
           const ratingValue = trainer.rating;

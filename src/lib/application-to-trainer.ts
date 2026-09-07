@@ -11,30 +11,16 @@ import {
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { parseGender } from "@/lib/gender";
+import {
+  resolveApplicationSessionPriceRange,
+  withSyncedSessionPrices,
+} from "@/lib/session-price";
 import type {
   SpecialistApplication,
   SpecialistOnboardingState,
 } from "@/types/specialist-application";
 import type { SpecialistProfileOverrides } from "@/types/specialist-profile-edit";
 import type { Trainer } from "@/types/trainer";
-
-function parsePrice(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
-  }
-  if (typeof value !== "string") return 0;
-  const digits = value.replace(/[^\d.]/g, "");
-  const parsed = Number.parseFloat(digits);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
-}
-
-function resolveApplicationSessionPrice(
-  app: SpecialistOnboardingState | SpecialistApplication
-): number {
-  const oneOnOne = parsePrice(app.pricing?.oneOnOnePrice);
-  if (oneOnOne > 0) return oneOnOne;
-  return parsePrice(app.pricing?.onlineCoachingPrice);
-}
 
 function linesToUrls(raw: string): string[] {
   return raw
@@ -70,7 +56,7 @@ export function applicationToTrainer(
 ): Trainer {
   const enriched = enrichSpecialistApplicationFields(app);
   /* Never invent a marketplace price — go-live gate requires a real session rate. */
-  const pricePerSession = resolveApplicationSessionPrice(app);
+  const sessionPrice = resolveApplicationSessionPriceRange(app.pricing);
   const city = app.city?.trim() ?? "";
   const neighborhood = app.neighborhood?.trim() ?? "";
   const location = [neighborhood, city, app.state]
@@ -171,7 +157,11 @@ export function applicationToTrainer(
     verified: app.profileStatus === "APPROVED",
     specialty: specialties,
     gender: parseGender(app.gender),
-    pricePerSession,
+    ...withSyncedSessionPrices({
+      pricePerSession: sessionPrice.max,
+      pricePerSessionMin: sessionPrice.min,
+      pricePerSessionMax: sessionPrice.max,
+    }),
     rating: 0,
     reviewCount: 0,
     galleryImages: mediaUrls.length > 0 ? mediaUrls : [photo],
@@ -257,7 +247,7 @@ export function applicationToPreviewTrainer(
 export function applicationToProfileOverrides(
   app: SpecialistApplication
 ): SpecialistProfileOverrides {
-  const pricePerSession = resolveApplicationSessionPrice(app);
+  const priceRange = resolveApplicationSessionPriceRange(app.pricing);
   const zip = app.zipCode?.trim() ?? "";
   const neighborhood = app.neighborhood?.trim() ?? "";
   const coords =
@@ -309,7 +299,9 @@ export function applicationToProfileOverrides(
     serviceArea: neighborhood ? [neighborhood] : [],
     serviceAreaDescription: app.serviceAreaDescription?.trim() ?? "",
     /* Keep 0 when unset — go-live gate / dashboard checklist should stay honest. */
-    pricePerSession,
+    pricePerSession: priceRange.max,
+    pricePerSessionMin: priceRange.min,
+    pricePerSessionMax: priceRange.max,
     bio: app.bio?.trim() ?? "",
     profilePhotoUrl: app.media?.profilePhotoUrl?.trim() ?? "",
     phone: app.phone?.trim() ?? "",

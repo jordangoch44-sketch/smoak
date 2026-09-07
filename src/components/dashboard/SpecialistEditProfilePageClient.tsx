@@ -66,6 +66,11 @@ import {
   type ProfileNameFontId,
 } from "@/lib/specialist-profile-style";
 import { cn, getInitials } from "@/lib/utils";
+import {
+  formatSessionPriceRange,
+  hasSessionPrice,
+  resolveTrainerSessionPriceRange,
+} from "@/lib/session-price";
 import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
 import { parseGender } from "@/lib/gender";
 
@@ -759,7 +764,13 @@ export function SpecialistEditProfilePageClient({
             title="Experience & training"
             description="Credentials clients trust"
             incomplete={
-              savedForm.pricePerSession <= 0 ||
+              !hasSessionPrice(
+                resolveTrainerSessionPriceRange({
+                  pricePerSession: savedForm.pricePerSession,
+                  pricePerSessionMin: savedForm.pricePerSessionMin,
+                  pricePerSessionMax: savedForm.pricePerSessionMax,
+                })
+              ) ||
               !savedForm.bookingAvailability.trim() ||
               !savedForm.experienceYears.trim()
             }
@@ -1033,11 +1044,13 @@ export function SpecialistEditProfilePageClient({
                 />
                 <ProfileEditViewField
                   label="Price per session"
-                  value={
-                    savedForm.pricePerSession > 0
-                      ? `$${savedForm.pricePerSession}`
-                      : ""
-                  }
+                  value={formatSessionPriceRange(
+                    resolveTrainerSessionPriceRange({
+                      pricePerSession: savedForm.pricePerSession,
+                      pricePerSessionMin: savedForm.pricePerSessionMin,
+                      pricePerSessionMax: savedForm.pricePerSessionMax,
+                    })
+                  )}
                   emptyLabel="Add pricing"
                 />
                 <ProfileEditViewField
@@ -1206,18 +1219,43 @@ export function SpecialistEditProfilePageClient({
                     }
                   />
                 </ProfileEditInputField>
-                <ProfileEditInputField label="Price per session (USD)">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={form.pricePerSession}
-                    onChange={(event) =>
-                      updateField("pricePerSession", Number(event.target.value) || 0)
-                    }
-                  />
-                </ProfileEditInputField>
+                <div className="session-price-range-fields">
+                  <ProfileEditInputField label="From (USD)">
+                    <input
+                      className="login-field__input profile-edit-input"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={form.pricePerSessionMin || ""}
+                      onChange={(event) => {
+                        const min = Number(event.target.value) || 0;
+                        const max = form.pricePerSessionMax || form.pricePerSession;
+                        updateField("pricePerSessionMin", min);
+                        updateField("pricePerSessionMax", max);
+                        updateField("pricePerSession", max > 0 ? max : min);
+                      }}
+                    />
+                  </ProfileEditInputField>
+                  <span className="session-price-range-fields__dash" aria-hidden="true">
+                    –
+                  </span>
+                  <ProfileEditInputField label="To (USD)">
+                    <input
+                      className="login-field__input profile-edit-input"
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={form.pricePerSessionMax || form.pricePerSession || ""}
+                      onChange={(event) => {
+                        const max = Number(event.target.value) || 0;
+                        const min = form.pricePerSessionMin || max;
+                        updateField("pricePerSessionMin", min);
+                        updateField("pricePerSessionMax", max);
+                        updateField("pricePerSession", max);
+                      }}
+                    />
+                  </ProfileEditInputField>
+                </div>
                 <ProfileEditInputField label="Availability & session types">
                   <input
                     className="login-field__input profile-edit-input"

@@ -21,6 +21,7 @@ import {
   TRAVEL_TO_CLIENTS_OPTIONS,
 } from "@/types/specialist-service-area";
 import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
+import { applicationPricingFromRange, formatApplicationSessionPrice } from "@/lib/session-price";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import {
   ADMIN_REJECTION_PRESETS,
@@ -172,6 +173,8 @@ export function AdminApplicationReviewPanel({
     setDraft((prev) => {
       const pricing = prev.pricing ?? {
         oneOnOnePrice: "",
+        oneOnOnePriceMin: "",
+        oneOnOnePriceMax: "",
         onlineCoachingPrice: "",
         groupTrainingAvailable: false,
         freeConsultationAvailable: false,
@@ -685,7 +688,8 @@ export function AdminApplicationReviewPanel({
                   <div className="admin-review-stat-box">
                     <span className="admin-review-stat-box__label">1:1 Session Rate</span>
                     <span className="admin-review-stat-box__num">
-                      {formatCurrency(draft.pricing?.oneOnOnePrice)}
+                      {formatApplicationSessionPrice(draft.pricing) ||
+                        formatCurrency(draft.pricing?.oneOnOnePrice)}
                     </span>
                     {draft.pricing?.sessionDuration && (
                       <span className="admin-review-stat-box__sub">
@@ -1331,11 +1335,41 @@ export function AdminApplicationReviewPanel({
                 <div className="admin-review-fields">
                   <div className="admin-review-grid admin-review-grid--2col">
                     <label className="admin-field-label">
-                      1:1 Session Price ($)
+                      1:1 Session From ($)
                       <input
                         className="admin-field"
-                        value={draft.pricing?.oneOnOnePrice ?? ""}
-                        onChange={(e) => patchPricing("oneOnOnePrice", e.target.value)}
+                        value={draft.pricing?.oneOnOnePriceMin ?? ""}
+                        onChange={(e) => {
+                          setDraft((prev) => ({
+                            ...prev,
+                            pricing: applicationPricingFromRange(
+                              e.target.value,
+                              prev.pricing.oneOnOnePriceMax,
+                              prev.pricing
+                            ),
+                          }));
+                          setFeedback(null);
+                          setErrorMessage(null);
+                        }}
+                      />
+                    </label>
+                    <label className="admin-field-label">
+                      1:1 Session To ($)
+                      <input
+                        className="admin-field"
+                        value={draft.pricing?.oneOnOnePriceMax ?? ""}
+                        onChange={(e) => {
+                          setDraft((prev) => ({
+                            ...prev,
+                            pricing: applicationPricingFromRange(
+                              prev.pricing.oneOnOnePriceMin,
+                              e.target.value,
+                              prev.pricing
+                            ),
+                          }));
+                          setFeedback(null);
+                          setErrorMessage(null);
+                        }}
                       />
                     </label>
                     <label className="admin-field-label">

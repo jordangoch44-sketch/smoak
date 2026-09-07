@@ -13,6 +13,7 @@ import {
 } from "@/lib/seo/marketplace-landing";
 import type { MarketplaceCity } from "@/data/locations";
 import type { MarketplaceProfessionLanding } from "@/lib/seo/marketplace-slugs";
+import { formatTrainerSessionPrice } from "@/lib/session-price";
 import type { Trainer } from "@/types/trainer";
 
 interface MarketplaceLandingShellProps {
@@ -138,9 +139,10 @@ export function MarketplaceLandingShell({
                           {location ? (
                             <p className="seo-landing-card__location">{location}</p>
                           ) : null}
-                          {trainer.pricePerSession > 0 ? (
+                          {trainer.pricePerSession > 0 ||
+                          (trainer.pricePerSessionMin ?? 0) > 0 ? (
                             <p className="seo-landing-card__price">
-                              ≈ ${trainer.pricePerSession} / session
+                              {formatTrainerSessionPrice(trainer)}
                             </p>
                           ) : null}
                         </div>

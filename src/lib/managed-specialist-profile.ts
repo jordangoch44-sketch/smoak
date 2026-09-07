@@ -35,6 +35,12 @@ import {
   parseSlideshowFrameMap,
   pruneSlideshowFrameMap,
 } from "@/lib/media/slideshow-frame";
+import {
+  applicationPricingFromRange,
+  formatSessionPriceRange,
+  hasSessionPrice,
+  resolveTrainerSessionPriceRange,
+} from "@/lib/session-price";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
 import type {
   ProfileStatus,
@@ -278,11 +284,17 @@ export function mergeProfileEditsIntoApplication(
         ? form.serviceArea.join(", ")
         : app.serviceAreaDescription,
     pricing: {
-      ...app.pricing,
-      oneOnOnePrice:
-        form.pricePerSession > 0
-          ? String(form.pricePerSession)
-          : app.pricing.oneOnOnePrice,
+      ...applicationPricingFromRange(
+        form.pricePerSessionMin > 0
+          ? String(form.pricePerSessionMin)
+          : "",
+        form.pricePerSessionMax > 0
+          ? String(form.pricePerSessionMax)
+          : form.pricePerSession > 0
+            ? String(form.pricePerSession)
+            : "",
+        app.pricing
+      ),
       groupTrainingAvailable: groupTrainingAvailableFromOptions(
         parseTrainingOptions(form.trainingOptions, {
           groupTrainingAvailable: Boolean(app.pricing?.groupTrainingAvailable),
@@ -399,11 +411,23 @@ export function buildProfileCompletionChecklist(
     },
     {
       id: "price",
-      label:
-        form.pricePerSession > 0
-          ? `Session price · $${form.pricePerSession}`
-          : "Set session price",
-      done: form.pricePerSession > 0,
+      label: (() => {
+        const range = resolveTrainerSessionPriceRange({
+          pricePerSession: form.pricePerSession,
+          pricePerSessionMin: form.pricePerSessionMin,
+          pricePerSessionMax: form.pricePerSessionMax,
+        });
+        return hasSessionPrice(range)
+          ? `Session price · ${formatSessionPriceRange(range)}`
+          : "Set session price range";
+      })(),
+      done: hasSessionPrice(
+        resolveTrainerSessionPriceRange({
+          pricePerSession: form.pricePerSession,
+          pricePerSessionMin: form.pricePerSessionMin,
+          pricePerSessionMax: form.pricePerSessionMax,
+        })
+      ),
     },
     {
       id: "bio",

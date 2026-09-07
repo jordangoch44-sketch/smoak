@@ -14,6 +14,11 @@ import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
 import { AlertTriangleIcon, CheckIcon } from "@/components/ui/icons";
 import { SpecialistLinkInBioCard } from "./SpecialistLinkInBioCard";
 import { cn } from "@/lib/utils";
+import {
+  formatSessionPriceRange,
+  hasSessionPrice,
+  resolveTrainerSessionPriceRange,
+} from "@/lib/session-price";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 import type { Gender, Trainer } from "@/types/trainer";
 import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
@@ -168,10 +173,14 @@ export function SpecialistIgStyleProfileEditor({
     formDefaults.tiktok.trim() && "TikTok",
     formDefaults.website.trim() && "Website",
   ].filter(Boolean);
-  const price =
-    formDefaults.pricePerSession > 0
-      ? `From $${formDefaults.pricePerSession}`
-      : "Add";
+  const sessionPrice = resolveTrainerSessionPriceRange({
+    pricePerSession: formDefaults.pricePerSession,
+    pricePerSessionMin: formDefaults.pricePerSessionMin,
+    pricePerSessionMax: formDefaults.pricePerSessionMax,
+  });
+  const price = hasSessionPrice(sessionPrice)
+    ? formatSessionPriceRange(sessionPrice)
+    : "Add";
   const contactBits = [
     formDefaults.phone.trim() && "Phone",
     formDefaults.email.trim() && "Email",
@@ -389,7 +398,7 @@ export function SpecialistIgStyleProfileEditor({
           sectionKey="pricing"
           label="Pricing"
           value={price}
-          incomplete={formDefaults.pricePerSession <= 0}
+          incomplete={!hasSessionPrice(sessionPrice)}
           highlighted={isHighlighted("pricing")}
           onClick={() => onEditSection("pricing")}
         />

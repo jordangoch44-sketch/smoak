@@ -81,3 +81,27 @@
 .session-price--stat .session-price__amount {
   font-size: 0.8125rem;
 }
+
+.session-price-range-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.5rem 0.75rem;
+  align-items: end;
+}
+
+.session-price-range-fields__legend {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.session-price-range-fields__dash {
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding-bottom: 0.85rem;
+}
+
+.session-price-range-fields .login-field,
+.session-price-range-fields .profile-edit-field {
+  min-width: 0;
+}

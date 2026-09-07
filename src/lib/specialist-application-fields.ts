@@ -106,6 +106,14 @@ export function normalizeSpecialistApplicationShape(
         pricing?.oneOnOnePrice,
         defaults.pricing.oneOnOnePrice
       ),
+      oneOnOnePriceMin: asString(
+        pricing?.oneOnOnePriceMin,
+        asString(pricing?.oneOnOnePrice, defaults.pricing.oneOnOnePriceMin)
+      ),
+      oneOnOnePriceMax: asString(
+        pricing?.oneOnOnePriceMax,
+        asString(pricing?.oneOnOnePrice, defaults.pricing.oneOnOnePriceMax)
+      ),
       onlineCoachingPrice: asString(
         pricing?.onlineCoachingPrice,
         defaults.pricing.onlineCoachingPrice

@@ -52,7 +52,7 @@ export function TrainerCardDetails({
   );
   const price = (
     <SessionPrice
-      amount={trainer.pricePerSession}
+      trainer={trainer}
       variant={metaLayout === "inline" ? "compact" : "grid"}
       className={cn("trainer-card-details__price", priceClassName)}
     />

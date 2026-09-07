@@ -924,21 +924,49 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "pricing" ? (
-          <label className="login-field">
-            <span className="login-field__label">Price per session (USD)</span>
-            <input
-              className="login-field__input profile-edit-input"
-              type="number"
-              min={0}
-              step={1}
-              inputMode="numeric"
-              value={form.pricePerSession || ""}
-              onChange={(e) =>
-                patch("pricePerSession", Number(e.target.value) || 0)
-              }
-              placeholder="e.g. 120"
-            />
-          </label>
+          <div className="session-price-range-fields">
+            <label className="login-field">
+              <span className="login-field__label">From (USD)</span>
+              <input
+                className="login-field__input profile-edit-input"
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={form.pricePerSessionMin || ""}
+                onChange={(e) => {
+                  const min = Number(e.target.value) || 0;
+                  const max = form.pricePerSessionMax || form.pricePerSession;
+                  patch("pricePerSessionMin", min);
+                  patch("pricePerSessionMax", max);
+                  patch("pricePerSession", max > 0 ? max : min);
+                }}
+                placeholder="80"
+              />
+            </label>
+            <span className="session-price-range-fields__dash" aria-hidden="true">
+              –
+            </span>
+            <label className="login-field">
+              <span className="login-field__label">To (USD)</span>
+              <input
+                className="login-field__input profile-edit-input"
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={form.pricePerSessionMax || form.pricePerSession || ""}
+                onChange={(e) => {
+                  const max = Number(e.target.value) || 0;
+                  const min = form.pricePerSessionMin || max;
+                  patch("pricePerSessionMin", min);
+                  patch("pricePerSessionMax", max);
+                  patch("pricePerSession", max);
+                }}
+                placeholder="120"
+              />
+            </label>
+          </div>
         ) : null}
 
         {editing === "contact" ? (

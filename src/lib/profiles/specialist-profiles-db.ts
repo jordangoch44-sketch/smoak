@@ -22,7 +22,13 @@ import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
 import { parseTrainingOptions } from "@/types/specialist-training-options";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
-import { applyCampaignExpiryToTrainerFlags } from "@/lib/stripe/activate-boost-campaign";
+import {
+  applyCampaignExpiryToTrainerFlags,
+} from "@/lib/stripe/activate-boost-campaign";
+import {
+  resolveTrainerSessionPriceRange,
+  withSyncedSessionPrices,
+} from "@/lib/session-price";
 
 export type SpecialistProfilesMutationResult =
   | { ok: true }
@@ -244,7 +250,11 @@ function trainerFromProfileData(
     specialty: asStringArray(profileData.specialty),
     homepageSpecialties: asStringArray(profileData.homepageSpecialties),
     gender: asGender(profileData.gender),
-    pricePerSession: asNumber(profileData.pricePerSession, 0),
+    ...withSyncedSessionPrices({
+      pricePerSession: asNumber(profileData.pricePerSession, 0),
+      pricePerSessionMin: asNumber(profileData.pricePerSessionMin, 0),
+      pricePerSessionMax: asNumber(profileData.pricePerSessionMax, 0),
+    }),
     rating: asNumber(profileData.rating, 0),
     reviewCount: asNumber(profileData.reviewCount, 0),
     reviewSources: asReviewSources(profileData.reviewSources),
@@ -352,6 +362,11 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
     row.id,
     (row.profile_data ?? {}) as Record<string, unknown>
   );
+  const sessionPrice = resolveTrainerSessionPriceRange({
+    pricePerSession: trainer.pricePerSession || row.price_per_session || 0,
+    pricePerSessionMin: trainer.pricePerSessionMin,
+    pricePerSessionMax: trainer.pricePerSessionMax,
+  });
   const withColumns: Trainer = {
       ...trainer,
       id: row.id,
@@ -387,7 +402,9 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
       specialty: trainer.specialty?.length
         ? trainer.specialty
         : asStringArray(row.specialty),
-      pricePerSession: trainer.pricePerSession || row.price_per_session || 0,
+      pricePerSession: sessionPrice.max,
+      pricePerSessionMin: sessionPrice.min,
+      pricePerSessionMax: sessionPrice.max,
       /* Columns are the source of truth for admin placement flags —
        * profile_data snapshots go stale when admins toggle featured/sponsored. */
       topRanked:
@@ -439,6 +456,7 @@ export function specialistProfileToRow(input: {
   status?: SpecialistProfileRow["status"];
 }): SpecialistProfileRow {
   const { trainer, overrides = {}, userId = null, applicationId = null } = input;
+  const sessionPrice = resolveTrainerSessionPriceRange(trainer);
   const now = new Date().toISOString();
   return {
     id: trainer.id,
@@ -454,7 +472,7 @@ export function specialistProfileToRow(input: {
     latitude: trainer.latitude ?? null,
     longitude: trainer.longitude ?? null,
     specialty: trainer.specialty ?? [],
-    price_per_session: trainer.pricePerSession ?? 0,
+    price_per_session: sessionPrice.max,
     service_type: trainer.serviceType ?? null,
     featured: Boolean(trainer.featured),
     sponsored: Boolean(trainer.sponsored),
@@ -465,7 +483,7 @@ export function specialistProfileToRow(input: {
     verified: Boolean(trainer.verified),
     rating: trainer.rating ?? 0,
     review_count: trainer.reviewCount ?? 0,
-    profile_data: trainer as unknown as Record<string, unknown>,
+    profile_data: withSyncedSessionPrices(trainer) as unknown as Record<string, unknown>,
     overrides: (overrides ?? {}) as Record<string, unknown>,
     created_at: now,
     updated_at: now,

@@ -1,5 +1,6 @@
 import { isListedGender } from "@/lib/gender";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
+import { hasSessionPrice, resolveApplicationSessionPriceRange } from "@/lib/session-price";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 export interface SpecialistGoLiveGap {
@@ -20,24 +21,6 @@ const PLACEHOLDER_PHOTO_MARKERS = [
   "placeholder.jpg",
   "picsum.photos",
 ];
-
-/** Coerce admin/DB session rates (string, number, or missing) without throwing. */
-function parseSessionPrice(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
-  }
-  if (typeof value !== "string") return 0;
-  const digits = value.replace(/[^\d.]/g, "");
-  const parsed = Number.parseFloat(digits);
-  return Number.isFinite(parsed) && parsed > 0 ? Math.round(parsed) : 0;
-}
-
-function resolveSessionPrice(app: SpecialistApplication): number {
-  const fromOneOnOne = parseSessionPrice(app.pricing?.oneOnOnePrice);
-  if (fromOneOnOne > 0) return fromOneOnOne;
-  /* Older drafts sometimes only filled online coaching — still a publishable rate. */
-  return parseSessionPrice(app.pricing?.onlineCoachingPrice);
-}
 
 function isRealProfilePhoto(url: unknown): boolean {
   if (typeof url !== "string") return false;
@@ -66,8 +49,8 @@ export function getSpecialistGoLiveGaps(
     gaps.push({ id: "photo", label: "Real profile photo" });
   }
 
-  if (resolveSessionPrice(app) <= 0) {
-    gaps.push({ id: "price", label: "Session price (e.g. $120)" });
+  if (!hasSessionPrice(resolveApplicationSessionPriceRange(app.pricing))) {
+    gaps.push({ id: "price", label: "Session price (e.g. $80–$120)" });
   }
 
   if (bio.length < 40) {

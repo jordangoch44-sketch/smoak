@@ -450,10 +450,18 @@ export async function saveSpecialistSignupProfile(
     specialist_city: state.city?.trim() ?? "",
     specialist_neighborhood: state.neighborhood?.trim() ?? "",
     specialist_format: state.serviceType?.trim() ?? "",
-    specialist_starting_price:
-      state.pricing?.oneOnOnePrice?.trim() ||
-      state.pricing?.onlineCoachingPrice?.trim() ||
-      "",
+    specialist_starting_price: (() => {
+      const from = state.pricing?.oneOnOnePriceMin?.trim() ?? "";
+      const to = state.pricing?.oneOnOnePriceMax?.trim() ?? "";
+      if (from && to) return `${from}–${to}`;
+      return (
+        to ||
+        from ||
+        state.pricing?.oneOnOnePrice?.trim() ||
+        state.pricing?.onlineCoachingPrice?.trim() ||
+        ""
+      );
+    })(),
     onboarding_data: specialistOnboardingForStorage(state),
   });
 }

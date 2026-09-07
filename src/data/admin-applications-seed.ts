@@ -59,6 +59,8 @@ export const ADMIN_APPLICATIONS_SEED: SpecialistApplication[] = [
     motivationStyle: "Accountability-focused",
     pricing: {
       oneOnOnePrice: "$95",
+      oneOnOnePriceMin: "$75",
+      oneOnOnePriceMax: "$95",
       onlineCoachingPrice: "$149/mo",
       groupTrainingAvailable: true,
       freeConsultationAvailable: true,
@@ -139,6 +141,8 @@ export const ADMIN_APPLICATIONS_SEED: SpecialistApplication[] = [
     motivationStyle: "Goal-milestone driven",
     pricing: {
       oneOnOnePrice: "$165",
+      oneOnOnePriceMin: "$130",
+      oneOnOnePriceMax: "$165",
       onlineCoachingPrice: "$89/mo",
       groupTrainingAvailable: false,
       freeConsultationAvailable: true,
@@ -219,6 +223,8 @@ export const ADMIN_APPLICATIONS_SEED: SpecialistApplication[] = [
     motivationStyle: "Habit-stacking",
     pricing: {
       oneOnOnePrice: "$120",
+      oneOnOnePriceMin: "$90",
+      oneOnOnePriceMax: "$120",
       onlineCoachingPrice: "$199/mo",
       groupTrainingAvailable: true,
       freeConsultationAvailable: true,

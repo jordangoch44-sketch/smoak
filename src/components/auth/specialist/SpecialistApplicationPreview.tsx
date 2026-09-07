@@ -4,6 +4,7 @@ import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import { applicationToPreviewTrainer } from "@/lib/application-to-trainer";
 import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
 import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
+import { formatApplicationSessionPrice } from "@/lib/session-price";
 
 interface SpecialistApplicationPreviewProps {
   state: SpecialistOnboardingState;
@@ -91,9 +92,7 @@ export function SpecialistApplicationPreview({
       <div className="wizard-profile-preview__row">
         <span className="wizard-profile-preview__label">1-on-1</span>
         <span className="wizard-profile-preview__value">
-          {state.pricing.oneOnOnePrice.trim()
-            ? state.pricing.oneOnOnePrice
-            : "Add after approval"}
+          {formatApplicationSessionPrice(state.pricing) || "Add after approval"}
         </span>
       </div>
 

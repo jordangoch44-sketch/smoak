@@ -82,6 +82,8 @@ function profilesSignature(profiles: Record<string, Trainer>): string {
         id,
         t?.name ?? "",
         t?.pricePerSession ?? 0,
+        t?.pricePerSessionMin ?? "",
+        t?.pricePerSessionMax ?? "",
         t?.latitude ?? "",
         t?.longitude ?? "",
         t?.zipCode ?? "",

@@ -1,6 +1,6 @@
 /**
  * Explore “Price per session” range — single config for slider + filtering.
- * Bounds cover current catalog pricing with headroom ($95–$195 today).
+ * Bounds cover current catalog pricing with headroom.
  */
 export const EXPLORE_PRICE_RANGE = {
   min: 25,

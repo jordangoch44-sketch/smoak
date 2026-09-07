@@ -10,6 +10,7 @@ import { EMPTY_CERTIFICATION } from "@/lib/specialist-profile-overrides";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import type { Certification } from "@/types/trainer";
 import { cn } from "@/lib/utils";
+import { applicationPricingFromRange } from "@/lib/session-price";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
 import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
@@ -518,31 +519,60 @@ export function SpecialistOnboardingSteps({
               value={state.trainingOptions}
               onChange={(trainingOptions) => onPatch({ trainingOptions })}
             />
-            <label className="login-field">
-              <span className="login-field__label">
+            <div className="session-price-range-fields">
+              <p className="login-field__label session-price-range-fields__legend">
                 1:1 session price
                 <RequiredMark />
+              </p>
+              <label className="login-field">
+                <span className="login-field__label">From</span>
+                <input
+                  className="login-field__input"
+                  inputMode="decimal"
+                  value={state.pricing.oneOnOnePriceMin}
+                  onChange={(e) =>
+                    onPatch({
+                      pricing: applicationPricingFromRange(
+                        e.target.value,
+                        state.pricing.oneOnOnePriceMax,
+                        state.pricing
+                      ),
+                    })
+                  }
+                  placeholder="$80"
+                  required
+                  aria-required="true"
+                  aria-label="Session price from"
+                />
+              </label>
+              <span className="session-price-range-fields__dash" aria-hidden="true">
+                –
               </span>
-              <input
-                className="login-field__input"
-                inputMode="decimal"
-                value={state.pricing.oneOnOnePrice}
-                onChange={(e) =>
-                  onPatch({
-                    pricing: {
-                      ...state.pricing,
-                      oneOnOnePrice: e.target.value,
-                    },
-                  })
-                }
-                placeholder="$120"
-                required
-                aria-required="true"
-              />
-            </label>
+              <label className="login-field">
+                <span className="login-field__label">To</span>
+                <input
+                  className="login-field__input"
+                  inputMode="decimal"
+                  value={state.pricing.oneOnOnePriceMax}
+                  onChange={(e) =>
+                    onPatch({
+                      pricing: applicationPricingFromRange(
+                        state.pricing.oneOnOnePriceMin,
+                        e.target.value,
+                        state.pricing
+                      ),
+                    })
+                  }
+                  placeholder="$120"
+                  required
+                  aria-required="true"
+                  aria-label="Session price to"
+                />
+              </label>
+            </div>
             <p className="wizard-field-hint">
-              Shown on your Marketplace card after approval. You can update it
-              anytime from Edit profile.
+              Shown as a range on your Marketplace card after approval, e.g.
+              $80–$120 / session. You can update it anytime from Edit profile.
             </p>
             <label className="login-field">
               <span className="login-field__label">Instagram</span>

@@ -1,6 +1,9 @@
 import { isListedGender } from "@/lib/gender";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import { isValidEmail } from "@/lib/validation/email";
+import {
+  parseSessionPrice,
+} from "@/lib/session-price";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 
 interface OnboardingMissingField {
@@ -41,10 +44,12 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       if (state.bio.trim().length < 40) {
         missing.push("Short bio (about 40+ characters)");
       }
-      const priceDigits = state.pricing.oneOnOnePrice.replace(/[^\d.]/g, "");
-      const price = Number.parseFloat(priceDigits);
-      if (!Number.isFinite(price) || price <= 0) {
-        missing.push("Session price (e.g. $120)");
+      {
+        const min = parseSessionPrice(state.pricing?.oneOnOnePriceMin);
+        const max = parseSessionPrice(state.pricing?.oneOnOnePriceMax);
+        if (min <= 0 || max <= 0) {
+          missing.push("Session price range (e.g. $80–$120)");
+        }
       }
       if (state.trainingOptions.length === 0) {
         missing.push("Training options");

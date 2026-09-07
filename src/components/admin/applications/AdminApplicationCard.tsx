@@ -5,6 +5,7 @@ import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { applicationStatusLabel } from "@/lib/admin-applications-service";
 import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 import { isSpecialistReadyToGoLive } from "@/lib/specialist-go-live-gate";
+import { formatApplicationSessionPrice } from "@/lib/session-price";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 interface AdminApplicationCardProps {
@@ -56,13 +57,12 @@ export const AdminApplicationCard = memo(function AdminApplicationCard({
     .filter(Boolean)
     .join(", ") || application.zipCode || "Location not set";
 
-  const priceText = application.pricing?.oneOnOnePrice
-    ? `$${application.pricing.oneOnOnePrice}/hr`
-    : application.pricing?.packageOptions
+  const priceText = formatApplicationSessionPrice(application.pricing)
+    || (application.pricing?.packageOptions
       ? "Packages"
       : application.pricing?.onlineCoachingPrice
         ? `$${application.pricing.onlineCoachingPrice}/mo`
-        : null;
+        : null);
 
   const serviceMode =
     application.serviceType === "both"

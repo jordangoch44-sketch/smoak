@@ -1,6 +1,7 @@
 import type { Trainer, TrainerFilters } from "@/types";
 import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 import { trainerMatchesGenderFilter } from "@/lib/gender";
+import { trainerSessionPriceOverlapsFilter } from "@/lib/session-price";
 
 export function trainerMatchesSpecialty(
   trainer: Trainer,
@@ -51,15 +52,16 @@ export function filterTrainers(
         return false;
       }
     }
-    if (filters.priceMin) {
-      const min = parseInt(filters.priceMin, 10);
-      if (Number.isFinite(min) && trainer.pricePerSession < min) {
-        return false;
-      }
-    }
-    if (filters.priceMax) {
-      const max = parseInt(filters.priceMax, 10);
-      if (Number.isFinite(max) && trainer.pricePerSession > max) {
+    if (filters.priceMin || filters.priceMax) {
+      const min = filters.priceMin ? parseInt(filters.priceMin, 10) : NaN;
+      const max = filters.priceMax ? parseInt(filters.priceMax, 10) : NaN;
+      if (
+        !trainerSessionPriceOverlapsFilter(
+          trainer,
+          Number.isFinite(min) ? min : null,
+          Number.isFinite(max) ? max : null
+        )
+      ) {
         return false;
       }
     }

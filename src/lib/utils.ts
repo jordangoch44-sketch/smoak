@@ -8,11 +8,6 @@ export function formatPrice(amount: number): string {
   }).format(amount);
 }
 
-/** Plain-text session rate for labels, aria, and non-component contexts */
-export function formatSessionPricePlain(amount: number): string {
-  return `≈ ${formatPrice(amount)} / session`;
-}
-
 /** Trainer aggregate rating — always one decimal (e.g. 5 → 5.0) */
 export function formatTrainerRating(rating: number): string {
   return rating.toFixed(1);
@@ -29,4 +24,9 @@ export function getInitials(name: string): string {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+}
+
+/** Allow labels like "Sports/Endurance" to wrap after `/`, not mid-word. */
+export function withSlashLineBreak(text: string): string {
+  return text.replaceAll("/", "/\u200B");
 }

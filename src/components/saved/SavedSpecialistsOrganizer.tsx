@@ -6,6 +6,10 @@ import { TrainerCard } from "@/components/trainers/TrainerCard";
 import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { getTrainerDistanceMiles } from "@/lib/trainer-proximity-sort";
+import {
+  formatSessionPriceAmount,
+  resolveTrainerSessionPriceRange,
+} from "@/lib/session-price";
 import type { Trainer } from "@/types";
 import "@/styles/saved-organizer.css";
 
@@ -17,15 +21,6 @@ interface SavedSpecialistsOrganizerProps {
 interface ComparePair {
   dragged: Trainer;
   target: Trainer;
-}
-
-function formatPrice(amount: number): string {
-  if (!Number.isFinite(amount)) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount);
 }
 
 function formatDistance(miles: number | null): string {
@@ -123,15 +118,14 @@ export function SavedSpecialistsOrganizer({
     if (!comparePair) return [];
     const leftDistance = getTrainerDistanceMiles(comparePair.dragged, coords);
     const rightDistance = getTrainerDistanceMiles(comparePair.target, coords);
+    const leftPrice = resolveTrainerSessionPriceRange(comparePair.dragged);
+    const rightPrice = resolveTrainerSessionPriceRange(comparePair.target);
     return [
       {
         label: "Price",
-        left: formatPrice(comparePair.dragged.pricePerSession),
-        right: formatPrice(comparePair.target.pricePerSession),
-        winner: winnerLower(
-          comparePair.dragged.pricePerSession,
-          comparePair.target.pricePerSession
-        ),
+        left: formatSessionPriceAmount(leftPrice) || "—",
+        right: formatSessionPriceAmount(rightPrice) || "—",
+        winner: winnerLower(leftPrice.min, rightPrice.min),
       },
       {
         label: "Location",

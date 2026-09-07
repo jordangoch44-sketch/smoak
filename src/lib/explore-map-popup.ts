@@ -40,7 +40,7 @@ export function buildExploreMapSinglePopupHtml(trainer: Trainer): string {
     resolveTrainerProfessionCategory(trainer) ||
     trainer.profession ||
     "Specialist";
-  const price = formatTrainerPriceLabel(trainer.pricePerSession);
+  const price = formatTrainerPriceLabel(trainer);
   const address =
     formatProviderLocation(trainer) || trainer.location?.trim() || "";
   const href = `/trainers/${encodeURIComponent(trainer.id)}`;
@@ -87,7 +87,7 @@ export function buildExploreMapClusterPopupHtml(cluster: ExploreMapCluster): str
         resolveTrainerProfessionCategory(trainer) ||
         trainer.profession ||
         "Specialist";
-      const price = formatTrainerPriceLabel(trainer.pricePerSession);
+      const price = formatTrainerPriceLabel(trainer);
       const href = `/trainers/${encodeURIComponent(trainer.id)}`;
       const photoSrc = safeExploreMapImageSrc(trainer.image);
       const photoHtml = photoSrc

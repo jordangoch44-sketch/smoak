@@ -17,6 +17,11 @@ import { parseTravelToClients } from "@/types/specialist-service-area";
 import { parseTrainingOptions } from "@/types/specialist-training-options";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
+import {
+  hasSessionPrice,
+  resolveTrainerSessionPriceRange,
+  withSyncedSessionPrices,
+} from "@/lib/session-price";
 import type { Certification, Trainer } from "@/types";
 import type {
   SpecialistProfileEditForm,
@@ -309,7 +314,7 @@ export function applySpecialistProfileOverrides(
     }
   }
 
-  return syncLocation(syncTrainerGalleryImages(merged));
+  return withSyncedSessionPrices(syncLocation(syncTrainerGalleryImages(merged)));
 }
 
 export function overridesFromTrainer(
@@ -364,7 +369,20 @@ export function overridesFromTrainer(
         : "zip",
     latitude: stored?.latitude ?? trainer.latitude ?? null,
     longitude: stored?.longitude ?? trainer.longitude ?? null,
-    pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
+    ...(() => {
+      const range = resolveTrainerSessionPriceRange({
+        pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
+        pricePerSessionMin:
+          stored?.pricePerSessionMin ?? trainer.pricePerSessionMin,
+        pricePerSessionMax:
+          stored?.pricePerSessionMax ?? trainer.pricePerSessionMax,
+      });
+      return {
+        pricePerSession: range.max,
+        pricePerSessionMin: range.min,
+        pricePerSessionMax: range.max,
+      };
+    })(),
     bio: stored?.bio ?? trainer.bio,
     photoNotes:
       stored?.photoNotes?.trim()
@@ -469,7 +487,18 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     ...(form.latitude != null && form.longitude != null
       ? { latitude: form.latitude, longitude: form.longitude }
       : {}),
-    pricePerSession: form.pricePerSession,
+    ...(() => {
+      const range = resolveTrainerSessionPriceRange({
+        pricePerSession: form.pricePerSession,
+        pricePerSessionMin: form.pricePerSessionMin,
+        pricePerSessionMax: form.pricePerSessionMax,
+      });
+      return {
+        pricePerSession: range.max,
+        pricePerSessionMin: range.min,
+        pricePerSessionMax: range.max,
+      };
+    })(),
     bio: form.bio.trim(),
     photoNotes: form.photoNotes.trim(),
     slideshowFramesJson: form.slideshowFramesJson.trim(),
@@ -510,7 +539,13 @@ export function computeProfileCompletion(
     form.specialty.length > 0,
     Boolean(form.city.trim() || form.zipCode.trim()),
     Boolean(form.serviceType),
-    form.pricePerSession > 0,
+    hasSessionPrice(
+      resolveTrainerSessionPriceRange({
+        pricePerSession: form.pricePerSession,
+        pricePerSessionMin: form.pricePerSessionMin,
+        pricePerSessionMax: form.pricePerSessionMax,
+      })
+    ),
     form.bio.trim().length >= 40,
     Boolean(form.profilePhotoUrl.trim()),
     Boolean(form.bookingAvailability.trim()),

@@ -259,7 +259,18 @@ export function loadSpecialistOnboardingDraft(): SpecialistOnboardingState | nul
     trainingOptions: parseTrainingOptions(parsed.trainingOptions, {
       groupTrainingAvailable: Boolean(parsed.pricing?.groupTrainingAvailable),
     }),
-    pricing: { ...INITIAL_SPECIALIST_ONBOARDING_STATE.pricing, ...parsed.pricing },
+    pricing: {
+      ...INITIAL_SPECIALIST_ONBOARDING_STATE.pricing,
+      ...parsed.pricing,
+      oneOnOnePriceMin:
+        parsed.pricing?.oneOnOnePriceMin ||
+        parsed.pricing?.oneOnOnePrice ||
+        "",
+      oneOnOnePriceMax:
+        parsed.pricing?.oneOnOnePriceMax ||
+        parsed.pricing?.oneOnOnePrice ||
+        "",
+    },
     availability: {
       ...INITIAL_SPECIALIST_ONBOARDING_STATE.availability,
       ...parsed.availability,

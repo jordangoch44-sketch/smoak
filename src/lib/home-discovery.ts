@@ -1,5 +1,6 @@
-import { formatPrice } from "@/lib/utils";
+import { formatTrainerSessionPrice } from "@/lib/session-price";
+import type { Trainer } from "@/types/trainer";
 
-export function formatTrainerPriceLabel(amount: number): string {
-  return `≈ ${formatPrice(amount)} / session`;
+export function formatTrainerPriceLabel(trainer: Trainer): string {
+  return formatTrainerSessionPrice(trainer);
 }
