@@ -1032,16 +1032,7 @@
 }
 
 .profile-hero__transforms {
-  margin-top: 0.85rem;
-  max-width: 22rem;
-}
-
-.profile-hero__transforms-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin-bottom: 0.45rem;
+  margin-top: 0.65rem;
 }
 
 .profile-hero__transforms-label {
@@ -1053,41 +1044,8 @@
   color: rgba(255, 255, 255, 0.55);
 }
 
-.profile-hero__transforms-nav {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.profile-hero__transforms-nav-btn {
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(8, 8, 12, 0.55);
-  color: rgba(255, 255, 255, 0.88);
-  font-size: 0.95rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.profile-hero__transforms-scroller {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  padding-bottom: 0.15rem;
-}
-
-.profile-hero__transforms-scroller::-webkit-scrollbar {
-  display: none;
-}
-
-.profile-hero__transforms-scroller .profile-hero__pinned-tile {
-  flex: 0 0 calc((100% - 1rem) / 3);
-  scroll-snap-align: start;
+.profile-hero__transforms .profile-hero__pinned {
+  margin-top: 0.4rem;
 }
 
 .profile-hero__reviews {
@@ -1792,10 +1750,18 @@ a.profile-tag-pill--grid {
   pointer-events: none;
 }
 
-/* Inside the animated sheet — absolute so X/actions slide away with the sheet */
+/* Inside the animated sheet — absolute so X/actions slide away with the sheet.
+ * Do not keep inset:0; a full-sheet overlay swallows taps on iOS even with
+ * pointer-events:none (transformed ancestor + overflow scrolling). */
 .profile-toolbar--in-sheet {
   position: absolute;
+  inset: auto;
+  top: 0;
+  right: 0;
+  left: 0;
   z-index: 1;
+  height: 0;
+  overflow: visible;
   --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 2.85rem);
 }
 

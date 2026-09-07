@@ -9,6 +9,7 @@ import {
   BoostVisibilityModal,
   PremiumTrialEndedModal,
   SmoacProUpgradeModal,
+  DashboardSignOutConfirmModal,
 } from "@/components/dashboard/shared";
 import {
   AnalyticsCard,
@@ -117,6 +118,7 @@ export function SpecialistDashboardPageClient() {
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const [focusSection, setFocusSection] = useState<string | null>(() => {
     return searchParams.get("focus") || searchParams.get("section");
   });
@@ -346,7 +348,13 @@ export function SpecialistDashboardPageClient() {
         profileFirst || isLivePublished ? null : profileStatusLabel
       }
       statusTone={statusTone}
-      utilityBar={<SpecialistDashboardAccountMenu onSignOut={handleSignOut} />}
+      utilityBar={
+        headerSurface === "profile" ? undefined : (
+          <SpecialistDashboardAccountMenu
+            onSignOut={() => setSignOutConfirmOpen(true)}
+          />
+        )
+      }
     >
       <div className="specialist-dash-layout">
         {showLastChance ? (
@@ -435,6 +443,7 @@ export function SpecialistDashboardPageClient() {
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
+                      onSignOut={() => setSignOutConfirmOpen(true)}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">
@@ -638,6 +647,7 @@ export function SpecialistDashboardPageClient() {
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
+                      onSignOut={() => setSignOutConfirmOpen(true)}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">
@@ -672,6 +682,14 @@ export function SpecialistDashboardPageClient() {
     <BoostVisibilityModal
       open={boostOpen}
       onClose={() => setBoostOpen(false)}
+    />
+    <DashboardSignOutConfirmModal
+      open={signOutConfirmOpen}
+      onClose={() => setSignOutConfirmOpen(false)}
+      onConfirm={() => {
+        setSignOutConfirmOpen(false);
+        handleSignOut();
+      }}
     />
     </>
   );

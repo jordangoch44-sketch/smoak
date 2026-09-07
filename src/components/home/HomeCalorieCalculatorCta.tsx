@@ -60,9 +60,6 @@ export function HomeCalorieCalculatorCta() {
               Find your{" "}
               <span className="home-calorie-card__accent">daily calories</span>
             </span>
-            <span className="home-calorie-card__sub">
-              Get your TDEE, BMR, and a personalized 12-week plan in seconds.
-            </span>
             <span className="home-calorie-card__cta">
               Calculate Now
               <span className="home-calorie-card__cta-arrows" aria-hidden>

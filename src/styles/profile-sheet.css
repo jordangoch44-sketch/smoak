@@ -91,6 +91,12 @@
   backface-visibility: hidden;
 }
 
+/* At rest: drop the compositor transform so iOS hit-tests X / heart / tabs. */
+.profile-sheet:not(.profile-sheet--animating) {
+  transform: none !important;
+  will-change: auto;
+}
+
 /* Full-height sheet on phone — nearly edge-to-edge like Maps/Zillow */
 @media (max-width: 767px) {
   .profile-sheet {
@@ -136,11 +142,15 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
 }
 
-/* Host for X / action bar — same transform as .profile-sheet */
+/* Host for X / action bar — height 0 so it cannot swallow sheet taps on iOS */
 .profile-sheet__toolbar-host {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
   z-index: 40;
+  height: 0;
+  overflow: visible;
   pointer-events: none;
 }
 
@@ -177,6 +187,16 @@ body.profile-sheet-open #site-header {
 body.profile-sheet-open footer {
   visibility: hidden;
   pointer-events: none;
+}
+
+/*
+ * Search stays mounted under the intercept sheet. site-chrome forces
+ * buttons/links to pointer-events:auto !important, so disable the whole
+ * page tree or map chrome still steals taps on iOS.
+ */
+body.profile-sheet-open .app-main,
+body.profile-sheet-open .app-main * {
+  pointer-events: none !important;
 }
 
 /*

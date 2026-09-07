@@ -27,6 +27,7 @@ import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
+import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
 
 export interface ExploreMapBottomCardProps {
   cluster: ExploreMapCluster | null;
@@ -42,6 +43,7 @@ export function ExploreMapBottomCard({
   className,
 }: ExploreMapBottomCardProps) {
   const router = useRouter();
+  const profileSheetOpen = useProfileSheetOpen();
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevClusterId, setPrevClusterId] = useState(cluster?.id);
   if (cluster?.id !== prevClusterId) {
@@ -173,7 +175,7 @@ export function ExploreMapBottomCard({
     [onClose]
   );
 
-  if (!cluster) return null;
+  if (!cluster || profileSheetOpen) return null;
 
   const isMulti = cluster.isMulti && cluster.trainers.length > 1;
   const headerInfo = getClusterHeaderInfo(cluster);

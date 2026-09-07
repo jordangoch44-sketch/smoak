@@ -1147,7 +1147,31 @@ body.explore-map-shell-open .app-main {
 body.profile-sheet-open .explore-page--map-shell .explore-map-hero,
 body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
   visibility: hidden;
-  pointer-events: none;
+  pointer-events: none !important;
+}
+
+/*
+ * iOS: position:fixed map chrome (bottom card, See results) can keep
+ * receiving taps after the parent is visibility:hidden. Hide them fully
+ * so the profile sheet X / heart / tabs / photos stay tappable.
+ */
+body.profile-sheet-open .explore-bottom-card-dock,
+body.profile-sheet-open .explore-hub-tray,
+body.profile-sheet-open .explore-split__cta-dock,
+body.profile-sheet-open .explore-map-hero__controls,
+body.profile-sheet-open .explore-map__recenter,
+body.profile-sheet-open .explore-map__search-here,
+body.profile-sheet-open .explore-page--map-shell .leaflet-top,
+body.profile-sheet-dismissing .explore-bottom-card-dock,
+body.profile-sheet-dismissing .explore-hub-tray,
+body.profile-sheet-dismissing .explore-split__cta-dock,
+body.profile-sheet-dismissing .explore-map-hero__controls,
+body.profile-sheet-dismissing .explore-map__recenter,
+body.profile-sheet-dismissing .explore-map__search-here,
+body.profile-sheet-dismissing .explore-page--map-shell .leaflet-top {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
 }
 
 .explore-map-hero .explore-map--hero {
@@ -3135,11 +3159,16 @@ body.location-selector-open .explore-map__recenter--hero {
 }
 
 .explore-browse__card-label {
+  min-width: 0;
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.25;
   letter-spacing: -0.01em;
   color: rgba(255, 255, 255, 0.94);
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
 }
 
 .explore-browse__card--active .explore-browse__card-label {

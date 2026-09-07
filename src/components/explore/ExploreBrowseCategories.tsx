@@ -16,7 +16,7 @@ import {
   type ExploreBrowseCategoryIcon,
 } from "@/lib/explore-browse-categories";
 import type { TrainerFilters } from "@/types";
-import { cn } from "@/lib/utils";
+import { cn, withSlashLineBreak } from "@/lib/utils";
 
 const CATEGORY_ICONS: Record<
   ExploreBrowseCategoryIcon,
@@ -100,7 +100,9 @@ export function ExploreBrowseCategories({
               <span className="explore-browse__card-icon" aria-hidden>
                 <Icon className="explore-browse__card-svg" />
               </span>
-              <span className="explore-browse__card-label">{category.label}</span>
+              <span className="explore-browse__card-label">
+                {withSlashLineBreak(category.label)}
+              </span>
             </button>
           );
         })}

@@ -76,6 +76,22 @@
   }
 }
 
+.dashboard-page--specialist .dashboard-page__content:not(:has(> .dashboard-page__utility-bar)) {
+  padding-top: calc(1.15rem + env(safe-area-inset-top, 0px));
+}
+
+@media (min-width: 640px) {
+  .dashboard-page--specialist .dashboard-page__content:not(:has(> .dashboard-page__utility-bar)) {
+    padding-top: calc(1.35rem + env(safe-area-inset-top, 0px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .dashboard-page--specialist .dashboard-page__content:not(:has(> .dashboard-page__utility-bar)) {
+    padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
+  }
+}
+
 .dashboard-page__utility-bar {
   display: flex;
   align-items: center;
@@ -3092,6 +3108,14 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   text-align: center;
 }
 
+.boost-ig-hero--compact {
+  margin-bottom: 0.55rem;
+}
+
+.boost-ig-hero--compact .boost-ig-hero__title {
+  font-size: 1.35rem;
+}
+
 .boost-ig-hero__title {
   margin: 0;
   color: #fff;
@@ -3289,6 +3313,89 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 .boost-ig-next:disabled {
   opacity: 0.55;
   cursor: wait;
+}
+
+.boost-checkout-spotlight {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  margin: 0.15rem 0 1.15rem;
+  text-align: center;
+}
+
+.boost-checkout-spotlight__photo {
+  position: relative;
+  display: block;
+  width: 6.1rem;
+  height: 6.1rem;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 2px solid rgba(250, 230, 66, 0.85);
+  background: #1a1a22;
+  box-shadow: 0 0 24px rgba(250, 204, 21, 0.18);
+}
+
+.boost-checkout-spotlight__photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.boost-checkout-spotlight__photo--fallback {
+  display: grid;
+  place-items: center;
+  color: #fae642;
+  font-size: 1.55rem;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
+.boost-checkout-spotlight__word {
+  margin: 0.75rem 0 0;
+  color: #fae642;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.boost-checkout-spotlight__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  margin: 1.05rem 0 0;
+  padding: 0.95rem 0 0;
+  border-top: 1px solid #262626;
+}
+
+.boost-checkout-spotlight__stats > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.boost-checkout-spotlight__stats dt,
+.boost-checkout-spotlight__stats dd {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.boost-checkout-spotlight__stats dt {
+  color: #a8a8a8;
+  text-align: left;
+}
+
+.boost-checkout-spotlight__stats dd {
+  color: #fff;
+  font-weight: 650;
+  text-align: right;
 }
 
 .boost-place {
@@ -3871,59 +3978,6 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     ) !important;
 }
 
-.dashboard-boost-cta {
-  margin: 1.15rem 0 0;
-  padding: 1.1rem 1.15rem 1.05rem;
-  border-radius: 1.05rem;
-  border: 1px solid rgba(250, 230, 66, 0.28);
-  background:
-    linear-gradient(
-      145deg,
-      rgba(250, 230, 66, 0.1) 0%,
-      rgba(14, 14, 20, 0.55) 100%
-    );
-  box-shadow:
-    0 0 0 1px rgba(250, 230, 66, 0.08) inset,
-    0 12px 28px rgba(0, 0, 0, 0.22);
-}
-
-.dashboard-boost-cta__eyebrow {
-  margin: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(254, 243, 140, 0.92);
-}
-
-.dashboard-boost-cta__title {
-  margin: 0.28rem 0 0;
-  font-size: 1.2rem;
-  font-weight: 650;
-  letter-spacing: -0.03em;
-  color: #fff;
-}
-
-.dashboard-boost-cta__body {
-  margin: 0.4rem 0 0;
-  max-width: 36rem;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.58);
-}
-
-.dashboard-boost-cta__btn {
-  margin-top: 0.85rem;
-  width: 100%;
-}
-
-.dashboard-boost-cta__note {
-  margin: 0.55rem 0 0;
-  font-size: 0.6875rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.42);
-}
-
 .dashboard-rankings-boost {
   display: flex;
   flex-wrap: wrap;
@@ -3952,11 +4006,12 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .dashboard-boost-checkout {
-  margin-top: 0.75rem;
-  padding: 0.85rem 0.9rem;
-  border-radius: 0.9rem;
-  border: 1px solid rgba(250, 230, 66, 0.14);
-  background: rgba(0, 0, 0, 0.28);
+  margin-top: auto;
+  padding: 0.85rem 0 0;
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid #262626;
+  background: transparent;
 }
 
 .dashboard-boost-checkout__label {
@@ -4005,8 +4060,65 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   background: rgba(255, 255, 255, 0.12);
 }
 
+.stripe-pay__fold {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.15rem 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.stripe-pay__fold::before,
+.stripe-pay__fold::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.stripe-pay__fold-label {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.stripe-pay__fold-icon {
+  flex-shrink: 0;
+  transition: transform 0.16s ease;
+}
+
+.stripe-pay__fold[aria-expanded="true"] .stripe-pay__fold-icon {
+  transform: rotate(180deg);
+}
+
 .stripe-pay__submit {
   width: 100%;
+}
+
+.dashboard-modal--boost .stripe-pay__submit {
+  padding: 0.95rem 1rem;
+  border: none;
+  border-radius: 12px;
+  background: #0095f6 !important;
+  color: #fff !important;
+  font-size: 1.05rem;
+  font-weight: 700;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+.dashboard-modal--boost .stripe-pay__submit:hover:not(:disabled) {
+  background: #1877f2 !important;
 }
 
 .stripe-pay__secure {
@@ -4124,6 +4236,48 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 
 .dashboard-modal__secondary:hover {
   color: rgba(255, 255, 255, 0.8);
+}
+
+.dashboard-modal__dialog--signout {
+  width: min(100%, 20.5rem);
+  padding: 1.65rem 1.25rem 1.2rem;
+  text-align: center;
+}
+
+.dashboard-modal__dialog--signout .dashboard-modal__title {
+  margin-bottom: 0.4rem;
+}
+
+.dashboard-modal__actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.15rem;
+}
+
+.dashboard-modal__actions .dashboard-primary-btn {
+  margin-top: 0;
+  flex: 1 1 0;
+}
+
+.dashboard-modal__cancel {
+  flex: 1 1 0;
+  min-height: 2.65rem;
+  padding: 0 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .dashboard-modal__cancel:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
 }
 
 /* SMOAC Pro — gated analytics (free tier) */
@@ -6743,9 +6897,9 @@ body.specialist-full-editor-open .mobile-bottom-nav {
 .specialist-live-mode {
   display: flex;
   gap: 0.28rem;
-  width: calc(100% - 2rem);
-  max-width: 22rem;
-  margin: 0.75rem auto 0.35rem;
+  width: calc(100% - 1.5rem);
+  max-width: 28rem;
+  margin: 0.15rem auto 2.5rem;
   padding: 0.28rem;
   border-radius: 9999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -6759,7 +6913,7 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   justify-content: center;
   gap: 0.28rem;
   min-height: 2.4rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.4rem 0.5rem;
   border: none;
   border-radius: 9999px;
   background: transparent;
@@ -6778,6 +6932,20 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   color: #fff;
   background: rgba(var(--aurora-lavender-rgb), 0.2);
   box-shadow: inset 0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.38);
+}
+
+.specialist-live-mode__btn--signout {
+  color: rgba(255, 255, 255, 0.48);
+}
+
+@media (hover: hover) {
+  .specialist-live-mode__btn--signout:hover {
+    color: rgba(255, 255, 255, 0.88);
+  }
+}
+
+.specialist-live-mode__btn--signout:active {
+  color: #fff;
 }
 
 .specialist-live-marketplace {
@@ -7112,7 +7280,7 @@ body.specialist-live-edit-open .mobile-bottom-nav {
 
 /* Instagram-style Edit profile list (dashboard only — public profile unchanged) */
 .ig-profile-edit-wrap {
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .ig-profile-edit {
@@ -7126,7 +7294,7 @@ body.specialist-live-edit-open .mobile-bottom-nav {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0 0.25rem;
+  padding: 0.35rem 0 0.25rem;
   margin-bottom: 0.25rem;
   border-radius: 1rem;
   transition: all 0.25s ease;

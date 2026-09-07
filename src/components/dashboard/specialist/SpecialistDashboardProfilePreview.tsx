@@ -111,6 +111,7 @@ interface SpecialistDashboardProfilePreviewProps {
   focusSection?: string | null;
   onClearFocus?: () => void;
   onUpgrade?: () => void;
+  onSignOut?: () => void;
 }
 
 function mapTargetSectionToSectionId(target: string | null | undefined): SectionId | null {
@@ -336,17 +337,25 @@ function LivePreviewModeToggle({
   value,
   onChange,
   isLivePublished = false,
+  onSignOut,
 }: {
   value: "edit" | "live";
   onChange: (value: "edit" | "live") => void;
   isLivePublished?: boolean;
+  onSignOut?: () => void;
 }) {
   return (
-    <div className="specialist-live-mode" role="tablist" aria-label="Profile mode">
+    <div
+      className={cn(
+        "specialist-live-mode",
+        onSignOut && "specialist-live-mode--with-account"
+      )}
+      role="group"
+      aria-label="Profile mode"
+    >
       <button
         type="button"
-        role="tab"
-        aria-selected={value === "edit"}
+        aria-pressed={value === "edit"}
         className={cn(
           "smoac-control specialist-live-mode__btn",
           value === "edit" && "specialist-live-mode__btn--active"
@@ -357,8 +366,7 @@ function LivePreviewModeToggle({
       </button>
       <button
         type="button"
-        role="tab"
-        aria-selected={value === "live"}
+        aria-pressed={value === "live"}
         className={cn(
           "smoac-control specialist-live-mode__btn",
           value === "live" && "specialist-live-mode__btn--active"
@@ -376,6 +384,15 @@ function LivePreviewModeToggle({
           </span>
         ) : null}
       </button>
+      {onSignOut ? (
+        <button
+          type="button"
+          className="smoac-control specialist-live-mode__btn specialist-live-mode__btn--signout"
+          onClick={onSignOut}
+        >
+          Sign out
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -393,6 +410,7 @@ export function SpecialistDashboardProfilePreview({
   focusSection = null,
   onClearFocus,
   onUpgrade,
+  onSignOut,
 }: SpecialistDashboardProfilePreviewProps) {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -406,10 +424,11 @@ export function SpecialistDashboardProfilePreview({
 
   const trainer = {
     ...(managedTrainer ?? trainerProp),
-    isPremium: isPremium || Boolean((managedTrainer ?? trainerProp).isPremium),
-    membershipPlan: isProPlus
-      ? "platinum"
-      : (managedTrainer ?? trainerProp).membershipPlan,
+    isPremium:
+      isPremium ||
+      isProPlus ||
+      Boolean((managedTrainer ?? trainerProp).isPremium),
+    membershipPlan: isProPlus ? "platinum" : isPremium ? "premium" : "free",
   } as Trainer;
   const isLiveListing = application?.profileStatus === "APPROVED";
 
@@ -1190,6 +1209,7 @@ export function SpecialistDashboardProfilePreview({
           value={previewMode}
           onChange={setPreviewMode}
           isLivePublished={isLivePublished}
+          onSignOut={onSignOut}
         />
         <SpecialistIgStyleProfileEditor
           trainer={trainer}
@@ -1222,6 +1242,7 @@ export function SpecialistDashboardProfilePreview({
           value={previewMode}
           onChange={setPreviewMode}
           isLivePublished={isLivePublished}
+          onSignOut={onSignOut}
         />
       ) : null}
       <LiveEditZone

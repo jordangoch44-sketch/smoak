@@ -171,10 +171,11 @@ export function ProfileHeroToolbar({
   );
 
   /* Sheet mode: portal into the animated sheet so X/actions exit with it.
-   * Fall back to document.body until the host node is mounted — never blank
-   * the chrome on slow mobile navigations. */
+   * Wait for the host — portaling to document.body puts a full-viewport
+   * overlay under/over the sheet and freezes taps on iOS. */
   if (toolbarHost) {
-    return createPortal(toolbar, sheetHostEl ?? document.body);
+    if (!sheetHostEl) return null;
+    return createPortal(toolbar, sheetHostEl);
   }
 
   /* Desktop full-page profile: keep fixed viewport chrome. */

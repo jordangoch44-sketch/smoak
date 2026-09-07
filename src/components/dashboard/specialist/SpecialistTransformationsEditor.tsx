@@ -103,7 +103,7 @@ export function SpecialistTransformationsEditor({
         ) : null}
       </div>
       <p className="specialist-media-editor__hint">
-        Shows in a carousel under pinned photos on your public profile.
+        Shows under pinned photos on your public profile.
       </p>
       {urls.length > 0 ? (
         <div

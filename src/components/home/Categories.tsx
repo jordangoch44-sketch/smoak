@@ -18,6 +18,7 @@ import {
 } from "@/lib/home-browse-categories";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import type { Trainer } from "@/types/trainer";
+import { withSlashLineBreak } from "@/lib/utils";
 
 const CATEGORY_ICONS: Record<
   HomeBrowseCategoryIcon,
@@ -80,7 +81,9 @@ export function Categories({
                 <span className="home-specialty-card__icon" aria-hidden>
                   <Icon className="home-specialty-card__svg" />
                 </span>
-                <span className="home-specialty-card__name">{category.label}</span>
+                <span className="home-specialty-card__name">
+                  {withSlashLineBreak(category.label)}
+                </span>
                 <span className="home-specialty-card__chevron" aria-hidden>
                   <CategoryChevronIcon className="home-specialty-card__chevron-svg" />
                 </span>

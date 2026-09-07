@@ -9,6 +9,7 @@ import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import {
   DashboardPageShell,
   SmoacProUpgradeModal,
+  DashboardSignOutConfirmModal,
 } from "@/components/dashboard/shared";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
 import {
@@ -116,6 +117,7 @@ export function SpecialistEditProfilePageClient({
     null
   );
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const focusPhoto = searchParams.get("focus") === "photo";
   const photoFocusOpenedRef = useRef(false);
   const isModal = presentation === "modal";
@@ -1511,7 +1513,9 @@ export function SpecialistEditProfilePageClient({
             <span>Dashboard</span>
           </Link>
           <div className="specialist-edit-profile__utility-end">
-            <SpecialistDashboardAccountMenu onSignOut={handleSignOut} />
+            <SpecialistDashboardAccountMenu
+              onSignOut={() => setSignOutConfirmOpen(true)}
+            />
           </div>
         </div>
       }
@@ -1521,6 +1525,14 @@ export function SpecialistEditProfilePageClient({
     <SmoacProUpgradeModal
       open={upgradeOpen}
       onClose={() => setUpgradeOpen(false)}
+    />
+    <DashboardSignOutConfirmModal
+      open={signOutConfirmOpen}
+      onClose={() => setSignOutConfirmOpen(false)}
+      onConfirm={() => {
+        setSignOutConfirmOpen(false);
+        handleSignOut();
+      }}
     />
     </>
   );

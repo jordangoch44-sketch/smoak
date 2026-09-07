@@ -537,10 +537,6 @@ body:has(.calorie-tool) .app-main {
   height: 1.2rem;
 }
 
-.calorie-tool__carousel .trainer-verified__label {
-  display: none;
-}
-
 .calorie-tool__carousel .home-portrait-card .trainer-card-save {
   transform: scale(0.85);
   transform-origin: top right;

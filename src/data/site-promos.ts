@@ -11,10 +11,7 @@ export const SITE_PROMO_CAMPAIGNS: readonly SitePromoCampaign[] = [
     id: "boost-launch-2026",
     priority: 100,
     active: true,
-    slotIds: [
-      "specialist_dashboard_boost",
-      "explore_results_rail",
-    ],
+    slotIds: ["specialist_dashboard_boost"],
     audience: "specialist",
     eyebrow: "Grow on SMOAC",
     headline: "Boost your profile where clients look",

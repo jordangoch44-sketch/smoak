@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
-import { BoostVisibilityModal } from "@/components/dashboard/shared/BoostVisibilityModal";
+import { HomeBoostRibbon } from "@/components/home/HomeBoostRibbon";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
@@ -20,7 +20,6 @@ import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
 import { ExploreMap } from "./ExploreMap";
 import { ExploreResults } from "./ExploreResults";
 import { ExploreResultsSheet } from "./ExploreResultsSheet";
-import { SitePromoSlot } from "@/components/promo/SitePromoSlot";
 
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
@@ -30,7 +29,6 @@ export function ExplorePageClient() {
   const preciseUserLocation = usePreciseUserCoordinates();
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
-  const [boostOpen, setBoostOpen] = useState(false);
   const [pendingMapArea, setPendingMapArea] =
     useState<ExploreSearchArea | null>(null);
   const [mapSearchLoading, setMapSearchLoading] = useState(false);
@@ -122,11 +120,7 @@ export function ExplorePageClient() {
 
   const resultsMain = (
     <main className="explore-page__results" id="explore-results">
-      <SitePromoSlot
-        slotId="explore_results_rail"
-        variant="compact"
-        onOpenBoost={() => setBoostOpen(true)}
-      />
+      <HomeBoostRibbon className="home-boost-card--explore" />
       <div className="explore-results-heading">
         <h2 className="explore-results-heading__title">Top experts near you</h2>
         <button
@@ -281,11 +275,6 @@ export function ExplorePageClient() {
         onClearFilters={clearFilters}
         onSelectCategory={handleCategorySelect}
         activeSearchQuery={displayQuery}
-      />
-
-      <BoostVisibilityModal
-        open={boostOpen}
-        onClose={() => setBoostOpen(false)}
       />
     </div>
   );

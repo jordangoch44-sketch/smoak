@@ -12,6 +12,7 @@ export { DashboardMetricCard } from "./DashboardMetricCard";
 export { DashboardListItem } from "./DashboardListItem";
 export { DashboardEmptyState } from "./DashboardEmptyState";
 export { DashboardComingSoonModal } from "./DashboardComingSoonModal";
+export { DashboardSignOutConfirmModal } from "./DashboardSignOutConfirmModal";
 export { PremiumLockedValues } from "./PremiumLockedValues";
 export { PremiumUnlockCta } from "./PremiumUnlockCta";
 export { SmoacProUpgradeModal } from "./SmoacProUpgradeModal";

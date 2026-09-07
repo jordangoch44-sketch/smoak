@@ -76,11 +76,13 @@ function lockSheetChrome() {
   document.body.classList.add("profile-sheet-open");
   document.documentElement.classList.add("profile-sheet-open");
   document.body.classList.remove("profile-sheet-dismissing");
+  document.querySelector(".app-main")?.setAttribute("inert", "");
 }
 
 function unlockSheetChrome() {
   document.body.classList.remove("profile-sheet-open");
   document.documentElement.classList.remove("profile-sheet-open");
+  document.querySelector(".app-main")?.removeAttribute("inert");
   chromeUnlockGuardUntil = Date.now() + 400;
 }
 
@@ -109,7 +111,9 @@ export function TrainerProfileSheet({
   const hydrated = useHydrated();
   const isSheetViewport = useTabletViewport(true);
   const reduceMotion = useReducedMotion();
-  const [entering, setEntering] = useState(true);
+  /* True while y is tweening. At rest we drop the transform so iOS hit-tests
+   * the X / heart / tabs / photos (transformed overlays swallow taps). */
+  const [sheetMoving, setSheetMoving] = useState(true);
   /* Start off-screen so the first paint never flashes the open sheet. */
   const y = useMotionValue(
     typeof window !== "undefined" ? viewportHeight() : 800
@@ -132,7 +136,10 @@ export function TrainerProfileSheet({
     (options: { navigate: boolean }) => {
       openAnimRef.current?.stop();
       openAnimRef.current = null;
-      setEntering(false);
+      setSheetMoving(true);
+      rootRef.current
+        ?.querySelector(".profile-sheet")
+        ?.classList.add("profile-sheet--animating");
 
       /*
        * Restore site chrome immediately. Soft-nav can keep this tree mounted
@@ -216,15 +223,15 @@ export function TrainerProfileSheet({
 
     if (reduceMotion) {
       y.set(0);
-      setEntering(false);
+      setSheetMoving(false);
     } else {
       y.set(vhRef.current);
-      setEntering(true);
+      setSheetMoving(true);
       const controls = animate(y, 0, OPEN_TRANSITION);
       openAnimRef.current = controls;
       void controls.then(() => {
         openAnimRef.current = null;
-        setEntering(false);
+        setSheetMoving(false);
       });
     }
 
@@ -313,7 +320,7 @@ export function TrainerProfileSheet({
             onClick={dismiss}
           />
 
-          <ProfileSheetChrome label={label} y={y} entering={entering}>
+          <ProfileSheetChrome label={label} y={y} sheetMoving={sheetMoving}>
             {children}
           </ProfileSheetChrome>
         </div>
@@ -327,12 +334,12 @@ export function TrainerProfileSheet({
 function ProfileSheetChrome({
   label,
   y,
-  entering,
+  sheetMoving,
   children,
 }: {
   label: string;
   y: MotionValue<number>;
-  entering: boolean;
+  sheetMoving: boolean;
   children: ReactNode;
 }) {
   const toolbarHost = useProfileSheetToolbarHost();
@@ -340,7 +347,7 @@ function ProfileSheetChrome({
   return (
     <motion.div
       className={
-        entering ? "profile-sheet profile-sheet--animating" : "profile-sheet"
+        sheetMoving ? "profile-sheet profile-sheet--animating" : "profile-sheet"
       }
       role="dialog"
       aria-modal="true"

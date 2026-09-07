@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { CloseIcon, InfoIcon } from "@/components/ui/icons";
+import { getInitials } from "@/lib/utils";
 import { BoostPlacementChoice } from "@/components/dashboard/shared/BoostPlacementChoice";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
 import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
@@ -344,12 +345,38 @@ export function BoostVisibilityModal({
 
           {step === "checkout" && checkout ? (
             <>
-              <div className="boost-ig-hero">
+              <div className="boost-ig-hero boost-ig-hero--compact">
                 <h3 className="boost-ig-hero__title">Pay {checkout.priceLabel}</h3>
                 <p className="boost-ig-hero__sub">
                   {checkout.label} · {checkout.days}{" "}
                   {checkout.days === 1 ? "day" : "days"}
                 </p>
+              </div>
+              <div className="boost-checkout-spotlight">
+                {photoUrl ? (
+                  <span className="boost-checkout-spotlight__photo">
+                    <img src={photoUrl} alt="" />
+                  </span>
+                ) : (
+                  <span className="boost-checkout-spotlight__photo boost-checkout-spotlight__photo--fallback">
+                    {getInitials(displayName)}
+                  </span>
+                )}
+                <p className="boost-checkout-spotlight__word">Boost</p>
+                <dl className="boost-checkout-spotlight__stats">
+                  <div>
+                    <dt>Estimated views</dt>
+                    <dd>{summary.viewsRangeLabel}</dd>
+                  </div>
+                  <div>
+                    <dt>Duration</dt>
+                    <dd>{summary.durationLabel}</dd>
+                  </div>
+                  <div>
+                    <dt>You'll appear in</dt>
+                    <dd>Marketplace, Search, Homepage</dd>
+                  </div>
+                </dl>
               </div>
               <div className="dashboard-boost-checkout">
                 <StripeEmbeddedCheckout
@@ -358,6 +385,7 @@ export function BoostVisibilityModal({
                   priceLabel={checkout.priceLabel}
                   submitLabel={`Pay · ${checkout.priceLabel}`}
                   walletMode="pay"
+                  foldCard
                   onPaid={() => setStep("paid")}
                   onError={(message) => setError(message || null)}
                 />

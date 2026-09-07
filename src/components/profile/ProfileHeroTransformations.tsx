@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useRef, type MouseEvent } from "react";
+import type { MouseEvent } from "react";
 import type { ClientTransformationPhoto } from "@/types";
+import { PhotosStackIcon } from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 
 interface ProfileHeroTransformationsProps {
   photos: ClientTransformationPhoto[];
@@ -12,49 +14,23 @@ export function ProfileHeroTransformations({
   photos,
   onOpen,
 }: ProfileHeroTransformationsProps) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-
-  const scrollByTile = useCallback((direction: -1 | 1) => {
-    const root = scrollerRef.current;
-    if (!root) return;
-    const tile = root.querySelector<HTMLElement>(".profile-hero__pinned-tile");
-    const step = (tile?.offsetWidth ?? 88) + 8;
-    root.scrollBy({ left: direction * step, behavior: "smooth" });
-  }, []);
-
   if (photos.length === 0) return null;
+
+  const visible = photos.slice(0, 3);
+  const extraCount = photos.length - visible.length;
+  const extraStart = photos[3]?.src;
 
   return (
     <div className="profile-hero__transforms">
-      <div className="profile-hero__transforms-head">
-        <p className="profile-hero__transforms-label">Client transformations</p>
-        {photos.length > 3 ? (
-          <div className="profile-hero__transforms-nav">
-            <button
-              type="button"
-              className="profile-hero__transforms-nav-btn"
-              aria-label="Previous transformations"
-              onClick={() => scrollByTile(-1)}
-            >
-              ‹
-            </button>
-            <button
-              type="button"
-              className="profile-hero__transforms-nav-btn"
-              aria-label="Next transformations"
-              onClick={() => scrollByTile(1)}
-            >
-              ›
-            </button>
-          </div>
-        ) : null}
-      </div>
+      <p className="profile-hero__transforms-label">Client transformations</p>
       <div
-        ref={scrollerRef}
-        className="profile-hero__transforms-scroller"
+        className={cn(
+          "profile-hero__pinned",
+          extraCount > 0 && "profile-hero__pinned--with-more"
+        )}
         aria-label="Client transformation photos"
       >
-        {photos.map((photo, index) => (
+        {visible.map((photo, index) => (
           <button
             key={photo.id || photo.src}
             type="button"
@@ -66,6 +42,21 @@ export function ProfileHeroTransformations({
             <img src={photo.src} alt="" />
           </button>
         ))}
+        {extraCount > 0 && extraStart ? (
+          <button
+            type="button"
+            className="smoac-control profile-hero__more-photos"
+            aria-label={`View ${extraCount} more ${
+              extraCount === 1 ? "transformation" : "transformations"
+            }`}
+            onClick={(event) => onOpen(event, extraStart)}
+          >
+            <PhotosStackIcon className="profile-hero__more-photos-icon" />
+            <span className="profile-hero__more-photos-count">
+              +{extraCount}
+            </span>
+          </button>
+        ) : null}
       </div>
     </div>
   );

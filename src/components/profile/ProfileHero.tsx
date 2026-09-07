@@ -67,10 +67,11 @@ export function ProfileHero({
     trainer.galleryImages,
     trainer.heroImage
   );
-  const pinnedPhotos =
-    trainer.isPremium === true
-      ? normalizePinnedPhotos(trainer.pinnedPhotos, coverImages)
-      : [];
+  const canShowPins =
+    trainer.isPremium === true || isTrainerProPlus(trainer);
+  const pinnedPhotos = canShowPins
+    ? normalizePinnedPhotos(trainer.pinnedPhotos, coverImages)
+    : [];
   const transformationPhotos = isTrainerProPlus(trainer)
     ? (trainer.clientTransformations ?? []).filter(
         (photo) => typeof photo?.src === "string" && photo.src.trim().length > 0

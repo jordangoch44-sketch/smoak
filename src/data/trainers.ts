@@ -11,6 +11,7 @@ import { defaultTrainingOptionsForProfession } from "@/types/specialist-training
 import { TRAINER_DEMO_REVIEW_SOURCES } from "@/constants/trainer-reputation-demo";
 import { buildTrainerGalleryImages } from "@/lib/trainer-gallery";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
+import { normalizePinnedPhotos } from "@/lib/specialist-media-limits";
 import {
   getTrainerGallery,
   getTrainerTransformations,
@@ -508,6 +509,10 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
   const reviewSources = TRAINER_DEMO_REVIEW_SOURCES[trainer.id];
   const galleryImages = buildTrainerGalleryImages(gallery, heroImage);
   const clientTransformations = getTrainerTransformations(trainer.id);
+  const membershipPlan = (
+    clientTransformations.length > 0 ? "platinum" : "premium"
+  ) as Trainer["membershipPlan"];
+  const isProPlus = membershipPlan === "platinum";
   const enriched = {
     ...trainer,
     ...curated,
@@ -518,9 +523,13 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
     galleryImages,
     reviewSources,
     clientTransformations,
-    membershipPlan: (clientTransformations.length > 0
-      ? "platinum"
-      : "premium") as Trainer["membershipPlan"],
+    membershipPlan,
+    ...(isProPlus
+      ? {
+          isPremium: true,
+          pinnedPhotos: normalizePinnedPhotos(galleryImages),
+        }
+      : {}),
   };
 
   return {

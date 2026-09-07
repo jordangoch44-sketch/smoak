@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Elements,
   ExpressCheckoutElement,
@@ -14,6 +14,7 @@ import {
   type StripeExpressCheckoutElementConfirmEvent,
 } from "@stripe/stripe-js";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
+import { ChevronDownIcon } from "@/components/ui/icons";
 
 const publishableKey =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || "";
@@ -73,6 +74,8 @@ interface StripeEmbeddedPayFormProps {
   priceLabel: string;
   submitLabel?: string;
   walletMode?: "subscribe" | "pay";
+  /** Collapse Card / Bank / Link fields until the specialist opens them. */
+  foldCard?: boolean;
   onPaid: () => void;
   onError: (message: string) => void;
 }
@@ -82,15 +85,22 @@ function StripeEmbeddedPayForm({
   priceLabel,
   submitLabel,
   walletMode = "subscribe",
+  foldCard = false,
   onPaid,
   onError,
 }: StripeEmbeddedPayFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [busy, setBusy] = useState(false);
+  const [cardOpen, setCardOpen] = useState(!foldCard);
   const [walletState, setWalletState] = useState<"pending" | "ready" | "empty">(
     "pending"
   );
+
+  useEffect(() => {
+    if (!foldCard || walletState !== "empty") return;
+    setCardOpen(true);
+  }, [foldCard, walletState]);
 
   async function confirm(event?: StripeExpressCheckoutElementConfirmEvent) {
     if (!stripe || !elements) return;
@@ -144,27 +154,43 @@ function StripeEmbeddedPayForm({
           onCancel={() => setBusy(false)}
         />
       </div>
-      {walletState === "ready" ? (
+      {foldCard && walletState !== "empty" ? (
+        <button
+          type="button"
+          className="stripe-pay__fold"
+          aria-expanded={cardOpen}
+          onClick={() => setCardOpen((open) => !open)}
+        >
+          <span className="stripe-pay__fold-label">
+            Or pay with card
+            <ChevronDownIcon className="stripe-pay__fold-icon h-4 w-4" />
+          </span>
+        </button>
+      ) : walletState === "ready" ? (
         <p className="stripe-pay__divider">
           <span>Or pay with card</span>
         </p>
       ) : null}
-      <PaymentElement
-        options={{
-          layout: "tabs",
-          wallets: {
-            applePay: "never",
-            googlePay: "never",
-          },
-        }}
-      />
-      <DashboardButton
-        className="stripe-pay__submit"
-        onClick={() => void confirm()}
-        disabled={!stripe || !elements || busy}
-      >
-        {busy ? "Processing…" : submitLabel ?? `Subscribe · ${priceLabel}`}
-      </DashboardButton>
+      {cardOpen ? (
+        <>
+          <PaymentElement
+            options={{
+              layout: "tabs",
+              wallets: {
+                applePay: "never",
+                googlePay: "never",
+              },
+            }}
+          />
+          <DashboardButton
+            className="stripe-pay__submit"
+            onClick={() => void confirm()}
+            disabled={!stripe || !elements || busy}
+          >
+            {busy ? "Processing…" : submitLabel ?? `Subscribe · ${priceLabel}`}
+          </DashboardButton>
+        </>
+      ) : null}
       <p className="stripe-pay__secure">
         Apple Pay, Google Pay, Link, or card · Stripe · {productLabel}
       </p>
@@ -178,6 +204,7 @@ interface StripeEmbeddedCheckoutProps {
   priceLabel: string;
   submitLabel?: string;
   walletMode?: "subscribe" | "pay";
+  foldCard?: boolean;
   onPaid: () => void;
   onError: (message: string) => void;
 }
@@ -188,6 +215,7 @@ export function StripeEmbeddedCheckout({
   priceLabel,
   submitLabel,
   walletMode = "subscribe",
+  foldCard = false,
   onPaid,
   onError,
 }: StripeEmbeddedCheckoutProps) {
@@ -214,6 +242,7 @@ export function StripeEmbeddedCheckout({
         priceLabel={priceLabel}
         submitLabel={submitLabel}
         walletMode={walletMode}
+        foldCard={foldCard}
         onPaid={onPaid}
         onError={onError}
       />
