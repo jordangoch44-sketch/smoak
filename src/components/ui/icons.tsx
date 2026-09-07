@@ -779,6 +779,25 @@ export function AlertTriangleIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+/** Small padlock for plan-gated profile fields */
+export function LockIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V8a4 4 0 018 0v3" />
+    </svg>
+  );
+}
+
 /** Checkmark icon for complete profile sections */
 export function CheckIcon({ className = "h-4 w-4" }: IconProps) {
   return (

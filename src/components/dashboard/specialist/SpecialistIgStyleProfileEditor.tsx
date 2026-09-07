@@ -11,7 +11,7 @@ import {
   profileStyleFrameLabel,
 } from "@/lib/specialist-profile-style";
 import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
-import { AlertTriangleIcon, CheckIcon } from "@/components/ui/icons";
+import { AlertTriangleIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
 import { SpecialistLinkInBioCard } from "./SpecialistLinkInBioCard";
 import { cn } from "@/lib/utils";
 import {
@@ -63,6 +63,8 @@ function IgEditRow({
   onClick,
   incomplete = false,
   highlighted = false,
+  locked = false,
+  lockPlan,
 }: {
   id?: string;
   sectionKey?: string;
@@ -71,8 +73,11 @@ function IgEditRow({
   onClick: () => void;
   incomplete?: boolean;
   highlighted?: boolean;
+  locked?: boolean;
+  lockPlan?: "Pro" | "Pro Plus";
 }) {
   const isEmpty = value === "Add" || value.startsWith("Add ");
+  const lockTitle = lockPlan ? `Unlocks with ${lockPlan}` : "Unlocks with a higher plan";
   return (
     <button
       id={id}
@@ -80,14 +85,21 @@ function IgEditRow({
       data-edit-section={sectionKey}
       className={cn(
         "ig-profile-edit__row",
-        incomplete && "ig-profile-edit__row--incomplete",
+        incomplete && !locked && "ig-profile-edit__row--incomplete",
+        locked && "ig-profile-edit__row--locked",
         highlighted && "ig-profile-edit__row--highlighted"
       )}
+      aria-label={locked ? `${label}. ${lockTitle}` : undefined}
       onClick={onClick}
     >
       <div className="ig-profile-edit__row-left">
-        <span className="ig-profile-edit__row-label">{label}</span>
-        {incomplete ? (
+        <span className="ig-profile-edit__row-label">
+          {label}
+          {locked ? (
+            <LockIcon className="ig-profile-edit__text-lock" />
+          ) : null}
+        </span>
+        {locked ? null : incomplete ? (
           <span
             className="ig-profile-edit__badge ig-profile-edit__badge--incomplete"
             title="Needs attention"
@@ -108,14 +120,20 @@ function IgEditRow({
       <span
         className={cn(
           "ig-profile-edit__row-value",
-          isEmpty && "ig-profile-edit__row-value--empty"
+          isEmpty && !locked && "ig-profile-edit__row-value--empty"
         )}
       >
         {value}
       </span>
-      <span className="ig-profile-edit__row-chevron" aria-hidden>
-        ›
-      </span>
+      {locked ? (
+        <span className="ig-profile-edit__row-lock" title={lockTitle} aria-hidden>
+          <LockIcon className="ig-profile-edit__row-lock-icon" />
+        </span>
+      ) : (
+        <span className="ig-profile-edit__row-chevron" aria-hidden>
+          ›
+        </span>
+      )}
     </button>
   );
 }
@@ -126,6 +144,7 @@ interface SpecialistIgStyleProfileEditorProps {
   onEditSection: (id: IgEditRowId) => void;
   highlightedSection?: string | null;
   footer?: ReactNode;
+  onUpgrade?: () => void;
 }
 
 /** Instagram-style list editor — same fields/saves, familiar mobile layout. */
@@ -135,6 +154,7 @@ export function SpecialistIgStyleProfileEditor({
   onEditSection,
   highlightedSection,
   footer,
+  onUpgrade,
 }: SpecialistIgStyleProfileEditorProps) {
   const { session } = useAuthSession();
   const onProTrial = Boolean(session?.premiumTrialActive);
@@ -364,17 +384,23 @@ export function SpecialistIgStyleProfileEditor({
           sectionKey="transformations"
           label="Transformations"
           value={
-            !isProPlus
-              ? "Pro Plus"
-              : formDefaults.transformationNotes.trim()
-                ? "Photos added"
-                : "Add"
+            formDefaults.transformationNotes.trim()
+              ? "Photos added"
+              : "Add"
           }
-          incomplete={
-            isProPlus ? !formDefaults.transformationNotes.trim() : false
-          }
+          incomplete={isProPlus && !formDefaults.transformationNotes.trim()}
           highlighted={isHighlighted("transformations")}
-          onClick={() => onEditSection("transformations")}
+          locked={!isProPlus}
+          lockPlan="Pro Plus"
+          onClick={() => {
+            if (!isProPlus) {
+              if (onUpgrade) {
+                onUpgrade();
+                return;
+              }
+            }
+            onEditSection("transformations");
+          }}
         />
         <IgEditRow
           id="ig-edit-row-social"

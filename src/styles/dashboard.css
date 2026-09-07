@@ -6541,6 +6541,9 @@ body.specialist-full-editor-open .mobile-bottom-nav {
 }
 
 .specialist-media-editor__thumb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 1 1 auto;
   min-height: 1.75rem;
   padding: 0 0.5rem;
@@ -6567,6 +6570,69 @@ body.specialist-full-editor-open .mobile-bottom-nav {
 
 .specialist-media-editor__thumb-btn--danger {
   color: rgba(255, 180, 180, 0.85);
+}
+
+.specialist-media-editor__thumb-btn--locked {
+  gap: 0.28rem;
+  color: rgba(255, 255, 255, 0.42);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.specialist-media-editor__btn-lock,
+.specialist-media-editor__add-lock,
+.specialist-media-editor__label-lock,
+.specialist-media-editor__lock-cta-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+}
+
+.specialist-media-editor__label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.specialist-media-editor__label-row .login-field__label {
+  margin: 0;
+}
+
+.specialist-media-editor__label-lock {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.specialist-media-editor__feature--locked {
+  opacity: 0.72;
+}
+
+.specialist-media-editor__add--locked {
+  color: rgba(255, 255, 255, 0.45);
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.specialist-media-editor__lock-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.15rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.specialist-media-editor__lock-cta-icon {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .specialist-media-editor__pin-row {
@@ -7253,10 +7319,43 @@ body.specialist-live-edit-open .mobile-bottom-nav {
 }
 
 .ig-profile-edit__row-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.88);
   white-space: nowrap;
+}
+
+.ig-profile-edit__text-lock {
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.ig-profile-edit__row--locked {
+  cursor: pointer;
+}
+
+.ig-profile-edit__row--locked .ig-profile-edit__row-label,
+.ig-profile-edit__row--locked .ig-profile-edit__row-value {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.ig-profile-edit__row-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.ig-profile-edit__row-lock-icon {
+  width: 0.95rem;
+  height: 0.95rem;
 }
 
 .ig-profile-edit__badge {

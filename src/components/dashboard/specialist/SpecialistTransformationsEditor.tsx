@@ -10,12 +10,14 @@ import {
   serializeMediaUrlList,
 } from "@/lib/specialist-media-limits";
 import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
+import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 interface SpecialistTransformationsEditorProps {
   transformationNotes: string;
   isProPlus: boolean;
   specialistId?: string | null;
+  onUpgrade?: () => void;
   onChange: (transformationNotes: string) => void;
 }
 
@@ -49,6 +51,7 @@ export function SpecialistTransformationsEditor({
   transformationNotes,
   isProPlus,
   specialistId,
+  onUpgrade,
   onChange,
 }: SpecialistTransformationsEditorProps) {
   const inputId = useId();
@@ -85,67 +88,97 @@ export function SpecialistTransformationsEditor({
   }
 
   return (
-    <div className="specialist-media-editor__pins">
-      <p className="login-field__label">
-        Client transformations
-        {isProPlus
-          ? ` · ${urls.length}/${CLIENT_TRANSFORMATIONS_MAX}`
-          : " · Pro Plus"}
-      </p>
-      {isProPlus ? (
-        <>
-          <p className="specialist-media-editor__hint">
-            Shows in a carousel under pinned photos on your public profile.
-          </p>
-          {urls.length > 0 ? (
-            <div
-              className="specialist-media-editor__pin-row"
-              aria-label="Transformation photos"
-            >
-              {urls.map((url, index) => (
-                <button
-                  key={`${url}-${index}`}
-                  type="button"
-                  className="specialist-media-editor__pin-tile"
-                  onClick={() => setUrls(urls.filter((_, i) => i !== index))}
-                  aria-label={`Remove transformation ${index + 1}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" />
-                  <span className="specialist-media-editor__pin-index">
-                    {index + 1}
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : null}
-          {!atLimit ? (
-            <label
-              htmlFor={inputId}
-              className={cn(
-                "smoac-control specialist-media-editor__add",
-                busy && "specialist-media-editor__add--busy"
-              )}
-            >
-              <span aria-hidden>+</span>
-              <span>{busy ? "Uploading…" : "Add transformations"}</span>
-            </label>
-          ) : null}
-          <input
-            id={inputId}
-            type="file"
-            multiple
-            accept={`${SPECIALIST_STORAGE_ACCEPT.galleryImage},.jpg,.jpeg,.png,.webp`}
-            className="dashboard-upload-zone__input"
-            onChange={(event) => void handleAdd(event)}
-            disabled={busy || atLimit}
-          />
-        </>
-      ) : (
-        <p className="specialist-media-editor__hint">
-          Unlock with Pro Plus — client results carousel under your pins, plus
-          20% off Boosts.
+    <div
+      className={cn(
+        "specialist-media-editor__pins",
+        !isProPlus && "specialist-media-editor__feature--locked"
+      )}
+    >
+      <div className="specialist-media-editor__label-row">
+        <p className="login-field__label">
+          Client transformations · {urls.length}/{CLIENT_TRANSFORMATIONS_MAX}
         </p>
+        {!isProPlus ? (
+          <LockIcon className="specialist-media-editor__label-lock" />
+        ) : null}
+      </div>
+      <p className="specialist-media-editor__hint">
+        Shows in a carousel under pinned photos on your public profile.
+      </p>
+      {urls.length > 0 ? (
+        <div
+          className="specialist-media-editor__pin-row"
+          aria-label="Transformation photos"
+        >
+          {urls.map((url, index) => (
+            <button
+              key={`${url}-${index}`}
+              type="button"
+              className="specialist-media-editor__pin-tile"
+              onClick={() => {
+                if (!isProPlus) {
+                  onUpgrade?.();
+                  return;
+                }
+                setUrls(urls.filter((_, i) => i !== index));
+              }}
+              aria-label={
+                isProPlus
+                  ? `Remove transformation ${index + 1}`
+                  : "Unlock transformations with Pro Plus"
+              }
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" />
+              <span className="specialist-media-editor__pin-index">
+                {index + 1}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {!atLimit ? (
+        isProPlus ? (
+          <label
+            htmlFor={inputId}
+            className={cn(
+              "smoac-control specialist-media-editor__add",
+              busy && "specialist-media-editor__add--busy"
+            )}
+          >
+            <span aria-hidden>+</span>
+            <span>{busy ? "Uploading…" : "Add transformations"}</span>
+          </label>
+        ) : (
+          <button
+            type="button"
+            className="smoac-control specialist-media-editor__add specialist-media-editor__add--locked"
+            onClick={() => onUpgrade?.()}
+          >
+            <LockIcon className="specialist-media-editor__add-lock" />
+            <span>Add transformations</span>
+          </button>
+        )
+      ) : null}
+      {isProPlus ? (
+        <input
+          id={inputId}
+          type="file"
+          multiple
+          accept={`${SPECIALIST_STORAGE_ACCEPT.galleryImage},.jpg,.jpeg,.png,.webp`}
+          className="dashboard-upload-zone__input"
+          onChange={(event) => void handleAdd(event)}
+          disabled={busy || atLimit}
+        />
+      ) : (
+        <button
+          type="button"
+          className="smoac-control specialist-media-editor__lock-cta"
+          onClick={() => onUpgrade?.()}
+        >
+          <LockIcon className="specialist-media-editor__lock-cta-icon" />
+          Unlock with Pro Plus
+        </button>
       )}
       {error ? (
         <p className="dashboard-upload-error" role="alert">

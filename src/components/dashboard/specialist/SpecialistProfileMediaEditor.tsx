@@ -24,6 +24,7 @@ import {
   specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
 import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
+import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
@@ -39,6 +40,7 @@ interface SpecialistProfileMediaEditorProps {
   isPremium: boolean;
   isProPlus?: boolean;
   specialistId?: string | null;
+  onUpgrade?: () => void;
   onChange: (patch: {
     profilePhotoUrl?: string;
     coverImageUrl?: string;
@@ -123,6 +125,7 @@ export function SpecialistProfileMediaEditor({
   isPremium,
   isProPlus = false,
   specialistId,
+  onUpgrade,
   onChange,
 }: SpecialistProfileMediaEditorProps) {
   const limits = specialistMediaLimitsForPlan(isPremium);
@@ -178,7 +181,7 @@ export function SpecialistProfileMediaEditor({
 
   function togglePin(url: string) {
     if (!isPremium) {
-      setError("Pinned photos unlock with Pro.");
+      onUpgrade?.();
       return;
     }
     const trimmed = url.trim();
@@ -407,12 +410,17 @@ export function SpecialistProfileMediaEditor({
                         className={cn(
                           "smoac-control specialist-media-editor__thumb-btn",
                           isPinned &&
-                            "specialist-media-editor__thumb-btn--pinned"
+                            "specialist-media-editor__thumb-btn--pinned",
+                          !isPremium &&
+                            "specialist-media-editor__thumb-btn--locked"
                         )}
                         onClick={() => togglePin(url)}
                         disabled={isPremium ? !isPinned && atPinLimit : false}
                       >
                         {isPinned ? "Pinned" : "Pin"}
+                        {!isPremium ? (
+                          <LockIcon className="specialist-media-editor__btn-lock" />
+                        ) : null}
                       </button>
                       <button
                         type="button"
@@ -444,6 +452,15 @@ export function SpecialistProfileMediaEditor({
               <span aria-hidden>+</span>
               <span>{busy ? "Uploading…" : "Add photos"}</span>
             </label>
+          ) : !isPremium ? (
+            <button
+              type="button"
+              className="smoac-control specialist-media-editor__add specialist-media-editor__add--locked"
+              onClick={() => onUpgrade?.()}
+            >
+              <LockIcon className="specialist-media-editor__add-lock" />
+              <span>More photos</span>
+            </button>
           ) : null}
         </div>
 
@@ -458,94 +475,132 @@ export function SpecialistProfileMediaEditor({
         />
       </div>
 
-      <div className="specialist-media-editor__pins">
-        <p className="login-field__label">
-          Pinned photos
-          {isPremium ? ` · ${pins.length}/${PINNED_PHOTOS_MAX}` : " · Pro"}
-        </p>
-        {isPremium ? (
-          pins.length > 0 ? (
-            <div
-              className="specialist-media-editor__pin-row"
-              aria-label="Pinned photos"
-            >
-              {pins.map((url, index) => (
-                <button
-                  key={url}
-                  type="button"
-                  className="specialist-media-editor__pin-tile"
-                  onClick={() => togglePin(url)}
-                  aria-label={`Unpin photo ${index + 1}`}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt="" />
-                  <span className="specialist-media-editor__pin-index">
-                    {index + 1}
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="specialist-media-editor__hint">
-              Tap Pin on a header photo.
-            </p>
-          )
+      <div
+        className={cn(
+          "specialist-media-editor__pins",
+          !isPremium && "specialist-media-editor__feature--locked"
+        )}
+      >
+        <div className="specialist-media-editor__label-row">
+          <p className="login-field__label">
+            Pinned photos · {pins.length}/{PINNED_PHOTOS_MAX}
+          </p>
+          {!isPremium ? (
+            <LockIcon className="specialist-media-editor__label-lock" />
+          ) : null}
+        </div>
+        {pins.length > 0 ? (
+          <div
+            className="specialist-media-editor__pin-row"
+            aria-label="Pinned photos"
+          >
+            {pins.map((url, index) => (
+              <button
+                key={url}
+                type="button"
+                className="specialist-media-editor__pin-tile"
+                onClick={() => togglePin(url)}
+                aria-label={`Unpin photo ${index + 1}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" />
+                <span className="specialist-media-editor__pin-index">
+                  {index + 1}
+                </span>
+              </button>
+            ))}
+          </div>
         ) : (
           <p className="specialist-media-editor__hint">
-            Unlock with Pro — pin up to 3 under your bio.
+            Pin up to 3 header photos under your bio.
           </p>
         )}
+        {!isPremium ? (
+          <button
+            type="button"
+            className="smoac-control specialist-media-editor__lock-cta"
+            onClick={() => onUpgrade?.()}
+          >
+            <LockIcon className="specialist-media-editor__lock-cta-icon" />
+            Unlock with Pro
+          </button>
+        ) : null}
       </div>
 
       <SpecialistTransformationsEditor
         transformationNotes={transformationNotes}
         isProPlus={isProPlus}
         specialistId={specialistId}
+        onUpgrade={onUpgrade}
         onChange={(next) => onChange({ transformationNotes: next })}
       />
 
-      {isPremium ? (
-        <div className="specialist-media-editor__videos">
+      <div
+        className={cn(
+          "specialist-media-editor__videos",
+          !isPremium && "specialist-media-editor__feature--locked"
+        )}
+      >
+        <div className="specialist-media-editor__label-row">
           <p className="login-field__label">
-            Videos · {headerVideos.length}/{limits.videos}
+            Videos · {headerVideos.length}/{isPremium ? limits.videos : 2}
           </p>
-          {headerVideos.map((url, index) => (
-            <div
-              key={`${url}-${index}`}
-              className="specialist-media-editor__video-row"
-            >
-              <input
-                className="login-field__input profile-edit-input"
-                value={url}
-                onChange={(event) => {
-                  const next = [...headerVideos];
-                  next[index] = event.target.value;
-                  setHeaderVideos(next);
-                }}
-                placeholder="Video URL"
-              />
-              <button
-                type="button"
-                className="dashboard-edit-remove"
-                onClick={() =>
-                  setHeaderVideos(headerVideos.filter((_, i) => i !== index))
-                }
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-          {!atVideoLimit ? (
-            <button
-              type="button"
-              className="dashboard-edit-add"
-              onClick={() => setHeaderVideos([...headerVideos, ""])}
-            >
-              + Add video URL
-            </button>
+          {!isPremium ? (
+            <LockIcon className="specialist-media-editor__label-lock" />
           ) : null}
         </div>
-      ) : null}
+        <p className="specialist-media-editor__hint">
+          Short clips on your public profile header.
+        </p>
+        {isPremium ? (
+          <>
+            {headerVideos.map((url, index) => (
+              <div
+                key={`${url}-${index}`}
+                className="specialist-media-editor__video-row"
+              >
+                <input
+                  className="login-field__input profile-edit-input"
+                  value={url}
+                  onChange={(event) => {
+                    const next = [...headerVideos];
+                    next[index] = event.target.value;
+                    setHeaderVideos(next);
+                  }}
+                  placeholder="Video URL"
+                />
+                <button
+                  type="button"
+                  className="dashboard-edit-remove"
+                  onClick={() =>
+                    setHeaderVideos(headerVideos.filter((_, i) => i !== index))
+                  }
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            {!atVideoLimit ? (
+              <button
+                type="button"
+                className="dashboard-edit-add"
+                onClick={() => setHeaderVideos([...headerVideos, ""])}
+              >
+                + Add video URL
+              </button>
+            ) : null}
+          </>
+        ) : (
+          <button
+            type="button"
+            className="smoac-control specialist-media-editor__lock-cta"
+            onClick={() => onUpgrade?.()}
+          >
+            <LockIcon className="specialist-media-editor__lock-cta-icon" />
+            Unlock with Pro
+          </button>
+        )}
+      </div>
 
       {error ? (
         <p className="dashboard-upload-error" role="alert">

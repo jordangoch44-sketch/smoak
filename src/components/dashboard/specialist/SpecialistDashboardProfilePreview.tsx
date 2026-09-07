@@ -110,6 +110,7 @@ interface SpecialistDashboardProfilePreviewProps {
   isLivePublished?: boolean;
   focusSection?: string | null;
   onClearFocus?: () => void;
+  onUpgrade?: () => void;
 }
 
 function mapTargetSectionToSectionId(target: string | null | undefined): SectionId | null {
@@ -391,6 +392,7 @@ export function SpecialistDashboardProfilePreview({
   isLivePublished = false,
   focusSection = null,
   onClearFocus,
+  onUpgrade,
 }: SpecialistDashboardProfilePreviewProps) {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -526,6 +528,7 @@ export function SpecialistDashboardProfilePreview({
               isPremium={isPremium}
               isProPlus={isProPlus}
               specialistId={trainerId}
+              onUpgrade={onUpgrade}
               onChange={(next) => {
                 setDraft((prev) => (prev ? { ...prev, ...next } : prev));
               }}
@@ -577,6 +580,7 @@ export function SpecialistDashboardProfilePreview({
             transformationNotes={form.transformationNotes}
             isProPlus={isProPlus}
             specialistId={trainerId}
+            onUpgrade={onUpgrade}
             onChange={(transformationNotes) =>
               patch("transformationNotes", transformationNotes)
             }
@@ -1192,6 +1196,7 @@ export function SpecialistDashboardProfilePreview({
           formDefaults={formDefaults}
           onEditSection={(id) => startEdit(id)}
           highlightedSection={highlightedRow}
+          onUpgrade={onUpgrade}
           footer={
             <p className="ig-profile-edit__hint">
               Changes go live on Marketplace when you save. Clients still see

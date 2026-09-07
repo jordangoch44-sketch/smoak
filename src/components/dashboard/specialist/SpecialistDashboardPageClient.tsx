@@ -434,6 +434,7 @@ export function SpecialistDashboardPageClient() {
                       isLivePublished={isLivePublished}
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
+                      onUpgrade={() => setUpgradeOpen(true)}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">
@@ -636,6 +637,7 @@ export function SpecialistDashboardPageClient() {
                       isLivePublished={isLivePublished}
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
+                      onUpgrade={() => setUpgradeOpen(true)}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">

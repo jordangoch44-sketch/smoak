@@ -8,6 +8,7 @@ import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import {
   DashboardPageShell,
+  SmoacProUpgradeModal,
 } from "@/components/dashboard/shared";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
 import {
@@ -114,6 +115,7 @@ export function SpecialistEditProfilePageClient({
   const [requestReviewError, setRequestReviewError] = useState<string | null>(
     null
   );
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const focusPhoto = searchParams.get("focus") === "photo";
   const photoFocusOpenedRef = useRef(false);
   const isModal = presentation === "modal";
@@ -1359,7 +1361,7 @@ export function SpecialistEditProfilePageClient({
                       ? `${savedForm.pinnedPhotos.length} pinned`
                       : ""
                   }
-                  emptyLabel={isPremium ? "Pin from header photos" : "Pro"}
+                  emptyLabel="Pin from header photos"
                 />
                 <ProfileEditViewField
                   label="Transformations"
@@ -1370,7 +1372,7 @@ export function SpecialistEditProfilePageClient({
                           .filter(Boolean).length} photo(s)`
                       : ""
                   }
-                  emptyLabel={isProPlus ? "Add under pinned photos" : "Pro Plus"}
+                  emptyLabel="Add under pinned photos"
                 />
                 <ProfileEditViewField label="Instagram" value={savedForm.instagram} />
                 <ProfileEditViewField label="TikTok" value={savedForm.tiktok} />
@@ -1390,6 +1392,7 @@ export function SpecialistEditProfilePageClient({
                   isPremium={isPremium}
                   isProPlus={isProPlus}
                   specialistId={trainerId}
+                  onUpgrade={() => setUpgradeOpen(true)}
                   onChange={(next) => {
                     setSectionDraft((prev) =>
                       prev ? { ...prev, ...next } : prev
@@ -1482,12 +1485,17 @@ export function SpecialistEditProfilePageClient({
           </header>
           <div className="specialist-full-editor__body">{editorBody}</div>
         </div>
+        <SmoacProUpgradeModal
+          open={upgradeOpen}
+          onClose={() => setUpgradeOpen(false)}
+        />
       </div>,
       document.body
     );
   }
 
   return (
+    <>
     <DashboardPageShell
       variant="specialist"
       hideHeader
@@ -1510,6 +1518,11 @@ export function SpecialistEditProfilePageClient({
     >
       {editorBody}
     </DashboardPageShell>
+    <SmoacProUpgradeModal
+      open={upgradeOpen}
+      onClose={() => setUpgradeOpen(false)}
+    />
+    </>
   );
 }
 
