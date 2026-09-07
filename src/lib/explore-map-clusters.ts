@@ -235,7 +235,7 @@ export function buildTrainerAvatarHtml(
 ): string {
   const photoSrc = safeExploreMapImageSrc(trainer.image);
   if (photoSrc) {
-    return `<img class="${sizeClass}" src="${escapeExploreMapHtml(photoSrc)}" alt="" loading="lazy" decoding="async" />`;
+    return `<img class="${sizeClass}" src="${escapeExploreMapHtml(photoSrc)}" alt="" loading="eager" decoding="async" />`;
   }
   const initials = getTrainerInitials(trainer.name);
   return `<span class="${sizeClass} ${sizeClass}--fallback" aria-hidden="true">${escapeExploreMapHtml(initials)}</span>`;
@@ -244,6 +244,35 @@ export function buildTrainerAvatarHtml(
 /** Leaflet / MapKit hit box for a single specialist pin (photo circle + caret). */
 export const EXPLORE_MAP_SINGLE_PIN_SIZE = { width: 36, height: 40 } as const;
 export const EXPLORE_MAP_CLUSTER_PIN_SIZE = { width: 88, height: 56 } as const;
+
+const PIN_TAP_SLOP_PX = 12;
+
+/** Select on pointer-up so the card does not wait for a delayed click. */
+export function bindExploreMapPinSelect(
+  el: HTMLElement,
+  onSelect: () => void,
+  onPress?: () => void
+): void {
+  let startX = 0;
+  let startY = 0;
+
+  el.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+    startX = e.clientX;
+    startY = e.clientY;
+    onPress?.();
+  });
+
+  el.addEventListener("pointerup", (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (Math.hypot(e.clientX - startX, e.clientY - startY) > PIN_TAP_SLOP_PX) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect();
+  });
+}
 
 /**
  * Option B Map Pin HTML:

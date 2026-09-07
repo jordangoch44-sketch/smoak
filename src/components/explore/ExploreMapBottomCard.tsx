@@ -8,13 +8,13 @@ import {
   type PointerEvent as ReactPointerEvent,
   type KeyboardEvent,
 } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { Trainer } from "@/types";
 import {
   type ExploreMapCluster,
   getClusterHeaderInfo,
 } from "@/lib/explore-map-clusters";
+import { safeExploreMapImageSrc } from "@/lib/explore-map-popup";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
   formatTrainerRating,
@@ -22,7 +22,10 @@ import {
   cn,
 } from "@/lib/utils";
 import { formatTrainerSessionPrice } from "@/lib/session-price";
-import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
+import {
+  warmExploreMapCluster,
+  warmTrainerProfileNavigation,
+} from "@/lib/warm-trainer-profile-navigation";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
@@ -36,6 +39,7 @@ export interface ExploreMapBottomCardProps {
 }
 
 const DISMISS_DRAG_PX = 80;
+const CARD_TAP_SLOP_PX = 14;
 
 export function ExploreMapBottomCard({
   cluster,
@@ -58,6 +62,18 @@ export function ExploreMapBottomCard({
     lastY: number;
     active: boolean;
   } | null>(null);
+  const cardPressRef = useRef<{
+    x: number;
+    y: number;
+    id: string;
+  } | null>(null);
+  const navLockUntilRef = useRef(0);
+  const isSwipingRef = useRef(false);
+
+  useEffect(() => {
+    if (!cluster) return;
+    warmExploreMapCluster(cluster, router);
+  }, [cluster, router]);
 
   // Scroll to active index on mount or slide change
   const goToSlide = useCallback((index: number) => {
@@ -121,8 +137,10 @@ export function ExploreMapBottomCard({
 
   const handleTrainerClick = useCallback(
     (trainer: Trainer) => {
-      // Don't navigate if user was swiping horizontally
       if (isSwipingRef.current) return;
+      const now = Date.now();
+      if (now < navLockUntilRef.current) return;
+      navLockUntilRef.current = now + 700;
       warmTrainerProfileNavigation(trainer, router);
       router.push(`/trainers/${encodeURIComponent(trainer.id)}`, {
         scroll: false,
@@ -131,7 +149,49 @@ export function ExploreMapBottomCard({
     [router]
   );
 
-  const isSwipingRef = useRef(false);
+  const handleCardPointerDown = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, trainer: Trainer) => {
+      if (e.button !== 0) return;
+      if (
+        e.target instanceof Element &&
+        e.target.closest("[data-save-control]")
+      ) {
+        return;
+      }
+      cardPressRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        id: trainer.id,
+      };
+      warmTrainerProfileNavigation(trainer, router);
+    },
+    [router]
+  );
+
+  const handleCardPointerUp = useCallback(
+    (e: ReactPointerEvent<HTMLElement>, trainer: Trainer) => {
+      const press = cardPressRef.current;
+      cardPressRef.current = null;
+      if (!press || press.id !== trainer.id) return;
+      if (
+        e.target instanceof Element &&
+        e.target.closest("[data-save-control]")
+      ) {
+        return;
+      }
+      if (
+        Math.hypot(e.clientX - press.x, e.clientY - press.y) > CARD_TAP_SLOP_PX
+      ) {
+        isSwipingRef.current = true;
+        window.setTimeout(() => {
+          isSwipingRef.current = false;
+        }, 220);
+        return;
+      }
+      handleTrainerClick(trainer);
+    },
+    [handleTrainerClick]
+  );
 
   const handlePointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -371,11 +431,17 @@ export function ExploreMapBottomCard({
             trainer.city?.trim() ||
             cluster.locationLabel ||
             "San Diego";
+          const photoSrc = safeExploreMapImageSrc(trainer.image);
 
           return (
             <article
               key={trainer.id}
               className="explore-bottom-card"
+              onPointerDown={(e) => handleCardPointerDown(e, trainer)}
+              onPointerUp={(e) => handleCardPointerUp(e, trainer)}
+              onPointerCancel={() => {
+                cardPressRef.current = null;
+              }}
               onClick={() => handleTrainerClick(trainer)}
               onKeyDown={(e: KeyboardEvent<HTMLElement>) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -390,15 +456,15 @@ export function ExploreMapBottomCard({
               {/* Left Photo Hero */}
               <div className="explore-bottom-card__photo-col">
                 <div className="explore-bottom-card__photo-wrap">
-                  {trainer.image ? (
-                    <Image
-                      src={trainer.image}
+                  {photoSrc ? (
+                    <img
+                      src={photoSrc}
                       alt={displayName}
                       width={160}
                       height={160}
                       className="explore-bottom-card__photo"
-                      loading="eager"
                       decoding="async"
+                      fetchPriority="high"
                     />
                   ) : (
                     <div

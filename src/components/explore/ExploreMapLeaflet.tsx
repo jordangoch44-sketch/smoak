@@ -17,10 +17,14 @@ import {
   searchAreaFromMapViewport,
   type ExploreSearchArea,
 } from "@/lib/explore-map-area";
-import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
+import {
+  warmExploreMapCluster,
+  warmTrainerProfileNavigation,
+} from "@/lib/warm-trainer-profile-navigation";
 import { getExploreMapBasemap } from "@/lib/explore-map-tiles";
 import {
   clusterTrainersForMap,
+  bindExploreMapPinSelect,
   buildExploreMapPinHtml,
   EXPLORE_MAP_CLUSTER_PIN_SIZE,
   EXPLORE_MAP_SINGLE_PIN_SIZE,
@@ -186,6 +190,8 @@ export function ExploreMapLeaflet({
   showNotes = true,
 }: ExploreMapProps) {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
@@ -222,7 +228,12 @@ export function ExploreMapLeaflet({
 
   const selectCluster = useCallback(
     (cluster: ExploreMapCluster) => {
+      if (selectedClusterIdRef.current === cluster.id) return;
+
       suppressUntilRef.current = Date.now() + 1200;
+      selectedClusterIdRef.current = cluster.id;
+      setSelectedCluster(cluster);
+      warmExploreMapCluster(cluster, routerRef.current);
 
       const map = mapRef.current;
       if (map) {
@@ -241,9 +252,6 @@ export function ExploreMapLeaflet({
         targetPin?.classList.add("explore-map-pin--selected");
       }
 
-      selectedClusterIdRef.current = cluster.id;
-      setSelectedCluster(cluster);
-
       if (map) {
         const needsPan = shouldPanToPinLeaflet(
           map,
@@ -256,8 +264,7 @@ export function ExploreMapLeaflet({
           const latSpan = bounds.getNorth() - bounds.getSouth();
           const offsetLat = (latSpan || 0.05) * 0.22;
           map.panTo([cluster.latitude - offsetLat, cluster.longitude], {
-            animate: true,
-            duration: 0.35,
+            animate: false,
           });
         }
       }
@@ -335,11 +342,24 @@ export function ExploreMapLeaflet({
       }
     }
 
+    function onPinPress(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const pinEl = target.closest<HTMLElement>(".explore-map-pin");
+      if (!pinEl) return;
+      const clusterId = pinEl.getAttribute("data-cluster-id");
+      if (!clusterId) return;
+      const cluster = clustersRef.current.find((c) => c.id === clusterId);
+      if (cluster) warmExploreMapCluster(cluster, routerRef.current);
+    }
+
     root.addEventListener("click", onPopupLinkClick, true);
     root.addEventListener("click", onContainerClick, true);
+    root.addEventListener("pointerdown", onPinPress, true);
     return () => {
       root.removeEventListener("click", onPopupLinkClick, true);
       root.removeEventListener("click", onContainerClick, true);
+      root.removeEventListener("pointerdown", onPinPress, true);
     };
   }, [router, selectCluster]);
 
@@ -644,15 +664,11 @@ export function ExploreMapLeaflet({
         const el = marker.getElement();
         if (!el) return;
         L.DomEvent.disableClickPropagation(el);
-        el.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handlePinSelect(e);
-        });
-        el.addEventListener("touchend", (e) => {
-          e.stopPropagation();
-          handlePinSelect(e);
-        });
+        bindExploreMapPinSelect(
+          el,
+          () => handlePinSelect(),
+          () => warmExploreMapCluster(cluster, routerRef.current)
+        );
       });
 
       layer.addLayer(marker);

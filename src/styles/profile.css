@@ -786,6 +786,33 @@
 .profile-hero__avatar-wrap {
   position: relative;
   flex-shrink: 0;
+  isolation: isolate;
+}
+
+.profile-hero__avatar-wrap::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 0;
+  width: 200%;
+  height: 200%;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle at 50% 48%,
+    rgba(var(--profile-accent-rgb), 0.5) 42%,
+    rgba(var(--profile-accent-rgb), 0.22) 58%,
+    rgba(var(--profile-accent-rgb), 0.08) 72%,
+    transparent 84%
+  );
+}
+
+.profile-hero__avatar-btn,
+.profile-hero__avatar-static {
+  position: relative;
+  z-index: 1;
 }
 
 .profile-hero__avatar-wrap--editable {

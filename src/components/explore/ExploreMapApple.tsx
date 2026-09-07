@@ -14,7 +14,10 @@ import {
   exploreSearchAreasDiffer,
   searchAreaFromMapViewport,
 } from "@/lib/explore-map-area";
-import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
+import {
+  warmExploreMapCluster,
+  warmTrainerProfileNavigation,
+} from "@/lib/warm-trainer-profile-navigation";
 import {
   loadAppleMapKit,
   regionForRadiusMiles,
@@ -22,6 +25,7 @@ import {
 } from "@/lib/apple-maps";
 import {
   clusterTrainersForMap,
+  bindExploreMapPinSelect,
   buildExploreMapPinHtml,
   EXPLORE_MAP_CLUSTER_PIN_SIZE,
   EXPLORE_MAP_SINGLE_PIN_SIZE,
@@ -191,6 +195,8 @@ export function ExploreMapApple({
   showNotes = true,
 }: ExploreMapProps) {
   const router = useRouter();
+  const routerRef = useRef(router);
+  routerRef.current = router;
   const stageRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapKitMap | null>(null);
@@ -204,6 +210,11 @@ export function ExploreMapApple({
   } | null>(null);
   const selectedClusterIdRef = useRef<string | null>(null);
   const pinSelectGuardRef = useRef(0);
+  const pinPressRef = useRef<{
+    x: number;
+    y: number;
+    clusterId: string;
+  } | null>(null);
   const areaCenterRef = useRef(areaCenter);
   areaCenterRef.current = areaCenter;
   const activeSearchAreaRef = useRef(activeSearchArea);
@@ -245,8 +256,17 @@ export function ExploreMapApple({
 
   const selectCluster = useCallback(
     (cluster: ExploreMapCluster) => {
+      if (selectedClusterIdRef.current === cluster.id) return;
+
       pinSelectGuardRef.current = Date.now() + 1000;
       suppressUntilRef.current = Date.now() + 1200;
+      selectedCoordRef.current = {
+        latitude: cluster.latitude,
+        longitude: cluster.longitude,
+      };
+      selectedClusterIdRef.current = cluster.id;
+      setSelectedCluster(cluster);
+      warmExploreMapCluster(cluster, routerRef.current);
 
       const stage = stageRef.current;
       if (stage) {
@@ -254,13 +274,6 @@ export function ExploreMapApple({
           .querySelectorAll(".explore-map-pin--selected")
           .forEach((el) => el.classList.remove("explore-map-pin--selected"));
       }
-
-      selectedCoordRef.current = {
-        latitude: cluster.latitude,
-        longitude: cluster.longitude,
-      };
-      selectedClusterIdRef.current = cluster.id;
-      setSelectedCluster(cluster);
 
       const ann = pinAnnotationsRef.current.find(
         (a) => (a.data as { clusterId?: string })?.clusterId === cluster.id
@@ -270,14 +283,10 @@ export function ExploreMapApple({
         if (pinEl) pinEl.classList.add("explore-map-pin--selected");
       }
 
-      // Conditionally pan camera ONLY if the tapped pin is in the bottom ~35-40% covered by the bottom card or off-screen.
-      // If already clearly visible and unobstructed in the upper viewport, keep the map camera stationary.
+      // Instant pan only when the card would cover the pin — never animate against the card.
       const map = mapRef.current;
       const mapkit = mapkitRef.current;
       if (map && mapkit) {
-        const ann = pinAnnotationsRef.current.find(
-          (a) => (a.data as { clusterId?: string })?.clusterId === cluster.id
-        );
         const needsPan = shouldPanToPinApple(
           map,
           mapkit,
@@ -294,7 +303,7 @@ export function ExploreMapApple({
               cluster.latitude - offsetLat,
               cluster.longitude
             ),
-            true
+            false
           );
         }
       }
@@ -335,30 +344,48 @@ export function ExploreMapApple({
       router.push(href, { scroll: false });
     }
 
-    function onPinClick(event: MouseEvent) {
+    function onPinActivate(event: Event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (
         target.closest(
-          ".explore-hub-tray, .explore-map-callout, .explore-map-popup-wrap, .smoac-control"
+          ".explore-hub-tray, .explore-map-callout, .explore-map-popup-wrap, .explore-bottom-card-dock, .smoac-control"
         )
+      ) {
+        return;
+      }
+      if (
+        event instanceof PointerEvent &&
+        event.pointerType === "mouse" &&
+        event.button !== 0
       ) {
         return;
       }
 
       const pinEl = target.closest<HTMLElement>(".explore-map-pin");
-      if (pinEl) {
-        const clusterId = pinEl.getAttribute("data-cluster-id");
-        if (clusterId) {
-          const cluster = clustersRef.current.find((c) => c.id === clusterId);
-          if (cluster) {
-            event.preventDefault();
-            event.stopPropagation();
-            selectCluster(cluster);
-            return;
-          }
+      const clusterId =
+        pinEl?.getAttribute("data-cluster-id") ??
+        pinPressRef.current?.clusterId ??
+        null;
+      if (!clusterId) return;
+
+      if (event instanceof PointerEvent) {
+        const press = pinPressRef.current;
+        if (
+          press &&
+          Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12
+        ) {
+          pinPressRef.current = null;
+          return;
         }
       }
+      pinPressRef.current = null;
+
+      const cluster = clustersRef.current.find((c) => c.id === clusterId);
+      if (!cluster) return;
+      event.preventDefault();
+      event.stopPropagation();
+      selectCluster(cluster);
     }
 
     /** Tap / drag outside the card or pin dismisses the callout. */
@@ -374,8 +401,20 @@ export function ExploreMapApple({
       }
       if (target.closest(".explore-map-pin, .explore-map-annotation-wrapper")) {
         pinSelectGuardRef.current = Date.now() + 1000;
+        const pinEl = target.closest<HTMLElement>(".explore-map-pin");
+        const clusterId = pinEl?.getAttribute("data-cluster-id");
+        if (clusterId) {
+          pinPressRef.current = {
+            x: event.clientX,
+            y: event.clientY,
+            clusterId,
+          };
+          const cluster = clustersRef.current.find((c) => c.id === clusterId);
+          if (cluster) warmExploreMapCluster(cluster, routerRef.current);
+        }
         return;
       }
+      pinPressRef.current = null;
       if (
         target.closest(
           ".explore-map__recenter, .explore-map__search-here, .smoac-control"
@@ -391,11 +430,13 @@ export function ExploreMapApple({
     }
 
     root.addEventListener("click", onPopupLinkClick, true);
-    root.addEventListener("click", onPinClick, true);
+    root.addEventListener("pointerup", onPinActivate, true);
+    root.addEventListener("click", onPinActivate, true);
     root.addEventListener("pointerdown", onPointerDown, true);
     return () => {
       root.removeEventListener("click", onPopupLinkClick, true);
-      root.removeEventListener("click", onPinClick, true);
+      root.removeEventListener("pointerup", onPinActivate, true);
+      root.removeEventListener("click", onPinActivate, true);
       root.removeEventListener("pointerdown", onPointerDown, true);
     };
   }, [router, clearSelection, selectCluster, mapEpoch]);
@@ -636,20 +677,14 @@ export function ExploreMapApple({
           el.className = `explore-map-annotation-wrapper ${isMulti ? "explore-map-annotation-wrapper--cluster" : "explore-map-annotation-wrapper--single"}`;
           el.innerHTML = pinHtml;
 
-          // Direct interaction listeners on the DOM element for instant mobile touch & desktop click response
-          el.addEventListener("pointerdown", (e) => {
-            e.stopPropagation();
-            pinSelectGuardRef.current = Date.now() + 1000;
-          });
-          el.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            selectCluster(cluster);
-          });
-          el.addEventListener("touchend", (e) => {
-            e.stopPropagation();
-            selectCluster(cluster);
-          });
+          bindExploreMapPinSelect(
+            el,
+            () => selectCluster(cluster),
+            () => {
+              pinSelectGuardRef.current = Date.now() + 1000;
+              warmExploreMapCluster(cluster, routerRef.current);
+            }
+          );
 
           return el;
         },
