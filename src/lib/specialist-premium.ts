@@ -92,13 +92,16 @@ export function formatProTrialBadgeLabel(
   return `Pro Trial · ${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left`;
 }
 
-/** Short membership chip on Edit profile — Pro Trial / Pro / Pro Plus / Free. */
+/** Short membership chip on Edit profile — Pro Trial · days left / Pro / Pro Plus / Free. */
 export function formatMembershipShortLabel(session: {
   premiumTrialActive?: boolean;
+  premiumTrialDaysRemaining?: number | null;
   isPremium?: boolean;
   membershipPlan?: string | null;
 } | null | undefined): string {
-  if (session?.premiumTrialActive) return "Pro Trial";
+  if (session?.premiumTrialActive) {
+    return formatProTrialBadgeLabel(session.premiumTrialDaysRemaining);
+  }
   if (isProPlusPlan(session?.membershipPlan)) return "Pro Plus";
   if (session?.isPremium) return "Pro";
   return "Free";
