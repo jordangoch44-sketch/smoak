@@ -19,6 +19,7 @@ interface InquiryThreadViewProps {
   thread: InquiryThreadPayload;
   sending?: boolean;
   error?: string | null;
+  layout?: "card" | "page";
   onBack: () => void;
   onSend: (message: string) => void;
 }
@@ -34,6 +35,7 @@ export function InquiryThreadView({
   thread,
   sending = false,
   error,
+  layout = "card",
   onBack,
   onSend,
 }: InquiryThreadViewProps) {
@@ -41,6 +43,7 @@ export function InquiryThreadView({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
+  const [keyboardInset, setKeyboardInset] = useState(0);
 
   const counterpartName =
     viewer === "client" ? thread.specialistName : thread.clientFirstName;
@@ -52,6 +55,29 @@ export function InquiryThreadView({
     if (!node) return;
     node.scrollTop = node.scrollHeight;
   }, [thread.messages.length, sending]);
+
+  useEffect(() => {
+    function syncKeyboardInset() {
+      const viewport = window.visualViewport;
+      if (!viewport) {
+        setKeyboardInset(0);
+        return;
+      }
+      const inset = Math.max(
+        0,
+        window.innerHeight - viewport.height - viewport.offsetTop
+      );
+      setKeyboardInset(inset > 80 ? inset : 0);
+    }
+
+    syncKeyboardInset();
+    window.visualViewport?.addEventListener("resize", syncKeyboardInset);
+    window.visualViewport?.addEventListener("scroll", syncKeyboardInset);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", syncKeyboardInset);
+      window.visualViewport?.removeEventListener("scroll", syncKeyboardInset);
+    };
+  }, []);
 
   function resizeTextarea() {
     const node = textareaRef.current;
@@ -87,7 +113,18 @@ export function InquiryThreadView({
   const topicLine = thread.topicLabels.join(" · ");
 
   return (
-    <div className="inquiry-thread" aria-labelledby={titleId}>
+    <div
+      className={cn(
+        "inquiry-thread",
+        layout === "page" && "inquiry-thread--page"
+      )}
+      aria-labelledby={titleId}
+      style={
+        keyboardInset > 0
+          ? { paddingBottom: keyboardInset }
+          : undefined
+      }
+    >
       <header className="inquiry-thread__header">
         <button
           type="button"

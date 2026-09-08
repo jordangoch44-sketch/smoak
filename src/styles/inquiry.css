@@ -22,6 +22,20 @@
   justify-content: flex-end;
 }
 
+/* Sit in the visual viewport so iOS keyboard does not cover the composer. */
+.inquiry-sheet-root--keyboard {
+  max-height: 100%;
+}
+
+.inquiry-sheet-root--keyboard .inquiry-sheet,
+.inquiry-sheet--keyboard {
+  max-height: 100%;
+}
+
+.inquiry-sheet-root--keyboard .inquiry-sheet__footer {
+  padding-bottom: 0.875rem;
+}
+
 .inquiry-sheet__backdrop {
   position: absolute;
   inset: 0;

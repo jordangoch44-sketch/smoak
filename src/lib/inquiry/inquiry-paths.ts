@@ -1,6 +1,6 @@
 import {
   CLIENT_DASHBOARD_PATH,
-  SPECIALIST_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_INQUIRIES_HREF,
 } from "@/lib/auth-routes";
 
 export function inquiryThreadHref(
@@ -11,7 +11,7 @@ export function inquiryThreadHref(
   if (viewer === "client") {
     return `${CLIENT_DASHBOARD_PATH}?tab=messages&c=${id}`;
   }
-  return `${SPECIALIST_DASHBOARD_PATH}?c=${id}`;
+  return `${SPECIALIST_DASHBOARD_INQUIRIES_HREF}&c=${id}`;
 }
 
 export function isDemoInquiryConversationId(id: string): boolean {

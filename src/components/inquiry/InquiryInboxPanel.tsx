@@ -30,6 +30,9 @@ interface InquiryInboxPanelProps {
   demoLeads?: SpecialistLead[];
   onOpenConversation?: (id: string) => void;
   onCloseThread?: () => void;
+  /** Full-page iMessage layout (specialist profile Inquiries tab). */
+  variant?: "card" | "page";
+  listTitle?: string;
 }
 
 export function InquiryInboxPanel({
@@ -43,6 +46,8 @@ export function InquiryInboxPanel({
   demoLeads = [],
   onOpenConversation,
   onCloseThread,
+  variant = "card",
+  listTitle,
 }: InquiryInboxPanelProps) {
   const [openId, setOpenId] = useState<string | null>(
     initialConversationId?.trim() || null
@@ -169,6 +174,7 @@ export function InquiryInboxPanel({
         thread={thread}
         sending={sending}
         error={error}
+        layout={variant}
         onBack={handleBack}
         onSend={(message) => {
           void handleSend(message);
@@ -179,13 +185,23 @@ export function InquiryInboxPanel({
 
   if (rows.length === 0) {
     return (
-      <DashboardEmptyState
-        message={emptyMessage}
-        actionHref={emptyActionHref}
-        actionLabel={emptyActionLabel}
-      />
+      <div className={variant === "page" ? "inquiry-inbox inquiry-inbox--page" : undefined}>
+        {variant === "page" && listTitle ? (
+          <h2 className="inquiry-inbox__title">{listTitle}</h2>
+        ) : null}
+        <DashboardEmptyState
+          message={emptyMessage}
+          actionHref={emptyActionHref}
+          actionLabel={emptyActionLabel}
+        />
+      </div>
     );
   }
 
-  return <InquiryConversationList rows={rows} onSelect={(id) => void openConversation(id)} />;
+  return (
+    <div className={variant === "page" ? "inquiry-inbox inquiry-inbox--page" : "inquiry-inbox"}>
+      {listTitle ? <h2 className="inquiry-inbox__title">{listTitle}</h2> : null}
+      <InquiryConversationList rows={rows} onSelect={(id) => void openConversation(id)} />
+    </div>
+  );
 }

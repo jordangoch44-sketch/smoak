@@ -7202,6 +7202,11 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   min-width: 0;
 }
 
+.specialist-profile-mode--inquiries {
+  flex: 1;
+  min-height: calc(100dvh - 10.5rem);
+}
+
 /* Same content-column width in Edit and Live — not inside the full-bleed hero. */
 .specialist-live-mode {
   display: flex;
@@ -7256,6 +7261,59 @@ body.specialist-full-editor-open .mobile-bottom-nav {
 
 .specialist-live-mode__btn--signout:active {
   color: #fff;
+}
+
+.specialist-live-mode--with-inquiries {
+  gap: 0.18rem;
+  padding: 0.22rem;
+}
+
+.specialist-live-mode--with-inquiries .specialist-live-mode__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.38rem 0.28rem;
+  font-size: 0.75rem;
+}
+
+.specialist-live-mode__count {
+  display: inline-flex;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.28rem;
+  border-radius: 9999px;
+  background: var(--smoac-color-indigo, #7c6cff);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.specialist-inquiries-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: calc(100dvh - 12.5rem);
+  margin: 0 -0.15rem 0.25rem;
+  animation: specialist-inquiries-drop 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes specialist-inquiries-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specialist-inquiries-page {
+    animation: none;
+  }
 }
 
 .specialist-live-marketplace {

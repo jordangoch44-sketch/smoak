@@ -8,11 +8,12 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
+import { SpecialistInquiriesInbox } from "@/components/dashboard/specialist/SpecialistInquiriesInbox";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
 import { ProfileContactCta } from "@/components/profile/ProfileContactCta";
@@ -63,8 +64,11 @@ import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 import { ProfileEditChipGroup } from "@/components/dashboard/specialist/ProfileEditSection";
 import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 import type { Trainer } from "@/types/trainer";
+import type { SpecialistLead } from "@/types/specialist-dashboard";
 import { HOMEPAGE_FEATURED_SPECIALTY_LIMIT } from "@/lib/specialty-display";
+import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 
+type ProfilePreviewMode = "edit" | "live" | "inquiries";
 const LOCK_CLASS = "specialist-live-edit-open";
 const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
 
@@ -123,6 +127,12 @@ interface SpecialistDashboardProfilePreviewProps {
   onClearFocus?: () => void;
   onUpgrade?: () => void;
   onSignOut?: () => void;
+  inquiryLeads?: SpecialistLead[];
+  inquirySenderUserId?: string;
+  inquiryUnreadCount?: number;
+  initialConversationId?: string | null;
+  onOpenInquiryLead?: (lead: SpecialistLead) => void;
+  onCloseInquiryThread?: () => void;
 }
 
 function mapTargetSectionToSectionId(target: string | null | undefined): SectionId | null {
@@ -353,17 +363,22 @@ function LivePreviewModeToggle({
   onChange,
   isLivePublished = false,
   onSignOut,
+  showInquiries = false,
+  inquiryUnreadCount = 0,
 }: {
-  value: "edit" | "live";
-  onChange: (value: "edit" | "live") => void;
+  value: ProfilePreviewMode;
+  onChange: (value: ProfilePreviewMode) => void;
   isLivePublished?: boolean;
   onSignOut?: () => void;
+  showInquiries?: boolean;
+  inquiryUnreadCount?: number;
 }) {
   return (
     <div
       className={cn(
         "specialist-live-mode",
-        onSignOut && "specialist-live-mode--with-account"
+        onSignOut && "specialist-live-mode--with-account",
+        showInquiries && "specialist-live-mode--with-inquiries"
       )}
       role="group"
       aria-label="Profile mode"
@@ -399,6 +414,24 @@ function LivePreviewModeToggle({
           </span>
         ) : null}
       </button>
+      {showInquiries ? (
+        <button
+          type="button"
+          aria-pressed={value === "inquiries"}
+          className={cn(
+            "smoac-control specialist-live-mode__btn",
+            value === "inquiries" && "specialist-live-mode__btn--active"
+          )}
+          onClick={() => onChange("inquiries")}
+        >
+          Inquiries
+          {inquiryUnreadCount > 0 ? (
+            <span className="specialist-live-mode__count">
+              {inquiryUnreadCount}
+            </span>
+          ) : null}
+        </button>
+      ) : null}
       {onSignOut ? (
         <button
           type="button"
@@ -426,7 +459,14 @@ export function SpecialistDashboardProfilePreview({
   onClearFocus,
   onUpgrade,
   onSignOut,
+  inquiryLeads = [],
+  inquirySenderUserId,
+  inquiryUnreadCount = 0,
+  initialConversationId = null,
+  onOpenInquiryLead,
+  onCloseInquiryThread,
 }: SpecialistDashboardProfilePreviewProps) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const {
@@ -453,7 +493,11 @@ export function SpecialistDashboardProfilePreview({
   const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
   const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [previewMode, setPreviewMode] = useState<"edit" | "live">("edit");
+  const conversationParam = searchParams.get("c")?.trim() || "";
+  const viewParam = searchParams.get("view")?.trim() || "";
+  const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
+    conversationParam || viewParam === "inquiries" ? "inquiries" : "edit"
+  );
   const {
     aggregate,
     reviews: smoacReviews,
@@ -466,6 +510,31 @@ export function SpecialistDashboardProfilePreview({
   } = useSpecialistReviews(trainer.id);
 
   const canEdit = editable && Boolean(formDefaults && trainerId);
+  const showInquiries = canEdit && Boolean(inquirySenderUserId);
+
+  useEffect(() => {
+    if (!showInquiries) return;
+    if (conversationParam || viewParam === "inquiries") {
+      setPreviewMode("inquiries");
+    }
+  }, [conversationParam, showInquiries, viewParam]);
+
+  function replacePreviewMode(next: ProfilePreviewMode) {
+    setPreviewMode(next);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", "profile");
+    if (next === "inquiries") {
+      params.set("view", "inquiries");
+    } else {
+      params.delete("view");
+      params.delete("c");
+    }
+    const qs = params.toString();
+    router.replace(
+      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
+      { scroll: false }
+    );
+  }
 
   useEffect(() => {
     const target =
@@ -1251,9 +1320,11 @@ export function SpecialistDashboardProfilePreview({
   const modeToggle = canEdit ? (
     <LivePreviewModeToggle
       value={previewMode}
-      onChange={setPreviewMode}
+      onChange={replacePreviewMode}
       isLivePublished={isLivePublished}
       onSignOut={onSignOut}
+      showInquiries={showInquiries}
+      inquiryUnreadCount={inquiryUnreadCount}
     />
   ) : null;
 
@@ -1278,6 +1349,24 @@ export function SpecialistDashboardProfilePreview({
           />
         </div>
         {editSheet}
+      </div>
+    );
+  }
+
+  if (canEdit && previewMode === "inquiries" && inquirySenderUserId) {
+    return (
+      <div
+        id={LIVE_PROFILE_ANCHOR_ID}
+        className="specialist-profile-mode specialist-profile-mode--inquiries"
+      >
+        {modeToggle}
+        <SpecialistInquiriesInbox
+          leads={inquiryLeads}
+          senderUserId={inquirySenderUserId}
+          onOpenLead={onOpenInquiryLead}
+          initialConversationId={initialConversationId}
+          onCloseThread={onCloseInquiryThread}
+        />
       </div>
     );
   }

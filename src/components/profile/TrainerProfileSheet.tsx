@@ -263,7 +263,8 @@ export function TrainerProfileSheet({
       /* Nested lightboxes own Escape while open */
       if (
         document.body.classList.contains("gallery-modal-open") ||
-        document.body.classList.contains("profile-image-preview-open")
+        document.body.classList.contains("profile-image-preview-open") ||
+        document.body.classList.contains("inquiry-sheet-open")
       ) {
         return;
       }

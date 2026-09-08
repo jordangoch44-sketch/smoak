@@ -14,7 +14,6 @@ import {
 import {
   AnalyticsCard,
   BoostProfileCard,
-  LeadsCard,
   ProfileCompletionCard,
   ReviewsCard,
   SubscriptionCard,
@@ -30,6 +29,7 @@ import { SpecialistPendingApprovalNotice } from "@/components/dashboard/speciali
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
+  SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
@@ -81,20 +81,22 @@ function dashboardSubtitle(
   if (mode === "approved-free") {
     return "Your profile is live on Marketplace — deepen it anytime from Edit profile.";
   }
-  return "Manage your profile, leads, and marketplace visibility.";
+  return "Manage your profile, inquiries, and marketplace visibility.";
 }
 
-function scrollToInquiries() {
-  document
-    .getElementById("specialist-inquiries")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function parseFreeTab(value: string | null): FreeDashboardTab {
+function parseFreeTab(
+  value: string | null,
+  openInquiries: boolean
+): FreeDashboardTab {
+  if (openInquiries) return "profile";
   return value === "plan" ? "plan" : "profile";
 }
 
-function parsePremiumTab(value: string | null): PremiumDashboardTab {
+function parsePremiumTab(
+  value: string | null,
+  openInquiries: boolean
+): PremiumDashboardTab {
+  if (openInquiries) return "profile";
   return value === "overview" ? "overview" : "profile";
 }
 
@@ -114,13 +116,13 @@ export function SpecialistDashboardPageClient() {
   const justSubmitted = searchParams.get("submitted") === "1";
   const tabParam = searchParams.get("tab");
   const conversationParam = searchParams.get("c")?.trim() || "";
+  const inquiriesView = searchParams.get("view") === "inquiries";
+  const openInquiries = Boolean(conversationParam) || inquiriesView;
   const [freeTab, setFreeTab] = useState<FreeDashboardTab>(() =>
-    conversationParam ? "profile" : parseFreeTab(tabParam)
+    parseFreeTab(tabParam, openInquiries)
   );
   const [premiumTab, setPremiumTab] = useState<PremiumDashboardTab>(() =>
-    conversationParam && tabParam !== "profile"
-      ? "overview"
-      : parsePremiumTab(tabParam)
+    parsePremiumTab(tabParam, openInquiries)
   );
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -173,13 +175,9 @@ export function SpecialistDashboardPageClient() {
   }, [searchParams]);
 
   useEffect(() => {
-    setFreeTab(conversationParam ? "profile" : parseFreeTab(tabParam));
-    setPremiumTab(
-      conversationParam && tabParam !== "profile"
-        ? "overview"
-        : parsePremiumTab(tabParam)
-    );
-  }, [tabParam, conversationParam]);
+    setFreeTab(parseFreeTab(tabParam, openInquiries));
+    setPremiumTab(parsePremiumTab(tabParam, openInquiries));
+  }, [tabParam, openInquiries]);
 
   useEffect(() => {
     if (!isReady || !session || !isHydrated) return;
@@ -198,11 +196,13 @@ export function SpecialistDashboardPageClient() {
 
   function replaceConversationParam(id: string | null) {
     const next = new URLSearchParams(searchParams.toString());
+    next.set("tab", "profile");
+    next.set("view", "inquiries");
     if (id) next.set("c", id);
     else next.delete("c");
     const qs = next.toString();
     router.replace(
-      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
+      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_INQUIRIES_HREF,
       { scroll: false }
     );
   }
@@ -269,18 +269,24 @@ export function SpecialistDashboardPageClient() {
           : "plan"
         : "status";
 
-  function openOverviewAndInquiries() {
+  function openProfileInquiries() {
     void handleDismissInquiryNotifications();
-    if (isFreeLive) {
-      /* Free plan has no Overview — inquiries live on Edit profile. */
-      replaceDashboardTab("profile");
-    } else if (premiumDashboard) {
-      replaceDashboardTab("overview");
-    }
-    window.requestAnimationFrame(() => {
-      window.setTimeout(scrollToInquiries, 80);
-    });
+    router.replace(SPECIALIST_DASHBOARD_INQUIRIES_HREF, { scroll: false });
   }
+
+  const inquiryPreviewProps = showsInquiries
+    ? {
+        inquiryLeads: data.newLeads,
+        inquirySenderUserId: session.userId,
+        inquiryUnreadCount,
+        initialConversationId: conversationParam || null,
+        onOpenInquiryLead: (lead: (typeof data.newLeads)[number]) => {
+          void handleOpenInquiryLead(lead);
+          replaceConversationParam(lead.id);
+        },
+        onCloseInquiryThread: () => replaceConversationParam(null),
+      }
+    : {};
 
   function handleNavigateToProfile(sectionId?: string) {
     if (sectionId) {
@@ -338,7 +344,7 @@ export function SpecialistDashboardPageClient() {
             </>
           ),
           subtitle:
-            "Leads, analytics, and how you show up on Marketplace — at a glance.",
+            "Analytics and how you show up on Marketplace — at a glance.",
         }
       : headerSurface === "profile"
         ? {
@@ -401,11 +407,11 @@ export function SpecialistDashboardPageClient() {
           />
         ) : null}
 
-        {showsInquiries ? (
+        {showsInquiries && !openInquiries ? (
           <InquiryNotificationBanner
             unreadCount={inquiryUnreadCount}
             latestSummary={latestInquirySummary}
-            onReview={openOverviewAndInquiries}
+            onReview={openProfileInquiries}
             onDismiss={() => {
               void handleDismissInquiryNotifications();
             }}
@@ -414,6 +420,7 @@ export function SpecialistDashboardPageClient() {
 
         {isFreeLive ? (
           <>
+            {openInquiries ? null : (
             <div
               className="specialist-dash-tabs"
               role="tablist"
@@ -434,14 +441,10 @@ export function SpecialistDashboardPageClient() {
                   onClick={() => replaceDashboardTab(tab.id)}
                 >
                   {tab.label}
-                  {tab.id === "profile" && inquiryUnreadCount > 0 ? (
-                    <span className="specialist-dash-tabs__count">
-                      {inquiryUnreadCount}
-                    </span>
-                  ) : null}
                 </button>
               ))}
             </div>
+            )}
 
             <div className="specialist-dash-panels">
               {freeTab === "plan" ? (
@@ -481,6 +484,7 @@ export function SpecialistDashboardPageClient() {
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
                       onSignOut={() => setSignOutConfirmOpen(true)}
+                      {...inquiryPreviewProps}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">
@@ -489,18 +493,9 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
-                  <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
-
-                  <LeadsCard
-                    leads={data.newLeads}
-                    senderUserId={session.userId}
-                    onOpenLead={(lead) => {
-                      void handleOpenInquiryLead(lead);
-                      replaceConversationParam(lead.id);
-                    }}
-                    initialConversationId={conversationParam || null}
-                    onCloseThread={() => replaceConversationParam(null)}
-                  />
+                  {openInquiries ? null : (
+                    <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
+                  )}
                 </div>
               ) : null}
             </div>
@@ -599,6 +594,7 @@ export function SpecialistDashboardPageClient() {
 
         {premiumDashboard ? (
           <>
+            {openInquiries ? null : (
             <div
               className="specialist-dash-tabs"
               role="tablist"
@@ -619,14 +615,10 @@ export function SpecialistDashboardPageClient() {
                   onClick={() => replaceDashboardTab(tab.id)}
                 >
                   {tab.label}
-                  {tab.id === "overview" && inquiryUnreadCount > 0 ? (
-                    <span className="specialist-dash-tabs__count">
-                      {inquiryUnreadCount}
-                    </span>
-                  ) : null}
                 </button>
               ))}
             </div>
+            )}
 
             <div className="specialist-dash-panels">
               {premiumTab === "overview" ? (
@@ -637,17 +629,6 @@ export function SpecialistDashboardPageClient() {
                   className="specialist-dash-panel"
                 >
                   <div className="dashboard-overview-accordions">
-                    <LeadsCard
-                      leads={data.newLeads}
-                      senderUserId={session.userId}
-                      onOpenLead={(lead) => {
-                        void handleOpenInquiryLead(lead);
-                        replaceConversationParam(lead.id);
-                      }}
-                      initialConversationId={conversationParam || null}
-                      onCloseThread={() => replaceConversationParam(null)}
-                      defaultOpen
-                    />
                     <AnalyticsCard
                       analytics={analytics}
                       isPremium={isPremium}
@@ -697,6 +678,7 @@ export function SpecialistDashboardPageClient() {
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
                       onSignOut={() => setSignOutConfirmOpen(true)}
+                      {...inquiryPreviewProps}
                     />
                   ) : (
                     <p className="specialist-dash-notice__text">
@@ -705,14 +687,18 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
-                  <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
+                  {openInquiries ? null : (
+                    <>
+                      <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
 
-                  <div className="specialist-dash-panel__footer-card">
-                    <SubscriptionCard
-                      subscription={data.subscription}
-                      onOpenBoost={() => setBoostOpen(true)}
-                    />
-                  </div>
+                      <div className="specialist-dash-panel__footer-card">
+                        <SubscriptionCard
+                          subscription={data.subscription}
+                          onOpenBoost={() => setBoostOpen(true)}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : null}
             </div>

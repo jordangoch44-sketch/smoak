@@ -54,6 +54,27 @@ import { cn } from "@/lib/utils";
 
 const DISMISS_OFFSET_PX = 110;
 const DISMISS_VELOCITY = 650;
+const KEYBOARD_INSET_PX = 80;
+
+function isEditableField(target: EventTarget | null): target is HTMLElement {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target instanceof HTMLInputElement) return true;
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLSelectElement) return true;
+  return target.isContentEditable;
+}
+
+function readKeyboardViewport(): { inset: number; top: number; height: number } {
+  const viewport = window.visualViewport;
+  const height = viewport?.height ?? window.innerHeight;
+  const top = viewport?.offsetTop ?? 0;
+  const inset = Math.max(0, window.innerHeight - height - top);
+  return {
+    inset: inset > KEYBOARD_INSET_PX ? inset : 0,
+    top,
+    height,
+  };
+}
 
 type SheetView = "compose" | "signup" | "signin" | "awaiting_email" | "success";
 
@@ -103,7 +124,8 @@ export function SpecialistInquirySheet({
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
   const reduceMotion = useReducedMotion();
-  const historyPushedRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const { session, isSignedIn, refreshSession } = useAuthSession();
   const topicOptions = getInquiryTopicsForProfession(specialistProfession);
 
@@ -119,6 +141,11 @@ export function SpecialistInquirySheet({
   const [password, setPassword] = useState("");
   const [syncedOpenKey, setSyncedOpenKey] = useState("");
   const submittingRef = useRef(false);
+  const [keyboardViewport, setKeyboardViewport] = useState({
+    inset: 0,
+    top: 0,
+    height: 0,
+  });
 
   const openKey = open ? `${specialistId}:${profilePath}` : "";
 
@@ -154,38 +181,52 @@ export function SpecialistInquirySheet({
     };
   }, [open]);
 
-  useEffect(() => {
-    if (!open) return;
-
-    window.history.pushState({ smoacInquirySheet: true }, "");
-    historyPushedRef.current = true;
-
-    function onPopState() {
-      historyPushedRef.current = false;
-      onClose();
-    }
-
-    window.addEventListener("popstate", onPopState);
-    return () => {
-      window.removeEventListener("popstate", onPopState);
-      if (historyPushedRef.current) {
-        historyPushedRef.current = false;
-        window.history.back();
-      }
-    };
-  }, [open, onClose]);
-
+  /*
+   * Do not pushState / history.back() while this overlay is open. The
+   * specialist profile intercept already owns that history entry; a dummy
+   * back() closes the profile and can land on Home / Explore instead of
+   * the specialist the user was messaging.
+   */
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
       }
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function syncKeyboardViewport() {
+      setKeyboardViewport(readKeyboardViewport());
+    }
+
+    function onFocusIn(event: FocusEvent) {
+      if (!isEditableField(event.target)) return;
+      const field = event.target;
+      window.setTimeout(() => {
+        field.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }, 280);
+    }
+
+    syncKeyboardViewport();
+    window.visualViewport?.addEventListener("resize", syncKeyboardViewport);
+    window.visualViewport?.addEventListener("scroll", syncKeyboardViewport);
+    window.addEventListener("resize", syncKeyboardViewport);
+    document.addEventListener("focusin", onFocusIn);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", syncKeyboardViewport);
+      window.visualViewport?.removeEventListener("scroll", syncKeyboardViewport);
+      window.removeEventListener("resize", syncKeyboardViewport);
+      document.removeEventListener("focusin", onFocusIn);
+    };
+  }, [open]);
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
@@ -194,10 +235,10 @@ export function SpecialistInquirySheet({
         info.offset.y > DISMISS_OFFSET_PX ||
         info.velocity.y > DISMISS_VELOCITY
       ) {
-        onClose();
+        onCloseRef.current();
       }
     },
-    [onClose]
+    []
   );
 
   const sendInquiry = useCallback(async () => {
@@ -370,11 +411,27 @@ export function SpecialistInquirySheet({
     : { duration: 0.22, ease: [0.22, 1, 0.36, 1] as const };
 
   const messageLen = draft.message.length;
+  const keyboardOpen = keyboardViewport.inset > 0;
 
   return createPortal(
     <AnimatePresence>
       {open ? (
-        <div className="inquiry-sheet-root" role="presentation">
+        <div
+          className={cn(
+            "inquiry-sheet-root",
+            keyboardOpen && "inquiry-sheet-root--keyboard"
+          )}
+          role="presentation"
+          style={
+            keyboardOpen
+              ? {
+                  top: keyboardViewport.top,
+                  height: keyboardViewport.height,
+                  bottom: "auto",
+                }
+              : undefined
+          }
+        >
           <motion.button
             type="button"
             aria-label="Close inquiry"
@@ -390,7 +447,10 @@ export function SpecialistInquirySheet({
 
           <motion.div
             ref={sheetRef}
-            className="inquiry-sheet"
+            className={cn(
+              "inquiry-sheet",
+              keyboardOpen && "inquiry-sheet--keyboard"
+            )}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}

@@ -131,6 +131,58 @@
   box-shadow: 0 0 0 3px rgba(124, 108, 255, 0.18);
 }
 
+.inquiry-inbox__title {
+  margin: 0.15rem 0 0.85rem;
+  padding: 0 0.15rem;
+  font-size: 1.7rem;
+  font-weight: 720;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+
+.inquiry-inbox--page .inquiry-inbox-list > li + li {
+  margin-top: 0;
+}
+
+.inquiry-inbox--page .inquiry-inbox-row {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  padding: 0.82rem 0.15rem;
+}
+
+.inquiry-inbox--page .inquiry-inbox-row--unread {
+  border-color: transparent;
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+  background: transparent;
+}
+
+.inquiry-inbox--page .inquiry-inbox-row:active {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.inquiry-thread--page {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.inquiry-thread--page .inquiry-thread__header {
+  padding: 0.55rem 0.15rem 0.7rem;
+  background: transparent;
+}
+
+.inquiry-thread--page .inquiry-thread__composer {
+  padding-left: 0.15rem;
+  padding-right: 0.15rem;
+  border-top-color: rgba(255, 255, 255, 0.08);
+  background: rgba(8, 8, 12, 0.72);
+}
+
 .inquiry-inbox__status {
   margin: 0;
   padding: 1rem 0.25rem;
