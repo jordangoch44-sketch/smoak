@@ -12,6 +12,7 @@ import {
   TrophyIcon,
   UserIcon,
   UsersIcon,
+  VirtualFormatIcon,
 } from "@/components/ui/icons";
 import type {
   ProfileSpecialtyIconId,
@@ -118,6 +119,7 @@ const TRAINING_ICONS: Record<
   "one-on-one": UserIcon,
   "semi-private": UsersIcon,
   class: LayoutGridIcon,
+  online: VirtualFormatIcon,
 };
 
 export function ProfileTrainingKindIcon({

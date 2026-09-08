@@ -5,6 +5,7 @@ import { applicationToPreviewTrainer } from "@/lib/application-to-trainer";
 import { buildServiceAreaDisplay } from "@/lib/specialist-service-area";
 import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
 import { formatApplicationSessionPrice } from "@/lib/session-price";
+import { HOMEPAGE_FEATURED_SPECIALTY_LIMIT } from "@/lib/specialty-display";
 
 interface SpecialistApplicationPreviewProps {
   state: SpecialistOnboardingState;
@@ -74,8 +75,15 @@ export function SpecialistApplicationPreview({
       <div className="wizard-profile-preview__section">
         <p className="wizard-profile-preview__label">Specialties</p>
         <div className="wizard-pill-grid wizard-profile-preview__pills">
-          {preview.specialty.slice(0, 6).map((item) => (
-            <span key={item} className="wizard-pill wizard-pill--active">
+          {preview.specialty.slice(0, 6).map((item, index) => (
+            <span
+              key={item}
+              className={
+                index < HOMEPAGE_FEATURED_SPECIALTY_LIMIT
+                  ? "wizard-pill wizard-pill--active wizard-pill--card-featured"
+                  : "wizard-pill wizard-pill--active"
+              }
+            >
               {item}
             </span>
           ))}

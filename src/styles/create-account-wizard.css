@@ -814,6 +814,13 @@ body:has(.login-page--wizard) main {
   box-shadow: 0 0 18px rgba(var(--accent-glow-rgb), 0.12);
 }
 
+.wizard-pill--card-featured {
+  border-color: rgba(var(--nebula-green-neon-rgb), 0.7);
+  background: rgba(var(--nebula-green-neon-rgb), 0.16);
+  color: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 0 18px rgba(var(--nebula-green-neon-rgb), 0.22);
+}
+
 .login-page--wizard .login-fields {
   gap: var(--wizard-space-md);
 }

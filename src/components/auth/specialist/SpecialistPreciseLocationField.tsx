@@ -262,8 +262,7 @@ export function SpecialistPreciseLocationField({
           Exact work / studio address
         </span>
         <span className="specialist-precise-location__hint">
-          Search and pick an address for accurate distance. Street stays private
-          — leave blank to use ZIP only.
+          Best for helping clients discover you
         </span>
         <div className="specialist-precise-location__search">
           <span className="specialist-precise-location__search-icon" aria-hidden>

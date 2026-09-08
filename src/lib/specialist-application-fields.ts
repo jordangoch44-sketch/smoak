@@ -62,6 +62,7 @@ export function normalizeSpecialistApplicationShape(
     groupTrainingAvailable: Boolean(
       pricing?.groupTrainingAvailable ?? defaults.pricing.groupTrainingAvailable
     ),
+    onlineCoachingAvailable: Boolean(app.onlineCoachingAvailable),
   });
 
   return {

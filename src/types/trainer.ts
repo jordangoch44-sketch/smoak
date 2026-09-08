@@ -112,7 +112,7 @@ export interface Trainer {
   travelRadius?: string;
   /** In-person, virtual, or both — drives matching */
   serviceType?: SpecialistServiceType;
-  /** One-on-one / semi-private / class — public “Training options” */
+  /** One-on-one / semi-private / class / online — public “Training options” */
   trainingOptions?: SpecialistTrainingOptionId[];
   /** Paid placement — stays above organic results when sorting by user ZIP */
   sponsored?: boolean;
@@ -125,7 +125,7 @@ export interface Trainer {
   verified?: boolean;
   specialty: string[];
   /**
-   * Up to two specialties featured on homepage cards.
+   * Up to three specialties featured on marketplace cards.
    * When empty/absent, cards use the first specialties from `specialty`.
    */
   homepageSpecialties?: string[];

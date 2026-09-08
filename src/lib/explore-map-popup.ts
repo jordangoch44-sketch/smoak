@@ -6,6 +6,7 @@ import {
   type ExploreMapCluster,
   getClusterHeaderInfo,
 } from "@/lib/explore-map-clusters";
+import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
 
 export function escapeExploreMapHtml(value: string): string {
   return value
@@ -93,7 +94,8 @@ export function buildExploreMapClusterPopupHtml(cluster: ExploreMapCluster): str
       const photoHtml = photoSrc
         ? `<img class="explore-map-cluster-card__photo" src="${escapeExploreMapHtml(photoSrc)}" alt="${escapeExploreMapHtml(trainer.name)}" width="56" height="56" loading="lazy" decoding="async" />`
         : `<span class="explore-map-cluster-card__photo explore-map-cluster-card__photo--empty" aria-hidden="true">${escapeExploreMapHtml(getTrainerInitials(trainer.name))}</span>`;
-      const specialtiesPreview = trainer.specialty?.slice(0, 2).join(" · ") || "";
+      const specialtiesPreview =
+        getHomepageFeaturedSpecialties(trainer).join(" · ") || "";
 
       return `<div class="explore-map-cluster-card" data-index="${index}">
         <div class="explore-map-cluster-card__header">

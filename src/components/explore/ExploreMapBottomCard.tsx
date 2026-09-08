@@ -30,6 +30,7 @@ import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
+import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
 import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
 
 export interface ExploreMapBottomCardProps {
@@ -358,7 +359,7 @@ export function ExploreMapBottomCard({
             "Specialist";
           const priceLabel = formatTrainerSessionPrice(trainer);
           const verified = isTrainerVerified(trainer);
-          const specialties = (trainer.specialty || []).slice(0, 3);
+          const specialties = getHomepageFeaturedSpecialties(trainer);
           const ratingValue = trainer.rating;
 
           // Display format:

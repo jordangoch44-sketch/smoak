@@ -258,6 +258,7 @@ export function loadSpecialistOnboardingDraft(): SpecialistOnboardingState | nul
     ...parsed,
     trainingOptions: parseTrainingOptions(parsed.trainingOptions, {
       groupTrainingAvailable: Boolean(parsed.pricing?.groupTrainingAvailable),
+      onlineCoachingAvailable: Boolean(parsed.onlineCoachingAvailable),
     }),
     pricing: {
       ...INITIAL_SPECIALIST_ONBOARDING_STATE.pricing,

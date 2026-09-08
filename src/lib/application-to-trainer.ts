@@ -15,6 +15,7 @@ import {
   resolveApplicationSessionPriceRange,
   withSyncedSessionPrices,
 } from "@/lib/session-price";
+import { featuredSpecialtiesFromSelection } from "@/lib/specialty-display";
 import type {
   SpecialistApplication,
   SpecialistOnboardingState,
@@ -92,6 +93,7 @@ export function applicationToTrainer(
   const mediaUrls = linesToUrls(app.media?.trainingVideoUrls ?? "");
   const headline = app.headline?.trim() ?? "";
   const specialties = Array.isArray(app.specialties) ? app.specialties : [];
+  const homepageSpecialties = featuredSpecialtiesFromSelection(specialties);
   const certifications = Array.isArray(app.certifications)
     ? app.certifications.filter((c) => c?.name?.trim())
     : [];
@@ -151,11 +153,13 @@ export function applicationToTrainer(
     serviceType,
     trainingOptions: parseTrainingOptions(app.trainingOptions, {
       groupTrainingAvailable: Boolean(app.pricing?.groupTrainingAvailable),
+      onlineCoachingAvailable: Boolean(app.onlineCoachingAvailable),
       sessionExperience: buildSessionExperience(app),
     }),
     sponsored: false,
     verified: app.profileStatus === "APPROVED",
     specialty: specialties,
+    homepageSpecialties,
     gender: parseGender(app.gender),
     ...withSyncedSessionPrices({
       pricePerSession: sessionPrice.max,
@@ -256,6 +260,7 @@ export function applicationToProfileOverrides(
       ? { latitude: app.latitude, longitude: app.longitude }
       : zipCodeToCoordinates(zip);
 
+  const specialties = Array.isArray(app.specialties) ? app.specialties : [];
   const trainingStyle = [
     app.coachingPhilosophy?.trim() ?? "",
     app.communicationStyle?.trim() ?? "",
@@ -272,9 +277,10 @@ export function applicationToProfileOverrides(
       resolveTrainerProfessionCategory({
         profession: app.professionalType,
         title: app.headline?.trim() ?? "",
-        specialty: Array.isArray(app.specialties) ? app.specialties : [],
+        specialty: specialties,
       }) || app.professionalType,
-    specialty: Array.isArray(app.specialties) ? app.specialties : [],
+    specialty: specialties,
+    homepageSpecialties: featuredSpecialtiesFromSelection(specialties),
     certifications: Array.isArray(app.certifications) ? app.certifications : [],
     city: app.city?.trim() ?? "",
     state: app.state?.trim() ?? "",
@@ -283,6 +289,7 @@ export function applicationToProfileOverrides(
     serviceType: app.serviceType || undefined,
     trainingOptions: parseTrainingOptions(app.trainingOptions, {
       groupTrainingAvailable: Boolean(app.pricing?.groupTrainingAvailable),
+      onlineCoachingAvailable: Boolean(app.onlineCoachingAvailable),
     }),
     travelRadius: app.travelRadius ?? "",
     travelToClients:

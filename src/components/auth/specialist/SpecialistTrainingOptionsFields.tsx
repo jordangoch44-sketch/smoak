@@ -28,9 +28,6 @@ export function SpecialistTrainingOptionsFields({
           </span>
         ) : null}
       </legend>
-      <p className="wizard-field-hint">
-        Select every format you offer. One-on-one is selected to start.
-      </p>
       <div
         className="wizard-pill-grid wizard-pill-grid--wide"
         role="group"

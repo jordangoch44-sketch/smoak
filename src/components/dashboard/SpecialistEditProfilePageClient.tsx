@@ -57,6 +57,7 @@ import type { SpecialistServiceType } from "@/types/specialist-service-area";
 import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import { formatTravelToClientsEditorLabel } from "@/lib/specialist-service-area";
+import { HOMEPAGE_FEATURED_SPECIALTY_LIMIT } from "@/lib/specialty-display";
 import {
   PROFILE_ACCENT_OPTIONS,
   PROFILE_AVATAR_FRAME_OPTIONS,
@@ -269,7 +270,8 @@ export function SpecialistEditProfilePageClient({
           ),
         };
       }
-      if (prev.homepageSpecialties.length >= 2) return prev;
+      if (prev.homepageSpecialties.length >= HOMEPAGE_FEATURED_SPECIALTY_LIMIT)
+        return prev;
       return {
         ...prev,
         homepageSpecialties: [...prev.homepageSpecialties, specialty],
@@ -910,9 +912,9 @@ export function SpecialistEditProfilePageClient({
                     Homepage Featured Specialties
                   </p>
                   <p className="profile-edit-homepage-specialties__help">
-                    These two specialties will appear on your homepage card.
-                    Your full list of specialties will still be displayed on
-                    your detailed profile.
+                    These {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} specialties will
+                    appear on your marketplace card. Your full list of
+                    specialties will still be displayed on your detailed profile.
                   </p>
                   {savedForm.homepageSpecialties.length > 0 ? (
                     <div className="dashboard-edit-chip-grid profile-edit-chip-grid--view">
@@ -927,7 +929,8 @@ export function SpecialistEditProfilePageClient({
                     </div>
                   ) : (
                     <p className="profile-edit-field__value profile-edit-field__value--empty">
-                      Using first two specialties by default
+                      Using first {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} specialties
+                      by default
                     </p>
                   )}
                 </div>
@@ -960,9 +963,9 @@ export function SpecialistEditProfilePageClient({
                     Homepage Featured Specialties
                   </p>
                   <p className="profile-edit-homepage-specialties__help">
-                    These two specialties will appear on your homepage card.
-                    Your full list of specialties will still be displayed on
-                    your detailed profile.
+                    These {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} specialties will
+                    appear on your marketplace card. Your full list of
+                    specialties will still be displayed on your detailed profile.
                   </p>
                   {form.specialty.length > 0 ? (
                     <div className="dashboard-edit-chip-grid">
@@ -970,7 +973,8 @@ export function SpecialistEditProfilePageClient({
                         const featured =
                           form.homepageSpecialties.includes(specialty);
                         const atLimit =
-                          form.homepageSpecialties.length >= 2 && !featured;
+                          form.homepageSpecialties.length >=
+                            HOMEPAGE_FEATURED_SPECIALTY_LIMIT && !featured;
                         return (
                           <button
                             key={`home-${specialty}`}

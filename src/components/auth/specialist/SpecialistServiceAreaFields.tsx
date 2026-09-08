@@ -122,43 +122,6 @@ export function SpecialistServiceAreaFields({
     <div className="login-fields specialist-service-area-fields">
       <fieldset className="login-field specialist-service-area-fields__section">
         <legend className="login-field__label">
-          Primary ZIP code
-          {state.serviceType !== "virtual" ? (
-            <span className="login-field__label-required" aria-hidden="true">
-              *
-            </span>
-          ) : null}
-        </legend>
-        <input
-          className="login-field__input"
-          value={state.zipCode}
-          onChange={(e) => handleZipChange(e.target.value)}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          autoComplete="postal-code"
-          placeholder="92129"
-          maxLength={5}
-          aria-invalid={state.zipCode.length === 5 && !zipValid}
-          aria-describedby="specialist-zip-hint"
-          aria-required={state.serviceType !== "virtual"}
-          required={state.serviceType !== "virtual"}
-        />
-        <p id="specialist-zip-hint" className="wizard-field-hint">
-          {zipLookupBusy
-            ? "Looking up your city…"
-            : zipValid && state.city
-              ? `Detected: ${state.city}, ${state.state}`
-              : "5-digit US ZIP — we'll detect city and state."}
-        </p>
-        {zipLookupError ? (
-          <p className="wizard-field-error" role="alert">
-            {zipLookupError}
-          </p>
-        ) : null}
-      </fieldset>
-
-      <fieldset className="login-field specialist-service-area-fields__section">
-        <legend className="login-field__label">
           Service type
           <span className="login-field__label-required" aria-hidden="true">
             *
@@ -216,6 +179,43 @@ export function SpecialistServiceAreaFields({
           Virtual coaches don&apos;t need a street address.
         </p>
       ) : null}
+
+      <fieldset className="login-field specialist-service-area-fields__section">
+        <legend className="login-field__label">
+          Primary ZIP code
+          {state.serviceType !== "virtual" ? (
+            <span className="login-field__label-required" aria-hidden="true">
+              *
+            </span>
+          ) : null}
+        </legend>
+        <input
+          className="login-field__input"
+          value={state.zipCode}
+          onChange={(e) => handleZipChange(e.target.value)}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="postal-code"
+          placeholder="92129"
+          maxLength={5}
+          aria-invalid={state.zipCode.length === 5 && !zipValid}
+          aria-describedby="specialist-zip-hint"
+          aria-required={state.serviceType !== "virtual"}
+          required={state.serviceType !== "virtual"}
+        />
+        <p id="specialist-zip-hint" className="wizard-field-hint">
+          {zipLookupBusy
+            ? "Looking up your city…"
+            : zipValid && state.city
+              ? `Detected: ${state.city}, ${state.state}`
+              : "5-digit US ZIP — we'll detect city and state."}
+        </p>
+        {zipLookupError ? (
+          <p className="wizard-field-error" role="alert">
+            {zipLookupError}
+          </p>
+        ) : null}
+      </fieldset>
 
       <label className="login-field">
         <span className="login-field__label">Service area description</span>

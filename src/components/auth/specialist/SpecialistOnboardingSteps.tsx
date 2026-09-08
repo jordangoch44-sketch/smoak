@@ -11,6 +11,10 @@ import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import type { Certification } from "@/types/trainer";
 import { cn } from "@/lib/utils";
 import { applicationPricingFromRange } from "@/lib/session-price";
+import {
+  HOMEPAGE_FEATURED_SPECIALTY_LIMIT,
+  orderSpecialtyPickerOptions,
+} from "@/lib/specialty-display";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
 import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
@@ -404,19 +408,33 @@ export function SpecialistOnboardingSteps({
             Specialties
             <RequiredMark />
           </p>
+          <p className="wizard-field-hint">
+            The first {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} you select appear on
+            your marketplace card. Extra specialties still show on your profile.
+          </p>
           <div
             className="wizard-pill-grid wizard-pill-grid--wide"
             role="group"
             aria-label="Specialties"
             aria-required="true"
           >
-            {SPECIALIST_SPECIALTY_OPTIONS.map((specialty) => {
+            {orderSpecialtyPickerOptions(
+              SPECIALIST_SPECIALTY_OPTIONS,
+              state.specialties
+            ).map((specialty) => {
               const active = state.specialties.includes(specialty);
+              const onCard =
+                active &&
+                state.specialties.indexOf(specialty) <
+                  HOMEPAGE_FEATURED_SPECIALTY_LIMIT;
               return (
                 <button
                   key={specialty}
                   type="button"
                   aria-pressed={active}
+                  aria-label={
+                    onCard ? `${specialty} (on your card)` : specialty
+                  }
                   onClick={() =>
                     onPatch({
                       specialties: toggleInList(state.specialties, specialty),
@@ -424,7 +442,8 @@ export function SpecialistOnboardingSteps({
                   }
                   className={cn(
                     "wizard-pill",
-                    active && "wizard-pill--active"
+                    active && "wizard-pill--active",
+                    onCard && "wizard-pill--card-featured"
                   )}
                 >
                   {specialty}

@@ -1,9 +1,10 @@
-/** How a specialist runs sessions — separate from in-person / virtual. */
+/** How a specialist runs sessions — separate from in-person / virtual service area. */
 
 export const SPECIALIST_TRAINING_OPTION_IDS = [
   "one-on-one",
   "semi-private",
   "class",
+  "online",
 ] as const;
 
 export type SpecialistTrainingOptionId =
@@ -28,6 +29,11 @@ export const SPECIALIST_TRAINING_OPTIONS: readonly {
     id: "class",
     label: "Class",
     description: "Scheduled group sessions with a full class.",
+  },
+  {
+    id: "online",
+    label: "Online",
+    description: "Virtual sessions you can take from anywhere.",
   },
 ] as const;
 
@@ -58,6 +64,7 @@ export function parseTrainingOptions(
   value: unknown,
   legacy?: {
     groupTrainingAvailable?: boolean;
+    onlineCoachingAvailable?: boolean;
     sessionExperience?: readonly string[];
   }
 ): SpecialistTrainingOptionId[] {
@@ -78,6 +85,9 @@ export function parseTrainingOptions(
   }
   if (/\bclass(es)?\b/.test(session)) {
     inferred.push("class");
+  }
+  if (legacy?.onlineCoachingAvailable || /online|virtual/.test(session)) {
+    inferred.push("online");
   }
   return uniqueValid(inferred);
 }

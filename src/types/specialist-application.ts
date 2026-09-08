@@ -106,7 +106,7 @@ export interface SpecialistApplication {
   inHomeAvailable: boolean;
   onlineCoachingAvailable: boolean;
   gymName: string;
-  /** One-on-one, semi-private, class — shown on the public profile */
+  /** One-on-one, semi-private, class, online — shown on the public profile */
   trainingOptions: SpecialistTrainingOptionId[];
   /**
    * Optional street / studio address for precise distance.

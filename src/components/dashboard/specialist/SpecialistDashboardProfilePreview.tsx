@@ -63,6 +63,7 @@ import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 import { ProfileEditChipGroup } from "@/components/dashboard/specialist/ProfileEditSection";
 import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 import type { Trainer } from "@/types/trainer";
+import { HOMEPAGE_FEATURED_SPECIALTY_LIMIT } from "@/lib/specialty-display";
 
 const LOCK_CLASS = "specialist-live-edit-open";
 const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
@@ -1187,8 +1188,8 @@ export function SpecialistDashboardProfilePreview({
         {editing === "featured-specialties" ? (
           <div className="specialist-dash-profile__fields">
             <p className="wizard-field-hint">
-              Pick up to two specialties for your homepage card. They must
-              already be in your specialties list.
+              Pick up to {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} specialties for your
+              marketplace card. They must already be in your specialties list.
             </p>
             {form.specialty.length === 0 ? (
               <p className="wizard-field-hint">
@@ -1220,7 +1221,11 @@ export function SpecialistDashboardProfilePreview({
                                 ),
                             };
                           }
-                          if (prev.homepageSpecialties.length >= 2) return prev;
+                          if (
+                            prev.homepageSpecialties.length >=
+                            HOMEPAGE_FEATURED_SPECIALTY_LIMIT
+                          )
+                            return prev;
                           return {
                             ...prev,
                             homepageSpecialties: [

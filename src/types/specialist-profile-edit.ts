@@ -15,7 +15,7 @@ export interface SpecialistProfileOverrides {
   gender?: Gender | "";
   profession?: string;
   specialty?: string[];
-  /** Up to two specialties shown on homepage cards */
+  /** Up to three specialties shown on marketplace cards */
   homepageSpecialties?: string[];
   certifications?: Certification[];
   city?: string;

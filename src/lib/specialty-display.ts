@@ -1,7 +1,30 @@
 /** Shared specialty chip display helpers for marketplace cards. */
 
-export const DEFAULT_VISIBLE_SPECIALTIES = 2;
-export const HOMEPAGE_FEATURED_SPECIALTY_LIMIT = 2;
+export const DEFAULT_VISIBLE_SPECIALTIES = 3;
+export const HOMEPAGE_FEATURED_SPECIALTY_LIMIT = 3;
+
+/** First N selections — shown on marketplace cards. */
+export function featuredSpecialtiesFromSelection(
+  specialties: readonly string[],
+  max: number = HOMEPAGE_FEATURED_SPECIALTY_LIMIT
+): string[] {
+  return specialties.map((s) => s.trim()).filter(Boolean).slice(0, max);
+}
+
+/**
+ * Pin the first N selected specialties to the front of a picker grid.
+ * Extra selected options stay in catalog order below.
+ */
+export function orderSpecialtyPickerOptions(
+  options: readonly string[],
+  selected: readonly string[],
+  featuredLimit: number = HOMEPAGE_FEATURED_SPECIALTY_LIMIT
+): string[] {
+  const featured = featuredSpecialtiesFromSelection(selected, featuredLimit);
+  const featuredSet = new Set(featured);
+  const rest = options.filter((option) => !featuredSet.has(option));
+  return [...featured, ...rest];
+}
 
 export function getVisibleSpecialties(
   specialties: readonly string[] | null | undefined,
