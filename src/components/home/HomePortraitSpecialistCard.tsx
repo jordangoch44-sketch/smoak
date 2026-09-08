@@ -6,6 +6,7 @@ import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
+import { isFreeFirstSessionBadge } from "@/lib/free-first-session";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -33,6 +34,8 @@ export function HomePortraitSpecialistCard({
   reviewCount,
   replaceCurrentProfile = false,
 }: HomePortraitSpecialistCardProps) {
+  const promoRibbon = isFreeFirstSessionBadge(badgeLabel);
+
   return (
     <div className="home-portrait-card relative" role="listitem">
       <SpecialistImpressionBeacon
@@ -61,10 +64,13 @@ export function HomePortraitSpecialistCard({
                 trainer={trainer}
                 className="home-portrait-card__verified"
               />
-              {badgeLabel ? (
+              {badgeLabel && !promoRibbon ? (
                 <span className="home-portrait-card__chip">{badgeLabel}</span>
               ) : null}
             </div>
+            {promoRibbon && badgeLabel ? (
+              <span className="home-portrait-card__ribbon">{badgeLabel}</span>
+            ) : null}
           </div>
           <div className="home-portrait-card__body">
             <TrainerCardDetails

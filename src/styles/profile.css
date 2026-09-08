@@ -3170,7 +3170,8 @@ body.profile-image-preview-open .profile-toolbar {
   padding-top: 0.3rem;
 }
 
-.profile-discovery .home-portrait-card__chip {
+.profile-discovery .home-portrait-card__chip,
+.profile-discovery .home-portrait-card__ribbon {
   display: none;
 }
 

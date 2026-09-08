@@ -2436,6 +2436,55 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
+/* Promo sash — bottom-left of the photo, swallowtail like a sale ribbon */
+.home-portrait-card__ribbon {
+  position: absolute;
+  left: 0;
+  bottom: 0.55rem;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  max-width: calc(100% - 0.7rem);
+  padding: 0.34rem 0.5rem 0.34rem 0.5rem;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fff;
+  background: linear-gradient(
+    90deg,
+    #ff6b4a 0%,
+    #f472b6 55%,
+    #c084fc 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  filter: drop-shadow(2px 3px 8px rgba(0, 0, 0, 0.4));
+}
+
+.home-portrait-card__ribbon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -0.48rem;
+  width: 0.48rem;
+  height: 100%;
+  background: #c084fc;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.home-portrait-card__ribbon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.26rem;
+  width: 0.26rem;
+  height: 0.26rem;
+  background: #8f243f;
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+}
+
 .home-portrait-card__thumb {
   position: absolute !important;
   inset: 0;

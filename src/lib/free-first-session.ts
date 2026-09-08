@@ -2,6 +2,12 @@ import type { Trainer } from "@/types/trainer";
 
 export const FREE_FIRST_SESSION_LABEL = "Free 1st session";
 
+export function isFreeFirstSessionBadge(
+  label: string | null | undefined
+): boolean {
+  return label?.trim() === FREE_FIRST_SESSION_LABEL;
+}
+
 /** Homepage rail size — matches New Specialists. */
 export const FREE_FIRST_SESSION_RAIL_LIMIT = 8;
 
