@@ -122,7 +122,7 @@ export function productLabel(key: SmoacStripeProductKey): string {
 export function productDescription(key: SmoacStripeProductKey): string {
   switch (key) {
     case "premium":
-      return "Full analytics, ranking intelligence, and growth insights.";
+      return "Full analytics, ranking intelligence, growth insights, and the Free 1st session marketplace rail.";
     case "platinum":
       return "Everything in Pro, plus client transformations on your profile and 20% off Boosts.";
     case "boosted_profile":

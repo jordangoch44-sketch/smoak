@@ -247,6 +247,17 @@ export const EXPLORE_MAP_CLUSTER_PIN_SIZE = { width: 88, height: 56 } as const;
 
 const PIN_TAP_SLOP_PX = 12;
 
+/** Stable key so pin layers skip a full rebuild when membership/coords are unchanged. */
+export function clustersPinSignature(clusters: ExploreMapCluster[]): string {
+  if (clusters.length === 0) return "pins:empty";
+  return clusters
+    .map(
+      (cluster) =>
+        `${cluster.id}:${cluster.count}:${cluster.latitude.toFixed(5)}:${cluster.longitude.toFixed(5)}`
+    )
+    .join("|");
+}
+
 /** Select on pointer-up so the card does not wait for a delayed click. */
 export function bindExploreMapPinSelect(
   el: HTMLElement,

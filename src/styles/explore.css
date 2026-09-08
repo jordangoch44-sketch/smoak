@@ -995,10 +995,18 @@ body.explore-hub-open .explore-split__cta-dock {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 50;
+    z-index: 60;
     height: 88%;
     max-height: calc(100dvh - var(--site-header-total-height));
     max-height: calc(100svh - var(--site-header-total-height));
+  }
+
+  .explore-page--map-shell:has(.explore-split--results-open)
+    .explore-bottom-card-dock,
+  .explore-page--map-shell:has(.explore-split--results-open) .explore-hub-tray {
+    display: none !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
   }
 
   .explore-page--map-shell:has(.explore-split--results-open)
@@ -2419,6 +2427,8 @@ body.location-selector-open .explore-map__recenter--hero {
   padding: 0.75rem 0.85rem 0.85rem;
   cursor: pointer;
   text-align: left;
+  text-decoration: none;
+  color: inherit;
   position: relative;
   outline: none;
   transition: background 180ms ease;

@@ -524,6 +524,7 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
     reviewSources,
     clientTransformations,
     membershipPlan,
+    offersFreeFirstSession: true,
     ...(isProPlus
       ? {
           isPremium: true,

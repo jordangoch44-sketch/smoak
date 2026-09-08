@@ -37,6 +37,8 @@ export interface SpecialistProfileOverrides {
   pricePerSession?: number;
   pricePerSessionMin?: number;
   pricePerSessionMax?: number;
+  /** Profile toggle — Pro / Pro Plus listing perk */
+  offersFreeFirstSession?: boolean;
   bio?: string;
   photoNotes?: string;
   /** JSON map of slideshow image URL → { x, y, zoom } framing for hero cover */
@@ -86,6 +88,7 @@ export type SpecialistProfileEditForm = Required<
     | "pricePerSession"
     | "pricePerSessionMin"
     | "pricePerSessionMax"
+    | "offersFreeFirstSession"
     | "bio"
     | "photoNotes"
     | "slideshowFramesJson"

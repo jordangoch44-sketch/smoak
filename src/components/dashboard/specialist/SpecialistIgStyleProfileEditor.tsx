@@ -5,12 +5,17 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatMembershipShortLabel, isProPlusPlan } from "@/lib/specialist-premium";
+import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 import {
   profileStyleAccentLabel,
   profileStyleFontLabel,
   profileStyleFrameLabel,
 } from "@/lib/specialist-profile-style";
-import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
+import {
+  formatCoachingStyleSelection,
+  GENDER_OPTIONS,
+  parseCoachingStyleSelection,
+} from "@/constants/specialist-onboarding-options";
 import { AlertTriangleIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
 import { SpecialistLinkInBioCard } from "./SpecialistLinkInBioCard";
 import { cn } from "@/lib/utils";
@@ -38,6 +43,7 @@ export type IgEditRowId =
   | "transformations"
   | "social"
   | "pricing"
+  | "free-first-session"
   | "contact"
   | "gender"
   | "experience"
@@ -345,8 +351,14 @@ export function SpecialistIgStyleProfileEditor({
           id="ig-edit-row-philosophy"
           sectionKey="philosophy"
           label="Coaching style"
-          value={previewOrAdd(formDefaults.trainingStyle)}
-          incomplete={!formDefaults.trainingStyle.trim()}
+          value={previewOrAdd(
+            formatCoachingStyleSelection(
+              parseCoachingStyleSelection(formDefaults.trainingStyle)
+            )
+          )}
+          incomplete={
+            parseCoachingStyleSelection(formDefaults.trainingStyle).length === 0
+          }
           highlighted={isHighlighted("philosophy")}
           onClick={() => onEditSection("philosophy")}
         />
@@ -427,6 +439,24 @@ export function SpecialistIgStyleProfileEditor({
           incomplete={!hasSessionPrice(sessionPrice)}
           highlighted={isHighlighted("pricing")}
           onClick={() => onEditSection("pricing")}
+        />
+        <IgEditRow
+          id="ig-edit-row-free-first-session"
+          sectionKey="free-first-session"
+          label={FREE_FIRST_SESSION_LABEL}
+          value={formDefaults.offersFreeFirstSession ? "On" : "Off"}
+          highlighted={isHighlighted("free-first-session")}
+          locked={!isPremium}
+          lockPlan="Pro"
+          onClick={() => {
+            if (!isPremium) {
+              if (onUpgrade) {
+                onUpgrade();
+                return;
+              }
+            }
+            onEditSection("free-first-session");
+          }}
         />
         <IgEditRow
           id="ig-edit-row-contact"

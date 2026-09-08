@@ -5,7 +5,6 @@
  * TODO: Rename to ProviderCard; routes remain /trainers/[id] until migrated to /providers.
  * Save heart lives outside the card link (valid HTML + reliable stacking).
  */
-import Link from "next/link";
 import { memo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Trainer } from "@/types";
@@ -17,8 +16,8 @@ import { TrainerCardGrid } from "./TrainerCardGrid";
 import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "./TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
+import { ProfileSheetLink } from "./ProfileSheetLink";
 import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
-import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 
 interface TrainerCardProps {
   trainer: Trainer;
@@ -50,10 +49,6 @@ export const TrainerCard = memo(function TrainerCard({
       /* prefetch is best-effort */
     }
   }, [priority, href, router]);
-
-  function warm() {
-    warmTrainerProfileNavigation(trainer, router);
-  }
 
   const cardBody = (
     <>
@@ -87,14 +82,13 @@ export const TrainerCard = memo(function TrainerCard({
           {cardBody}
         </div>
       ) : (
-        <Link
+        <ProfileSheetLink
+          trainer={trainer}
           href={href}
           className="block active:opacity-95"
-          onPointerDown={warm}
-          onClick={warm}
         >
           {cardBody}
-        </Link>
+        </ProfileSheetLink>
       )}
       <TrainerCardSaveSlot trainerId={trainer.id} />
     </div>

@@ -52,8 +52,16 @@ import {
   SPECIALIST_SERVICE_TYPE_OPTIONS,
   TRAVEL_TO_CLIENTS_OPTIONS,
 } from "@/types/specialist-service-area";
-import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
+import {
+  COACHING_STYLE_OPTIONS,
+  formatCoachingStyleSelection,
+  GENDER_OPTIONS,
+  parseCoachingStyleSelection,
+} from "@/constants/specialist-onboarding-options";
 import { parseGender } from "@/lib/gender";
+import { canonicalizeProfessionLabel } from "@/lib/profession-category";
+import { ProfileEditChipGroup } from "@/components/dashboard/specialist/ProfileEditSection";
+import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 import type { Trainer } from "@/types/trainer";
 
 const LOCK_CLASS = "specialist-live-edit-open";
@@ -74,6 +82,7 @@ type SectionId =
   | "credentials"
   | "social"
   | "pricing"
+  | "free-first-session"
   | "contact"
   | "gender"
   | "experience"
@@ -91,10 +100,11 @@ const SECTION_TITLES: Record<SectionId, string> = {
   philosophy: "Coaching style",
   "ideal-clients": "Best for",
   "service-area": "Service area & location",
-  "session-experience": "Session experience",
+  "session-experience": "Training options",
   credentials: "Credentials",
   social: "Connect",
   pricing: "Pricing",
+  "free-first-session": "Free 1st session",
   contact: "Contact",
   gender: "Gender",
   experience: "Experience",
@@ -136,6 +146,10 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
     case "pricing":
     case "rates":
       return "pricing";
+    case "free-first-session":
+    case "free-first":
+    case "first-session":
+      return "free-first-session";
     case "bio":
     case "about":
       return "bio";
@@ -482,8 +496,26 @@ export function SpecialistDashboardProfilePreview({
 
   function startEdit(section: SectionId) {
     if (!canEdit || !formDefaults) return;
+    if (section === "free-first-session" && !isPremium) {
+      onUpgrade?.();
+      return;
+    }
+    if (section === "transformations" && !isProPlus) {
+      onUpgrade?.();
+      return;
+    }
+    const next = cloneSpecialistProfileEditForm(formDefaults);
+    if (section === "philosophy") {
+      next.trainingStyle = formatCoachingStyleSelection(
+        parseCoachingStyleSelection(next.trainingStyle)
+      );
+    }
+    if (section === "profession") {
+      next.profession =
+        canonicalizeProfessionLabel(next.profession) ?? next.profession;
+    }
     setEditing(section);
-    setDraft(cloneSpecialistProfileEditForm(formDefaults));
+    setDraft(next);
   }
 
   function cancelEdit() {
@@ -520,6 +552,9 @@ export function SpecialistDashboardProfilePreview({
   }
 
   const form = draft;
+  const selectedProfession = form
+    ? canonicalizeProfessionLabel(form.profession)
+    : null;
   const profileStyle = normalizeProfileStyle(trainer.profileStyle);
   const pageStyle = {
     "--profile-accent-rgb": getProfileAccentRgb(profileStyle.accent),
@@ -578,20 +613,13 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "profession" ? (
-          <label className="login-field">
-            <span className="login-field__label">Category</span>
-            <select
-              className="login-field__input dashboard-edit-select profile-edit-input"
-              value={form.profession}
-              onChange={(e) => patch("profession", e.target.value)}
-            >
-              {MAIN_PROFESSION_CATEGORIES.map((profession) => (
-                <option key={profession} value={profession}>
-                  {profession}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ProfileEditChipGroup
+            label="Category"
+            options={MAIN_PROFESSION_CATEGORIES}
+            selected={selectedProfession ? [selectedProfession] : []}
+            onChange={(next) => patch("profession", next[0] ?? "")}
+            hint="Choose one of the eleven marketplace categories."
+          />
         ) : null}
 
         {editing === "transformations" ? (
@@ -662,12 +690,15 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "philosophy" ? (
-          <textarea
-            className="login-field__input dashboard-edit-textarea profile-edit-input"
-            rows={4}
-            value={form.trainingStyle}
-            onChange={(e) => patch("trainingStyle", e.target.value)}
-            placeholder="How you coach and what drives results"
+          <ProfileEditChipGroup
+            label="Coaching style"
+            options={COACHING_STYLE_OPTIONS}
+            selected={parseCoachingStyleSelection(form.trainingStyle)}
+            onChange={(next) =>
+              patch("trainingStyle", formatCoachingStyleSelection(next))
+            }
+            multiple
+            hint="Select every style that fits how you coach."
           />
         ) : null}
 
@@ -826,26 +857,12 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "session-experience" ? (
-          <div className="specialist-dash-profile__fields">
-            <SpecialistTrainingOptionsFields
-              value={form.trainingOptions}
-              onChange={(trainingOptions) =>
-                patch("trainingOptions", trainingOptions)
-              }
-            />
-            <label className="login-field">
-              <span className="login-field__label">
-                Session experience (comma-separated)
-              </span>
-              <textarea
-                className="login-field__input dashboard-edit-textarea profile-edit-input"
-                rows={4}
-                value={form.bookingAvailability}
-                onChange={(e) => patch("bookingAvailability", e.target.value)}
-                placeholder="In-home sessions, Online coaching, Free consultation"
-              />
-            </label>
-          </div>
+          <SpecialistTrainingOptionsFields
+            value={form.trainingOptions}
+            onChange={(trainingOptions) =>
+              patch("trainingOptions", trainingOptions)
+            }
+          />
         ) : null}
 
         {editing === "credentials" ? (
@@ -992,6 +1009,41 @@ export function SpecialistDashboardProfilePreview({
           </div>
         ) : null}
 
+        {editing === "free-first-session" ? (
+          <div className="specialist-dash-profile__fields">
+            <p className="wizard-field-hint">
+              Turn this on to appear in the marketplace {FREE_FIRST_SESSION_LABEL}{" "}
+              slider. Pro and Pro Plus only.
+            </p>
+            <div className="dashboard-edit-chip-grid" role="group" aria-label={FREE_FIRST_SESSION_LABEL}>
+              <button
+                type="button"
+                className={
+                  form.offersFreeFirstSession
+                    ? "dashboard-edit-chip dashboard-edit-chip--active"
+                    : "dashboard-edit-chip"
+                }
+                aria-pressed={form.offersFreeFirstSession}
+                onClick={() => patch("offersFreeFirstSession", true)}
+              >
+                On
+              </button>
+              <button
+                type="button"
+                className={
+                  !form.offersFreeFirstSession
+                    ? "dashboard-edit-chip dashboard-edit-chip--active"
+                    : "dashboard-edit-chip"
+                }
+                aria-pressed={!form.offersFreeFirstSession}
+                onClick={() => patch("offersFreeFirstSession", false)}
+              >
+                Off
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         {editing === "contact" ? (
           <div className="specialist-dash-profile__fields">
             <label className="login-field">
@@ -1018,22 +1070,12 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "gender" ? (
-          <label className="login-field">
-            <span className="login-field__label">Gender</span>
-            <select
-              className="login-field__input dashboard-edit-select profile-edit-input"
-              value={form.gender}
-              required
-              onChange={(e) => patch("gender", parseGender(e.target.value))}
-            >
-              <option value="">Select</option>
-              {GENDER_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ProfileEditChipGroup
+            label="Gender"
+            options={GENDER_OPTIONS}
+            selected={form.gender ? [form.gender] : []}
+            onChange={(next) => patch("gender", parseGender(next[0] ?? ""))}
+          />
         ) : null}
 
         {editing === "experience" ? (

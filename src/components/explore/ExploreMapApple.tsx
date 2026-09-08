@@ -7,7 +7,6 @@ import {
   useProfileSheetOpen,
   useSiteLocationGateOpen,
 } from "@/hooks/useProfileSheetOpen";
-import { useExploreMapLayoutEpoch } from "@/hooks/useExploreMapLayoutEpoch";
 import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import {
@@ -25,6 +24,7 @@ import {
 } from "@/lib/apple-maps";
 import {
   clusterTrainersForMap,
+  clustersPinSignature,
   bindExploreMapPinSelect,
   buildExploreMapPinHtml,
   EXPLORE_MAP_CLUSTER_PIN_SIZE,
@@ -225,10 +225,10 @@ export function ExploreMapApple({
   const [mapEpoch, setMapEpoch] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCluster, setSelectedCluster] = useState<ExploreMapCluster | null>(null);
+  const pinsSignatureRef = useRef("");
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
   const mapPaused = profileSheetOpen || locationGateOpen;
-  const layoutEpoch = useExploreMapLayoutEpoch();
   const wasPausedRef = useRef(false);
 
   const clusters = useMemo(() => {
@@ -431,12 +431,10 @@ export function ExploreMapApple({
 
     root.addEventListener("click", onPopupLinkClick, true);
     root.addEventListener("pointerup", onPinActivate, true);
-    root.addEventListener("click", onPinActivate, true);
     root.addEventListener("pointerdown", onPointerDown, true);
     return () => {
       root.removeEventListener("click", onPopupLinkClick, true);
       root.removeEventListener("pointerup", onPinActivate, true);
-      root.removeEventListener("click", onPinActivate, true);
       root.removeEventListener("pointerdown", onPointerDown, true);
     };
   }, [router, clearSelection, selectCluster, mapEpoch]);
@@ -621,7 +619,6 @@ export function ExploreMapApple({
     activeSearchArea?.radiusMiles,
     mapPaused,
     mapEpoch,
-    layoutEpoch,
     applyLiveCamera,
     suppressMoves,
   ]);
@@ -630,6 +627,13 @@ export function ExploreMapApple({
     const map = mapRef.current;
     const mapkit = mapkitRef.current;
     if (!map || !mapkit) return;
+
+    const meKey = userLocationDot
+      ? `me:${userLocationDot.latitude.toFixed(4)},${userLocationDot.longitude.toFixed(4)}`
+      : "me:none";
+    const signature = `${mapEpoch}|${clustersPinSignature(clusters)}|${meKey}`;
+    if (pinsSignatureRef.current === signature) return;
+    pinsSignatureRef.current = signature;
 
     if (pinAnnotationsRef.current.length > 0) {
       map.removeAnnotations(pinAnnotationsRef.current);
@@ -738,7 +742,6 @@ export function ExploreMapApple({
     clusters,
     userLocationDot,
     mapEpoch,
-    layoutEpoch,
     selectCluster,
     clearSelection,
   ]);

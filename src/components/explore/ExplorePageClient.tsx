@@ -29,8 +29,7 @@ export function ExplorePageClient() {
   const preciseUserLocation = usePreciseUserCoordinates();
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
-  const [pendingMapArea, setPendingMapArea] =
-    useState<ExploreSearchArea | null>(null);
+  const [showSearchHere, setShowSearchHere] = useState(false);
   const [mapSearchLoading, setMapSearchLoading] = useState(false);
 
   const {
@@ -65,11 +64,11 @@ export function ExplorePageClient() {
     catalogMode,
   });
 
-  pendingMapAreaRef.current = pendingMapArea;
-
   const handlePendingSearchAreaChange = useCallback(
     (area: ExploreSearchArea | null) => {
-      setPendingMapArea(area);
+      pendingMapAreaRef.current = area;
+      const next = Boolean(area);
+      setShowSearchHere((prev) => (prev === next ? prev : next));
     },
     []
   );
@@ -79,12 +78,14 @@ export function ExplorePageClient() {
     if (!area) return;
     setMapSearchLoading(true);
     applyMapSearchArea(area);
-    setPendingMapArea(null);
+    pendingMapAreaRef.current = null;
+    setShowSearchHere(false);
     window.setTimeout(() => setMapSearchLoading(false), 280);
   }, [applyMapSearchArea]);
 
   const handleRecenterSearch = useCallback(() => {
-    setPendingMapArea(null);
+    pendingMapAreaRef.current = null;
+    setShowSearchHere(false);
     setMapSearchLoading(false);
     resetMapSearchArea();
   }, [resetMapSearchArea]);
@@ -233,7 +234,7 @@ export function ExplorePageClient() {
         {isMobile ? (
           <ExploreResultsSheet
             resultCount={filtered.length}
-            showSearchHere={Boolean(pendingMapArea)}
+            showSearchHere={showSearchHere}
             searchHereLoading={mapSearchLoading}
             onSearchHere={handleSearchHere}
           >
@@ -250,7 +251,7 @@ export function ExplorePageClient() {
                   activeSearchArea={activeSearchArea}
                   onPendingSearchAreaChange={handlePendingSearchAreaChange}
                   onRecenterSearch={handleRecenterSearch}
-                  showSearchHere={Boolean(pendingMapArea)}
+                  showSearchHere={showSearchHere}
                   searchHereLoading={mapSearchLoading}
                   onSearchHere={handleSearchHere}
                   locked={false}

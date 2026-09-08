@@ -26,10 +26,10 @@ import {
 } from "./ProfileSheetToolbarHostContext";
 import type { MotionValue } from "framer-motion";
 
-/** GPU tween — smooth slide-up; no spring overshoot. */
+/** GPU tween — keep this short so pin/list taps feel instant. */
 const OPEN_TRANSITION = {
   type: "tween" as const,
-  duration: 0.22,
+  duration: 0.14,
   ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
 };
 const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];

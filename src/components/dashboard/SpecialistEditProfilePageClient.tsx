@@ -13,6 +13,7 @@ import {
 } from "@/components/dashboard/shared";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
 import {
+  ProfileEditChipGroup,
   ProfileEditInputField,
   ProfileEditSection,
   ProfileEditViewField,
@@ -73,8 +74,15 @@ import {
   hasSessionPrice,
   resolveTrainerSessionPriceRange,
 } from "@/lib/session-price";
-import { GENDER_OPTIONS } from "@/constants/specialist-onboarding-options";
+import {
+  COACHING_STYLE_OPTIONS,
+  formatCoachingStyleSelection,
+  GENDER_OPTIONS,
+  parseCoachingStyleSelection,
+} from "@/constants/specialist-onboarding-options";
 import { parseGender } from "@/lib/gender";
+import { canonicalizeProfessionLabel } from "@/lib/profession-category";
+import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 
 type SectionId =
   | "basic-info"
@@ -146,6 +154,9 @@ export function SpecialistEditProfilePageClient({
 
   const savedForm = formDefaults;
   const form = editingSection != null && sectionDraft ? sectionDraft : savedForm;
+  const selectedProfession = form
+    ? canonicalizeProfessionLabel(form.profession)
+    : null;
 
   useEffect(() => {
     if (!savedForm) return;
@@ -203,7 +214,17 @@ export function SpecialistEditProfilePageClient({
       return;
     }
     setEditingSection(sectionId);
-    setSectionDraft(cloneSpecialistProfileEditForm(savedForm));
+    const next = cloneSpecialistProfileEditForm(savedForm);
+    if (sectionId === "experience") {
+      next.trainingStyle = formatCoachingStyleSelection(
+        parseCoachingStyleSelection(next.trainingStyle)
+      );
+    }
+    if (sectionId === "professional-role") {
+      next.profession =
+        canonicalizeProfessionLabel(next.profession) ?? next.profession;
+    }
+    setSectionDraft(next);
   }
 
   function cancelEdit() {
@@ -579,23 +600,14 @@ export function SpecialistEditProfilePageClient({
                     required
                   />
                 </ProfileEditInputField>
-                <ProfileEditInputField label="Gender">
-                  <select
-                    className="login-field__input dashboard-edit-select profile-edit-input"
-                    value={form.gender}
-                    required
-                    onChange={(event) =>
-                      updateField("gender", parseGender(event.target.value))
-                    }
-                  >
-                    <option value="">Select</option>
-                    {GENDER_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </ProfileEditInputField>
+                <ProfileEditChipGroup
+                  label="Gender"
+                  options={GENDER_OPTIONS}
+                  selected={form.gender ? [form.gender] : []}
+                  onChange={(next) =>
+                    updateField("gender", parseGender(next[0] ?? ""))
+                  }
+                />
                 <ProfileEditInputField label="Phone">
                   <input
                     className="login-field__input profile-edit-input"
@@ -786,10 +798,11 @@ export function SpecialistEditProfilePageClient({
                   emptyLabel="Add experience"
                 />
                 <ProfileEditViewField
-                  label="Training style"
-                  value={savedForm.trainingStyle}
-                  emptyLabel="Add coaching philosophy"
-                  multiline
+                  label="Coaching style"
+                  value={formatCoachingStyleSelection(
+                    parseCoachingStyleSelection(savedForm.trainingStyle)
+                  )}
+                  emptyLabel="Add coaching style"
                 />
                 <ProfileEditViewField
                   label="Services offered"
@@ -810,16 +823,19 @@ export function SpecialistEditProfilePageClient({
                     }
                   />
                 </ProfileEditInputField>
-                <ProfileEditInputField label="Training style">
-                  <textarea
-                    className="login-field__input dashboard-edit-textarea profile-edit-input"
-                    rows={4}
-                    value={form.trainingStyle}
-                    onChange={(event) =>
-                      updateField("trainingStyle", event.target.value)
-                    }
-                  />
-                </ProfileEditInputField>
+                <ProfileEditChipGroup
+                  label="Coaching style"
+                  options={COACHING_STYLE_OPTIONS}
+                  selected={parseCoachingStyleSelection(form.trainingStyle)}
+                  onChange={(next) =>
+                    updateField(
+                      "trainingStyle",
+                      formatCoachingStyleSelection(next)
+                    )
+                  }
+                  multiple
+                  hint="Select every style that fits how you coach."
+                />
                 <ProfileEditInputField label="Services offered">
                   <textarea
                     className="login-field__input dashboard-edit-textarea profile-edit-input"
@@ -839,31 +855,28 @@ export function SpecialistEditProfilePageClient({
             title="Professional role"
             description="Your main profession category"
             incomplete={
-              !savedForm.profession.trim() ||
-              !savedForm.trainingStyle.trim() ||
+              !canonicalizeProfessionLabel(savedForm.profession) ||
+              parseCoachingStyleSelection(savedForm.trainingStyle).length === 0 ||
               !savedForm.servicesOffered.trim()
             }
             viewContent={
               <ProfileEditViewField
-                label="Profession"
-                value={savedForm.profession}
-                emptyLabel="Add profession"
+                label="Category"
+                value={
+                  canonicalizeProfessionLabel(savedForm.profession) ??
+                  savedForm.profession
+                }
+                emptyLabel="Add category"
               />
             }
             editContent={
-              <ProfileEditInputField label="Profession">
-                <select
-                  className="login-field__input dashboard-edit-select profile-edit-input"
-                  value={form.profession}
-                  onChange={(event) => updateField("profession", event.target.value)}
-                >
-                  {MAIN_PROFESSION_CATEGORIES.map((profession) => (
-                    <option key={profession} value={profession}>
-                      {profession}
-                    </option>
-                  ))}
-                </select>
-              </ProfileEditInputField>
+              <ProfileEditChipGroup
+                label="Category"
+                options={MAIN_PROFESSION_CATEGORIES}
+                selected={selectedProfession ? [selectedProfession] : []}
+                onChange={(next) => updateField("profession", next[0] ?? "")}
+                hint="Choose one of the eleven marketplace categories."
+              />
             }
           />
 
@@ -1056,6 +1069,16 @@ export function SpecialistEditProfilePageClient({
                     })
                   )}
                   emptyLabel="Add pricing"
+                />
+                <ProfileEditViewField
+                  label={FREE_FIRST_SESSION_LABEL}
+                  value={
+                    isPremium
+                      ? savedForm.offersFreeFirstSession
+                        ? "On"
+                        : "Off"
+                      : "Unlocks with Pro"
+                  }
                 />
                 <ProfileEditViewField
                   label="Availability"
@@ -1260,6 +1283,59 @@ export function SpecialistEditProfilePageClient({
                     />
                   </ProfileEditInputField>
                 </div>
+                {isPremium ? (
+                  <ProfileEditInputField
+                    label={FREE_FIRST_SESSION_LABEL}
+                    hint="Appear in the marketplace Free 1st session slider. Pro and Pro Plus only."
+                  >
+                    <div
+                      className="dashboard-edit-chip-grid"
+                      role="group"
+                      aria-label={FREE_FIRST_SESSION_LABEL}
+                    >
+                      <button
+                        type="button"
+                        className={
+                          form.offersFreeFirstSession
+                            ? "dashboard-edit-chip dashboard-edit-chip--active"
+                            : "dashboard-edit-chip"
+                        }
+                        aria-pressed={form.offersFreeFirstSession}
+                        onClick={() =>
+                          updateField("offersFreeFirstSession", true)
+                        }
+                      >
+                        On
+                      </button>
+                      <button
+                        type="button"
+                        className={
+                          !form.offersFreeFirstSession
+                            ? "dashboard-edit-chip dashboard-edit-chip--active"
+                            : "dashboard-edit-chip"
+                        }
+                        aria-pressed={!form.offersFreeFirstSession}
+                        onClick={() =>
+                          updateField("offersFreeFirstSession", false)
+                        }
+                      >
+                        Off
+                      </button>
+                    </div>
+                  </ProfileEditInputField>
+                ) : (
+                  <p className="wizard-field-hint">
+                    {FREE_FIRST_SESSION_LABEL} is a Pro perk.{" "}
+                    <button
+                      type="button"
+                      className="smoac-control"
+                      onClick={() => setUpgradeOpen(true)}
+                    >
+                      Upgrade to Pro
+                    </button>{" "}
+                    to appear on the marketplace slider.
+                  </p>
+                )}
                 <ProfileEditInputField label="Availability & session types">
                   <input
                     className="login-field__input profile-edit-input"

@@ -18,6 +18,7 @@ export type SpecialistEngagementSurface =
   | "home_sponsored"
   | "home_featured"
   | "home_new"
+  | "home_free_first"
   | "home_top50"
   | "home_ranking_boost"
   | "profile_rail"

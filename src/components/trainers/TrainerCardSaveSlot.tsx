@@ -12,6 +12,7 @@ export function TrainerCardSaveSlot({ trainerId }: TrainerCardSaveSlotProps) {
     <div
       className="trainer-card-save"
       data-save-control
+      onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
       <SaveTrainerButton trainerId={trainerId} overlay={false} />

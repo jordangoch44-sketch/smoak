@@ -111,6 +111,10 @@ export function applySpecialistProfileOverrides(
       overrides.homepageSpecialties ?? base.homepageSpecialties,
     serviceArea: overrides.serviceArea ?? base.serviceArea,
     certifications: overrides.certifications ?? base.certifications,
+    offersFreeFirstSession:
+      overrides.offersFreeFirstSession ??
+      base.offersFreeFirstSession ??
+      true,
     profileStyle: normalizeProfileStyle(
       overrides.profileStyle ?? base.profileStyle
     ),
@@ -383,6 +387,10 @@ export function overridesFromTrainer(
         pricePerSessionMax: range.max,
       };
     })(),
+    offersFreeFirstSession:
+      stored?.offersFreeFirstSession ??
+      trainer.offersFreeFirstSession ??
+      true,
     bio: stored?.bio ?? trainer.bio,
     photoNotes:
       stored?.photoNotes?.trim()
@@ -499,6 +507,7 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
         pricePerSessionMax: range.max,
       };
     })(),
+    offersFreeFirstSession: form.offersFreeFirstSession,
     bio: form.bio.trim(),
     photoNotes: form.photoNotes.trim(),
     slideshowFramesJson: form.slideshowFramesJson.trim(),

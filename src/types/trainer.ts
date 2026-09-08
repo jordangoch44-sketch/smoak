@@ -139,6 +139,11 @@ export interface Trainer {
   pricePerSessionMin?: number;
   /** High end of the advertised 1:1 session range (USD). */
   pricePerSessionMax?: number;
+  /**
+   * Opt into the marketplace “Free 1st session” rail.
+   * Defaults ON when unset. Public placement still requires Pro / Pro Plus.
+   */
+  offersFreeFirstSession?: boolean;
   rating: number;
   /** Sum of `reviewSources` when set; otherwise legacy total */
   reviewCount: number;

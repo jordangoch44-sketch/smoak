@@ -1,13 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { TapLink } from "@/components/ui/TapLink";
+import { ProfileSheetLink } from "@/components/trainers/ProfileSheetLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -35,29 +33,17 @@ export function HomePortraitSpecialistCard({
   reviewCount,
   replaceCurrentProfile = false,
 }: HomePortraitSpecialistCardProps) {
-  const router = useRouter();
-  const href = `/trainers/${trainer.id}`;
-
-  function warm() {
-    warmTrainerProfileNavigation(trainer, router, {
-      prefetch: replaceCurrentProfile ? false : undefined,
-    });
-  }
-
   return (
     <div className="home-portrait-card relative" role="listitem">
       <SpecialistImpressionBeacon
         specialistId={trainer.id}
         surface={impressionSurface}
       />
-      <TapLink
-        href={href}
+      <ProfileSheetLink
+        trainer={trainer}
         replace={replaceCurrentProfile}
         prefetch={replaceCurrentProfile ? false : undefined}
-        scroll={replaceCurrentProfile ? false : undefined}
         className="home-portrait-card__link"
-        onPointerDown={warm}
-        onClick={warm}
       >
         <article className="home-portrait-card__article">
           <div className="home-portrait-card__media">
@@ -94,7 +80,7 @@ export function HomePortraitSpecialistCard({
             />
           </div>
         </article>
-      </TapLink>
+      </ProfileSheetLink>
       <TrainerCardSaveSlot trainerId={trainer.id} />
     </div>
   );

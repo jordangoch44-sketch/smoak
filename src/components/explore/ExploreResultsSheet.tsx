@@ -17,6 +17,17 @@ const RESULTS_HEIGHT_PCT = 88;
 const DISMISS_DRAG_PX = 72;
 /** Fast downward flick also dismisses */
 const DISMISS_VELOCITY = 0.85;
+/** Body-list pull must beat a normal card tap / slight finger jitter */
+const BODY_DISMISS_PULL_PX = 24;
+
+function isResultsInteractiveTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest(
+      "a, button, input, textarea, select, label, [data-save-control], .smoac-control"
+    )
+  );
+}
 
 interface ExploreResultsSheetProps {
   children: ReactNode;
@@ -51,6 +62,7 @@ export function ExploreResultsSheet({
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     pointerId: number;
+    startX: number;
     startY: number;
     lastY: number;
     lastT: number;
@@ -83,12 +95,14 @@ export function ExploreResultsSheet({
     ) => {
       if (!open || event.button !== 0) return;
       if (options.fromBody) {
+        if (isResultsInteractiveTarget(event.target)) return;
         const body = bodyRef.current;
         if (!body || body.scrollTop > 1) return;
       }
 
       dragRef.current = {
         pointerId: event.pointerId,
+        startX: event.clientX,
         startY: event.clientY,
         lastY: event.clientY,
         lastT: performance.now(),
@@ -121,8 +135,9 @@ export function ExploreResultsSheet({
     if (drag.fromBody && !drag.active) {
       const body = bodyRef.current;
       if (!body) return;
-      /* Only take over once the user pulls down while already at top */
-      if (delta <= 8 || body.scrollTop > 1) return;
+      /* Only take over once the user clearly pulls down while already at top */
+      if (delta < BODY_DISMISS_PULL_PX || body.scrollTop > 1) return;
+      if (delta < Math.abs(event.clientX - drag.startX) * 1.35) return;
       drag.active = true;
       try {
         event.currentTarget.setPointerCapture(event.pointerId);

@@ -3,6 +3,7 @@
 import {
   SponsoredSpecialists,
   FeaturedSpotlightSpecialists,
+  FreeFirstSessionSpecialists,
   NewSpecialists,
   HomeCalorieCalculatorCta,
 } from "@/components/home";
@@ -14,7 +15,7 @@ import type { Trainer } from "@/types/trainer";
 /**
  * Marketplace discovery rails — catalog from the session store.
  * Categories (and the city-rankings CTA) sit above; calorie calculator sits
- * between Sponsored and New; essence photo strip sits below.
+ * between Sponsored and Free 1st session; New and Featured follow.
  * Sponsored leads when anyone is paying for a boost; otherwise that rail is omitted.
  */
 export function HomeDiscoveryClient({
@@ -44,6 +45,10 @@ export function HomeDiscoveryClient({
         catalogMode={resolvedMode}
       />
       <HomeCalorieCalculatorCta />
+      <FreeFirstSessionSpecialists
+        initialCatalog={resolvedCatalog}
+        catalogMode={resolvedMode}
+      />
       <NewSpecialists
         initialCatalog={resolvedCatalog}
         catalogMode={resolvedMode}

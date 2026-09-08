@@ -37,6 +37,7 @@ export const SMOAC_PRO_TRIAL_CONFIRM_MODAL = {
     "Full profile analytics unlocked",
     "Visibility & ranking intelligence",
     "Client engagement metrics",
+    "Free 1st session marketplace placement",
     "Growth insights across your marketplace profile",
   ] as const,
   note: "Available once per specialist account.",

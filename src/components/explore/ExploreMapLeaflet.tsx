@@ -24,6 +24,7 @@ import {
 import { getExploreMapBasemap } from "@/lib/explore-map-tiles";
 import {
   clusterTrainersForMap,
+  clustersPinSignature,
   bindExploreMapPinSelect,
   buildExploreMapPinHtml,
   EXPLORE_MAP_CLUSTER_PIN_SIZE,
@@ -209,6 +210,7 @@ export function ExploreMapLeaflet({
   const [mapEpoch, setMapEpoch] = useState(0);
   const [selectedCluster, setSelectedCluster] = useState<ExploreMapCluster | null>(null);
   const selectedClusterIdRef = useRef<string | null>(null);
+  const pinsSignatureRef = useRef("");
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
   const mapPaused = profileSheetOpen || locationGateOpen;
@@ -317,31 +319,6 @@ export function ExploreMapLeaflet({
       router.push(href, { scroll: false });
     }
 
-    function onContainerClick(event: MouseEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      if (
-        target.closest(
-          ".explore-hub-tray, .leaflet-popup, .smoac-control"
-        )
-      ) {
-        return;
-      }
-
-      const pinEl = target.closest<HTMLElement>(".explore-map-pin");
-      if (pinEl) {
-        const clusterId = pinEl.getAttribute("data-cluster-id");
-        if (clusterId) {
-          const cluster = clustersRef.current.find((c) => c.id === clusterId);
-          if (cluster) {
-            event.preventDefault();
-            event.stopPropagation();
-            selectCluster(cluster);
-          }
-        }
-      }
-    }
-
     function onPinPress(event: PointerEvent) {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -354,14 +331,12 @@ export function ExploreMapLeaflet({
     }
 
     root.addEventListener("click", onPopupLinkClick, true);
-    root.addEventListener("click", onContainerClick, true);
     root.addEventListener("pointerdown", onPinPress, true);
     return () => {
       root.removeEventListener("click", onPopupLinkClick, true);
-      root.removeEventListener("click", onContainerClick, true);
       root.removeEventListener("pointerdown", onPinPress, true);
     };
-  }, [router, selectCluster]);
+  }, [router]);
 
   const areaKey = areaCenter
     ? `${areaCenter.latitude.toFixed(4)},${areaCenter.longitude.toFixed(4)}`
@@ -588,7 +563,6 @@ export function ExploreMapLeaflet({
     activeSearchArea?.radiusMiles,
     mapPaused,
     mapEpoch,
-    layoutEpoch,
     applyLiveCamera,
     suppressMoves,
   ]);
@@ -598,6 +572,13 @@ export function ExploreMapLeaflet({
     const L = leafletRef.current;
     const layer = markersLayerRef.current;
     if (!map || !L || !layer) return;
+
+    const meKey = userLocationDot
+      ? `me:${userLocationDot.latitude.toFixed(4)},${userLocationDot.longitude.toFixed(4)}`
+      : "me:none";
+    const signature = `${mapEpoch}|${clustersPinSignature(clusters)}|${meKey}`;
+    if (pinsSignatureRef.current === signature) return;
+    pinsSignatureRef.current = signature;
 
     layer.clearLayers();
     if (areaDotRef.current) {

@@ -76,6 +76,68 @@ export const GENDER_OPTIONS = [
   { value: "female" as const, label: "Female" },
 ] as const;
 
+/** Canonical coaching-style pills on specialist profiles — select from these only. */
+export const COACHING_STYLE_OPTIONS = [
+  "Science-Based",
+  "Supportive Coaching",
+  "High Accountability",
+  "Results-Focused",
+  "Beginner Friendly",
+  "Athletic Performance",
+  "Tough Love",
+] as const;
+
+export type CoachingStyleOption = (typeof COACHING_STYLE_OPTIONS)[number];
+
+const COACHING_STYLE_BY_KEY = new Map<string, CoachingStyleOption>(
+  COACHING_STYLE_OPTIONS.map((option) => [option.toLowerCase(), option])
+);
+
+const COACHING_STYLE_ALIASES: Record<string, CoachingStyleOption> = {
+  supportive: "Supportive Coaching",
+  "high accountability": "High Accountability",
+  "results focused": "Results-Focused",
+  "science based": "Science-Based",
+  "beginner friendly": "Beginner Friendly",
+  "tough love": "Tough Love",
+  "athletic performance": "Athletic Performance",
+};
+
+function coachingStyleKey(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
+export function parseCoachingStyleSelection(
+  value: string
+): CoachingStyleOption[] {
+  if (!value.trim()) return [];
+  const parts = /[,;\n·]/.test(value) ? value.split(/[,;\n·]+/) : [value];
+  const seen = new Set<CoachingStyleOption>();
+  const next: CoachingStyleOption[] = [];
+  for (const part of parts) {
+    const key = coachingStyleKey(part);
+    if (!key) continue;
+    const match =
+      COACHING_STYLE_BY_KEY.get(key) ??
+      COACHING_STYLE_BY_KEY.get(part.trim().toLowerCase()) ??
+      COACHING_STYLE_ALIASES[key];
+    if (!match || seen.has(match)) continue;
+    seen.add(match);
+    next.push(match);
+  }
+  return next;
+}
+
+export function formatCoachingStyleSelection(
+  selected: readonly string[]
+): string {
+  return parseCoachingStyleSelection(selected.join(" · ")).join(" · ");
+}
+
 export const SPECIALIST_ONBOARDING_STEP_LABELS = [
   "Professional type",
   "Account details",

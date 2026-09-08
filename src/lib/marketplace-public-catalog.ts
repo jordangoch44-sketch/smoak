@@ -17,6 +17,7 @@ import {
 } from "@/lib/specialist-application-storage";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
+import { isTrainerFreeFirstSessionEligible } from "@/lib/free-first-session";
 import type { ProfileStatus } from "@/types/specialist-application";
 import type { Trainer } from "@/types/trainer";
 
@@ -221,6 +222,15 @@ export function listPublicSponsoredTrainers(
   options: PublicCatalogOptions = {}
 ): Trainer[] {
   return listPublicMarketplaceTrainers(options).filter(isTrainerSponsored);
+}
+
+/** Specialists who opted into a free first session (default ON). */
+export function listPublicFreeFirstSessionTrainers(
+  options: PublicCatalogOptions = {}
+): Trainer[] {
+  return listPublicMarketplaceTrainers(options).filter(
+    isTrainerFreeFirstSessionEligible
+  );
 }
 
 /**

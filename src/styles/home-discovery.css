@@ -148,7 +148,8 @@
 }
 
 .home-page--discovery .home-sponsored .home-section__header,
-.home-page--discovery .home-new .home-section__header {
+.home-page--discovery .home-new .home-section__header,
+.home-page--discovery .home-free-first .home-section__header {
   margin-bottom: 1.1rem;
 }
 
@@ -1093,6 +1094,7 @@
   .home-page--discovery .home-sponsored,
   .home-page--discovery .home-specialty,
   .home-page--discovery .home-new,
+  .home-page--discovery .home-free-first,
   .home-page--discovery .home-featured {
     padding-block: clamp(1.35rem, 2.8vw, 2.15rem);
   }
@@ -1235,6 +1237,7 @@
   }
 
   .home-page--discovery .home-new .home-portrait-card,
+.home-page--discovery .home-free-first .home-portrait-card,
   .home-page--discovery .home-featured .home-portrait-card,
   .home-page--discovery .home-sponsored .home-portrait-card {
     flex-basis: 14rem;
@@ -1245,6 +1248,7 @@
 .home-page--discovery .home-sponsored,
 .home-page--discovery .home-specialty,
 .home-page--discovery .home-new,
+.home-page--discovery .home-free-first,
 .home-page--discovery .home-featured,
 .home-page--discovery .home-calorie-cta {
   padding-block: clamp(2.25rem, 5vw, 3.5rem);
@@ -1256,12 +1260,14 @@
 }
 
 .home-page--discovery .home-specialty + .home-new,
+.home-page--discovery .home-specialty + .home-free-first,
 .home-page--discovery .home-specialty + .home-sponsored {
   padding-top: 2.1rem;
   padding-bottom: 1.65rem;
 }
 
-.home-page--discovery .home-sponsored + .home-new {
+.home-page--discovery .home-sponsored + .home-new,
+.home-page--discovery .home-sponsored + .home-free-first {
   padding-top: 2rem;
   padding-bottom: 1.65rem;
 }
@@ -1272,7 +1278,13 @@
   padding-bottom: 1.15rem;
 }
 
-.home-page--discovery .home-calorie-cta + .home-new {
+.home-page--discovery .home-calorie-cta + .home-new,
+.home-page--discovery .home-calorie-cta + .home-free-first {
+  padding-top: 1.85rem;
+  padding-bottom: 1.65rem;
+}
+
+.home-page--discovery .home-free-first + .home-new {
   padding-top: 1.85rem;
   padding-bottom: 1.65rem;
 }
@@ -1595,7 +1607,8 @@
   }
 }
 
-.home-page--discovery .home-new + .home-featured {
+.home-page--discovery .home-new + .home-featured,
+.home-page--discovery .home-free-first + .home-featured {
   padding-top: 1.75rem;
   padding-bottom: clamp(1.75rem, 4vw, 2.5rem);
 }
@@ -1607,13 +1620,15 @@
 /* Essence strip after discovery rails */
 .home-page--discovery .home-featured + .home-essence,
 .home-page--discovery .home-sponsored + .home-essence,
-.home-page--discovery .home-new + .home-essence {
+.home-page--discovery .home-new + .home-essence,
+.home-page--discovery .home-free-first + .home-essence {
   margin-top: 1.35rem;
   margin-bottom: 0.75rem;
 }
 
 .home-page--discovery .home-sponsored .horizontal-carousel__track,
 .home-page--discovery .home-new .horizontal-carousel__track,
+.home-page--discovery .home-free-first .horizontal-carousel__track,
 .home-page--discovery .home-featured .horizontal-carousel__track {
   gap: 0.875rem;
   padding-block: 0.25rem;
@@ -1624,6 +1639,7 @@
 @media (min-width: 640px) {
   .home-page--discovery .home-sponsored .horizontal-carousel__track,
   .home-page--discovery .home-new .horizontal-carousel__track,
+  .home-page--discovery .home-free-first .horizontal-carousel__track,
   .home-page--discovery .home-featured .horizontal-carousel__track {
     gap: 1rem;
   }
@@ -1635,6 +1651,25 @@
   display: flex;
   flex: 0 0 min(78vw, 17.5rem);
   align-self: stretch;
+}
+
+.home-sponsored-card__link {
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 100%;
+  color: inherit;
+  text-decoration: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.home-sponsored-card__article,
+.home-sponsored-card__article * {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 @media (min-width: 640px) {
@@ -1678,6 +1713,8 @@
 .home-sponsored-card__thumb-img {
   object-fit: cover;
   object-position: 50% 18%;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 .home-sponsored-card__media-scrim {
@@ -2252,6 +2289,7 @@
 
 /* Marketplace portrait rails — compact cards like New Specialists */
 .home-page--discovery .home-new .home-portrait-card,
+.home-page--discovery .home-free-first .home-portrait-card,
 .home-page--discovery .home-featured .home-portrait-card,
 .home-page--discovery .home-sponsored .home-portrait-card {
   flex-basis: min(53vw, 12.3rem);
@@ -2259,6 +2297,7 @@
 
 @media (min-width: 640px) {
   .home-page--discovery .home-new .home-portrait-card,
+.home-page--discovery .home-free-first .home-portrait-card,
   .home-page--discovery .home-featured .home-portrait-card,
   .home-page--discovery .home-sponsored .home-portrait-card {
     flex-basis: 13.2rem;
@@ -2266,12 +2305,14 @@
 }
 
 .home-page--discovery .home-new .home-portrait-card__article,
+.home-page--discovery .home-free-first .home-portrait-card__article,
 .home-page--discovery .home-featured .home-portrait-card__article,
 .home-page--discovery .home-sponsored .home-portrait-card__article {
   border-radius: 1rem;
 }
 
 .home-page--discovery .home-new .home-portrait-card__body,
+.home-page--discovery .home-free-first .home-portrait-card__body,
 .home-page--discovery .home-featured .home-portrait-card__body,
 .home-page--discovery .home-sponsored .home-portrait-card__body {
   height: 9.2rem;
@@ -2281,18 +2322,21 @@
 }
 
 .home-page--discovery .home-new .home-portrait-card__name,
+.home-page--discovery .home-free-first .home-portrait-card__name,
 .home-page--discovery .home-featured .home-portrait-card__name,
 .home-page--discovery .home-sponsored .home-portrait-card__name {
   font-size: 0.8125rem;
 }
 
 .home-page--discovery .home-new .home-portrait-card__profession,
+.home-page--discovery .home-free-first .home-portrait-card__profession,
 .home-page--discovery .home-featured .home-portrait-card__profession,
 .home-page--discovery .home-sponsored .home-portrait-card__profession {
   font-size: 0.6875rem;
 }
 
 .home-page--discovery .home-new .home-portrait-card__meta,
+.home-page--discovery .home-free-first .home-portrait-card__meta,
 .home-page--discovery .home-featured .home-portrait-card__meta,
 .home-page--discovery .home-sponsored .home-portrait-card__meta {
   font-size: 0.625rem;
@@ -2304,6 +2348,17 @@
   flex: 1 1 auto;
   width: 100%;
   min-height: 100%;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Hits go to the card link — image drag / nested nodes must not cancel taps */
+.home-portrait-card__article,
+.home-portrait-card__article * {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .home-portrait-card__article {
@@ -2392,6 +2447,8 @@
 .home-portrait-card__thumb-img {
   object-fit: cover;
   object-position: 50% 18%;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 .home-portrait-card__scrim {

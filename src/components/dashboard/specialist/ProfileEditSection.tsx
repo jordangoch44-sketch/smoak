@@ -173,3 +173,75 @@ export function ProfileEditInputField({
     </label>
   );
 }
+
+type ProfileEditChipOption = string | { value: string; label: string };
+
+interface ProfileEditChipGroupProps {
+  label: string;
+  options: readonly ProfileEditChipOption[];
+  selected: readonly string[];
+  onChange: (next: string[]) => void;
+  multiple?: boolean;
+  hint?: string;
+}
+
+function chipOption(option: ProfileEditChipOption): {
+  value: string;
+  label: string;
+} {
+  return typeof option === "string" ? { value: option, label: option } : option;
+}
+
+/** Single- or multi-select chips — used instead of free-text for closed lists. */
+export function ProfileEditChipGroup({
+  label,
+  options,
+  selected,
+  onChange,
+  multiple = false,
+  hint,
+}: ProfileEditChipGroupProps) {
+  return (
+    <div className="login-field">
+      <p className="login-field__label">{label}</p>
+      <div
+        className="dashboard-edit-chip-grid"
+        role={multiple ? "group" : "radiogroup"}
+        aria-label={label}
+      >
+        {options.map((raw) => {
+          const option = chipOption(raw);
+          const active = selected.includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              role={multiple ? undefined : "radio"}
+              aria-checked={multiple ? undefined : active}
+              aria-pressed={multiple ? active : undefined}
+              className={
+                active
+                  ? "dashboard-edit-chip dashboard-edit-chip--active"
+                  : "dashboard-edit-chip"
+              }
+              onClick={() => {
+                if (multiple) {
+                  onChange(
+                    active
+                      ? selected.filter((item) => item !== option.value)
+                      : [...selected, option.value]
+                  );
+                  return;
+                }
+                if (!active) onChange([option.value]);
+              }}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+      {hint ? <p className="wizard-field-hint">{hint}</p> : null}
+    </div>
+  );
+}

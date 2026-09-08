@@ -250,6 +250,10 @@ function trainerFromProfileData(
     specialty: asStringArray(profileData.specialty),
     homepageSpecialties: asStringArray(profileData.homepageSpecialties),
     gender: asGender(profileData.gender),
+    offersFreeFirstSession:
+      typeof profileData.offersFreeFirstSession === "boolean"
+        ? profileData.offersFreeFirstSession
+        : true,
     ...withSyncedSessionPrices({
       pricePerSession: asNumber(profileData.pricePerSession, 0),
       pricePerSessionMin: asNumber(profileData.pricePerSessionMin, 0),

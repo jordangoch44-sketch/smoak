@@ -189,6 +189,7 @@ body:has(.home-page--discovery) .explore-search-overlay__chip:active {
 /* Browse + New + Sponsored sit on the page canvas — no wrapping card */
 .home-page--discovery .home-specialty,
 .home-page--discovery .home-new,
+.home-page--discovery .home-free-first,
 .home-page--discovery .home-sponsored {
   margin-inline: 0;
   margin-block: 0;

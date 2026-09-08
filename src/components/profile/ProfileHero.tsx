@@ -18,6 +18,10 @@ import {
 import { isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
+import {
+  FREE_FIRST_SESSION_LABEL,
+  isTrainerFreeFirstSessionEligible,
+} from "@/lib/free-first-session";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { PhotosStackIcon } from "@/components/ui/icons";
@@ -237,11 +241,18 @@ export function ProfileHero({
                     hasOwnReview={hasOwnReview}
                     onLeaveReview={onLeaveReview}
                   />
-                  <SessionPrice
-                    trainer={trainer}
-                    variant="hero"
-                    className="profile-hero__meta-price shrink-0"
-                  />
+                  <div className="profile-hero__meta-offer">
+                    <SessionPrice
+                      trainer={trainer}
+                      variant="hero"
+                      className="profile-hero__meta-price shrink-0"
+                    />
+                    {isTrainerFreeFirstSessionEligible(trainer) ? (
+                      <span className="profile-hero__free-session">
+                        {FREE_FIRST_SESSION_LABEL}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 {showMetaGalleryButton ? (
                   <button

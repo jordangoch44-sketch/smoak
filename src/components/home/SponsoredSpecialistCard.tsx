@@ -1,13 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { TapLink } from "@/components/ui/TapLink";
+import { ProfileSheetLink } from "@/components/trainers/ProfileSheetLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { TrainerCardDetails } from "@/components/trainers/TrainerCardDetails";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 
@@ -33,15 +31,7 @@ export function SponsoredSpecialistCard({
   impressionSurface = "home_sponsored",
   replaceCurrentProfile = false,
 }: SponsoredSpecialistCardProps) {
-  const router = useRouter();
-  const href = `/trainers/${trainer.id}`;
   const chip = badgeLabel?.trim() || null;
-
-  function warm() {
-    warmTrainerProfileNavigation(trainer, router, {
-      prefetch: replaceCurrentProfile ? false : undefined,
-    });
-  }
 
   return (
     <div className="home-sponsored-card relative" role="listitem">
@@ -49,16 +39,13 @@ export function SponsoredSpecialistCard({
         specialistId={trainer.id}
         surface={impressionSurface}
       />
-      <article className="home-sponsored-card__article">
-        <TapLink
-          href={href}
-          replace={replaceCurrentProfile}
-          prefetch={replaceCurrentProfile ? false : undefined}
-          scroll={replaceCurrentProfile ? false : undefined}
-          className="home-sponsored-card__media-link"
-          onPointerDown={warm}
-          onClick={warm}
-        >
+      <ProfileSheetLink
+        trainer={trainer}
+        replace={replaceCurrentProfile}
+        prefetch={replaceCurrentProfile ? false : undefined}
+        className="home-sponsored-card__link"
+      >
+        <article className="home-sponsored-card__article">
           <div className="home-sponsored-card__media">
             <TrainerThumbnail
               src={trainer.image}
@@ -76,44 +63,25 @@ export function SponsoredSpecialistCard({
               ) : null}
             </div>
           </div>
-        </TapLink>
 
-        <div className="home-sponsored-card__body">
-          <TapLink
-            href={href}
-            replace={replaceCurrentProfile}
-            prefetch={replaceCurrentProfile ? false : undefined}
-            scroll={replaceCurrentProfile ? false : undefined}
-            className="home-sponsored-card__identity"
-            onPointerDown={warm}
-            onClick={warm}
-          >
-            <TrainerCardDetails
-              trainer={trainer}
-              nameClassName="home-sponsored-card__name"
-              professionClassName="home-sponsored-card__profession"
-              locationClassName="home-sponsored-card__location"
-              distanceClassName="home-sponsored-card__distance"
-              footerClassName="home-sponsored-card__meta"
-              ratingClassName="home-sponsored-card__smoac-stars"
-              priceClassName="home-sponsored-card__price"
-              metaLayout="inline"
-            />
-          </TapLink>
-
-          <TapLink
-            href={href}
-            replace={replaceCurrentProfile}
-            prefetch={replaceCurrentProfile ? false : undefined}
-            scroll={replaceCurrentProfile ? false : undefined}
-            className="home-sponsored-card__cta"
-            onPointerDown={warm}
-            onClick={warm}
-          >
-            View Profile
-          </TapLink>
-        </div>
-      </article>
+          <div className="home-sponsored-card__body">
+            <div className="home-sponsored-card__identity">
+              <TrainerCardDetails
+                trainer={trainer}
+                nameClassName="home-sponsored-card__name"
+                professionClassName="home-sponsored-card__profession"
+                locationClassName="home-sponsored-card__location"
+                distanceClassName="home-sponsored-card__distance"
+                footerClassName="home-sponsored-card__meta"
+                ratingClassName="home-sponsored-card__smoac-stars"
+                priceClassName="home-sponsored-card__price"
+                metaLayout="inline"
+              />
+            </div>
+            <span className="home-sponsored-card__cta">View Profile</span>
+          </div>
+        </article>
+      </ProfileSheetLink>
       <TrainerCardSaveSlot trainerId={trainer.id} />
     </div>
   );
