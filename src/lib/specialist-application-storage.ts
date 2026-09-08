@@ -230,29 +230,19 @@ export function getSpecialistApplicationsHydratedServerSnapshot(): boolean {
   return false;
 }
 
-/** DEV ONLY — autosave draft between onboarding steps (stays local until submit) */
-export function persistSpecialistOnboardingDraft(
-  state: SpecialistOnboardingState
-): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(
-      DEV_SPECIALIST_ONBOARDING_DRAFT_KEY,
-      JSON.stringify({ ...state, savedAt: new Date().toISOString() })
-    );
-  } catch {
-    /* ignore */
-  }
+type SpecialistOnboardingDraftRecord = SpecialistOnboardingState & {
+  savedAt?: string;
+  wizardStep?: number;
+};
+
+export interface LoadedSpecialistOnboardingDraft {
+  state: SpecialistOnboardingState;
+  wizardStep: number | null;
 }
 
-export function loadSpecialistOnboardingDraft(): SpecialistOnboardingState | null {
-  if (typeof window === "undefined") return null;
-  const parsed = safeParse<
-    SpecialistOnboardingState & { savedAt?: string }
-  >(window.localStorage.getItem(DEV_SPECIALIST_ONBOARDING_DRAFT_KEY), {
-    ...INITIAL_SPECIALIST_ONBOARDING_STATE,
-  });
-  if (!parsed || typeof parsed !== "object") return null;
+function normalizeOnboardingDraftState(
+  parsed: SpecialistOnboardingDraftRecord
+): SpecialistOnboardingState {
   return {
     ...INITIAL_SPECIALIST_ONBOARDING_STATE,
     ...parsed,
@@ -279,6 +269,49 @@ export function loadSpecialistOnboardingDraft(): SpecialistOnboardingState | nul
     social: { ...INITIAL_SPECIALIST_ONBOARDING_STATE.social, ...parsed.social },
     media: { ...INITIAL_SPECIALIST_ONBOARDING_STATE.media, ...parsed.media },
   };
+}
+
+/** DEV ONLY — autosave draft between onboarding steps (stays local until submit) */
+export function persistSpecialistOnboardingDraft(
+  state: SpecialistOnboardingState,
+  options?: { wizardStep?: number }
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    const payload: SpecialistOnboardingDraftRecord = {
+      ...state,
+      savedAt: new Date().toISOString(),
+    };
+    if (options?.wizardStep != null) {
+      payload.wizardStep = options.wizardStep;
+    }
+    window.localStorage.setItem(
+      DEV_SPECIALIST_ONBOARDING_DRAFT_KEY,
+      JSON.stringify(payload)
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+export function loadSpecialistOnboardingDraftRecord(): LoadedSpecialistOnboardingDraft | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(DEV_SPECIALIST_ONBOARDING_DRAFT_KEY);
+  if (!raw) return null;
+  const parsed = safeParse<SpecialistOnboardingDraftRecord | null>(raw, null);
+  if (!parsed || typeof parsed !== "object") return null;
+  const wizardStep =
+    typeof parsed.wizardStep === "number" && Number.isFinite(parsed.wizardStep)
+      ? parsed.wizardStep
+      : null;
+  return {
+    state: normalizeOnboardingDraftState(parsed),
+    wizardStep,
+  };
+}
+
+export function loadSpecialistOnboardingDraft(): SpecialistOnboardingState | null {
+  return loadSpecialistOnboardingDraftRecord()?.state ?? null;
 }
 
 export function clearSpecialistOnboardingDraft(): void {

@@ -5,6 +5,7 @@ import { isDemoSpecialistDashboard } from "@/lib/managed-specialist-profile";
 
 export type SpecialistDashboardMode =
   | "demo-premium"
+  | "onboarding"
   | "pending"
   | "rejected"
   | "approved-free"
@@ -41,7 +42,8 @@ export function resolveSpecialistDashboardMode(input: {
     return isPremium ? "demo-premium" : "approved-free";
   }
 
-  return "pending";
+  /* Auth exists but no submitted application — resume onboarding, not admin review. */
+  return "onboarding";
 }
 
 export function showsPremiumDashboard(mode: SpecialistDashboardMode): boolean {

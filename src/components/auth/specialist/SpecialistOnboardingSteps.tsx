@@ -78,6 +78,8 @@ export interface SpecialistOnboardingStepsProps {
   passwordFieldsError?: boolean;
   shakePasswordFields?: boolean;
   onPasswordShakeEnd?: () => void;
+  hidePasswordFields?: boolean;
+  emailLocked?: boolean;
 }
 
 export function SpecialistOnboardingSteps({
@@ -91,6 +93,8 @@ export function SpecialistOnboardingSteps({
   passwordFieldsError = false,
   shakePasswordFields = false,
   onPasswordShakeEnd,
+  hidePasswordFields = false,
+  emailLocked = false,
 }: SpecialistOnboardingStepsProps) {
   function handleProfilePhotoFile(file: File) {
     profilePhotoCrop.openCropFromFile(file, (payload) => {
@@ -185,8 +189,16 @@ export function SpecialistOnboardingSteps({
       return (
         <WizardStepPanel stepKey="sp-2">
           <WizardStepHeading
-            title="Create your specialist account"
-            subtitle="You’ll use this email to sign in — including while your application is under review."
+            title={
+              hidePasswordFields
+                ? "Confirm your specialist account"
+                : "Create your specialist account"
+            }
+            subtitle={
+              hidePasswordFields
+                ? "You’re signed in — finish your profile so we can review your application."
+                : "You’ll use this email to sign in — including while your application is under review."
+            }
           />
           <div className="login-fields">
             <label className="login-field">
@@ -281,8 +293,11 @@ export function SpecialistOnboardingSteps({
                 onChange={(e) => onPatch({ email: e.target.value })}
                 autoComplete="email"
                 required
+                readOnly={emailLocked}
+                aria-readonly={emailLocked}
               />
             </label>
+            {hidePasswordFields ? null : (
             <div
               className={cn(
                 "wizard-password-fields",
@@ -329,6 +344,7 @@ export function SpecialistOnboardingSteps({
                 </p>
               ) : null}
             </div>
+            )}
             <label className="login-field">
               <span className="login-field__label">
                 Phone number

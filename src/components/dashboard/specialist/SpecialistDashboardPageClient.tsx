@@ -34,6 +34,7 @@ import {
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
 } from "@/lib/auth-routes";
+import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import {
   showsPremiumDashboard,
   showsProfileFirstDashboard,
@@ -70,6 +71,9 @@ function dashboardSubtitle(
 ): string {
   if (mode === "rejected") {
     return "Update your application, then request another review.";
+  }
+  if (mode === "onboarding") {
+    return "Finish your application to send it for review.";
   }
   if (mode === "pending") {
     return "Your application is under review.";
@@ -146,6 +150,7 @@ export function SpecialistDashboardPageClient() {
     handleSignOut,
     handleOpenInquiryLead,
     handleDismissInquiryNotifications,
+    isHydrated,
   } = useSpecialistDashboard();
 
   useEffect(() => {
@@ -168,6 +173,12 @@ export function SpecialistDashboardPageClient() {
     setFreeTab(parseFreeTab(tabParam));
     setPremiumTab(parsePremiumTab(tabParam));
   }, [tabParam]);
+
+  useEffect(() => {
+    if (!isReady || !session || !isHydrated) return;
+    if (dashboardMode !== "onboarding") return;
+    router.replace(SPECIALIST_ONBOARDING_RESUME_HREF);
+  }, [isReady, session, isHydrated, dashboardMode, router]);
 
   function replaceDashboardTab(tab: FreeDashboardTab | PremiumDashboardTab) {
     const nextHref = hrefForDashboardTab(tab);
@@ -196,6 +207,14 @@ export function SpecialistDashboardPageClient() {
 
   if (!isReady || !session) {
     return <DashboardLoadingState />;
+  }
+
+  if (!isHydrated) {
+    return <DashboardLoadingState />;
+  }
+
+  if (dashboardMode === "onboarding") {
+    return <DashboardLoadingState message="Opening your application…" />;
   }
 
   const isLivePublished = profileStatusLabel === "Published";

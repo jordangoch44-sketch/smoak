@@ -13,6 +13,12 @@ export const JOIN_INTRO_PARAM = "intro";
 /** Deep-link role for promo / save-complete CTAs (`?role=specialist|client`) */
 export const JOIN_ROLE_PARAM = "role";
 
+/** Signed-in specialists with an unsubmitted form — skip the welcome intro. */
+export const SPECIALIST_ONBOARDING_RESUME_HREF = buildJoinFlowHref({
+  role: "specialist",
+  intro: false,
+});
+
 export function buildJoinFlowHref(options?: {
   role?: PublicAuthRole;
   intro?: boolean;

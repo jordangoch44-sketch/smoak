@@ -20,13 +20,15 @@ import { submitSpecialistApplication } from "@/lib/specialist-application-submit
 import {
   findSpecialistApplicationByEmail,
   findSpecialistApplicationByUserId,
-  loadSpecialistOnboardingDraft,
+  loadSpecialistOnboardingDraftRecord,
   persistSpecialistOnboardingDraft,
 } from "@/lib/specialist-application-storage";
 import { patchAuthSessionAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import {
   getSpecialistOnboardingAuthGaps,
   getSpecialistOnboardingMissingFields,
+  getSpecialistOnboardingResumeStep,
+  type SpecialistOnboardingStep,
 } from "@/lib/specialist-onboarding-validation";
 import { isValidEmail } from "@/lib/validation/email";
 import {
@@ -44,7 +46,30 @@ import {
 } from "@/lib/auth/marketplace-auth";
 import { saveSpecialistSignupProfile } from "@/lib/profiles/profile-service";
 
-type OnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
+type OnboardingStep = SpecialistOnboardingStep;
+
+function specialistSessionMatchesEmail(email: string): boolean {
+  const session = getAuthSessionSnapshot();
+  const trimmed = email.trim().toLowerCase();
+  return Boolean(
+    session &&
+      session.role === "specialist" &&
+      trimmed.length > 0 &&
+      session.email.trim().toLowerCase() === trimmed
+  );
+}
+
+function buildInitialSpecialistOnboardingState(): SpecialistOnboardingState {
+  const draft = loadSpecialistOnboardingDraftRecord();
+  const session = getAuthSessionSnapshot();
+  const base = draft?.state ?? INITIAL_SPECIALIST_ONBOARDING_STATE;
+  if (session?.role !== "specialist") return base;
+  return {
+    ...base,
+    email: base.email.trim() || session.email,
+    fullName: base.fullName.trim() || session.firstName?.trim() || "",
+  };
+}
 
 function stepProgressPercent(step: OnboardingStep): number {
   return Math.round(((step - 1) / SPECIALIST_ONBOARDING_TOTAL_STEPS) * 100);
@@ -60,13 +85,11 @@ export function SpecialistOnboardingWizard({
   const router = useRouter();
   const { signInWithPassword, refreshSession } = useAuthSession();
   const { showToast } = useToast();
+  const [state, setState] = useState<SpecialistOnboardingState>(
+    INITIAL_SPECIALIST_ONBOARDING_STATE
+  );
   const [step, setStep] = useState<OnboardingStep>(1);
-  const [state, setState] = useState<SpecialistOnboardingState>(() => {
-    if (typeof window === "undefined") {
-      return INITIAL_SPECIALIST_ONBOARDING_STATE;
-    }
-    return loadSpecialistOnboardingDraft() ?? INITIAL_SPECIALIST_ONBOARDING_STATE;
-  });
+  const [draftReady, setDraftReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState<string | null>(
@@ -92,16 +115,36 @@ export function SpecialistOnboardingWizard({
   }
 
   const progressPercent = stepProgressPercent(step);
+  const accountAlreadyCreated = specialistSessionMatchesEmail(state.email);
+  const missingFieldOptions = { skipPassword: accountAlreadyCreated };
 
   useEffect(() => {
-    persistSpecialistOnboardingDraft(state);
-  }, [state]);
+    const initial = buildInitialSpecialistOnboardingState();
+    const draft = loadSpecialistOnboardingDraftRecord();
+    setState(initial);
+    setStep(
+      getSpecialistOnboardingResumeStep(initial, {
+        skipPassword: specialistSessionMatchesEmail(initial.email),
+        savedStep: draft?.wizardStep ?? null,
+      })
+    );
+    if (specialistSessionMatchesEmail(initial.email)) {
+      setVerifiedEmail(initial.email.trim().toLowerCase());
+    }
+    setDraftReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    persistSpecialistOnboardingDraft(state, { wizardStep: step });
+  }, [draftReady, state, step]);
 
   /* Each Continue / Back question should land the user at the top of the step. */
   useEffect(() => {
+    if (!draftReady) return;
     if (typeof window === "undefined") return;
     window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
-  }, [step]);
+  }, [step, draftReady]);
 
   const goToPendingApplicationPortal = useCallback(async () => {
     const priorAvatar = getAuthSessionSnapshot()?.avatarUrl?.trim() || "";
@@ -157,6 +200,10 @@ export function SpecialistOnboardingWizard({
   function handleBack() {
     if (submitting) return;
     if (step === 1) {
+      if (accountAlreadyCreated) {
+        router.push("/");
+        return;
+      }
       onBackToRole();
       return;
     }
@@ -223,7 +270,7 @@ export function SpecialistOnboardingWizard({
         return true;
       }
 
-      persistSpecialistOnboardingDraft(state);
+      persistSpecialistOnboardingDraft(state, { wizardStep: step });
       setAwaitingEmailConfirm(trimmedEmail);
       setEmailOtpCode("");
       showToast({
@@ -240,10 +287,11 @@ export function SpecialistOnboardingWizard({
     if (submitting) return;
 
     if (step >= 1 && step <= 5) {
-      const stepGaps = getSpecialistOnboardingMissingFields(state).filter(
-        (field) => field.step === step
-      );
-      if (step === 2) {
+      const stepGaps = getSpecialistOnboardingMissingFields(
+        state,
+        missingFieldOptions
+      ).filter((field) => field.step === step);
+      if (step === 2 && !accountAlreadyCreated) {
         if (!isValidEmail(state.email)) {
           setPasswordFieldsError(false);
           setError("Enter a valid email — you’ll use it to sign in.");
@@ -266,6 +314,12 @@ export function SpecialistOnboardingWizard({
     }
 
     if (step === 2) {
+      if (accountAlreadyCreated) {
+        setVerifiedEmail(state.email.trim().toLowerCase());
+        setStep(3);
+        setError(null);
+        return;
+      }
       const verified = await verifyEmailBeforeContinue();
       if (!verified) return;
       setStep(3);
@@ -379,10 +433,17 @@ export function SpecialistOnboardingWizard({
   async function handleSubmitApplication() {
     if (submitting) return;
 
-    const authGaps = getSpecialistOnboardingAuthGaps(state);
-    if (authGaps.length > 0 || state.password !== confirmPassword) {
+    const authGaps = getSpecialistOnboardingAuthGaps(state, missingFieldOptions);
+    if (
+      authGaps.length > 0 ||
+      (!accountAlreadyCreated && state.password !== confirmPassword)
+    ) {
       setStep(2);
-      if (state.password !== confirmPassword && state.password.trim().length >= 8) {
+      if (
+        !accountAlreadyCreated &&
+        state.password !== confirmPassword &&
+        state.password.trim().length >= 8
+      ) {
         flagPasswordFieldsError("Passwords do not match.");
       } else if (authGaps.some((g) => g.label.startsWith("Password"))) {
         flagPasswordFieldsError(
@@ -488,11 +549,25 @@ export function SpecialistOnboardingWizard({
   function continueLabel(): string {
     if (submitting) return step === 2 ? "Verifying email…" : "Submitting…";
     if (step === 6) return "Submit Application";
-    if (step === 2) return "Verify email & continue";
+    if (step === 2 && !accountAlreadyCreated) return "Verify email & continue";
     return "Continue";
   }
 
   const stepLabel = SPECIALIST_ONBOARDING_STEP_LABELS[step - 1];
+
+  if (!draftReady) {
+    return (
+      <div
+        className="login-page login-page--wizard login-page--specialist-onboarding"
+        data-login-role="specialist"
+        aria-busy="true"
+      >
+        <div className="login-page__shell">
+          <p className="wizard-question__subtitle">Loading your application…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -524,9 +599,15 @@ export function SpecialistOnboardingWizard({
           <div className="login-card wizard-card">
             <div className="wizard-progress">
               <div className="wizard-signup-reassure">
-                <p className="wizard-signup-reassure__title">Quick &amp; easy signup</p>
+                <p className="wizard-signup-reassure__title">
+                  {accountAlreadyCreated
+                    ? "Pick up where you left off"
+                    : "Quick & easy signup"}
+                </p>
                 <p className="wizard-signup-reassure__sub">
-                  About 5 minutes — short steps, then you&apos;re in.
+                  {accountAlreadyCreated
+                    ? "Your answers are saved on this device until you submit."
+                    : "About 5 minutes — short steps, then you’re in."}
                 </p>
               </div>
               <div className="wizard-progress__header">
@@ -561,6 +642,8 @@ export function SpecialistOnboardingWizard({
                 confirmPassword={confirmPassword}
                 passwordFieldsError={passwordFieldsError}
                 shakePasswordFields={shakePasswordFields}
+                hidePasswordFields={accountAlreadyCreated}
+                emailLocked={accountAlreadyCreated}
                 onPasswordShakeEnd={() => setShakePasswordFields(false)}
                 onConfirmPasswordChange={(value) => {
                   setConfirmPassword(value);
@@ -586,7 +669,11 @@ export function SpecialistOnboardingWizard({
                   onClick={handleBack}
                   disabled={submitting}
                 >
-                  {step === 1 ? "Change role" : "Back"}
+                  {step === 1
+                    ? accountAlreadyCreated
+                      ? "Exit"
+                      : "Change role"
+                    : "Back"}
                 </button>
                 <button
                   type="button"
@@ -599,10 +686,12 @@ export function SpecialistOnboardingWizard({
               </div>
             </div>
 
+            {accountAlreadyCreated ? null : (
             <p className="wizard-footer-link">
               <span>Already have an account?</span>
               <Link href={LOGIN_PATH}>Log in</Link>
             </p>
+            )}
           </div>
         </div>
 

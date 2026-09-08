@@ -11,7 +11,18 @@ interface OnboardingMissingField {
   label: string;
 }
 
-function missingForStep(step: number, state: SpecialistOnboardingState): string[] {
+export type SpecialistOnboardingStep = 1 | 2 | 3 | 4 | 5 | 6;
+
+interface MissingFieldOptions {
+  /** Auth account already exists — password is not required to continue. */
+  skipPassword?: boolean;
+}
+
+function missingForStep(
+  step: number,
+  state: SpecialistOnboardingState,
+  options?: MissingFieldOptions
+): string[] {
   const missing: string[] = [];
 
   switch (step) {
@@ -26,7 +37,9 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
       if (!state.displayName.trim()) missing.push("Business name");
       if (!state.headline.trim()) missing.push("Professional title");
       if (!isValidEmail(state.email)) missing.push("Valid email");
-      if (state.password.trim().length < 8) missing.push("Password (8+ characters)");
+      if (!options?.skipPassword && state.password.trim().length < 8) {
+        missing.push("Password (8+ characters)");
+      }
       if (!state.phone.trim()) missing.push("Phone number");
       if (!state.media.profilePhotoUrl.trim()) missing.push("Profile photo");
       break;
@@ -65,12 +78,13 @@ function missingForStep(step: number, state: SpecialistOnboardingState): string[
 
 /** Required fields missing before final specialist submit (short path). */
 export function getSpecialistOnboardingMissingFields(
-  state: SpecialistOnboardingState
+  state: SpecialistOnboardingState,
+  options?: MissingFieldOptions
 ): OnboardingMissingField[] {
   const results: OnboardingMissingField[] = [];
 
   for (let step = 1; step <= 5; step += 1) {
-    for (const label of missingForStep(step, state)) {
+    for (const label of missingForStep(step, state, options)) {
       results.push({ step, label });
     }
   }
@@ -80,14 +94,40 @@ export function getSpecialistOnboardingMissingFields(
 
 /** Auth credentials required to create an account — cannot submit without these. */
 export function getSpecialistOnboardingAuthGaps(
-  state: SpecialistOnboardingState
+  state: SpecialistOnboardingState,
+  options?: MissingFieldOptions
 ): OnboardingMissingField[] {
   const gaps: OnboardingMissingField[] = [];
   if (!isValidEmail(state.email)) {
     gaps.push({ step: 2, label: "Valid email" });
   }
-  if (state.password.trim().length < 8) {
+  if (!options?.skipPassword && state.password.trim().length < 8) {
     gaps.push({ step: 2, label: "Password (8+ characters)" });
   }
   return gaps;
+}
+
+function asOnboardingStep(value: number): SpecialistOnboardingStep | null {
+  if (value === 1 || value === 2 || value === 3 || value === 4 || value === 5 || value === 6) {
+    return value;
+  }
+  return null;
+}
+
+/** First incomplete questionnaire step, or review (6) when required fields are filled. */
+export function getSpecialistOnboardingResumeStep(
+  state: SpecialistOnboardingState,
+  options?: MissingFieldOptions & { savedStep?: number | null }
+): SpecialistOnboardingStep {
+  let inferred: SpecialistOnboardingStep = 6;
+  for (let step = 1; step <= 5; step += 1) {
+    if (missingForStep(step, state, options).length > 0) {
+      inferred = step as SpecialistOnboardingStep;
+      break;
+    }
+  }
+
+  const saved = asOnboardingStep(options?.savedStep ?? 0);
+  if (!saved) return inferred;
+  return saved < inferred ? saved : inferred;
 }

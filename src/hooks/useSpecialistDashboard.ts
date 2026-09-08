@@ -61,6 +61,7 @@ export function useSpecialistDashboard() {
     trainer: managedTrainer,
     formDefaults,
     profileCompletion,
+    isHydrated,
   } = useManagedSpecialistProfile();
 
   const useDemoData = isDemoSpecialistDashboard(trainerId, session?.email);
@@ -286,5 +287,6 @@ export function useSpecialistDashboard() {
     handleSignOut,
     handleOpenInquiryLead,
     handleDismissInquiryNotifications,
+    isHydrated,
   };
 }

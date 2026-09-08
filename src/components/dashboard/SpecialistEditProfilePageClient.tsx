@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
@@ -27,6 +27,7 @@ import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile
 import { useProfileKeyboardChrome } from "@/hooks/useProfileKeyboardChrome";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
@@ -108,6 +109,7 @@ export function SpecialistEditProfilePageClient({
   presentation?: "page" | "modal";
   onRequestClose?: () => void;
 } = {}) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
@@ -186,6 +188,12 @@ export function SpecialistEditProfilePageClient({
     subscription: getSpecialistSubscriptionForSession(session),
   });
 
+  useEffect(() => {
+    if (!isReady || !session || !isHydrated) return;
+    if (dashboardMode !== "onboarding") return;
+    router.replace(SPECIALIST_ONBOARDING_RESUME_HREF);
+  }, [isReady, session, isHydrated, dashboardMode, router]);
+
   const isPremium = Boolean(session?.isPremium);
   const isProPlus = isProPlusPlan(session?.membershipPlan);
   const onProTrial = Boolean(session?.premiumTrialActive);
@@ -205,7 +213,7 @@ export function SpecialistEditProfilePageClient({
   }, [signOut]);
 
   function startEdit(sectionId: SectionId) {
-    if (dashboardMode === "pending") return;
+    if (dashboardMode === "pending" || dashboardMode === "onboarding") return;
     if (!savedForm) return;
     if (editingSection != null && editingSection !== sectionId) {
       showToast({
@@ -365,6 +373,29 @@ export function SpecialistEditProfilePageClient({
       <div className="dashboard-page dashboard-page--loading">
         <div className="dashboard-page__content">
           <p className="dashboard-page__subtitle">Loading profile editor…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (dashboardMode === "onboarding") {
+    if (isModal) {
+      if (!modalMounted || typeof document === "undefined") return null;
+      return createPortal(
+        <div className="specialist-full-editor" role="presentation">
+          <div className="specialist-full-editor__panel">
+            <p className="specialist-full-editor__loading">
+              Opening your application…
+            </p>
+          </div>
+        </div>,
+        document.body
+      );
+    }
+    return (
+      <div className="dashboard-page dashboard-page--loading">
+        <div className="dashboard-page__content">
+          <p className="dashboard-page__subtitle">Opening your application…</p>
         </div>
       </div>
     );

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { createPortal } from "react-dom";
 
@@ -33,6 +33,13 @@ import { resolvePostLoginNavigation } from "@/lib/post-login-flow";
 import { persistCreateAccountProfile } from "@/lib/create-account-profile-storage";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import { sendClientWelcomeEmail } from "@/lib/email/confirmation-email-service";
+import { shouldResumeIncompleteSpecialistOnboarding } from "@/lib/specialist-onboarding-resume";
+import {
+  ensureSpecialistApplicationsHydrated,
+  getSpecialistApplicationsHydratedServerSnapshot,
+  getSpecialistApplicationsHydratedSnapshot,
+  subscribeSpecialistApplications,
+} from "@/lib/specialist-application-storage";
 import type { PublicAuthRole } from "@/types/auth-roles";
 import {
   INITIAL_CREATE_ACCOUNT_STATE,
@@ -259,8 +266,34 @@ export function CreateAccountWizardClient({
     (typeof window !== "undefined" &&
       isAuthReturnToSaved(new URLSearchParams(window.location.search)));
 
+  const applicationsHydrated = useSyncExternalStore(
+    subscribeSpecialistApplications,
+    getSpecialistApplicationsHydratedSnapshot,
+    getSpecialistApplicationsHydratedServerSnapshot
+  );
+
+  useEffect(() => {
+    if (session?.role !== "specialist") return;
+    ensureSpecialistApplicationsHydrated();
+  }, [session?.role, session?.userId]);
+
   useEffect(() => {
     if (!isReady || !session || session.role === "admin") return;
+
+    if (session.role === "specialist") {
+      if (!applicationsHydrated) return;
+      if (
+        shouldResumeIncompleteSpecialistOnboarding(session, {
+          applicationsHydrated: true,
+        })
+      ) {
+        if (!showSpecialistOnboarding) {
+          setShowSpecialistOnboarding(true);
+        }
+        return;
+      }
+    }
+
     /* Specialist onboarding owns navigation after submit — don't bounce
      * mid-signup when Auth session appears (that aborted saves + sent people home). */
     if (showSpecialistOnboarding) return;
@@ -269,7 +302,14 @@ export function CreateAccountWizardClient({
       return;
     }
     router.replace(getDashboardPathForRole(session.role));
-  }, [isReady, session, router, wantsSaved, showSpecialistOnboarding]);
+  }, [
+    isReady,
+    session,
+    router,
+    wantsSaved,
+    showSpecialistOnboarding,
+    applicationsHydrated,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -787,6 +827,20 @@ export function CreateAccountWizardClient({
       <SpecialistOnboardingWizard
         onBackToRole={() => setShowSpecialistOnboarding(false)}
       />
+    );
+  }
+
+  if (
+    isReady &&
+    session?.role === "specialist" &&
+    !applicationsHydrated
+  ) {
+    return (
+      <div className="login-page login-page--wizard" aria-busy="true">
+        <div className="login-page__shell">
+          <p className="wizard-question__subtitle">Opening your application…</p>
+        </div>
+      </div>
     );
   }
 
