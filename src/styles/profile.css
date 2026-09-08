@@ -789,23 +789,26 @@
   isolation: isolate;
 }
 
-.profile-hero__avatar-wrap::after {
+/*
+ * Accent ring + slight glow — specialist profile only
+ * (sheet / public page). Not used on marketplace cards or map pins.
+ */
+.profile-sheet .profile-hero__avatar-wrap::after,
+.profile-page--styled .profile-hero__avatar-wrap::after {
   content: "";
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 0;
-  width: 118%;
-  height: 118%;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   pointer-events: none;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    circle at 50% 48%,
-    rgba(var(--profile-accent-rgb), 0.18) 78%,
-    rgba(var(--profile-accent-rgb), 0.06) 90%,
-    transparent 100%
-  );
+  transform: translate(-50%, -50%) scale(1.038);
+  border: 1.5px solid rgba(var(--profile-accent-rgb), 0.82);
+  box-shadow:
+    0 0 0 1px rgba(var(--profile-accent-rgb), 0.2),
+    0 0 6px rgba(var(--profile-accent-rgb), 0.32);
 }
 
 .profile-hero__avatar-btn,
