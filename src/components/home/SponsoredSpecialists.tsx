@@ -8,6 +8,7 @@ import {
   useMarketplaceUserCoordinates,
   useMarketplaceUserCoordinatesKey,
 } from "@/hooks/useMarketplaceGeo";
+import { useFrozenTrainerList } from "@/hooks/useFrozenTrainerList";
 import { useHydrated } from "@/hooks/useHydrated";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicSponsoredTrainers } from "@/lib/marketplace-public-catalog";
@@ -52,19 +53,20 @@ export function SponsoredSpecialists({
       }),
     [sponsoredPool, hydrated, personalizationCity, coordsKey, userCoords]
   );
+  const trainers = useFrozenTrainerList(rail.trainers);
 
   useEffect(() => {
-    if (!hydrated || rail.trainers.length === 0) return;
-    for (const trainer of rail.trainers.slice(0, 4)) {
+    if (!hydrated || trainers.length === 0) return;
+    for (const trainer of trainers.slice(0, 4)) {
       try {
         router.prefetch(`/trainers/${trainer.id}`);
       } catch {
         /* prefetch is best-effort */
       }
     }
-  }, [hydrated, rail.trainers, router]);
+  }, [hydrated, trainers, router]);
 
-  if (rail.trainers.length === 0) return null;
+  if (trainers.length === 0) return null;
 
   return (
     <section
@@ -82,7 +84,7 @@ export function SponsoredSpecialists({
           className="home-sponsored__carousel"
           ariaLabel="Sponsored specialists"
         >
-          {rail.trainers.map((trainer, index) => (
+          {trainers.map((trainer, index) => (
             <HomePortraitSpecialistCard
               key={trainer.id}
               trainer={trainer}

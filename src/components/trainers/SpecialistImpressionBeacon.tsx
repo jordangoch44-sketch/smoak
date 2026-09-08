@@ -12,8 +12,8 @@ interface SpecialistImpressionBeaconProps {
 }
 
 /**
- * Fires search_appearance once when the card enters the viewport
- * (IntersectionObserver — avoids carousel/grid mount overcounting).
+ * Fires search_appearance once when the card enters the viewport.
+ * Observes the card root — never a full-size overlay (those eat iOS taps).
  */
 export function SpecialistImpressionBeacon({
   specialistId,
@@ -23,7 +23,7 @@ export function SpecialistImpressionBeacon({
   const fired = useRef(false);
 
   useEffect(() => {
-    const node = ref.current;
+    const node = ref.current?.parentElement;
     if (!node || fired.current) return;
 
     const observer = new IntersectionObserver(
@@ -49,7 +49,7 @@ export function SpecialistImpressionBeacon({
   return (
     <span
       ref={ref}
-      className="pointer-events-none absolute inset-0"
+      className="pointer-events-none absolute top-0 left-0 h-px w-px overflow-hidden"
       aria-hidden
       data-engagement-impression={specialistId}
     />

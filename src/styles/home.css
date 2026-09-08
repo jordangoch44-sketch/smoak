@@ -761,6 +761,13 @@ button.smoked-glass:hover {
   scrollbar-width: none;
 }
 
+/* Card links inherit site-chrome `manipulation`; restore pan so iOS
+   does not cancel the tap after a 1px carousel nudge. */
+.app-main .horizontal-carousel__track .home-portrait-card__link,
+.app-main .horizontal-carousel__track .home-sponsored-card__link {
+  touch-action: pan-x pan-y !important;
+}
+
 .horizontal-carousel__track::-webkit-scrollbar {
   display: none;
 }

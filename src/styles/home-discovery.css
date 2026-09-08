@@ -2591,6 +2591,7 @@
   top: 0.5rem !important;
   right: 0.5rem !important;
   z-index: 90 !important;
+  pointer-events: auto !important;
 }
 
 /* Soften old mobile search-first overrides on discovery homepage */

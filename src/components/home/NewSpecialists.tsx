@@ -8,6 +8,7 @@ import {
   useMarketplaceUserCoordinates,
   useMarketplaceUserCoordinatesKey,
 } from "@/hooks/useMarketplaceGeo";
+import { useFrozenTrainerList } from "@/hooks/useFrozenTrainerList";
 import { useHydrated } from "@/hooks/useHydrated";
 import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-store";
 import { listPublicNewTrainers } from "@/lib/marketplace-public-catalog";
@@ -52,19 +53,20 @@ export function NewSpecialists({
     initialCatalog,
     catalogMode,
   ]);
+  const trainers = useFrozenTrainerList(newcomers);
 
   useEffect(() => {
-    if (!hydrated || newcomers.length === 0) return;
-    for (const trainer of newcomers.slice(0, 4)) {
+    if (!hydrated || trainers.length === 0) return;
+    for (const trainer of trainers.slice(0, 4)) {
       try {
         router.prefetch(`/trainers/${trainer.id}`);
       } catch {
         /* prefetch is best-effort */
       }
     }
-  }, [hydrated, newcomers, router]);
+  }, [hydrated, trainers, router]);
 
-  if (newcomers.length === 0) return null;
+  if (trainers.length === 0) return null;
 
   return (
     <section
@@ -82,7 +84,7 @@ export function NewSpecialists({
           className="home-new__carousel"
           ariaLabel="New specialists"
         >
-          {newcomers.map((trainer, index) => (
+          {trainers.map((trainer, index) => (
             <HomePortraitSpecialistCard
               key={trainer.id}
               trainer={trainer}

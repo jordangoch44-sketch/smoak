@@ -12,15 +12,20 @@ import { cn } from "@/lib/utils";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import type { Trainer } from "@/types";
 
-/** Finger jitter vs a real carousel / page swipe. */
-const TAP_SLOP_PX = 16;
-/** Longer than this is a long-press (context menu), not a tap. */
-const TAP_MAX_MS = 420;
+/** Carousel / page pan vs a tap with finger jitter. */
+const SWIPE_PX = 22;
 
 function isSaveControl(target: EventTarget | null): boolean {
   return (
     target instanceof Element && Boolean(target.closest("[data-save-control]"))
   );
+}
+
+function isSwipe(dx: number, dy: number): boolean {
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax < SWIPE_PX && ay < SWIPE_PX) return false;
+  return ax >= SWIPE_PX || ay >= SWIPE_PX;
 }
 
 type ProfileSheetLinkProps = Omit<
@@ -34,7 +39,7 @@ type ProfileSheetLinkProps = Omit<
 /**
  * Marketplace / listing link into the profile intercept sheet.
  * Warms on pointerdown, skips page scroll, and recovers taps that iOS
- * cancels after a 1–2px carousel pan.
+ * cancels after a 1–2px carousel pan — without eating real clicks.
  */
 export function ProfileSheetLink({
   trainer,
@@ -54,11 +59,10 @@ export function ProfileSheetLink({
   const pressRef = useRef<{
     x: number;
     y: number;
-    t: number;
     pointerId: number;
   } | null>(null);
   const openedRef = useRef(false);
-  const ignoreClickRef = useRef(false);
+  const swipeRef = useRef(false);
   const shouldPrefetch = prefetch !== false && !replace;
 
   function warm() {
@@ -83,11 +87,10 @@ export function ProfileSheetLink({
     if (event.defaultPrevented || event.button !== 0) return;
     if (isSaveControl(event.target)) return;
     openedRef.current = false;
-    ignoreClickRef.current = false;
+    swipeRef.current = false;
     pressRef.current = {
       x: event.clientX,
       y: event.clientY,
-      t: performance.now(),
       pointerId: event.pointerId,
     };
     warm();
@@ -104,14 +107,9 @@ export function ProfileSheetLink({
       return;
     }
     if (isSaveControl(event.target)) return;
-    if (performance.now() - press.t > TAP_MAX_MS) return;
-    if (
-      Math.hypot(event.clientX - press.x, event.clientY - press.y) > TAP_SLOP_PX
-    ) {
-      ignoreClickRef.current = true;
-      return;
-    }
-    event.preventDefault();
+    const swiped = isSwipe(event.clientX - press.x, event.clientY - press.y);
+    swipeRef.current = swiped;
+    if (swiped) return;
     openSheet();
   }
 
@@ -127,8 +125,8 @@ export function ProfileSheetLink({
       warm();
       return;
     }
-    if (ignoreClickRef.current) {
-      ignoreClickRef.current = false;
+    if (swipeRef.current) {
+      swipeRef.current = false;
       event.preventDefault();
       return;
     }
