@@ -511,6 +511,21 @@ export function ExploreMapLeaflet({
     const map = mapRef.current;
     if (!map) return;
     const enable = !locked && !mapPaused;
+    try {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+      document.body.classList.remove("leaflet-dragging", "leaflet-touch-zoom");
+      document.documentElement.classList.remove(
+        "leaflet-dragging",
+        "leaflet-touch-zoom"
+      );
+    } catch {
+      /* Leaflet internals */
+    }
     if (enable) {
       map.dragging.enable();
       map.touchZoom.enable();
@@ -518,13 +533,6 @@ export function ExploreMapLeaflet({
       map.scrollWheelZoom.enable();
       map.boxZoom.enable();
       map.keyboard.enable();
-    } else {
-      map.dragging.disable();
-      map.touchZoom.disable();
-      map.doubleClickZoom.disable();
-      map.scrollWheelZoom.disable();
-      map.boxZoom.disable();
-      map.keyboard.disable();
     }
     if (wasPausedRef.current && !mapPaused) {
       safeInvalidateMapSize(map);

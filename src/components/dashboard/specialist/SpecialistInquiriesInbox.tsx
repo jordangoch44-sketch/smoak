@@ -10,6 +10,7 @@ interface SpecialistInquiriesInboxProps {
   onOpenLead?: (lead: SpecialistLead) => void;
   initialConversationId?: string | null;
   onCloseThread?: () => void;
+  onHideLead?: (id: string) => void | Promise<void>;
 }
 
 export function SpecialistInquiriesInbox({
@@ -18,6 +19,7 @@ export function SpecialistInquiriesInbox({
   onOpenLead,
   initialConversationId,
   onCloseThread,
+  onHideLead,
 }: SpecialistInquiriesInboxProps) {
   const demoLeads = leads.filter((lead) => isDemoInquiryConversationId(lead.id));
 
@@ -31,7 +33,9 @@ export function SpecialistInquiriesInbox({
         initialConversationId={initialConversationId}
         emptyMessage="No inquiries yet. When a client contacts you, their conversation shows up here."
         demoLeads={demoLeads}
+        previewLeads={leads}
         onCloseThread={onCloseThread}
+        onHideConversation={onHideLead}
         onOpenConversation={(id) => {
           const lead = leads.find((item) => item.id === id);
           if (lead) onOpenLead?.(lead);
@@ -43,6 +47,7 @@ export function SpecialistInquiriesInbox({
           preview: lead.messagePreview || lead.intent,
           time: lead.receivedAt,
           unread: lead.unread,
+          topicLabels: lead.topicLabels,
         }))}
       />
     </div>

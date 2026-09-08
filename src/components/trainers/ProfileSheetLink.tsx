@@ -14,6 +14,8 @@ import type { Trainer } from "@/types";
 
 /** Carousel / page pan vs a tap with finger jitter. */
 const SWIPE_PX = 22;
+/** Ignore the ghost click after pointerup — not later taps on the same card. */
+const OPEN_GESTURE_MS = 500;
 
 function isSaveControl(target: EventTarget | null): boolean {
   return (
@@ -61,7 +63,7 @@ export function ProfileSheetLink({
     y: number;
     pointerId: number;
   } | null>(null);
-  const openedRef = useRef(false);
+  const openedAtRef = useRef(0);
   const swipeRef = useRef(false);
   const shouldPrefetch = prefetch !== false && !replace;
 
@@ -72,8 +74,8 @@ export function ProfileSheetLink({
   }
 
   function openSheet() {
-    if (openedRef.current) return;
-    openedRef.current = true;
+    if (Date.now() - openedAtRef.current < OPEN_GESTURE_MS) return;
+    openedAtRef.current = Date.now();
     warm();
     if (replace) {
       router.replace(dest, { scroll: false });
@@ -86,7 +88,6 @@ export function ProfileSheetLink({
     onPointerDown?.(event);
     if (event.defaultPrevented || event.button !== 0) return;
     if (isSaveControl(event.target)) return;
-    openedRef.current = false;
     swipeRef.current = false;
     pressRef.current = {
       x: event.clientX,

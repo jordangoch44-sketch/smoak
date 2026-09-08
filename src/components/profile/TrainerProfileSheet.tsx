@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   animate,
   motion,
@@ -18,6 +18,8 @@ import {
 } from "framer-motion";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
+import { restoreListingPointerAccess } from "@/lib/chrome-body-classes";
+import { isTrainerProfilePath } from "@/lib/motion";
 import { navigateToProfileSheetReturn } from "@/lib/profile-sheet-return";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
 import {
@@ -68,33 +70,36 @@ function dismissTravelPx(root: HTMLElement | null, yNow: number): number {
   return Math.max(sheetH, vh, yNow + 48) + DISMISS_OVERFLOW_PX;
 }
 
-/** Blocks remount re-lock while soft-nav still holds the sheet tree. */
-let chromeUnlockGuardUntil = 0;
-/** True while a dismiss animation owns chrome — remounts must not re-lock. */
-let sheetChromeDismissing = false;
+/**
+ * Which sheet instance currently owns listing chrome (`inert` / body class).
+ * An older unmount must not unlock a newer open — that left Marketplace
+ * cards with a stuck `inert` app-main after a few open/close cycles.
+ */
+let sheetChromeLockOwner = 0;
 
-function lockSheetChrome() {
-  if (sheetChromeDismissing || Date.now() < chromeUnlockGuardUntil) return;
+function lockSheetChrome(): number {
   document.body.classList.add("profile-sheet-open");
   document.documentElement.classList.add("profile-sheet-open");
   document.body.classList.remove("profile-sheet-dismissing");
   document.querySelector(".app-main")?.setAttribute("inert", "");
+  sheetChromeLockOwner += 1;
+  return sheetChromeLockOwner;
 }
 
-function unlockSheetChrome() {
+function unlockSheetChrome(owner?: number) {
+  if (owner != null && owner !== sheetChromeLockOwner) return;
   document.body.classList.remove("profile-sheet-open");
   document.documentElement.classList.remove("profile-sheet-open");
   document.querySelector(".app-main")?.removeAttribute("inert");
-  chromeUnlockGuardUntil = Date.now() + 400;
+  restoreListingPointerAccess({ forceNudge: true });
 }
 
 function markSheetDismissing() {
-  sheetChromeDismissing = true;
   document.body.classList.add("profile-sheet-dismissing");
 }
 
-function clearSheetDismissing() {
-  sheetChromeDismissing = false;
+function clearSheetDismissing(owner?: number) {
+  if (owner != null && owner !== sheetChromeLockOwner) return;
   document.body.classList.remove("profile-sheet-dismissing");
 }
 
@@ -111,9 +116,14 @@ export function TrainerProfileSheet({
   intercept = false,
 }: TrainerProfileSheetProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const hydrated = useHydrated();
   const isSheetViewport = useTabletViewport(true);
   const reduceMotion = useReducedMotion();
+  const onProfilePath = isTrainerProfilePath(pathname);
+  const overlayActive = !intercept || onProfilePath;
+  const lockOwnerRef = useRef(0);
+  const wasOnProfilePathRef = useRef(onProfilePath);
   /* True while y is tweening. At rest we drop the transform so iOS hit-tests
    * the X / heart / tabs / photos (transformed overlays swallow taps). */
   const [sheetMoving, setSheetMoving] = useState(true);
@@ -149,7 +159,7 @@ export function TrainerProfileSheet({
        * for seconds after the slide; waiting for animation/unmount left the
        * bottom nav and header missing for 10s+.
        */
-      unlockSheetChrome();
+      unlockSheetChrome(lockOwnerRef.current);
       markSheetDismissing();
       const root = rootRef.current;
       root?.classList.add("profile-sheet-root--pass-through");
@@ -159,7 +169,7 @@ export function TrainerProfileSheet({
       const finish = () => {
         if (finishOnceRef.current) return;
         finishOnceRef.current = true;
-        clearSheetDismissing();
+        clearSheetDismissing(lockOwnerRef.current);
         root?.classList.add("profile-sheet-root--exited");
         /* Unmount portal before/while soft-nav clears @modal — prevents
          * a 1‑frame remnant strip under the bottom nav on iOS. */
@@ -195,16 +205,46 @@ export function TrainerProfileSheet({
   }, [exited, runDismissAnimation]);
 
   useLayoutEffect(() => {
-    if (isSheetViewport || !intercept) return;
-    lockSheetChrome();
+    if (isSheetViewport || !intercept || !overlayActive) return;
+    lockOwnerRef.current = lockSheetChrome();
+    const owner = lockOwnerRef.current;
     return () => {
-      unlockSheetChrome();
-      clearSheetDismissing();
+      unlockSheetChrome(owner);
+      clearSheetDismissing(owner);
     };
-  }, [intercept, isSheetViewport]);
+  }, [intercept, isSheetViewport, overlayActive]);
+
+  /*
+   * Next.js can keep `@modal` mounted after replace() back to Marketplace /
+   * Search. If the URL is no longer a profile, drop the overlay and reset so
+   * the next card tap can open again instead of looking like a dead tap.
+   */
+  useLayoutEffect(() => {
+    const wasOnProfile = wasOnProfilePathRef.current;
+    wasOnProfilePathRef.current = onProfilePath;
+
+    if (!intercept) return;
+
+    if (!onProfilePath) {
+      dismissingRef.current = false;
+      programmaticNavRef.current = false;
+      if (!exited) setExited(true);
+      unlockSheetChrome(lockOwnerRef.current);
+      clearSheetDismissing(lockOwnerRef.current);
+      restoreListingPointerAccess();
+      return;
+    }
+
+    if (!wasOnProfile && (exited || dismissingRef.current)) {
+      dismissingRef.current = false;
+      finishOnceRef.current = false;
+      programmaticNavRef.current = false;
+      setExited(false);
+    }
+  }, [exited, intercept, onProfilePath, trainerId]);
 
   useLayoutEffect(() => {
-    if (!isSheetViewport) return;
+    if (!isSheetViewport || !overlayActive) return;
 
     const syncVh = () => {
       vhRef.current = viewportHeight();
@@ -214,24 +254,24 @@ export function TrainerProfileSheet({
     window.visualViewport?.addEventListener("resize", syncVh);
 
     if (dismissingRef.current || exited) {
+      const owner = lockOwnerRef.current;
       return () => {
         window.removeEventListener("resize", syncVh);
         window.visualViewport?.removeEventListener("resize", syncVh);
-        unlockSheetChrome();
-        clearSheetDismissing();
+        unlockSheetChrome(owner);
+        clearSheetDismissing(owner);
       };
     }
 
     dismissingRef.current = false;
     finishOnceRef.current = false;
-    sheetChromeDismissing = false;
-    chromeUnlockGuardUntil = 0;
     programmaticNavRef.current = false;
     /* Fresh open — never keep a prior exit's pass-through / inert. */
     const root = rootRef.current;
     root?.classList.remove("profile-sheet-root--pass-through");
     root?.removeAttribute("inert");
-    lockSheetChrome();
+    lockOwnerRef.current = lockSheetChrome();
+    const owner = lockOwnerRef.current;
 
     if (reduceMotion) {
       y.set(0);
@@ -252,10 +292,10 @@ export function TrainerProfileSheet({
       openAnimRef.current = null;
       window.removeEventListener("resize", syncVh);
       window.visualViewport?.removeEventListener("resize", syncVh);
-      unlockSheetChrome();
-      clearSheetDismissing();
+      unlockSheetChrome(owner);
+      clearSheetDismissing(owner);
     };
-  }, [exited, isSheetViewport, reduceMotion, y]);
+  }, [exited, isSheetViewport, overlayActive, reduceMotion, y]);
 
   useLayoutEffect(() => {
     if (!isSheetViewport || !trainerId || exited || dismissingRef.current) {
@@ -310,6 +350,9 @@ export function TrainerProfileSheet({
     if (!intercept) {
       return <>{children}</>;
     }
+    if (!overlayActive) {
+      return null;
+    }
 
     return (
       <ProfileSheetDismissProvider dismiss={navigateAway}>
@@ -325,7 +368,7 @@ export function TrainerProfileSheet({
     );
   }
 
-  if (exited) {
+  if (exited || !overlayActive) {
     return null;
   }
 

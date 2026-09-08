@@ -110,7 +110,9 @@ export function listLocalInquiriesForSpecialist(
   specialistId: string
 ): LocalInquiryRecord[] {
   return readLocalAll().filter(
-    (row) => row.conversation.specialist_id === specialistId
+    (row) =>
+      row.conversation.specialist_id === specialistId &&
+      !row.conversation.specialist_hidden_at
   );
 }
 
@@ -180,4 +182,13 @@ export function markLocalInquiryRead(
     }
   }
   if (changed) writeLocalAll(all);
+}
+
+export function hideLocalInquiryForSpecialist(conversationId: string): void {
+  const all = readLocalAll();
+  const record = all.find((row) => row.conversation.id === conversationId);
+  if (!record) return;
+  record.conversation.specialist_hidden_at = new Date().toISOString();
+  record.conversation.updated_at = new Date().toISOString();
+  writeLocalAll(all);
 }

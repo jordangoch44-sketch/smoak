@@ -155,6 +155,7 @@ export function SpecialistDashboardPageClient() {
     handleSignOut,
     handleOpenInquiryLead,
     handleDismissInquiryNotifications,
+    handleHideInquiry,
     isHydrated,
   } = useSpecialistDashboard();
 
@@ -270,7 +271,11 @@ export function SpecialistDashboardPageClient() {
         : "status";
 
   function openProfileInquiries() {
-    void handleDismissInquiryNotifications();
+    const latest = data.newLeads.find((lead) => lead.unread);
+    if (latest) {
+      replaceConversationParam(latest.id);
+      return;
+    }
     router.replace(SPECIALIST_DASHBOARD_INQUIRIES_HREF, { scroll: false });
   }
 
@@ -285,6 +290,10 @@ export function SpecialistDashboardPageClient() {
           replaceConversationParam(lead.id);
         },
         onCloseInquiryThread: () => replaceConversationParam(null),
+        onHideInquiryLead: (id: string) => {
+          void handleHideInquiry(id);
+          if (conversationParam === id) replaceConversationParam(null);
+        },
       }
     : {};
 

@@ -133,6 +133,7 @@ interface SpecialistDashboardProfilePreviewProps {
   initialConversationId?: string | null;
   onOpenInquiryLead?: (lead: SpecialistLead) => void;
   onCloseInquiryThread?: () => void;
+  onHideInquiryLead?: (id: string) => void | Promise<void>;
 }
 
 function mapTargetSectionToSectionId(target: string | null | undefined): SectionId | null {
@@ -465,6 +466,7 @@ export function SpecialistDashboardProfilePreview({
   initialConversationId = null,
   onOpenInquiryLead,
   onCloseInquiryThread,
+  onHideInquiryLead,
 }: SpecialistDashboardProfilePreviewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1366,6 +1368,7 @@ export function SpecialistDashboardProfilePreview({
           onOpenLead={onOpenInquiryLead}
           initialConversationId={initialConversationId}
           onCloseThread={onCloseInquiryThread}
+          onHideLead={onHideInquiryLead}
         />
       </div>
     );

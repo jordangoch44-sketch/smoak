@@ -201,6 +201,7 @@ export function TrainerProfilePageClient({
 
   return (
     <TrainerProfileSheet
+      key={trainer.id}
       label={`${trainer.name} profile`}
       trainerId={trainer.id}
       intercept={intercept}

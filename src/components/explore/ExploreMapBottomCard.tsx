@@ -59,12 +59,27 @@ export function ExploreMapBottomCard({
     startY: number;
     lastY: number;
     active: boolean;
+    pointerId: number;
+    target: HTMLDivElement;
   } | null>(null);
 
   useEffect(() => {
     if (!cluster) return;
     warmExploreMapCluster(cluster, router);
   }, [cluster, router]);
+
+  useEffect(() => {
+    return () => {
+      const drag = dragRef.current;
+      if (!drag) return;
+      try {
+        drag.target.releasePointerCapture(drag.pointerId);
+      } catch {
+        /* already released / unmounted */
+      }
+      dragRef.current = null;
+    };
+  }, [cluster]);
 
   // Scroll to active index on mount or slide change
   const goToSlide = useCallback((index: number) => {
@@ -132,6 +147,8 @@ export function ExploreMapBottomCard({
       startY: e.clientY,
       lastY: e.clientY,
       active: true,
+      pointerId: e.pointerId,
+      target: e.currentTarget,
     };
     try {
       e.currentTarget.setPointerCapture(e.pointerId);

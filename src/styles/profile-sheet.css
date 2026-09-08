@@ -231,11 +231,14 @@ body.profile-sheet-dismissing {
   }
 }
 
-/* Soft-nav can keep the React tree briefly — never leave a painted remnant. */
+/* Soft-nav can keep the React tree briefly — never leave a painted remnant.
+ * Descendants need none too: site-chrome forces controls to auto !important. */
 .profile-sheet-root--pass-through.profile-sheet-root--exited,
-.profile-sheet-root--exited {
+.profile-sheet-root--exited,
+.profile-sheet-root--exited * {
   visibility: hidden !important;
   opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 @media (max-width: 1023px) {

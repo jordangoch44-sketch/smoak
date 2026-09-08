@@ -24,6 +24,7 @@ import {
   labelsForInquiryTopics,
 } from "@/lib/inquiry-options";
 import { markSpecialistInquiryNotificationRead } from "@/lib/inquiry/specialist-inquiry-notifications";
+import { isInquiryHidden, listHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
 
 export interface ClientInquiryListItem {
   id: string;
@@ -88,6 +89,7 @@ function conversationToLead(
     messagePreview,
     messageBody: displayInquiryMessageBody(body),
     avatarUrl: conversation.client_avatar_url?.trim() ?? "",
+    clientUserId: conversation.client_user_id?.trim() ?? "",
   };
 }
 
@@ -101,16 +103,31 @@ async function fetchSpecialistConversations(
     latestBody: string;
   }[]
 > {
-  const { data, error } = await supabase
+  const query = supabase
     .from("inquiry_conversations")
     .select("*")
     .eq("specialist_id", specialistId)
     .order("last_message_at", { ascending: false })
     .limit(20);
 
+  let { data, error } = await query.is("specialist_hidden_at", null);
+
+  if (error && /42703|column.*does not exist|PGRST204/i.test(error.message)) {
+    const retry = await supabase
+      .from("inquiry_conversations")
+      .select("*")
+      .eq("specialist_id", specialistId)
+      .order("last_message_at", { ascending: false })
+      .limit(20);
+    data = retry.data;
+    error = retry.error;
+  }
+
   if (error || !data) return [];
 
-  const rows = data as InquiryConversationRow[];
+  const rows = (data as InquiryConversationRow[]).filter(
+    (conversation) => !conversation.specialist_hidden_at
+  );
   const results: {
     conversation: InquiryConversationRow;
     unread: boolean;
@@ -303,7 +320,10 @@ export async function loadSpecialistInquiryLeads(
   if (!specialistId) return [];
 
   if (!isMarketplaceSupabaseActive()) {
-    return listLocalInquiriesForSpecialist(specialistId).map((record) => {
+    return listLocalInquiriesForSpecialist(specialistId)
+      .filter((record) => !record.conversation.specialist_hidden_at)
+      .filter((record) => !isInquiryHidden(specialistId, record.conversation.id))
+      .map((record) => {
       const latest = [...record.messages]
         .reverse()
         .find((m) => m.sender_role === "client");
@@ -318,10 +338,13 @@ export async function loadSpecialistInquiryLeads(
 
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return [];
+  const hidden = new Set(listHiddenInquiryIds(specialistId));
   const rows = await fetchSpecialistConversations(supabase, specialistId);
-  return rows.map(({ conversation, unread, latestBody }) =>
-    conversationToLead(conversation, { unread, latestBody })
-  );
+  return rows
+    .filter(({ conversation }) => !hidden.has(conversation.id))
+    .map(({ conversation, unread, latestBody }) =>
+      conversationToLead(conversation, { unread, latestBody })
+    );
 }
 
 export async function markInquiryThreadRead(

@@ -13,6 +13,8 @@ export interface InquiryConversationRow {
   client_email: string;
   /** Snapshot of the client's avatar at last client send (optional until migrated). */
   client_avatar_url?: string;
+  /** Specialist inbox hide — client still has the thread. */
+  specialist_hidden_at?: string | null;
   last_message_at: string;
   created_at: string;
   updated_at: string;

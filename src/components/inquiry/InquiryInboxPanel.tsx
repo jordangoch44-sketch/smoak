@@ -8,6 +8,11 @@ import {
   markInquiryThreadRead,
   threadFromDemoLead,
 } from "@/lib/inquiry/inquiry-inbox";
+import {
+  fetchInquiryClientPreview,
+  previewFromLead,
+  type InquiryClientPreview,
+} from "@/lib/inquiry/inquiry-client-preview";
 import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
 import { submitInquiryReply } from "@/lib/inquiry/inquiry-submit";
 import { DashboardEmptyState } from "@/components/dashboard/shared";
@@ -15,6 +20,10 @@ import {
   InquiryConversationList,
   type InquiryInboxRow,
 } from "./InquiryConversationList";
+import {
+  InquiryClientPreviewModal,
+  InquiryDeleteConfirmModal,
+} from "./InquiryClientPreviewModal";
 import { InquiryThreadView } from "./InquiryThreadView";
 import "@/styles/inquiry-thread.css";
 
@@ -28,8 +37,11 @@ interface InquiryInboxPanelProps {
   emptyActionLabel?: string;
   /** Used to seed demo threads that are not in the inquiry tables */
   demoLeads?: SpecialistLead[];
+  /** All specialist leads — demo fallback for client preview / hide */
+  previewLeads?: SpecialistLead[];
   onOpenConversation?: (id: string) => void;
   onCloseThread?: () => void;
+  onHideConversation?: (id: string) => void | Promise<void>;
   /** Full-page iMessage layout (specialist profile Inquiries tab). */
   variant?: "card" | "page";
   listTitle?: string;
@@ -44,8 +56,10 @@ export function InquiryInboxPanel({
   emptyActionHref,
   emptyActionLabel,
   demoLeads = [],
+  previewLeads = demoLeads,
   onOpenConversation,
   onCloseThread,
+  onHideConversation,
   variant = "card",
   listTitle,
 }: InquiryInboxPanelProps) {
@@ -56,6 +70,20 @@ export function InquiryInboxPanel({
   const [loadingThread, setLoadingThread] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [clientPreview, setClientPreview] = useState<InquiryClientPreview | null>(
+    null
+  );
+
+  const swipeActions = viewer === "specialist" && Boolean(onHideConversation);
+
+  const leadFor = useCallback(
+    (id: string) => previewLeads.find((lead) => lead.id === id),
+    [previewLeads]
+  );
 
   const openConversation = useCallback(
     async (id: string) => {
@@ -77,6 +105,7 @@ export function InquiryInboxPanel({
           messagePreview: "",
           messageBody: "",
           avatarUrl: "",
+          clientUserId: "",
         }));
         return;
       }
@@ -106,6 +135,38 @@ export function InquiryInboxPanel({
     setThread(null);
     setError(null);
     onCloseThread?.();
+  }
+
+  useEffect(() => {
+    if (openId && !rows.some((row) => row.id === openId)) {
+      setOpenId(null);
+      setThread(null);
+      setError(null);
+      onCloseThread?.();
+    }
+  }, [openId, onCloseThread, rows]);
+
+  async function handleViewProfile(id: string) {
+    const lead = leadFor(id);
+    setClientPreview(lead ? previewFromLead(lead) : null);
+    setPreviewOpen(true);
+    setPreviewLoading(true);
+    const fromApi = await fetchInquiryClientPreview(id);
+    setClientPreview(fromApi ?? (lead ? previewFromLead(lead) : null));
+    setPreviewLoading(false);
+  }
+
+  async function handleConfirmDelete() {
+    if (!pendingDeleteId || !onHideConversation) return;
+    const id = pendingDeleteId;
+    setDeleteBusy(true);
+    await onHideConversation(id);
+    if (clientPreview?.conversationId === id) {
+      setPreviewOpen(false);
+      setClientPreview(null);
+    }
+    setDeleteBusy(false);
+    setPendingDeleteId(null);
   }
 
   async function handleSend(message: string) {
@@ -201,7 +262,35 @@ export function InquiryInboxPanel({
   return (
     <div className={variant === "page" ? "inquiry-inbox inquiry-inbox--page" : "inquiry-inbox"}>
       {listTitle ? <h2 className="inquiry-inbox__title">{listTitle}</h2> : null}
-      <InquiryConversationList rows={rows} onSelect={(id) => void openConversation(id)} />
+      <InquiryConversationList
+        rows={rows}
+        swipeActions={swipeActions}
+        onSelect={(id) => void openConversation(id)}
+        onViewProfile={(id) => {
+          void handleViewProfile(id);
+        }}
+        onDelete={setPendingDeleteId}
+      />
+      <InquiryDeleteConfirmModal
+        open={Boolean(pendingDeleteId)}
+        name={pendingDeleteId ? leadFor(pendingDeleteId)?.name ?? "this client" : ""}
+        busy={deleteBusy}
+        onCancel={() => {
+          if (!deleteBusy) setPendingDeleteId(null);
+        }}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
+      />
+      <InquiryClientPreviewModal
+        open={previewOpen}
+        preview={clientPreview}
+        loading={previewLoading}
+        onClose={() => {
+          setPreviewOpen(false);
+          setClientPreview(null);
+        }}
+      />
     </div>
   );
 }

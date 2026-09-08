@@ -17,8 +17,8 @@ export function InquiryNotificationBanner({
 
   const title =
     unreadCount === 1
-      ? "New client inquiry"
-      : `${unreadCount} new client inquiries`;
+      ? "Want to review this message?"
+      : `Want to review these ${unreadCount} messages?`;
 
   return (
     <aside
@@ -31,7 +31,7 @@ export function InquiryNotificationBanner({
         <p className="specialist-inquiry-banner__title">{title}</p>
         <p className="specialist-inquiry-banner__body">
           {latestSummary
-            ? `${latestSummary}. Reply from Inquiries.`
+            ? latestSummary
             : "Open Inquiries to read and reply in the thread."}
         </p>
       </div>
@@ -41,14 +41,14 @@ export function InquiryNotificationBanner({
           className="smoac-control specialist-inquiry-banner__primary"
           onClick={onReview}
         >
-          Review inquiries
+          Yes
         </button>
         <button
           type="button"
           className="smoac-control specialist-inquiry-banner__secondary"
           onClick={onDismiss}
         >
-          Dismiss
+          Not now
         </button>
       </div>
     </aside>

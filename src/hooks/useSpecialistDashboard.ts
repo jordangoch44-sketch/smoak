@@ -34,6 +34,10 @@ import {
   markAllSpecialistInquiriesRead,
   markSpecialistInquiryRead,
 } from "@/lib/inquiry/inquiry-inbox";
+import { hideSpecialistInquiryConversation } from "@/lib/inquiry/inquiry-client-preview";
+import { hideInquiryId, listHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
+import { hideLocalInquiryForSpecialist } from "@/lib/inquiry/inquiry-local-store";
+import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
 import { markAllSpecialistInquiryNotificationsRead } from "@/lib/inquiry/specialist-inquiry-notifications";
 import type {
   SpecialistDashboardRanking,
@@ -203,6 +207,20 @@ export function useSpecialistDashboard() {
     );
   }
 
+  async function handleHideInquiry(conversationId: string) {
+    if (!trainerId || !conversationId) return;
+    hideInquiryId(trainerId, conversationId);
+    hideLocalInquiryForSpecialist(conversationId);
+    const result = await hideSpecialistInquiryConversation(conversationId);
+    if (!result.ok && !isDemoInquiryConversationId(conversationId)) {
+      /* Keep it hidden locally even if the remote column is not migrated yet. */
+    }
+    setInquiryLeads((prev) => prev.filter((item) => item.id !== conversationId));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("smoac:inquiry-updated"));
+    }
+  }
+
   const trainer = managedTrainer ?? data.trainer;
   const analytics =
     liveAnalytics ??
@@ -245,12 +263,17 @@ export function useSpecialistDashboard() {
   });
 
   /* Prefer real inquiries; demo leads only when demo mode has nothing live. */
+  const hiddenIds =
+    isHydrated && trainerId
+      ? new Set(listHiddenInquiryIds(trainerId))
+      : new Set<string>();
   const mergedLeads =
-    inquiryLeads.length > 0
+    (inquiryLeads.length > 0
       ? inquiryLeads
       : useDemoData
         ? data.newLeads
-        : [];
+        : []
+    ).filter((lead) => !hiddenIds.has(lead.id));
 
   async function handleSignOut() {
     await signOut();
@@ -289,6 +312,7 @@ export function useSpecialistDashboard() {
     handleSignOut,
     handleOpenInquiryLead,
     handleDismissInquiryNotifications,
+    handleHideInquiry,
     isHydrated,
   };
 }

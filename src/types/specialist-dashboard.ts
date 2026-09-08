@@ -16,6 +16,8 @@ export interface SpecialistLead {
   messageBody: string;
   /** Client photo when available; empty shows initials */
   avatarUrl: string;
+  /** Auth user id for the client who sent this inquiry */
+  clientUserId: string;
 }
 
 export interface SpecialistSubscription {
