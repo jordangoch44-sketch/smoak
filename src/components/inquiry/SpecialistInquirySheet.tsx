@@ -33,16 +33,14 @@ import {
 } from "@/lib/auth/inquiry-auth";
 import { setAuthSession } from "@/lib/auth-session-store";
 import { trackInquiryEvent } from "@/lib/inquiry/inquiry-analytics";
-import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
 import {
   draftToSubmitInput,
   submitSpecialistInquiry,
 } from "@/lib/inquiry/inquiry-submit";
 import {
-  INQUIRY_ACTIONS,
+  DEFAULT_INQUIRY_ACTION,
   INQUIRY_MESSAGE_MAX_LENGTH,
   getInquiryTopicsForProfession,
-  type InquiryActionId,
   type InquiryTopicId,
 } from "@/lib/inquiry-options";
 import {
@@ -66,21 +64,18 @@ interface SpecialistInquirySheetProps {
   specialistName: string;
   specialistProfession?: string;
   profilePath: string;
-  /** Pre-select action when opening from Book Consultation */
-  initialAction?: InquiryActionId;
 }
 
 function emptyDraft(
   specialistId: string,
   specialistName: string,
-  profilePath: string,
-  initialAction: InquiryActionId
+  profilePath: string
 ): PendingInquiryDraft {
   const existing = readPendingInquiryDraft();
   if (existing && existing.specialistId === specialistId) {
     return {
       ...existing,
-      inquiryAction: initialAction || existing.inquiryAction,
+      inquiryAction: DEFAULT_INQUIRY_ACTION,
       specialistName,
       profilePath,
     };
@@ -88,7 +83,7 @@ function emptyDraft(
   return {
     specialistId,
     specialistName,
-    inquiryAction: initialAction,
+    inquiryAction: DEFAULT_INQUIRY_ACTION,
     inquiryTopics: [],
     message: "",
     profilePath,
@@ -103,7 +98,6 @@ export function SpecialistInquirySheet({
   specialistName,
   specialistProfession = "",
   profilePath,
-  initialAction = "ask_question",
 }: SpecialistInquirySheetProps) {
   const titleId = useId();
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -115,7 +109,7 @@ export function SpecialistInquirySheet({
 
   const [view, setView] = useState<SheetView>("compose");
   const [draft, setDraft] = useState<PendingInquiryDraft>(() =>
-    emptyDraft(specialistId, specialistName, profilePath, initialAction)
+    emptyDraft(specialistId, specialistName, profilePath)
   );
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
@@ -126,18 +120,11 @@ export function SpecialistInquirySheet({
   const [syncedOpenKey, setSyncedOpenKey] = useState("");
   const submittingRef = useRef(false);
 
-  const openKey = open
-    ? `${specialistId}:${initialAction}:${profilePath}`
-    : "";
+  const openKey = open ? `${specialistId}:${profilePath}` : "";
 
   if (open && syncedOpenKey !== openKey) {
     setSyncedOpenKey(openKey);
-    const next = emptyDraft(
-      specialistId,
-      specialistName,
-      profilePath,
-      initialAction
-    );
+    const next = emptyDraft(specialistId, specialistName, profilePath);
     setDraft(next);
     setView("compose");
     setError(null);
@@ -236,6 +223,7 @@ export function SpecialistInquirySheet({
         userId: session.userId,
         firstName: session.firstName?.trim() || firstName || "Client",
         email: session.email,
+        avatarUrl: session.avatarUrl,
       })
     );
 
@@ -301,6 +289,7 @@ export function SpecialistInquirySheet({
         userId: result.session.userId,
         firstName: firstName.trim() || result.session.firstName || "Client",
         email: result.session.email,
+        avatarUrl: result.session.avatarUrl,
       })
     );
 
@@ -343,6 +332,7 @@ export function SpecialistInquirySheet({
         userId: result.session.userId,
         firstName: result.session.firstName?.trim() || "Client",
         email: result.session.email,
+        avatarUrl: result.session.avatarUrl,
       })
     );
 
@@ -428,17 +418,28 @@ export function SpecialistInquirySheet({
                 <span className="inquiry-sheet__handle" aria-hidden />
               </button>
               <div className="inquiry-sheet__header">
-                <h2 id={titleId} className="inquiry-sheet__title">
-                  {view === "success"
-                    ? "You're all set"
-                    : view === "awaiting_email"
-                      ? "Check your email"
-                      : view === "signup"
-                        ? "One quick step"
-                        : view === "signin"
-                          ? "Sign in to send"
-                          : "How can we help you?"}
-                </h2>
+                <div className="inquiry-sheet__heading">
+                  {view === "compose" ? (
+                    <>
+                      <p className="inquiry-sheet__eyebrow">
+                        Inquire for specialist
+                      </p>
+                      <h2 id={titleId} className="inquiry-sheet__title">
+                        {specialistName}
+                      </h2>
+                    </>
+                  ) : (
+                    <h2 id={titleId} className="inquiry-sheet__title">
+                      {view === "success"
+                        ? "You're all set"
+                        : view === "awaiting_email"
+                          ? "Check your email"
+                          : view === "signup"
+                            ? "One quick step"
+                            : "Sign in to send"}
+                    </h2>
+                  )}
+                </div>
                 <button
                   type="button"
                   onClick={onClose}
@@ -455,45 +456,7 @@ export function SpecialistInquirySheet({
             <div className="inquiry-sheet__body">
               {view === "compose" ? (
                 <>
-                  <div className="inquiry-sheet__actions" role="tablist" aria-label="Inquiry type">
-                    {INQUIRY_ACTIONS.map((action) => (
-                      <button
-                        key={action.id}
-                        type="button"
-                        role="tab"
-                        aria-selected={draft.inquiryAction === action.id}
-                        className={cn(
-                          "smoac-control inquiry-sheet__action",
-                          draft.inquiryAction === action.id &&
-                            "inquiry-sheet__action--selected"
-                        )}
-                        onClick={() => {
-                          persistDraft({ ...draft, inquiryAction: action.id });
-                          trackInquiryEvent("inquiry_action_selected", {
-                            action: action.id,
-                          });
-                          if (
-                            action.id === "book_call" ||
-                            action.id === "book_consultation"
-                          ) {
-                            recordSpecialistEngagement({
-                              event: "booking_click",
-                              specialistId,
-                              surface: "profile",
-                              inquiryAction: action.id,
-                              oncePerSession: true,
-                            });
-                          }
-                        }}
-                      >
-                        {action.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <p className="inquiry-sheet__label">
-                    What would you like to ask about?
-                  </p>
+                  <p className="inquiry-sheet__label">How can we help?</p>
                   <div className="inquiry-sheet__topics">
                     {topicOptions.map((topic) => {
                       const selected = draft.inquiryTopics.includes(topic.id);
@@ -522,14 +485,14 @@ export function SpecialistInquirySheet({
                   </div>
 
                   <label className="inquiry-sheet__label" htmlFor="inquiry-message">
-                    Your Question
+                    Message
                   </label>
                   <textarea
                     id="inquiry-message"
                     className="inquiry-sheet__textarea"
                     rows={5}
                     maxLength={INQUIRY_MESSAGE_MAX_LENGTH}
-                    placeholder="Tell the specialist what you’re looking for or what you’d like help with."
+                    placeholder="Tell them what you’re looking for."
                     value={draft.message}
                     onChange={(event) =>
                       persistDraft({
@@ -555,7 +518,7 @@ export function SpecialistInquirySheet({
                   email={email}
                   onFirstNameChange={setFirstName}
                   onEmailChange={setEmail}
-                  supportText={`Your message is ready. Enter your name and email so we can send it to ${specialistName} and they can reply.`}
+                  supportText={`Your message is ready. Enter your name and email so we can send it to ${specialistName}.`}
                 />
               ) : null}
 
@@ -626,11 +589,11 @@ export function SpecialistInquirySheet({
               {view === "success" ? (
                 <div className="inquiry-sheet__state">
                   <p className="inquiry-sheet__success">
-                    Sent to {specialistName}. They’ll reply by email.
+                    Sent to {specialistName}. They’ll reply in your Inquiries.
                   </p>
                   <p className="inquiry-sheet__support">
                     {emailMode === "resend"
-                      ? "We also emailed you a confirmation."
+                      ? "We’ll email you when they respond."
                       : "Your inquiry is saved in your SMOAC account."}
                   </p>
                   <Link

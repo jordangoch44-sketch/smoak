@@ -1,16 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { SubmitInquiryInput, SubmitInquiryResult } from "@/types/inquiry";
-import {
-  sendInquiryClientConfirmationEmail,
-  sendInquirySpecialistNotificationEmail,
-} from "@/lib/email/inquiry-email-service";
-import { formatInquiryMessageBody } from "@/lib/inquiry/inquiry-local-store";
-import {
-  sanitizeInquiryMessage,
-} from "@/lib/pending-inquiry-storage";
-import { CLIENT_DASHBOARD_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import type {
+  InquiryConversationRow,
+  SubmitInquiryInput,
+  SubmitInquiryReplyResult,
+  SubmitInquiryResult,
+} from "@/types/inquiry";
+import { sendInquiryMessageReceivedEmail } from "@/lib/email/inquiry-email-service";
+import { composeInquiryThreadBody } from "@/lib/inquiry/inquiry-message-body";
+import { inquiryThreadHref } from "@/lib/inquiry/inquiry-paths";
+import { isInquiryActionId } from "@/lib/inquiry-options";
+import { resolveAvatarUrlFromProfile } from "@/lib/profiles/profile-avatar";
+import type { ProfileRow } from "@/types/database";
 import { getAuthSiteOrigin } from "@/lib/auth/site-origin";
-import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
 import {
   resolveSpecialistNotifyEmail,
   resolveSpecialistUserId,
@@ -20,24 +21,74 @@ function siteOrigin(): string {
   return getAuthSiteOrigin() ?? "https://smoac.com";
 }
 
+function isMissingAvatarColumnError(message: string | undefined): boolean {
+  return Boolean(message && /client_avatar_url/i.test(message));
+}
+
+async function resolveClientAvatarUrl(
+  supabase: SupabaseClient,
+  clientUserId: string,
+  fallback?: string
+): Promise<string> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("avatar_url, avatar_path, onboarding_data")
+    .eq("user_id", clientUserId)
+    .maybeSingle();
+  const fromProfile = resolveAvatarUrlFromProfile(data as ProfileRow | null);
+  if (fromProfile) return fromProfile;
+  const extra = fallback?.trim() ?? "";
+  if (extra && !extra.toLowerCase().startsWith("data:")) return extra;
+  return "";
+}
+
+async function notifyRecipient(input: {
+  to: string;
+  kind: "inquiry_client" | "inquiry_specialist";
+  recipientFirstName: string;
+  senderName: string;
+  message: string;
+  viewer: "client" | "specialist";
+  conversationId: string;
+  inquiryAction?: string;
+  inquiryTopics?: string[];
+}): Promise<{ success: boolean; mode?: "resend" | "console" }> {
+  const origin = siteOrigin();
+  const action = input.inquiryAction;
+  return sendInquiryMessageReceivedEmail({
+    to: input.to,
+    kind: input.kind,
+    recipientFirstName: input.recipientFirstName,
+    senderName: input.senderName,
+    message: input.message,
+    threadPath: `${origin}${inquiryThreadHref(input.viewer, input.conversationId)}`,
+    inquiryAction: action && isInquiryActionId(action) ? action : undefined,
+    inquiryTopics: input.inquiryTopics,
+  });
+}
+
 /**
- * Persist inquiry + send emails. Runs on the server with an authenticated
- * Supabase client (RLS). Does not touch browser localStorage.
+ * Persist inquiry + notify the specialist. Runs on the server with an
+ * authenticated Supabase client (RLS). Does not touch browser localStorage.
  */
 export async function persistSpecialistInquiry(
   supabase: SupabaseClient,
   input: SubmitInquiryInput
 ): Promise<SubmitInquiryResult> {
   const now = new Date().toISOString();
-  const messageBody = formatInquiryMessageBody({
+  const messageBody = composeInquiryThreadBody({
     inquiryAction: input.inquiryAction,
     inquiryTopics: input.inquiryTopics,
     message: input.message,
-    clientFirstName: input.clientFirstName,
   });
   const specialistUserId = await resolveSpecialistUserId(
     supabase,
     input.specialistId
+  );
+  const clientAvatarUrl = await resolveClientAvatarUrl(
+    supabase,
+    input.clientUserId,
+    input.clientAvatarUrl
   );
 
   const { data: existing, error: existingError } = await supabase
@@ -53,33 +104,49 @@ export async function persistSpecialistInquiry(
 
   let conversationId = existing?.id as string | undefined;
 
-  if (!conversationId) {
-    const { data: created, error: createError } = await supabase
-      .from("inquiry_conversations")
-      .insert({
-        client_user_id: input.clientUserId,
-        specialist_id: input.specialistId,
-        specialist_user_id: specialistUserId,
-        specialist_name: input.specialistName,
-        inquiry_action: input.inquiryAction,
-        inquiry_topics: input.inquiryTopics,
-        source: "specialist_profile",
-        client_first_name: input.clientFirstName,
-        client_email: input.clientEmail,
-        last_message_at: now,
-      })
-      .select("id")
-      .single();
+  const conversationFields = {
+    specialist_user_id: specialistUserId,
+    specialist_name: input.specialistName,
+    inquiry_action: input.inquiryAction,
+    inquiry_topics: input.inquiryTopics,
+    client_first_name: input.clientFirstName,
+    client_email: input.clientEmail,
+    last_message_at: now,
+    client_avatar_url: clientAvatarUrl,
+  };
 
-    if (createError || !created?.id) {
+  if (!conversationId) {
+    const insertRow = {
+      client_user_id: input.clientUserId,
+      specialist_id: input.specialistId,
+      source: "specialist_profile",
+      ...conversationFields,
+    };
+    let created = (
+      await supabase
+        .from("inquiry_conversations")
+        .insert(insertRow)
+        .select("id")
+        .single()
+    ) as { data: { id: string } | null; error: { message: string } | null };
+
+    if (created.error && isMissingAvatarColumnError(created.error.message)) {
+      const { client_avatar_url: _omit, ...withoutAvatar } = insertRow;
+      created = await supabase
+        .from("inquiry_conversations")
+        .insert(withoutAvatar)
+        .select("id")
+        .single();
+    }
+
+    if (created.error || !created.data?.id) {
       return {
         ok: false,
-        message: createError?.message ?? "Could not create conversation.",
+        message: created.error?.message ?? "Could not create conversation.",
       };
     }
-    conversationId = created.id;
+    conversationId = created.data.id;
   } else {
-    /* Soft idempotency: identical body in the last 2 minutes → treat as already sent */
     const { data: recent } = await supabase
       .from("inquiry_messages")
       .select("id, body, created_at")
@@ -104,19 +171,20 @@ export async function persistSpecialistInquiry(
       };
     }
 
-    const { error: updateError } = await supabase
+    const updateRow = { ...conversationFields, updated_at: now };
+    let { error: updateError } = await supabase
       .from("inquiry_conversations")
-      .update({
-        specialist_user_id: specialistUserId,
-        specialist_name: input.specialistName,
-        inquiry_action: input.inquiryAction,
-        inquiry_topics: input.inquiryTopics,
-        client_first_name: input.clientFirstName,
-        client_email: input.clientEmail,
-        last_message_at: now,
-        updated_at: now,
-      })
+      .update(updateRow)
       .eq("id", conversationId);
+
+    if (updateError && isMissingAvatarColumnError(updateError.message)) {
+      const { client_avatar_url: _omit, ...withoutAvatar } = updateRow;
+      const retry = await supabase
+        .from("inquiry_conversations")
+        .update(withoutAvatar)
+        .eq("id", conversationId);
+      updateError = retry.error;
+    }
 
     if (updateError) {
       return { ok: false, message: updateError.message };
@@ -144,37 +212,26 @@ export async function persistSpecialistInquiry(
     };
   }
 
-  const origin = siteOrigin();
-  const sanitizedMessage = sanitizeInquiryMessage(input.message);
-
-  const clientEmailResult = await sendInquiryClientConfirmationEmail({
-    to: input.clientEmail,
-    clientFirstName: input.clientFirstName,
-    specialistName: input.specialistName,
-    inquiryAction: input.inquiryAction,
-    inquiryTopics: input.inquiryTopics,
-    message: sanitizedMessage,
-    messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}?tab=messages`,
-    leaveReviewPath: `${origin}${buildLeaveReviewHref(input.specialistId)}`,
-  });
-
   const specialistEmail = await resolveSpecialistNotifyEmail(
     supabase,
     input.specialistId,
     specialistUserId
   );
   let specialistEmailSent = false;
-  let emailMode = clientEmailResult.mode ?? "console";
+  let emailMode: "resend" | "console" = "console";
   if (specialistEmail) {
-    const specialistResult = await sendInquirySpecialistNotificationEmail({
+    const specialistFirst =
+      input.specialistName.trim().split(/\s+/)[0] || "there";
+    const specialistResult = await notifyRecipient({
       to: specialistEmail,
-      clientFirstName: input.clientFirstName,
-      clientEmail: input.clientEmail,
-      specialistName: input.specialistName,
+      kind: "inquiry_specialist",
+      recipientFirstName: specialistFirst,
+      senderName: input.clientFirstName,
+      message: messageBody,
+      viewer: "specialist",
+      conversationId,
       inquiryAction: input.inquiryAction,
       inquiryTopics: input.inquiryTopics,
-      message: sanitizedMessage,
-      dashboardPath: `${origin}${SPECIALIST_DASHBOARD_PATH}`,
     });
     specialistEmailSent = specialistResult.success;
     emailMode = specialistResult.mode ?? emailMode;
@@ -191,5 +248,110 @@ export async function persistSpecialistInquiry(
     messageId: message.id as string,
     emailMode,
     specialistEmailSent,
+  };
+}
+
+export async function persistInquiryReply(
+  supabase: SupabaseClient,
+  input: {
+    conversationId: string;
+    senderUserId: string;
+    senderRole: "client" | "specialist";
+    message: string;
+  }
+): Promise<SubmitInquiryReplyResult> {
+  const { data: conversation, error: conversationError } = await supabase
+    .from("inquiry_conversations")
+    .select("*")
+    .eq("id", input.conversationId)
+    .maybeSingle();
+
+  if (conversationError || !conversation) {
+    return {
+      ok: false,
+      message: conversationError?.message ?? "Conversation not found.",
+    };
+  }
+
+  const row = conversation as InquiryConversationRow;
+  const now = new Date().toISOString();
+
+  const { data: message, error: messageError } = await supabase
+    .from("inquiry_messages")
+    .insert({
+      conversation_id: row.id,
+      sender_user_id: input.senderUserId,
+      sender_role: input.senderRole,
+      body: input.message,
+      is_read: false,
+    })
+    .select("id")
+    .single();
+
+  if (messageError || !message?.id) {
+    return {
+      ok: false,
+      message: messageError?.message ?? "Could not send message.",
+    };
+  }
+
+  const conversationPatch: Record<string, string> = {
+    last_message_at: now,
+    updated_at: now,
+  };
+  if (input.senderRole === "specialist" && !row.specialist_user_id) {
+    conversationPatch.specialist_user_id = input.senderUserId;
+  }
+
+  await supabase
+    .from("inquiry_conversations")
+    .update(conversationPatch)
+    .eq("id", row.id);
+
+  let emailMode: "resend" | "console" = "console";
+  if (input.senderRole === "client") {
+    const specialistUserId =
+      row.specialist_user_id ??
+      (await resolveSpecialistUserId(supabase, row.specialist_id));
+    const specialistEmail = await resolveSpecialistNotifyEmail(
+      supabase,
+      row.specialist_id,
+      specialistUserId
+    );
+    if (specialistEmail) {
+      const specialistFirst =
+        row.specialist_name.trim().split(/\s+/)[0] || "there";
+      const result = await notifyRecipient({
+        to: specialistEmail,
+        kind: "inquiry_specialist",
+        recipientFirstName: specialistFirst,
+        senderName: row.client_first_name,
+        message: input.message,
+        viewer: "specialist",
+        conversationId: row.id,
+      });
+      emailMode = result.mode ?? emailMode;
+    }
+  } else {
+    const clientEmail = row.client_email.trim().toLowerCase();
+    if (clientEmail.includes("@")) {
+      const result = await notifyRecipient({
+        to: clientEmail,
+        kind: "inquiry_client",
+        recipientFirstName: row.client_first_name,
+        senderName: row.specialist_name,
+        message: input.message,
+        viewer: "client",
+        conversationId: row.id,
+      });
+      emailMode = result.mode ?? emailMode;
+    }
+  }
+
+  return {
+    ok: true,
+    conversationId: row.id,
+    messageId: message.id as string,
+    emailMode,
   };
 }

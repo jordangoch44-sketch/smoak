@@ -167,6 +167,7 @@ export function useSpecialistDashboard() {
     document.addEventListener("visibilitychange", onVisible);
     /* Same-browser refresh signal after a new inquiry is written. */
     window.addEventListener("smoac:specialist-inquiry-notifications", loadLeads);
+    window.addEventListener("smoac:inquiry-updated", loadLeads);
 
     return () => {
       cancelled = true;
@@ -176,6 +177,7 @@ export function useSpecialistDashboard() {
         "smoac:specialist-inquiry-notifications",
         loadLeads
       );
+      window.removeEventListener("smoac:inquiry-updated", loadLeads);
     };
   }, [trainerId]);
 

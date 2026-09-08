@@ -12,8 +12,10 @@ export interface SpecialistLead {
   topicLabels: string[];
   /** Short line for list subtitle / notification */
   messagePreview: string;
-  /** Full inquiry body for portal detail */
+  /** Full inquiry body for portal detail / demo thread seed */
   messageBody: string;
+  /** Client photo when available; empty shows initials */
+  avatarUrl: string;
 }
 
 export interface SpecialistSubscription {

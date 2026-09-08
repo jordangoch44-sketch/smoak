@@ -3,15 +3,8 @@ import type {
   InquiryMessageRow,
   SubmitInquiryInput,
 } from "@/types/inquiry";
-import {
-  labelsForInquiryTopics,
-  labelForInquiryAction,
-  isInquiryActionId,
-} from "@/lib/inquiry-options";
-import {
-  sanitizeInquiryMessage,
-  validateInquiryDraft,
-} from "@/lib/pending-inquiry-storage";
+import { composeInquiryThreadBody } from "@/lib/inquiry/inquiry-message-body";
+import { validateInquiryDraft } from "@/lib/pending-inquiry-storage";
 import { LOCAL_INQUIRIES_STORAGE_KEY } from "@/lib/dev-storage-keys";
 
 export interface LocalInquiryRecord {
@@ -37,37 +30,6 @@ function writeLocalAll(records: LocalInquiryRecord[]): void {
     LOCAL_INQUIRIES_STORAGE_KEY,
     JSON.stringify(records)
   );
-}
-
-export function formatInquiryMessageBody(input: {
-  inquiryAction: string;
-  inquiryTopics: string[];
-  message: string;
-  clientFirstName: string;
-}): string {
-  const actionLabel = isInquiryActionId(input.inquiryAction)
-    ? labelForInquiryAction(input.inquiryAction)
-    : input.inquiryAction;
-  const topicLabels = labelsForInquiryTopics(input.inquiryTopics);
-  const lines = [
-    `New inquiry from ${input.clientFirstName.trim() || "a client"}`,
-    "",
-    `Interested in: ${actionLabel}`,
-  ];
-  if (topicLabels.length > 0) {
-    lines.push("");
-    lines.push("Topics:");
-    for (const label of topicLabels) {
-      lines.push(`- ${label}`);
-    }
-  }
-  const message = sanitizeInquiryMessage(input.message);
-  if (message) {
-    lines.push("");
-    lines.push("Message:");
-    lines.push(message);
-  }
-  return lines.join("\n");
 }
 
 export function saveLocalInquiry(
@@ -103,6 +65,7 @@ export function saveLocalInquiry(
         source: "specialist_profile",
         client_first_name: input.clientFirstName,
         client_email: input.clientEmail,
+        client_avatar_url: input.clientAvatarUrl?.trim() ?? "",
         last_message_at: now,
         created_at: now,
         updated_at: now,
@@ -115,6 +78,8 @@ export function saveLocalInquiry(
     record.conversation.inquiry_topics = [...input.inquiryTopics];
     record.conversation.client_first_name = input.clientFirstName;
     record.conversation.client_email = input.clientEmail;
+    record.conversation.client_avatar_url =
+      input.clientAvatarUrl?.trim() || record.conversation.client_avatar_url;
     record.conversation.specialist_name = input.specialistName;
     record.conversation.last_message_at = now;
     record.conversation.updated_at = now;
@@ -130,7 +95,7 @@ export function saveLocalInquiry(
     conversation_id: record.conversation.id,
     sender_user_id: input.clientUserId,
     sender_role: "client",
-    body: formatInquiryMessageBody(input),
+    body: composeInquiryThreadBody(input),
     inquiry_action: input.inquiryAction,
     inquiry_topics: [...input.inquiryTopics],
     is_read: false,
@@ -157,13 +122,58 @@ export function listLocalInquiriesForClient(
   );
 }
 
-export function markLocalInquiryRead(conversationId: string): void {
+export function getLocalInquiryRecord(
+  conversationId: string
+): LocalInquiryRecord | null {
+  return (
+    readLocalAll().find((row) => row.conversation.id === conversationId) ?? null
+  );
+}
+
+export function saveLocalReply(input: {
+  conversationId: string;
+  senderUserId: string;
+  senderRole: "client" | "specialist";
+  message: string;
+}): { conversationId: string; messageId: string } | null {
+  const all = readLocalAll();
+  const record = all.find((row) => row.conversation.id === input.conversationId);
+  if (!record) return null;
+
+  const now = new Date().toISOString();
+  const messageId =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `local-msg-${Date.now()}`;
+
+  record.conversation.last_message_at = now;
+  record.conversation.updated_at = now;
+  record.messages.push({
+    id: messageId,
+    conversation_id: record.conversation.id,
+    sender_user_id: input.senderUserId,
+    sender_role: input.senderRole,
+    body: input.message,
+    inquiry_action: null,
+    inquiry_topics: [],
+    is_read: false,
+    created_at: now,
+  });
+  writeLocalAll(all);
+  return { conversationId: record.conversation.id, messageId };
+}
+
+export function markLocalInquiryRead(
+  conversationId: string,
+  readerRole: "client" | "specialist" = "specialist"
+): void {
+  const counterpart = readerRole === "client" ? "specialist" : "client";
   const all = readLocalAll();
   let changed = false;
   for (const record of all) {
     if (record.conversation.id !== conversationId) continue;
     for (const message of record.messages) {
-      if (message.sender_role === "client" && !message.is_read) {
+      if (message.sender_role === counterpart && !message.is_read) {
         message.is_read = true;
         changed = true;
       }

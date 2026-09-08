@@ -41,7 +41,7 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
   {
     title: "Sharing",
     paragraphs: [
-      "When you inquire about a specialist, we share relevant inquiry details (including your contact email) with that specialist so they can reply by email.",
+      "When you inquire about a specialist, we share relevant inquiry details with that specialist so they can reply in SMOAC. We also email both of you when a new message arrives.",
       "We use service providers (for example authentication, database, and email delivery) to run SMOAC. We do not sell your personal information.",
     ],
   },
@@ -76,7 +76,7 @@ export const TERMS_SECTIONS: LegalSection[] = [
   {
     title: "Inquiries and communications",
     paragraphs: [
-      "Client inquiries may be delivered to specialists through the SMOAC portal and by email. Specialists typically reply by email outside SMOAC messaging. You agree not to misuse inquiry tools (spam, harassment, or unlawful content).",
+      "Client inquiries are delivered in the SMOAC portal, with email notifications when a new message arrives. Reply in SMOAC to keep the conversation in one thread. You agree not to misuse inquiry tools (spam, harassment, or unlawful content).",
     ],
   },
   {

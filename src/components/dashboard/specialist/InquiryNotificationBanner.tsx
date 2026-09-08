@@ -31,8 +31,8 @@ export function InquiryNotificationBanner({
         <p className="specialist-inquiry-banner__title">{title}</p>
         <p className="specialist-inquiry-banner__body">
           {latestSummary
-            ? `${latestSummary}. Reply by email from Inquiries.`
-            : "Open Inquiries for client details, then reply by email."}
+            ? `${latestSummary}. Reply from Inquiries.`
+            : "Open Inquiries to read and reply in the thread."}
         </p>
       </div>
       <div className="specialist-inquiry-banner__actions">

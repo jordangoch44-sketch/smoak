@@ -1,6 +1,6 @@
 # SMOAC transactional email (Resend)
 
-Inquiry + application emails go through `src/lib/email/email-transport.ts` and share a branded HTML shell in `src/lib/email/email-html-shell.ts` (dark graphite, SMOAC Color spectrum rim, wordmark, spectrum CTA). Plain-text fallback is always included. Specialist inquiry emails set `reply_to` to the client so specialists can hit Reply in their inbox.
+Inquiry + application emails go through `src/lib/email/email-transport.ts` and share a branded HTML shell in `src/lib/email/email-html-shell.ts` (dark graphite, SMOAC Color spectrum rim, wordmark, spectrum CTA). Plain-text fallback is always included. Inquiry emails are notifications only — they link into the SMOAC thread and do not set `reply_to` to the other person.
 
 - **With `RESEND_API_KEY`:** real sends via Resend (HTML + text)
 - **Without:** payloads log to the server console (safe for local UI work)
@@ -46,8 +46,8 @@ EMAIL_FROM=SMOAC <noreply@smoac.com>
 
 | Event | Recipient | Kind | Trigger |
 |-------|-----------|------|---------|
-| Client inquiry | Client | `inquiry_client` | `POST /api/inquiry/submit` |
-| Client inquiry | Specialist | `inquiry_specialist` | `POST /api/inquiry/submit` |
+| Client inquiry / reply | Specialist | `inquiry_specialist` | `POST /api/inquiry/submit` or `/api/inquiry/reply` |
+| Specialist reply | Client | `inquiry_client` | `POST /api/inquiry/reply` |
 | Client Join Now / complete-account | Client | `confirmation_client` | `sendClientWelcomeEmail` (deduped per browser) |
 | Specialist application submitted | Specialist | `confirmation_specialist` | Onboarding submit |
 | Specialist approved | Specialist | `approval_specialist` | Admin approve |
@@ -68,7 +68,7 @@ Run each once against a real inbox before inviting trainers:
 5. **Forgot password** — “Reset your SMOAC password”
 6. **Specialist OTP** — 6-digit code during onboarding
 7. **Specialist application received** — after wizard submit
-8. **Inquiry** — both client + specialist copies
+8. **Inquiry thread** — specialist notify on first message; client notify when the specialist replies
 9. **Admin approve / reject** — approval live email + rejection closed email
 
 ## Auth emails

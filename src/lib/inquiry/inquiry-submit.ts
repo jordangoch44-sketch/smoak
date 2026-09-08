@@ -1,16 +1,14 @@
-import type { SubmitInquiryInput, SubmitInquiryResult } from "@/types/inquiry";
+import type { SubmitInquiryInput, SubmitInquiryResult, SubmitInquiryReplyResult } from "@/types/inquiry";
 import {
   getMarketplaceAuthClient,
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
-import {
-  sendInquiryClientConfirmationEmail,
-  sendInquirySpecialistNotificationEmail,
-} from "@/lib/email/inquiry-email-service";
+import { sendInquiryMessageReceivedEmail } from "@/lib/email/inquiry-email-service";
 import { trackInquiryEvent } from "@/lib/inquiry/inquiry-analytics";
 import { persistSpecialistInquiry } from "@/lib/inquiry/inquiry-persist";
 import {
   saveLocalInquiry,
+  saveLocalReply,
 } from "@/lib/inquiry/inquiry-local-store";
 import {
   createInquiryIdempotencyKey,
@@ -19,15 +17,22 @@ import {
 } from "@/lib/inquiry/inquiry-session-flags";
 import { pushSpecialistInquiryNotification } from "@/lib/inquiry/specialist-inquiry-notifications";
 import {
-  sanitizeInquiryMessage,
+  composeInquiryThreadBody,
+  validateThreadMessage,
+} from "@/lib/inquiry/inquiry-message-body";
+import { inquiryThreadHref } from "@/lib/inquiry/inquiry-paths";
+import {
   validateInquiryDraft,
   type PendingInquiryDraft,
 } from "@/lib/pending-inquiry-storage";
 import { getSpecialistApplicationById } from "@/lib/specialist-application-storage";
-import { CLIENT_DASHBOARD_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { getAuthSiteOrigin } from "@/lib/auth/site-origin";
 import { labelsForInquiryTopics, labelForInquiryAction } from "@/lib/inquiry-options";
-import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
+
+function dispatchInquiryUpdated(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event("smoac:inquiry-updated"));
+}
 
 function notifySpecialistPortal(input: {
   specialistId: string;
@@ -47,6 +52,7 @@ function notifySpecialistPortal(input: {
     clientFirstName: input.clientFirstName,
     summary,
   });
+  dispatchInquiryUpdated();
 }
 
 function resolveLocalSpecialistNotifyEmail(specialistId: string): string | null {
@@ -103,7 +109,7 @@ export async function submitSpecialistInquiry(
 
   const normalized: SubmitInquiryInput = {
     ...input,
-    message: sanitizeInquiryMessage(input.message),
+    message: composeInquiryThreadBody(input),
     clientEmail: input.clientEmail.trim().toLowerCase(),
     clientFirstName: input.clientFirstName.trim(),
     specialistId: input.specialistId.trim(),
@@ -121,7 +127,6 @@ export async function submitSpecialistInquiry(
 
   try {
     if (isMarketplaceSupabaseActive()) {
-      /* Browser: prefer authenticated API (server writes + emails). */
       if (typeof window !== "undefined") {
         const result = await submitInquiryViaApi(normalized);
         if (result.ok) {
@@ -144,7 +149,6 @@ export async function submitSpecialistInquiry(
         return result;
       }
 
-      /* Server-side callers (rare): persist directly with user client. */
       const supabase = getMarketplaceAuthClient();
       if (!supabase) {
         trackInquiryEvent("inquiry_failed", { reason: "no_client" });
@@ -190,32 +194,23 @@ export async function submitSpecialistInquiry(
     });
 
     const origin = siteOrigin();
-    const clientEmailResult = await sendInquiryClientConfirmationEmail({
-      to: normalized.clientEmail,
-      clientFirstName: normalized.clientFirstName,
-      specialistName: normalized.specialistName,
-      inquiryAction: normalized.inquiryAction,
-      inquiryTopics: normalized.inquiryTopics,
-      message: normalized.message,
-      messagesPath: `${origin}${CLIENT_DASHBOARD_PATH}?tab=messages`,
-      leaveReviewPath: `${origin}${buildLeaveReviewHref(normalized.specialistId)}`,
-    });
-
     const specialistEmail = resolveLocalSpecialistNotifyEmail(
       normalized.specialistId
     );
     let specialistEmailSent = false;
-    let emailMode = clientEmailResult.mode ?? "console";
+    let emailMode: "resend" | "console" = "console";
     if (specialistEmail) {
-      const specialistResult = await sendInquirySpecialistNotificationEmail({
+      const specialistFirst =
+        normalized.specialistName.trim().split(/\s+/)[0] || "there";
+      const specialistResult = await sendInquiryMessageReceivedEmail({
         to: specialistEmail,
-        clientFirstName: normalized.clientFirstName,
-        clientEmail: normalized.clientEmail,
-        specialistName: normalized.specialistName,
+        kind: "inquiry_specialist",
+        recipientFirstName: specialistFirst,
+        senderName: normalized.clientFirstName,
+        message: normalized.message,
+        threadPath: `${origin}${inquiryThreadHref("specialist", local.conversationId)}`,
         inquiryAction: normalized.inquiryAction,
         inquiryTopics: normalized.inquiryTopics,
-        message: normalized.message,
-        dashboardPath: `${origin}${SPECIALIST_DASHBOARD_PATH}`,
       });
       specialistEmailSent = specialistResult.success;
       emailMode = specialistResult.mode ?? emailMode;
@@ -245,12 +240,86 @@ export async function submitSpecialistInquiry(
   }
 }
 
+export async function submitInquiryReply(input: {
+  conversationId: string;
+  message: string;
+  senderUserId: string;
+  senderRole: "client" | "specialist";
+  specialistId?: string;
+  clientFirstName?: string;
+}): Promise<SubmitInquiryReplyResult> {
+  const validation = validateThreadMessage(input.message);
+  if (!validation.ok) {
+    return validation;
+  }
+
+  try {
+    if (isMarketplaceSupabaseActive() && typeof window !== "undefined") {
+      const response = await fetch("/api/inquiry/reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          conversationId: input.conversationId,
+          message: validation.message,
+        }),
+      });
+      const data = (await response.json().catch(() => null)) as
+        | SubmitInquiryReplyResult
+        | null;
+      if (data && typeof data === "object" && "ok" in data) {
+        if (data.ok) dispatchInquiryUpdated();
+        return data;
+      }
+      return {
+        ok: false,
+        message:
+          response.status === 401
+            ? "Sign in to send your message."
+            : "Could not send your message. Try again.",
+      };
+    }
+
+    const local = saveLocalReply({
+      conversationId: input.conversationId,
+      senderUserId: input.senderUserId,
+      senderRole: input.senderRole,
+      message: validation.message,
+    });
+    if (!local) {
+      return { ok: false, message: "Conversation not found." };
+    }
+    if (input.senderRole === "client" && input.specialistId) {
+      notifySpecialistPortal({
+        specialistId: input.specialistId,
+        conversationId: local.conversationId,
+        clientFirstName: input.clientFirstName || "Client",
+        inquiryAction: "ask_question",
+        inquiryTopics: [],
+      });
+    } else {
+      dispatchInquiryUpdated();
+    }
+    return {
+      ok: true,
+      conversationId: local.conversationId,
+      messageId: local.messageId,
+      emailMode: "console",
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Could not send your message.";
+    return { ok: false, message };
+  }
+}
+
 export function draftToSubmitInput(
   draft: PendingInquiryDraft,
   client: {
     userId: string;
     firstName: string;
     email: string;
+    avatarUrl?: string;
   }
 ): SubmitInquiryInput {
   return {
@@ -262,6 +331,7 @@ export function draftToSubmitInput(
     clientUserId: client.userId,
     clientFirstName: client.firstName,
     clientEmail: client.email,
+    clientAvatarUrl: client.avatarUrl,
     idempotencyKey: createInquiryIdempotencyKey(draft),
   };
 }

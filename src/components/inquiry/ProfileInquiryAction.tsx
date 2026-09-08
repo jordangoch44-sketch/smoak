@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { InquiryActionId } from "@/lib/inquiry-options";
 import { SpecialistInquirySheet } from "./SpecialistInquirySheet";
 
 interface ProfileInquiryActionProps {
@@ -13,7 +12,6 @@ interface ProfileInquiryActionProps {
   onOpenChange?: (open: boolean) => void;
   buttonLabel?: string;
   className?: string;
-  initialAction?: InquiryActionId;
   showButton?: boolean;
 }
 
@@ -25,7 +23,6 @@ export function ProfileInquiryAction({
   onOpenChange,
   buttonLabel = "Contact Specialist",
   className,
-  initialAction,
   showButton = true,
 }: ProfileInquiryActionProps) {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -64,7 +61,6 @@ export function ProfileInquiryAction({
         specialistName={specialistName}
         specialistProfession={specialistProfession}
         profilePath={profilePath || `/trainers/${specialistId}`}
-        initialAction={initialAction}
       />
     </>
   );

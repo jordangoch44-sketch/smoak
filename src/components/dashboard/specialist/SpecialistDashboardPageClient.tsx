@@ -113,11 +113,14 @@ export function SpecialistDashboardPageClient() {
   const searchParams = useSearchParams();
   const justSubmitted = searchParams.get("submitted") === "1";
   const tabParam = searchParams.get("tab");
+  const conversationParam = searchParams.get("c")?.trim() || "";
   const [freeTab, setFreeTab] = useState<FreeDashboardTab>(() =>
-    parseFreeTab(tabParam)
+    conversationParam ? "profile" : parseFreeTab(tabParam)
   );
   const [premiumTab, setPremiumTab] = useState<PremiumDashboardTab>(() =>
-    parsePremiumTab(tabParam)
+    conversationParam && tabParam !== "profile"
+      ? "overview"
+      : parsePremiumTab(tabParam)
   );
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -170,9 +173,13 @@ export function SpecialistDashboardPageClient() {
   }, [searchParams]);
 
   useEffect(() => {
-    setFreeTab(parseFreeTab(tabParam));
-    setPremiumTab(parsePremiumTab(tabParam));
-  }, [tabParam]);
+    setFreeTab(conversationParam ? "profile" : parseFreeTab(tabParam));
+    setPremiumTab(
+      conversationParam && tabParam !== "profile"
+        ? "overview"
+        : parsePremiumTab(tabParam)
+    );
+  }, [tabParam, conversationParam]);
 
   useEffect(() => {
     if (!isReady || !session || !isHydrated) return;
@@ -187,6 +194,17 @@ export function SpecialistDashboardPageClient() {
       if (current === nextHref) return;
     }
     router.replace(nextHref, { scroll: false });
+  }
+
+  function replaceConversationParam(id: string | null) {
+    const next = new URLSearchParams(searchParams.toString());
+    if (id) next.set("c", id);
+    else next.delete("c");
+    const qs = next.toString();
+    router.replace(
+      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
+      { scroll: false }
+    );
   }
 
   async function handleRequestReview() {
@@ -475,7 +493,13 @@ export function SpecialistDashboardPageClient() {
 
                   <LeadsCard
                     leads={data.newLeads}
-                    onOpenLead={handleOpenInquiryLead}
+                    senderUserId={session.userId}
+                    onOpenLead={(lead) => {
+                      void handleOpenInquiryLead(lead);
+                      replaceConversationParam(lead.id);
+                    }}
+                    initialConversationId={conversationParam || null}
+                    onCloseThread={() => replaceConversationParam(null)}
                   />
                 </div>
               ) : null}
@@ -615,7 +639,13 @@ export function SpecialistDashboardPageClient() {
                   <div className="dashboard-overview-accordions">
                     <LeadsCard
                       leads={data.newLeads}
-                      onOpenLead={handleOpenInquiryLead}
+                      senderUserId={session.userId}
+                      onOpenLead={(lead) => {
+                        void handleOpenInquiryLead(lead);
+                        replaceConversationParam(lead.id);
+                      }}
+                      initialConversationId={conversationParam || null}
+                      onCloseThread={() => replaceConversationParam(null)}
                       defaultOpen
                     />
                     <AnalyticsCard

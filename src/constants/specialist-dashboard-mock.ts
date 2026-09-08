@@ -27,6 +27,7 @@ export const DEMO_SPECIALIST_LEADS: SpecialistLead[] = [
     actionLabel: "Ask a question",
     topicLabels: ["Sports performance"],
     messagePreview: "Looking for North Park sessions twice a week.",
+    avatarUrl: "",
     messageBody:
       "New inquiry from Jordan M.\n\nInterested in: Ask a question\n\nTopics:\n- Sports performance\n\nMessage:\nLooking for North Park sessions twice a week.",
   },
@@ -40,6 +41,7 @@ export const DEMO_SPECIALIST_LEADS: SpecialistLead[] = [
     actionLabel: "Book a consult",
     topicLabels: ["Strength coaching"],
     messagePreview: "Interested in Mission Valley availability.",
+    avatarUrl: "",
     messageBody:
       "New inquiry from Priya S.\n\nInterested in: Book a consult\n\nTopics:\n- Strength coaching\n\nMessage:\nInterested in Mission Valley availability.",
   },
@@ -53,6 +55,7 @@ export const DEMO_SPECIALIST_LEADS: SpecialistLead[] = [
     actionLabel: "Ask a question",
     topicLabels: ["HYROX prep"],
     messagePreview: "Hillcrest — race prep over 8 weeks.",
+    avatarUrl: "",
     messageBody:
       "New inquiry from Chris L.\n\nInterested in: Ask a question\n\nTopics:\n- HYROX prep\n\nMessage:\nHillcrest — race prep over 8 weeks.",
   },

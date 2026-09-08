@@ -2,14 +2,20 @@
 
 import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 
+/**
+ * Composer no longer asks clients to pick an action type.
+ * Legacy ids stay valid so stored drafts / older inquiries still parse.
+ */
 export const INQUIRY_ACTIONS = [
-  { id: "ask_question", label: "Ask a Question" },
+  { id: "ask_question", label: "Inquiry" },
   { id: "book_call", label: "Book a Call" },
   { id: "book_consultation", label: "Book a Consultation" },
   { id: "get_rates", label: "Get Rates" },
 ] as const;
 
 export type InquiryActionId = (typeof INQUIRY_ACTIONS)[number]["id"];
+
+export const DEFAULT_INQUIRY_ACTION: InquiryActionId = "ask_question";
 
 export interface InquiryTopicOption {
   id: string;

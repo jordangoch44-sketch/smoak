@@ -87,6 +87,20 @@ SaveTrainerButton (trainers/)
 
 Hearts sit in `TrainerCardSaveSlot` **outside** the card link. Nav badges use `formatSavedCountBadge` from `lib/saved-ui.ts`.
 
+### Inquiry thread
+
+```
+Contact Specialist (profile sheet)
+  → POST /api/inquiry/submit     first message (client)
+  → POST /api/inquiry/reply      later messages (client or specialist)
+  → inquiry_conversations / inquiry_messages
+  → Resend notify to the recipient only (Open conversation CTA)
+  → Client Inquiries tab / Specialist Inquiries card
+       list (avatar + name) → iMessage-style thread
+```
+
+Email is a ping, not the inbox. Deep links: `/client-dashboard?tab=messages&c=…` and `/specialist-dashboard?c=…`.
+
 ### Mobile chrome
 
 ```

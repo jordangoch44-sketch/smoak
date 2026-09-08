@@ -78,14 +78,32 @@ export function ClientDashboardPageClient() {
   const [messages, setMessages] = useState<ClientInquiryListItem[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ClientDashboardTab>("profile");
+  const [openConversationId, setOpenConversationId] = useState<string | null>(
+    null
+  );
   const [profileForm, setProfileForm] = useState<ClientProfileFormState | null>(
     null
   );
   const [loadTimedOut, setLoadTimedOut] = useState(false);
 
   useEffect(() => {
-    if (!session?.userId) return;
-    void loadClientInquiryMessages(session.userId).then(setMessages);
+    const userId = session?.userId;
+    if (!userId) return;
+    function loadMessages() {
+      void loadClientInquiryMessages(userId).then(setMessages);
+    }
+    loadMessages();
+    function onVisible() {
+      if (document.visibilityState === "visible") loadMessages();
+    }
+    window.addEventListener("focus", loadMessages);
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("smoac:inquiry-updated", loadMessages);
+    return () => {
+      window.removeEventListener("focus", loadMessages);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("smoac:inquiry-updated", loadMessages);
+    };
   }, [session?.userId]);
 
   useEffect(() => {
@@ -97,6 +115,12 @@ export function ClientDashboardPageClient() {
       return;
     }
     const tab = searchParams.get("tab");
+    const conversationId = searchParams.get("c")?.trim() || "";
+    if (conversationId) {
+      setActiveTab("messages");
+      setOpenConversationId(conversationId);
+      return;
+    }
     if (tab === "messages" || tab === "saved" || tab === "profile") {
       setActiveTab(tab);
       router.replace("/client-dashboard", { scroll: false });
@@ -392,7 +416,20 @@ export function ClientDashboardPageClient() {
               aria-labelledby="client-dash-tab-messages"
               className="client-dash-panel"
             >
-              <ClientInquiriesList inquiries={messages} />
+              <ClientInquiriesList
+                inquiries={messages}
+                userId={session.userId}
+                initialConversationId={openConversationId}
+                onConversationOpened={(id) => {
+                  setOpenConversationId(id);
+                  setMessages((prev) =>
+                    prev.map((item) =>
+                      item.id === id ? { ...item, unread: false } : item
+                    )
+                  );
+                }}
+                onCloseThread={() => setOpenConversationId(null)}
+              />
             </section>
           ) : null}
         </div>

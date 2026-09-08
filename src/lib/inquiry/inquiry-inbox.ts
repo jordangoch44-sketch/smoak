@@ -1,11 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { InquiryConversationRow, InquiryMessageRow } from "@/types/inquiry";
+import type {
+  InquiryConversationRow,
+  InquiryMessageRow,
+  InquiryThreadPayload,
+} from "@/types/inquiry";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 import {
   getMarketplaceAuthClient,
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
+import { resolveSpecialistListingAvatar } from "@/lib/inquiry/inquiry-avatars";
+import { displayInquiryMessageBody } from "@/lib/inquiry/inquiry-message-body";
+import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
 import {
+  getLocalInquiryRecord,
   listLocalInquiriesForClient,
   listLocalInquiriesForSpecialist,
   markLocalInquiryRead,
@@ -24,12 +32,12 @@ export interface ClientInquiryListItem {
   /** List subtitle — message preview or topics */
   preview: string;
   time: string;
-  /** Specialist reply waiting (none yet in email-handoff model) */
   unread: boolean;
   actionLabel: string;
   topicLabels: string[];
   messagePreview: string;
   messageBody: string;
+  avatarUrl: string;
 }
 
 function relativeTime(iso: string): string {
@@ -46,16 +54,12 @@ function relativeTime(iso: string): string {
 }
 
 function previewFromBody(body: string): string {
-  const lines = body
+  const display = displayInquiryMessageBody(body);
+  const lines = display
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-  const messageIdx = lines.findIndex((line) => /^message:?$/i.test(line));
-  if (messageIdx >= 0) {
-    const after = lines.slice(messageIdx + 1).join(" ").trim();
-    if (after) return after.slice(0, 140);
-  }
-  return lines.slice(0, 2).join(" — ").slice(0, 140);
+  return lines.join(" ").slice(0, 140);
 }
 
 function conversationToLead(
@@ -82,7 +86,8 @@ function conversationToLead(
     actionLabel: action,
     topicLabels: topics,
     messagePreview,
-    messageBody: body,
+    messageBody: displayInquiryMessageBody(body),
+    avatarUrl: conversation.client_avatar_url?.trim() ?? "",
   };
 }
 
@@ -158,7 +163,8 @@ function conversationToClientItem(
     actionLabel: action,
     topicLabels: topics,
     messagePreview,
-    messageBody: body,
+    messageBody: displayInquiryMessageBody(body),
+    avatarUrl: resolveSpecialistListingAvatar(conversation.specialist_id),
   };
 }
 
@@ -187,7 +193,7 @@ async function fetchClientConversations(
       .limit(8);
 
     const list = (messages as InquiryMessageRow[] | null) ?? [];
-    const latestClient = list.find((m) => m.sender_role === "client");
+    const latest = list[0];
     const unreadSpecialist = list.some(
       (m) => m.sender_role === "specialist" && !m.is_read
     );
@@ -195,12 +201,100 @@ async function fetchClientConversations(
     results.push(
       conversationToClientItem(conversation, {
         unread: unreadSpecialist,
-        latestBody: latestClient?.body ?? "",
+        latestBody: latest?.body ?? "",
       })
     );
   }
 
   return results;
+}
+
+function threadFromRecord(
+  conversation: InquiryConversationRow,
+  messages: InquiryMessageRow[],
+  canReply: boolean
+): InquiryThreadPayload {
+  const action = isInquiryActionId(conversation.inquiry_action)
+    ? labelForInquiryAction(conversation.inquiry_action)
+    : conversation.inquiry_action;
+  return {
+    conversationId: conversation.id,
+    specialistId: conversation.specialist_id,
+    specialistName: conversation.specialist_name || "Specialist",
+    clientFirstName: conversation.client_first_name || "Client",
+    clientAvatarUrl: conversation.client_avatar_url?.trim() ?? "",
+    specialistAvatarUrl: resolveSpecialistListingAvatar(conversation.specialist_id),
+    actionLabel: action,
+    topicLabels: labelsForInquiryTopics(conversation.inquiry_topics),
+    messages: messages.map((message) => ({
+      id: message.id,
+      senderRole: message.sender_role,
+      body: displayInquiryMessageBody(message.body),
+      createdAt: message.created_at,
+    })),
+    canReply,
+  };
+}
+
+export function threadFromDemoLead(lead: SpecialistLead): InquiryThreadPayload {
+  return {
+    conversationId: lead.id,
+    specialistId: "",
+    specialistName: "You",
+    clientFirstName: lead.name,
+    clientAvatarUrl: lead.avatarUrl,
+    specialistAvatarUrl: "",
+    actionLabel: lead.actionLabel,
+    topicLabels: lead.topicLabels,
+    messages: lead.messageBody
+      ? [
+          {
+            id: `${lead.id}-msg`,
+            senderRole: "client",
+            body: displayInquiryMessageBody(lead.messageBody),
+            createdAt: new Date().toISOString(),
+          },
+        ]
+      : [],
+    canReply: false,
+  };
+}
+
+export async function loadInquiryThread(
+  conversationId: string
+): Promise<InquiryThreadPayload | null> {
+  if (!conversationId || isDemoInquiryConversationId(conversationId)) {
+    return null;
+  }
+
+  if (!isMarketplaceSupabaseActive()) {
+    const record = getLocalInquiryRecord(conversationId);
+    if (!record) return null;
+    return threadFromRecord(record.conversation, record.messages, true);
+  }
+
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return null;
+
+  const { data: conversation, error } = await supabase
+    .from("inquiry_conversations")
+    .select("*")
+    .eq("id", conversationId)
+    .maybeSingle();
+
+  if (error || !conversation) return null;
+
+  const { data: messages } = await supabase
+    .from("inquiry_messages")
+    .select("*")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
+
+  return threadFromRecord(
+    conversation as InquiryConversationRow,
+    (messages as InquiryMessageRow[] | null) ?? [],
+    true
+  );
 }
 
 export async function loadSpecialistInquiryLeads(
@@ -230,14 +324,14 @@ export async function loadSpecialistInquiryLeads(
   );
 }
 
-export async function markSpecialistInquiryRead(
-  specialistId: string,
-  conversationId: string
+export async function markInquiryThreadRead(
+  conversationId: string,
+  readerRole: "client" | "specialist"
 ): Promise<void> {
-  markSpecialistInquiryNotificationRead(specialistId, conversationId);
+  const counterpart = readerRole === "client" ? "specialist" : "client";
 
   if (!isMarketplaceSupabaseActive()) {
-    markLocalInquiryRead(conversationId);
+    markLocalInquiryRead(conversationId, readerRole);
     return;
   }
 
@@ -248,8 +342,16 @@ export async function markSpecialistInquiryRead(
     .from("inquiry_messages")
     .update({ is_read: true })
     .eq("conversation_id", conversationId)
-    .eq("sender_role", "client")
+    .eq("sender_role", counterpart)
     .eq("is_read", false);
+}
+
+export async function markSpecialistInquiryRead(
+  specialistId: string,
+  conversationId: string
+): Promise<void> {
+  markSpecialistInquiryNotificationRead(specialistId, conversationId);
+  await markInquiryThreadRead(conversationId, "specialist");
 }
 
 /** Mark every unread client message for this specialist as read (banner dismiss). */
@@ -274,9 +376,7 @@ export async function loadClientInquiryMessages(
 
   if (!isMarketplaceSupabaseActive()) {
     return listLocalInquiriesForClient(clientUserId).map((record) => {
-      const latest = [...record.messages]
-        .reverse()
-        .find((m) => m.sender_role === "client");
+      const latest = [...record.messages].reverse()[0];
       return conversationToClientItem(record.conversation, {
         unread: record.messages.some(
           (m) => m.sender_role === "specialist" && !m.is_read

@@ -4,7 +4,7 @@ export interface OutboundEmail {
   text: string;
   /** Branded HTML multipart body — always prefer sending with text fallback */
   html?: string;
-  /** Sets Resend reply_to so specialists can hit Reply in their inbox */
+  /** Optional Resend reply_to — unused for inquiry notifications */
   replyTo?: string;
   kind: string;
 }
