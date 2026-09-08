@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   sendSpecialistEmailOtp,
   verifySpecialistEmailOtp,
+  abandonUnconfirmedSpecialistSignup,
 } from "@/lib/auth/specialist-email-otp-server";
 
 interface Body {
@@ -16,6 +17,7 @@ interface Body {
  * Specialist onboarding email OTP — SMOAC-branded 6-digit code via Resend.
  * send: create/update Auth user (unconfirmed) + email code
  * verify: confirm email after correct code so the wizard can continue
+ * abandon: delete unconfirmed Auth user if the applicant leaves before confirming
  */
 export async function POST(request: Request) {
   let body: Body;
@@ -56,8 +58,19 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   }
 
+  if (action === "abandon") {
+    const result = await abandonUnconfirmedSpecialistSignup({
+      email,
+      password,
+    });
+    if (!result.ok) {
+      return NextResponse.json(result, { status: 400 });
+    }
+    return NextResponse.json(result);
+  }
+
   return NextResponse.json(
-    { ok: false, message: "action must be send or verify." },
+    { ok: false, message: "action must be send, verify, or abandon." },
     { status: 400 }
   );
 }

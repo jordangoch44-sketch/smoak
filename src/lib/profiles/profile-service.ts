@@ -90,7 +90,8 @@ function publicAvatarUrl(value: string | undefined): string {
  * Photos belong in Storage / https avatar_url, not jsonb.
  */
 function specialistOnboardingForStorage(
-  state: SpecialistOnboardingState
+  state: SpecialistOnboardingState,
+  extra?: { wizardStep?: number }
 ): Record<string, unknown> {
   const media = { ...state.media };
   if (isInlineDataUrl(media.profilePhotoUrl ?? "")) {
@@ -103,6 +104,8 @@ function specialistOnboardingForStorage(
     ...state,
     password: "",
     media,
+    savedAt: new Date().toISOString(),
+    ...(extra?.wizardStep != null ? { wizardStep: extra.wizardStep } : {}),
   };
 }
 
@@ -425,7 +428,8 @@ export async function saveClientSignupProfile(
 export async function saveSpecialistSignupProfile(
   supabase: SupabaseClient,
   userId: string,
-  state: SpecialistOnboardingState
+  state: SpecialistOnboardingState,
+  options?: { wizardStep?: number }
 ): Promise<ProfileUpsertResult> {
   const roleResult = await upsertUserRole(supabase, userId, "specialist");
   if (!roleResult.ok) return roleResult;
@@ -462,7 +466,9 @@ export async function saveSpecialistSignupProfile(
         ""
       );
     })(),
-    onboarding_data: specialistOnboardingForStorage(state),
+    onboarding_data: specialistOnboardingForStorage(state, {
+      wizardStep: options?.wizardStep,
+    }),
   });
 }
 

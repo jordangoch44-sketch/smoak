@@ -40,6 +40,39 @@ export async function sendSpecialistEmailVerificationCode(params: {
   }
 }
 
+export async function abandonUnconfirmedSpecialistSignupClient(params: {
+  email: string;
+  password: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  const email = params.email.trim().toLowerCase();
+  const password = params.password;
+  if (!email.includes("@") || password.length < 8) {
+    return { ok: true };
+  }
+  try {
+    const response = await fetch("/api/auth/specialist-email-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      keepalive: true,
+      body: JSON.stringify({
+        action: "abandon",
+        email,
+        password,
+      }),
+    });
+    const payload = (await response.json().catch(() => null)) as
+      | { ok?: boolean; message?: string }
+      | null;
+    if (!payload?.ok) {
+      return { ok: false, message: payload?.message || "Could not clear signup." };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, message: "Network error clearing signup." };
+  }
+}
+
 export async function verifySpecialistEmailVerificationCode(params: {
   email: string;
   password: string;

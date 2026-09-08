@@ -240,6 +240,21 @@ export interface LoadedSpecialistOnboardingDraft {
   wizardStep: number | null;
 }
 
+export function parseSpecialistOnboardingDraftRecord(
+  parsed: unknown
+): LoadedSpecialistOnboardingDraft | null {
+  if (!parsed || typeof parsed !== "object") return null;
+  const record = parsed as SpecialistOnboardingDraftRecord;
+  const wizardStep =
+    typeof record.wizardStep === "number" && Number.isFinite(record.wizardStep)
+      ? record.wizardStep
+      : null;
+  return {
+    state: normalizeOnboardingDraftState(record),
+    wizardStep,
+  };
+}
+
 function normalizeOnboardingDraftState(
   parsed: SpecialistOnboardingDraftRecord
 ): SpecialistOnboardingState {
@@ -299,15 +314,7 @@ export function loadSpecialistOnboardingDraftRecord(): LoadedSpecialistOnboardin
   const raw = window.localStorage.getItem(DEV_SPECIALIST_ONBOARDING_DRAFT_KEY);
   if (!raw) return null;
   const parsed = safeParse<SpecialistOnboardingDraftRecord | null>(raw, null);
-  if (!parsed || typeof parsed !== "object") return null;
-  const wizardStep =
-    typeof parsed.wizardStep === "number" && Number.isFinite(parsed.wizardStep)
-      ? parsed.wizardStep
-      : null;
-  return {
-    state: normalizeOnboardingDraftState(parsed),
-    wizardStep,
-  };
+  return parseSpecialistOnboardingDraftRecord(parsed);
 }
 
 export function loadSpecialistOnboardingDraft(): SpecialistOnboardingState | null {

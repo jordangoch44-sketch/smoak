@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
@@ -18,9 +18,11 @@ import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
 import { submitSpecialistApplication } from "@/lib/specialist-application-submit";
 import {
+  clearSpecialistOnboardingDraft,
   findSpecialistApplicationByEmail,
   findSpecialistApplicationByUserId,
   loadSpecialistOnboardingDraftRecord,
+  parseSpecialistOnboardingDraftRecord,
   persistSpecialistOnboardingDraft,
 } from "@/lib/specialist-application-storage";
 import { patchAuthSessionAvatarUrl } from "@/lib/profiles/update-profile-avatar";
@@ -37,6 +39,7 @@ import {
 } from "@/types/specialist-application";
 import { SpecialistOnboardingSteps } from "@/components/auth/specialist/SpecialistOnboardingSteps";
 import {
+  abandonUnconfirmedSpecialistSignupClient,
   sendSpecialistEmailVerificationCode,
   verifySpecialistEmailVerificationCode,
 } from "@/lib/auth/specialist-email-verify";
@@ -59,16 +62,34 @@ function specialistSessionMatchesEmail(email: string): boolean {
   );
 }
 
-function buildInitialSpecialistOnboardingState(): SpecialistOnboardingState {
-  const draft = loadSpecialistOnboardingDraftRecord();
+async function loadRemoteSpecialistOnboardingDraft(userId: string) {
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("onboarding_data")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return parseSpecialistOnboardingDraftRecord(data.onboarding_data);
+  } catch {
+    return null;
+  }
+}
+
+async function persistVerifiedOnboardingProgress(
+  state: SpecialistOnboardingState,
+  wizardStep: OnboardingStep
+) {
+  persistSpecialistOnboardingDraft(state, { wizardStep });
+  if (!isMarketplaceSupabaseActive()) return;
   const session = getAuthSessionSnapshot();
-  const base = draft?.state ?? INITIAL_SPECIALIST_ONBOARDING_STATE;
-  if (session?.role !== "specialist") return base;
-  return {
-    ...base,
-    email: base.email.trim() || session.email,
-    fullName: base.fullName.trim() || session.firstName?.trim() || "",
-  };
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase || !session?.userId) return;
+  await saveSpecialistSignupProfile(supabase, session.userId, state, {
+    wizardStep,
+  });
 }
 
 function stepProgressPercent(step: OnboardingStep): number {
@@ -83,7 +104,7 @@ export function SpecialistOnboardingWizard({
   onBackToRole,
 }: SpecialistOnboardingWizardProps) {
   const router = useRouter();
-  const { signInWithPassword, refreshSession } = useAuthSession();
+  const { signInWithPassword, refreshSession, isReady } = useAuthSession();
   const { showToast } = useToast();
   const [state, setState] = useState<SpecialistOnboardingState>(
     INITIAL_SPECIALIST_ONBOARDING_STATE
@@ -102,6 +123,9 @@ export function SpecialistOnboardingWizard({
   const [passwordFieldsError, setPasswordFieldsError] = useState(false);
   const [shakePasswordFields, setShakePasswordFields] = useState(false);
   const profilePhotoCrop = useProfilePhotoCropSession();
+  const verifiedRef = useRef(false);
+  const credentialsRef = useRef({ email: "", password: "" });
+  const abandonTimerRef = useRef<number | null>(null);
 
   function flagPasswordFieldsError(message: string) {
     setError(message);
@@ -117,27 +141,126 @@ export function SpecialistOnboardingWizard({
   const progressPercent = stepProgressPercent(step);
   const accountAlreadyCreated = specialistSessionMatchesEmail(state.email);
   const missingFieldOptions = { skipPassword: accountAlreadyCreated };
+  verifiedRef.current = Boolean(verifiedEmail || accountAlreadyCreated);
+  credentialsRef.current = {
+    email: state.email,
+    password: state.password,
+  };
 
   useEffect(() => {
-    const initial = buildInitialSpecialistOnboardingState();
-    const draft = loadSpecialistOnboardingDraftRecord();
-    setState(initial);
-    setStep(
-      getSpecialistOnboardingResumeStep(initial, {
-        skipPassword: specialistSessionMatchesEmail(initial.email),
-        savedStep: draft?.wizardStep ?? null,
-      })
-    );
-    if (specialistSessionMatchesEmail(initial.email)) {
-      setVerifiedEmail(initial.email.trim().toLowerCase());
+    try {
+      const local = loadSpecialistOnboardingDraftRecord();
+      const session = getAuthSessionSnapshot();
+      const localState = local?.state ?? INITIAL_SPECIALIST_ONBOARDING_STATE;
+      const merged: SpecialistOnboardingState = {
+        ...localState,
+        email: localState.email.trim() || session?.email || "",
+        fullName: localState.fullName.trim() || session?.firstName?.trim() || "",
+      };
+      setState(merged);
+      setStep(
+        getSpecialistOnboardingResumeStep(merged, {
+          skipPassword: specialistSessionMatchesEmail(merged.email),
+          savedStep: local?.wizardStep ?? null,
+        })
+      );
+      if (specialistSessionMatchesEmail(merged.email)) {
+        setVerifiedEmail(merged.email.trim().toLowerCase());
+      }
+    } finally {
+      setDraftReady(true);
     }
-    setDraftReady(true);
   }, []);
+
+  useEffect(() => {
+    if (!isReady || !draftReady) return;
+    const session = getAuthSessionSnapshot();
+    if (
+      session?.role !== "specialist" ||
+      !session.userId ||
+      !isMarketplaceSupabaseActive()
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    void loadRemoteSpecialistOnboardingDraft(session.userId).then((remote) => {
+      if (cancelled || !remote?.state) return;
+      const remoteState = remote.state;
+      const hasProgress = Boolean(
+        remoteState.professionalType ||
+          remoteState.fullName.trim() ||
+          remoteState.displayName.trim() ||
+          remoteState.specialties.length > 0 ||
+          remoteState.bio.trim()
+      );
+      if (!hasProgress) return;
+      setState((localState) => ({
+        ...remoteState,
+        email: remoteState.email.trim() || session.email || localState.email,
+        fullName:
+          remoteState.fullName.trim() ||
+          session.firstName?.trim() ||
+          localState.fullName,
+        password: localState.password || remoteState.password,
+      }));
+      setStep(
+        getSpecialistOnboardingResumeStep(remoteState, {
+          skipPassword: true,
+          savedStep: remote.wizardStep,
+        })
+      );
+      setVerifiedEmail(session.email.trim().toLowerCase());
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isReady, draftReady]);
 
   useEffect(() => {
     if (!draftReady) return;
     persistSpecialistOnboardingDraft(state, { wizardStep: step });
   }, [draftReady, state, step]);
+
+  useEffect(() => {
+    if (!draftReady || !accountAlreadyCreated) return;
+    const handle = window.setTimeout(() => {
+      void persistVerifiedOnboardingProgress(state, step);
+    }, 800);
+    return () => window.clearTimeout(handle);
+  }, [draftReady, accountAlreadyCreated, state, step]);
+
+  useEffect(() => {
+    if (abandonTimerRef.current) {
+      window.clearTimeout(abandonTimerRef.current);
+      abandonTimerRef.current = null;
+    }
+
+    function abandonUnverifiedProgress() {
+      if (verifiedRef.current) return;
+      clearSpecialistOnboardingDraft();
+      const { email, password } = credentialsRef.current;
+      void abandonUnconfirmedSpecialistSignupClient({ email, password });
+    }
+
+    function onPageHide() {
+      abandonUnverifiedProgress();
+    }
+
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      if (verifiedRef.current) return;
+      abandonTimerRef.current = window.setTimeout(() => {
+        if (window.location.pathname.startsWith("/create-account")) {
+          abandonTimerRef.current = null;
+          return;
+        }
+        abandonUnverifiedProgress();
+        abandonTimerRef.current = null;
+      }, 400);
+    };
+  }, []);
 
   /* Each Continue / Back question should land the user at the top of the step. */
   useEffect(() => {
@@ -267,6 +390,7 @@ export function SpecialistOnboardingWizard({
         setVerifiedEmail(trimmedEmail);
         setAwaitingEmailConfirm(null);
         setEmailOtpCode("");
+        void persistVerifiedOnboardingProgress(state, 3);
         return true;
       }
 
@@ -379,6 +503,7 @@ export function SpecialistOnboardingWizard({
       setAwaitingEmailConfirm(null);
       setEmailOtpCode("");
       setStep(3);
+      void persistVerifiedOnboardingProgress(state, 3);
       showToast({
         type: "success",
         message: "Email verified — continue your application.",
@@ -414,6 +539,7 @@ export function SpecialistOnboardingWizard({
           setAwaitingEmailConfirm(null);
           setEmailOtpCode("");
           setStep(3);
+          void persistVerifiedOnboardingProgress(state, 3);
           showToast({
             type: "success",
             message: "Email already verified — continue your application.",
@@ -554,20 +680,6 @@ export function SpecialistOnboardingWizard({
   }
 
   const stepLabel = SPECIALIST_ONBOARDING_STEP_LABELS[step - 1];
-
-  if (!draftReady) {
-    return (
-      <div
-        className="login-page login-page--wizard login-page--specialist-onboarding"
-        data-login-role="specialist"
-        aria-busy="true"
-      >
-        <div className="login-page__shell">
-          <p className="wizard-question__subtitle">Loading your application…</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

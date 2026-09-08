@@ -392,3 +392,42 @@ export async function verifySpecialistEmailOtp(params: {
 
   return { ok: true, email };
 }
+
+/** Drop an unconfirmed specialist Auth user so the email can be reused. */
+export async function abandonUnconfirmedSpecialistSignup(params: {
+  email: string;
+  password: string;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  const email = params.email.trim().toLowerCase();
+  const password = params.password;
+  if (!email.includes("@") || password.length < 8) {
+    return { ok: true };
+  }
+
+  const service = createSupabaseServiceClient();
+  if (!service) {
+    return { ok: false, message: "Authentication is not available on the server." };
+  }
+
+  const user = await findAuthUserByEmail(service, email);
+  if (!user) return { ok: true };
+  if (user.email_confirmed_at) {
+    return { ok: true };
+  }
+
+  const login = await tryPasswordSignIn(email, password);
+  if (login.status === "invalid") {
+    return { ok: true };
+  }
+  if (login.status === "error") {
+    return { ok: false, message: login.message };
+  }
+
+  await service.from("user_roles").delete().eq("user_id", user.id);
+  await service.from("profiles").delete().eq("user_id", user.id);
+  const { error } = await service.auth.admin.deleteUser(user.id);
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: true };
+}
