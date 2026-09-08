@@ -39,6 +39,8 @@ export interface EmailCta {
 export interface EmailDetailRow {
   label: string;
   value: string;
+  /** Optional circular photo shown to the left of `value` (https URLs only). */
+  imageUrl?: string;
 }
 
 export function emailSiteOrigin(): string {
@@ -74,6 +76,29 @@ export function renderEmailParagraphs(paragraphs: string[]): string {
     .join("");
 }
 
+function emailSafeImageUrl(value: string | undefined): string {
+  const raw = value?.trim() ?? "";
+  if (!raw || raw.toLowerCase().startsWith("data:")) return "";
+  const absolute = /^https?:\/\//i.test(raw) ? raw : emailAbsoluteUrl(raw);
+  return /^https?:\/\//i.test(absolute) ? absolute : "";
+}
+
+function renderEmailDetailValue(row: EmailDetailRow): string {
+  const value = escapeEmailHtml(row.value).replace(/\n/g, "<br/>");
+  const name = `<span style="font-size:15px;line-height:1.5;color:${COLORS.title};">${value}</span>`;
+  const imageUrl = emailSafeImageUrl(row.imageUrl);
+  if (!imageUrl) return name;
+
+  return `<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+  <tr>
+    <td style="padding:0 10px 0 0;vertical-align:middle;">
+      <img src="${escapeEmailHtml(imageUrl)}" width="40" height="40" alt="" style="display:block;border:0;border-radius:20px;width:40px;height:40px;object-fit:cover;"/>
+    </td>
+    <td style="vertical-align:middle;">${name}</td>
+  </tr>
+</table>`;
+}
+
 export function renderEmailDetailRows(rows: EmailDetailRow[]): string {
   const filtered = rows.filter((row) => row.value.trim());
   if (filtered.length === 0) return "";
@@ -81,17 +106,17 @@ export function renderEmailDetailRows(rows: EmailDetailRow[]): string {
   const cells = filtered
     .map((row, index) => {
       const label = escapeEmailHtml(row.label);
-      const value = escapeEmailHtml(row.value).replace(/\n/g, "<br/>");
       const border =
         index === filtered.length - 1
           ? "none"
           : `1px solid ${COLORS.hairline}`;
+      const align = row.imageUrl ? "middle" : "top";
       return `<tr>
-  <td style="padding:12px 0;border-bottom:${border};vertical-align:top;width:34%;">
+  <td style="padding:12px 0;border-bottom:${border};vertical-align:${align};width:34%;">
     <span style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:${COLORS.muted};">${label}</span>
   </td>
-  <td style="padding:12px 0 12px 16px;border-bottom:${border};vertical-align:top;">
-    <span style="font-size:15px;line-height:1.5;color:${COLORS.title};">${value}</span>
+  <td style="padding:12px 0 12px 16px;border-bottom:${border};vertical-align:${align};">
+    ${renderEmailDetailValue(row)}
   </td>
 </tr>`;
     })

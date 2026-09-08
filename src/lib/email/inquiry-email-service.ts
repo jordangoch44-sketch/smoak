@@ -5,6 +5,7 @@ import {
   renderEmailParagraphs,
   renderEmailQuote,
   wrapTransactionalEmailHtml,
+  type EmailDetailRow,
 } from "@/lib/email/email-html-shell";
 import {
   labelsForInquiryTopics,
@@ -17,6 +18,8 @@ export interface InquiryReceivedEmailInput {
   kind: "inquiry_client" | "inquiry_specialist";
   recipientFirstName: string;
   senderName: string;
+  /** Public https photo for the sender — shown left of their name in From. */
+  senderAvatarUrl?: string;
   message: string;
   threadPath: string;
   inquiryAction?: InquiryActionId;
@@ -59,10 +62,14 @@ SMOAC`;
       ]),
       renderEmailDetailRows(
         [
-          { label: "From", value: sender },
+          {
+            label: "From",
+            value: sender,
+            imageUrl: input.senderAvatarUrl,
+          },
           action ? { label: "Inquiry", value: action } : null,
           topicText ? { label: "Topics", value: topicText } : null,
-        ].filter((row): row is { label: string; value: string } => row != null)
+        ].filter((row): row is EmailDetailRow => row != null)
       ),
       renderEmailQuote("Message", message),
     ].join("");

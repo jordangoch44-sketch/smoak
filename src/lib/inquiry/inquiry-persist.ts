@@ -8,10 +8,12 @@ import type {
 import { sendInquiryMessageReceivedEmail } from "@/lib/email/inquiry-email-service";
 import { composeInquiryThreadBody } from "@/lib/inquiry/inquiry-message-body";
 import { inquiryThreadHref } from "@/lib/inquiry/inquiry-paths";
+import { resolveSpecialistListingAvatar } from "@/lib/inquiry/inquiry-avatars";
 import { isInquiryActionId } from "@/lib/inquiry-options";
 import { resolveAvatarUrlFromProfile } from "@/lib/profiles/profile-avatar";
 import type { ProfileRow } from "@/types/database";
 import { getAuthSiteOrigin } from "@/lib/auth/site-origin";
+import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
   resolveSpecialistNotifyEmail,
   resolveSpecialistUserId,
@@ -42,11 +44,60 @@ async function resolveClientAvatarUrl(
   return "";
 }
 
+function publicPhotoUrl(value: string | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed || trimmed.toLowerCase().startsWith("data:")) return "";
+  return trimmed;
+}
+
+function photoFromProfileData(profileData: unknown): string {
+  if (!profileData || typeof profileData !== "object") return "";
+  const data = profileData as Record<string, unknown>;
+  const image = typeof data.image === "string" ? data.image : "";
+  const hero = typeof data.heroImage === "string" ? data.heroImage : "";
+  const gallery = Array.isArray(data.galleryImages) ? data.galleryImages : [];
+  const firstGallery = typeof gallery[0] === "string" ? gallery[0] : "";
+  return (
+    publicPhotoUrl(image) ||
+    publicPhotoUrl(hero) ||
+    publicPhotoUrl(firstGallery)
+  );
+}
+
+async function resolveSpecialistAvatarUrl(
+  supabase: SupabaseClient,
+  specialistId: string,
+  specialistUserId: string | null
+): Promise<string> {
+  const listing = resolveSpecialistListingAvatar(specialistId);
+  if (listing) return listing;
+
+  const db = createSupabaseServiceClient() ?? supabase;
+  const { data: profileRow } = await db
+    .from("specialist_profiles")
+    .select("profile_data")
+    .eq("id", specialistId)
+    .maybeSingle();
+  const fromListing = photoFromProfileData(
+    (profileRow as { profile_data?: unknown } | null)?.profile_data
+  );
+  if (fromListing) return fromListing;
+
+  if (!specialistUserId) return "";
+  const { data } = await db
+    .from("profiles")
+    .select("avatar_url, avatar_path, onboarding_data")
+    .eq("user_id", specialistUserId)
+    .maybeSingle();
+  return resolveAvatarUrlFromProfile(data as ProfileRow | null) ?? "";
+}
+
 async function notifyRecipient(input: {
   to: string;
   kind: "inquiry_client" | "inquiry_specialist";
   recipientFirstName: string;
   senderName: string;
+  senderAvatarUrl?: string;
   message: string;
   viewer: "client" | "specialist";
   conversationId: string;
@@ -60,6 +111,7 @@ async function notifyRecipient(input: {
     kind: input.kind,
     recipientFirstName: input.recipientFirstName,
     senderName: input.senderName,
+    senderAvatarUrl: input.senderAvatarUrl,
     message: input.message,
     threadPath: `${origin}${inquiryThreadHref(input.viewer, input.conversationId)}`,
     inquiryAction: action && isInquiryActionId(action) ? action : undefined,
@@ -227,6 +279,7 @@ export async function persistSpecialistInquiry(
       kind: "inquiry_specialist",
       recipientFirstName: specialistFirst,
       senderName: input.clientFirstName,
+      senderAvatarUrl: clientAvatarUrl,
       message: messageBody,
       viewer: "specialist",
       conversationId,
@@ -238,7 +291,7 @@ export async function persistSpecialistInquiry(
   } else {
     console.warn(
       "[SMOAC EMAIL] No specialist email found for inquiry notify",
-      input.specialistId
+      { specialistId: input.specialistId, specialistUserId }
     );
   }
 
@@ -326,20 +379,35 @@ export async function persistInquiryReply(
         kind: "inquiry_specialist",
         recipientFirstName: specialistFirst,
         senderName: row.client_first_name,
+        senderAvatarUrl: row.client_avatar_url,
         message: input.message,
         viewer: "specialist",
         conversationId: row.id,
       });
       emailMode = result.mode ?? emailMode;
+    } else {
+      console.warn(
+        "[SMOAC EMAIL] No specialist email found for reply notify",
+        { specialistId: row.specialist_id, specialistUserId }
+      );
     }
   } else {
     const clientEmail = row.client_email.trim().toLowerCase();
     if (clientEmail.includes("@")) {
+      const specialistUserId =
+        row.specialist_user_id ??
+        (input.senderRole === "specialist" ? input.senderUserId : null);
+      const specialistAvatarUrl = await resolveSpecialistAvatarUrl(
+        supabase,
+        row.specialist_id,
+        specialistUserId
+      );
       const result = await notifyRecipient({
         to: clientEmail,
         kind: "inquiry_client",
         recipientFirstName: row.client_first_name,
         senderName: row.specialist_name,
+        senderAvatarUrl: specialistAvatarUrl,
         message: input.message,
         viewer: "client",
         conversationId: row.id,

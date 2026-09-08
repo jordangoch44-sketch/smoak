@@ -207,6 +207,7 @@ export async function submitSpecialistInquiry(
         kind: "inquiry_specialist",
         recipientFirstName: specialistFirst,
         senderName: normalized.clientFirstName,
+        senderAvatarUrl: normalized.clientAvatarUrl,
         message: normalized.message,
         threadPath: `${origin}${inquiryThreadHref("specialist", local.conversationId)}`,
         inquiryAction: normalized.inquiryAction,
