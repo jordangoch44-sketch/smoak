@@ -89,6 +89,7 @@ export function TrainerProfileInterceptClient({
     <TrainerProfilePageClient
       trainerId={routeId}
       initialTrainer={trainer ?? null}
+      intercept
     />
   );
 }

@@ -383,11 +383,12 @@ body:has(.rankings-page) .site-footer__glow {
 /* Horizontal ranking card */
 .rankings-row {
   position: relative;
-  isolation: isolate;
   overflow: visible;
 }
 
 .rankings-row__link {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 5.5rem minmax(0, 1fr);
   grid-template-rows: minmax(6.75rem, auto);

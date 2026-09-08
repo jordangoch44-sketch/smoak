@@ -7,9 +7,8 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Trainer } from "@/types";
+import { ProfileSheetLink } from "@/components/trainers/ProfileSheetLink";
 import {
   type ExploreMapCluster,
   getClusterHeaderInfo,
@@ -24,7 +23,6 @@ import {
 import { formatTrainerSessionPrice } from "@/lib/session-price";
 import {
   warmExploreMapCluster,
-  warmTrainerProfileNavigation,
 } from "@/lib/warm-trainer-profile-navigation";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
@@ -127,13 +125,6 @@ export function ExploreMapBottomCard({
       setActiveIndex(newIndex);
     }
   }, [cluster, activeIndex]);
-
-  const handleCardPointerDown = useCallback(
-    (trainer: Trainer) => {
-      warmTrainerProfileNavigation(trainer, router);
-    },
-    [router]
-  );
 
   const handlePointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
@@ -376,12 +367,10 @@ export function ExploreMapBottomCard({
           const photoSrc = safeExploreMapImageSrc(trainer.image);
 
           return (
-            <Link
-              key={trainer.id}
-              href={`/trainers/${trainer.id}`}
-              scroll={false}
+            <div key={trainer.id} className="explore-bottom-card-slide">
+            <ProfileSheetLink
+              trainer={trainer}
               className="explore-bottom-card"
-              onPointerDown={() => handleCardPointerDown(trainer)}
               aria-label={`View ${displayName}'s profile, ${profession}, ${priceLabel}`}
             >
               {/* Left Photo Hero */}
@@ -420,20 +409,6 @@ export function ExploreMapBottomCard({
 
               {/* Right Content Column */}
               <div className="explore-bottom-card__info-col">
-                {/* Save Heart Button Slot (Top-Right) */}
-                <div
-                  className="explore-bottom-card__save-slot"
-                  data-save-control
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  <SaveTrainerButton
-                    trainerId={trainer.id}
-                    trainerName={displayName}
-                    overlay={false}
-                  />
-                </div>
-
                 {/* Name / Business Name */}
                 <div className="explore-bottom-card__title-row">
                   <h3 className="explore-bottom-card__trainer-name">
@@ -488,7 +463,20 @@ export function ExploreMapBottomCard({
                   </div>
                 ) : null}
               </div>
-            </Link>
+            </ProfileSheetLink>
+            <div
+              className="explore-bottom-card__save-slot"
+              data-save-control
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <SaveTrainerButton
+                trainerId={trainer.id}
+                trainerName={displayName}
+                overlay={false}
+              />
+            </div>
+            </div>
           );
         })}
       </div>

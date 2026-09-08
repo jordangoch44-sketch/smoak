@@ -43,6 +43,8 @@ interface TrainerProfileSheetProps {
   label?: string;
   /** Specialist id — used to reset sheet scroll when Picks swap in-place. */
   trainerId?: string;
+  /** Soft-nav from a listing — cover the still-mounted previous page on desktop. */
+  intercept?: boolean;
 }
 
 function viewportHeight(): number {
@@ -106,6 +108,7 @@ export function TrainerProfileSheet({
   children,
   label = "Specialist profile",
   trainerId,
+  intercept = false,
 }: TrainerProfileSheetProps) {
   const router = useRouter();
   const hydrated = useHydrated();
@@ -190,6 +193,15 @@ export function TrainerProfileSheet({
     dismissingRef.current = true;
     runDismissAnimation({ navigate: true });
   }, [exited, runDismissAnimation]);
+
+  useLayoutEffect(() => {
+    if (isSheetViewport || !intercept) return;
+    lockSheetChrome();
+    return () => {
+      unlockSheetChrome();
+      clearSheetDismissing();
+    };
+  }, [intercept, isSheetViewport]);
 
   useLayoutEffect(() => {
     if (!isSheetViewport) return;
@@ -295,7 +307,22 @@ export function TrainerProfileSheet({
   }, [exited, isSheetViewport, runDismissAnimation]);
 
   if (!isSheetViewport) {
-    return <>{children}</>;
+    if (!intercept) {
+      return <>{children}</>;
+    }
+
+    return (
+      <ProfileSheetDismissProvider dismiss={navigateAway}>
+        <div
+          className="profile-intercept-page"
+          role="dialog"
+          aria-modal="true"
+          aria-label={label}
+        >
+          {children}
+        </div>
+      </ProfileSheetDismissProvider>
+    );
   }
 
   if (exited) {

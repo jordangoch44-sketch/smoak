@@ -13,21 +13,10 @@ import { cn } from "@/lib/utils";
 
 /** Results panel height as % of the map shell */
 const RESULTS_HEIGHT_PCT = 88;
-/** Drag down this far (px) from open to return to map */
+/** Drag down this far (px) from the chrome to return to map */
 const DISMISS_DRAG_PX = 72;
 /** Fast downward flick also dismisses */
 const DISMISS_VELOCITY = 0.85;
-/** Body-list pull must beat a normal card tap / slight finger jitter */
-const BODY_DISMISS_PULL_PX = 24;
-
-function isResultsInteractiveTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  return Boolean(
-    target.closest(
-      "a, button, input, textarea, select, label, [data-save-control], .smoac-control"
-    )
-  );
-}
 
 interface ExploreResultsSheetProps {
   children: ReactNode;
@@ -46,7 +35,8 @@ function seeResultsLabel(count: number): string {
 
 /**
  * Split Search views: map-first + compact “See results” CTA,
- * then a fly-up list panel. Drag down (chrome or list-at-top) returns to map.
+ * then a fly-up list panel. Drag the handle (or Map) returns to the map;
+ * the list itself only scrolls so card taps are not stolen.
  */
 export function ExploreResultsSheet({
   children,
@@ -62,13 +52,10 @@ export function ExploreResultsSheet({
   const bodyRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     pointerId: number;
-    startX: number;
     startY: number;
     lastY: number;
     lastT: number;
     velocity: number;
-    active: boolean;
-    fromBody: boolean;
   } | null>(null);
 
   const closeToMap = useCallback(() => {
@@ -89,32 +76,22 @@ export function ExploreResultsSheet({
   }, [open]);
 
   const beginDrag = useCallback(
-    (
-      event: ReactPointerEvent<HTMLElement>,
-      options: { fromBody: boolean; captureTarget: HTMLElement }
-    ) => {
+    (event: ReactPointerEvent<HTMLElement>) => {
       if (!open || event.button !== 0) return;
-      if (options.fromBody) {
-        if (isResultsInteractiveTarget(event.target)) return;
-        const body = bodyRef.current;
-        if (!body || body.scrollTop > 1) return;
+      if ((event.target as HTMLElement).closest(".explore-split__map-btn")) {
+        return;
       }
 
       dragRef.current = {
         pointerId: event.pointerId,
-        startX: event.clientX,
         startY: event.clientY,
         lastY: event.clientY,
         lastT: performance.now(),
         velocity: 0,
-        active: !options.fromBody,
-        fromBody: options.fromBody,
       };
 
-      if (!options.fromBody) {
-        event.preventDefault();
-        options.captureTarget.setPointerCapture(event.pointerId);
-      }
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
     },
     [open]
   );
@@ -130,32 +107,14 @@ export function ExploreResultsSheet({
     drag.lastY = event.clientY;
     drag.lastT = now;
 
-    const delta = event.clientY - drag.startY;
-
-    if (drag.fromBody && !drag.active) {
-      const body = bodyRef.current;
-      if (!body) return;
-      /* Only take over once the user clearly pulls down while already at top */
-      if (delta < BODY_DISMISS_PULL_PX || body.scrollTop > 1) return;
-      if (delta < Math.abs(event.clientX - drag.startX) * 1.35) return;
-      drag.active = true;
-      try {
-        event.currentTarget.setPointerCapture(event.pointerId);
-      } catch {
-        /* ignore */
-      }
-    }
-
-    if (!drag.active) return;
     event.preventDefault();
-    setDragOffset(Math.max(0, delta));
+    setDragOffset(Math.max(0, event.clientY - drag.startY));
   }, []);
 
   const endDrag = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
-      const wasActive = drag.active;
       const delta = Math.max(0, event.clientY - drag.startY);
       const velocity = drag.velocity;
       dragRef.current = null;
@@ -164,11 +123,6 @@ export function ExploreResultsSheet({
         event.currentTarget.releasePointerCapture(event.pointerId);
       } catch {
         /* already released */
-      }
-
-      if (!wasActive) {
-        setDragOffset(0);
-        return;
       }
 
       if (delta >= DISMISS_DRAG_PX || velocity >= DISMISS_VELOCITY) {
@@ -227,7 +181,9 @@ export function ExploreResultsSheet({
           open
             ? {
                 height: `${RESULTS_HEIGHT_PCT}%`,
-                transform: `translateY(${dragOffset}px)`,
+                ...(dragOffset > 0
+                  ? { transform: `translateY(${dragOffset}px)` }
+                  : {}),
               }
             : undefined
         }
@@ -237,17 +193,7 @@ export function ExploreResultsSheet({
       >
         <div
           className="explore-split__chrome"
-          onPointerDown={(event) => {
-            if (
-              (event.target as HTMLElement).closest(".explore-split__map-btn")
-            ) {
-              return;
-            }
-            beginDrag(event, {
-              fromBody: false,
-              captureTarget: event.currentTarget,
-            });
-          }}
+          onPointerDown={beginDrag}
           onPointerMove={moveDrag}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
@@ -271,19 +217,7 @@ export function ExploreResultsSheet({
             </button>
           </div>
         </div>
-        <div
-          ref={bodyRef}
-          className="explore-split__body"
-          onPointerDown={(event) =>
-            beginDrag(event, {
-              fromBody: true,
-              captureTarget: event.currentTarget,
-            })
-          }
-          onPointerMove={moveDrag}
-          onPointerUp={endDrag}
-          onPointerCancel={endDrag}
-        >
+        <div ref={bodyRef} className="explore-split__body">
           {children}
         </div>
       </section>

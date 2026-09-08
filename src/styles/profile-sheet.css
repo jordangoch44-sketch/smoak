@@ -32,6 +32,18 @@
   visibility: hidden;
 }
 
+/* Desktop soft-nav: previous listing stays mounted — cover it so a card
+ * tap actually shows the profile instead of looking like a dead tap. */
+.profile-intercept-page {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-profile-sheet);
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #080b10;
+  pointer-events: auto;
+}
+
 .profile-sheet__backdrop {
   position: absolute;
   inset: 0;

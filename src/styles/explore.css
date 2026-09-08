@@ -981,7 +981,9 @@ body.explore-hub-open .explore-split__cta-dock {
 
 .explore-split__panel--open {
   pointer-events: auto;
-  transform: translateY(0);
+  /* Rest state must not keep a compositor transform — iOS then fails to
+   * hit-test cards inside the overflow-scrolling list. */
+  transform: none;
   visibility: visible;
 }
 
@@ -2416,20 +2418,26 @@ body.location-selector-open .explore-map__recenter--hero {
 }
 
 /* Specialist Card */
-.explore-bottom-card {
+.explore-bottom-card-slide {
+  position: relative;
   flex: 0 0 100%;
   width: 100%;
   scroll-snap-align: start;
   scroll-snap-stop: always;
+}
+
+.explore-bottom-card {
   display: flex;
   align-items: stretch;
   gap: 0.85rem;
+  width: 100%;
   padding: 0.75rem 0.85rem 0.85rem;
   cursor: pointer;
   text-align: left;
   text-decoration: none;
   color: inherit;
   position: relative;
+  z-index: 1;
   outline: none;
   transition: background 180ms ease;
   user-select: none;
@@ -2550,8 +2558,8 @@ body.location-selector-open .explore-map__recenter--hero {
 
 .explore-bottom-card__save-slot {
   position: absolute;
-  top: -0.1rem;
-  right: 0;
+  top: 0.65rem;
+  right: 0.65rem;
   z-index: 10;
 }
 

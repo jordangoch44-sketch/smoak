@@ -52,6 +52,8 @@ interface TrainerProfilePageClientProps {
   initialCatalog?: Trainer[];
   initialAggregates?: SpecialistReviewAggregate[];
   initialCityRanking?: TrainerCityRanking | null;
+  /** Soft-nav intercept — cover the still-mounted listing on desktop. */
+  intercept?: boolean;
 }
 
 export function TrainerProfilePageClient({
@@ -60,6 +62,7 @@ export function TrainerProfilePageClient({
   initialCatalog = [],
   initialAggregates = [],
   initialCityRanking = null,
+  intercept = false,
 }: TrainerProfilePageClientProps) {
   const hydrated = useHydrated();
   const catalogReady = useSyncExternalStore(
@@ -200,6 +203,7 @@ export function TrainerProfilePageClient({
     <TrainerProfileSheet
       label={`${trainer.name} profile`}
       trainerId={trainer.id}
+      intercept={intercept}
     >
       <div
         key={trainer.id}

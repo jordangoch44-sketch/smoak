@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import type { SmoacRankedSpecialist } from "@/lib/smoac-rankings";
-import { TapLink } from "@/components/ui/TapLink";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { TrainerCardSaveSlot } from "@/components/trainers/TrainerCardSaveSlot";
@@ -12,7 +10,7 @@ import { LocationLabel } from "@/components/trainers/LocationLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { TrainerVerifiedCheck } from "@/components/trainers/TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "@/components/trainers/SpecialistImpressionBeacon";
-import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
+import { ProfileSheetLink } from "@/components/trainers/ProfileSheetLink";
 import { cn } from "@/lib/utils";
 
 interface RankingsRowProps {
@@ -21,14 +19,8 @@ interface RankingsRowProps {
 }
 
 export function RankingsRow({ row, priority = false }: RankingsRowProps) {
-  const router = useRouter();
   const { trainer, displayRank, avgRating, reviewCount } = row;
-  const href = `/trainers/${trainer.id}`;
   const isPodium = displayRank <= 3;
-
-  function warm() {
-    warmTrainerProfileNavigation(trainer, router);
-  }
 
   return (
     <div
@@ -42,12 +34,10 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
       <div className="rankings-row__rank" aria-hidden>
         <span className="rankings-row__rank-num">#{displayRank}</span>
       </div>
-      <TapLink
-        href={href}
+      <ProfileSheetLink
+        trainer={trainer}
         className="rankings-row__link"
         aria-label={`Rank ${displayRank}: ${trainer.name}`}
-        onPointerDown={warm}
-        onClick={warm}
       >
         <div className="rankings-row__avatar">
           <TrainerThumbnail
@@ -101,7 +91,7 @@ export function RankingsRow({ row, priority = false }: RankingsRowProps) {
             className="rankings-row__price"
           />
         </div>
-      </TapLink>
+      </ProfileSheetLink>
       <TrainerCardSaveSlot trainerId={trainer.id} />
     </div>
   );
