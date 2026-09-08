@@ -66,18 +66,29 @@ export async function ensureSpecialistStripeCustomer(input: {
       },
     });
     customerId = customer.id;
-    await service.from("specialist_billing").upsert(
-      {
-        user_id: input.user.id,
-        specialist_profile_id: specialistProfileId,
-        stripe_customer_id: customerId,
-        status: "none",
-        plan: "free",
-        active_addons: [],
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
+    if (billing) {
+      await service
+        .from("specialist_billing")
+        .update({
+          stripe_customer_id: customerId,
+          specialist_profile_id: specialistProfileId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", input.user.id);
+    } else {
+      await service.from("specialist_billing").upsert(
+        {
+          user_id: input.user.id,
+          specialist_profile_id: specialistProfileId,
+          stripe_customer_id: customerId,
+          status: "none",
+          plan: "free",
+          active_addons: [],
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+    }
   }
 
   return {

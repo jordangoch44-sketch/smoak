@@ -12,6 +12,7 @@ export interface AdminSpecialistMeta {
   sponsored?: boolean;
   topRanked?: boolean;
   isPremium?: boolean;
+  membershipPlan?: "free" | "premium" | "platinum";
   /** Protect from test cleanup / bulk delete tools */
   isProtected?: boolean;
   /** Distinguish owner/real accounts from filler test data */

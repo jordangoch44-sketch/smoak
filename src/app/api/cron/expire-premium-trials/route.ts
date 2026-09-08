@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { expireDueAdminPlanOverrides } from "@/lib/admin-specialist-plan-change";
 import { processPremiumTrialLifecycle } from "@/lib/specialist-premium-trial";
 import { expireEndedBoostCampaigns } from "@/lib/stripe/activate-boost-campaign";
 
@@ -17,7 +18,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const overrideExpired = await expireDueAdminPlanOverrides();
   const { reminders, expired } = await processPremiumTrialLifecycle();
   const boostExpired = await expireEndedBoostCampaigns();
-  return NextResponse.json({ ok: true, reminders, expired, boostExpired });
+  return NextResponse.json({
+    ok: true,
+    reminders,
+    expired,
+    overrideExpired,
+    boostExpired,
+  });
 }

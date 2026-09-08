@@ -5,6 +5,7 @@
  * activate. Manual Plan-tab claim remains for older accounts that never got one.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { readActiveAdminOverride } from "@/lib/admin-plan-override";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export const PREMIUM_TRIAL_DAYS = 30;
@@ -143,6 +144,33 @@ export async function resolveAndSyncSpecialistPremiumAccess(
   const now = Date.now();
   const trialActive =
     Boolean(trialEndsAt) && new Date(trialEndsAt as string).getTime() > now;
+  const override = await readActiveAdminOverride(supabase, userId);
+
+  if (override && override.plan !== "free") {
+    if (!role.is_premium) {
+      await supabase
+        .from("user_roles")
+        .update({ is_premium: true, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+    }
+    await supabase
+      .from("specialist_profiles")
+      .update({
+        is_premium: true,
+        membership_plan: override.plan,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", userId);
+    return {
+      isPremium: true,
+      isPaid,
+      isTrialing: trialActive && !isPaid,
+      trialEndsAt,
+      trialStartedAt,
+      trialJustEnded: false,
+      daysRemaining: trialActive ? daysUntil(trialEndsAt as string, now) : null,
+    };
+  }
 
   if (isPaid) {
     if (!role.is_premium) {

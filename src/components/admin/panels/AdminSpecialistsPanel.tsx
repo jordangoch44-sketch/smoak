@@ -23,6 +23,8 @@ import {
   SPECIALIST_TRAVEL_RADIUS_OPTIONS,
 } from "@/types/specialist-service-area";
 import { purgeSpecialistFromMarketplace } from "@/lib/admin-specialist-purge-client";
+import { AdminChangePlanModal } from "@/components/admin/specialists/AdminChangePlanModal";
+import { parseMembershipPlan } from "@/lib/specialist-premium";
 
 interface AdminSpecialistsPanelProps {
   specialists: AdminSpecialistRow[];
@@ -67,6 +69,7 @@ function SpecialistCard({
   onBasicsChange,
   onProtectedChange,
   onAccountKindChange,
+  onChangePlan,
 }: {
   row: AdminSpecialistRow;
   billing?: SpecialistBillingRecord;
@@ -81,6 +84,7 @@ function SpecialistCard({
   onBasicsChange: AdminSpecialistsPanelProps["onBasicsChange"];
   onProtectedChange: AdminSpecialistsPanelProps["onProtectedChange"];
   onAccountKindChange: AdminSpecialistsPanelProps["onAccountKindChange"];
+  onChangePlan: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -148,6 +152,15 @@ function SpecialistCard({
         >
           Profile
         </Link>
+        {permissions.canEditSpecialists ? (
+          <button
+            type="button"
+            className="admin-btn admin-btn--compact admin-btn--primary smoac-control"
+            onClick={onChangePlan}
+          >
+            Upgrade
+          </button>
+        ) : null}
         {permissions.canEditSpecialists ? (
           <button
             type="button"
@@ -400,6 +413,7 @@ export function AdminSpecialistsPanel({
   const [activeCategory, setActiveCategory] =
     useState<SpecialistTierCategory>("free");
   const [search, setSearch] = useState("");
+  const [planTargetId, setPlanTargetId] = useState<string | null>(null);
 
   const tierCounts = useMemo(() => {
     if (!billingById) return null;
@@ -440,8 +454,15 @@ export function AdminSpecialistsPanel({
   const activeMeta = SPECIALIST_TIER_CATEGORIES.find(
     (c) => c.id === activeCategory
   );
+  const planTarget = planTargetId
+    ? specialists.find((row) => row.id === planTargetId) ?? null
+    : null;
+  const planTargetBilling = planTarget
+    ? billingById?.get(planTarget.id)
+    : undefined;
 
   return (
+    <>
     <DashboardSection
       title="Specialists"
       description={
@@ -509,6 +530,7 @@ export function AdminSpecialistsPanel({
               onBasicsChange={onBasicsChange}
               onProtectedChange={onProtectedChange}
               onAccountKindChange={onAccountKindChange}
+              onChangePlan={() => setPlanTargetId(row.id)}
             />
           ))}
         </ul>
@@ -716,5 +738,18 @@ export function AdminSpecialistsPanel({
         </AdminCollapsible>
       )}
     </DashboardSection>
+    {permissions.canEditSpecialists ? (
+      <AdminChangePlanModal
+        open={Boolean(planTarget)}
+        specialistId={planTarget?.id ?? ""}
+        specialistName={planTarget?.name ?? ""}
+        specialistEmail={planTarget?.email ?? ""}
+        currentPlan={parseMembershipPlan(
+          planTargetBilling?.tier ?? planTarget?.membershipPlan
+        )}
+        onClose={() => setPlanTargetId(null)}
+      />
+    ) : null}
+    </>
   );
 }

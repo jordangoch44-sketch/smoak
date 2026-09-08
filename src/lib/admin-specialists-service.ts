@@ -194,9 +194,14 @@ function applicationAsTrainerRow(
     topRanked:
       approved?.topRanked ?? directory?.topRanked ?? meta.topRanked ?? false,
     isPremium:
-      approved?.isPremium ?? directory?.isPremium ?? meta.isPremium ?? false,
+      typeof meta.isPremium === "boolean"
+        ? meta.isPremium
+        : (approved?.isPremium ?? directory?.isPremium ?? false),
     membershipPlan:
-      approved?.membershipPlan ?? directory?.membershipPlan ?? "free",
+      meta.membershipPlan ??
+      approved?.membershipPlan ??
+      directory?.membershipPlan ??
+      "free",
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? "test",
     inSeedCatalog: false,
@@ -227,8 +232,14 @@ function rowFromTrainer(
     featured: trainer.featured ?? meta.featured ?? false,
     sponsored: Boolean(trainer.sponsored) || Boolean(meta.sponsored),
     topRanked: Boolean(trainer.topRanked) || Boolean(meta.topRanked),
-    isPremium: Boolean(trainer.isPremium) || Boolean(meta.isPremium),
-    membershipPlan: trainer.membershipPlan ?? (trainer.isPremium ? "premium" : "free"),
+    isPremium:
+      typeof meta.isPremium === "boolean"
+        ? meta.isPremium
+        : Boolean(trainer.isPremium),
+    membershipPlan:
+      meta.membershipPlan ??
+      trainer.membershipPlan ??
+      (trainer.isPremium ? "premium" : "free"),
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? (inSeedCatalog ? "test" : "real"),
     inSeedCatalog,

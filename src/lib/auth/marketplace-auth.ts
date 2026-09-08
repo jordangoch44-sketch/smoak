@@ -99,6 +99,12 @@ async function resolveSpecialistMembershipPlan(
   userId: string,
   isPremium: boolean
 ): Promise<"free" | "premium" | "platinum"> {
+  const { readActiveAdminOverride } = await import("@/lib/admin-plan-override");
+  const override = await readActiveAdminOverride(supabase, userId);
+  if (override) {
+    return override.plan;
+  }
+
   const { data: billing } = await supabase
     .from("specialist_billing")
     .select("plan")

@@ -1,6 +1,11 @@
 import type Stripe from "stripe";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
+  higherMembershipPlan,
+  isAdminOverrideActive,
+} from "@/lib/admin-plan-override";
+import { parseMembershipPlan } from "@/lib/specialist-premium";
+import {
   entitlementsFromProducts,
   isMembershipProduct,
   resolveProductKeyFromStripe,
@@ -126,10 +131,10 @@ export async function syncSpecialistCustomerBilling(input: {
   ];
   const entitlements = entitlementsFromProducts(productKeys);
 
-  const { data: campaignRow } = await supabase
+  const { data: billingRow } = await supabase
     .from("specialist_billing")
     .select(
-      "boost_campaign_product, boost_campaign_ends_at, boost_campaign_payment_intent_id"
+      "boost_campaign_product, boost_campaign_ends_at, boost_campaign_payment_intent_id, admin_override_plan, admin_override_ends_at, admin_override_granted_at, admin_override_granted_by"
     )
     .eq("user_id", input.userId)
     .maybeSingle();
@@ -138,7 +143,7 @@ export async function syncSpecialistCustomerBilling(input: {
     sponsored: entitlements.sponsored,
     categorySpotlight: entitlements.categorySpotlight,
     topRanked: entitlements.topRanked,
-    campaign: campaignFromBillingRow(campaignRow),
+    campaign: campaignFromBillingRow(billingRow),
   });
 
   const productKeysBySubscription = new Map<
@@ -167,6 +172,19 @@ export async function syncSpecialistCustomerBilling(input: {
 
   const status = primarySub?.status ?? (refreshed.length ? "active" : "canceled");
 
+  const overridePlan = isAdminOverrideActive(
+    billingRow?.admin_override_plan,
+    billingRow?.admin_override_ends_at
+  )
+    ? parseMembershipPlan(billingRow?.admin_override_plan)
+    : null;
+  let effectivePlan = entitlements.plan;
+  if (overridePlan === "free") {
+    effectivePlan = "free";
+  } else if (overridePlan) {
+    effectivePlan = higherMembershipPlan(entitlements.plan, overridePlan);
+  }
+
   const { error: billingError } = await supabase.from("specialist_billing").upsert(
     {
       user_id: input.userId,
@@ -179,6 +197,10 @@ export async function syncSpecialistCustomerBilling(input: {
       cancel_at_period_end: Boolean(primarySub?.cancel_at_period_end),
       plan: entitlements.plan,
       active_addons: entitlements.activeAddons,
+      admin_override_plan: billingRow?.admin_override_plan ?? null,
+      admin_override_ends_at: billingRow?.admin_override_ends_at ?? null,
+      admin_override_granted_at: billingRow?.admin_override_granted_at ?? null,
+      admin_override_granted_by: billingRow?.admin_override_granted_by ?? null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" }
@@ -188,8 +210,8 @@ export async function syncSpecialistCustomerBilling(input: {
     console.error("[stripe] billing upsert failed:", billingError.message);
   }
 
-  /* Preserve complimentary trial Pro if Stripe membership is free */
-  let isPremium = entitlements.isPremium;
+  /* Preserve complimentary trial / admin grant if Stripe membership is free */
+  let isPremium = effectivePlan !== "free";
   if (!isPremium) {
     const { data: role } = await supabase
       .from("user_roles")
@@ -215,7 +237,7 @@ export async function syncSpecialistCustomerBilling(input: {
 
   const profilePatch = {
     is_premium: isPremium,
-    membership_plan: entitlements.plan,
+    membership_plan: isPremium && effectivePlan === "free" ? "premium" : effectivePlan,
     featured: campaignFlags.featured,
     sponsored: campaignFlags.sponsored,
     top_ranked: campaignFlags.topRanked,
