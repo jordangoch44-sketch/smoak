@@ -109,7 +109,7 @@ const SECTION_TITLES: Record<SectionId, string> = {
   credentials: "Credentials",
   social: "Connect",
   pricing: "Pricing",
-  "free-first-session": "Free 1st session",
+  "free-first-session": FREE_FIRST_SESSION_LABEL,
   contact: "Contact",
   gender: "Gender",
   experience: "Experience",

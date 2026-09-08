@@ -2448,9 +2448,9 @@
   padding: 0.34rem 0.5rem 0.34rem 0.5rem;
   font-size: 0.5rem;
   font-weight: 800;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.03em;
   line-height: 1.1;
-  text-transform: uppercase;
+  text-transform: none;
   white-space: nowrap;
   color: #fff;
   background: linear-gradient(

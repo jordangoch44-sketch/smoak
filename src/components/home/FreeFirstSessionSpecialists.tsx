@@ -14,6 +14,7 @@ import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-st
 import {
   FREE_FIRST_SESSION_LABEL,
   FREE_FIRST_SESSION_RAIL_LIMIT,
+  FREE_FIRST_SESSION_RAIL_TITLE,
 } from "@/lib/free-first-session";
 import { listPublicFreeFirstSessionTrainers } from "@/lib/marketplace-public-catalog";
 import { selectPlacementRailTrainers } from "@/lib/sponsored-rail";
@@ -81,13 +82,13 @@ export function FreeFirstSessionSpecialists({
       <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
         <header className="home-section__header">
           <h2 id="home-free-first-heading" className="home-section__title">
-            {FREE_FIRST_SESSION_LABEL}
+            {FREE_FIRST_SESSION_RAIL_TITLE}
           </h2>
         </header>
 
         <HorizontalCarousel
           className="home-free-first__carousel"
-          ariaLabel={FREE_FIRST_SESSION_LABEL}
+          ariaLabel={FREE_FIRST_SESSION_RAIL_TITLE}
         >
           {trainers.map((trainer, index) => (
             <HomePortraitSpecialistCard

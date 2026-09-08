@@ -1,11 +1,18 @@
 import type { Trainer } from "@/types/trainer";
 
-export const FREE_FIRST_SESSION_LABEL = "Free 1st session";
+/** Homepage rail heading. */
+export const FREE_FIRST_SESSION_RAIL_TITLE = "Try a Trainer for Free";
+
+/** Card ribbon + public profile chip. */
+export const FREE_FIRST_SESSION_LABEL = "Free first session";
 
 export function isFreeFirstSessionBadge(
   label: string | null | undefined
 ): boolean {
-  return label?.trim() === FREE_FIRST_SESSION_LABEL;
+  const trimmed = label?.trim();
+  return (
+    trimmed === FREE_FIRST_SESSION_LABEL || trimmed === "Free 1st session"
+  );
 }
 
 /** Homepage rail size — matches New Specialists. */

@@ -1321,7 +1321,7 @@ export function SpecialistEditProfilePageClient({
                 {isPremium ? (
                   <ProfileEditInputField
                     label={FREE_FIRST_SESSION_LABEL}
-                    hint="Appear in the marketplace Free 1st session slider. Pro and Pro Plus only."
+                    hint="Appear in the marketplace Try a Trainer for Free slider. Pro and Pro Plus only."
                   >
                     <div
                       className="dashboard-edit-chip-grid"
