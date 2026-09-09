@@ -1,7 +1,11 @@
 import { patchAdminSpecialistMeta } from "@/lib/admin-specialist-meta-store";
 import { refreshAdminSpecialistDirectoryFromRemote } from "@/lib/admin-specialists-service";
-import { refreshApprovedSpecialistProfilesFromRemoteAsync } from "@/lib/approved-specialist-profiles-store";
+import {
+  patchApprovedSpecialistProfileFields,
+  refreshApprovedSpecialistProfilesFromRemoteAsync,
+} from "@/lib/approved-specialist-profiles-store";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
+import { requestPublicCatalogRevalidate } from "@/lib/profiles/request-catalog-revalidate";
 import { membershipPlanLabel } from "@/lib/stripe/products";
 import type { SpecialistMembershipPlan } from "@/lib/specialist-premium";
 import type {
@@ -9,6 +13,18 @@ import type {
   AdminPlanChangeMethod,
   AdminPlanChangeResult,
 } from "@/types/admin-specialist-plan-change";
+
+function applyLocalPlan(specialistId: string, plan: SpecialistMembershipPlan) {
+  patchAdminSpecialistMeta(specialistId, {
+    isPremium: plan !== "free",
+    membershipPlan: plan,
+  });
+  patchApprovedSpecialistProfileFields(specialistId, {
+    isPremium: plan !== "free",
+    membershipPlan: plan,
+    verified: plan !== "free",
+  });
+}
 
 export async function changeAdminSpecialistPlan(input: {
   specialistId: string;
@@ -24,10 +40,7 @@ export async function changeAdminSpecialistPlan(input: {
           "Checkout links need a live specialist login and Stripe. Use admin override in this environment.",
       };
     }
-    patchAdminSpecialistMeta(input.specialistId, {
-      isPremium: input.plan !== "free",
-      membershipPlan: input.plan,
-    });
+    applyLocalPlan(input.specialistId, input.plan);
     const planLabel = membershipPlanLabel(input.plan);
     return {
       ok: true,
@@ -67,10 +80,8 @@ export async function changeAdminSpecialistPlan(input: {
     }
 
     if (data.method === "admin_override") {
-      patchAdminSpecialistMeta(input.specialistId, {
-        isPremium: data.plan !== "free",
-        membershipPlan: data.plan,
-      });
+      applyLocalPlan(input.specialistId, data.plan);
+      requestPublicCatalogRevalidate();
       await refreshApprovedSpecialistProfilesFromRemoteAsync();
       await refreshAdminSpecialistDirectoryFromRemote();
     }

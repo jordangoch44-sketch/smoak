@@ -2,15 +2,14 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import {
-  enrichTrainersWithSpecialistFirstNames,
+  fetchApprovedSpecialistByPublicKey,
   fetchApprovedSpecialistProfiles,
-  specialistProfileFromRow,
 } from "@/lib/profiles/specialist-profiles-db";
 import {
   getSupabasePublicConfig,
   isSupabaseConfigured,
 } from "@/lib/supabase/config";
-import type { SpecialistProfileRow } from "@/types/database";
+import { findTrainerByPublicKey, hydrateTrainerPublicSlugs } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
 /**
@@ -47,7 +46,7 @@ async function fetchApprovedCatalogUncached(): Promise<Trainer[]> {
  */
 const loadApprovedCatalogCached = unstable_cache(
   fetchApprovedCatalogUncached,
-  ["approved-specialist-catalog-v5"],
+  ["approved-specialist-catalog-v7"],
   { revalidate: 45, tags: ["public-catalog"] }
 );
 
@@ -71,11 +70,11 @@ export const loadPublicCatalogForServer = cache(
   }> => {
     if (!isSupabaseConfigured()) {
       const { trainers } = await import("@/data/trainers");
-      return { trainers: trainers.slice(), mode: "seed" };
+      return { trainers: hydrateTrainerPublicSlugs(trainers.slice()), mode: "seed" };
     }
 
     const approved = await loadApprovedCatalogForServer();
-    return { trainers: approved, mode: "live" };
+    return { trainers: hydrateTrainerPublicSlugs(approved), mode: "live" };
   }
 );
 
@@ -83,32 +82,18 @@ export const loadPublicCatalogForServer = cache(
 export async function loadPublicTrainerByIdForServer(
   id: string
 ): Promise<Trainer | null> {
-  const { trainers, mode } = await loadPublicCatalogForServer();
-  const fromCatalog = trainers.find((t) => t.id === id);
-  if (fromCatalog) return fromCatalog;
-
-  if (mode === "seed") {
-    const { getTrainerById } = await import("@/data/trainers");
-    return getTrainerById(id) ?? null;
+  if (isSupabaseConfigured()) {
+    const supabase = getCatalogSupabaseClient();
+    if (supabase) {
+      const fresh = await fetchApprovedSpecialistByPublicKey(supabase, id);
+      if (fresh) return fresh;
+    }
+    const { trainers } = await loadPublicCatalogForServer();
+    return findTrainerByPublicKey(trainers, id) ?? null;
   }
 
-  /* Live: fetch single approved row in case list was empty/partial */
-  const supabase = getCatalogSupabaseClient();
-  if (!supabase) return null;
-
-  const { data, error } = await supabase
-    .from("specialist_profiles")
-    .select("*")
-    .eq("id", id)
-    .eq("status", "approved")
-    .maybeSingle();
-
-  if (error || !data) return null;
-  const mapped = specialistProfileFromRow(data as SpecialistProfileRow).trainer;
-  const [enriched] = await enrichTrainersWithSpecialistFirstNames(
-    supabase,
-    [data as SpecialistProfileRow],
-    [mapped]
+  const { trainers: seedTrainers } = await import("@/data/trainers");
+  return (
+    findTrainerByPublicKey(hydrateTrainerPublicSlugs(seedTrainers), id) ?? null
   );
-  return enriched;
 }

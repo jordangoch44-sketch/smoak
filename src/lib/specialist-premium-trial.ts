@@ -222,6 +222,33 @@ export async function resolveAndSyncSpecialistPremiumAccess(
     };
   }
 
+  const { data: profile } = await supabase
+    .from("specialist_profiles")
+    .select("membership_plan")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const durablePlan =
+    profile?.membership_plan === "premium" ||
+    profile?.membership_plan === "platinum";
+
+  if (durablePlan) {
+    if (!role.is_premium) {
+      await supabase
+        .from("user_roles")
+        .update({ is_premium: true, updated_at: new Date().toISOString() })
+        .eq("user_id", userId);
+    }
+    return {
+      isPremium: true,
+      isPaid,
+      isTrialing: false,
+      trialEndsAt,
+      trialStartedAt,
+      trialJustEnded: false,
+      daysRemaining: trialActive ? daysUntil(trialEndsAt as string, now) : null,
+    };
+  }
+
   /* Trial ended (or never started) and not paid */
   let trialJustEnded = false;
   if (trialEndsAt && !role.premium_trial_ended_notified_at) {

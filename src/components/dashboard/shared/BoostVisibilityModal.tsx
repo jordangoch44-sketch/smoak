@@ -332,7 +332,7 @@ export function BoostVisibilityModal({
                 </div>
                 {summary.discountPercent > 0 ? (
                   <div>
-                    <dt>Pro Plus</dt>
+                    <dt>PRO+</dt>
                     <dd>−{summary.discountPercent}%</dd>
                   </div>
                 ) : null}

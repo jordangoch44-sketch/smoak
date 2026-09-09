@@ -2,6 +2,7 @@ import {
   applicationToProfileOverrides,
   applicationToTrainer,
 } from "@/lib/application-to-trainer";
+import { ensureUniqueApplicationSlug } from "@/lib/specialist-public-slug";
 import { getDevDashboardTrainerSeed } from "@/data/demo/dev-dashboard-trainer";
 import { getTrainerById as getSeedTrainerById } from "@/data/trainers";
 import {
@@ -23,6 +24,7 @@ import {
   saveSpecialistApplicationAsync,
 } from "@/lib/specialist-application-storage";
 import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
+import { requestPublicCatalogRevalidate } from "@/lib/profiles/request-catalog-revalidate";
 import {
   applySpecialistProfileOverrides,
   formToOverrides,
@@ -172,6 +174,23 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
       pinnedPhotos: approved.pinnedPhotos?.length
         ? approved.pinnedPhotos
         : fromApp.pinnedPhotos,
+      clientTransformations:
+        fromApp.clientTransformations?.length
+          ? fromApp.clientTransformations
+          : approved.clientTransformations,
+      homepageSpecialties:
+        application.homepageSpecialties &&
+        application.homepageSpecialties.length > 0
+          ? fromApp.homepageSpecialties
+          : approved.homepageSpecialties?.length
+            ? approved.homepageSpecialties
+            : fromApp.homepageSpecialties,
+      offersFreeFirstSession:
+        typeof application.offersFreeFirstSession === "boolean"
+          ? fromApp.offersFreeFirstSession
+          : typeof approved.offersFreeFirstSession === "boolean"
+            ? approved.offersFreeFirstSession
+            : fromApp.offersFreeFirstSession,
       gallerySlideshowFrames,
       profileStyle:
         fromApp.profileStyle ??
@@ -205,6 +224,20 @@ export function syncProfileOverridesFromApplication(
       generated.slideshowFramesJson?.trim() ||
       existing?.slideshowFramesJson?.trim() ||
       "",
+    transformationNotes:
+      generated.transformationNotes?.trim() ||
+      existing?.transformationNotes?.trim() ||
+      "",
+    homepageSpecialties:
+      generated.homepageSpecialties?.length
+        ? generated.homepageSpecialties
+        : existing?.homepageSpecialties,
+    offersFreeFirstSession:
+      generated.offersFreeFirstSession ?? existing?.offersFreeFirstSession,
+    phone: generated.phone?.trim() || existing?.phone,
+    email: generated.email?.trim() || existing?.email,
+    experienceYears:
+      generated.experienceYears?.trim() || existing?.experienceYears,
     profileStyle:
       generated.profileStyle ??
       existing?.profileStyle ??
@@ -218,9 +251,13 @@ export async function syncApprovedProfileFromApplicationAsync(
   overridesExplicit?: SpecialistProfileOverrides | null
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   if (app.profileStatus !== "APPROVED") return { ok: true };
-  const base = applicationToTrainer(app);
+  const withSlug = ensureUniqueApplicationSlug(app);
+  if (withSlug.slug !== app.slug) {
+    await saveSpecialistApplicationAsync(withSlug);
+  }
+  const base = applicationToTrainer(withSlug);
   const overrides =
-    overridesExplicit ?? loadSpecialistOverridesForId(app.id);
+    overridesExplicit ?? loadSpecialistOverridesForId(withSlug.id);
   return saveApprovedSpecialistProfileAsync(
     overrides ? applySpecialistProfileOverrides(base, overrides) : base,
     overrides
@@ -247,6 +284,8 @@ export function mergeProfileEditsIntoApplication(
     gender: form.gender,
     professionalType: form.profession.trim(),
     specialties: form.specialty,
+    homepageSpecialties: form.homepageSpecialties.map((s) => s.trim()).filter(Boolean),
+    offersFreeFirstSession: form.offersFreeFirstSession,
     certifications: form.certifications.filter((cert) => cert.name.trim()),
     city: form.city.trim(),
     neighborhood: form.neighborhood.trim(),
@@ -377,9 +416,7 @@ export async function saveManagedSpecialistProfileEdits(
           return { ok: false, error: remote.message || "Unable to save changes" };
         }
         /* Bust SSR catalog so Explore / cards / sheets pick up new distance. */
-        void fetch("/api/catalog/revalidate", { method: "POST" }).catch(
-          () => undefined
-        );
+        void requestPublicCatalogRevalidate();
       }
     } else {
       saveTrainerProfileOverrides(trainerId, overrides);

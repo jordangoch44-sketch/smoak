@@ -6,6 +6,7 @@ import {
   hasSessionPrice,
   resolveTrainerSessionPriceRange,
 } from "@/lib/session-price";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
 export function buildTrainerProfileJsonLd(trainer: Trainer): Record<string, unknown> {
@@ -14,7 +15,7 @@ export function buildTrainerProfileJsonLd(trainer: Trainer): Record<string, unkn
     trainer.profession?.trim() ||
     "Wellness Specialist";
   const locationLine = formatProviderLocation(trainer);
-  const profileUrl = absoluteUrl(`/trainers/${encodeURIComponent(trainer.id)}`);
+  const profileUrl = absoluteUrl(trainerProfilePath(trainer));
   const coords = getTrainerCoordinates(trainer);
   const image =
     trainer.heroImage?.trim() ||

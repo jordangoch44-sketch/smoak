@@ -1,7 +1,7 @@
-import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendSpecialistReviewNotificationEmail } from "@/lib/email/review-email-service";
+import { revalidatePublicMarketplaceCatalog } from "@/lib/profiles/revalidate-public-catalog";
 import {
   resolveSpecialistNotifyEmail,
   resolveSpecialistUserId,
@@ -24,11 +24,7 @@ interface ReviewSubmitBody {
 
 function revalidateMarketplaceAfterReview(): void {
   try {
-    revalidateTag("public-catalog", { expire: 0 });
-    revalidatePath("/explore");
-    revalidatePath("/");
-    revalidatePath("/rankings");
-    revalidatePath("/trainers", "layout");
+    revalidatePublicMarketplaceCatalog();
   } catch (error) {
     console.warn("[SMOAC reviews] cache revalidate failed", error);
   }

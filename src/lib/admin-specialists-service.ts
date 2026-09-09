@@ -1,13 +1,16 @@
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { trainers } from "@/data/trainers";
 import {
   getAdminSpecialistMeta,
   getAdminSpecialistMetaSnapshot,
   patchAdminSpecialistMeta,
 } from "@/lib/admin-specialist-meta-store";
+import { applySpecialistMembershipEntitlements } from "@/lib/admin-plan-override";
 import {
   getApprovedSpecialistProfileById,
   getApprovedSpecialistProfilesSnapshot,
   hideApprovedSpecialistProfileAsync,
+  patchApprovedSpecialistProfileFields,
   refreshApprovedSpecialistProfilesFromRemoteAsync,
   restoreApprovedSpecialistProfileAsync,
 } from "@/lib/approved-specialist-profiles-store";
@@ -15,6 +18,7 @@ import {
   getMarketplaceAuthClient,
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
+import { requestPublicCatalogRevalidate } from "@/lib/profiles/request-catalog-revalidate";
 import {
   fetchAdminSpecialistDirectory,
   setSpecialistProfileFlags,
@@ -22,6 +26,9 @@ import {
   updateSpecialistProfileBasics,
   type AdminSpecialistDirectoryEntry,
 } from "@/lib/profiles/specialist-profiles-db";
+import {
+  parseMembershipPlan,
+} from "@/lib/specialist-premium";
 import {
   getHiddenTrainersSnapshot,
   hideTrainerId,
@@ -79,7 +86,7 @@ function directorySignature(
     .sort()
     .map(
       (id) =>
-        `${id}:${map[id]?.status}:${map[id]?.trainer.name}:${map[id]?.trainer.featured}:${map[id]?.email ?? ""}`
+        `${id}:${map[id]?.status}:${map[id]?.trainer.name}:${map[id]?.trainer.featured}:${map[id]?.trainer.sponsored}:${map[id]?.trainer.topRanked}:${map[id]?.trainer.isPremium}:${map[id]?.trainer.membershipPlan ?? ""}:${map[id]?.email ?? ""}`
     )
     .join("|");
 }
@@ -205,7 +212,10 @@ function applicationAsTrainerRow(
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? "test",
     inSeedCatalog: false,
-    profileHref: `/trainers/${id}`,
+    profileHref: trainerProfilePath({
+      id,
+      slug: approved?.slug ?? directory?.slug ?? app.slug,
+    }),
   };
 }
 
@@ -243,7 +253,7 @@ function rowFromTrainer(
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? (inSeedCatalog ? "test" : "real"),
     inSeedCatalog,
-    profileHref: `/trainers/${trainer.id}`,
+    profileHref: trainerProfilePath(trainer),
   };
 }
 
@@ -476,7 +486,21 @@ export async function setAdminSpecialistFlagAsync(
   flag: AdminSpecialistFlag,
   value: boolean
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  patchAdminSpecialistMeta(trainerId, { [flag]: value });
+  const premiumPlan = value ? "premium" : "free";
+  if (flag === "isPremium") {
+    patchAdminSpecialistMeta(trainerId, {
+      isPremium: value,
+      membershipPlan: premiumPlan,
+    });
+    patchApprovedSpecialistProfileFields(trainerId, {
+      isPremium: value,
+      membershipPlan: premiumPlan,
+      verified: value,
+    });
+  } else {
+    patchAdminSpecialistMeta(trainerId, { [flag]: value });
+    patchApprovedSpecialistProfileFields(trainerId, { [flag]: value });
+  }
 
   if (!isMarketplaceSupabaseActive()) return { ok: true };
 
@@ -485,34 +509,69 @@ export async function setAdminSpecialistFlagAsync(
     return { ok: false, message: "Authentication is not available." };
   }
 
-  const result = await setSpecialistProfileFlags(supabase, trainerId, {
-    [flag]: value,
-  });
-  if (!result.ok) {
-    console.warn(
-      "[SMOAC admin] specialist_profiles flag update failed:",
-      result.message
-    );
-    return result;
-  }
-
   if (flag === "isPremium") {
+    const { data: profileRow } = await supabase
+      .from("specialist_profiles")
+      .select("user_id, membership_plan")
+      .eq("id", trainerId)
+      .maybeSingle();
+    const currentPlan = parseMembershipPlan(profileRow?.membership_plan);
+    const plan = value
+      ? currentPlan === "platinum"
+        ? "platinum"
+        : "premium"
+      : "free";
     const userId =
-      getSpecialistApplicationById(trainerId)?.userId?.trim() || null;
-    if (userId) {
-      const { error } = await supabase
-        .from("user_roles")
-        .update({ is_premium: value, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
-      if (error) {
-        console.warn(
-          "[SMOAC admin] user_roles is_premium update failed:",
-          error.message
-        );
+      (typeof profileRow?.user_id === "string" && profileRow.user_id.trim()) ||
+      getSpecialistApplicationById(trainerId)?.userId?.trim() ||
+      null;
+
+    patchAdminSpecialistMeta(trainerId, {
+      isPremium: value,
+      membershipPlan: plan,
+    });
+    patchApprovedSpecialistProfileFields(trainerId, {
+      isPremium: value,
+      membershipPlan: plan,
+      verified: value,
+    });
+
+    if (value) {
+      /* Service-role override so trial expiry / Stripe sync cannot wipe Pro. */
+      const { changeAdminSpecialistPlan } = await import(
+        "@/lib/admin-specialist-plan-change-client"
+      );
+      const result = await changeAdminSpecialistPlan({
+        specialistId: trainerId,
+        plan,
+        method: "admin_override",
+        duration: { kind: "indefinite" },
+      });
+      if (!result.ok) {
+        return { ok: false, message: result.message };
       }
+      return { ok: true };
+    }
+
+    await applySpecialistMembershipEntitlements(supabase, {
+      userId,
+      specialistProfileId: trainerId,
+      plan,
+    });
+  } else {
+    const result = await setSpecialistProfileFlags(supabase, trainerId, {
+      [flag]: value,
+    });
+    if (!result.ok) {
+      console.warn(
+        "[SMOAC admin] specialist_profiles flag update failed:",
+        result.message
+      );
+      return result;
     }
   }
 
+  requestPublicCatalogRevalidate();
   await refreshApprovedSpecialistProfilesFromRemoteAsync();
   await refreshAdminSpecialistDirectoryFromRemote();
   return { ok: true };

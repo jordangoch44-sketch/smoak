@@ -19,7 +19,7 @@ export function getSpecialistSubscriptionForSession(
       );
       const days = session.premiumTrialDaysRemaining;
       return {
-        plan: "SMOAC Pro · Free trial",
+        plan: "Pro Trial",
         status:
           typeof days === "number"
             ? `Trial · ${days} day${days === 1 ? "" : "s"} left`
@@ -28,10 +28,10 @@ export function getSpecialistSubscriptionForSession(
         isPremium: true,
       };
     }
-    /* Paid Pro / Pro Plus — renew date comes from Stripe billing-summary */
+    /* Paid Pro / PRO+ — renew date comes from Stripe billing-summary */
     return {
       plan:
-        session.membershipPlan === "platinum" ? "SMOAC Pro Plus" : "SMOAC Pro",
+        session.membershipPlan === "platinum" ? "SMOAC PRO+" : "SMOAC Pro",
       status: "Active",
       renewsOn: "—",
       isPremium: true,

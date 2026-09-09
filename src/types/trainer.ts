@@ -67,6 +67,11 @@ export interface TrainerReviewSources {
  */
 export interface Trainer {
   id: string;
+  /**
+   * Public marketplace path (`/trainers/{slug}`). Internal `id` stays the
+   * data key for saves, inquiries, and reviews.
+   */
+  slug?: string;
   name: string;
   /**
    * Personal first name (from onboarding full name / profiles.first_name).
@@ -141,7 +146,7 @@ export interface Trainer {
   pricePerSessionMax?: number;
   /**
    * Opt into the marketplace “Free 1st session” rail.
-   * Defaults ON when unset. Public placement still requires Pro / Pro Plus.
+   * Defaults ON when unset. Public placement still requires Pro / PRO+.
    */
   offersFreeFirstSession?: boolean;
   rating: number;
@@ -177,7 +182,7 @@ export interface Trainer {
   /** Listing entitlement mirror (also on user_roles.is_premium) */
   isPremium?: boolean;
   /**
-   * Highest paid membership. Stripe/DB key for Pro Plus is `platinum`.
+   * Highest paid membership. Stripe/DB key for PRO+ is `platinum`.
    * Independent of Boost placement flags.
    */
   membershipPlan?: "free" | "premium" | "platinum";

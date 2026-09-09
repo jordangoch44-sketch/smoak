@@ -16,6 +16,12 @@ import {
   listSpecialistApplications,
 } from "@/lib/specialist-application-storage";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import {
+  decodePublicTrainerKey,
+  findTrainerByPublicKey,
+  hydrateTrainerPublicSlugs,
+  trainerMatchesPublicKey,
+} from "@/lib/trainer-profile-path";
 import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
 import { isTrainerFreeFirstSessionEligible } from "@/lib/free-first-session";
 import type { ProfileStatus } from "@/types/specialist-application";
@@ -27,6 +33,16 @@ function applicationBlocksPublicSeed(trainerId: string): boolean {
   const app = getSpecialistApplicationById(trainerId);
   if (!app) return false;
   return !PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus);
+}
+
+function findApprovedInMap(
+  map: Record<string, Trainer>,
+  key: string
+): Trainer | undefined {
+  return findTrainerByPublicKey(
+    hydrateTrainerPublicSlugs(Object.values(map)),
+    key
+  );
 }
 
 function isTrainerHidden(trainerId: string, hiddenSet: Set<string>): boolean {
@@ -95,33 +111,49 @@ function usesLiveCatalog(options: PublicCatalogOptions): boolean {
   return isSupabaseConfigured();
 }
 
-/** Whether a specialist id should appear on Explore, search, saves, rankings */
+function findApplicationByPublicKey(key: string) {
+  const decoded = decodePublicTrainerKey(key);
+  const byId = getSpecialistApplicationById(decoded);
+  if (byId) return byId;
+  const lower = decoded.toLowerCase();
+  if (!lower) return undefined;
+  return listSpecialistApplications().find(
+    (application) => application.slug?.trim().toLowerCase() === lower
+  );
+}
+
+/** Whether a specialist id or public slug should appear on Explore / profile */
 export function isPublicMarketplaceTrainerId(
   trainerId: string,
   options: PublicCatalogOptions = {}
 ): boolean {
   const live = usesLiveCatalog(options);
+  const approvedMap = resolveApprovedMap(options);
+  const approved = findApprovedInMap(approvedMap, trainerId);
+
   /* Live mode: specialist_profiles.status=approved is the hide gate — skip
    * browser-local hide list so admin moderation is multi-device durable. */
   if (!live && options.includeBrowserState !== false) {
     const hiddenSet = new Set(getHiddenTrainersSnapshot());
-    if (isTrainerHidden(trainerId, hiddenSet)) return false;
+    const hideKey = approved?.id ?? decodePublicTrainerKey(trainerId);
+    if (isTrainerHidden(hideKey, hiddenSet)) return false;
   }
 
-  const approvedMap = resolveApprovedMap(options);
   if (live) {
-    return Boolean(approvedMap[trainerId]);
+    return Boolean(approved);
   }
 
-  const app = getSpecialistApplicationById(trainerId);
+  const app = findApplicationByPublicKey(trainerId);
   if (app) {
     return PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus);
   }
 
-  const seed = getSeedTrainerById(trainerId);
+  const seed =
+    findTrainerByPublicKey(seedTrainers, trainerId) ??
+    getSeedTrainerById(decodePublicTrainerKey(trainerId));
   if (!seed) return false;
 
-  return !applicationBlocksPublicSeed(trainerId);
+  return !applicationBlocksPublicSeed(seed.id);
 }
 
 export function getPublicMarketplaceTrainerBaseById(
@@ -131,19 +163,24 @@ export function getPublicMarketplaceTrainerBaseById(
   if (!isPublicMarketplaceTrainerId(trainerId, options)) return undefined;
 
   const approvedMap = resolveApprovedMap(options);
-  if (approvedMap[trainerId]) return approvedMap[trainerId];
+  const fromMap = findApprovedInMap(approvedMap, trainerId);
+  if (fromMap) return fromMap;
 
-  const approved = getApprovedSpecialistProfileById(trainerId);
-  if (approved) return approved;
+  const approved = getApprovedSpecialistProfileById(
+    decodePublicTrainerKey(trainerId)
+  );
+  if (approved && trainerMatchesPublicKey(approved, trainerId)) return approved;
 
   if (usesLiveCatalog(options)) {
     return undefined;
   }
 
-  const seed = getSeedTrainerById(trainerId);
+  const seed =
+    findTrainerByPublicKey(seedTrainers, trainerId) ??
+    getSeedTrainerById(decodePublicTrainerKey(trainerId));
   if (seed) return seed;
 
-  const app = getSpecialistApplicationById(trainerId);
+  const app = findApplicationByPublicKey(trainerId);
   if (app && PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus)) {
     return applicationToTrainer(app);
   }
@@ -185,12 +222,12 @@ export function listPublicMarketplaceTrainers(
       result.push(trainer);
     }
 
-    return result;
+    return hydrateTrainerPublicSlugs(result);
   }
 
   /* Seed mode (Supabase not configured) — local demo only */
   if (!includeBrowserState) {
-    return seedTrainers.slice();
+    return hydrateTrainerPublicSlugs(seedTrainers.slice());
   }
 
   const seen = new Set<string>();
@@ -214,7 +251,7 @@ export function listPublicMarketplaceTrainers(
     }
   }
 
-  return result;
+  return hydrateTrainerPublicSlugs(result);
 }
 
 /** Homepage Sponsored boost placements only — Pro membership is not enough. */

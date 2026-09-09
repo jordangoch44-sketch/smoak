@@ -2,9 +2,9 @@
  * SMOAC specialist Stripe products — membership vs paid placement add-ons.
  *
  * Rules:
- * - Pro (`premium` key) / Pro Plus (`platinum` key) set membership only
- *   (`is_premium`). Pro Plus does not grant Featured — that is a Boost.
- * - Pro Plus perks: richer listing (client transformations) + 20% off Boosts.
+ * - Pro (`premium` key) / PRO+ (`platinum` key) set membership only
+ *   (`is_premium`). PRO+ does not grant Featured — that is a Boost.
+ * - PRO+ perks: richer listing (client transformations) + 20% off Boosts.
  * - Pro membership never grants sponsored placement by itself.
  * - Add-ons set placement flags independently and do not require Pro.
  */
@@ -98,7 +98,7 @@ export function formatListPriceLabel(cents: number): string {
   return `$${fixed}/mo`;
 }
 
-/** Specialist-facing membership name. Stripe/DB key for Pro Plus stays `platinum`. */
+/** Specialist-facing membership name. Stripe/DB key for PRO+ stays `platinum`. */
 export function membershipPlanLabel(
   plan: "free" | "premium" | "platinum"
 ): string {
@@ -106,7 +106,7 @@ export function membershipPlanLabel(
     case "premium":
       return "SMOAC Pro";
     case "platinum":
-      return "SMOAC Pro Plus";
+      return "SMOAC PRO+";
     default:
       return "Free";
   }

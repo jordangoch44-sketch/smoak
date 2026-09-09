@@ -195,7 +195,11 @@ function SpecialistCard({
             {row.topRanked ? (
               <span className="admin-chip">Top ranked</span>
             ) : null}
-            {row.isPremium ? <span className="admin-chip">Pro</span> : null}
+            {row.membershipPlan === "platinum" ? (
+              <span className="admin-chip">PRO+</span>
+            ) : row.isPremium ? (
+              <span className="admin-chip">Pro</span>
+            ) : null}
             {row.isProtected || row.accountKind === "real" ? (
               <span className="admin-chip">Real / protected</span>
             ) : null}

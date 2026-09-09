@@ -9,11 +9,13 @@ import { cn } from "@/lib/utils";
 interface SpecialistLinkInBioCardProps {
   trainerId: string;
   trainerName?: string;
+  slug?: string | null;
   className?: string;
 }
 
 export function SpecialistLinkInBioCard({
   trainerId,
+  slug,
   className,
 }: SpecialistLinkInBioCardProps) {
   const [copiedBio, setCopiedBio] = useState(false);
@@ -31,7 +33,7 @@ export function SpecialistLinkInBioCard({
 
   const handleCopyBio = useCallback(async () => {
     try {
-      await copyTrainerProfileLink(trainerId);
+      await copyTrainerProfileLink({ id: trainerId, slug });
       setCopiedBio(true);
       showToast({
         type: "success",
@@ -47,14 +49,14 @@ export function SpecialistLinkInBioCard({
         message: "Could not copy link to clipboard.",
       });
     }
-  }, [trainerId, showToast]);
+  }, [trainerId, slug, showToast]);
 
   const handleCopyReview = useCallback(async () => {
     try {
       const origin =
         typeof window !== "undefined"
           ? window.location.origin
-          : getTrainerProfileUrl(trainerId).split("/trainers/")[0];
+          : getTrainerProfileUrl({ id: trainerId, slug }).split("/trainers/")[0];
       const reviewUrl = `${origin}${buildLeaveReviewHref(trainerId)}`;
 
       if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
@@ -78,7 +80,7 @@ export function SpecialistLinkInBioCard({
         message: "Could not copy link to clipboard.",
       });
     }
-  }, [trainerId, showToast]);
+  }, [trainerId, slug, showToast]);
 
   return (
     <div className={cn("specialist-bio-link-card", className)}>

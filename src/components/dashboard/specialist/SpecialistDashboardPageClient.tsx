@@ -47,10 +47,13 @@ import {
   SMOAC_FREE_PLAN_LABEL,
   formatProTrialBadgeLabel,
   isProPlusPlan,
+  isTrainerProPlus,
+  membershipBadgeToneForSession,
   showProTrialLastChance,
   showSpecialistFreeTrialPromo,
   showSpecialistPaidUpgradePromo,
 } from "@/lib/specialist-premium";
+import { membershipPlanLabel } from "@/lib/stripe/products";
 import { cn } from "@/lib/utils";
 import {
   markSpecialistProfileWelcomeSeen,
@@ -308,7 +311,9 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "pending" || dashboardMode === "rejected";
   const isFreeLive = dashboardMode === "approved-free";
   const onProTrial = Boolean(session.premiumTrialActive);
-  const isProPlus = isProPlusPlan(session.membershipPlan);
+  const isProPlus =
+    isProPlusPlan(session.membershipPlan) ||
+    isTrainerProPlus(trainer ?? {});
   const showLastChance = showProTrialLastChance(session);
 
   const headerSurface: SpecialistDashHeaderSurface = isPendingGate
@@ -394,26 +399,34 @@ export function SpecialistDashboardPageClient() {
     : isFreeLive
       ? SMOAC_FREE_PLAN_LABEL
       : isProPlus
-        ? "SMOAC Pro Plus"
+        ? membershipPlanLabel("platinum")
         : isPremium
-          ? "SMOAC Pro"
+          ? membershipPlanLabel("premium")
           : "Specialist";
 
-  /* Pro Trial days badge lives on Profile only — not Overview. */
+  const planBadgeTone = membershipBadgeToneForSession(session);
+
+  /* Plan badge matches the signed-in account on every dashboard surface. */
   const roleLabel =
     headerSurface === "profile"
       ? profilePlanLabel
       : headerSurface === "plan"
         ? SMOAC_FREE_PLAN_LABEL
-        : headerSurface === "overview" && isPremium && !onProTrial
-          ? "SMOAC Pro"
+        : headerSurface === "overview"
+          ? onProTrial
+            ? formatProTrialBadgeLabel(session.premiumTrialDaysRemaining)
+            : isProPlus
+              ? membershipPlanLabel("platinum")
+              : isPremium
+                ? membershipPlanLabel("premium")
+                : undefined
           : undefined;
 
   const roleLabelTone =
-    headerSurface === "profile" && (onProTrial || isPremium)
-      ? "pro-trial"
-      : headerSurface === "overview" && isPremium && !onProTrial
-        ? "pro-trial"
+    headerSurface === "plan"
+      ? "free"
+      : roleLabel
+        ? planBadgeTone
         : "default";
 
   const headerCopy =

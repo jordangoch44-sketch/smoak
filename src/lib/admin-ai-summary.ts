@@ -356,8 +356,8 @@ export function generateAiExecutiveBriefing(
       id: "action-monetization",
       priority: "medium",
       priorityLabel: "Revenue Unlock",
-      title: "Activate Pro & Pro Plus",
-      description: `Invite top-performing specialists to upgrade to Pro ($9.99/mo) or Pro Plus ($19.99/mo) for verified badges and ranking intelligence.`,
+      title: "Activate Pro & PRO+",
+      description: `Invite top-performing specialists to upgrade to Pro ($9.99/mo) or PRO+ ($19.99/mo) for verified badges and ranking intelligence.`,
       category: "monetization",
     });
   } else if (inquiryCompletion < 35 && inquiryCompletion > 0) {

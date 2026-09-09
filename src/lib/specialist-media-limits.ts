@@ -36,7 +36,7 @@ export function promoteMediaUrl(urls: string[], url: string): string[] {
 /** Max Instagram-style pins under the public profile hero (Pro / trial only). */
 export const PINNED_PHOTOS_MAX = 3;
 
-/** Pro Plus — client transformations carousel under pinned photos. */
+/** PRO+ — client transformations carousel under pinned photos. */
 export const CLIENT_TRANSFORMATIONS_MAX = 8;
 
 export function normalizeTransformationUrls(urls: unknown): string[] {

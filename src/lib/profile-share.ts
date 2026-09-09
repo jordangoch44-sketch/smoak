@@ -1,16 +1,32 @@
-export function getTrainerProfileUrl(trainerId: string): string {
+import {
+  publicTrainerSlug,
+  trainerProfilePath,
+  type TrainerPublicIdentity,
+} from "@/lib/trainer-profile-path";
+
+export function getTrainerProfileUrl(
+  trainer: string | TrainerPublicIdentity
+): string {
+  const path =
+    typeof trainer === "string"
+      ? `/trainers/${encodeURIComponent(trainer)}`
+      : trainerProfilePath(trainer);
   if (typeof window === "undefined") {
-    return `/trainers/${trainerId}`;
+    return path;
   }
-  return `${window.location.origin}/trainers/${trainerId}`;
+  return `${window.location.origin}${path}`;
 }
 
 export async function shareTrainerProfile(options: {
   trainerId: string;
   trainerName: string;
   title?: string;
+  slug?: string | null;
 }): Promise<"shared" | "copied"> {
-  const url = getTrainerProfileUrl(options.trainerId);
+  const url = getTrainerProfileUrl({
+    id: options.trainerId,
+    slug: options.slug,
+  });
   const title = options.title ?? `${options.trainerName} on SMOAC`;
 
   if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
@@ -37,9 +53,9 @@ export async function shareTrainerProfile(options: {
 }
 
 export async function copyTrainerProfileLink(
-  trainerId: string
+  trainer: string | TrainerPublicIdentity
 ): Promise<void> {
-  const url = getTrainerProfileUrl(trainerId);
+  const url = getTrainerProfileUrl(trainer);
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(url);
     return;
@@ -51,3 +67,5 @@ export function scrollToProfileConsultation(): void {
   const target = document.getElementById("profile-consultation");
   target?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+export { publicTrainerSlug, trainerProfilePath };

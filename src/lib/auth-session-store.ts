@@ -54,6 +54,7 @@ function sessionSignature(session: AuthSession | null): string {
     profileCompletionStatus: session.profileCompletionStatus ?? "",
     passwordSetupStatus: session.passwordSetupStatus ?? "",
     isPremium: Boolean(session.isPremium),
+    membershipPlan: session.membershipPlan ?? "",
     premiumIsPaid: Boolean(session.premiumIsPaid),
     premiumTrialUsed: Boolean(session.premiumTrialUsed),
     premiumTrialActive: Boolean(session.premiumTrialActive),

@@ -14,6 +14,7 @@ import { primePublicCatalogFromSSR } from "@/lib/approved-specialist-profiles-st
 import { listPublicSponsoredTrainers } from "@/lib/marketplace-public-catalog";
 import { selectSponsoredRailTrainers } from "@/lib/sponsored-rail";
 import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 import { HomePortraitSpecialistCard } from "./HomePortraitSpecialistCard";
 
@@ -59,7 +60,7 @@ export function SponsoredSpecialists({
     if (!hydrated || trainers.length === 0) return;
     for (const trainer of trainers.slice(0, 4)) {
       try {
-        router.prefetch(`/trainers/${trainer.id}`);
+        router.prefetch(trainerProfilePath(trainer));
       } catch {
         /* prefetch is best-effort */
       }

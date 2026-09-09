@@ -112,7 +112,7 @@ export interface SpecialistProfileRow {
   top_ranked: boolean;
   category_spotlight: boolean;
   is_premium: boolean;
-  /** free | premium (Pro) | platinum (Pro Plus) */
+  /** free | premium (Pro) | platinum (PRO+) */
   membership_plan?: "free" | "premium" | "platinum" | string;
   boost_campaign_product?: string | null;
   boost_campaign_ends_at?: string | null;

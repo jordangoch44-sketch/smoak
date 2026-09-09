@@ -35,6 +35,7 @@ import {
   EMPTY_CERTIFICATION,
   cloneSpecialistProfileEditForm,
   computeProfileCompletion,
+  overlayProfileSectionDraft,
 } from "@/lib/specialist-profile-overrides";
 import {
   resolveSpecialistDashboardMode,
@@ -44,8 +45,12 @@ import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-
 import {
   formatProTrialBadgeLabel,
   isProPlusPlan,
+  isTrainerProPlus,
+  membershipBadgeToneForSession,
+  membershipRoleBadgeClassName,
   SMOAC_FREE_PLAN_LABEL,
 } from "@/lib/specialist-premium";
+import { membershipPlanLabel } from "@/lib/stripe/products";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import type { Certification, Gender } from "@/types/trainer";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
@@ -114,7 +119,7 @@ export function SpecialistEditProfilePageClient({
   const { isReady, session } = useRequireAuth("specialist");
   const { signOut } = useAuthSession();
   const { showToast } = useToast();
-  const { formDefaults, saveForm, application, trainerId, isHydrated } =
+  const { formDefaults, saveForm, application, trainer, trainerId, isHydrated } =
     useManagedSpecialistProfile();
 
   const [editingSection, setEditingSection] = useState<SectionId | null>(null);
@@ -195,16 +200,18 @@ export function SpecialistEditProfilePageClient({
   }, [isReady, session, isHydrated, dashboardMode, router]);
 
   const isPremium = Boolean(session?.isPremium);
-  const isProPlus = isProPlusPlan(session?.membershipPlan);
+  const isProPlus =
+    isProPlusPlan(session?.membershipPlan) || isTrainerProPlus(trainer ?? {});
   const onProTrial = Boolean(session?.premiumTrialActive);
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
   const profilePlanLabel = onProTrial
     ? formatProTrialBadgeLabel(session?.premiumTrialDaysRemaining)
     : isProPlus
-      ? "SMOAC Pro Plus"
+      ? membershipPlanLabel("platinum")
       : isPremium
-        ? "SMOAC Pro"
+        ? membershipPlanLabel("premium")
         : SMOAC_FREE_PLAN_LABEL;
+  const planBadgeTone = membershipBadgeToneForSession(session);
 
   const handleSignOut = useCallback(() => {
     void signOut().then(() => {
@@ -326,10 +333,11 @@ export function SpecialistEditProfilePageClient({
 
   async function saveSection() {
     const draft = sectionDraft;
-    if (!draft || !trainerId) return;
+    if (!draft || !trainerId || !savedForm || !editingSection) return;
     if (application?.profileStatus === "PENDING_APPROVAL") return;
     setSaving(true);
-    const result = await saveForm(draft);
+    const payload = overlayProfileSectionDraft(savedForm, draft, editingSection);
+    const result = await saveForm(payload);
     setSaving(false);
 
     if (result.ok) {
@@ -520,12 +528,7 @@ export function SpecialistEditProfilePageClient({
         <div className="specialist-edit-profile__title-bubble">
           {profilePlanLabel ? (
             <div className="ig-profile-edit__badge-wrap">
-              <span
-                className={cn(
-                  "dashboard-role-badge",
-                  (onProTrial || isPremium) && "dashboard-role-badge--pro-trial"
-                )}
-              >
+              <span className={membershipRoleBadgeClassName(planBadgeTone)}>
                 {profilePlanLabel}
               </span>
             </div>
@@ -1321,7 +1324,7 @@ export function SpecialistEditProfilePageClient({
                 {isPremium ? (
                   <ProfileEditInputField
                     label={FREE_FIRST_SESSION_LABEL}
-                    hint="Appear in the marketplace Try a Trainer for Free slider. Pro and Pro Plus only."
+                    hint="Appear in the marketplace Try a Trainer for Free slider. Pro and PRO+ only."
                   >
                     <div
                       className="dashboard-edit-chip-grid"

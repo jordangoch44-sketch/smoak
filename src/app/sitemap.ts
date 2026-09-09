@@ -6,6 +6,7 @@ import {
   cityToSlug,
   listMarketplaceLandingPaths,
 } from "@/lib/seo/marketplace-slugs";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { MARKETPLACE_CITIES } from "@/data/locations";
 
 const STATIC_ROUTES: Array<{
@@ -50,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
 
   const trainerEntries: MetadataRoute.Sitemap = trainers.map((trainer) => ({
-    url: absoluteUrl(`/trainers/${encodeURIComponent(trainer.id)}`),
+    url: absoluteUrl(trainerProfilePath(trainer)),
     lastModified,
     changeFrequency: "weekly",
     priority: 0.75,

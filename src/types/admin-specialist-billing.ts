@@ -1,6 +1,6 @@
 /**
  * Specialist subscription + add-on billing.
- * Display names: Free · Pro · Pro Plus. Stripe/DB key for Pro Plus is `platinum`.
+ * Display names: Free · Pro · PRO+. Stripe/DB key for PRO+ is `platinum`.
  * Amounts in USD cents.
  */
 

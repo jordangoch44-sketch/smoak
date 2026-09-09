@@ -7,6 +7,7 @@ import {
   type MarketplaceProfessionLanding,
 } from "@/lib/seo/marketplace-slugs";
 import type { MarketplaceCity } from "@/data/locations";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 import type { Metadata } from "next";
 
@@ -172,7 +173,7 @@ function buildTrainerItemList(
       "@type": "ListItem",
       position: index + 1,
       name: trainer.name,
-      url: absoluteUrl(`/trainers/${encodeURIComponent(trainer.id)}`),
+      url: absoluteUrl(trainerProfilePath(trainer)),
     })),
   };
 }

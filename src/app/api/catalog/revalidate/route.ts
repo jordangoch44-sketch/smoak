@@ -1,5 +1,5 @@
-import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
+import { revalidatePublicMarketplaceCatalog } from "@/lib/profiles/revalidate-public-catalog";
 
 export const runtime = "nodejs";
 
@@ -9,10 +9,7 @@ export const runtime = "nodejs";
  */
 export async function POST() {
   try {
-    revalidateTag("public-catalog", { expire: 0 });
-    revalidatePath("/explore");
-    revalidatePath("/");
-    revalidatePath("/trainers", "layout");
+    revalidatePublicMarketplaceCatalog();
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.warn("[SMOAC catalog] revalidate failed", error);

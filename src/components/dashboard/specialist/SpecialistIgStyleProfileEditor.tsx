@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
-import { formatMembershipShortLabel, isProPlusPlan } from "@/lib/specialist-premium";
+import { formatMembershipShortLabel, isProPlusPlan, isTrainerProPlus, membershipBadgeToneForSession, membershipRoleBadgeClassName } from "@/lib/specialist-premium";
 import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 import {
   profileStyleAccentLabel,
@@ -80,7 +80,7 @@ function IgEditRow({
   incomplete?: boolean;
   highlighted?: boolean;
   locked?: boolean;
-  lockPlan?: "Pro" | "Pro Plus";
+  lockPlan?: "Pro" | "PRO+";
 }) {
   const isEmpty = value === "Add" || value.startsWith("Add ");
   const lockTitle = lockPlan ? `Unlocks with ${lockPlan}` : "Unlocks with a higher plan";
@@ -163,10 +163,11 @@ export function SpecialistIgStyleProfileEditor({
   onUpgrade,
 }: SpecialistIgStyleProfileEditorProps) {
   const { session } = useAuthSession();
-  const onProTrial = Boolean(session?.premiumTrialActive);
   const isPremium = Boolean(session?.isPremium);
-  const isProPlus = isProPlusPlan(session?.membershipPlan);
+  const isProPlus =
+    isProPlusPlan(session?.membershipPlan) || isTrainerProPlus(trainer);
   const resolvedPlanLabel = formatMembershipShortLabel(session);
+  const planBadgeTone = membershipBadgeToneForSession(session);
 
   const hasPhoto = Boolean(formDefaults.profilePhotoUrl.trim());
   const photo = formDefaults.profilePhotoUrl.trim() || trainer.image;
@@ -277,8 +278,8 @@ export function SpecialistIgStyleProfileEditor({
           </button>
           <span
             className={cn(
-              "dashboard-role-badge ig-profile-edit__plan-badge",
-              (onProTrial || isPremium) && "dashboard-role-badge--pro-trial"
+              "ig-profile-edit__plan-badge",
+              membershipRoleBadgeClassName(planBadgeTone)
             )}
             aria-label={`Current plan: ${resolvedPlanLabel}`}
           >
@@ -289,6 +290,7 @@ export function SpecialistIgStyleProfileEditor({
 
       <SpecialistLinkInBioCard
         trainerId={trainer.id}
+        slug={trainer.slug}
         trainerName={formDefaults.name || trainer.name}
       />
 
@@ -403,7 +405,7 @@ export function SpecialistIgStyleProfileEditor({
           incomplete={isProPlus && !formDefaults.transformationNotes.trim()}
           highlighted={isHighlighted("transformations")}
           locked={!isProPlus}
-          lockPlan="Pro Plus"
+          lockPlan="PRO+"
           onClick={() => {
             if (!isProPlus) {
               if (onUpgrade) {

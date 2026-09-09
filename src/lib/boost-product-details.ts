@@ -32,7 +32,7 @@ const BOOST_DETAILS: Record<SmoacAddonProduct, Omit<BoostProductDetail, "key" | 
       youGet: [
         "A labeled Sponsored card on the Marketplace homepage",
         "Geo-aware placement so nearby clients see you first in that rail",
-        "Separate from Pro — works on Free, Pro, or Pro Plus",
+        "Separate from Pro — works on Free, Pro, or PRO+",
       ],
       appearsOn: [
         "Homepage Sponsored specialists carousel",
@@ -50,7 +50,7 @@ const BOOST_DETAILS: Record<SmoacAddonProduct, Omit<BoostProductDetail, "key" | 
       youGet: [
         "A labeled Featured card on the Marketplace homepage spotlight rail",
         "Higher-visibility placement than standard Sponsored",
-        "Separate from Pro Plus — this is a paid Boost",
+        "Separate from PRO+ — this is a paid Boost",
       ],
       appearsOn: [
         "Homepage Featured spotlight rail",

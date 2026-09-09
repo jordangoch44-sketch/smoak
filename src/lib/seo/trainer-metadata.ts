@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { absoluteUrl } from "@/lib/seo/site-url";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
 function truncate(text: string, max: number): string {
@@ -46,7 +47,7 @@ export function buildTrainerPageMetadata(trainer: Trainer): Metadata {
       `${trainer.name} is a ${profession}${location ? ` in ${location}` : ""}. View session rates, reviews, and specialties on SMOAC.`,
     160
   );
-  const canonical = absoluteUrl(`/trainers/${encodeURIComponent(trainer.id)}`);
+  const canonical = absoluteUrl(trainerProfilePath(trainer));
   const image = pickTrainerOgImage(trainer);
 
   return {

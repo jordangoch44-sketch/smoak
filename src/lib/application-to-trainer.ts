@@ -15,7 +15,10 @@ import {
   resolveApplicationSessionPriceRange,
   withSyncedSessionPrices,
 } from "@/lib/session-price";
-import { featuredSpecialtiesFromSelection } from "@/lib/specialty-display";
+import {
+  featuredSpecialtiesFromSelection,
+  sanitizeHomepageSpecialties,
+} from "@/lib/specialty-display";
 import type {
   SpecialistApplication,
   SpecialistOnboardingState,
@@ -93,7 +96,15 @@ export function applicationToTrainer(
   const mediaUrls = linesToUrls(app.media?.trainingVideoUrls ?? "");
   const headline = app.headline?.trim() ?? "";
   const specialties = Array.isArray(app.specialties) ? app.specialties : [];
-  const homepageSpecialties = featuredSpecialtiesFromSelection(specialties);
+  const homepageSpecialties = (() => {
+    const saved = sanitizeHomepageSpecialties(
+      specialties,
+      app.homepageSpecialties
+    );
+    return saved.length > 0
+      ? saved
+      : featuredSpecialtiesFromSelection(specialties);
+  })();
   const certifications = Array.isArray(app.certifications)
     ? app.certifications.filter((c) => c?.name?.trim())
     : [];
@@ -110,6 +121,7 @@ export function applicationToTrainer(
 
   return {
     id,
+    slug: app.slug?.trim() || undefined,
     name: app.displayName?.trim() || app.fullName?.trim() || "Specialist",
     specialistFirstName: (() => {
       const full = app.fullName?.trim() ?? "";
@@ -166,7 +178,10 @@ export function applicationToTrainer(
       pricePerSessionMin: sessionPrice.min,
       pricePerSessionMax: sessionPrice.max,
     }),
-    offersFreeFirstSession: true,
+    offersFreeFirstSession:
+      typeof app.offersFreeFirstSession === "boolean"
+        ? app.offersFreeFirstSession
+        : true,
     rating: 0,
     reviewCount: 0,
     galleryImages: mediaUrls.length > 0 ? mediaUrls : [photo],
@@ -280,7 +295,15 @@ export function applicationToProfileOverrides(
         specialty: specialties,
       }) || app.professionalType,
     specialty: specialties,
-    homepageSpecialties: featuredSpecialtiesFromSelection(specialties),
+    homepageSpecialties: (() => {
+      const saved = sanitizeHomepageSpecialties(
+        specialties,
+        app.homepageSpecialties
+      );
+      return saved.length > 0
+        ? saved
+        : featuredSpecialtiesFromSelection(specialties);
+    })(),
     certifications: Array.isArray(app.certifications) ? app.certifications : [],
     city: app.city?.trim() ?? "",
     state: app.state?.trim() ?? "",
@@ -310,7 +333,10 @@ export function applicationToProfileOverrides(
     pricePerSession: priceRange.max,
     pricePerSessionMin: priceRange.min,
     pricePerSessionMax: priceRange.max,
-    offersFreeFirstSession: true,
+    offersFreeFirstSession:
+      typeof app.offersFreeFirstSession === "boolean"
+        ? app.offersFreeFirstSession
+        : true,
     bio: app.bio?.trim() ?? "",
     profilePhotoUrl: app.media?.profilePhotoUrl?.trim() ?? "",
     phone: app.phone?.trim() ?? "",

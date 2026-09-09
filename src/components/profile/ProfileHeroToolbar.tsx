@@ -15,6 +15,7 @@ import { useProfileSheetToolbarHost } from "./ProfileSheetToolbarHostContext";
 interface ProfileHeroToolbarProps {
   trainerId: string;
   trainerName: string;
+  slug?: string | null;
   instagram?: string | null;
 }
 
@@ -44,6 +45,7 @@ function ToolbarIcon({
 export function ProfileHeroToolbar({
   trainerId,
   trainerName,
+  slug,
   instagram,
 }: ProfileHeroToolbarProps) {
   const router = useRouter();
@@ -69,7 +71,11 @@ export function ProfileHeroToolbar({
 
   async function handleShare() {
     try {
-      const result = await shareTrainerProfile({ trainerId, trainerName });
+      const result = await shareTrainerProfile({
+        trainerId,
+        trainerName,
+        slug,
+      });
       showToast({
         type: "success",
         message:

@@ -345,6 +345,7 @@ export function ProfileHero({
         <ProfileHeroToolbar
           trainerId={trainer.id}
           trainerName={trainer.name}
+          slug={trainer.slug}
           instagram={trainer.social?.instagram}
         />
       )}

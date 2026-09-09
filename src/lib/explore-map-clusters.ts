@@ -2,6 +2,7 @@ import type { Trainer } from "@/types";
 import { getTrainerCoordinates } from "@/lib/trainer-location";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { escapeExploreMapHtml, safeExploreMapImageSrc } from "@/lib/explore-map-popup";
+import { isTrainerVerified } from "@/lib/trainer-sponsorship";
 
 /**
  * Proximity threshold for grouping specialists at the exact same or adjacent facility.
@@ -36,7 +37,7 @@ function getTrainerInitials(name: string): string {
 function getTrainerProminenceScore(trainer: Trainer): number {
   let score = 0;
   if (trainer.sponsored) score += 50;
-  if (trainer.verified) score += 30;
+  if (isTrainerVerified(trainer)) score += 30;
   if (trainer.rating) score += trainer.rating * 4;
   if (trainer.reviewCount) score += Math.min(20, trainer.reviewCount * 0.1);
   if (trainer.image) score += 10;

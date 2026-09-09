@@ -28,7 +28,7 @@ export function trainerOffersFreeFirstSession(
   return trainer.offersFreeFirstSession !== false;
 }
 
-/** Pro, Pro Plus, or complimentary Pro trial (`isPremium`). */
+/** Pro, PRO+, or complimentary Pro trial (`isPremium`). */
 export function isTrainerProOrProPlus(
   trainer: Pick<Trainer, "isPremium" | "membershipPlan">
 ): boolean {
@@ -41,7 +41,7 @@ export function isTrainerProOrProPlus(
 /**
  * Marketplace Free 1st session rail + public profile chip.
  * Defaults ON when the flag was never set. Changing the offer in profile
- * is a Pro / Pro Plus control.
+ * is a Pro / PRO+ control.
  */
 export function isTrainerFreeFirstSessionEligible(
   trainer: Pick<Trainer, "offersFreeFirstSession">

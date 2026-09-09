@@ -17,6 +17,7 @@ import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "./TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
 import { ProfileSheetLink } from "./ProfileSheetLink";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
 
 interface TrainerCardProps {
@@ -37,7 +38,7 @@ export const TrainerCard = memo(function TrainerCard({
   linkDisabled = false,
 }: TrainerCardProps) {
   const router = useRouter();
-  const href = `/trainers/${trainer.id}`;
+  const href = trainerProfilePath(trainer);
   const sponsored = isTrainerSponsored(trainer);
   const verified = isTrainerVerified(trainer);
 

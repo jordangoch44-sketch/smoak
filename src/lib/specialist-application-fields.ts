@@ -70,6 +70,7 @@ export function normalizeSpecialistApplicationShape(
     ...app,
     email: asString(app.email),
     password: asString(app.password),
+    slug: asString(app.slug) || undefined,
     professionalType: asString(app.professionalType),
     fullName: asString(app.fullName),
     displayName: asString(app.displayName),
@@ -90,6 +91,11 @@ export function normalizeSpecialistApplicationShape(
     trainingOptions,
     facilityAddress: asString(app.facilityAddress),
     specialties: asStringArray(app.specialties),
+    homepageSpecialties: asStringArray(app.homepageSpecialties),
+    offersFreeFirstSession:
+      typeof app.offersFreeFirstSession === "boolean"
+        ? app.offersFreeFirstSession
+        : undefined,
     certifications,
     collegeAttended: asString(app.collegeAttended),
     degree: asString(app.degree),

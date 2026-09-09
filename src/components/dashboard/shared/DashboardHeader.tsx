@@ -1,4 +1,8 @@
 import type { ReactNode } from "react";
+import {
+  membershipRoleBadgeClassName,
+  type MembershipBadgeTone,
+} from "@/lib/specialist-premium";
 
 export interface DashboardHeaderProps {
   eyebrow: string;
@@ -8,8 +12,8 @@ export interface DashboardHeaderProps {
   quote?: string;
   quoteAttribution?: string;
   roleLabel?: string;
-  /** Visual tone for the plan badge (e.g. neon Pro Trial) */
-  roleLabelTone?: "default" | "pro-trial";
+  /** Visual tone for the plan badge (Free silver / Pro blue / PRO+ SMOAC) */
+  roleLabelTone?: "default" | MembershipBadgeTone;
   statusLabel?: string | null;
   statusTone?: "pending" | "active" | "rejected";
   actions?: ReactNode;
@@ -71,9 +75,9 @@ export function DashboardHeader({
             {roleLabel ? (
               <span
                 className={
-                  roleLabelTone === "pro-trial"
-                    ? "dashboard-role-badge dashboard-role-badge--pro-trial"
-                    : "dashboard-role-badge"
+                  roleLabelTone === "default"
+                    ? "dashboard-role-badge"
+                    : membershipRoleBadgeClassName(roleLabelTone)
                 }
               >
                 {roleLabel}

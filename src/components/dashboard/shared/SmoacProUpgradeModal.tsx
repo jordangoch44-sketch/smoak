@@ -131,10 +131,10 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
                 onClick={() => void startCheckout("platinum")}
                 disabled={busy}
               >
-                Or Pro Plus · {SMOAC_PRO_PLUS_PRICE_LABEL}
+                Or PRO+ · {SMOAC_PRO_PLUS_PRICE_LABEL}
               </button>
               <p className="dashboard-modal__note">
-                Pro Plus adds client transformations under your pins and 20% off
+                PRO+ adds client transformations under your pins and 20% off
                 Boosts. Pay with Apple Pay, Google Pay, Link, or card.
               </p>
             </>

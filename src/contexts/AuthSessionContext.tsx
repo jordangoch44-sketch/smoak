@@ -223,6 +223,20 @@ export function AuthSessionProvider({
     };
   }, [supabaseAuth, refreshSession]);
 
+  useEffect(() => {
+    if (!supabaseAuth) return;
+    function onResume() {
+      if (document.visibilityState === "hidden") return;
+      void refreshSession();
+    }
+    window.addEventListener("focus", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    return () => {
+      window.removeEventListener("focus", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+    };
+  }, [supabaseAuth, refreshSession]);
+
   /* Cookie session exists but app session never built (timeout / huge row).
    * Keep retrying instead of bouncing to /login (proxy would send us back). */
   useEffect(() => {

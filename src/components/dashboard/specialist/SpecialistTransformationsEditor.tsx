@@ -1,15 +1,14 @@
 "use client";
 
-import { useId, useState, type ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
-import { readFileAsDataUrl } from "@/lib/media/crop-image";
+import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
   CLIENT_TRANSFORMATIONS_MAX,
   normalizeTransformationUrls,
   parseMediaUrlList,
   serializeMediaUrlList,
 } from "@/lib/specialist-media-limits";
-import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
 import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +18,20 @@ interface SpecialistTransformationsEditorProps {
   specialistId?: string | null;
   onUpgrade?: () => void;
   onChange: (transformationNotes: string) => void;
+}
+
+function rejectUnsupportedPhonePhoto(file: File): string | null {
+  const type = (file.type || "").toLowerCase();
+  const name = file.name.toLowerCase();
+  if (
+    type.includes("heic") ||
+    type.includes("heif") ||
+    name.endsWith(".heic") ||
+    name.endsWith(".heif")
+  ) {
+    return "Use JPEG or PNG (on iPhone: Format → Most Compatible).";
+  }
+  return null;
 }
 
 async function uploadTransformationDataUrl(
@@ -40,7 +53,12 @@ async function uploadTransformationDataUrl(
     | { ok: boolean; publicUrl?: string; message?: string }
     | null;
   if (!response.ok || !payload?.ok || !payload.publicUrl) {
-    throw new Error(payload?.message ?? "Could not upload image.");
+    throw new Error(
+      payload?.message ??
+        (response.status === 413
+          ? "Photo is too large to upload."
+          : "Could not upload image.")
+    );
   }
   return payload.publicUrl.includes("?")
     ? `${payload.publicUrl}&v=${stamp}`
@@ -54,8 +72,8 @@ export function SpecialistTransformationsEditor({
   onUpgrade,
   onChange,
 }: SpecialistTransformationsEditorProps) {
-  const inputId = useId();
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const urls = normalizeTransformationUrls(parseMediaUrlList(transformationNotes));
   const atLimit = urls.length >= CLIENT_TRANSFORMATIONS_MAX;
@@ -67,23 +85,44 @@ export function SpecialistTransformationsEditor({
   async function handleAdd(event: ChangeEvent<HTMLInputElement>) {
     const fileList = event.target.files;
     event.target.value = "";
-    if (!fileList || fileList.length === 0 || !isProPlus) return;
+    if (!fileList || fileList.length === 0 || !isProPlus || atLimit) return;
 
     const remaining = CLIENT_TRANSFORMATIONS_MAX - urls.length;
     const files = Array.from(fileList).slice(0, remaining);
     setBusy(true);
     setError(null);
+    setProgress(null);
+    let lastError: string | null = null;
     try {
       const uploaded: string[] = [];
-      for (const file of files) {
-        const dataUrl = await readFileAsDataUrl(file);
+      for (let index = 0; index < files.length; index += 1) {
+        const file = files[index];
+        const phoneReject = rejectUnsupportedPhonePhoto(file);
+        if (phoneReject) {
+          lastError = phoneReject;
+          continue;
+        }
+        if (files.length > 1) {
+          setProgress(`${index + 1}/${files.length}`);
+        }
+        const dataUrl = await prepareImageDataUrlForUpload(file, "gallery");
         uploaded.push(await uploadTransformationDataUrl(specialistId, dataUrl));
       }
-      setUrls([...urls, ...uploaded]);
+      if (uploaded.length > 0) {
+        setUrls([...urls, ...uploaded]);
+      } else {
+        setError(lastError ?? "Could not add photos.");
+      }
+      if (fileList.length > remaining) {
+        setError(
+          `Selected ${fileList.length} photos; only ${remaining} more allowed.`
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add photos.");
     } finally {
       setBusy(false);
+      setProgress(null);
     }
   }
 
@@ -103,83 +142,73 @@ export function SpecialistTransformationsEditor({
         ) : null}
       </div>
       <p className="specialist-media-editor__hint">
-        Shows under pinned photos on your public profile.
+        Multi-select photos. They appear under pinned photos on your public
+        profile.
       </p>
-      {urls.length > 0 ? (
-        <div
-          className="specialist-media-editor__pin-row"
-          aria-label="Transformation photos"
-        >
-          {urls.map((url, index) => (
-            <button
-              key={`${url}-${index}`}
-              type="button"
-              className="specialist-media-editor__pin-tile"
-              onClick={() => {
-                if (!isProPlus) {
-                  onUpgrade?.();
-                  return;
-                }
-                setUrls(urls.filter((_, i) => i !== index));
-              }}
-              aria-label={
-                isProPlus
-                  ? `Remove transformation ${index + 1}`
-                  : "Unlock transformations with Pro Plus"
-              }
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" />
-              <span className="specialist-media-editor__pin-index">
-                {index + 1}
-              </span>
-            </button>
-          ))}
-        </div>
-      ) : null}
-      {!atLimit ? (
-        isProPlus ? (
-          <label
-            htmlFor={inputId}
-            className={cn(
-              "smoac-control specialist-media-editor__add",
-              busy && "specialist-media-editor__add--busy"
-            )}
-          >
-            <span aria-hidden>+</span>
-            <span>{busy ? "Uploading…" : "Add transformations"}</span>
-          </label>
-        ) : (
+      <div
+        className="specialist-media-editor__pin-row"
+        aria-label="Transformation photos"
+      >
+        {urls.map((url, index) => (
           <button
+            key={`${url}-${index}`}
             type="button"
-            className="smoac-control specialist-media-editor__add specialist-media-editor__add--locked"
-            onClick={() => onUpgrade?.()}
+            className="specialist-media-editor__pin-tile"
+            onClick={() => {
+              if (!isProPlus) {
+                onUpgrade?.();
+                return;
+              }
+              setUrls(urls.filter((_, i) => i !== index));
+            }}
+            aria-label={
+              isProPlus
+                ? `Remove transformation ${index + 1}`
+                : "Unlock transformations with PRO+"
+            }
           >
-            <LockIcon className="specialist-media-editor__add-lock" />
-            <span>Add transformations</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" />
+            <span className="specialist-media-editor__pin-index">
+              {index + 1}
+            </span>
           </button>
-        )
-      ) : null}
-      {isProPlus ? (
-        <input
-          id={inputId}
-          type="file"
-          multiple
-          accept={`${SPECIALIST_STORAGE_ACCEPT.galleryImage},.jpg,.jpeg,.png,.webp`}
-          className="dashboard-upload-zone__input"
-          onChange={(event) => void handleAdd(event)}
-          disabled={busy || atLimit}
-        />
-      ) : (
-        <button
-          type="button"
-          className="smoac-control specialist-media-editor__lock-cta"
-          onClick={() => onUpgrade?.()}
-        >
-          <LockIcon className="specialist-media-editor__lock-cta-icon" />
-          Unlock with Pro Plus
-        </button>
-      )}
+        ))}
+        {!atLimit ? (
+          isProPlus ? (
+            <label
+              htmlFor="specialist-transformation-upload"
+              className={cn(
+                "smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add",
+                busy && "specialist-media-editor__pin-tile--busy"
+              )}
+            >
+              <input
+                id="specialist-transformation-upload"
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp,image/*,.jpg,.jpeg,.png,.webp"
+                className="specialist-media-editor__pin-file"
+                onChange={(event) => void handleAdd(event)}
+                disabled={busy}
+                aria-label="Add transformation photos"
+              />
+              <span aria-hidden>+</span>
+              <span>{busy ? progress ?? "Uploading…" : "Add"}</span>
+            </label>
+          ) : (
+            <button
+              type="button"
+              className="smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add specialist-media-editor__pin-tile--locked"
+              onClick={() => onUpgrade?.()}
+              aria-label="Unlock transformations with PRO+"
+            >
+              <LockIcon className="specialist-media-editor__add-lock" />
+              <span>Add</span>
+            </button>
+          )
+        ) : null}
+      </div>
       {error ? (
         <p className="dashboard-upload-error" role="alert">
           {error}

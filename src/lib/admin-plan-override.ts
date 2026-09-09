@@ -3,6 +3,7 @@ import {
   parseMembershipPlan,
   type SpecialistMembershipPlan,
 } from "@/lib/specialist-premium";
+import { setSpecialistProfileMembership } from "@/lib/profiles/specialist-profiles-db";
 
 export interface AdminPlanOverride {
   plan: SpecialistMembershipPlan;
@@ -76,22 +77,40 @@ export async function applySpecialistMembershipEntitlements(
   const now = new Date().toISOString();
   const isPremium = input.plan !== "free";
 
-  await supabase
+  const profileResult = await setSpecialistProfileMembership(
+    supabase,
+    input.specialistProfileId,
+    input.plan
+  );
+  if (!profileResult.ok) {
+    console.warn(
+      "[admin plan] specialist_profiles entitlement update failed:",
+      profileResult.message
+    );
+  }
+
+  const { data: profileRow } = await supabase
     .from("specialist_profiles")
-    .update({
-      is_premium: isPremium,
-      membership_plan: input.plan,
-      updated_at: now,
-    })
-    .eq("id", input.specialistProfileId);
+    .select("user_id")
+    .eq("id", input.specialistProfileId)
+    .maybeSingle();
+  const userId =
+    input.userId ||
+    (typeof profileRow?.user_id === "string" ? profileRow.user_id : null);
 
-  if (!input.userId) return;
+  if (!userId) return;
 
-  await supabase
+  const { error: roleError } = await supabase
     .from("user_roles")
     .update({
       is_premium: isPremium,
       updated_at: now,
     })
-    .eq("user_id", input.userId);
+    .eq("user_id", userId);
+  if (roleError) {
+    console.warn(
+      "[admin plan] user_roles is_premium update failed:",
+      roleError.message
+    );
+  }
 }

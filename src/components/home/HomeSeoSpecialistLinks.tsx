@@ -5,6 +5,7 @@ import {
   cityToSlug,
   findPathForProfession,
 } from "@/lib/seo/marketplace-slugs";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
 interface HomeSeoSpecialistLinksProps {
@@ -38,7 +39,7 @@ export function HomeSeoSpecialistLinks({ trainers }: HomeSeoSpecialistLinksProps
                   : null;
               return (
                 <li key={trainer.id}>
-                  <Link href={`/trainers/${encodeURIComponent(trainer.id)}`}>
+                  <Link href={trainerProfilePath(trainer)}>
                     {trainer.name}
                   </Link>
                   <span className="home-seo-links__meta">

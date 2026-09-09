@@ -23,10 +23,8 @@ export const dynamicParams = true;
 
 export async function generateStaticParams() {
   const { trainers: catalog, mode } = await loadPublicCatalogForServer();
-  if (mode === "live") {
-    return catalog.map((t) => ({ id: t.id }));
-  }
-  return trainers.map((t) => ({ id: t.id }));
+  const list = mode === "live" ? catalog : trainers;
+  return list.map((t) => ({ id: t.slug?.trim() || t.id }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -62,7 +60,7 @@ export default async function TrainerProfilePage({ params }: PageProps) {
     <>
       <JsonLd data={buildTrainerProfileJsonLd(trainer)} />
       <TrainerProfilePageClient
-        trainerId={id}
+        trainerId={trainer.id}
         initialTrainer={trainer}
         initialCatalog={cityPeers.length > 0 ? cityPeers : [trainer]}
         initialAggregates={serializeReviewAggregates(aggregates)}

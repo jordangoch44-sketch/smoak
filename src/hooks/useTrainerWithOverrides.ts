@@ -50,5 +50,5 @@ export function useTrainerWithOverrides(
     return base;
   }
 
-  return applySpecialistProfileOverrides(base, overridesMap[trainerId]);
+  return applySpecialistProfileOverrides(base, overridesMap[base.id]);
 }

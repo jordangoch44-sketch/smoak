@@ -10,6 +10,7 @@ import {
 } from "react";
 import { cn } from "@/lib/utils";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types";
 
 /** Carousel / page pan vs a tap with finger jitter. */
@@ -57,7 +58,7 @@ export function ProfileSheetLink({
   ...props
 }: ProfileSheetLinkProps) {
   const router = useRouter();
-  const dest = href ?? `/trainers/${trainer.id}`;
+  const dest = href ?? trainerProfilePath(trainer);
   const pressRef = useRef<{
     x: number;
     y: number;

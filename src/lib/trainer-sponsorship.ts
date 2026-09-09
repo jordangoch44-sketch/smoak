@@ -28,9 +28,16 @@ export function partitionSponsoredTrainers(trainers: readonly Trainer[]): {
 
 /**
  * Public “Verified” badge + organic sort boost.
- * Tied only to SMOAC Pro / paid entitlement (`isPremium`) — not approval,
- * review counts, or stored `verified` flags. Free → no badge; cancel Pro → badge off.
+ * Tied only to SMOAC Pro / paid entitlement (`isPremium` or a paid
+ * membershipPlan) — not approval, review counts, or stored `verified` flags.
+ * Free → no badge; cancel Pro → badge off.
  */
-export function isTrainerVerified(trainer: Trainer): boolean {
-  return Boolean(trainer.isPremium);
+export function isTrainerVerified(
+  trainer: Pick<Trainer, "isPremium" | "membershipPlan">
+): boolean {
+  if (trainer.isPremium) return true;
+  return (
+    trainer.membershipPlan === "premium" ||
+    trainer.membershipPlan === "platinum"
+  );
 }

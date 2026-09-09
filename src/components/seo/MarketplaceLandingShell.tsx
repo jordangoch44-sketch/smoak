@@ -14,6 +14,7 @@ import {
 import type { MarketplaceCity } from "@/data/locations";
 import type { MarketplaceProfessionLanding } from "@/lib/seo/marketplace-slugs";
 import { formatTrainerSessionPrice } from "@/lib/session-price";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
 interface MarketplaceLandingShellProps {
@@ -110,7 +111,7 @@ export function MarketplaceLandingShell({
           {trainers.length > 0 ? (
             <ul className="seo-landing__cards">
               {trainers.map((trainer, index) => {
-                const href = `/trainers/${encodeURIComponent(trainer.id)}`;
+                const href = trainerProfilePath(trainer);
                 const imageSrc = safeImageSrc(trainer.image);
                 const location = landingTrainerLocationLine(trainer);
                 return (

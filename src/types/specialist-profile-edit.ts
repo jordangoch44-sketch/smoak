@@ -37,7 +37,7 @@ export interface SpecialistProfileOverrides {
   pricePerSession?: number;
   pricePerSessionMin?: number;
   pricePerSessionMax?: number;
-  /** Profile toggle — Pro / Pro Plus listing perk */
+  /** Profile toggle — Pro / PRO+ listing perk */
   offersFreeFirstSession?: boolean;
   bio?: string;
   photoNotes?: string;

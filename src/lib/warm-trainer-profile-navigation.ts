@@ -1,6 +1,7 @@
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { safeExploreMapImageSrc } from "@/lib/explore-map-popup";
 import { primeTrainerProfile } from "@/lib/primed-trainer-profile";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
 /** Decode the marketplace photo so the sheet/card can paint from cache. */
@@ -22,7 +23,7 @@ export function warmTrainerProfileNavigation(
   preloadTrainerPhoto(trainer.image);
   if (!router || options?.prefetch === false) return;
   try {
-    router.prefetch(`/trainers/${trainer.id}`);
+    router.prefetch(trainerProfilePath(trainer));
   } catch {
     /* prefetch is best-effort */
   }

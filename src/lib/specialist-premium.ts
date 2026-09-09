@@ -84,6 +84,46 @@ export function isTrainerProPlus(trainer: {
   return trainer.membershipPlan === "platinum";
 }
 
+/** Compact plan name on badges. Display is PRO+ — never PROPLUS / Pro Plus. */
+export const MEMBERSHIP_BADGE_LABEL = {
+  free: "Free",
+  trial: "Pro Trial",
+  premium: "Pro",
+  platinum: "PRO+",
+} as const;
+
+export type MembershipBadgeTone = "free" | "pro" | "pro-plus" | "pro-trial";
+
+export function membershipBadgeToneForSession(session: {
+  premiumTrialActive?: boolean;
+  isPremium?: boolean;
+  membershipPlan?: string | null;
+} | null | undefined): MembershipBadgeTone {
+  if (session?.premiumTrialActive) return "pro-trial";
+  if (isProPlusPlan(session?.membershipPlan)) return "pro-plus";
+  if (session?.isPremium) return "pro";
+  return "free";
+}
+
+export function membershipRoleBadgeClassName(tone: MembershipBadgeTone): string {
+  if (tone === "pro-plus") return "dashboard-role-badge dashboard-role-badge--pro-plus";
+  if (tone === "pro") return "dashboard-role-badge dashboard-role-badge--pro";
+  if (tone === "pro-trial") return "dashboard-role-badge dashboard-role-badge--pro-trial";
+  return "dashboard-role-badge dashboard-role-badge--free";
+}
+
+/** Compact header chip — Pro Trial / Pro / PRO+. Days stay on dashboard badges. */
+export function formatMembershipHeaderBadgeLabel(session: {
+  premiumTrialActive?: boolean;
+  isPremium?: boolean;
+  membershipPlan?: string | null;
+} | null | undefined): string {
+  if (session?.premiumTrialActive) return MEMBERSHIP_BADGE_LABEL.trial;
+  if (isProPlusPlan(session?.membershipPlan)) return MEMBERSHIP_BADGE_LABEL.platinum;
+  if (session?.isPremium) return MEMBERSHIP_BADGE_LABEL.premium;
+  return MEMBERSHIP_BADGE_LABEL.free;
+}
+
 /** Header badge while complimentary Pro trial is active */
 export function formatProTrialBadgeLabel(
   daysRemaining: number | null | undefined
@@ -93,7 +133,7 @@ export function formatProTrialBadgeLabel(
   return `Pro Trial · ${daysRemaining} day${daysRemaining === 1 ? "" : "s"} left`;
 }
 
-/** Short membership chip on Edit profile — Pro Trial · days left / Pro / Pro Plus / Free. */
+/** Short membership chip — Pro Trial · days left / Pro / PRO+ / Free. */
 export function formatMembershipShortLabel(session: {
   premiumTrialActive?: boolean;
   premiumTrialDaysRemaining?: number | null;
@@ -103,9 +143,9 @@ export function formatMembershipShortLabel(session: {
   if (session?.premiumTrialActive) {
     return formatProTrialBadgeLabel(session.premiumTrialDaysRemaining);
   }
-  if (isProPlusPlan(session?.membershipPlan)) return "Pro Plus";
-  if (session?.isPremium) return "Pro";
-  return "Free";
+  if (isProPlusPlan(session?.membershipPlan)) return MEMBERSHIP_BADGE_LABEL.platinum;
+  if (session?.isPremium) return MEMBERSHIP_BADGE_LABEL.premium;
+  return MEMBERSHIP_BADGE_LABEL.free;
 }
 
 /** Neon free-trial bubble — once per specialist, gone after trial starts. */
@@ -157,14 +197,16 @@ function isSpecialistPayingPro(session: {
 }
 
 /**
- * Site header “Pro” chip next to SMOAC — specialists on paid Pro or active
- * trial only. Hidden for clients and logged-out visitors.
+ * Site header plan chip next to SMOAC — specialists on paid Pro, PRO+,
+ * or an active trial. Hidden for clients and logged-out visitors.
  */
 export function showSpecialistHeaderProBadge(session: {
   role?: string | null;
   isPremium?: boolean;
   premiumTrialActive?: boolean;
+  membershipPlan?: string | null;
 } | null | undefined): boolean {
   if (!session || session.role !== "specialist") return false;
+  if (isProPlusPlan(session.membershipPlan)) return true;
   return Boolean(session.isPremium || session.premiumTrialActive);
 }

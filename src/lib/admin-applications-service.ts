@@ -25,6 +25,7 @@ import {
   refreshSpecialistApplicationsFromRemote,
   saveSpecialistApplicationAsync,
 } from "@/lib/specialist-application-storage";
+import { ensureUniqueApplicationSlug } from "@/lib/specialist-public-slug";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
 import type {
   ProfileStatus,
@@ -104,9 +105,13 @@ export async function saveSpecialistApplicationEditsAsync(
   application: SpecialistApplication
 ): Promise<AdminApplicationMutationResult> {
   const edited = normalizeApplicationEdits(application);
-  const appResult = await saveSpecialistApplicationAsync(edited);
+  const toSave =
+    edited.profileStatus === "APPROVED"
+      ? ensureUniqueApplicationSlug(edited)
+      : edited;
+  const appResult = await saveSpecialistApplicationAsync(toSave);
   if (!appResult.ok) {
-    return { ok: false, message: appResult.message, application: edited };
+    return { ok: false, message: appResult.message, application: toSave };
   }
 
   /* Use the saved copy — inline photos may have moved to storage URLs. */
@@ -269,11 +274,13 @@ export async function activateSpecialistFromApplicationAsync(
   const blocked = blockIfNotReadyToGoLive(existing);
   if (blocked) return blocked;
 
-  const approvedEdits = normalizeApplicationEdits({
-    ...existing,
-    profileStatus: "APPROVED",
-    rejectionReason: "",
-  });
+  const approvedEdits = ensureUniqueApplicationSlug(
+    normalizeApplicationEdits({
+      ...existing,
+      profileStatus: "APPROVED",
+      rejectionReason: "",
+    })
+  );
 
   const appResult = await saveSpecialistApplicationAsync(approvedEdits);
   if (!appResult.ok) {

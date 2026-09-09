@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { applyAdminPlanOverride, createAdminPlanCheckoutLink } from "@/lib/admin-specialist-plan-change";
+import { revalidatePublicMarketplaceCatalog } from "@/lib/profiles/revalidate-public-catalog";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
@@ -103,7 +104,7 @@ export async function POST(request: Request) {
   const plan = parseMembershipPlan(body.plan);
   if (body.plan !== "free" && body.plan !== "premium" && body.plan !== "platinum") {
     return NextResponse.json(
-      { ok: false, message: "Choose Free, Pro, or Pro Plus." },
+      { ok: false, message: "Choose Free, Pro, or PRO+." },
       { status: 400 }
     );
   }
@@ -112,7 +113,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: "Checkout links are for Pro or Pro Plus. Use admin override to move someone to Free.",
+        message: "Checkout links are for Pro or PRO+. Use admin override to move someone to Free.",
       },
       { status: 400 }
     );
@@ -148,6 +149,14 @@ export async function POST(request: Request) {
           duration,
           grantedBy: user.id,
         });
+
+  if (result.ok && method === "admin_override") {
+    try {
+      revalidatePublicMarketplaceCatalog();
+    } catch (error) {
+      console.warn("[admin plan] catalog revalidate failed:", error);
+    }
+  }
 
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

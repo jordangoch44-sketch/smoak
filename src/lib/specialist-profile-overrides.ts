@@ -2,7 +2,12 @@ import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
-import { normalizePinnedPhotos, parseMediaUrlList } from "@/lib/specialist-media-limits";
+import {
+  normalizePinnedPhotos,
+  normalizeTransformationUrls,
+  parseMediaUrlList,
+  serializeMediaUrlList,
+} from "@/lib/specialist-media-limits";
 import {
   parseSlideshowFrameMap,
   parseGallerySlideshowFrames,
@@ -57,6 +62,107 @@ export function cloneSpecialistProfileEditForm(
   };
 }
 
+/** Fields each Instagram-style / settings row actually edits. Saving one row
+ * must not rewrite the rest of the profile from a stale full-form clone. */
+const PROFILE_SECTION_FIELDS: Record<
+  string,
+  readonly (keyof SpecialistProfileEditForm)[]
+> = {
+  hero: [
+    "profilePhotoUrl",
+    "coverImageUrl",
+    "photoNotes",
+    "slideshowFramesJson",
+    "videoNotes",
+    "pinnedPhotos",
+    "transformationNotes",
+  ],
+  transformations: ["transformationNotes"],
+  name: ["name"],
+  headline: ["title"],
+  profession: ["profession"],
+  "professional-role": ["profession", "title"],
+  specialties: ["specialty", "homepageSpecialties"],
+  bio: ["bio"],
+  philosophy: ["trainingStyle"],
+  "ideal-clients": ["servicesOffered"],
+  "service-area": [
+    "workAddress",
+    "locationPrecision",
+    "latitude",
+    "longitude",
+    "city",
+    "neighborhood",
+    "zipCode",
+    "serviceType",
+    "travelToClients",
+    "travelRadius",
+    "serviceArea",
+  ],
+  "session-experience": ["trainingOptions"],
+  credentials: ["certifications"],
+  social: [
+    "instagram",
+    "website",
+    "tiktok",
+    "googleReviewsUrl",
+    "googlePlaceId",
+  ],
+  pricing: ["pricePerSession", "pricePerSessionMin", "pricePerSessionMax"],
+  "free-first-session": ["offersFreeFirstSession"],
+  contact: ["phone", "email"],
+  gender: ["gender"],
+  experience: ["experienceYears"],
+  "profile-style": ["profileAccent", "profileAvatarFrame", "profileNameFont"],
+  "featured-specialties": ["homepageSpecialties"],
+  "basic-info": [
+    "name",
+    "title",
+    "gender",
+    "experienceYears",
+    "phone",
+    "email",
+    "profession",
+  ],
+  "photos-links": [
+    "profilePhotoUrl",
+    "coverImageUrl",
+    "photoNotes",
+    "slideshowFramesJson",
+    "videoNotes",
+    "pinnedPhotos",
+    "transformationNotes",
+    "instagram",
+    "website",
+    "tiktok",
+    "googleReviewsUrl",
+    "googlePlaceId",
+  ],
+};
+
+export function overlayProfileSectionDraft(
+  latest: SpecialistProfileEditForm,
+  draft: SpecialistProfileEditForm,
+  section: string | null | undefined
+): SpecialistProfileEditForm {
+  const keys = section ? PROFILE_SECTION_FIELDS[section] : undefined;
+  if (!keys) {
+    return cloneSpecialistProfileEditForm({ ...latest, ...draft });
+  }
+  const next = cloneSpecialistProfileEditForm(latest);
+  for (const key of keys) {
+    const value = draft[key];
+    Object.assign(next, { [key]: value });
+  }
+  if (section === "specialties") {
+    next.homepageSpecialties = sanitizeHomepageSpecialties(
+      next.specialty,
+      draft.homepageSpecialties
+    );
+  }
+  return cloneSpecialistProfileEditForm(next);
+}
+
 function syncLocation(trainer: Trainer): Trainer {
   const neighborhood = trainer.neighborhood.trim();
   const city = trainer.city.trim();
@@ -95,6 +201,10 @@ function parsePillList(value: string): string[] {
 
 function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
+}
+
+function isTransformationSrc(value: string): boolean {
+  return isUrl(value) || /^data:image\//i.test(value);
 }
 
 export function applySpecialistProfileOverrides(
@@ -307,15 +417,15 @@ export function applySpecialistProfileOverrides(
     delete merged.pinnedPhotos;
   }
 
-  if (overrides.transformationNotes?.trim()) {
-    const transformUrls = parseLineList(overrides.transformationNotes).filter(isUrl);
-    if (transformUrls.length > 0) {
-      merged.clientTransformations = transformUrls.map((src, index) => ({
-        id: `profile-transform-${index}`,
-        src,
-        alt: `Client transformation ${index + 1}`,
-      }));
-    }
+  if (typeof overrides.transformationNotes === "string") {
+    const transformUrls = normalizeTransformationUrls(
+      parseMediaUrlList(overrides.transformationNotes).filter(isTransformationSrc)
+    );
+    merged.clientTransformations = transformUrls.map((src, index) => ({
+      id: `profile-transform-${index}`,
+      src,
+      alt: `Client transformation ${index + 1}`,
+    }));
   }
 
   return withSyncedSessionPrices(syncLocation(syncTrainerGalleryImages(merged)));
@@ -408,7 +518,16 @@ export function overridesFromTrainer(
             .filter((item) => item.type === "video")
             .map((item) => item.src)
             .join("\n"),
-    transformationNotes: stored?.transformationNotes ?? "",
+    transformationNotes: stored?.transformationNotes?.trim()
+      ? stored.transformationNotes
+      : serializeMediaUrlList(
+          normalizeTransformationUrls(
+            (Array.isArray(trainer.clientTransformations)
+              ? trainer.clientTransformations
+              : []
+            ).map((photo) => photo.src)
+          )
+        ),
     bookingAvailability:
       stored?.bookingAvailability ??
       (Array.isArray(trainer.sessionExperience)

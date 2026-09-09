@@ -70,6 +70,11 @@ export interface SpecialistApplicationSocial extends SocialLinks {
 /** Full specialist onboarding payload — maps to marketplace profile after approval */
 export interface SpecialistApplication {
   id: string;
+  /**
+   * Public marketplace path frozen at approval (`/trainers/{slug}`).
+   * Distinct from `id`, which remains the durable data key.
+   */
+  slug?: string;
   profileStatus: ProfileStatus;
   email: string;
   password: string;
@@ -117,6 +122,10 @@ export interface SpecialistApplication {
   locationPrecision?: "zip" | "address";
 
   specialties: string[];
+  /** Up to three specialties shown on marketplace cards — dashboard "Featured specialties". */
+  homepageSpecialties?: string[];
+  /** Profile toggle — Pro / PRO+ listing perk. Omitted means default On. */
+  offersFreeFirstSession?: boolean;
 
   certifications: Certification[];
   collegeAttended: string;
@@ -145,7 +154,7 @@ export interface SpecialistApplication {
 
 export type SpecialistOnboardingState = Omit<
   SpecialistApplication,
-  "id" | "profileStatus" | "submittedAt" | "updatedAt"
+  "id" | "profileStatus" | "submittedAt" | "updatedAt" | "slug"
 >;
 
 export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {

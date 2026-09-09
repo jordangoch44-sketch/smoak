@@ -156,7 +156,7 @@ export function generateCopilotTelemetryResponse(
     if (paidCount === 0 && specialistsTotal > 0) {
       reply += `Offer a 14-day Pro trial ($9.99/mo) to your top 3 most-viewed specialists to initiate recurring software subscription revenue.\n`;
     } else {
-      reply += `Encourage specialists with high inquiry volume to upgrade to Pro Plus ($19.99/mo) for analytics plus Featured homepage spotlight.\n`;
+      reply += `Encourage specialists with high inquiry volume to upgrade to PRO+ ($19.99/mo) for analytics plus Featured homepage spotlight.\n`;
     }
 
     return {

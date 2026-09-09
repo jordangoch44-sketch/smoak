@@ -21,6 +21,7 @@ import {
   warmExploreMapCluster,
   warmTrainerProfileNavigation,
 } from "@/lib/warm-trainer-profile-navigation";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { getExploreMapBasemap } from "@/lib/explore-map-tiles";
 import {
   clusterTrainersForMap,
@@ -309,7 +310,9 @@ export function ExploreMapLeaflet({
 
       const decodedId = decodeURIComponent(trainerId);
       const trainer = trainersRef.current.find((t) => t.id === decodedId);
-      const href = `/trainers/${encodeURIComponent(trainer?.id ?? decodedId)}`;
+      const href = trainer
+        ? trainerProfilePath(trainer)
+        : `/trainers/${encodeURIComponent(decodedId)}`;
 
       if (trainer) {
         warmTrainerProfileNavigation(trainer, router);

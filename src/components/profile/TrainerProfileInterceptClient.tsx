@@ -10,8 +10,7 @@ import {
   clearPrimedTrainer,
   peekPrimedTrainer,
 } from "@/lib/primed-trainer-profile";
-import { specialistProfileFromRow, enrichTrainersWithSpecialistFirstNames } from "@/lib/profiles/specialist-profiles-db";
-import type { SpecialistProfileRow } from "@/types/database";
+import { fetchApprovedSpecialistByPublicKey } from "@/lib/profiles/specialist-profiles-db";
 import type { Trainer } from "@/types/trainer";
 
 /**
@@ -40,12 +39,12 @@ export function TrainerProfileInterceptClient({
 
   useEffect(() => {
     const next = peekPrimedTrainer(routeId);
-    setHandoff(next?.id === routeId ? next : null);
+    setHandoff(next);
     setFetched(null);
     clearPrimedTrainer(routeId);
   }, [routeId]);
 
-  const primed = handoff?.id === routeId ? handoff : null;
+  const primed = handoff;
 
   useEffect(() => {
     if (fromCatalog || primed) return;
@@ -58,24 +57,11 @@ export function TrainerProfileInterceptClient({
       const supabase = getMarketplaceAuthClient();
       if (!supabase) return;
 
-      const { data, error } = await supabase
-        .from("specialist_profiles")
-        .select("*")
-        .eq("id", routeId)
-        .eq("status", "approved")
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (!error && data) {
-        const mapped = specialistProfileFromRow(data as SpecialistProfileRow);
-        const [enriched] = await enrichTrainersWithSpecialistFirstNames(
-          supabase,
-          [data as SpecialistProfileRow],
-          [mapped.trainer]
-        );
-        setFetched(enriched);
-      }
+      const resolved = await fetchApprovedSpecialistByPublicKey(
+        supabase,
+        routeId
+      );
+      if (!cancelled && resolved) setFetched(resolved);
     })();
 
     return () => {
@@ -84,10 +70,11 @@ export function TrainerProfileInterceptClient({
   }, [fromCatalog, primed, routeId]);
 
   const trainer = fromCatalog ?? primed ?? fetched;
+  const resolvedId = trainer?.id ?? routeId;
 
   return (
     <TrainerProfilePageClient
-      trainerId={routeId}
+      trainerId={resolvedId}
       initialTrainer={trainer ?? null}
       intercept
     />

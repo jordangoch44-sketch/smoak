@@ -21,7 +21,11 @@ import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overri
 import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
 import { parseTrainingOptions } from "@/types/specialist-training-options";
-import { parseMembershipPlan } from "@/lib/specialist-premium";
+import {
+  parseMembershipPlan,
+  type SpecialistMembershipPlan,
+} from "@/lib/specialist-premium";
+import { hydrateTrainerPublicSlugs } from "@/lib/trainer-profile-path";
 import {
   applyCampaignExpiryToTrainerFlags,
 } from "@/lib/stripe/activate-boost-campaign";
@@ -88,6 +92,15 @@ function asClientTransformations(
   if (!Array.isArray(value)) return [];
   return value
     .map((item, index): ClientTransformationPhoto | null => {
+      if (typeof item === "string") {
+        const src = item.trim();
+        if (!src) return null;
+        return {
+          id: `transform-${index}`,
+          src,
+          alt: `Client transformation ${index + 1}`,
+        };
+      }
       if (!item || typeof item !== "object") return null;
       const row = item as Record<string, unknown>;
       const src = asString(row.src).trim();
@@ -189,6 +202,10 @@ function trainerFromProfileData(
 
   return {
     id,
+    slug:
+      typeof profileData.slug === "string" && profileData.slug.trim()
+        ? profileData.slug.trim()
+        : undefined,
     name: asString(profileData.name),
     specialistFirstName:
       typeof profileData.specialistFirstName === "string"
@@ -374,6 +391,7 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
   const withColumns: Trainer = {
       ...trainer,
       id: row.id,
+      slug: trainer.slug,
       name: trainer.name || row.display_name || "",
       profession: resolveTrainerProfessionCategory({
         profession: trainer.profession || row.profession || "",
@@ -438,7 +456,12 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
       membershipPlan: parseMembershipPlan(
         row.membership_plan ?? trainer.membershipPlan
       ),
-      verified: trainer.verified ?? row.verified,
+      verified:
+        (typeof row.is_premium === "boolean"
+          ? row.is_premium
+          : Boolean(trainer.isPremium)) ||
+        parseMembershipPlan(row.membership_plan ?? trainer.membershipPlan) !==
+          "free",
       rating: trainer.rating || Number(row.rating) || 0,
       reviewCount: trainer.reviewCount || row.review_count || 0,
   };
@@ -526,7 +549,52 @@ export async function fetchApprovedSpecialistProfiles(
     profiles
   );
 
-  return { ok: true, profiles: enriched, overridesById };
+  return {
+    ok: true,
+    profiles: hydrateTrainerPublicSlugs(enriched),
+    overridesById,
+  };
+}
+
+/** Resolve an approved listing by durable id or public slug. */
+export async function fetchApprovedSpecialistByPublicKey(
+  supabase: SupabaseClient,
+  publicKey: string
+): Promise<Trainer | null> {
+  const key = publicKey.trim();
+  if (!key) return null;
+
+  const byId = await supabase
+    .from("specialist_profiles")
+    .select("*")
+    .eq("id", key)
+    .eq("status", "approved")
+    .maybeSingle();
+
+  let row = (!byId.error && byId.data
+    ? (byId.data as SpecialistProfileRow)
+    : null);
+
+  if (!row) {
+    const bySlug = await supabase
+      .from("specialist_profiles")
+      .select("*")
+      .eq("status", "approved")
+      .filter("profile_data->>slug", "eq", key)
+      .maybeSingle();
+    if (!bySlug.error && bySlug.data) {
+      row = bySlug.data as SpecialistProfileRow;
+    }
+  }
+
+  if (!row) return null;
+  const mapped = specialistProfileFromRow(row).trainer;
+  const [enriched] = await enrichTrainersWithSpecialistFirstNames(
+    supabase,
+    [row],
+    [mapped]
+  );
+  return hydrateTrainerPublicSlugs([enriched])[0] ?? enriched;
 }
 
 export async function upsertSpecialistProfile(
@@ -577,6 +645,48 @@ export async function upsertSpecialistProfile(
   return { ok: true };
 }
 
+/** Merge membership onto columns + profile_data so public JSON snapshots stay live. */
+export async function setSpecialistProfileMembership(
+  supabase: SupabaseClient,
+  id: string,
+  plan: SpecialistMembershipPlan
+): Promise<SpecialistProfilesMutationResult> {
+  const isPremium = plan !== "free";
+  const now = new Date().toISOString();
+  const { data: row, error: readError } = await supabase
+    .from("specialist_profiles")
+    .select("profile_data")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (readError) {
+    return { ok: false, message: readError.message };
+  }
+
+  const profileData =
+    row?.profile_data && typeof row.profile_data === "object"
+      ? { ...(row.profile_data as Record<string, unknown>) }
+      : {};
+  profileData.isPremium = isPremium;
+  profileData.membershipPlan = plan;
+  profileData.verified = isPremium;
+
+  const { error } = await supabase
+    .from("specialist_profiles")
+    .update({
+      is_premium: isPremium,
+      membership_plan: plan,
+      profile_data: profileData,
+      updated_at: now,
+    })
+    .eq("id", id);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+  return { ok: true };
+}
+
 /** Admin placement flags — durable column update. */
 export async function setSpecialistProfileFlags(
   supabase: SupabaseClient,
@@ -588,13 +698,25 @@ export async function setSpecialistProfileFlags(
     isPremium?: boolean;
   }
 ): Promise<SpecialistProfilesMutationResult> {
+  if (typeof flags.isPremium === "boolean") {
+    const membership = await setSpecialistProfileMembership(
+      supabase,
+      id,
+      flags.isPremium ? "premium" : "free"
+    );
+    if (!membership.ok) return membership;
+  }
+
   const patch: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   };
   if (typeof flags.featured === "boolean") patch.featured = flags.featured;
   if (typeof flags.sponsored === "boolean") patch.sponsored = flags.sponsored;
   if (typeof flags.topRanked === "boolean") patch.top_ranked = flags.topRanked;
-  if (typeof flags.isPremium === "boolean") patch.is_premium = flags.isPremium;
+
+  if (Object.keys(patch).length === 1) {
+    return { ok: true };
+  }
 
   const { error } = await supabase
     .from("specialist_profiles")

@@ -12,6 +12,7 @@ import {
 import {
   applySpecialistProfileOverrides,
   loadAllSpecialistOverrides,
+  persistAllSpecialistOverrides,
   saveSpecialistOverridesForId,
 } from "@/lib/specialist-profile-overrides";
 
@@ -84,4 +85,16 @@ export function saveTrainerProfileOverrides(
 
   const merged = applySpecialistProfileOverrides(priorApproved, overrides);
   saveApprovedSpecialistProfile(merged);
+}
+
+/** Restore durable specialist_profiles.overrides after a live catalog hydrate.
+ * In-session edits win so a save in flight is not clobbered. */
+export function hydrateTrainerProfileOverrides(
+  remote: Record<string, SpecialistProfileOverrides>
+): void {
+  if (typeof window === "undefined") return;
+  const existing = loadAllSpecialistOverrides();
+  persistAllSpecialistOverrides({ ...remote, ...existing });
+  cachedOverrides = loadAllSpecialistOverrides();
+  listeners.forEach((listener) => listener());
 }

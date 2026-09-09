@@ -44,6 +44,7 @@ import {
 import {
   EMPTY_CERTIFICATION,
   cloneSpecialistProfileEditForm,
+  overlayProfileSectionDraft,
 } from "@/lib/specialist-profile-overrides";
 import { cn } from "@/lib/utils";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
@@ -603,9 +604,10 @@ export function SpecialistDashboardProfilePreview({
   }
 
   async function publish() {
-    if (!draft) return;
+    if (!draft || !formDefaults || !editing) return;
     setSaving(true);
-    const result = await saveForm(draft);
+    const payload = overlayProfileSectionDraft(formDefaults, draft, editing);
+    const result = await saveForm(payload);
     setSaving(false);
     if (result.ok) {
       showToast({
@@ -1085,7 +1087,7 @@ export function SpecialistDashboardProfilePreview({
           <div className="specialist-dash-profile__fields">
             <p className="wizard-field-hint">
               Turn this on to appear in the marketplace {FREE_FIRST_SESSION_LABEL}{" "}
-              slider. Pro and Pro Plus only.
+              slider. Pro and PRO+ only.
             </p>
             <div className="dashboard-edit-chip-grid" role="group" aria-label={FREE_FIRST_SESSION_LABEL}>
               <button

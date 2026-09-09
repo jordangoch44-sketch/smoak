@@ -88,6 +88,11 @@ function profilesSignature(profiles: Record<string, Trainer>): string {
         t?.longitude ?? "",
         t?.zipCode ?? "",
         t?.locationPrecision ?? "",
+        t?.isPremium ? "1" : "0",
+        t?.membershipPlan ?? "",
+        t?.featured ? "1" : "0",
+        t?.sponsored ? "1" : "0",
+        t?.topRanked ? "1" : "0",
       ].join(":");
     })
     .join("|");
@@ -177,7 +182,6 @@ async function hydrateFromSupabase(): Promise<void> {
     markHydratedAndNotify();
     return;
   }
-  if (hydrating) return;
 
   const generation = ++loadGeneration;
   hydrating = true;
@@ -221,6 +225,12 @@ async function hydrateFromSupabase(): Promise<void> {
     }
     applyCache(next);
     writeLocalProfiles(next);
+    if (Object.keys(result.overridesById).length > 0) {
+      const { hydrateTrainerProfileOverrides } = await import(
+        "@/lib/specialist-profile-store"
+      );
+      hydrateTrainerProfileOverrides(result.overridesById);
+    }
     /* Paint Marketplace rails as soon as the approved catalog is in memory.
      * Admin/moderation mirrors can finish afterward — blocking here left
      * iPhone reloads sitting on Hero + categories with empty rails. */
@@ -476,6 +486,19 @@ export function refreshApprovedSpecialistProfilesFromRemote(): void {
 export async function refreshApprovedSpecialistProfilesFromRemoteAsync(): Promise<void> {
   hydrated = false;
   await hydrateFromSupabase();
+}
+
+/** Immediate in-memory patch so public cards/profiles update before the remote refetch lands. */
+export function patchApprovedSpecialistProfileFields(
+  id: string,
+  patch: Partial<Trainer>
+): void {
+  const current = cachedProfiles[id];
+  if (!current) return;
+  applyCache({
+    ...cachedProfiles,
+    [id]: { ...current, ...patch },
+  });
 }
 
 /** True after first local or Supabase catalog hydrate finishes (client). */

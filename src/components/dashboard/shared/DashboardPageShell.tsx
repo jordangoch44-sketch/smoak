@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AdminCosmosBackdrop } from "@/components/admin/AdminCosmosBackdrop";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import type { AdminSectionId } from "@/lib/admin-sections";
+import type { MembershipBadgeTone } from "@/lib/specialist-premium";
 import { DashboardHeader } from "./DashboardHeader";
 
 interface DashboardPageShellProps {
@@ -11,7 +12,7 @@ interface DashboardPageShellProps {
   quote?: string;
   quoteAttribution?: string;
   roleLabel?: string;
-  roleLabelTone?: "default" | "pro-trial";
+  roleLabelTone?: "default" | MembershipBadgeTone;
   statusLabel?: string | null;
   statusTone?: "pending" | "active" | "rejected";
   actions?: ReactNode;

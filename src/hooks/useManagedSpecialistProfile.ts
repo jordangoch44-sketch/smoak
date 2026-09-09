@@ -2,6 +2,7 @@
 
 import { useEffect, useSyncExternalStore } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { applicationToProfileOverrides } from "@/lib/application-to-trainer";
 import {
   applySpecialistProfileOverrides,
   computeProfileCompletion,
@@ -93,11 +94,56 @@ export function useManagedSpecialistProfile() {
   void applicationRevision;
   const base = trainerId ? getManagedTrainerBaseById(trainerId) : undefined;
   const storedOverrides = trainerId ? overridesMap[trainerId] ?? null : null;
+  /* Live mode keeps overrides in memory only — after reload, rebuild from the
+   * application so More Details / transformations still round-trip. */
+  const fromApplication = application
+    ? applicationToProfileOverrides(application)
+    : null;
+  const mergedOverrides = {
+    ...(fromApplication ?? {}),
+    ...(storedOverrides ?? {}),
+  };
+  if (fromApplication) {
+    if (
+      !mergedOverrides.transformationNotes?.trim() &&
+      fromApplication.transformationNotes?.trim()
+    ) {
+      mergedOverrides.transformationNotes = fromApplication.transformationNotes;
+    }
+    if (
+      !mergedOverrides.experienceYears?.trim() &&
+      fromApplication.experienceYears?.trim()
+    ) {
+      mergedOverrides.experienceYears = fromApplication.experienceYears;
+    }
+    if (!mergedOverrides.phone?.trim() && fromApplication.phone?.trim()) {
+      mergedOverrides.phone = fromApplication.phone;
+    }
+    if (!mergedOverrides.email?.trim() && fromApplication.email?.trim()) {
+      mergedOverrides.email = fromApplication.email;
+    }
+    if (
+      !(mergedOverrides.homepageSpecialties &&
+        mergedOverrides.homepageSpecialties.length > 0) &&
+      fromApplication.homepageSpecialties &&
+      fromApplication.homepageSpecialties.length > 0
+    ) {
+      mergedOverrides.homepageSpecialties = [
+        ...fromApplication.homepageSpecialties,
+      ];
+    }
+  }
+  const hasMergedOverrides = Object.keys(mergedOverrides).length > 0;
   const trainer = base
-    ? applySpecialistProfileOverrides(base, storedOverrides)
+    ? applySpecialistProfileOverrides(
+        base,
+        hasMergedOverrides ? mergedOverrides : null
+      )
     : undefined;
 
-  const formDefaults = base ? overridesFromTrainer(base, storedOverrides) : null;
+  const formDefaults = base
+    ? overridesFromTrainer(base, hasMergedOverrides ? mergedOverrides : null)
+    : null;
 
   async function saveForm(
     form: SpecialistProfileEditForm
