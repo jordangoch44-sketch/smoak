@@ -11,4 +11,4 @@ Official mark and wordmark for reuse across the product.
 
 Site copies also live at `/public/smoac-mark.png` and `/public/smoac-wordmark.png` (wired via `src/lib/brand.ts`).
 
-The wordmark **is** the custom SMOAC type. There is no separate `.ttf`/`.otf` yet — logo lockups and `SmoacBrandName` use this raster. Body/SEO copy stays plain “SMOAC” text.
+The wordmark **is** the custom SMOAC type. There is no separate `.ttf`/`.otf` yet — logo lockups use this raster. Body/SEO copy stays plain “SMOAC” text.

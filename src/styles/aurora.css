@@ -97,10 +97,6 @@
     0 24px 56px rgba(0, 0, 0, 0.42);
 }
 
-.profile-hero__stats {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
 /* Trust pillar cards — subtle ambient rim */
 .home-section-aurora .rounded-2xl.border {
   background: rgba(10, 10, 12, 0.55) !important;

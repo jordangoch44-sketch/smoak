@@ -86,26 +86,6 @@
   transform: scale(0.98);
 }
 
-/* Inline brand name using the official wordmark letterforms */
-.smoac-brand-name {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35em;
-  vertical-align: middle;
-}
-
-.smoac-brand-name__prefix {
-  line-height: 1;
-}
-
-.smoac-brand-name__wordmark {
-  display: block;
-  height: 0.78em;
-  width: auto;
-  object-fit: contain;
-  object-position: left center;
-}
-
 /* ── SMOAC Color utilities — multi-spectrum brand (see :root tokens) ── */
 
 .smoac-color-fill {
