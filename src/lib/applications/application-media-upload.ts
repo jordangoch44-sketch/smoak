@@ -8,28 +8,12 @@
  * `/api/media/specialist-application` (service role — storage RLS does not
  * allow direct client uploads on the live project).
  */
+import { postSpecialistApplicationMedia } from "@/lib/media/specialist-media-upload";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 export type ApplicationMediaUploadResult =
   | { ok: true; application: SpecialistApplication }
   | { ok: false; message: string };
-
-async function uploadDataUrl(dataUrl: string, path: string): Promise<string> {
-  const response = await fetch("/api/media/specialist-application", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, dataUrl }),
-  });
-  const payload = (await response.json().catch(() => null)) as
-    | { ok: boolean; publicUrl?: string; message?: string }
-    | null;
-  if (!response.ok || !payload?.ok || !payload.publicUrl) {
-    throw new Error(payload?.message ?? `Upload failed (${response.status})`);
-  }
-  const stamp = Date.now().toString(36);
-  const url = payload.publicUrl;
-  return url.includes("?") ? `${url}&v=${stamp}` : `${url}?v=${stamp}`;
-}
 
 /** Line-delimited URL fields (transformations, certifications, videos). */
 async function uploadLineField(value: string, basePath: string): Promise<string> {
@@ -43,7 +27,7 @@ async function uploadLineField(value: string, basePath: string): Promise<string>
   for (const line of lines) {
     if (line.startsWith("data:")) {
       index += 1;
-      out.push(await uploadDataUrl(line, `${basePath}-${index}`));
+      out.push(await postSpecialistApplicationMedia(`${basePath}-${index}`, line));
     } else {
       out.push(line);
     }
@@ -72,15 +56,15 @@ export async function uploadApplicationMediaToStorage(
   const stamp = Date.now().toString(36);
   try {
     if (media.profilePhotoUrl.startsWith("data:")) {
-      media.profilePhotoUrl = await uploadDataUrl(
-        media.profilePhotoUrl,
-        `${id}/profile/avatar-${stamp}`
+      media.profilePhotoUrl = await postSpecialistApplicationMedia(
+        `${id}/profile/avatar-${stamp}`,
+        media.profilePhotoUrl
       );
     }
     if (media.profilePhotoOriginalUrl.startsWith("data:")) {
-      media.profilePhotoOriginalUrl = await uploadDataUrl(
-        media.profilePhotoOriginalUrl,
-        `${id}/profile/avatar-original-${stamp}`
+      media.profilePhotoOriginalUrl = await postSpecialistApplicationMedia(
+        `${id}/profile/avatar-original-${stamp}`,
+        media.profilePhotoOriginalUrl
       );
     }
     media.transformationPhotoUrls = await uploadLineField(

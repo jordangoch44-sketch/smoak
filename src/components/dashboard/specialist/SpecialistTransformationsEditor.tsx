@@ -1,9 +1,11 @@
 "use client";
 
 import { useId, useState, type ChangeEvent } from "react";
-import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
-import { specialistMediaPathId } from "@/lib/media/specialist-media-path";
+import {
+  rejectUnsupportedPhonePhoto,
+  uploadSpecialistDashboardMedia,
+} from "@/lib/media/specialist-media-upload";
 import {
   CLIENT_TRANSFORMATIONS_MAX,
   normalizeTransformationUrls,
@@ -19,57 +21,6 @@ interface SpecialistTransformationsEditorProps {
   specialistId?: string | null;
   onUpgrade?: () => void;
   onChange: (transformationNotes: string) => void;
-}
-
-function rejectUnsupportedPhonePhoto(file: File): string | null {
-  const type = (file.type || "").toLowerCase();
-  const name = file.name.toLowerCase();
-  if (
-    type.includes("heic") ||
-    type.includes("heif") ||
-    name.endsWith(".heic") ||
-    name.endsWith(".heif")
-  ) {
-    return "Use JPEG or PNG (on iPhone: Format → Most Compatible).";
-  }
-  return null;
-}
-
-async function uploadTransformationDataUrl(
-  specialistId: string | null | undefined,
-  dataUrl: string
-): Promise<string> {
-  const id = specialistId?.trim();
-  if (!id) {
-    throw new Error("Could not upload — profile is not ready. Refresh and try again.");
-  }
-  if (!isMarketplaceSupabaseActive()) return dataUrl;
-
-  const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  /* Same shape as working header-gallery uploads: {id}/gallery/{token}/image */
-  const basePath = `${specialistMediaPathId(id)}/gallery/t-${stamp}/image`;
-  const response = await fetch("/api/media/specialist-application", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path: basePath, dataUrl }),
-  });
-  const payload = (await response.json().catch(() => null)) as
-    | { ok: boolean; publicUrl?: string; message?: string }
-    | null;
-  if (!response.ok || !payload?.ok || !payload.publicUrl) {
-    throw new Error(
-      payload?.message ??
-        (response.status === 413
-          ? "Photo is too large to upload."
-          : response.status === 401
-            ? "Sign in again to upload photos."
-            : "Could not upload image.")
-    );
-  }
-  return payload.publicUrl.includes("?")
-    ? `${payload.publicUrl}&v=${stamp}`
-    : `${payload.publicUrl}?v=${stamp}`;
 }
 
 export function SpecialistTransformationsEditor({
@@ -113,7 +64,13 @@ export function SpecialistTransformationsEditor({
           setProgress(`${index + 1}/${files.length}`);
         }
         const dataUrl = await prepareImageDataUrlForUpload(file, "gallery");
-        uploaded.push(await uploadTransformationDataUrl(specialistId, dataUrl));
+        uploaded.push(
+          await uploadSpecialistDashboardMedia(
+            specialistId,
+            dataUrl,
+            "transformation"
+          )
+        );
       }
       if (uploaded.length > 0) {
         setUrls([...urls, ...uploaded]);

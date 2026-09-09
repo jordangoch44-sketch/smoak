@@ -45,7 +45,7 @@ const UPLOAD_MAX_DATA_URL_CHARS = 3_800_000;
 /**
  * Returns the new bounding area of a rotated rectangle.
  */
-export function calculateRotatedBoundingBox(
+function calculateRotatedBoundingBox(
   width: number,
   height: number,
   rotation: number

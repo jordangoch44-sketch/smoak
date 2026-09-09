@@ -10,28 +10,12 @@ import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
 import { cn } from "@/lib/utils";
 import "@/styles/profile-photo-cropper.css";
 
-export interface AspectRatioPreset {
-  id: string;
-  label: string;
-  value: number | undefined; // undefined for unconstrained / free crop
-}
-
-export const GALLERY_ASPECT_PRESETS: AspectRatioPreset[] = [
-  { id: "4-5", label: "4:5 Portrait", value: 4 / 5 },
-  { id: "1-1", label: "1:1 Square", value: 1 },
-  { id: "16-9", label: "16:9 Wide", value: 16 / 9 },
-  { id: "4-3", label: "4:3 Classic", value: 4 / 3 },
-  { id: "free", label: "Free", value: undefined },
-];
-
 export interface ProfilePhotoCropperProps {
   imageSrc: string;
   initialCrop?: Point;
   initialZoom?: number;
   initialRotation?: number;
   aspect?: number;
-  aspectPresets?: AspectRatioPreset[];
-  showAspectPresets?: boolean;
   /** Circular mask for avatar preview (output file remains square). */
   cropShape?: "rect" | "round";
   title?: string;
@@ -39,10 +23,6 @@ export interface ProfilePhotoCropperProps {
   stepBadge?: string;
   confirmLabel?: string;
   confirmingLabel?: string;
-  skipLabel?: string;
-  onSkip?: () => void | Promise<void>;
-  /** When `frame-preview`, saves the original image + pan/zoom settings (no file crop). */
-  exportMode?: "crop" | "frame-preview";
   /** Hide rotate / reset controls (slideshow framing). */
   hideToolbarExtras?: boolean;
   onCancel: () => void;
@@ -65,17 +45,12 @@ export function ProfilePhotoCropper({
   initialZoom = 1,
   initialRotation = 0,
   aspect = 1,
-  aspectPresets,
-  showAspectPresets = false,
   cropShape = "rect",
   title = "Adjust Photo",
   lead = "Drag to reposition. Pinch or use the slider to zoom.",
   stepBadge,
   confirmLabel = "Confirm Crop",
   confirmingLabel = "Processing…",
-  skipLabel = "Skip Crop",
-  onSkip,
-  exportMode = "crop",
   hideToolbarExtras = false,
   onCancel,
   onSave,
@@ -83,27 +58,20 @@ export function ProfilePhotoCropper({
   const [crop, setCrop] = useState<Point>(initialCrop);
   const [zoom, setZoom] = useState(initialZoom);
   const [rotation, setRotation] = useState(initialRotation);
-  const [currentAspect, setCurrentAspect] = useState<number | undefined>(aspect);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
-  const [croppedAreaPercent, setCroppedAreaPercent] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const resolvedPresets =
-    aspectPresets ?? (showAspectPresets ? GALLERY_ASPECT_PRESETS : undefined);
 
   useEffect(() => {
     setCrop(initialCrop);
     setZoom(initialZoom);
     setRotation(initialRotation);
-    setCurrentAspect(aspect);
     setError(null);
-  }, [imageSrc, initialCrop.x, initialCrop.y, initialZoom, initialRotation, aspect]);
+  }, [imageSrc, initialCrop.x, initialCrop.y, initialZoom, initialRotation]);
 
   useBlockingModalOpen(true);
 
   const onCropComplete = useCallback((_area: Area, pixels: Area) => {
-    setCroppedAreaPercent(_area);
     setCroppedAreaPixels(pixels);
   }, []);
 
@@ -115,7 +83,6 @@ export function ProfilePhotoCropper({
     setCrop({ x: 0, y: 0 });
     setZoom(1);
     setRotation(0);
-    setCurrentAspect(aspect);
   }
 
   async function handleConfirm() {
@@ -123,28 +90,6 @@ export function ProfilePhotoCropper({
     setSaving(true);
     setError(null);
     try {
-      if (exportMode === "frame-preview") {
-        await onSave(
-          imageSrc,
-          {
-            x: crop.x,
-            y: crop.y,
-            zoom,
-            ...(croppedAreaPercent
-              ? {
-                  areaX: croppedAreaPercent.x,
-                  areaY: croppedAreaPercent.y,
-                  areaWidth: croppedAreaPercent.width,
-                  areaHeight: croppedAreaPercent.height,
-                }
-              : {}),
-          },
-          croppedAreaPixels,
-          rotation
-        );
-        return;
-      }
-
       const croppedImageData = await getCroppedImageDataUrl(
         imageSrc,
         croppedAreaPixels,
@@ -163,23 +108,6 @@ export function ProfilePhotoCropper({
         saveError instanceof Error
           ? saveError.message
           : "Could not save crop. Please try again."
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleSkip() {
-    if (!onSkip || saving) return;
-    setSaving(true);
-    setError(null);
-    try {
-      await onSkip();
-    } catch (skipError) {
-      setError(
-        skipError instanceof Error
-          ? skipError.message
-          : "Could not proceed with original photo."
       );
     } finally {
       setSaving(false);
@@ -220,10 +148,10 @@ export function ProfilePhotoCropper({
           crop={crop}
           zoom={zoom}
           rotation={rotation}
-          aspect={currentAspect}
+          aspect={aspect}
           cropShape={cropShape}
           showGrid={true}
-          restrictPosition={currentAspect !== undefined}
+          restrictPosition={true}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onRotationChange={setRotation}
@@ -232,34 +160,6 @@ export function ProfilePhotoCropper({
       </div>
 
       <div className="profile-photo-cropper__controls">
-        {resolvedPresets && resolvedPresets.length > 0 ? (
-          <div className="profile-photo-cropper__aspect-block">
-            <span className="profile-photo-cropper__aspect-label">Aspect ratio</span>
-            <div className="profile-photo-cropper__aspect-row" role="radiogroup" aria-label="Aspect ratio">
-              {resolvedPresets.map((preset) => {
-                const isActive =
-                  currentAspect === preset.value ||
-                  (currentAspect === undefined && preset.value === undefined);
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={isActive}
-                    disabled={saving}
-                    className={`profile-photo-cropper__aspect-btn ${
-                      isActive ? "profile-photo-cropper__aspect-btn--active" : ""
-                    }`}
-                    onClick={() => setCurrentAspect(preset.value)}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
-
         <div className="profile-photo-cropper__toolbar">
           {!hideToolbarExtras ? (
             <div className="profile-photo-cropper__tool-actions">
@@ -331,7 +231,7 @@ export function ProfilePhotoCropper({
         <footer
           className={cn(
             "profile-photo-cropper__footer",
-            !onSkip && "profile-photo-cropper__footer--simple"
+            "profile-photo-cropper__footer--simple"
           )}
         >
           <button
@@ -342,16 +242,6 @@ export function ProfilePhotoCropper({
           >
             Cancel
           </button>
-          {onSkip ? (
-            <button
-              type="button"
-              className="profile-photo-cropper__btn profile-photo-cropper__btn--skip"
-              disabled={saving}
-              onClick={() => void handleSkip()}
-            >
-              {skipLabel}
-            </button>
-          ) : null}
           <button
             type="button"
             className="profile-photo-cropper__btn profile-photo-cropper__btn--confirm"

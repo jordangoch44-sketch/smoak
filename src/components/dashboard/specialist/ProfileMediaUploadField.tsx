@@ -1,57 +1,27 @@
 "use client";
 
 import { useId, useState, type ChangeEvent } from "react";
-import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
+import { ProfilePhotoCropper } from "@/components/media/ProfilePhotoCropper";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
-import { specialistMediaPathId } from "@/lib/media/specialist-media-path";
 import {
-  ProfilePhotoCropper,
-  GALLERY_ASPECT_PRESETS,
-} from "@/components/media/ProfilePhotoCropper";
+  rejectUnsupportedPhonePhoto,
+  uploadSpecialistDashboardMedia,
+} from "@/lib/media/specialist-media-upload";
 import {
   SPECIALIST_STORAGE_ACCEPT,
   SPECIALIST_STORAGE_LIMITS,
 } from "@/lib/supabase/constants";
 import { SpecialistStorageValidationError } from "@/lib/supabase/errors";
 import { cn } from "@/lib/utils";
-import type { SpecialistStorageMediaKind } from "@/types/supabase-storage";
 
 interface ProfileMediaUploadFieldProps {
   label: string;
   hint?: string;
   value: string;
   onChange: (value: string) => void;
-  aspect?: "cover" | "square";
   accept?: string;
-  /** When set with Supabase configured, uploads to specialist-media bucket */
   specialistId?: string | null;
-  mediaKind?: Extract<
-    SpecialistStorageMediaKind,
-    "profile" | "cover" | "gallery-image"
-  >;
   onClear?: () => void;
-}
-
-function maxBytesForUiKind(
-  kind: ProfileMediaUploadFieldProps["mediaKind"]
-): number {
-  if (kind === "cover") return SPECIALIST_STORAGE_LIMITS.cover;
-  if (kind === "gallery-image") return SPECIALIST_STORAGE_LIMITS.galleryImage;
-  return SPECIALIST_STORAGE_LIMITS.profile;
-}
-
-function rejectUnsupportedPhonePhoto(file: File): string | null {
-  const type = (file.type || "").toLowerCase();
-  const name = file.name.toLowerCase();
-  if (
-    type.includes("heic") ||
-    type.includes("heif") ||
-    name.endsWith(".heic") ||
-    name.endsWith(".heif")
-  ) {
-    return "Use JPEG or PNG (on iPhone: Format → Most Compatible).";
-  }
-  return null;
 }
 
 export function ProfileMediaUploadField({
@@ -59,24 +29,14 @@ export function ProfileMediaUploadField({
   hint,
   value,
   onChange,
-  aspect = "cover",
-  accept,
+  accept = SPECIALIST_STORAGE_ACCEPT.profile,
   specialistId,
-  mediaKind = "profile",
   onClear,
 }: ProfileMediaUploadFieldProps) {
   const inputId = useId();
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [pendingCropSrc, setPendingCropSrc] = useState<string | null>(null);
-
-  const resolvedAccept =
-    accept ??
-    (mediaKind === "gallery-image"
-      ? SPECIALIST_STORAGE_ACCEPT.galleryImage
-      : mediaKind === "cover"
-        ? SPECIALIST_STORAGE_ACCEPT.cover
-        : SPECIALIST_STORAGE_ACCEPT.profile);
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -91,18 +51,14 @@ export function ProfileMediaUploadField({
         throw new SpecialistStorageValidationError(phoneReject);
       }
 
-      const maxBytes = maxBytesForUiKind(mediaKind);
+      const maxBytes = SPECIALIST_STORAGE_LIMITS.profile;
       if (file.size > maxBytes) {
         throw new SpecialistStorageValidationError(
           `Image must be under ${Math.round(maxBytes / (1024 * 1024))}MB.`
         );
       }
 
-      const prepared = await prepareImageDataUrlForUpload(
-        file,
-        mediaKind === "cover" || mediaKind === "gallery-image" ? "cover" : "profile"
-      );
-      setPendingCropSrc(prepared);
+      setPendingCropSrc(await prepareImageDataUrlForUpload(file, "profile"));
     } catch (error) {
       const message =
         error instanceof SpecialistStorageValidationError
@@ -120,62 +76,24 @@ export function ProfileMediaUploadField({
     setUploading(true);
     setUploadError(null);
     try {
-      const useStorage =
-        Boolean(specialistId?.trim()) &&
-        isMarketplaceSupabaseActive() &&
-        (mediaKind === "profile" ||
-          mediaKind === "cover" ||
-          mediaKind === "gallery-image");
-
-      if (useStorage) {
-        const id = specialistMediaPathId(specialistId!.trim());
-        const stamp = Date.now().toString(36);
-        const basePath =
-          mediaKind === "profile"
-            ? `${id}/profile/avatar-${stamp}`
-            : mediaKind === "cover"
-              ? `${id}/cover/hero-${stamp}`
-              : `${id}/gallery/g-${stamp}/image`;
-        const response = await fetch("/api/media/specialist-application", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path: basePath, dataUrl: croppedImageDataUrl }),
-        });
-        const payload = (await response.json().catch(() => null)) as
-          | { ok: boolean; publicUrl?: string; message?: string }
-          | null;
-        if (!response.ok || !payload?.ok || !payload.publicUrl) {
-          throw new Error(
-            payload?.message ??
-              (response.status === 413
-                ? "Photo is too large to upload."
-                : "Could not upload image. Try again.")
-          );
-        }
-        const publicUrl = payload.publicUrl.includes("?")
-          ? `${payload.publicUrl}&v=${stamp}`
-          : `${payload.publicUrl}?v=${stamp}`;
-        onChange(publicUrl);
-      } else {
-        onChange(croppedImageDataUrl);
-      }
+      const publicUrl = await uploadSpecialistDashboardMedia(
+        specialistId,
+        croppedImageDataUrl,
+        "profile"
+      );
+      onChange(publicUrl);
       setPendingCropSrc(null);
     } catch (error) {
       const message =
-        error instanceof SpecialistStorageValidationError
+        error instanceof Error
           ? error.message
-          : error instanceof Error
-            ? error.message
-            : "Could not upload image. Try again.";
+          : "Could not upload image. Try again.";
       setUploadError(message);
       throw error;
     } finally {
       setUploading(false);
     }
   }
-
-  const isSquare = aspect === "square" || mediaKind === "profile";
 
   return (
     <div className="dashboard-upload-field">
@@ -186,7 +104,7 @@ export function ProfileMediaUploadField({
         htmlFor={inputId}
         className={cn(
           "dashboard-upload-zone",
-          isSquare && "dashboard-upload-zone--square",
+          "dashboard-upload-zone--square",
           value && "dashboard-upload-zone--has-preview",
           uploading && "dashboard-upload-zone--busy"
         )}
@@ -220,7 +138,7 @@ export function ProfileMediaUploadField({
         <input
           id={inputId}
           type="file"
-          accept={`${resolvedAccept},.jpg,.jpeg,.png,.webp`}
+          accept={`${accept},.jpg,.jpeg,.png,.webp`}
           className="dashboard-upload-zone__input"
           onChange={(event) => void handleFileChange(event)}
           disabled={uploading}
@@ -268,15 +186,10 @@ export function ProfileMediaUploadField({
       {pendingCropSrc ? (
         <ProfilePhotoCropper
           imageSrc={pendingCropSrc}
-          aspect={isSquare ? 1 : 16 / 9}
-          cropShape={isSquare ? "round" : "rect"}
-          showAspectPresets={false}
-          title={isSquare ? "Adjust Profile Picture" : "Frame Cover Photo"}
-          lead={
-            isSquare
-              ? "Drag to reposition. Pinch or use the zoom slider. The circle shows your avatar preview."
-              : "Drag to reposition, zoom, or rotate your photo to fit the header slideshow."
-          }
+          aspect={1}
+          cropShape="round"
+          title="Adjust Profile Picture"
+          lead="Drag to reposition. Pinch or use the zoom slider. The circle shows your avatar preview."
           confirmLabel="Use photo"
           confirmingLabel="Uploading…"
           onCancel={() => setPendingCropSrc(null)}

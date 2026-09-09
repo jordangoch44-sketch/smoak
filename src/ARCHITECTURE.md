@@ -120,6 +120,21 @@ Email is a ping, not the inbox. Deep links: `/client-dashboard?tab=messages&c=�
         └── LegalDocumentPage   pricing, contact, faq, safety, privacy, terms, …
 ```
 
+### Specialist photos (dashboard → public profile)
+
+```
+SpecialistProfileMediaEditor          Live tab + /specialist-dashboard/edit-profile
+  ├── ProfileMediaUploadField         avatar crop
+  ├── slideshow crop queue           4:5 baked JPEG
+  └── SpecialistTransformationsEditor PRO+ before/after photos
+        └── lib/media/specialist-media-upload.ts
+              POST /api/media/specialist-application  → specialist-media bucket
+saveManagedSpecialistProfileEdits → application media URLs + specialist_profiles
+Public hero: ProfileHeroCoverGallery + slideshow-frame.ts
+```
+
+Do not persist data-URL photos when a specialist id is available — `isUrl()` strips them on save.
+
 ### Specialist profile reviews (separate sources)
 
 ```

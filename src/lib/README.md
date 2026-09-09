@@ -51,7 +51,10 @@ Do **not** merge with `trainer-reviews.ts` (demo/Google) or `specialist-reputati
 
 ## Image upload / crop
 
-- `media/crop-image.ts` — crop + `readFileAsDataUrl` (persistable data URLs)
+- `media/crop-image.ts` — bake/crop canvas helpers (`prepareImageDataUrlForUpload`, `getCroppedImageDataUrl`, `readFileAsDataUrl`)
+- `media/specialist-media-upload.ts` — HEIC reject + POST to `/api/media/specialist-application`
+- `media/slideshow-frame.ts` — header slideshow frame map (legacy area framing + baked crops)
+- `applications/application-media-upload.ts` — onboarding data-URL → storage before application upsert
 
 ## Auth (Phase 2)
 

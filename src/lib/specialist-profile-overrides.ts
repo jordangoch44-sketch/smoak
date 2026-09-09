@@ -10,7 +10,6 @@ import {
 } from "@/lib/specialist-media-limits";
 import {
   parseSlideshowFrameMap,
-  parseGallerySlideshowFrames,
   pruneSlideshowFrameMap,
   serializeSlideshowFrameMap,
 } from "@/lib/media/slideshow-frame";

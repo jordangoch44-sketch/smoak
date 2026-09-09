@@ -114,63 +114,6 @@
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* Aspect ratio presets */
-.profile-photo-cropper__aspect-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.profile-photo-cropper__aspect-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.profile-photo-cropper__aspect-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
-}
-
-.profile-photo-cropper__aspect-row::-webkit-scrollbar {
-  display: none;
-}
-
-.profile-photo-cropper__aspect-btn {
-  flex-shrink: 0;
-  padding: 0.35rem 0.625rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.profile-photo-cropper__aspect-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.profile-photo-cropper__aspect-btn--active {
-  color: #fff;
-  background: rgba(var(--aurora-lavender-rgb), 0.2);
-  border-color: rgba(var(--aurora-lavender-rgb), 0.65);
-  box-shadow: 0 0 12px rgba(var(--aurora-lavender-rgb), 0.25);
-  font-weight: 600;
-}
-
 /* Toolbar: Rotate, Reset, Zoom */
 .profile-photo-cropper__toolbar {
   display: flex;
@@ -308,17 +251,6 @@
 
 .profile-photo-cropper__btn--cancel:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-}
-
-.profile-photo-cropper__btn--skip {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.profile-photo-cropper__btn--skip:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
   color: #fff;
 }
 
