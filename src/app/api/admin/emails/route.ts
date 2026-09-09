@@ -5,6 +5,7 @@ import {
   listAdminEmailsFromDb,
   upsertAdminEmailInDb,
 } from "@/lib/admin-email-db";
+import { ensureDefaultAdminEmails } from "@/lib/admin-email-defaults";
 import type { AdminManagedEmail } from "@/types/admin-email";
 
 export const runtime = "nodejs";
@@ -28,7 +29,9 @@ export async function GET() {
       { status: 503 }
     );
   }
-  return NextResponse.json({ ok: true, emails });
+  await ensureDefaultAdminEmails();
+  const next = (await listAdminEmailsFromDb()) ?? emails;
+  return NextResponse.json({ ok: true, emails: next });
 }
 
 export async function POST(request: Request) {

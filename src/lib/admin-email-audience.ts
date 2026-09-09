@@ -184,6 +184,15 @@ export async function resolveIncompleteSpecialists(): Promise<
   );
 }
 
+export async function resolveInactiveSpecialists(): Promise<
+  AdminEmailAudienceMember[]
+> {
+  const inactive = await resolveAdminEmailAudience(["inactive"]);
+  const specialists = await resolveAdminEmailAudience(["specialists_all"]);
+  const specialistEmails = new Set(specialists.map((member) => member.email));
+  return inactive.filter((member) => specialistEmails.has(member.email));
+}
+
 export async function countAdminEmailAudience(
   audienceIds: readonly AdminEmailAudienceId[]
 ): Promise<number> {

@@ -29,8 +29,10 @@ const AUDIENCES = new Set<AdminEmailAudienceId>([
 ]);
 const TRIGGERS = new Set<AdminEmailTriggerKind>([
   "after_signup",
+  "after_approval",
   "profile_incomplete",
   "weekly",
+  "inactive",
   "one_time",
   "custom",
 ]);

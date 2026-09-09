@@ -104,6 +104,6 @@ Owner + Staff manage these from `/internal` → Email. Catalog rows persist in `
 
 **Resend dashboard:** enable Open and Click tracking, then add a webhook to `https://smoac.com/api/webhooks/resend` for `email.opened`, `email.clicked`, `email.bounced`, `email.complained`. Set `RESEND_WEBHOOK_SECRET` on Vercel. Optional: `EMAIL_UNSUBSCRIBE_SECRET` (falls back to `CRON_SECRET`).
 
-After-signup catalog emails fire when a welcome/confirmation send succeeds (in addition to the hardcoded transactional templates). Activate an automated email with trigger **After sign up** and the matching audience to start them.
+After-signup catalog emails fire when a welcome/confirmation send succeeds (in addition to the hardcoded transactional templates). Founding-specialist catalog mail fires on **approval**. Inactive specialists (30 days quiet) get a one-time catalog mail from hourly cron. The weekly digest is the only recurring calendar email.
 
 Apply schema: `npm run apply:migration -- supabase/migrations/20260909010000_admin_emails.sql` (or `supabase/production/apply-admin-emails-safe.sql` in prod).

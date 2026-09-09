@@ -5,14 +5,12 @@ import {
 } from "@/lib/admin-email-catalog";
 import {
   resolveAdminEmailAudience,
+  resolveInactiveSpecialists,
   resolveIncompleteSpecialists,
   type AdminEmailAudienceMember,
 } from "@/lib/admin-email-audience";
-import {
-  getAdminEmailFromDb,
-  listAdminEmailsFromDb,
-  refreshAdminEmailCounts,
-} from "@/lib/admin-email-db";
+import { getAdminEmailFromDb, listAdminEmailsFromDb, refreshAdminEmailCounts } from "@/lib/admin-email-db";
+import { ensureDefaultAdminEmails } from "@/lib/admin-email-defaults";
 import { unsubscribeUrlFor } from "@/lib/admin-email-unsubscribe";
 import { sendOutboundEmail } from "@/lib/email/email-transport";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -30,7 +28,9 @@ export type AdminEmailSendKind =
   | "scheduled"
   | "weekly"
   | "after_signup"
+  | "after_approval"
   | "profile_incomplete"
+  | "inactive"
   | "resend_non_openers";
 
 function emptyResult(message: string): AdminEmailDispatchResult {
@@ -339,17 +339,49 @@ export async function dispatchAfterSignupCatalogEmail(input: {
   }
 }
 
+export async function dispatchAfterApprovalCatalogEmail(input: {
+  to: string;
+  firstName?: string | null;
+}): Promise<void> {
+  const emails = (await listAdminEmailsFromDb()) ?? [];
+  const active = emails.filter(
+    (email) =>
+      email.status === "active" &&
+      email.kind === "automated" &&
+      email.triggerKind === "after_approval" &&
+      email.audienceIds.some(
+        (id) =>
+          id === "specialists_all" ||
+          id === "specialists_free" ||
+          id === "specialists_pro"
+      )
+  );
+  const member: AdminEmailAudienceMember = {
+    email: input.to.trim().toLowerCase(),
+    firstName: input.firstName?.trim() ?? "",
+    userId: null,
+  };
+  for (const email of active) {
+    await dispatchToMembers(email, "after_approval", [member], {
+      skipIfAlreadySent: true,
+    });
+  }
+}
+
 export async function runAdminEmailMaintenance(): Promise<{
   processed: { sent: number; failed: number };
   weekly: number;
   scheduled: number;
   incomplete: number;
+  inactive: number;
 }> {
   const processed = await processQueuedAdminEmails();
+  await ensureDefaultAdminEmails();
   const emails = (await listAdminEmailsFromDb()) ?? [];
   let weekly = 0;
   let scheduled = 0;
   let incomplete = 0;
+  let inactive = 0;
   const now = Date.now();
 
   for (const email of emails) {
@@ -386,9 +418,21 @@ export async function runAdminEmailMaintenance(): Promise<{
       });
       if (result.attempted > 0) incomplete += 1;
     }
+
+    if (
+      email.status === "active" &&
+      email.kind === "automated" &&
+      email.triggerKind === "inactive"
+    ) {
+      const members = await resolveInactiveSpecialists();
+      const result = await dispatchToMembers(email, "inactive", members, {
+        skipIfAlreadySent: true,
+      });
+      if (result.attempted > 0) inactive += 1;
+    }
   }
 
-  return { processed, weekly, scheduled, incomplete };
+  return { processed, weekly, scheduled, incomplete, inactive };
 }
 
 export async function previewAudienceCount(

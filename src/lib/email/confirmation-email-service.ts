@@ -246,13 +246,23 @@ export async function sendSpecialistApplicationApprovedEmail(
 ): Promise<ConfirmationEmailResult> {
   try {
     const payload = buildSpecialistApprovalEmail(application);
-    return await dispatchTransactionalEmail({
+    const result = await dispatchTransactionalEmail({
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
       html: payload.html,
       kind: "approval_specialist",
     });
+    if (typeof window === "undefined" && result.success) {
+      const { dispatchAfterApprovalCatalogEmail } = await import(
+        "@/lib/admin-email-send"
+      );
+      void dispatchAfterApprovalCatalogEmail({
+        to: payload.to,
+        firstName: specialistFirstName(application),
+      });
+    }
+    return result;
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist approval email failed", error);
     return { success: false };

@@ -52,11 +52,21 @@ export const ADMIN_EMAIL_TRIGGER_OPTIONS: ReadonlyArray<{
 }> = [
   { id: "after_signup", label: "After sign up", defaultLabel: "After Sign Up" },
   {
+    id: "after_approval",
+    label: "After approval",
+    defaultLabel: "After Approval",
+  },
+  {
     id: "profile_incomplete",
     label: "Profile incomplete",
     defaultLabel: "Profile Incomplete",
   },
   { id: "weekly", label: "Weekly", defaultLabel: "Weekly (Mon)" },
+  {
+    id: "inactive",
+    label: "Inactive 30 days",
+    defaultLabel: "Inactive (30 days)",
+  },
   { id: "one_time", label: "One-time", defaultLabel: "One-Time" },
   { id: "custom", label: "Custom", defaultLabel: "Custom" },
 ];

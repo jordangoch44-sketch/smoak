@@ -8,7 +8,7 @@ create table if not exists public.admin_emails (
   kind text not null default 'automated'
     check (kind in ('automated', 'one_time')),
   trigger_kind text not null default 'custom'
-    check (trigger_kind in ('after_signup', 'profile_incomplete', 'weekly', 'one_time', 'custom')),
+    check (trigger_kind in ('after_signup', 'after_approval', 'profile_incomplete', 'weekly', 'inactive', 'one_time', 'custom')),
   trigger_label text not null default '',
   audience_ids text[] not null default '{}',
   status text not null default 'draft'

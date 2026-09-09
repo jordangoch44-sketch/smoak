@@ -279,7 +279,9 @@ export function AdminEmailEditor({
                 }
               >
                 {ADMIN_EMAIL_TRIGGER_OPTIONS.filter((option) =>
-                  isOneTime ? option.id === "one_time" || option.id === "custom" : true
+                  isOneTime
+                    ? option.id === "one_time" || option.id === "custom"
+                    : option.id !== "one_time"
                 ).map((option) => (
                   <option key={option.id} value={option.id}>
                     {option.label}

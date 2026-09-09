@@ -11,8 +11,10 @@ export type AdminEmailAudienceId =
 
 export type AdminEmailTriggerKind =
   | "after_signup"
+  | "after_approval"
   | "profile_incomplete"
   | "weekly"
+  | "inactive"
   | "one_time"
   | "custom";
 
