@@ -103,6 +103,8 @@ export function TrainerProfilePageClient({
     setInquiryOpen(false);
     setReviewModalOpen(false);
   }
+  /* Reviews are stored by internal specialist id, not the public URL slug. */
+  const reviewSpecialistId = trainer?.id || trainerId;
   const {
     aggregate,
     reviews: smoacReviews,
@@ -114,7 +116,7 @@ export function TrainerProfilePageClient({
     ownReview,
     canLeaveReview,
     applySubmittedReview,
-  } = useSpecialistReviews(routeId);
+  } = useSpecialistReviews(reviewSpecialistId);
 
   useEffect(() => {
     if (!ssrTrainer || catalogReady) return;
