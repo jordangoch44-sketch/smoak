@@ -7,6 +7,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readActiveAdminOverride } from "@/lib/admin-plan-override";
 import {
+  listingMembershipFromRow,
   resolveSpecialistProfileId,
   setSpecialistProfileMembership,
 } from "@/lib/profiles/specialist-profiles-db";
@@ -228,10 +229,10 @@ export async function resolveAndSyncSpecialistPremiumAccess(
 
   const { data: profile } = await supabase
     .from("specialist_profiles")
-    .select("membership_plan")
+    .select("is_premium, profile_data")
     .eq("user_id", userId)
     .maybeSingle();
-  const durablePlan = parseMembershipPlan(profile?.membership_plan);
+  const durablePlan = listingMembershipFromRow(profile ?? {}).plan;
   if (durablePlan !== "free") {
     if (!role.is_premium) {
       await supabase

@@ -280,7 +280,6 @@ export async function syncSpecialistCustomerBilling(input: {
       .from("specialist_profiles")
       .update({
         is_premium: isPremium,
-        membership_plan: membershipPlan,
         featured: campaignFlags.featured,
         sponsored: campaignFlags.sponsored,
         top_ranked: campaignFlags.topRanked,

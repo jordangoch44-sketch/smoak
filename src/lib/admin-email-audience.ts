@@ -1,4 +1,5 @@
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { listingMembershipFromRow } from "@/lib/profiles/specialist-profiles-db";
 import type { AdminEmailAudienceId } from "@/types/admin-email";
 
 export interface AdminEmailAudienceMember {
@@ -98,15 +99,15 @@ export async function resolveAdminEmailAudience(
   )
     ? await service
         .from("specialist_profiles")
-        .select("user_id, is_premium, membership_plan")
+        .select("user_id, is_premium, profile_data")
         .in("status", ["approved", "hidden"])
     : { data: [] as unknown[] };
 
   const specialistByUser = new Map(
     ((specialistRows ?? []) as Array<{
       user_id: string | null;
-      is_premium: boolean | null;
-      membership_plan?: string | null;
+      is_premium?: boolean | null;
+      profile_data?: unknown;
     }>)
       .filter((row) => row.user_id)
       .map((row) => [row.user_id as string, row])
@@ -123,9 +124,7 @@ export async function resolveAdminEmailAudience(
     const specialist = specialistByUser.get(role.user_id);
     const isPro =
       Boolean(role.is_premium) ||
-      Boolean(specialist?.is_premium) ||
-      specialist?.membership_plan === "premium" ||
-      specialist?.membership_plan === "platinum";
+      listingMembershipFromRow(specialist ?? {}).isPremium;
 
     let match = false;
     if (selected.has("specialists_all") && role.role === "specialist") match = true;

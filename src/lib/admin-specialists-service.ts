@@ -21,14 +21,12 @@ import {
 import { requestPublicCatalogRevalidate } from "@/lib/profiles/request-catalog-revalidate";
 import {
   fetchAdminSpecialistDirectory,
+  listingMembershipFromRow,
   setSpecialistProfileFlags,
   setSpecialistProfileOpsFields,
   updateSpecialistProfileBasics,
   type AdminSpecialistDirectoryEntry,
 } from "@/lib/profiles/specialist-profiles-db";
-import {
-  parseMembershipPlan,
-} from "@/lib/specialist-premium";
 import {
   getHiddenTrainersSnapshot,
   hideTrainerId,
@@ -512,10 +510,10 @@ export async function setAdminSpecialistFlagAsync(
   if (flag === "isPremium") {
     const { data: profileRow } = await supabase
       .from("specialist_profiles")
-      .select("user_id, membership_plan")
+      .select("user_id, is_premium, profile_data")
       .eq("id", trainerId)
       .maybeSingle();
-    const currentPlan = parseMembershipPlan(profileRow?.membership_plan);
+    const currentPlan = listingMembershipFromRow(profileRow ?? {}).plan;
     const plan = value
       ? currentPlan === "platinum"
         ? "platinum"

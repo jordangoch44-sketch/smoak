@@ -17,6 +17,7 @@ import {
   saveSpecialistSignupProfile,
 } from "@/lib/profiles/profile-service";
 import { resolveAvatarUrlFromProfile } from "@/lib/profiles/profile-avatar";
+import { listingMembershipFromRow } from "@/lib/profiles/specialist-profiles-db";
 import type { AuthRole, AuthSession } from "@/types/auth";
 import type { PublicAuthRole } from "@/types/auth-roles";
 import type { AdminRoleType } from "@/types/admin-permissions";
@@ -115,15 +116,11 @@ async function resolveSpecialistMembershipPlan(
   }
   const { data: profile } = await supabase
     .from("specialist_profiles")
-    .select("membership_plan")
+    .select("is_premium, profile_data")
     .eq("user_id", userId)
     .maybeSingle();
-  if (
-    profile?.membership_plan === "platinum" ||
-    profile?.membership_plan === "premium"
-  ) {
-    return profile.membership_plan;
-  }
+  const listingPlan = listingMembershipFromRow(profile ?? {}).plan;
+  if (listingPlan !== "free") return listingPlan;
   return isPremium ? "premium" : "free";
 }
 

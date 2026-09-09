@@ -34,12 +34,37 @@ import {
   withSyncedSessionPrices,
 } from "@/lib/session-price";
 
-export type SpecialistProfilesMutationResult =
-  | { ok: true }
-  | { ok: false; message: string };
+function isMissingColumnError(error: { message?: string } | null, column: string): boolean {
+  const message = error?.message?.toLowerCase() ?? "";
+  return message.includes(column) && message.includes("does not exist");
+}
+
+/** Listing entitlement from columns, with profile_data as fallback when the plan column is missing. */
+export function listingMembershipFromRow(row: {
+  is_premium?: boolean | null;
+  membership_plan?: unknown;
+  profile_data?: unknown;
+}): { isPremium: boolean; plan: SpecialistMembershipPlan } {
+  const profileData =
+    row.profile_data && typeof row.profile_data === "object"
+      ? (row.profile_data as Record<string, unknown>)
+      : {};
+  const plan = parseMembershipPlan(
+    row.membership_plan ?? profileData.membershipPlan
+  );
+  const isPremium = Boolean(row.is_premium) || plan !== "free";
+  return {
+    isPremium,
+    plan: plan === "free" && isPremium ? "premium" : plan,
+  };
+}
 
 export type SpecialistProfilesFetchResult =
   | { ok: true; profiles: Trainer[]; overridesById: Record<string, SpecialistProfileOverrides> }
+  | { ok: false; message: string };
+
+export type SpecialistProfilesMutationResult =
+  | { ok: true }
   | { ok: false; message: string };
 
 function asString(value: unknown, fallback = ""): string {
@@ -392,6 +417,7 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
     pricePerSessionMin: trainer.pricePerSessionMin,
     pricePerSessionMax: trainer.pricePerSessionMax,
   });
+  const membership = listingMembershipFromRow(row);
   const withColumns: Trainer = {
       ...trainer,
       id: row.id,
@@ -453,19 +479,9 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
         campaignProduct: row.boost_campaign_product,
         campaignEndsAt: row.boost_campaign_ends_at,
       }),
-      isPremium:
-        typeof row.is_premium === "boolean"
-          ? row.is_premium
-          : Boolean(trainer.isPremium),
-      membershipPlan: parseMembershipPlan(
-        row.membership_plan ?? trainer.membershipPlan
-      ),
-      verified:
-        (typeof row.is_premium === "boolean"
-          ? row.is_premium
-          : Boolean(trainer.isPremium)) ||
-        parseMembershipPlan(row.membership_plan ?? trainer.membershipPlan) !==
-          "free",
+      isPremium: membership.isPremium,
+      membershipPlan: membership.plan,
+      verified: membership.isPremium,
       rating: trainer.rating || Number(row.rating) || 0,
       reviewCount: trainer.reviewCount || row.review_count || 0,
   };
@@ -618,7 +634,7 @@ export async function upsertSpecialistProfile(
    * (inserts fall back to the DB defaults of false). */
   const { data: existing } = await supabase
     .from("specialist_profiles")
-    .select("is_premium, membership_plan")
+    .select("is_premium, profile_data")
     .eq("id", row.id)
     .maybeSingle();
 
@@ -627,11 +643,10 @@ export async function upsertSpecialistProfile(
       ? { ...(row.profile_data as Record<string, unknown>) }
       : {};
   if (existing) {
-    const plan = parseMembershipPlan(existing.membership_plan);
-    const isPremium = Boolean(existing.is_premium) || plan !== "free";
-    profileData.isPremium = isPremium;
-    profileData.membershipPlan = plan;
-    profileData.verified = isPremium;
+    const membership = listingMembershipFromRow(existing);
+    profileData.isPremium = membership.isPremium;
+    profileData.membershipPlan = membership.plan;
+    profileData.verified = membership.isPremium;
   }
 
   const { error } = await supabase.from("specialist_profiles").upsert(
@@ -782,7 +797,6 @@ export async function setSpecialistProfileMembership(
     .from("specialist_profiles")
     .update({
       is_premium: isPremium,
-      membership_plan: plan,
       verified: isPremium,
       profile_data: profileData,
       updated_at: now,
@@ -795,6 +809,15 @@ export async function setSpecialistProfileMembership(
   }
   if (!updated?.length) {
     return { ok: false, message: "Could not update listing membership." };
+  }
+
+  const withPlan = await supabase
+    .from("specialist_profiles")
+    .update({ membership_plan: plan, updated_at: now })
+    .eq("id", profileId)
+    .select("id");
+  if (withPlan.error && !isMissingColumnError(withPlan.error, "membership_plan")) {
+    return { ok: false, message: withPlan.error.message };
   }
   return { ok: true };
 }
