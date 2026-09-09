@@ -480,6 +480,7 @@ export function CreateAccountWizardClient({
 
       const { path, toast } = resolvePostLoginNavigation(navRole, {
         returnToSaved: wantsReturnToSaved(),
+        session: signUpResult.session,
       });
       if (toast) {
         showSaveToast(toast);

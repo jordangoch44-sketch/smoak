@@ -25,6 +25,9 @@ export const DEV_PENDING_MARKETPLACE_SIGNUP_KEY =
   "smoac_pending_marketplace_signup";
 /** Once-per-browser marker so client welcome email isn’t double-sent */
 export const CLIENT_WELCOME_EMAIL_SENT_PREFIX = "smoac_client_welcome_sent:";
+/** Once-per-specialist first-live-profile welcome (after approval) */
+export const SPECIALIST_PROFILE_WELCOME_SEEN_PREFIX =
+  "smoac_specialist_profile_welcome_seen:";
 /** Local fallback inbox when Supabase inquiry tables are unavailable */
 export const LOCAL_INQUIRIES_STORAGE_KEY = "smoac_local_inquiries";
 /** Specialist portal inquiry alerts (local + same-browser notify) */

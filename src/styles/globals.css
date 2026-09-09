@@ -212,6 +212,7 @@ html.review-modal-open,
 body.saved-panel-open,
 body.login-gate-open,
 body.site-location-gate-open,
+body.specialist-profile-welcome-open,
 body.complete-account-lock,
 body.client-profile-sheet-open,
 body.admin-review-open {
@@ -232,6 +233,7 @@ html.review-modal-open,
   body.saved-panel-open,
   body.login-gate-open,
   body.site-location-gate-open,
+  body.specialist-profile-welcome-open,
   body.complete-account-lock,
   body.client-profile-sheet-open,
   body.admin-review-open {
@@ -249,6 +251,7 @@ html.review-modal-open,
   body.saved-panel-open .app-main,
   body.login-gate-open .app-main,
   body.site-location-gate-open .app-main,
+  body.specialist-profile-welcome-open .app-main,
   body.complete-account-lock .app-main,
   body.client-profile-sheet-open .app-main,
   body.admin-review-open .app-main {
@@ -259,6 +262,7 @@ html.review-modal-open,
 
   html.login-gate-open,
   html.site-location-gate-open,
+  html.specialist-profile-welcome-open,
   html.complete-account-lock,
   html.client-profile-sheet-open {
     overflow: visible;

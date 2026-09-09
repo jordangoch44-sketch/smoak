@@ -8,6 +8,7 @@ import {
   DashboardPageShell,
   BoostVisibilityModal,
   PremiumTrialEndedModal,
+  SpecialistProfileWelcomeModal,
   SmoacProUpgradeModal,
   DashboardSignOutConfirmModal,
 } from "@/components/dashboard/shared";
@@ -33,6 +34,7 @@ import {
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
+  SPECIALIST_DASHBOARD_WELCOME_HREF,
 } from "@/lib/auth-routes";
 import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import {
@@ -50,6 +52,10 @@ import {
   showSpecialistPaidUpgradePromo,
 } from "@/lib/specialist-premium";
 import { cn } from "@/lib/utils";
+import {
+  markSpecialistProfileWelcomeSeen,
+  shouldShowSpecialistProfileWelcome,
+} from "@/lib/specialist-profile-welcome";
 
 type FreeDashboardTab = "plan" | "profile";
 type PremiumDashboardTab = "overview" | "profile";
@@ -118,6 +124,7 @@ export function SpecialistDashboardPageClient() {
   const conversationParam = searchParams.get("c")?.trim() || "";
   const inquiriesView = searchParams.get("view") === "inquiries";
   const openInquiries = Boolean(conversationParam) || inquiriesView;
+  const welcomeParam = searchParams.get("welcome") === "1";
   const [freeTab, setFreeTab] = useState<FreeDashboardTab>(() =>
     parseFreeTab(tabParam, openInquiries)
   );
@@ -125,6 +132,7 @@ export function SpecialistDashboardPageClient() {
     parsePremiumTab(tabParam, openInquiries)
   );
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
@@ -164,6 +172,51 @@ export function SpecialistDashboardPageClient() {
       setTrialEndedOpen(true);
     }
   }, [session?.premiumTrialJustEnded]);
+
+  useEffect(() => {
+    if (!isReady || !session || !isHydrated) return;
+    if (trialEndedOpen) return;
+    if (
+      !shouldShowSpecialistProfileWelcome({
+        session,
+        dashboardMode,
+        openInquiries,
+        force: welcomeParam,
+      })
+    ) {
+      return;
+    }
+    setWelcomeOpen(true);
+  }, [
+    isReady,
+    session,
+    isHydrated,
+    trialEndedOpen,
+    dashboardMode,
+    openInquiries,
+    welcomeParam,
+  ]);
+
+  useEffect(() => {
+    if (!welcomeOpen) return;
+    const onProfileTab =
+      (showsPremiumDashboard(dashboardMode) && premiumTab === "profile") ||
+      (dashboardMode === "approved-free" && freeTab === "profile");
+    if (onProfileTab) return;
+    router.replace(
+      welcomeParam
+        ? SPECIALIST_DASHBOARD_WELCOME_HREF
+        : SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
+      { scroll: false }
+    );
+  }, [
+    welcomeOpen,
+    dashboardMode,
+    premiumTab,
+    freeTab,
+    welcomeParam,
+    router,
+  ]);
 
   useEffect(() => {
     const promo = searchParams.get("promo");
@@ -302,6 +355,27 @@ export function SpecialistDashboardPageClient() {
       setFocusSection(sectionId);
     }
     replaceDashboardTab("profile");
+  }
+
+  function dismissProfileWelcome() {
+    const userId = session?.userId;
+    if (userId) {
+      markSpecialistProfileWelcomeSeen(userId);
+    }
+    setWelcomeOpen(false);
+    if (!welcomeParam) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("welcome");
+    const qs = next.toString();
+    router.replace(
+      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
+      { scroll: false }
+    );
+  }
+
+  function startWelcomeWithPhotos() {
+    setFocusSection("hero");
+    dismissProfileWelcome();
   }
 
   const liveDot =
@@ -718,6 +792,11 @@ export function SpecialistDashboardPageClient() {
     <PremiumTrialEndedModal
       open={trialEndedOpen}
       onClose={() => setTrialEndedOpen(false)}
+    />
+    <SpecialistProfileWelcomeModal
+      open={welcomeOpen && !trialEndedOpen}
+      onClose={dismissProfileWelcome}
+      onStartWithPhotos={startWelcomeWithPhotos}
     />
     <SmoacProUpgradeModal
       open={upgradeOpen}

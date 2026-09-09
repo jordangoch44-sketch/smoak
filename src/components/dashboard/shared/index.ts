@@ -20,6 +20,7 @@ export { SmoacProTrialConfirmModal } from "./SmoacProTrialConfirmModal";
 export { BoostVisibilityModal } from "./BoostVisibilityModal";
 export { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
 export { PremiumTrialEndedModal } from "./PremiumTrialEndedModal";
+export { SpecialistProfileWelcomeModal } from "./SpecialistProfileWelcomeModal";
 export { DashboardLoadingState } from "./DashboardLoadingState";
 export { DashboardGrid } from "./DashboardGrid";
 export { DashboardSignOutButton } from "./DashboardSignOutButton";

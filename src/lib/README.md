@@ -23,6 +23,7 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 - `specialist-dashboard-mode.ts` — pending / free / pro dashboard modes
 - `specialist-dashboard-analytics.ts`, `specialist-dashboard-stats.ts`, `specialist-dashboard-subscription.ts`
 - `specialist-premium.ts`
+- `specialist-profile-welcome.ts` — first post-approval login → profile + one-time Pro trial welcome
 
 ## Specialist profile edit
 

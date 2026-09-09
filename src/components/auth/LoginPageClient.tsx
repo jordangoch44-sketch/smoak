@@ -13,10 +13,10 @@ import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { PUBLIC_INVALID_LOGIN_MESSAGE, type PublicAuthRole } from "@/lib/dev-auth";
 import type { AuthRole } from "@/types/auth";
-import { getDashboardPathForRole } from "@/lib/auth-routes";
 import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation, navigateAfterAuth } from "@/lib/post-login-flow";
+import { hasPendingSpecialistProfileWelcome } from "@/lib/specialist-profile-welcome";
 import { cn } from "@/lib/utils";
 
 const LOGIN_FAILURE_DELAY_MS = 300;
@@ -119,11 +119,11 @@ export function LoginPageClient() {
     const publicRole = getUserRole(session);
     if (!publicRole) return;
     /* Pending specialists must land on their dashboard, not the homepage. */
-    navigateAfterAuth(
-      returnToSaved && publicRole === "client"
-        ? "/saved"
-        : getDashboardPathForRole(publicRole)
-    );
+    const { path } = resolvePostLoginNavigation(publicRole, {
+      returnToSaved,
+      session,
+    });
+    navigateAfterAuth(path);
   }, [isReady, session, returnToSaved, submitting, submitPressed, roleMismatch, roleMismatchActive]);
 
   useEffect(() => {
@@ -270,6 +270,7 @@ export function LoginPageClient() {
 
     const { path, toast } = resolvePostLoginNavigation(signedInRole, {
       returnToSaved,
+      session: result.session,
     });
     if (toast) {
       showSaveToast(toast);
@@ -310,7 +311,9 @@ export function LoginPageClient() {
             <p className="login-card__eyebrow">Welcome back</p>
             <h1 className="login-card__title">Opening your account…</h1>
             <p className="login-card__subtitle">
-              Taking you to your {publicSessionRole} dashboard.
+              {hasPendingSpecialistProfileWelcome(session)
+                ? "Taking you to your profile."
+                : `Taking you to your ${publicSessionRole} dashboard.`}
             </p>
           </div>
         </div>
