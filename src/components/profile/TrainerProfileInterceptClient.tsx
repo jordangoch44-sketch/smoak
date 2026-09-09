@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { TrainerProfilePageClient } from "@/components/profile/TrainerProfilePageClient";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
-import { refreshApprovedSpecialistProfilesFromRemote } from "@/lib/approved-specialist-profiles-store";
+import {
+  mergeApprovedSpecialistProfileLocal,
+  refreshApprovedSpecialistProfilesFromRemote,
+} from "@/lib/approved-specialist-profiles-store";
 import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
 import {
   clearPrimedTrainer,
   peekPrimedTrainer,
 } from "@/lib/primed-trainer-profile";
 import { fetchApprovedSpecialistByPublicKey } from "@/lib/profiles/specialist-profiles-db";
+import { overlayTrainerMembership } from "@/lib/trainer-sponsorship";
 import type { Trainer } from "@/types/trainer";
 
 /**
@@ -47,8 +51,6 @@ export function TrainerProfileInterceptClient({
   const primed = handoff;
 
   useEffect(() => {
-    if (fromCatalog || primed) return;
-
     let cancelled = false;
 
     void (async () => {
@@ -61,15 +63,20 @@ export function TrainerProfileInterceptClient({
         supabase,
         routeId
       );
-      if (!cancelled && resolved) setFetched(resolved);
+      if (!cancelled && resolved) {
+        mergeApprovedSpecialistProfileLocal(resolved);
+        setFetched(resolved);
+      }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [fromCatalog, primed, routeId]);
+  }, [routeId]);
 
-  const trainer = fromCatalog ?? primed ?? fetched;
+  const trainer = fetched
+    ? overlayTrainerMembership(fromCatalog ?? primed ?? fetched, fetched)
+    : fromCatalog ?? primed ?? fetched;
   const resolvedId = trainer?.id ?? routeId;
 
   return (

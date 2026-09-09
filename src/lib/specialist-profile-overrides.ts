@@ -428,6 +428,16 @@ export function applySpecialistProfileOverrides(
     }));
   }
 
+  /* Columns are source of truth for Pro / PRO+ and placement. Spreading
+   * leftover keys from overrides JSON must not hide the verified badge. */
+  merged.isPremium = base.isPremium;
+  merged.membershipPlan = base.membershipPlan;
+  merged.verified = base.verified;
+  merged.featured = base.featured;
+  merged.sponsored = base.sponsored;
+  merged.topRanked = base.topRanked;
+  merged.categorySpotlight = base.categorySpotlight;
+
   return withSyncedSessionPrices(syncLocation(syncTrainerGalleryImages(merged)));
 }
 

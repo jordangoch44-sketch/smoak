@@ -612,6 +612,24 @@ export async function upsertSpecialistProfile(
    * admin placement flags managed via setSpecialistProfileFlags. Including them
    * here would let re-approvals / profile edits clobber admin-set values
    * (inserts fall back to the DB defaults of false). */
+  const { data: existing } = await supabase
+    .from("specialist_profiles")
+    .select("is_premium, membership_plan")
+    .eq("id", row.id)
+    .maybeSingle();
+
+  const profileData =
+    row.profile_data && typeof row.profile_data === "object"
+      ? { ...(row.profile_data as Record<string, unknown>) }
+      : {};
+  if (existing) {
+    const plan = parseMembershipPlan(existing.membership_plan);
+    const isPremium = Boolean(existing.is_premium) || plan !== "free";
+    profileData.isPremium = isPremium;
+    profileData.membershipPlan = plan;
+    profileData.verified = isPremium;
+  }
+
   const { error } = await supabase.from("specialist_profiles").upsert(
     {
       id: row.id,
@@ -632,7 +650,7 @@ export async function upsertSpecialistProfile(
       verified: row.verified,
       rating: row.rating,
       review_count: row.review_count,
-      profile_data: row.profile_data,
+      profile_data: profileData,
       overrides: row.overrides,
       updated_at: new Date().toISOString(),
     },

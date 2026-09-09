@@ -12,6 +12,8 @@ import {
 const scrollPositions = new Map<string, number>();
 
 let pinGeneration = 0;
+let documentTouchCount = 0;
+let overscrollRecoveryInstalled = false;
 
 function pathnameFromRouteKey(key: string): string {
   const q = key.indexOf("?");
@@ -31,6 +33,8 @@ function shouldResetScrollOnEnter(pathname: string): boolean {
 /** Immediate scroll-to-top across window + common scrollports. */
 export function forceDocumentScrollTop(): void {
   if (typeof window === "undefined") return;
+  /* Don't fight an in-flight iOS rubber-band / pull-to-refresh. */
+  if (documentTouchCount > 0) return;
   try {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   } catch {
@@ -40,6 +44,67 @@ export function forceDocumentScrollTop(): void {
   document.body.scrollTop = 0;
   const main = document.querySelector(".app-main");
   if (main instanceof HTMLElement) main.scrollTop = 0;
+}
+
+function recoverStuckIosOverscroll(): void {
+  if (documentTouchCount > 0) return;
+  const y = window.scrollY || document.documentElement.scrollTop || 0;
+  /* Only unstick a parked pull-to-refresh at the top — never yank a scrolled page. */
+  if (y > 1) return;
+  const offset = window.visualViewport?.offsetTop ?? 0;
+  if (offset <= 1) return;
+  try {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  } catch {
+    window.scrollTo(0, 0);
+  }
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}
+
+/**
+ * iOS Safari: pull-to-refresh can leave the visual viewport translated with a
+ * black gap above the header. Snap back after the gesture ends.
+ */
+export function installIosOverscrollRecovery(): () => void {
+  if (typeof window === "undefined") return () => undefined;
+  if (overscrollRecoveryInstalled) return () => undefined;
+  overscrollRecoveryInstalled = true;
+
+  const onTouchStart = () => {
+    documentTouchCount += 1;
+  };
+  const onTouchEnd = () => {
+    documentTouchCount = Math.max(0, documentTouchCount - 1);
+    if (documentTouchCount > 0) return;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(recoverStuckIosOverscroll);
+    });
+  };
+
+  window.addEventListener("touchstart", onTouchStart, {
+    passive: true,
+    capture: true,
+  });
+  window.addEventListener("touchend", onTouchEnd, {
+    passive: true,
+    capture: true,
+  });
+  window.addEventListener("touchcancel", onTouchEnd, {
+    passive: true,
+    capture: true,
+  });
+  window.addEventListener("scroll", recoverStuckIosOverscroll, {
+    passive: true,
+  });
+
+  return () => {
+    overscrollRecoveryInstalled = false;
+    window.removeEventListener("touchstart", onTouchStart, true);
+    window.removeEventListener("touchend", onTouchEnd, true);
+    window.removeEventListener("touchcancel", onTouchEnd, true);
+    window.removeEventListener("scroll", recoverStuckIosOverscroll);
+  };
 }
 
 /**

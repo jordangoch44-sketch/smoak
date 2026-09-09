@@ -4,6 +4,7 @@ import {
   higherMembershipPlan,
   isAdminOverrideActive,
 } from "@/lib/admin-plan-override";
+import { setSpecialistProfileMembership } from "@/lib/profiles/specialist-profiles-db";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
 import {
   entitlementsFromProducts,
@@ -226,6 +227,9 @@ export async function syncSpecialistCustomerBilling(input: {
     }
   }
 
+  const membershipPlan =
+    isPremium && effectivePlan === "free" ? "premium" : effectivePlan;
+
   const { error: roleError } = await supabase
     .from("user_roles")
     .update({ is_premium: isPremium })
@@ -235,28 +239,54 @@ export async function syncSpecialistCustomerBilling(input: {
     console.error("[stripe] user_roles is_premium sync failed:", roleError.message);
   }
 
-  const profilePatch = {
-    is_premium: isPremium,
-    membership_plan: isPremium && effectivePlan === "free" ? "premium" : effectivePlan,
-    featured: campaignFlags.featured,
-    sponsored: campaignFlags.sponsored,
-    top_ranked: campaignFlags.topRanked,
-    category_spotlight: campaignFlags.categorySpotlight,
-    updated_at: new Date().toISOString(),
-  };
+  let specialistProfileId = input.specialistProfileId ?? null;
+  if (!specialistProfileId) {
+    const { data: profileRow } = await supabase
+      .from("specialist_profiles")
+      .select("id")
+      .eq("user_id", input.userId)
+      .maybeSingle();
+    specialistProfileId =
+      typeof profileRow?.id === "string" ? profileRow.id : null;
+  }
 
-  if (input.specialistProfileId) {
+  if (specialistProfileId) {
+    const membership = await setSpecialistProfileMembership(
+      supabase,
+      specialistProfileId,
+      membershipPlan
+    );
+    if (!membership.ok) {
+      console.error(
+        "[stripe] profile membership sync failed:",
+        membership.message
+      );
+    }
     const { error } = await supabase
       .from("specialist_profiles")
-      .update(profilePatch)
-      .eq("id", input.specialistProfileId);
+      .update({
+        featured: campaignFlags.featured,
+        sponsored: campaignFlags.sponsored,
+        top_ranked: campaignFlags.topRanked,
+        category_spotlight: campaignFlags.categorySpotlight,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", specialistProfileId);
     if (error) {
-      console.error("[stripe] profile entitlement sync failed:", error.message);
+      console.error("[stripe] profile placement sync failed:", error.message);
     }
   } else {
     const { error } = await supabase
       .from("specialist_profiles")
-      .update(profilePatch)
+      .update({
+        is_premium: isPremium,
+        membership_plan: membershipPlan,
+        featured: campaignFlags.featured,
+        sponsored: campaignFlags.sponsored,
+        top_ranked: campaignFlags.topRanked,
+        category_spotlight: campaignFlags.categorySpotlight,
+        updated_at: new Date().toISOString(),
+      })
       .eq("user_id", input.userId);
     if (error) {
       console.error("[stripe] profile entitlement sync failed:", error.message);

@@ -21,14 +21,17 @@ import { ProfileInquiryAction } from "@/components/inquiry";
 import {
   getApprovedSpecialistProfilesHydratedServerSnapshot,
   getApprovedSpecialistProfilesHydratedSnapshot,
+  mergeApprovedSpecialistProfileLocal,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
-import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
-import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
-import { isLeaveReviewQuery } from "@/lib/reviews/leave-review-href";
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
+import { overlayTrainerMembership } from "@/lib/trainer-sponsorship";
+import { trainerMatchesPublicKey } from "@/lib/trainer-profile-path";
+import { reviewAggregatesFromSerialized } from "@/lib/reviews/specialist-review-types";
+import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
+import { isLeaveReviewQuery } from "@/lib/reviews/leave-review-href";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
@@ -77,10 +80,17 @@ export function TrainerProfilePageClient({
       : trainerId;
   const liveTrainer = useTrainerWithOverrides(routeId);
   const primed = peekPrimedTrainer(routeId);
+  const ssrTrainer =
+    initialTrainer &&
+    (trainerMatchesPublicKey(initialTrainer, routeId) ||
+      trainerMatchesPublicKey(initialTrainer, trainerId))
+      ? initialTrainer
+      : null;
+  const liveOrPrimed = liveTrainer ?? ssrTrainer ?? primed ?? null;
   const trainer =
-    liveTrainer ??
-    (initialTrainer?.id === routeId ? initialTrainer : null) ??
-    primed;
+    liveOrPrimed && ssrTrainer
+      ? overlayTrainerMembership(liveOrPrimed, ssrTrainer)
+      : liveOrPrimed;
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
@@ -104,10 +114,13 @@ export function TrainerProfilePageClient({
     applySubmittedReview,
   } = useSpecialistReviews(routeId);
 
+  useEffect(() => {
+    if (!ssrTrainer) return;
+    mergeApprovedSpecialistProfileLocal(ssrTrainer);
+  }, [ssrTrainer]);
+
   const cityRanking = useMemo(() => {
-    const current =
-      liveTrainer ??
-      (initialTrainer?.id === routeId ? initialTrainer : null);
+    const current = trainer;
     if (!current) return null;
 
     const peers =
@@ -125,15 +138,16 @@ export function TrainerProfilePageClient({
       });
     } else if (
       initialCityRanking &&
-      current.id === routeId &&
-      current.id === initialTrainer?.id
+      initialTrainer &&
+      trainerMatchesPublicKey(current, routeId) &&
+      current.id === initialTrainer.id
     ) {
       return initialCityRanking;
     }
     return getLiveTrainerCityRanking(current, peers, map);
   }, [
     routeId,
-    liveTrainer,
+    trainer,
     initialTrainer,
     initialCatalog,
     initialAggregates,

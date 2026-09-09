@@ -84,9 +84,12 @@ export function ProfileHeroCoverGallery({
                 fill
                 sizes="100vw"
                 className="object-cover"
-                style={slideshowFrameToImageStyle(
-                  resolveSlideshowFrame(slideshowFrames ?? {}, src)
-                )}
+                style={{
+                  objectFit: "cover",
+                  ...slideshowFrameToImageStyle(
+                    resolveSlideshowFrame(slideshowFrames ?? {}, src)
+                  ),
+                }}
                 priority={slideIndex === 0}
               />
             </div>

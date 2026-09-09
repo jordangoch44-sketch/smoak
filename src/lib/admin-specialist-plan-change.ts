@@ -277,11 +277,14 @@ export async function applyAdminPlanOverride(input: {
     }
   }
 
-  await applySpecialistMembershipEntitlements(input.supabase, {
+  const entitlements = await applySpecialistMembershipEntitlements(input.supabase, {
     userId: target.userId,
     specialistProfileId: target.specialistId,
     plan: input.plan,
   });
+  if (!entitlements.ok) {
+    return entitlements;
+  }
 
   const planLabel = membershipPlanLabel(input.plan);
   const durationCopy =

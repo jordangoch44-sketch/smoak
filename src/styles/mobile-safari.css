@@ -5,6 +5,20 @@ html {
   text-size-adjust: 100%;
 }
 
+/*
+ * iOS Safari pull-to-refresh translates the whole webview (including
+ * position:fixed header). If JS scroll-pins or a compositor layer fights
+ * the rubber-band, the page stays parked with a black gap under the
+ * status bar. Block that native refresh; document scroll still works.
+ */
+@supports (-webkit-touch-callout: none) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+    background-color: #050506;
+  }
+}
+
 @media (max-width: 1023px) {
   :root {
     --mesh-blur: 0px;

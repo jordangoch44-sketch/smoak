@@ -41,3 +41,16 @@ export function isTrainerVerified(
     trainer.membershipPlan === "platinum"
   );
 }
+
+/** Copy Pro / PRO+ entitlement from a fresh listing onto a possibly stale one. */
+export function overlayTrainerMembership<T extends Trainer>(
+  trainer: T,
+  source: Pick<Trainer, "isPremium" | "membershipPlan" | "verified">
+): T {
+  return {
+    ...trainer,
+    isPremium: source.isPremium,
+    membershipPlan: source.membershipPlan,
+    verified: source.verified,
+  };
+}

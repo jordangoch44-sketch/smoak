@@ -1205,6 +1205,10 @@
   opacity: 1;
 }
 
+.profile-hero-cover__slide img {
+  object-fit: cover;
+}
+
 /* Collapsible bio under hero intro */
 .profile-hero__bio {
   position: relative;

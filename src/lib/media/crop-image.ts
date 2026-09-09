@@ -39,6 +39,9 @@ function getRadianAngle(degreeValue: number) {
   return (degreeValue * Math.PI) / 180;
 }
 
+/** Keep base64 JSON under typical serverless body limits (~4.5MB). */
+const UPLOAD_MAX_DATA_URL_CHARS = 3_800_000;
+
 /**
  * Returns the new bounding area of a rotated rectangle.
  */
@@ -54,6 +57,35 @@ export function calculateRotatedBoundingBox(
     height:
       Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
   };
+}
+
+function encodeCanvasDataUrl(
+  canvas: HTMLCanvasElement,
+  mimeType: string,
+  quality: number
+): string {
+  let outQuality = quality;
+  let dataUrl = canvas.toDataURL(mimeType, outQuality);
+  while (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS && outQuality > 0.45) {
+    outQuality -= 0.08;
+    dataUrl = canvas.toDataURL(mimeType, outQuality);
+  }
+  return dataUrl;
+}
+
+function scaleToMaxEdge(
+  width: number,
+  height: number,
+  maxEdge: number
+): { width: number; height: number } {
+  let outWidth = Math.max(1, Math.round(width));
+  let outHeight = Math.max(1, Math.round(height));
+  if (maxEdge && Math.max(outWidth, outHeight) > maxEdge) {
+    const scale = maxEdge / Math.max(outWidth, outHeight);
+    outWidth = Math.max(1, Math.round(outWidth * scale));
+    outHeight = Math.max(1, Math.round(outHeight * scale));
+  }
+  return { width: outWidth, height: outHeight };
 }
 
 /** Render cropped region to JPEG/PNG data URL for specialist onboarding & profile editor. */
@@ -73,10 +105,21 @@ export async function getCroppedImageDataUrl(
   }
 
   const normalizedRotation = ((rotation % 360) + 360) % 360;
+  const cropWidth = Math.max(1, Math.round(pixelCrop.width));
+  const cropHeight = Math.max(1, Math.round(pixelCrop.height));
+  const { width: outWidth, height: outHeight } = scaleToMaxEdge(
+    cropWidth,
+    cropHeight,
+    maxEdge
+  );
 
   if (normalizedRotation === 0) {
-    canvas.width = pixelCrop.width;
-    canvas.height = pixelCrop.height;
+    /* Draw the crop directly. Re-applying pixelCrop.x/y on an already-cropped
+     * canvas changed the aspect and stretched the photo. */
+    canvas.width = outWidth;
+    canvas.height = outHeight;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
     ctx.drawImage(
       image,
       pixelCrop.x,
@@ -85,30 +128,30 @@ export async function getCroppedImageDataUrl(
       pixelCrop.height,
       0,
       0,
-      pixelCrop.width,
-      pixelCrop.height
+      outWidth,
+      outHeight
     );
-  } else {
-    const rotRad = getRadianAngle(normalizedRotation);
-    const { width: bBoxWidth, height: bBoxHeight } = calculateRotatedBoundingBox(
-      image.width,
-      image.height,
-      normalizedRotation
-    );
-
-    canvas.width = bBoxWidth;
-    canvas.height = bBoxHeight;
-
-    ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
-    ctx.rotate(rotRad);
-    ctx.translate(-image.width / 2, -image.height / 2);
-    ctx.drawImage(image, 0, 0);
+    return encodeCanvasDataUrl(canvas, mimeType, quality);
   }
+
+  const rotRad = getRadianAngle(normalizedRotation);
+  const { width: bBoxWidth, height: bBoxHeight } = calculateRotatedBoundingBox(
+    image.width,
+    image.height,
+    normalizedRotation
+  );
+
+  canvas.width = bBoxWidth;
+  canvas.height = bBoxHeight;
+  ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
+  ctx.rotate(rotRad);
+  ctx.translate(-image.width / 2, -image.height / 2);
+  ctx.drawImage(image, 0, 0);
 
   const cropX = Math.max(0, Math.round(pixelCrop.x));
   const cropY = Math.max(0, Math.round(pixelCrop.y));
-  const cropWidth = Math.min(canvas.width - cropX, Math.round(pixelCrop.width));
-  const cropHeight = Math.min(canvas.height - cropY, Math.round(pixelCrop.height));
+  const srcWidth = Math.min(canvas.width - cropX, cropWidth);
+  const srcHeight = Math.min(canvas.height - cropY, cropHeight);
 
   const finalCanvas = document.createElement("canvas");
   const finalCtx = finalCanvas.getContext("2d");
@@ -116,43 +159,23 @@ export async function getCroppedImageDataUrl(
     throw new Error("Could not get canvas context");
   }
 
-  let outWidth = Math.max(1, cropWidth);
-  let outHeight = Math.max(1, cropHeight);
-  if (maxEdge && Math.max(outWidth, outHeight) > maxEdge) {
-    const scale = maxEdge / Math.max(outWidth, outHeight);
-    outWidth = Math.max(1, Math.round(outWidth * scale));
-    outHeight = Math.max(1, Math.round(outHeight * scale));
-  }
-
   finalCanvas.width = outWidth;
   finalCanvas.height = outHeight;
   finalCtx.imageSmoothingEnabled = true;
   finalCtx.imageSmoothingQuality = "high";
+  finalCtx.drawImage(
+    canvas,
+    cropX,
+    cropY,
+    srcWidth,
+    srcHeight,
+    0,
+    0,
+    outWidth,
+    outHeight
+  );
 
-  if (normalizedRotation === 0) {
-    finalCtx.drawImage(canvas, 0, 0, outWidth, outHeight);
-  } else {
-    finalCtx.drawImage(
-      canvas,
-      cropX,
-      cropY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      outWidth,
-      outHeight
-    );
-  }
-
-  let outQuality = quality;
-  let dataUrl = finalCanvas.toDataURL(mimeType, outQuality);
-  while (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS && outQuality > 0.45) {
-    outQuality -= 0.08;
-    dataUrl = finalCanvas.toDataURL(mimeType, outQuality);
-  }
-
-  return dataUrl;
+  return encodeCanvasDataUrl(finalCanvas, mimeType, quality);
 }
 
 /**
@@ -270,37 +293,59 @@ const UPLOAD_MAX_EDGE = {
   gallery: 1600,
 } as const;
 
-/** Keep base64 JSON under typical serverless body limits (~4.5MB). */
-const UPLOAD_MAX_DATA_URL_CHARS = 3_800_000;
+function jpegDataUrlFromSize(
+  width: number,
+  height: number,
+  draw: (ctx: CanvasRenderingContext2D, width: number, height: number) => void,
+  kind: keyof typeof UPLOAD_MAX_EDGE
+): string {
+  const maxEdge = UPLOAD_MAX_EDGE[kind];
+  const scale = Math.min(1, maxEdge / Math.max(width, height, 1));
+  const outWidth = Math.max(1, Math.round(width * scale));
+  const outHeight = Math.max(1, Math.round(height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = outWidth;
+  canvas.height = outHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not process image.");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  draw(ctx, outWidth, outHeight);
+
+  const dataUrl = encodeCanvasDataUrl(canvas, "image/jpeg", 0.82);
+  if (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS) {
+    throw new Error("Photo is still too large. Try a smaller image.");
+  }
+  return dataUrl;
+}
 
 async function jpegDataUrlFromImageSrc(
   src: string,
   kind: keyof typeof UPLOAD_MAX_EDGE
 ): Promise<string> {
   const image = await createImage(src);
-  const maxEdge = UPLOAD_MAX_EDGE[kind];
-  const scale = Math.min(1, maxEdge / Math.max(image.width, image.height, 1));
-  const width = Math.max(1, Math.round(image.width * scale));
-  const height = Math.max(1, Math.round(image.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Could not process image.");
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(image, 0, 0, width, height);
+  return jpegDataUrlFromSize(
+    image.width,
+    image.height,
+    (ctx, width, height) => ctx.drawImage(image, 0, 0, width, height),
+    kind
+  );
+}
 
-  let quality = 0.82;
-  let dataUrl = canvas.toDataURL("image/jpeg", quality);
-  while (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS && quality > 0.45) {
-    quality -= 0.08;
-    dataUrl = canvas.toDataURL("image/jpeg", quality);
+async function jpegDataUrlFromBitmap(
+  bitmap: ImageBitmap,
+  kind: keyof typeof UPLOAD_MAX_EDGE
+): Promise<string> {
+  try {
+    return jpegDataUrlFromSize(
+      bitmap.width,
+      bitmap.height,
+      (ctx, width, height) => ctx.drawImage(bitmap, 0, 0, width, height),
+      kind
+    );
+  } finally {
+    bitmap.close();
   }
-  if (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS) {
-    throw new Error("Photo is still too large. Try a smaller image.");
-  }
-  return dataUrl;
 }
 
 /**
@@ -311,6 +356,22 @@ export async function prepareImageDataUrlForUpload(
   file: File,
   kind: keyof typeof UPLOAD_MAX_EDGE = "gallery"
 ): Promise<string> {
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file, {
+        imageOrientation: "from-image",
+      });
+      return await jpegDataUrlFromBitmap(bitmap, kind);
+    } catch (bitmapError) {
+      if (
+        bitmapError instanceof Error &&
+        bitmapError.message.startsWith("Photo is still")
+      ) {
+        throw bitmapError;
+      }
+    }
+  }
+
   const objectUrl = URL.createObjectURL(file);
   try {
     try {

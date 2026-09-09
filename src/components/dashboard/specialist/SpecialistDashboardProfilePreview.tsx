@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useRef,
   useState,
   type CSSProperties,
   type MouseEvent,
@@ -280,6 +281,7 @@ function LiveEditSheet({
 }) {
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
+  const pickerGuardUntilRef = useRef(0);
 
   useEffect(() => {
     setMounted(true);
@@ -289,15 +291,32 @@ function LiveEditSheet({
     document.body.classList.add(LOCK_CLASS);
     document.documentElement.classList.add(LOCK_CLASS);
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !saving) onClose();
+      if (event.key !== "Escape" || saving) return;
+      if (document.querySelector(".profile-photo-cropper")) return;
+      onClose();
     };
+    const armPickerGuard = (event: Event) => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement && target.type === "file") {
+        pickerGuardUntilRef.current = Date.now() + 1600;
+      }
+    };
+    document.addEventListener("change", armPickerGuard, true);
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.classList.remove(LOCK_CLASS);
       document.documentElement.classList.remove(LOCK_CLASS);
+      document.removeEventListener("change", armPickerGuard, true);
       window.removeEventListener("keydown", onKey);
     };
   }, [onClose, saving]);
+
+  function requestClose() {
+    if (saving) return;
+    if (document.querySelector(".profile-photo-cropper")) return;
+    if (Date.now() < pickerGuardUntilRef.current) return;
+    onClose();
+  }
 
   if (!mounted) return null;
 
@@ -308,7 +327,15 @@ function LiveEditSheet({
         className="specialist-live-sheet__backdrop"
         aria-label="Close editor"
         disabled={saving}
-        onClick={onClose}
+        onPointerDown={(event) => {
+          event.currentTarget.dataset.sheetBackdropArmed = "true";
+        }}
+        onClick={(event) => {
+          /* Ignore ghost clicks after the iOS photo picker closes. */
+          if (event.currentTarget.dataset.sheetBackdropArmed !== "true") return;
+          delete event.currentTarget.dataset.sheetBackdropArmed;
+          requestClose();
+        }}
       />
       <div
         className="specialist-live-sheet__dialog"
@@ -349,7 +376,7 @@ function LiveEditSheet({
             type="button"
             className="smoac-control specialist-live-sheet__cancel"
             disabled={saving}
-            onClick={onClose}
+            onClick={requestClose}
           >
             Cancel
           </button>

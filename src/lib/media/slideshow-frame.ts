@@ -107,7 +107,7 @@ export function slideshowFrameToImageStyle(
   frame: ProfilePhotoCropSettings | undefined
 ): CSSProperties {
   if (!frame) {
-    return { objectPosition: "50% 18%" };
+    return { objectFit: "cover", objectPosition: "50% 18%" };
   }
 
   if (
@@ -118,22 +118,15 @@ export function slideshowFrameToImageStyle(
     frame.areaWidth > 0 &&
     frame.areaHeight > 0
   ) {
-    const focalX = frame.areaX + frame.areaWidth / 2;
-    const focalY = frame.areaY + frame.areaHeight / 2;
+    const focalX = Math.min(100, Math.max(0, frame.areaX + frame.areaWidth / 2));
+    const focalY = Math.min(100, Math.max(0, frame.areaY + frame.areaHeight / 2));
     return {
+      objectFit: "cover",
       objectPosition: `${focalX}% ${focalY}%`,
     };
   }
 
-  const x = 50 - frame.x / 2;
-  const y = 50 - frame.y / 2;
-  const scale = frame.zoom > 1 ? frame.zoom : 1;
-
-  return {
-    objectPosition: `${x}% ${y}%`,
-    transform: scale > 1 ? `scale(${scale})` : undefined,
-    transformOrigin: `${x}% ${y}%`,
-  };
+  return { objectFit: "cover", objectPosition: "50% 18%" };
 }
 
 export function parseGallerySlideshowFrames(

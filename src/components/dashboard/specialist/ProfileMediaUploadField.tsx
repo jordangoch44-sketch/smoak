@@ -2,7 +2,8 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
-import { readFileAsDataUrl } from "@/lib/media/crop-image";
+import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
+import { specialistMediaPathId } from "@/lib/media/specialist-media-path";
 import {
   ProfilePhotoCropper,
   GALLERY_ASPECT_PRESETS,
@@ -83,6 +84,7 @@ export function ProfileMediaUploadField({
     if (!file) return;
 
     setUploadError(null);
+    setUploading(true);
     try {
       const phoneReject = rejectUnsupportedPhonePhoto(file);
       if (phoneReject) {
@@ -96,8 +98,11 @@ export function ProfileMediaUploadField({
         );
       }
 
-      const rawDataUrl = await readFileAsDataUrl(file);
-      setPendingCropSrc(rawDataUrl);
+      const prepared = await prepareImageDataUrlForUpload(
+        file,
+        mediaKind === "cover" || mediaKind === "gallery-image" ? "cover" : "profile"
+      );
+      setPendingCropSrc(prepared);
     } catch (error) {
       const message =
         error instanceof SpecialistStorageValidationError
@@ -106,6 +111,8 @@ export function ProfileMediaUploadField({
             ? error.message
             : "Could not read image.";
       setUploadError(message);
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -121,7 +128,7 @@ export function ProfileMediaUploadField({
           mediaKind === "gallery-image");
 
       if (useStorage) {
-        const id = specialistId!.trim();
+        const id = specialistMediaPathId(specialistId!.trim());
         const stamp = Date.now().toString(36);
         const basePath =
           mediaKind === "profile"

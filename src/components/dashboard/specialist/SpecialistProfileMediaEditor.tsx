@@ -1,12 +1,13 @@
 "use client";
 
-import { useId, useState, type ChangeEvent } from "react";
+import { useEffect, useId, useRef, useState, type ChangeEvent } from "react";
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import {
   ProfilePhotoCropper,
 } from "@/components/media/ProfilePhotoCropper";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
-import { readFileAsDataUrl } from "@/lib/media/crop-image";
+import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
+import { specialistMediaPathId } from "@/lib/media/specialist-media-path";
 import {
   normalizeSlideshowImageKey,
   parseSlideshowFrameMap,
@@ -81,15 +82,26 @@ function rejectUnsupportedPhonePhoto(file: File): string | null {
   return null;
 }
 
+function revokeQueuePreviews(items: CropQueueItem[]) {
+  for (const item of items) {
+    if (item.dataUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(item.dataUrl);
+    }
+  }
+}
+
 async function uploadCroppedDataUrl(
   specialistId: string | null | undefined,
   dataUrl: string
 ): Promise<string> {
   const id = specialistId?.trim();
-  if (!id || !isMarketplaceSupabaseActive()) return dataUrl;
+  if (!id) {
+    throw new Error("Could not upload — profile is not ready. Refresh and try again.");
+  }
+  if (!isMarketplaceSupabaseActive()) return dataUrl;
 
   const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const basePath = `${id}/gallery/g-${stamp}/image`;
+  const basePath = `${specialistMediaPathId(id)}/gallery/g-${stamp}/image`;
   const response = await fetch("/api/media/specialist-application", {
     method: "POST",
     credentials: "include",
@@ -139,6 +151,15 @@ export function SpecialistProfileMediaEditor({
   const [error, setError] = useState<string | null>(null);
   const [brokenHeaderUrls, setBrokenHeaderUrls] = useState<string[]>([]);
   const [cropQueue, setCropQueue] = useState<CropQueueState | null>(null);
+  const cropQueueRef = useRef<CropQueueState | null>(null);
+  cropQueueRef.current = cropQueue;
+
+  useEffect(() => {
+    return () => {
+      const queue = cropQueueRef.current;
+      if (queue) revokeQueuePreviews(queue.items);
+    };
+  }, []);
 
   const atImageLimit = headerImages.length >= limits.images;
   const atVideoLimit = headerVideos.length >= limits.videos;
@@ -201,9 +222,10 @@ export function SpecialistProfileMediaEditor({
   }
 
   async function handleAddHeaderImages(event: ChangeEvent<HTMLInputElement>) {
-    const fileList = event.target.files;
+    /* Snapshot first — FileList is live and empties when value is cleared. */
+    const selected = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!fileList || fileList.length === 0) return;
+    if (selected.length === 0) return;
 
     if (atImageLimit) {
       setError(
@@ -215,57 +237,69 @@ export function SpecialistProfileMediaEditor({
     }
 
     const remainingSlots = limits.images - headerImages.length;
-    const selectedFiles = Array.from(fileList).slice(0, remainingSlots);
+    const selectedFiles = selected.slice(0, remainingSlots);
 
-    if (fileList.length > remainingSlots) {
+    if (selected.length > remainingSlots) {
       setError(
-        `Selected ${fileList.length} photos; only ${remainingSlots} more allowed on your plan.`
+        `Selected ${selected.length} photos; only ${remainingSlots} more allowed on your plan.`
       );
     } else {
       setError(null);
     }
 
-    // Filter invalid files
-    const validItems: CropQueueItem[] = [];
-    for (const file of selectedFiles) {
-      const phoneReject = rejectUnsupportedPhonePhoto(file);
-      if (phoneReject) {
-        setError(phoneReject);
-        continue;
+    setBusy(true);
+    try {
+      const validItems: CropQueueItem[] = [];
+      for (const file of selectedFiles) {
+        const phoneReject = rejectUnsupportedPhonePhoto(file);
+        if (phoneReject) {
+          setError(phoneReject);
+          continue;
+        }
+        try {
+          validItems.push({
+            dataUrl: await prepareImageDataUrlForUpload(file, "gallery"),
+            name: file.name,
+          });
+        } catch {
+          setError("Could not read one of the selected photos.");
+        }
       }
-      try {
-        const dataUrl = await readFileAsDataUrl(file);
-        validItems.push({ file, dataUrl, name: file.name });
-      } catch {
-        setError("Could not read one of the selected photos.");
-      }
+
+      if (validItems.length === 0) return;
+
+      setCropQueue((prev) => {
+        if (prev) revokeQueuePreviews(prev.items);
+        return {
+          items: validItems,
+          currentIndex: 0,
+          uploadedUrls: [],
+          uploadedFrames: {},
+        };
+      });
+    } finally {
+      setBusy(false);
     }
-
-    if (validItems.length === 0) return;
-
-    setCropQueue({
-      items: validItems,
-      currentIndex: 0,
-      uploadedUrls: [],
-      uploadedFrames: {},
-    });
   }
 
   function handleAdjustExistingPhoto(index: number) {
     const url = headerImages[index];
     if (!url) return;
-    setCropQueue({
-      items: [
-        {
-          dataUrl: url,
-          name: `Slideshow photo ${index + 1}`,
-          replaceIndex: index,
-          initialFrame: resolveSlideshowFrame(slideshowFrames, url),
-        },
-      ],
-      currentIndex: 0,
-      uploadedUrls: [],
-      uploadedFrames: {},
+    setCropQueue((prev) => {
+      if (prev) revokeQueuePreviews(prev.items);
+      return {
+        items: [
+          {
+            dataUrl: url,
+            name: `Slideshow photo ${index + 1}`,
+            replaceIndex: index,
+            initialFrame: resolveSlideshowFrame(slideshowFrames, url),
+          },
+        ],
+        currentIndex: 0,
+        uploadedUrls: [],
+        uploadedFrames: {},
+      };
     });
   }
 
@@ -279,10 +313,7 @@ export function SpecialistProfileMediaEditor({
 
     setBusy(true);
     try {
-      const isRemote = /^https?:\/\//i.test(imageData.trim());
-      const uploadedUrl = isRemote
-        ? imageData.trim()
-        : await uploadCroppedDataUrl(specialistId, imageData);
+      const uploadedUrl = await uploadCroppedDataUrl(specialistId, imageData);
 
       const frameKey = normalizeSlideshowImageKey(uploadedUrl);
       const nextFrames: SlideshowFrameMap = { ...slideshowFrames };
@@ -296,6 +327,7 @@ export function SpecialistProfileMediaEditor({
         next[currentItem.replaceIndex] = uploadedUrl;
         nextFrames[frameKey] = frame;
         setHeaderImages(next, pins, nextFrames);
+        revokeQueuePreviews(cropQueue.items);
         setCropQueue(null);
         return;
       }
@@ -317,6 +349,7 @@ export function SpecialistProfileMediaEditor({
           ...nextFrames,
           ...queuedFrames,
         });
+        revokeQueuePreviews(cropQueue.items);
         setCropQueue(null);
       }
     } catch (err) {
@@ -611,8 +644,7 @@ export function SpecialistProfileMediaEditor({
       {currentCropItem ? (
         <ProfilePhotoCropper
           imageSrc={currentCropItem.dataUrl}
-          aspect={16 / 9}
-          exportMode="frame-preview"
+          aspect={4 / 5}
           hideToolbarExtras
           showAspectPresets={false}
           cropShape="rect"
@@ -622,7 +654,7 @@ export function SpecialistProfileMediaEditor({
           }}
           initialZoom={currentCropItem.initialFrame?.zoom ?? 1}
           title="Frame Slideshow Photo"
-          lead="Drag and zoom to set how this photo appears in the header slideshow. Your full photo is kept for gallery view."
+          lead="Drag and zoom to set how this photo appears in the header. The framed photo is what clients see."
           stepBadge={
             cropQueue && cropQueue.items.length > 1
               ? `Photo ${cropQueue.currentIndex + 1} of ${cropQueue.items.length}`
@@ -634,7 +666,10 @@ export function SpecialistProfileMediaEditor({
               : "Save"
           }
           confirmingLabel="Saving…"
-          onCancel={() => setCropQueue(null)}
+          onCancel={() => {
+            revokeQueuePreviews(cropQueue?.items ?? []);
+            setCropQueue(null);
+          }}
           onSave={async (imageData, frame) => {
             await handleFrameSave(imageData, frame);
           }}

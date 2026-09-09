@@ -501,6 +501,31 @@ export function patchApprovedSpecialistProfileFields(
   });
 }
 
+/**
+ * Overlay a fresh SSR listing into the client catalog so Explore/profile
+ * don’t keep a pre-plan-change snapshot (verified badge, membership).
+ */
+export function mergeApprovedSpecialistProfileLocal(trainer: Trainer): void {
+  if (typeof window === "undefined") return;
+  const current = cachedProfiles[trainer.id];
+  if (!current) {
+    applyCache({
+      ...cachedProfiles,
+      [trainer.id]: trainer,
+    });
+    return;
+  }
+  applyCache({
+    ...cachedProfiles,
+    [trainer.id]: {
+      ...current,
+      isPremium: trainer.isPremium,
+      membershipPlan: trainer.membershipPlan,
+      verified: trainer.verified,
+    },
+  });
+}
+
 /** True after first local or Supabase catalog hydrate finishes (client). */
 export function getApprovedSpecialistProfilesHydratedSnapshot(): boolean {
   if (typeof window === "undefined") return false;

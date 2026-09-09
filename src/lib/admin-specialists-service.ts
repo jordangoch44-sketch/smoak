@@ -553,11 +553,14 @@ export async function setAdminSpecialistFlagAsync(
       return { ok: true };
     }
 
-    await applySpecialistMembershipEntitlements(supabase, {
+    const entitlements = await applySpecialistMembershipEntitlements(supabase, {
       userId,
       specialistProfileId: trainerId,
       plan,
     });
+    if (!entitlements.ok) {
+      return entitlements;
+    }
   } else {
     const result = await setSpecialistProfileFlags(supabase, trainerId, {
       [flag]: value,

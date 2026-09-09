@@ -73,7 +73,7 @@ export async function applySpecialistMembershipEntitlements(
     specialistProfileId: string;
     plan: SpecialistMembershipPlan;
   }
-): Promise<void> {
+): Promise<{ ok: true } | { ok: false; message: string }> {
   const now = new Date().toISOString();
   const isPremium = input.plan !== "free";
 
@@ -83,10 +83,7 @@ export async function applySpecialistMembershipEntitlements(
     input.plan
   );
   if (!profileResult.ok) {
-    console.warn(
-      "[admin plan] specialist_profiles entitlement update failed:",
-      profileResult.message
-    );
+    return profileResult;
   }
 
   const { data: profileRow } = await supabase
@@ -98,7 +95,7 @@ export async function applySpecialistMembershipEntitlements(
     input.userId ||
     (typeof profileRow?.user_id === "string" ? profileRow.user_id : null);
 
-  if (!userId) return;
+  if (!userId) return { ok: true };
 
   const { error: roleError } = await supabase
     .from("user_roles")
@@ -113,4 +110,5 @@ export async function applySpecialistMembershipEntitlements(
       roleError.message
     );
   }
+  return { ok: true };
 }

@@ -5,6 +5,7 @@ import { useLayoutEffect } from "react";
 import { isExploreNavPath } from "@/lib/mobile-bottom-nav";
 import {
   disarmExploreMapShellScrollLock,
+  installIosOverscrollRecovery,
   setBottomNavPanelBodyActive,
 } from "@/lib/mobile-chrome";
 import { scrubStaleChromeBodyOverlays } from "@/lib/chrome-body-classes";
@@ -14,6 +15,10 @@ import { trackProfileSheetReturnPath } from "@/lib/profile-sheet-return";
 /** Clears stale scroll locks when leaving Search or after interrupted tab transitions. */
 export function SiteRouteScrollHygiene() {
   const pathname = usePathname();
+
+  useLayoutEffect(() => {
+    return installIosOverscrollRecovery();
+  }, []);
 
   useLayoutEffect(() => {
     if (typeof window !== "undefined") {
