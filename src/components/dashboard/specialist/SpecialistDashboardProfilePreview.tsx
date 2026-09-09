@@ -69,6 +69,7 @@ import type { Trainer } from "@/types/trainer";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 import { HOMEPAGE_FEATURED_SPECIALTY_LIMIT } from "@/lib/specialty-display";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { parseMembershipPlan } from "@/lib/specialist-premium";
 
 type ProfilePreviewMode = "edit" | "live" | "inquiries";
 const LOCK_CLASS = "specialist-live-edit-open";
@@ -298,7 +299,10 @@ function LiveEditSheet({
     const armPickerGuard = (event: Event) => {
       const target = event.target;
       if (target instanceof HTMLInputElement && target.type === "file") {
-        pickerGuardUntilRef.current = Date.now() + 1600;
+        const isVideo =
+          (target.accept || "").includes("video") ||
+          (target.files?.[0]?.type || "").startsWith("video/");
+        pickerGuardUntilRef.current = Date.now() + (isVideo ? 12000 : 1600);
       }
     };
     document.addEventListener("change", armPickerGuard, true);
@@ -507,13 +511,23 @@ export function SpecialistDashboardProfilePreview({
     trainer: managedTrainer,
   } = useManagedSpecialistProfile();
 
+  const listing = managedTrainer ?? trainerProp;
+  const listingPlan = parseMembershipPlan(listing.membershipPlan);
+  const sessionPlan = isProPlus
+    ? "platinum"
+    : isPremium
+      ? "premium"
+      : "free";
+  const membershipPlan =
+    sessionPlan === "platinum" || listingPlan === "platinum"
+      ? "platinum"
+      : sessionPlan === "premium" || listingPlan === "premium"
+        ? "premium"
+        : "free";
   const trainer = {
-    ...(managedTrainer ?? trainerProp),
-    isPremium:
-      isPremium ||
-      isProPlus ||
-      Boolean((managedTrainer ?? trainerProp).isPremium),
-    membershipPlan: isProPlus ? "platinum" : isPremium ? "premium" : "free",
+    ...listing,
+    isPremium: membershipPlan !== "free",
+    membershipPlan,
   } as Trainer;
   const isLiveListing = application?.profileStatus === "APPROVED";
 
@@ -678,6 +692,7 @@ export function SpecialistDashboardProfilePreview({
               photoNotes={form.photoNotes}
               slideshowFramesJson={form.slideshowFramesJson}
               videoNotes={form.videoNotes}
+              videoPostersJson={form.videoPostersJson}
               pinnedPhotos={form.pinnedPhotos}
               transformationNotes={form.transformationNotes}
               isPremium={isPremium}

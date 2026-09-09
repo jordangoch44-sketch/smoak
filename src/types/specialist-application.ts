@@ -54,8 +54,16 @@ export interface SpecialistApplicationMedia {
   profilePhotoCrop: ProfilePhotoCropSettings | null;
   transformationPhotoUrls: string;
   certificationUploadUrls: string;
+  /**
+   * Header slideshow **photo** URLs (newline-separated).
+   * Legacy name — not training videos. Dashboard form field is `photoNotes`.
+   * Real profile videos live on profile overrides as `videoNotes` (PRO+ phone uploads).
+   */
   trainingVideoUrls: string;
-  /** JSON map of slideshow image URL → framing { x, y, zoom, area* } */
+  /**
+   * JSON map of slideshow image URL → framing { x, y, zoom, area* }.
+   * New photos are baked 4:5 JPEGs; keep this for older listings and Adjust.
+   */
   slideshowFramesJson?: string;
 }
 

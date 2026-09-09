@@ -19,16 +19,23 @@ import {
 import {
   normalizePinnedPhotos,
   parseMediaUrlList,
+  pinAllowList,
   PINNED_PHOTOS_MAX,
   promoteMediaUrl,
   serializeMediaUrlList,
   specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
+import {
+  parseVideoPosterMap,
+  resolveVideoPoster,
+} from "@/lib/media/video-poster";
+import { formatClipSecondsLabel } from "@/lib/media/video-file";
 import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
 import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
+import { SpecialistVideosEditor } from "@/components/dashboard/specialist/SpecialistVideosEditor";
 
 interface SpecialistProfileMediaEditorProps {
   profilePhotoUrl: string;
@@ -36,6 +43,7 @@ interface SpecialistProfileMediaEditorProps {
   photoNotes: string;
   slideshowFramesJson: string;
   videoNotes: string;
+  videoPostersJson?: string;
   pinnedPhotos: string[];
   transformationNotes?: string;
   isPremium: boolean;
@@ -48,6 +56,7 @@ interface SpecialistProfileMediaEditorProps {
     photoNotes?: string;
     slideshowFramesJson?: string;
     videoNotes?: string;
+    videoPostersJson?: string;
     pinnedPhotos?: string[];
     transformationNotes?: string;
   }) => void;
@@ -73,6 +82,7 @@ export function SpecialistProfileMediaEditor({
   photoNotes,
   slideshowFramesJson,
   videoNotes,
+  videoPostersJson = "",
   pinnedPhotos,
   transformationNotes = "",
   isPremium,
@@ -81,11 +91,15 @@ export function SpecialistProfileMediaEditor({
   onUpgrade,
   onChange,
 }: SpecialistProfileMediaEditorProps) {
-  const limits = specialistMediaLimitsForPlan(isPremium);
+  const limits = specialistMediaLimitsForPlan(isPremium, isProPlus);
   const headerImages = parseMediaUrlList(photoNotes);
-  const slideshowFrames = parseSlideshowFrameMap(slideshowFramesJson);
   const headerVideos = parseMediaUrlList(videoNotes);
-  const pins = normalizePinnedPhotos(pinnedPhotos, headerImages);
+  const slideshowFrames = parseSlideshowFrameMap(slideshowFramesJson);
+  const pins = normalizePinnedPhotos(
+    pinnedPhotos,
+    pinAllowList(headerImages, headerVideos)
+  );
+  const videoPosters = parseVideoPosterMap(videoPostersJson);
   const cover = coverImageUrl.trim() || headerImages[0] || "";
   const inputId = useId();
   const [busy, setBusy] = useState(false);
@@ -94,7 +108,6 @@ export function SpecialistProfileMediaEditor({
   const [cropQueue, setCropQueue] = useState<CropQueueState | null>(null);
 
   const atImageLimit = headerImages.length >= limits.images;
-  const atVideoLimit = headerVideos.length >= limits.videos;
   const atPinLimit = pins.length >= PINNED_PHOTOS_MAX;
 
   function markHeaderBroken(url: string) {
@@ -112,15 +125,14 @@ export function SpecialistProfileMediaEditor({
     onChange({
       photoNotes: serializeMediaUrlList(trimmed),
       coverImageUrl: nextCover,
-      pinnedPhotos: normalizePinnedPhotos(nextPins ?? pins, trimmed),
+      pinnedPhotos: normalizePinnedPhotos(
+        nextPins ?? pins,
+        pinAllowList(trimmed, headerVideos)
+      ),
       slideshowFramesJson: serializeSlideshowFrameMap(
         pruneSlideshowFrameMap(frameBase, trimmed)
       ),
     });
-  }
-
-  function setHeaderVideos(next: string[]) {
-    onChange({ videoNotes: serializeMediaUrlList(next) });
   }
 
   function makeCover(url: string) {
@@ -128,7 +140,10 @@ export function SpecialistProfileMediaEditor({
     onChange({
       photoNotes: serializeMediaUrlList(promoted),
       coverImageUrl: url.trim(),
-      pinnedPhotos: normalizePinnedPhotos(pins, promoted),
+      pinnedPhotos: normalizePinnedPhotos(
+        pins,
+        pinAllowList(promoted, headerVideos)
+      ),
     });
   }
 
@@ -138,7 +153,8 @@ export function SpecialistProfileMediaEditor({
       return;
     }
     const trimmed = url.trim();
-    if (!trimmed || !headerImages.includes(trimmed)) return;
+    if (!trimmed || !pinAllowList(headerImages, headerVideos).includes(trimmed))
+      return;
     if (pins.includes(trimmed)) {
       onChange({
         pinnedPhotos: pins.filter((item) => item !== trimmed),
@@ -146,7 +162,7 @@ export function SpecialistProfileMediaEditor({
       return;
     }
     if (atPinLimit) {
-      setError(`You can pin up to ${PINNED_PHOTOS_MAX} photos.`);
+      setError(`You can pin up to ${PINNED_PHOTOS_MAX} photos or videos.`);
       return;
     }
     setError(null);
@@ -440,7 +456,7 @@ export function SpecialistProfileMediaEditor({
       >
         <div className="specialist-media-editor__label-row">
           <p className="login-field__label">
-            Pinned photos · {pins.length}/{PINNED_PHOTOS_MAX}
+            Pinned · {pins.length}/{PINNED_PHOTOS_MAX}
           </p>
           {!isPremium ? (
             <LockIcon className="specialist-media-editor__label-lock" />
@@ -449,27 +465,37 @@ export function SpecialistProfileMediaEditor({
         {pins.length > 0 ? (
           <div
             className="specialist-media-editor__pin-row"
-            aria-label="Pinned photos"
+            aria-label="Pinned photos and videos"
           >
-            {pins.map((url, index) => (
+            {pins.map((url, index) => {
+              const videoPoster = resolveVideoPoster(videoPosters, url);
+              const isVideo = headerVideos.includes(url);
+              const preview = videoPoster?.posterUrl || url;
+              return (
               <button
                 key={url}
                 type="button"
                 className="specialist-media-editor__pin-tile"
                 onClick={() => togglePin(url)}
-                aria-label={`Unpin photo ${index + 1}`}
+                aria-label={`Unpin ${isVideo ? "video" : "photo"} ${index + 1}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={url} alt="" />
+                <img src={preview} alt="" />
+                {isVideo ? (
+                  <span className="specialist-media-editor__clip-seconds">
+                    {formatClipSecondsLabel(videoPoster?.duration ?? 0)}
+                  </span>
+                ) : null}
                 <span className="specialist-media-editor__pin-index">
                   {index + 1}
                 </span>
               </button>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="specialist-media-editor__hint">
-            Pin up to 3 header photos under your bio.
+            Pin up to 3 photos or videos under your bio.
           </p>
         )}
         {!isPremium ? (
@@ -492,72 +518,16 @@ export function SpecialistProfileMediaEditor({
         onChange={(next) => onChange({ transformationNotes: next })}
       />
 
-      <div
-        className={cn(
-          "specialist-media-editor__videos",
-          !isPremium && "specialist-media-editor__feature--locked"
-        )}
-      >
-        <div className="specialist-media-editor__label-row">
-          <p className="login-field__label">
-            Videos · {headerVideos.length}/{isPremium ? limits.videos : 2}
-          </p>
-          {!isPremium ? (
-            <LockIcon className="specialist-media-editor__label-lock" />
-          ) : null}
-        </div>
-        <p className="specialist-media-editor__hint">
-          Short clips on your public profile header.
-        </p>
-        {isPremium ? (
-          <>
-            {headerVideos.map((url, index) => (
-              <div
-                key={`${url}-${index}`}
-                className="specialist-media-editor__video-row"
-              >
-                <input
-                  className="login-field__input profile-edit-input"
-                  value={url}
-                  onChange={(event) => {
-                    const next = [...headerVideos];
-                    next[index] = event.target.value;
-                    setHeaderVideos(next);
-                  }}
-                  placeholder="Video URL"
-                />
-                <button
-                  type="button"
-                  className="dashboard-edit-remove"
-                  onClick={() =>
-                    setHeaderVideos(headerVideos.filter((_, i) => i !== index))
-                  }
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
-            {!atVideoLimit ? (
-              <button
-                type="button"
-                className="dashboard-edit-add"
-                onClick={() => setHeaderVideos([...headerVideos, ""])}
-              >
-                + Add video URL
-              </button>
-            ) : null}
-          </>
-        ) : (
-          <button
-            type="button"
-            className="smoac-control specialist-media-editor__lock-cta"
-            onClick={() => onUpgrade?.()}
-          >
-            <LockIcon className="specialist-media-editor__lock-cta-icon" />
-            Unlock with Pro
-          </button>
-        )}
-      </div>
+      <SpecialistVideosEditor
+        videoNotes={videoNotes}
+        videoPostersJson={videoPostersJson}
+        pinnedPhotos={pins}
+        isPremium={isPremium}
+        isProPlus={isProPlus}
+        specialistId={specialistId}
+        onUpgrade={onUpgrade}
+        onChange={(next) => onChange(next)}
+      />
 
       {error ? (
         <p className="dashboard-upload-error" role="alert">

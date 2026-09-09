@@ -43,13 +43,15 @@ export interface SpecialistProfileOverrides {
   photoNotes?: string;
   /** JSON map of slideshow image URL → { x, y, zoom } framing for hero cover */
   slideshowFramesJson?: string;
-  /** Header / gallery video URLs (Pro) — one per line */
+  /** Header / gallery videos (PRO+) — uploaded clips, one URL per line */
   videoNotes?: string;
+  /** JSON map of video URL → { posterUrl, duration, time } for pin thumbnails */
+  videoPostersJson?: string;
   transformationNotes?: string;
   bookingAvailability?: string;
   profilePhotoUrl?: string;
   coverImageUrl?: string;
-  /** Pro / trial — up to 3 header gallery URLs pinned on the public profile */
+  /** Pro / trial — up to 3 gallery URLs pinned on the public profile (photos or PRO+ videos) */
   pinnedPhotos?: string[];
   phone?: string;
   email?: string;
@@ -93,6 +95,7 @@ export type SpecialistProfileEditForm = Required<
     | "photoNotes"
     | "slideshowFramesJson"
     | "videoNotes"
+    | "videoPostersJson"
     | "transformationNotes"
     | "bookingAvailability"
     | "profilePhotoUrl"

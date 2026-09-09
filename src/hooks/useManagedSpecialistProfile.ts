@@ -19,6 +19,7 @@ import {
   getApprovedSpecialistProfilesSnapshot,
   getApprovedSpecialistProfilesHydratedServerSnapshot,
   getApprovedSpecialistProfilesHydratedSnapshot,
+  refreshApprovedSpecialistProfilesFromRemoteAsync,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import {
@@ -54,6 +55,11 @@ export function useManagedSpecialistProfile() {
     if (!sessionUserId && !sessionEmail) return;
     ensureSpecialistApplicationsHydrated();
   }, [sessionUserId, sessionEmail]);
+
+  useEffect(() => {
+    if (!sessionUserId || session?.role !== "specialist") return;
+    void refreshApprovedSpecialistProfilesFromRemoteAsync();
+  }, [sessionUserId, session?.role, session?.membershipPlan, session?.isPremium]);
 
   const applicationRevision = useSyncExternalStore(
     subscribeSpecialistApplications,

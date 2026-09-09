@@ -127,13 +127,17 @@ SpecialistProfileMediaEditor          Live tab + /specialist-dashboard/edit-prof
   ├── ProfileMediaUploadField         avatar crop
   ├── slideshow crop queue           4:5 baked JPEG
   └── SpecialistTransformationsEditor PRO+ before/after photos
+  └── SpecialistVideosEditor          PRO+ phone clips (45s, signed upload)
         └── lib/media/specialist-media-upload.ts
-              POST /api/media/specialist-application  → specialist-media bucket
+              photos: POST /api/media/specialist-application
+              videos:  POST /api/media/specialist-video → signed PUT to bucket
 saveManagedSpecialistProfileEdits → application media URLs + specialist_profiles
 Public hero: ProfileHeroCoverGallery + slideshow-frame.ts
 ```
 
 Do not persist data-URL photos when a specialist id is available — `isUrl()` strips them on save.
+
+Name mapping (do not rename): `photoNotes` ↔ `media.trainingVideoUrls` (slideshow photos, not videos). Real videos: `videoNotes` (PRO+ phone clips, 45s max). `videoPostersJson` is the chosen pin thumbnail still + duration. `slideshowFramesJson` is leftover framing for older listings.
 
 ### Specialist profile reviews (separate sources)
 

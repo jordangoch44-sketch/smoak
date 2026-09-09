@@ -6,6 +6,14 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readActiveAdminOverride } from "@/lib/admin-plan-override";
+import {
+  resolveSpecialistProfileId,
+  setSpecialistProfileMembership,
+} from "@/lib/profiles/specialist-profiles-db";
+import {
+  parseMembershipPlan,
+  type SpecialistMembershipPlan,
+} from "@/lib/specialist-premium";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export const PREMIUM_TRIAL_DAYS = 30;
@@ -93,19 +101,25 @@ export async function grantSpecialistPremiumTrialIfNeeded(
     return { granted: false, trialEndsAt: null };
   }
 
-  if (specialistProfileId) {
-    await supabase
-      .from("specialist_profiles")
-      .update({ is_premium: true, updated_at: startedAt })
-      .eq("id", specialistProfileId);
-  } else {
-    await supabase
-      .from("specialist_profiles")
-      .update({ is_premium: true, updated_at: startedAt })
-      .eq("user_id", userId);
-  }
+  await syncListingMembership(supabase, "premium", {
+    profileId: specialistProfileId,
+    userId,
+  });
 
   return { granted: true, trialEndsAt: endsAt };
+}
+
+async function syncListingMembership(
+  supabase: SupabaseClient,
+  plan: SpecialistMembershipPlan,
+  input: { profileId?: string | null; userId?: string | null }
+): Promise<void> {
+  const profileId = await resolveSpecialistProfileId(supabase, input);
+  if (!profileId) return;
+  const result = await setSpecialistProfileMembership(supabase, profileId, plan);
+  if (!result.ok) {
+    console.warn("[SMOAC membership] listing sync failed:", result.message);
+  }
 }
 
 /**
@@ -153,14 +167,7 @@ export async function resolveAndSyncSpecialistPremiumAccess(
         .update({ is_premium: true, updated_at: new Date().toISOString() })
         .eq("user_id", userId);
     }
-    await supabase
-      .from("specialist_profiles")
-      .update({
-        is_premium: true,
-        membership_plan: override.plan,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    await syncListingMembership(supabase, override.plan, { userId });
     return {
       isPremium: true,
       isPaid,
@@ -173,19 +180,22 @@ export async function resolveAndSyncSpecialistPremiumAccess(
   }
 
   if (isPaid) {
+    const { data: billing } = await supabase
+      .from("specialist_billing")
+      .select("plan")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const paidPlan =
+      billing?.plan === "platinum" || billing?.plan === "premium"
+        ? billing.plan
+        : "premium";
     if (!role.is_premium) {
       await supabase
         .from("user_roles")
         .update({ is_premium: true, updated_at: new Date().toISOString() })
         .eq("user_id", userId);
-      await supabase
-        .from("specialist_profiles")
-        .update({
-          is_premium: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
     }
+    await syncListingMembership(supabase, paidPlan, { userId });
     return {
       isPremium: true,
       isPaid: true,
@@ -203,14 +213,8 @@ export async function resolveAndSyncSpecialistPremiumAccess(
         .from("user_roles")
         .update({ is_premium: true, updated_at: new Date().toISOString() })
         .eq("user_id", userId);
-      await supabase
-        .from("specialist_profiles")
-        .update({
-          is_premium: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", userId);
     }
+    await syncListingMembership(supabase, "premium", { userId });
     return {
       isPremium: true,
       isPaid: false,
@@ -227,17 +231,15 @@ export async function resolveAndSyncSpecialistPremiumAccess(
     .select("membership_plan")
     .eq("user_id", userId)
     .maybeSingle();
-  const durablePlan =
-    profile?.membership_plan === "premium" ||
-    profile?.membership_plan === "platinum";
-
-  if (durablePlan) {
+  const durablePlan = parseMembershipPlan(profile?.membership_plan);
+  if (durablePlan !== "free") {
     if (!role.is_premium) {
       await supabase
         .from("user_roles")
         .update({ is_premium: true, updated_at: new Date().toISOString() })
         .eq("user_id", userId);
     }
+    await syncListingMembership(supabase, durablePlan, { userId });
     return {
       isPremium: true,
       isPaid,
@@ -261,25 +263,13 @@ export async function resolveAndSyncSpecialistPremiumAccess(
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", userId);
-    await supabase
-      .from("specialist_profiles")
-      .update({
-        is_premium: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    await syncListingMembership(supabase, "free", { userId });
   } else if (role.is_premium) {
     await supabase
       .from("user_roles")
       .update({ is_premium: false, updated_at: new Date().toISOString() })
       .eq("user_id", userId);
-    await supabase
-      .from("specialist_profiles")
-      .update({
-        is_premium: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    await syncListingMembership(supabase, "free", { userId });
   }
 
   return {

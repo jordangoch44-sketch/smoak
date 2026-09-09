@@ -44,6 +44,7 @@ export function getTrainerGallery(trainerId: string): TrainerMediaItem[] {
       type: "video",
       src: SAMPLE_VIDEO,
       poster: `https://picsum.photos/seed/smoac-gallery-v-${trainerId}/960/600`,
+      duration: 15,
       alt: "Session highlight reel",
     },
     {

@@ -36,8 +36,12 @@ export function getProfileGalleryMedia(
         url: item.src.trim(),
         thumbnail:
           item.type === "video"
-            ? (item.poster ?? item.src).trim()
+            ? (item.poster ?? "").trim() || undefined
             : item.src.trim(),
+        duration:
+          item.type === "video" && typeof item.duration === "number"
+            ? item.duration
+            : undefined,
         alt: item.alt,
       }));
   }
@@ -80,6 +84,17 @@ export function resolveGalleryIndexForUrl(
     (item) => item.url === trimmed || item.thumbnail === trimmed
   );
   return match >= 0 ? match : 0;
+}
+
+export function resolveGalleryItemForUrl(
+  media: ProfileGalleryMedia[],
+  url: string
+): ProfileGalleryMedia | undefined {
+  const trimmed = url.trim();
+  if (!trimmed) return undefined;
+  return media.find(
+    (item) => item.url === trimmed || item.thumbnail === trimmed
+  );
 }
 
 export function syncTrainerGalleryImages(trainer: Trainer): Trainer {

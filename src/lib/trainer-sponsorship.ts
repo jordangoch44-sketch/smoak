@@ -42,7 +42,7 @@ export function isTrainerVerified(
   );
 }
 
-/** Copy Pro / PRO+ entitlement from a fresh listing onto a possibly stale one. */
+/** Copy Pro / PRO+ entitlement from a listing snapshot onto a possibly stale one. */
 export function overlayTrainerMembership<T extends Trainer>(
   trainer: T,
   source: Pick<Trainer, "isPremium" | "membershipPlan" | "verified">

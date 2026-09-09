@@ -71,6 +71,19 @@ Specialist profiles show **two separate** reputation systems:
 
 Never average SMOAC and Google counts. Hero shows classic ★ + total plus a separate SMOAK line.
 
+## Named differently (do not rename)
+
+Stored names are older than the UI. Keep them; map in code.
+
+| You mean | Stored as | Notes |
+|----------|-----------|--------|
+| Header slideshow photos | `media.trainingVideoUrls` | Dashboard form: `photoNotes` |
+| Profile videos | `videoNotes` (profile overrides) | PRO+ only. Phone upload, 45s max. Do not put videos in `trainingVideoUrls` |
+| Video pin thumbnails | `videoPostersJson` | Chosen still + duration for pin squares. Not a trim. |
+| Slideshow framing | `slideshowFramesJson` | Legacy pan/zoom for old photos; new photos are baked JPEGs |
+
+Specialist crop → data URL → `/api/media/specialist-application`. Client avatars use `getCroppedAvatarFile` (a File). Do not merge those helpers.
+
 ## Footer & legal routes
 
 Global footer: `components/layout/Footer.tsx` + `lib/footer-nav.ts` (`FOOTER_NAV_GROUPS`).  

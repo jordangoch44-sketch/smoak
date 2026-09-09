@@ -1503,6 +1503,7 @@ export function SpecialistEditProfilePageClient({
                   photoNotes={form.photoNotes}
                   slideshowFramesJson={form.slideshowFramesJson}
                   videoNotes={form.videoNotes}
+                  videoPostersJson={form.videoPostersJson}
                   pinnedPhotos={form.pinnedPhotos}
                   transformationNotes={form.transformationNotes}
                   isPremium={isPremium}

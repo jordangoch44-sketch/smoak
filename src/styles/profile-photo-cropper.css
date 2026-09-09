@@ -102,6 +102,13 @@
   background: radial-gradient(circle at center, rgba(20, 20, 30, 0.4) 0%, rgba(3, 3, 6, 0.9) 100%);
 }
 
+.profile-photo-cropper__video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
 .profile-photo-cropper__controls {
   flex-shrink: 0;
   display: flex;

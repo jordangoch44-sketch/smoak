@@ -505,14 +505,16 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
     throw new Error(`Missing curated profile for trainer: ${trainer.id}`);
   }
   const heroImage = getTrainerHeroPlaceholder(trainer.id);
-  const gallery = getTrainerGallery(trainer.id);
-  const reviewSources = TRAINER_DEMO_REVIEW_SOURCES[trainer.id];
-  const galleryImages = buildTrainerGalleryImages(gallery, heroImage);
   const clientTransformations = getTrainerTransformations(trainer.id);
   const membershipPlan = (
     clientTransformations.length > 0 ? "platinum" : "premium"
   ) as Trainer["membershipPlan"];
   const isProPlus = membershipPlan === "platinum";
+  const gallery = getTrainerGallery(trainer.id).filter(
+    (item) => isProPlus || item.type !== "video"
+  );
+  const reviewSources = TRAINER_DEMO_REVIEW_SOURCES[trainer.id];
+  const galleryImages = buildTrainerGalleryImages(gallery, heroImage);
   const enriched = {
     ...trainer,
     ...curated,
@@ -528,7 +530,12 @@ export const trainers: Trainer[] = trainerRecords.map((trainer) => {
     ...(isProPlus
       ? {
           isPremium: true,
-          pinnedPhotos: normalizePinnedPhotos(galleryImages),
+          pinnedPhotos: normalizePinnedPhotos(
+            [
+              gallery.find((item) => item.type === "video")?.src,
+              ...galleryImages,
+            ].filter((url): url is string => Boolean(url))
+          ),
         }
       : {}),
   };

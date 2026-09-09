@@ -1,18 +1,27 @@
 /**
  * Marketplace media caps for specialist public profiles.
- * Free: header slideshow images only. Pro: more images + short videos.
+ * Free: header slideshow images only.
+ * Pro: more images + pins.
+ * PRO+: same images + up to 2 profile videos (45 seconds each, from the phone).
  */
 export const SPECIALIST_MEDIA_LIMITS = {
   free: { images: 4, videos: 0 },
-  premium: { images: 8, videos: 2 },
+  premium: { images: 8, videos: 0 },
+  proPlus: { images: 8, videos: 2 },
 } as const;
+
+/** Max length for a PRO+ profile video. */
+export const SPECIALIST_VIDEO_MAX_SECONDS = 45;
 
 export type SpecialistMediaPlan = keyof typeof SPECIALIST_MEDIA_LIMITS;
 
-export function specialistMediaLimitsForPlan(isPremium: boolean) {
-  return isPremium
-    ? SPECIALIST_MEDIA_LIMITS.premium
-    : SPECIALIST_MEDIA_LIMITS.free;
+export function specialistMediaLimitsForPlan(
+  isPremium: boolean,
+  isProPlus = false
+) {
+  if (isProPlus) return SPECIALIST_MEDIA_LIMITS.proPlus;
+  if (isPremium) return SPECIALIST_MEDIA_LIMITS.premium;
+  return SPECIALIST_MEDIA_LIMITS.free;
 }
 
 export function parseMediaUrlList(value: string): string[] {
@@ -52,7 +61,16 @@ export function normalizeTransformationUrls(urls: unknown): string[] {
   return cleaned;
 }
 
-/** Keep up to 3 unique image URLs, optionally restricted to an allow-list. */
+/** Keep up to 3 unique media URLs, optionally restricted to an allow-list. */
+export function pinAllowList(
+  photoUrls: readonly string[] | undefined,
+  videoUrls?: readonly string[] | undefined
+): string[] {
+  return [...(photoUrls ?? []), ...(videoUrls ?? [])]
+    .map((url) => url.trim())
+    .filter(Boolean);
+}
+
 export function normalizePinnedPhotos(
   urls: unknown,
   allowed?: readonly string[]

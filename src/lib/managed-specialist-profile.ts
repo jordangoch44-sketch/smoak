@@ -30,6 +30,7 @@ import {
   formToOverrides,
   loadSpecialistOverridesForId,
 } from "@/lib/specialist-profile-overrides";
+import { parseMembershipPlan } from "@/lib/specialist-premium";
 import { resolveSpecialistFormLocation } from "@/lib/specialist-form-location";
 import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
@@ -197,6 +198,14 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
         (approved.profileStyle
           ? normalizeProfileStyle(approved.profileStyle)
           : undefined),
+      isPremium: Boolean(approved.isPremium) || Boolean(fromApp.isPremium),
+      membershipPlan: parseMembershipPlan(
+        approved.membershipPlan ?? fromApp.membershipPlan
+      ),
+      verified:
+        Boolean(approved.isPremium) ||
+        parseMembershipPlan(approved.membershipPlan) !== "free" ||
+        Boolean(fromApp.verified),
     };
   }
 
@@ -220,6 +229,8 @@ export function syncProfileOverridesFromApplication(
     coverImageUrl: existing?.coverImageUrl ?? generated.coverImageUrl,
     pinnedPhotos: existing?.pinnedPhotos ?? generated.pinnedPhotos,
     videoNotes: existing?.videoNotes ?? generated.videoNotes,
+    videoPostersJson:
+      existing?.videoPostersJson ?? generated.videoPostersJson,
     slideshowFramesJson:
       generated.slideshowFramesJson?.trim() ||
       existing?.slideshowFramesJson?.trim() ||

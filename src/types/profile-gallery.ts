@@ -4,5 +4,6 @@ export interface ProfileGalleryMedia {
   type: "image" | "video";
   url: string;
   thumbnail?: string;
+  duration?: number;
   alt?: string;
 }

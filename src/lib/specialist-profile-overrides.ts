@@ -6,6 +6,7 @@ import {
   normalizePinnedPhotos,
   normalizeTransformationUrls,
   parseMediaUrlList,
+  pinAllowList,
   serializeMediaUrlList,
 } from "@/lib/specialist-media-limits";
 import {
@@ -14,12 +15,19 @@ import {
   serializeSlideshowFrameMap,
 } from "@/lib/media/slideshow-frame";
 import {
+  parseVideoPosterMap,
+  pruneVideoPosterMap,
+  resolveVideoPoster,
+  serializeVideoPosterMap,
+} from "@/lib/media/video-poster";
+import {
   parseTravelRadiusMiles,
   travelToClientsFromLegacyRadius,
 } from "@/lib/specialist-service-area";
 import { parseTravelToClients } from "@/types/specialist-service-area";
 import { parseTrainingOptions } from "@/types/specialist-training-options";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
+import { isTrainerProPlus } from "@/lib/specialist-premium";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import {
   hasSessionPrice,
@@ -73,6 +81,7 @@ const PROFILE_SECTION_FIELDS: Record<
     "photoNotes",
     "slideshowFramesJson",
     "videoNotes",
+    "videoPostersJson",
     "pinnedPhotos",
     "transformationNotes",
   ],
@@ -129,6 +138,7 @@ const PROFILE_SECTION_FIELDS: Record<
     "photoNotes",
     "slideshowFramesJson",
     "videoNotes",
+    "videoPostersJson",
     "pinnedPhotos",
     "transformationNotes",
     "instagram",
@@ -206,11 +216,22 @@ function isTransformationSrc(value: string): boolean {
   return isUrl(value) || /^data:image\//i.test(value);
 }
 
+function stripGalleryVideosUnlessProPlus(trainer: Trainer): Trainer {
+  if (isTrainerProPlus(trainer)) return trainer;
+  if (!trainer.gallery?.some((item) => item.type === "video")) return trainer;
+  return {
+    ...trainer,
+    gallery: trainer.gallery.filter((item) => item.type !== "video"),
+  };
+}
+
 export function applySpecialistProfileOverrides(
   base: Trainer,
   overrides: SpecialistProfileOverrides | null | undefined
 ): Trainer {
-  if (!overrides) return base;
+  if (!overrides) {
+    return stripGalleryVideosUnlessProPlus(base);
+  }
 
   const merged: Trainer = {
     ...base,
@@ -369,18 +390,26 @@ export function applySpecialistProfileOverrides(
     }
   }
 
-  if (overrides.videoNotes?.trim()) {
+  if (isTrainerProPlus(merged) && overrides.videoNotes?.trim()) {
     const videoUrls = parseLineList(overrides.videoNotes).filter(isUrl);
+    const posters = parseVideoPosterMap(overrides.videoPostersJson ?? "");
     if (videoUrls.length > 0) {
       const imageItems = merged.gallery.filter((item) => item.type === "image");
-      const videoItems = videoUrls.map((src, index) => ({
-        id: `profile-video-${index}`,
-        type: "video" as const,
-        src,
-        alt: `${merged.name} video ${index + 1}`,
-      }));
+      const videoItems = videoUrls.map((src, index) => {
+        const poster = resolveVideoPoster(posters, src);
+        return {
+          id: `profile-video-${index}`,
+          type: "video" as const,
+          src,
+          alt: `${merged.name} video ${index + 1}`,
+          ...(poster?.posterUrl ? { poster: poster.posterUrl } : {}),
+          ...(poster ? { duration: poster.duration } : {}),
+        };
+      });
       merged.gallery = [...imageItems, ...videoItems];
     }
+  } else if (!isTrainerProPlus(merged)) {
+    merged.gallery = merged.gallery.filter((item) => item.type !== "video");
   }
 
   merged.galleryImages = buildTrainerGalleryImages(
@@ -401,15 +430,20 @@ export function applySpecialistProfileOverrides(
   }
   merged.reviewCount = computeTrainerReviewCount(merged);
 
+  const pinVideos = isTrainerProPlus(merged)
+    ? merged.gallery
+        .filter((item) => item.type === "video")
+        .map((item) => item.src)
+    : [];
   if (overrides.pinnedPhotos !== undefined) {
     merged.pinnedPhotos = normalizePinnedPhotos(
       overrides.pinnedPhotos,
-      merged.galleryImages
+      pinAllowList(merged.galleryImages, pinVideos)
     );
   } else if (base.pinnedPhotos?.length) {
     merged.pinnedPhotos = normalizePinnedPhotos(
       base.pinnedPhotos,
-      merged.galleryImages
+      pinAllowList(merged.galleryImages, pinVideos)
     );
   }
   if (!merged.pinnedPhotos?.length) {
@@ -527,6 +561,28 @@ export function overridesFromTrainer(
             .filter((item) => item.type === "video")
             .map((item) => item.src)
             .join("\n"),
+    videoPostersJson:
+      stored?.videoPostersJson?.trim() ??
+      serializeVideoPosterMap(
+        Object.fromEntries(
+          (Array.isArray(trainer.gallery) ? trainer.gallery : [])
+            .filter(
+              (item) =>
+                item.type === "video" &&
+                typeof item.poster === "string" &&
+                item.poster.trim()
+            )
+            .map((item) => [
+              item.src,
+              {
+                posterUrl: item.poster!.trim(),
+                duration:
+                  typeof item.duration === "number" ? item.duration : 0,
+                time: 0,
+              },
+            ])
+        )
+      ),
     transformationNotes: stored?.transformationNotes?.trim()
       ? stored.transformationNotes
       : serializeMediaUrlList(
@@ -557,16 +613,28 @@ export function overridesFromTrainer(
       stored?.pinnedPhotos?.length
         ? stored.pinnedPhotos
         : trainer.pinnedPhotos,
-      (
-        stored?.photoNotes?.trim()
-          ? stored.photoNotes
-              .split("\n")
-              .map((line) => line.trim())
-              .filter(Boolean)
-          : Array.isArray(trainer.galleryImages)
-            ? trainer.galleryImages
-            : []
-      ).filter(Boolean)
+      pinAllowList(
+        (
+          stored?.photoNotes?.trim()
+            ? stored.photoNotes
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean)
+            : Array.isArray(trainer.galleryImages)
+              ? trainer.galleryImages
+              : []
+        ).filter(Boolean),
+        (
+          stored?.videoNotes?.trim()
+            ? stored.videoNotes
+                .split("\n")
+                .map((line) => line.trim())
+                .filter(Boolean)
+            : (Array.isArray(trainer.gallery) ? trainer.gallery : [])
+                .filter((item) => item.type === "video")
+                .map((item) => item.src)
+        ).filter(Boolean)
+      )
     ),
     phone: stored?.phone ?? "",
     email: stored?.email ?? "",
@@ -640,13 +708,22 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     photoNotes: form.photoNotes.trim(),
     slideshowFramesJson: form.slideshowFramesJson.trim(),
     videoNotes: form.videoNotes.trim(),
+    videoPostersJson: serializeVideoPosterMap(
+      pruneVideoPosterMap(
+        parseVideoPosterMap(form.videoPostersJson ?? ""),
+        parseMediaUrlList(form.videoNotes)
+      )
+    ),
     transformationNotes: form.transformationNotes.trim(),
     bookingAvailability: form.bookingAvailability.trim(),
     profilePhotoUrl: form.profilePhotoUrl.trim(),
     coverImageUrl: form.coverImageUrl.trim(),
     pinnedPhotos: normalizePinnedPhotos(
       form.pinnedPhotos,
-      parseMediaUrlList(form.photoNotes)
+      pinAllowList(
+        parseMediaUrlList(form.photoNotes),
+        parseMediaUrlList(form.videoNotes)
+      )
     ),
     phone: form.phone.trim(),
     email: form.email.trim(),

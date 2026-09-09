@@ -21,6 +21,6 @@ export const SPECIALIST_STORAGE_ACCEPT = {
   profile: "image/jpeg,image/png,image/webp",
   cover: "image/jpeg,image/png,image/webp",
   galleryImage: "image/jpeg,image/png,image/webp",
-  galleryVideo: "video/mp4,video/quicktime,video/webm",
+  galleryVideo: "video/mp4,video/quicktime,video/webm,video/x-m4v,.mp4,.mov,.m4v",
   galleryVideoPoster: "image/jpeg,image/png,image/webp",
 } as const;

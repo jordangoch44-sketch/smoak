@@ -44,6 +44,8 @@ export interface TrainerMediaItem {
   type: "image" | "video";
   src: string;
   poster?: string;
+  /** Whole-clip length in seconds (videos). */
+  duration?: number;
   alt: string;
 }
 
@@ -161,8 +163,8 @@ export interface Trainer {
     { x: number; y: number; zoom: number }
   >;
   /**
-   * Pro / trial only — up to 3 gallery URLs pinned under the hero bio.
-   * Hidden on public profiles when empty or when not Pro.
+   * Pro / trial — up to 3 gallery URLs pinned under the hero bio
+   * (photos and PRO+ videos). Hidden when empty or not Pro.
    */
   pinnedPhotos?: string[];
   image: string;

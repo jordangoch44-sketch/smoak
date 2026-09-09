@@ -88,9 +88,11 @@ export function TrainerProfilePageClient({
       : null;
   const liveOrPrimed = liveTrainer ?? ssrTrainer ?? primed ?? null;
   const trainer =
-    liveOrPrimed && ssrTrainer
-      ? overlayTrainerMembership(liveOrPrimed, ssrTrainer)
-      : liveOrPrimed;
+    catalogReady && liveTrainer
+      ? liveTrainer
+      : liveOrPrimed && ssrTrainer
+        ? overlayTrainerMembership(liveOrPrimed, ssrTrainer)
+        : liveOrPrimed;
   const [inquiryOpen, setInquiryOpen] = useState(false);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
@@ -115,9 +117,9 @@ export function TrainerProfilePageClient({
   } = useSpecialistReviews(routeId);
 
   useEffect(() => {
-    if (!ssrTrainer) return;
+    if (!ssrTrainer || catalogReady) return;
     mergeApprovedSpecialistProfileLocal(ssrTrainer);
-  }, [ssrTrainer]);
+  }, [ssrTrainer, catalogReady]);
 
   const cityRanking = useMemo(() => {
     const current = trainer;

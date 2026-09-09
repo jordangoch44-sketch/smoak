@@ -24,6 +24,7 @@ import {
 } from "@/lib/boost-campaign";
 import { createBoostCampaignCheckout } from "@/lib/stripe/boost-campaign-checkout";
 import { isProPlusPlan } from "@/lib/stripe/pro-plus-boost";
+import { isLikelyVideoUrl } from "@/lib/media/video-file";
 
 interface BoostVisibilityModalProps {
   open: boolean;
@@ -559,7 +560,7 @@ function BackChevron() {
 function firstPhoto(...values: (string | null | undefined)[]): string {
   for (const value of values) {
     const trimmed = value?.trim();
-    if (trimmed) return trimmed;
+    if (trimmed && !isLikelyVideoUrl(trimmed)) return trimmed;
   }
   return "";
 }

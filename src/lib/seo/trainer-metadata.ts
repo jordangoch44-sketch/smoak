@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { isLikelyVideoUrl } from "@/lib/media/video-file";
 import { absoluteUrl } from "@/lib/seo/site-url";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
@@ -12,15 +13,20 @@ function truncate(text: string, max: number): string {
 }
 
 function pickTrainerOgImage(trainer: Trainer): string | undefined {
+  const firstPin = trainer.pinnedPhotos?.[0]?.trim() ?? "";
+  const pinPoster = trainer.gallery?.find(
+    (item) => item.type === "video" && item.src.trim() === firstPin
+  )?.poster;
   const candidates = [
     trainer.heroImage,
     trainer.image,
     trainer.galleryImages?.[0],
-    trainer.pinnedPhotos?.[0],
+    pinPoster,
+    firstPin,
   ];
   for (const raw of candidates) {
     const url = raw?.trim() ?? "";
-    if (!url) continue;
+    if (!url || isLikelyVideoUrl(url)) continue;
     if (/^(https?:\/\/|\/)/i.test(url)) return url;
   }
   return undefined;

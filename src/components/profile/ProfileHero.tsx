@@ -8,8 +8,13 @@ import {
   buildTrainerGalleryImages,
   getProfileGalleryMedia,
   resolveGalleryIndexForUrl,
+  resolveGalleryItemForUrl,
 } from "@/lib/trainer-gallery";
-import { normalizePinnedPhotos } from "@/lib/specialist-media-limits";
+import { formatClipSecondsLabel } from "@/lib/media/video-file";
+import {
+  normalizePinnedPhotos,
+  pinAllowList,
+} from "@/lib/specialist-media-limits";
 import { isTrainerProPlus } from "@/lib/specialist-premium";
 import {
   getProfileAccentRgb,
@@ -73,8 +78,14 @@ export function ProfileHero({
   );
   const canShowPins =
     trainer.isPremium === true || isTrainerProPlus(trainer);
+  const pinVideos = galleryMedia
+    .filter((item) => item.type === "video")
+    .map((item) => item.url);
   const pinnedPhotos = canShowPins
-    ? normalizePinnedPhotos(trainer.pinnedPhotos, coverImages)
+    ? normalizePinnedPhotos(
+        trainer.pinnedPhotos,
+        pinAllowList(coverImages, pinVideos)
+      )
     : [];
   const transformationPhotos = isTrainerProPlus(trainer)
     ? (trainer.clientTransformations ?? []).filter(
@@ -274,20 +285,36 @@ export function ProfileHero({
                   "profile-hero__pinned",
                   remainingPhotoCount > 0 && "profile-hero__pinned--with-more"
                 )}
-                aria-label="Pinned photos"
+                aria-label="Pinned photos and videos"
               >
-                {pinnedPhotos.map((url, index) => (
-                  <button
-                    key={url}
-                    type="button"
-                    className="profile-hero__pinned-tile"
-                    aria-label={`Open pinned photo ${index + 1}`}
-                    onClick={(event) => openGallery(event, url)}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={url} alt="" />
-                  </button>
-                ))}
+                {pinnedPhotos.map((url, index) => {
+                  const item = resolveGalleryItemForUrl(galleryMedia, url);
+                  const isVideo = item?.type === "video";
+                  const preview = isVideo ? item.thumbnail || "" : url;
+                  return (
+                    <button
+                      key={url}
+                      type="button"
+                      className="profile-hero__pinned-tile"
+                      aria-label={
+                        isVideo
+                          ? `Play pinned video ${index + 1}`
+                          : `Open pinned photo ${index + 1}`
+                      }
+                      onClick={(event) => openGallery(event, url)}
+                    >
+                      {preview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={preview} alt="" />
+                      ) : null}
+                      {isVideo ? (
+                        <span className="profile-hero__pinned-seconds">
+                          {formatClipSecondsLabel(item.duration ?? 0)}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
                 {remainingPhotoCount > 0 ? (
                   <button
                     type="button"

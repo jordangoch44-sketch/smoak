@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { useCarousel } from "@/hooks/useCarousel";
 import { useHorizontalSwipe } from "@/hooks/useHorizontalSwipe";
 import type { ProfileGalleryMedia } from "@/types/profile-gallery";
+import { formatClipSecondsLabel } from "@/lib/media/video-file";
 import { cn } from "@/lib/utils";
 
 const CLOSE_MS = 300;
@@ -336,11 +337,20 @@ export function ProfileGalleryModal({
                           poster={item.thumbnail}
                           playsInline
                           muted
+                          autoPlay
                           controls={videoPlaying}
-                          preload="metadata"
-                          onLoadedData={handleMediaReady}
+                          preload="auto"
+                          onLoadedData={() => {
+                            handleMediaReady();
+                            void handlePlayVideo();
+                          }}
+                          onPlay={() => setVideoPlaying(true)}
                           onEnded={() => setVideoPlaying(false)}
-                          onPause={() => setVideoPlaying(false)}
+                          onPause={(event) => {
+                            if (!event.currentTarget.isConnected) return;
+                            if (event.currentTarget.seeking) return;
+                            setVideoPlaying(false);
+                          }}
                         />
                         {!videoPlaying ? (
                           <button
@@ -411,21 +421,28 @@ export function ProfileGalleryModal({
                     )}
                     onClick={() => goToSlide(thumbIndex)}
                   >
-                    <Image
-                      src={item.thumbnail ?? item.url}
-                      alt=""
-                      fill
-                      sizes="80px"
-                      className="object-cover"
-                      loading="lazy"
-                      draggable={false}
-                    />
+                    {item.type === "video" && !item.thumbnail ? (
+                      <span
+                        className="profile-gallery-modal__thumb-fallback"
+                        aria-hidden
+                      />
+                    ) : (
+                      <Image
+                        src={item.thumbnail ?? item.url}
+                        alt=""
+                        fill
+                        sizes="80px"
+                        className="object-cover"
+                        loading="lazy"
+                        draggable={false}
+                      />
+                    )}
                     {item.type === "video" ? (
                       <span
-                        className="profile-gallery-modal__thumb-badge"
+                        className="profile-gallery-modal__thumb-badge profile-gallery-modal__thumb-badge--seconds"
                         aria-hidden
                       >
-                        ▶
+                        {formatClipSecondsLabel(item.duration ?? 0)}
                       </span>
                     ) : null}
                   </button>

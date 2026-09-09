@@ -80,6 +80,10 @@ function asGallery(value: unknown): TrainerMediaItem[] {
           typeof row.poster === "string" && row.poster.trim()
             ? row.poster.trim()
             : undefined,
+        duration:
+          typeof row.duration === "number" && Number.isFinite(row.duration)
+            ? Math.max(0, row.duration)
+            : undefined,
         alt: asString(row.alt),
       };
     })
@@ -663,44 +667,134 @@ export async function upsertSpecialistProfile(
   return { ok: true };
 }
 
+/** Resolve the durable listing id (profile id, application id, or linked user). */
+export async function resolveSpecialistProfileId(
+  supabase: SupabaseClient,
+  input: { profileId?: string | null; userId?: string | null }
+): Promise<string | null> {
+  const profileId = input.profileId?.trim() || "";
+  if (profileId) {
+    const byId = await supabase
+      .from("specialist_profiles")
+      .select("id")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (typeof byId.data?.id === "string" && byId.data.id) {
+      return byId.data.id;
+    }
+    const byApplication = await supabase
+      .from("specialist_profiles")
+      .select("id")
+      .eq("application_id", profileId)
+      .maybeSingle();
+    if (typeof byApplication.data?.id === "string" && byApplication.data.id) {
+      return byApplication.data.id;
+    }
+  }
+
+  const userId = input.userId?.trim() || "";
+  if (userId) {
+    const byUser = await supabase
+      .from("specialist_profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (typeof byUser.data?.id === "string" && byUser.data.id) {
+      return byUser.data.id;
+    }
+    const { data: application } = await supabase
+      .from("specialist_applications")
+      .select("id")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const applicationId =
+      typeof application?.id === "string" ? application.id.trim() : "";
+    if (applicationId) {
+      const byApplicationId = await supabase
+        .from("specialist_profiles")
+        .select("id")
+        .eq("id", applicationId)
+        .maybeSingle();
+      if (typeof byApplicationId.data?.id === "string" && byApplicationId.data.id) {
+        return byApplicationId.data.id;
+      }
+      const byApplicationFk = await supabase
+        .from("specialist_profiles")
+        .select("id")
+        .eq("application_id", applicationId)
+        .maybeSingle();
+      if (
+        typeof byApplicationFk.data?.id === "string" &&
+        byApplicationFk.data.id
+      ) {
+        return byApplicationFk.data.id;
+      }
+    }
+  }
+
+  return null;
+}
+
+function membershipProfileDataPatch(
+  profileData: Record<string, unknown> | null | undefined,
+  plan: SpecialistMembershipPlan
+): Record<string, unknown> {
+  const isPremium = plan !== "free";
+  const next =
+    profileData && typeof profileData === "object" ? { ...profileData } : {};
+  next.isPremium = isPremium;
+  next.membershipPlan = plan;
+  next.verified = isPremium;
+  return next;
+}
+
 /** Merge membership onto columns + profile_data so public JSON snapshots stay live. */
 export async function setSpecialistProfileMembership(
   supabase: SupabaseClient,
   id: string,
   plan: SpecialistMembershipPlan
 ): Promise<SpecialistProfilesMutationResult> {
+  const profileId = await resolveSpecialistProfileId(supabase, {
+    profileId: id,
+  });
+  if (!profileId) {
+    return { ok: false, message: "Specialist listing was not found." };
+  }
+
   const isPremium = plan !== "free";
   const now = new Date().toISOString();
   const { data: row, error: readError } = await supabase
     .from("specialist_profiles")
     .select("profile_data")
-    .eq("id", id)
+    .eq("id", profileId)
     .maybeSingle();
 
   if (readError) {
     return { ok: false, message: readError.message };
   }
 
-  const profileData =
-    row?.profile_data && typeof row.profile_data === "object"
-      ? { ...(row.profile_data as Record<string, unknown>) }
-      : {};
-  profileData.isPremium = isPremium;
-  profileData.membershipPlan = plan;
-  profileData.verified = isPremium;
+  const profileData = membershipProfileDataPatch(
+    row?.profile_data as Record<string, unknown> | undefined,
+    plan
+  );
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("specialist_profiles")
     .update({
       is_premium: isPremium,
       membership_plan: plan,
+      verified: isPremium,
       profile_data: profileData,
       updated_at: now,
     })
-    .eq("id", id);
+    .eq("id", profileId)
+    .select("id");
 
   if (error) {
     return { ok: false, message: error.message };
+  }
+  if (!updated?.length) {
+    return { ok: false, message: "Could not update listing membership." };
   }
   return { ok: true };
 }
