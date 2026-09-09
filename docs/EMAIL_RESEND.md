@@ -86,3 +86,24 @@ node scripts/generate-supabase-auth-emails.mjs
 ```
 
 For production From-address branding, point Supabase Auth **custom SMTP** at Resend so Auth mail also comes from `SMOAC <noreply@smoac.com>`.
+
+## Admin catalog emails (live)
+
+Owner + Staff manage these from `/internal` → Email. Catalog rows persist in `admin_emails`. **Send now**, scheduled one-times, weekly, after-signup, and profile-incomplete all go through Resend (`kind: admin_broadcast`). Empty catalog until you add the real list.
+
+| Piece | Where |
+|-------|--------|
+| Save / list / delete | `GET/POST /api/admin/emails`, `PATCH/DELETE /api/admin/emails/[id]` |
+| Send now | `POST /api/admin/emails/[id]/send` |
+| Recipients | `GET /api/admin/emails/[id]/recipients` |
+| Resend non-openers | `POST /api/admin/emails/[id]/resend-non-openers` |
+| Analytics | `GET /api/admin/emails/analytics?range=7d\|30d` |
+| Hourly drain + automations | Vercel cron `GET /api/cron/admin-emails` (`Authorization: Bearer CRON_SECRET`) |
+| Open / click / bounce / complaint | `POST /api/webhooks/resend` |
+| Unsubscribe | `/email/unsubscribe?token=…` |
+
+**Resend dashboard:** enable Open and Click tracking, then add a webhook to `https://smoac.com/api/webhooks/resend` for `email.opened`, `email.clicked`, `email.bounced`, `email.complained`. Set `RESEND_WEBHOOK_SECRET` on Vercel. Optional: `EMAIL_UNSUBSCRIBE_SECRET` (falls back to `CRON_SECRET`).
+
+After-signup catalog emails fire when a welcome/confirmation send succeeds (in addition to the hardcoded transactional templates). Activate an automated email with trigger **After sign up** and the matching audience to start them.
+
+Apply schema: `npm run apply:migration -- supabase/migrations/20260909010000_admin_emails.sql` (or `supabase/production/apply-admin-emails-safe.sql` in prod).

@@ -7,6 +7,7 @@ import {
 } from "@/lib/email/email-html-shell";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { getSiteUrlForStripe } from "@/lib/stripe/config";
+import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { CLIENT_DASHBOARD_PATH, LOGIN_PATH } from "@/lib/auth-routes";
 import { CLIENT_WELCOME_EMAIL_SENT_PREFIX } from "@/lib/dev-storage-keys";
 import type { SpecialistApplication } from "@/types/specialist-application";
@@ -91,7 +92,10 @@ function buildSpecialistApprovalEmail(
   const firstName = specialistFirstName(application);
   const loginUrl = specialistLoginUrl();
   const profileUrl = emailAbsoluteUrl(
-    `/trainers/${encodeURIComponent(application.id)}`
+    trainerProfilePath({
+      id: application.id,
+      slug: application.slug,
+    })
   );
   const text = `Hi ${firstName},
 
@@ -212,13 +216,24 @@ export async function sendSpecialistApplicationConfirmationEmail(
 ): Promise<ConfirmationEmailResult> {
   try {
     const payload = buildSpecialistConfirmationEmail(application);
-    return await dispatchTransactionalEmail({
+    const result = await dispatchTransactionalEmail({
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
       html: payload.html,
       kind: "confirmation_specialist",
     });
+    if (typeof window === "undefined" && result.success) {
+      const { dispatchAfterSignupCatalogEmail } = await import(
+        "@/lib/admin-email-send"
+      );
+      void dispatchAfterSignupCatalogEmail({
+        to: payload.to,
+        firstName: specialistFirstName(application),
+        audience: "specialist",
+      });
+    }
+    return result;
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist confirmation email failed", error);
     return { success: false };
@@ -358,6 +373,16 @@ export async function sendClientWelcomeEmail(
     });
     if (result.success) {
       markClientWelcomeSent(to);
+      if (typeof window === "undefined") {
+        const { dispatchAfterSignupCatalogEmail } = await import(
+          "@/lib/admin-email-send"
+        );
+        void dispatchAfterSignupCatalogEmail({
+          to,
+          firstName: input.firstName,
+          audience: "client",
+        });
+      }
     }
     return result;
   } catch (error) {

@@ -15,6 +15,7 @@ import { AdminOwnerRevenuePanel } from "@/components/admin/panels/AdminOwnerReve
 import { AdminSettingsPanel } from "@/components/admin/panels/AdminSettingsPanel";
 import { AdminSpecialistsPanel } from "@/components/admin/panels/AdminSpecialistsPanel";
 import { AdminTeamPanel } from "@/components/admin/panels/AdminTeamPanel";
+import { AdminEmailPanel } from "@/components/admin/email/AdminEmailPanel";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import {
@@ -429,6 +430,10 @@ export function AdminDashboardPageClient() {
 
             {resolvedSection === "clients" && permissions.canViewClients ? (
               <AdminClientsPanel canDelete={isOwnerAdmin} />
+            ) : null}
+
+            {resolvedSection === "email" && permissions.canManageEmails ? (
+              <AdminEmailPanel />
             ) : null}
 
             {resolvedSection === "revenue" && permissions.canViewRevenue ? (

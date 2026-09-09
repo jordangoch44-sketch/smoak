@@ -25,7 +25,7 @@ const INTERNAL_LOGIN_ROLES: {
   {
     id: "staff_admin",
     title: "Sign in as Staff",
-    description: "Applications, specialists, and client operations.",
+    description: "Applications, specialists, clients, and email.",
   },
 ];
 

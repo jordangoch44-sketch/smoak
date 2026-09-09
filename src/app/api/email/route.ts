@@ -45,8 +45,20 @@ export async function POST(request: Request) {
   }
 
   const result = await sendOutboundEmail({ to, subject, text, html, kind });
+  if (result.success && kind === "confirmation_client") {
+    const { dispatchAfterSignupCatalogEmail } = await import(
+      "@/lib/admin-email-send"
+    );
+    void dispatchAfterSignupCatalogEmail({ to, audience: "client" });
+  }
+  if (result.success && kind === "confirmation_specialist") {
+    const { dispatchAfterSignupCatalogEmail } = await import(
+      "@/lib/admin-email-send"
+    );
+    void dispatchAfterSignupCatalogEmail({ to, audience: "specialist" });
+  }
   return NextResponse.json(
-    { success: result.success, mode: result.mode },
+    { success: result.success, mode: result.mode, providerId: result.providerId },
     { status: result.success ? 200 : 502 }
   );
 }

@@ -19,6 +19,8 @@ export const DEV_ADMIN_SPECIALIST_META_KEY = "smoac_admin_specialist_meta";
 /** Admin nav badges — item IDs last seen when a section tab was opened */
 export const DEV_ADMIN_SECTION_BADGE_SEEN_KEY =
   "smoac_admin_section_badge_seen";
+/** Admin email catalog — automated + one-time templates (framework, not live send) */
+export const DEV_ADMIN_EMAIL_CATALOG_KEY = "smoac_admin_email_catalog";
 export const DEV_PENDING_SAVE_KEY = "smoac_pending_save";
 /** Survives email-confirm gap before profiles/roles can be written */
 export const DEV_PENDING_MARKETPLACE_SIGNUP_KEY =

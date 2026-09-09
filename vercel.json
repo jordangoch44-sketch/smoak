@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/expire-premium-trials",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/admin-emails",
+      "schedule": "0 * * * *"
     }
   ]
 }

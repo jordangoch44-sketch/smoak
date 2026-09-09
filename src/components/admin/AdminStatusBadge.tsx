@@ -9,7 +9,17 @@ type BadgeLabel =
   | "trial"
   | "cancelled"
   | "scheduled"
-  | "expired";
+  | "expired"
+  | "draft"
+  | "paused"
+  | "sent"
+  | "queued"
+  | "opened"
+  | "clicked"
+  | "bounced"
+  | "complained"
+  | "unsubscribed"
+  | "failed";
 
 export function AdminStatusBadge({ label }: { label: BadgeLabel }) {
   return <span className={`admin-badge admin-badge--${label}`}>{label}</span>;

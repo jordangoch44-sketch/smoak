@@ -9,6 +9,7 @@ Owner + Staff platform dashboards. **Not** used on public marketplace routes.
 | `AdminDashboardPageClient.tsx` | Section router + handlers |
 | `AdminSectionNav.tsx` | Tab nav + notification badges |
 | `panels/` | One panel per admin section |
+| `email/` | Email catalog, editor, preview |
 | `applications/` | Application review sheet |
 | `specialists/` | Tier subcategory nav |
 | `owner/` | Owner-only specialist billing block |

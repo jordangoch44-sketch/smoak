@@ -80,6 +80,7 @@ See `docs/PHASE2_AUTH_ARCHITECTURE.md`.
 - permissions, notifications, specialist billing catalog projection
 - live revenue via `/api/admin/revenue` + Stripe sync
 - `internal-auth*.ts`, `internal-routes.ts`
+- `admin-email-catalog.ts`, `admin-email-store.ts`, `admin-email-db.ts`, `admin-email-send.ts`, `admin-email-audience.ts`, `admin-email-analytics.ts` — admin Email tab (live Resend + cron)
 
 ## Cross-cutting
 

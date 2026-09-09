@@ -13,4 +13,5 @@ export interface AdminPermissions {
   canEditSpecialists: boolean;
   canViewClients: boolean;
   canFeatureSpecialists: boolean;
+  canManageEmails: boolean;
 }

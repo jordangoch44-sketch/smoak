@@ -7,11 +7,13 @@ export interface OutboundEmail {
   /** Optional Resend reply_to — unused for inquiry notifications */
   replyTo?: string;
   kind: string;
+  tags?: Array<{ name: string; value: string }>;
 }
 
 export interface EmailSendResult {
   success: boolean;
   mode: EmailTransportMode;
+  providerId?: string;
 }
 
 export type EmailTransportMode = "resend" | "console";
@@ -58,6 +60,9 @@ export async function sendOutboundEmail(
           text: payload.text,
           ...(html ? { html } : {}),
           ...(replyTo ? { reply_to: replyTo } : {}),
+          ...(payload.tags && payload.tags.length > 0
+            ? { tags: payload.tags }
+            : {}),
         }),
       });
 
@@ -71,13 +76,20 @@ export async function sendOutboundEmail(
         return { success: false, mode };
       }
 
+      const sentBody = (await response.json().catch(() => null)) as {
+        id?: string;
+      } | null;
+      const providerId =
+        typeof sentBody?.id === "string" ? sentBody.id : undefined;
+
       console.info("[SMOAC EMAIL] Sent via Resend", {
         kind: payload.kind,
         to,
         subject: payload.subject,
         html: Boolean(html),
+        providerId,
       });
-      return { success: true, mode };
+      return { success: true, mode, providerId };
     } catch (error) {
       console.warn("[SMOAC EMAIL] Resend request error", error);
       return { success: false, mode };
@@ -122,6 +134,11 @@ export async function dispatchTransactionalEmail(
       return {
         success: Boolean(response.ok && data?.success),
         mode: data?.mode === "resend" ? "resend" : "console",
+        providerId:
+          typeof (data as { providerId?: string } | null)?.providerId ===
+          "string"
+            ? (data as { providerId?: string }).providerId
+            : undefined,
       };
     }
 

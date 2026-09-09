@@ -8,7 +8,6 @@ import {
   SMOAC_COLOR,
   WORDMARK_SRC,
 } from "@/lib/brand";
-import { getSiteUrlForStripe } from "@/lib/stripe/config";
 
 const COLORS = {
   page: "#050506",
@@ -44,7 +43,12 @@ export interface EmailDetailRow {
 }
 
 export function emailSiteOrigin(): string {
-  return getSiteUrlForStripe();
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  if (typeof window !== "undefined" && window.location?.origin) {
+    return window.location.origin;
+  }
+  return "http://localhost:3000";
 }
 
 export function emailAbsoluteUrl(pathOrUrl: string): string {
@@ -176,6 +180,12 @@ export function renderEmailBioLinkBubble(
   const eyebrow = escapeEmailHtml(
     options.eyebrow ?? "Instagram & Bio Link"
   );
+  const displayUrl = escapeEmailHtml(
+    profileUrl.replace(/^https?:\/\//i, "")
+  );
+  const igIcon = emailAbsoluteUrl("/email/icon-instagram.png");
+  const tiktokIcon = emailAbsoluteUrl("/email/icon-tiktok.png");
+  const webIcon = emailAbsoluteUrl("/email/icon-website.png");
 
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 22px;border-collapse:collapse;">
   <tr>
@@ -186,10 +196,23 @@ export function renderEmailBioLinkBubble(
             <p style="margin:0 0 8px;font-family:${FONT_SANS};font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.accentSoft};">${eyebrow}</p>
             <h3 style="margin:0 0 8px;font-family:${FONT_SANS};font-size:16px;font-weight:600;line-height:1.35;letter-spacing:-0.01em;color:${COLORS.title};">${title}</h3>
             <p style="margin:0 0 14px;font-family:${FONT_SANS};font-size:14px;line-height:1.55;color:${COLORS.body};">${description}</p>
+            <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 12px;border-collapse:collapse;">
+              <tr>
+                <td style="padding:0 7px;" align="center">
+                  <img src="${escapeEmailHtml(igIcon)}" width="32" height="32" alt="Instagram" style="display:block;border:0;width:32px;height:32px;"/>
+                </td>
+                <td style="padding:0 7px;" align="center">
+                  <img src="${escapeEmailHtml(tiktokIcon)}" width="32" height="32" alt="TikTok" style="display:block;border:0;width:32px;height:32px;"/>
+                </td>
+                <td style="padding:0 7px;" align="center">
+                  <img src="${escapeEmailHtml(webIcon)}" width="32" height="32" alt="Website" style="display:block;border:0;width:32px;height:32px;"/>
+                </td>
+              </tr>
+            </table>
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px;border-collapse:collapse;">
               <tr>
                 <td style="padding:12px 14px;background:#050507;border:1px solid #2d2d38;border-radius:10px;word-break:break-all;">
-                  <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,Monaco,Courier,monospace,${FONT_SANS};font-size:13px;font-weight:600;line-height:1.45;color:${COLORS.accentSoft};text-decoration:none;display:block;word-break:break-all;">${safeUrl}</a>
+                  <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,Monaco,Courier,monospace,${FONT_SANS};font-size:13px;font-weight:600;line-height:1.45;color:${COLORS.accentSoft};text-decoration:none;display:block;word-break:break-all;">${displayUrl}</a>
                 </td>
               </tr>
             </table>
@@ -237,6 +260,7 @@ export interface WrapTransactionalEmailOptions {
   cta?: EmailCta;
   secondaryLink?: EmailCta;
   footerNote?: string;
+  unsubscribeHref?: string;
 }
 
 /**
@@ -265,6 +289,11 @@ export function wrapTransactionalEmailHtml(
         options.secondaryLink.label,
         options.secondaryLink.href
       )
+    : "";
+  const unsubscribeHtml = options.unsubscribeHref
+    ? `<p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
+  <a href="${escapeEmailHtml(emailAbsoluteUrl(options.unsubscribeHref))}" style="color:${COLORS.accentSoft};text-decoration:underline;">Unsubscribe</a>
+</p>`
     : "";
 
   return `<!DOCTYPE html>
@@ -310,6 +339,7 @@ export function wrapTransactionalEmailHtml(
           <tr>
             <td align="center" style="padding:22px 12px 0;font-family:${FONT_SANS};">
               <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:${COLORS.muted};">${footerNote}</p>
+              ${unsubscribeHtml}
               <p style="margin:0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
                 <a href="${escapeEmailHtml(origin)}" style="color:${COLORS.accentSoft};text-decoration:none;">${escapeEmailHtml(origin.replace(/^https?:\/\//, ""))}</a>
                 · © ${year} ${BRAND_NAME}

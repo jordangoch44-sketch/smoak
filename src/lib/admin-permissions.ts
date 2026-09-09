@@ -15,6 +15,7 @@ const OWNER_ADMIN_PERMISSIONS: AdminPermissions = {
   canEditSpecialists: true,
   canViewClients: true,
   canFeatureSpecialists: true,
+  canManageEmails: true,
 };
 
 const STAFF_ADMIN_PERMISSIONS: AdminPermissions = {
@@ -26,6 +27,7 @@ const STAFF_ADMIN_PERMISSIONS: AdminPermissions = {
   canEditSpecialists: true,
   canViewClients: true,
   canFeatureSpecialists: false,
+  canManageEmails: true,
 };
 
 export function getPermissionsForAdminRole(
@@ -66,6 +68,8 @@ export function canAccessAdminSection(
       return true;
     case "clients":
       return permissions.canViewClients;
+    case "email":
+      return permissions.canManageEmails;
     case "revenue":
       return permissions.canViewRevenue;
     case "team":
@@ -85,6 +89,7 @@ export function getDefaultAdminSection(
     "applications",
     "specialists",
     "clients",
+    "email",
     "revenue",
     "team",
     "settings",
