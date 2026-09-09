@@ -7,8 +7,13 @@ function createImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.addEventListener("load", () => resolve(image));
-    image.addEventListener("error", (error) => reject(error));
-    image.crossOrigin = "anonymous";
+    image.addEventListener("error", () =>
+      reject(new Error("Could not decode image."))
+    );
+    /* blob: / data: URLs break in Safari if crossOrigin is set. */
+    if (/^https?:\/\//i.test(url)) {
+      image.crossOrigin = "anonymous";
+    }
     image.src = url;
   });
 }
@@ -268,6 +273,36 @@ const UPLOAD_MAX_EDGE = {
 /** Keep base64 JSON under typical serverless body limits (~4.5MB). */
 const UPLOAD_MAX_DATA_URL_CHARS = 3_800_000;
 
+async function jpegDataUrlFromImageSrc(
+  src: string,
+  kind: keyof typeof UPLOAD_MAX_EDGE
+): Promise<string> {
+  const image = await createImage(src);
+  const maxEdge = UPLOAD_MAX_EDGE[kind];
+  const scale = Math.min(1, maxEdge / Math.max(image.width, image.height, 1));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not process image.");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(image, 0, 0, width, height);
+
+  let quality = 0.82;
+  let dataUrl = canvas.toDataURL("image/jpeg", quality);
+  while (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS && quality > 0.45) {
+    quality -= 0.08;
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  }
+  if (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS) {
+    throw new Error("Photo is still too large. Try a smaller image.");
+  }
+  return dataUrl;
+}
+
 /**
  * Decode + JPEG-compress a phone photo for `/api/media/specialist-application`.
  * Large HEIC/JPEG camera files often fail silently when posted raw as data URLs.
@@ -278,35 +313,23 @@ export async function prepareImageDataUrlForUpload(
 ): Promise<string> {
   const objectUrl = URL.createObjectURL(file);
   try {
-    const image = await createImage(objectUrl);
-    const maxEdge = UPLOAD_MAX_EDGE[kind];
-    const scale = Math.min(1, maxEdge / Math.max(image.width, image.height, 1));
-    const width = Math.max(1, Math.round(image.width * scale));
-    const height = Math.max(1, Math.round(image.height * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Could not process image.");
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(image, 0, 0, width, height);
-
-    let quality = 0.82;
-    let dataUrl = canvas.toDataURL("image/jpeg", quality);
-    while (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS && quality > 0.45) {
-      quality -= 0.08;
-      dataUrl = canvas.toDataURL("image/jpeg", quality);
+    try {
+      return await jpegDataUrlFromImageSrc(objectUrl, kind);
+    } catch (blobError) {
+      if (
+        blobError instanceof Error &&
+        blobError.message.startsWith("Photo is still")
+      ) {
+        throw blobError;
+      }
+      const asDataUrl = await readFileAsDataUrl(file);
+      return await jpegDataUrlFromImageSrc(asDataUrl, kind);
     }
-    if (dataUrl.length > UPLOAD_MAX_DATA_URL_CHARS) {
-      throw new Error("Photo is still too large. Try a smaller image.");
-    }
-    return dataUrl;
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("Photo is still")) {
       throw error;
     }
-    throw new Error("Could not read this photo. Use JPEG or PNG.");
+    throw new Error("Could not read this photo. Try another image.");
   } finally {
     URL.revokeObjectURL(objectUrl);
   }

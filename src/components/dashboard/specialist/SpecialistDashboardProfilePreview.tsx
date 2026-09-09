@@ -655,7 +655,7 @@ export function SpecialistDashboardProfilePreview({
               transformationNotes={form.transformationNotes}
               isPremium={isPremium}
               isProPlus={isProPlus}
-              specialistId={trainerId}
+              specialistId={trainerId ?? application?.id ?? trainer.id}
               onUpgrade={onUpgrade}
               onChange={(next) => {
                 setDraft((prev) => (prev ? { ...prev, ...next } : prev));
@@ -700,7 +700,7 @@ export function SpecialistDashboardProfilePreview({
           <SpecialistTransformationsEditor
             transformationNotes={form.transformationNotes}
             isProPlus={isProPlus}
-            specialistId={trainerId}
+            specialistId={trainerId ?? application?.id ?? trainer.id}
             onUpgrade={onUpgrade}
             onChange={(transformationNotes) =>
               patch("transformationNotes", transformationNotes)

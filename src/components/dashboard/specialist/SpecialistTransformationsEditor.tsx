@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useId, useState, type ChangeEvent } from "react";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
@@ -20,18 +20,15 @@ interface SpecialistTransformationsEditorProps {
   onChange: (transformationNotes: string) => void;
 }
 
-function rejectUnsupportedPhonePhoto(file: File): string | null {
-  const type = (file.type || "").toLowerCase();
-  const name = file.name.toLowerCase();
-  if (
-    type.includes("heic") ||
-    type.includes("heif") ||
-    name.endsWith(".heic") ||
-    name.endsWith(".heif")
-  ) {
-    return "Use JPEG or PNG (on iPhone: Format → Most Compatible).";
-  }
-  return null;
+function mediaPathId(specialistId: string): string {
+  return (
+    specialistId
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 128) || "specialist"
+  );
 }
 
 async function uploadTransformationDataUrl(
@@ -39,10 +36,14 @@ async function uploadTransformationDataUrl(
   dataUrl: string
 ): Promise<string> {
   const id = specialistId?.trim();
-  if (!id || !isMarketplaceSupabaseActive()) return dataUrl;
+  if (!id) {
+    throw new Error("Could not upload — profile is not ready. Refresh and try again.");
+  }
+  if (!isMarketplaceSupabaseActive()) return dataUrl;
 
   const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const basePath = `${id}/gallery/transformation/t-${stamp}/image`;
+  /* Same shape as working header-gallery uploads: {id}/gallery/{token}/image */
+  const basePath = `${mediaPathId(id)}/gallery/t-${stamp}/image`;
   const response = await fetch("/api/media/specialist-application", {
     method: "POST",
     credentials: "include",
@@ -57,7 +58,9 @@ async function uploadTransformationDataUrl(
       payload?.message ??
         (response.status === 413
           ? "Photo is too large to upload."
-          : "Could not upload image.")
+          : response.status === 401
+            ? "Sign in again to upload photos."
+            : "Could not upload image.")
     );
   }
   return payload.publicUrl.includes("?")
@@ -72,6 +75,7 @@ export function SpecialistTransformationsEditor({
   onUpgrade,
   onChange,
 }: SpecialistTransformationsEditorProps) {
+  const inputId = useId();
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -92,16 +96,10 @@ export function SpecialistTransformationsEditor({
     setBusy(true);
     setError(null);
     setProgress(null);
-    let lastError: string | null = null;
     try {
       const uploaded: string[] = [];
       for (let index = 0; index < files.length; index += 1) {
         const file = files[index];
-        const phoneReject = rejectUnsupportedPhonePhoto(file);
-        if (phoneReject) {
-          lastError = phoneReject;
-          continue;
-        }
         if (files.length > 1) {
           setProgress(`${index + 1}/${files.length}`);
         }
@@ -111,7 +109,7 @@ export function SpecialistTransformationsEditor({
       if (uploaded.length > 0) {
         setUrls([...urls, ...uploaded]);
       } else {
-        setError(lastError ?? "Could not add photos.");
+        setError("Could not add photos.");
       }
       if (fileList.length > remaining) {
         setError(
@@ -177,22 +175,12 @@ export function SpecialistTransformationsEditor({
         {!atLimit ? (
           isProPlus ? (
             <label
-              htmlFor="specialist-transformation-upload"
+              htmlFor={inputId}
               className={cn(
                 "smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add",
                 busy && "specialist-media-editor__pin-tile--busy"
               )}
             >
-              <input
-                id="specialist-transformation-upload"
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp,image/*,.jpg,.jpeg,.png,.webp"
-                className="specialist-media-editor__pin-file"
-                onChange={(event) => void handleAdd(event)}
-                disabled={busy}
-                aria-label="Add transformation photos"
-              />
               <span aria-hidden>+</span>
               <span>{busy ? progress ?? "Uploading…" : "Add"}</span>
             </label>
@@ -209,6 +197,17 @@ export function SpecialistTransformationsEditor({
           )
         ) : null}
       </div>
+      {isProPlus && !atLimit ? (
+        <input
+          id={inputId}
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+          className="dashboard-upload-zone__input"
+          onChange={(event) => void handleAdd(event)}
+          disabled={busy}
+        />
+      ) : null}
       {error ? (
         <p className="dashboard-upload-error" role="alert">
           {error}
