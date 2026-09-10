@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { MEDIA_TAP_SLOP_PX, TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { useCarousel } from "@/hooks/useCarousel";
 import { useHorizontalSwipe } from "@/hooks/useHorizontalSwipe";
 import type { ProfileGalleryMedia } from "@/types/profile-gallery";
@@ -47,6 +48,11 @@ export function ProfileGalleryModal({
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeFinishedRef = useRef(false);
   const openedAtRef = useRef(0);
+  const dismissPressRef = useRef<{
+    x: number;
+    y: number;
+    fromProtected: boolean;
+  } | null>(null);
 
   const pauseVideo = useCallback(() => {
     setVideoPlaying(false);
@@ -97,6 +103,21 @@ export function ProfileGalleryModal({
     closeTimerRef.current = setTimeout(finishClose, CLOSE_MS);
   }, [finishClose, isClosing, mounted, pauseVideo]);
 
+  const handleDismissPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (event.button !== 0) return;
+      const target = event.target as HTMLElement;
+      dismissPressRef.current = {
+        x: event.clientX,
+        y: event.clientY,
+        fromProtected: Boolean(
+          target.closest(PROTECTED_SELECTOR) || target.closest(CLOSE_SELECTOR)
+        ),
+      };
+    },
+    []
+  );
+
   const handleDismissPointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       if (isClosing || !visible) return;
@@ -105,6 +126,15 @@ export function ProfileGalleryModal({
       const target = event.target as HTMLElement;
       if (target.closest(CLOSE_SELECTOR)) return;
       if (target.closest(PROTECTED_SELECTOR)) return;
+      const press = dismissPressRef.current;
+      dismissPressRef.current = null;
+      if (!press || press.fromProtected) return;
+      if (
+        Math.hypot(event.clientX - press.x, event.clientY - press.y) >
+        TAP_SLOP_PX
+      ) {
+        return;
+      }
       requestClose();
     },
     [isClosing, requestClose, visible]
@@ -262,6 +292,7 @@ export function ProfileGalleryModal({
       role="dialog"
       aria-modal="true"
       aria-label={`${trainerName} gallery`}
+      onPointerDown={handleDismissPointerDown}
       onPointerUp={handleDismissPointerUp}
       onTransitionEnd={handleModalTransitionEnd}
     >
@@ -416,6 +447,7 @@ export function ProfileGalleryModal({
                       thumbIndex === index &&
                         "profile-gallery-modal__thumb--active"
                     )}
+                    slopPx={MEDIA_TAP_SLOP_PX}
                     onActivate={() => goToSlide(thumbIndex)}
                   >
                     {item.type === "video" && !item.thumbnail ? (

@@ -31,6 +31,7 @@ import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { PhotosStackIcon } from "@/components/ui/icons";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { MEDIA_TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileHeroBio } from "./ProfileHeroBio";
@@ -295,6 +296,7 @@ export function ProfileHero({
                           ? `Play pinned video ${index + 1}`
                           : `Open pinned photo ${index + 1}`
                       }
+                      slopPx={MEDIA_TAP_SLOP_PX}
                       onActivate={() => openGallery(url)}
                     >
                       {preview ? (
@@ -315,6 +317,7 @@ export function ProfileHero({
                     aria-label={`View ${remainingPhotoCount} more ${
                       remainingPhotoCount === 1 ? "photo" : "photos"
                     }`}
+                    slopPx={MEDIA_TAP_SLOP_PX}
                     onActivate={() => openGallery(firstRemainingPhotoUrl)}
                   >
                     <PhotosStackIcon className="profile-hero__more-photos-icon" />

@@ -1,16 +1,10 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type TouchEvent as ReactTouchEvent,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useHorizontalSwipe } from "@/hooks/useHorizontalSwipe";
 
 const AUTOPLAY_MS = 5500;
 const INTERACTION_PAUSE_MS = 9000;
-const SWIPE_THRESHOLD_PX = 48;
 
 interface UseProfileHeroCoverGalleryOptions {
   imageCount: number;
@@ -21,7 +15,6 @@ export function useProfileHeroCoverGallery({
 }: UseProfileHeroCoverGalleryOptions) {
   const [index, setIndex] = useState(0);
   const pauseUntilRef = useRef(0);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const count = Math.max(imageCount, 0);
   const canSlide = count > 1;
 
@@ -53,33 +46,17 @@ export function useProfileHeroCoverGallery({
     return () => window.clearInterval(timer);
   }, [canSlide, count]);
 
-  const onTouchStart = useCallback((event: ReactTouchEvent<HTMLElement>) => {
-    const touch = event.touches[0];
-    if (!touch) return;
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  }, []);
-
-  const onTouchEnd = useCallback(
-    (event: ReactTouchEvent<HTMLElement>) => {
-      const start = touchStartRef.current;
-      touchStartRef.current = null;
-      if (!start || !canSlide) return;
-
-      const touch = event.changedTouches[0];
-      if (!touch) return;
-
-      const deltaX = touch.clientX - start.x;
-      const deltaY = touch.clientY - start.y;
-
-      if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX) return;
-      if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
-
+  const { onTouchStart, onTouchEnd } = useHorizontalSwipe({
+    enabled: canSlide,
+    onSwipeLeft: () => {
       registerInteraction();
-      if (deltaX < 0) goNext();
-      else goPrev();
+      goNext();
     },
-    [canSlide, goNext, goPrev, registerInteraction]
-  );
+    onSwipeRight: () => {
+      registerInteraction();
+      goPrev();
+    },
+  });
 
   return {
     index,

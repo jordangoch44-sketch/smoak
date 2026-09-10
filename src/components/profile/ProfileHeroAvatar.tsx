@@ -201,6 +201,8 @@ export function ProfileHeroAvatar({
             type="button"
             className="profile-hero__avatar-btn"
             aria-label="View larger profile photo"
+            onPointerDown={avatarActivate.onPointerDown}
+            onPointerCancel={avatarActivate.onPointerCancel}
             onPointerUp={avatarActivate.onPointerUp}
             onClick={avatarActivate.onClick}
           >

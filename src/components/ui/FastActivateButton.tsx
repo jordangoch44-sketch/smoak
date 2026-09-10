@@ -10,6 +10,8 @@ type FastActivateButtonProps = Omit<
   onActivate: () => void;
   /** Hearts on cards — keep the parent link from seeing the tap. */
   stopPropagation?: boolean;
+  /** Finger travel that still counts as a tap. Defaults to TAP_SLOP_PX. */
+  slopPx?: number;
 };
 
 /** Button that commits on touch pointerup; mouse still uses click. */
@@ -22,17 +24,24 @@ export const FastActivateButton = forwardRef<
     type = "button",
     disabled,
     stopPropagation = false,
+    slopPx,
     onPointerDown,
+    onPointerCancel,
     ...props
   },
   ref
 ) {
-  const { onPointerUp, onClick } = useFastActivate(
+  const {
+    onPointerDown: activatePointerDown,
+    onPointerCancel: activatePointerCancel,
+    onPointerUp,
+    onClick,
+  } = useFastActivate(
     () => {
       if (disabled) return;
       onActivate();
     },
-    { stopPropagation }
+    { stopPropagation, slopPx }
   );
 
   return (
@@ -42,8 +51,12 @@ export const FastActivateButton = forwardRef<
       disabled={disabled}
       {...props}
       onPointerDown={(event) => {
-        if (stopPropagation) event.stopPropagation();
+        activatePointerDown(event);
         onPointerDown?.(event);
+      }}
+      onPointerCancel={(event) => {
+        activatePointerCancel();
+        onPointerCancel?.(event);
       }}
       onPointerUp={onPointerUp}
       onClick={onClick}

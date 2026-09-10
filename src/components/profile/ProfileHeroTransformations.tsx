@@ -2,6 +2,7 @@
 
 import type { ClientTransformationPhoto } from "@/types";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { MEDIA_TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { PhotosStackIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +36,7 @@ export function ProfileHeroTransformations({
             key={photo.id || photo.src}
             className="profile-hero__pinned-tile"
             aria-label={`Open transformation photo ${index + 1}`}
+            slopPx={MEDIA_TAP_SLOP_PX}
             onActivate={() => onOpen(photo.src)}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -47,6 +49,7 @@ export function ProfileHeroTransformations({
             aria-label={`View ${extraCount} more ${
               extraCount === 1 ? "transformation" : "transformations"
             }`}
+            slopPx={MEDIA_TAP_SLOP_PX}
             onActivate={() => onOpen(extraStart)}
           >
             <PhotosStackIcon className="profile-hero__more-photos-icon" />

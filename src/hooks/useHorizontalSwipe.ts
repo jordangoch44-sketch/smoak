@@ -2,7 +2,9 @@
 
 import { useCallback, useRef, type TouchEvent as ReactTouchEvent } from "react";
 
-const SWIPE_THRESHOLD_PX = 48;
+const SWIPE_THRESHOLD_PX = 56;
+/** Horizontal travel must clearly beat vertical, or the sheet is scrolling. */
+const SWIPE_AXIS_RATIO = 1.5;
 
 interface UseHorizontalSwipeOptions {
   enabled?: boolean;
@@ -35,9 +37,11 @@ export function useHorizontalSwipe({
 
       const deltaX = touch.clientX - start.x;
       const deltaY = touch.clientY - start.y;
+      const absX = Math.abs(deltaX);
+      const absY = Math.abs(deltaY);
 
-      if (Math.abs(deltaX) < SWIPE_THRESHOLD_PX) return;
-      if (Math.abs(deltaX) <= Math.abs(deltaY)) return;
+      if (absX < SWIPE_THRESHOLD_PX) return;
+      if (absX < absY * SWIPE_AXIS_RATIO) return;
 
       if (deltaX < 0) onSwipeLeft?.();
       else onSwipeRight?.();
