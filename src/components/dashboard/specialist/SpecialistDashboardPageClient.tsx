@@ -15,6 +15,7 @@ import {
 import {
   AnalyticsCard,
   BoostProfileCard,
+  GoogleReviewsCard,
   ProfileCompletionCard,
   ReviewsCard,
   SubscriptionCard,
@@ -769,6 +770,10 @@ export function SpecialistDashboardPageClient() {
                       onOpenBoost={() => setBoostOpen(true)}
                     />
                     <ReviewsCard
+                      trainer={trainer}
+                      isPremium={isPremium}
+                    />
+                    <GoogleReviewsCard
                       trainer={trainer}
                       isPremium={isPremium}
                       onUpgrade={() => setUpgradeOpen(true)}

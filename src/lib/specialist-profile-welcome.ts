@@ -86,7 +86,7 @@ export function buildProfileWelcomeTasks(
   );
 
   const candidates: Array<ProfileWelcomeTask & { done: boolean }> = [
-    { id: "hero", label: "Photos", done: hasPhoto && hasSlideshow },
+    { id: "hero", label: "Pictures / slideshow", done: hasPhoto && hasSlideshow },
     { id: "name", label: "Business name", done: Boolean(form.name.trim()) },
     { id: "headline", label: "Headline", done: Boolean(form.title.trim()) },
     {

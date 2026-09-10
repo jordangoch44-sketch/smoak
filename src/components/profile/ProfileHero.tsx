@@ -50,7 +50,7 @@ interface ProfileHeroProps {
   canLeaveReview?: boolean;
   hasOwnReview?: boolean;
   onLeaveReview?: () => void;
-  /** Specialist Live tab — same look, no client toolbar / review actions */
+  /** Specialist Live tab — same client profile, minus toolbar / leave-review / distance */
   variant?: "public" | "specialist-live";
   /** Live tab — Edit chip on the circular profile photo */
   onEditProfilePhoto?: () => void;
@@ -226,54 +226,39 @@ export function ProfileHero({
               </div>
             ) : null}
 
-            {isSpecialistLive ? (
-              showMetaGalleryButton ? (
-                <div className="profile-hero__meta">
-                  <FastActivateButton
-                    className="profile-hero__view-gallery"
-                    aria-label="View specialist gallery"
-                    onActivate={() => openGallery()}
-                  >
-                    <PhotosStackIcon className="profile-hero__view-gallery-icon" />
-                    View Gallery
-                  </FastActivateButton>
-                </div>
-              ) : null
-            ) : (
-              <div className="profile-hero__meta">
-                <div className="profile-hero__meta-primary">
-                  <ProfileReviewMeta
+            <div className="profile-hero__meta">
+              <div className="profile-hero__meta-primary">
+                <ProfileReviewMeta
+                  trainer={trainer}
+                  smoacAggregate={smoacAggregate}
+                  canLeaveReview={isSpecialistLive ? false : canLeaveReview}
+                  hasOwnReview={isSpecialistLive ? false : hasOwnReview}
+                  onLeaveReview={isSpecialistLive ? undefined : onLeaveReview}
+                />
+                <div className="profile-hero__meta-offer">
+                  <SessionPrice
                     trainer={trainer}
-                    smoacAggregate={smoacAggregate}
-                    canLeaveReview={canLeaveReview}
-                    hasOwnReview={hasOwnReview}
-                    onLeaveReview={onLeaveReview}
+                    variant="hero"
+                    className="profile-hero__meta-price shrink-0"
                   />
-                  <div className="profile-hero__meta-offer">
-                    <SessionPrice
-                      trainer={trainer}
-                      variant="hero"
-                      className="profile-hero__meta-price shrink-0"
-                    />
-                    {isTrainerFreeFirstSessionEligible(trainer) ? (
-                      <span className="profile-hero__free-session">
-                        {FREE_FIRST_SESSION_LABEL}
-                      </span>
-                    ) : null}
-                  </div>
+                  {isTrainerFreeFirstSessionEligible(trainer) ? (
+                    <span className="profile-hero__free-session">
+                      {FREE_FIRST_SESSION_LABEL}
+                    </span>
+                  ) : null}
                 </div>
-                {showMetaGalleryButton ? (
-                  <FastActivateButton
-                    className="profile-hero__view-gallery"
-                    aria-label="View specialist gallery"
-                    onActivate={() => openGallery()}
-                  >
-                    <PhotosStackIcon className="profile-hero__view-gallery-icon" />
-                    View Gallery
-                  </FastActivateButton>
-                ) : null}
               </div>
-            )}
+              {showMetaGalleryButton ? (
+                <FastActivateButton
+                  className="profile-hero__view-gallery"
+                  aria-label="View specialist gallery"
+                  onActivate={() => openGallery()}
+                >
+                  <PhotosStackIcon className="profile-hero__view-gallery-icon" />
+                  View Gallery
+                </FastActivateButton>
+              ) : null}
+            </div>
 
             {pinnedPhotos.length > 0 ? (
               <div

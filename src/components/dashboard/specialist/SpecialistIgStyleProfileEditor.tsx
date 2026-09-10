@@ -19,6 +19,7 @@ import {
 import { AlertTriangleIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
 import { SpecialistLinkInBioCard } from "./SpecialistLinkInBioCard";
 import { cn } from "@/lib/utils";
+import { parseMediaUrlList } from "@/lib/specialist-media-limits";
 import {
   formatSessionPriceRange,
   hasSessionPrice,
@@ -170,6 +171,14 @@ export function SpecialistIgStyleProfileEditor({
   const planBadgeTone = membershipBadgeToneForSession(session);
 
   const hasPhoto = Boolean(formDefaults.profilePhotoUrl.trim());
+  const slideshowCount = parseMediaUrlList(formDefaults.photoNotes).length;
+  const hasSlideshow = slideshowCount > 0;
+  const picturesPreview =
+    hasPhoto && hasSlideshow
+      ? slideshowCount === 1
+        ? "1 photo"
+        : `${slideshowCount} photos`
+      : "Add";
   const photo = formDefaults.profilePhotoUrl.trim() || trainer.image;
   const profession =
     resolveTrainerProfessionCategory({
@@ -233,20 +242,13 @@ export function SpecialistIgStyleProfileEditor({
 
   return (
     <div className="ig-profile-edit" aria-label="Edit profile">
-      <div
-        className={cn(
-          "ig-profile-edit__media",
-          isHighlighted("hero") && "ig-profile-edit__media--highlighted"
-        )}
-        data-edit-section="hero"
-        id="ig-edit-row-hero"
-      >
+      <div className="ig-profile-edit__media">
         <div className="ig-profile-edit__avatar-wrap">
           <button
             type="button"
             className="ig-profile-edit__avatar-btn smoac-control"
             onClick={() => onEditSection("hero")}
-            aria-label="Edit profile picture"
+            aria-label="Edit pictures and slideshow"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photo} alt="" className="ig-profile-edit__avatar" />
@@ -269,13 +271,6 @@ export function SpecialistIgStyleProfileEditor({
           </button>
         </div>
         <div className="ig-profile-edit__media-actions">
-          <button
-            type="button"
-            className="ig-profile-edit__media-link smoac-control"
-            onClick={() => onEditSection("hero")}
-          >
-            Edit pictures/slideshow
-          </button>
           <span
             className={cn(
               "ig-profile-edit__plan-badge",
@@ -295,6 +290,15 @@ export function SpecialistIgStyleProfileEditor({
       />
 
       <div className="ig-profile-edit__list" role="list">
+        <IgEditRow
+          id="ig-edit-row-hero"
+          sectionKey="hero"
+          label="Pictures / slideshow"
+          value={picturesPreview}
+          incomplete={!hasPhoto || !hasSlideshow}
+          highlighted={isHighlighted("hero")}
+          onClick={() => onEditSection("hero")}
+        />
         <IgEditRow
           id="ig-edit-row-name"
           sectionKey="name"

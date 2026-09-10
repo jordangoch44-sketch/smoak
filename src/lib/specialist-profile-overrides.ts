@@ -346,6 +346,9 @@ export function applySpecialistProfileOverrides(
           ? overrides.googlePlaceId.trim()
           : merged.social?.googlePlaceId) ||
         merged.social?.googlePlaceId,
+      googleRating: merged.social?.googleRating,
+      googleReviewCount: merged.social?.googleReviewCount,
+      googleFetchedAt: merged.social?.googleFetchedAt,
     };
   }
 

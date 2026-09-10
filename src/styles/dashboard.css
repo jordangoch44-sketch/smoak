@@ -2779,6 +2779,67 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: #fecaca;
 }
 
+.dashboard-google-reviews {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.dashboard-google-reviews .dashboard-connect-google-form {
+  margin-top: 0;
+}
+
+.dashboard-google-reviews__lead {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.dashboard-google-reviews__steps {
+  margin: 0;
+  padding: 0 0 0 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.dashboard-google-reviews__steps--modal {
+  margin: 0.15rem 0 0;
+}
+
+.dashboard-google-reviews__connected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-google-reviews__stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.dashboard-google-reviews__rating {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.dashboard-google-reviews__count {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.52);
+}
+
 .dashboard-reputation__google-cta {
   margin: 0.75rem 0 0.35rem;
 }
@@ -5626,6 +5687,28 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   display: block;
 }
 
+.dashboard-smoac-reviews-card .dashboard-accordion__section-icon,
+.dashboard-google-reviews-card .dashboard-accordion__section-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.dashboard-accordion__brand-mark {
+  display: block;
+  width: 1.15rem;
+  height: 1.15rem;
+  object-fit: contain;
+}
+
+.dashboard-accordion__brand-mark--google {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
 .dashboard-accordion__trigger .dashboard-section__title {
   white-space: normal;
 }
@@ -8013,33 +8096,7 @@ body.specialist-live-edit-open .mobile-bottom-nav {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.55rem;
   justify-content: center;
-}
-
-.ig-profile-edit__media-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.35rem 0.875rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: all 0.2s ease;
-}
-
-.ig-profile-edit__media-link:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.22);
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .ig-profile-edit__plan-badge {
@@ -8233,7 +8290,7 @@ body.specialist-live-edit-open .mobile-bottom-nav {
 
 @media (max-width: 480px) {
   .ig-profile-edit__row {
-    grid-template-columns: minmax(8rem, 11rem) minmax(0, 1fr) auto;
+    grid-template-columns: minmax(9rem, 12.25rem) minmax(0, 1fr) auto;
   }
 }
 
@@ -8854,6 +8911,13 @@ body.specialist-live-edit-open .mobile-bottom-nav {
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.06);
   color: #f5f0ff;
+  box-shadow: none;
+}
+
+.dashboard-page--specialist .dashboard-smoac-reviews-card .dashboard-accordion__section-icon,
+.dashboard-page--specialist .dashboard-google-reviews-card .dashboard-accordion__section-icon {
+  border: none;
+  background: transparent;
   box-shadow: none;
 }
 

@@ -103,16 +103,21 @@ export function ConnectGoogleReviewsModal({
             Connect Google Reviews
           </h2>
           <p id="connect-google-desc" className="dashboard-modal__body">
-            Paste a Google Maps share link (maps.app.goo.gl), the full Maps
-            URL, or a Place ID (ChIJ…). Live stars show on your public
-            profile — tapping them opens your Google listing.
+            Paste a Google Maps share link.
           </p>
+          <ol className="dashboard-google-reviews__steps dashboard-google-reviews__steps--modal">
+            <li>Open Google Maps</li>
+            <li>Search your business</li>
+            <li>Tap Share</li>
+            <li>Copy the link</li>
+            <li>Paste it here</li>
+          </ol>
           <form
             className="dashboard-connect-google-form"
             onSubmit={(e) => void handleSubmit(e)}
           >
             <label className="login-field">
-              <span className="login-field__label">Place ID or Maps link</span>
+              <span className="login-field__label">Maps share link</span>
               <input
                 className="login-field__input"
                 value={value}

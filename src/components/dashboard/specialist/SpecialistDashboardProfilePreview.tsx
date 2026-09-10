@@ -71,6 +71,8 @@ import type { SpecialistLead } from "@/types/specialist-dashboard";
 import { HOMEPAGE_FEATURED_SPECIALTY_LIMIT } from "@/lib/specialty-display";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
+import { getApprovedSpecialistProfileById } from "@/lib/approved-specialist-profiles-store";
+import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
 
 type ProfilePreviewMode = "edit" | "live" | "inquiries";
 const LOCK_CLASS = "specialist-live-edit-open";
@@ -99,7 +101,7 @@ type SectionId =
   | "featured-specialties";
 
 const SECTION_TITLES: Record<SectionId, string> = {
-  hero: "Photos",
+  hero: "Pictures / slideshow",
   name: "Business name",
   headline: "Headline",
   profession: "Category",
@@ -521,10 +523,20 @@ export function SpecialistDashboardProfilePreview({
       : sessionPlan === "premium" || listingPlan === "premium"
         ? "premium"
         : "free";
+  const approvedListing = getApprovedSpecialistProfileById(
+    trainerId ?? listing.id
+  );
   const trainer = {
     ...listing,
     isPremium: membershipPlan !== "free",
     membershipPlan,
+    social: overlayGoogleSocialIfMissing(
+      listing.social,
+      approvedListing?.social
+    ),
+    rating: listing.rating || approvedListing?.rating || 0,
+    reviewCount: listing.reviewCount || approvedListing?.reviewCount || 0,
+    reviewSources: listing.reviewSources ?? approvedListing?.reviewSources,
   } as Trainer;
   const isLiveListing = application?.profileStatus === "APPROVED";
 
@@ -1434,6 +1446,7 @@ export function SpecialistDashboardProfilePreview({
           <ProfileHero
             trainer={trainer}
             variant="specialist-live"
+            smoacAggregate={aggregate}
             onEditProfilePhoto={canEdit ? () => startEdit("hero") : undefined}
           />
         </div>
