@@ -129,7 +129,6 @@ body:has(.home-page--discovery) .explore-search-overlay__location-icon {
 }
 
 body:has(.home-page--discovery) .explore-search-overlay__chip,
-body:has(.home-page--discovery) .explore-search-overlay__chip--goal,
 body:has(.home-page--discovery) .explore-search-overlay__chip:active {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: #15151e;

@@ -3,8 +3,12 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
-import { CloseIcon } from "@/components/ui/icons";
 import { DashboardButton } from "@/components/dashboard/shared";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalCloseButton,
+  DashboardModalScrim,
+} from "@/components/dashboard/shared/DashboardModalScrim";
 import type { GooglePlaceSnapshot } from "@/lib/google-places";
 
 interface ConnectGoogleReviewsModalProps {
@@ -78,10 +82,8 @@ export function ConnectGoogleReviewsModal({
   }
 
   return createPortal(
-    <div
-      className="dashboard-modal"
-      role="presentation"
-      onClick={() => {
+    <DashboardModalScrim
+      onDismiss={() => {
         if (!busy) onClose();
       }}
     >
@@ -91,18 +93,10 @@ export function ConnectGoogleReviewsModal({
         aria-modal="true"
         aria-labelledby="connect-google-title"
         aria-describedby="connect-google-desc"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <div className="dashboard-modal__glow" aria-hidden />
-        <button
-          type="button"
-          className="dashboard-modal__close"
-          onClick={onClose}
-          aria-label="Close"
-          disabled={busy}
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <DashboardModalCloseButton onClose={onClose} disabled={busy} />
         <div className="dashboard-modal__content">
           <p className="dashboard-modal__eyebrow">SMOAC Pro</p>
           <h2 id="connect-google-title" className="dashboard-modal__title">
@@ -142,7 +136,7 @@ export function ConnectGoogleReviewsModal({
           <SmoacSavingOverlay label="Connecting Google Reviews" />
         ) : null}
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

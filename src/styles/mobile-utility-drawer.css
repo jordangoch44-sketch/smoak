@@ -71,10 +71,33 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
+
+  .mobile-utility-drawer__close {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 .mobile-utility-drawer--open .mobile-utility-drawer__panel {
   transform: translate3d(0, 0, 0);
+}
+
+.mobile-utility-drawer__aurora,
+.mobile-utility-drawer__aurora-drift,
+.mobile-utility-drawer__sheen,
+.mobile-utility-drawer__edge-glow {
+  pointer-events: none;
+}
+
+.mobile-utility-drawer__row-icon,
+.mobile-utility-drawer__row-icon-svg,
+.mobile-utility-drawer__account-avatar,
+.mobile-utility-drawer__account-photo,
+.mobile-utility-drawer__account-initials,
+.mobile-utility-drawer__metric-icon,
+.mobile-utility-drawer__growth-icon,
+.mobile-utility-drawer__close svg {
+  pointer-events: none;
 }
 
 .mobile-utility-drawer__aurora {

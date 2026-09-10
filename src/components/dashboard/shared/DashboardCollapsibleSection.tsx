@@ -5,7 +5,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import Link from "next/link";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { cn } from "@/lib/utils";
 
 export interface DashboardCollapsibleSectionProps {
@@ -59,12 +60,11 @@ export function DashboardCollapsibleSection({
       )}
     >
       <div className="dashboard-accordion__head">
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control dashboard-accordion__trigger"
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => setOpen(!open)}
+          onActivate={() => setOpen(!open)}
         >
           <span className="dashboard-accordion__trigger-copy">
             <span className="dashboard-accordion__title-row">
@@ -99,15 +99,17 @@ export function DashboardCollapsibleSection({
               />
             </svg>
           </span>
-        </button>
+        </FastActivateButton>
         {href ? (
-          <Link
+          <HeaderChromeLink
             href={href}
             className="dashboard-section__link dashboard-accordion__link"
+            onPointerDown={(event) => event.stopPropagation()}
+            onPointerUp={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
           >
             {linkLabel}
-          </Link>
+          </HeaderChromeLink>
         ) : null}
       </div>
 

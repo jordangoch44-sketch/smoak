@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { LocationMarkIcon } from "@/components/ui/icons";
 import { useUserLocationEditor } from "@/contexts/UserLocationContext";
+import { useFastActivate } from "@/hooks/useFastActivate";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +26,12 @@ export function SiteLocationPill({
   const { zip, isPlaceholder, isPanelOpen } = useUserLocation();
   const { toggleLocationPanel, panelAnchorRef } = useUserLocationEditor();
 
-  const handleClick = () => {
+  const { onPointerUp, onClick } = useFastActivate(() => {
     if (buttonRef.current) {
       panelAnchorRef.current = buttonRef.current;
     }
     toggleLocationPanel(buttonRef.current);
-  };
+  });
 
   const zipLabel = zip?.trim() || PLACEHOLDER_LABEL;
 
@@ -47,7 +48,8 @@ export function SiteLocationPill({
         isPanelOpen && "site-location-text--open",
         className
       )}
-      onClick={handleClick}
+      onPointerUp={onPointerUp}
+      onClick={onClick}
       aria-expanded={isPanelOpen}
       aria-haspopup="dialog"
       aria-label={

@@ -2845,6 +2845,27 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   opacity: 0.4;
 }
 
+.dashboard-modal__close svg,
+.dashboard-accordion__chevron,
+.dashboard-accordion__section-icon,
+.dashboard-checklist__warning-icon,
+.dashboard-checklist__check-icon,
+.dashboard-checklist__arrow {
+  pointer-events: none;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .dashboard-modal {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .dashboard-modal__dialog {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 .dashboard-modal__content {
   position: relative;
   z-index: 1;

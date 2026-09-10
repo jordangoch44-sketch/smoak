@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   LocationMarkIcon,
   SearchIcon,
@@ -17,8 +19,8 @@ import {
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import {
   EXPLORE_RECENT_SEARCH_OVERLAY_LIMIT,
-  EXPLORE_SEARCH_GOAL_PROMPTS,
-  EXPLORE_SEARCH_SPECIALIST_PROMPTS,
+  EXPLORE_SEARCH_PLACEHOLDER,
+  EXPLORE_SEARCH_PROMPT_GROUPS,
 } from "@/lib/explore-search-prompts";
 import {
   getRecentSearchesServerSnapshot,
@@ -42,7 +44,6 @@ interface ExploreSearchOverlayProps {
   onClose: () => void;
   onSubmit: (query: string) => void;
   showLocationPrompt: boolean;
-  locationLabel?: string;
 }
 
 /**
@@ -58,7 +59,6 @@ export function ExploreSearchOverlay({
   onClose,
   onSubmit,
   showLocationPrompt,
-  locationLabel,
 }: ExploreSearchOverlayProps) {
   const titleId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -71,6 +71,8 @@ export function ExploreSearchOverlay({
     getRecentSearchesSnapshot,
     getRecentSearchesServerSnapshot
   ).slice(0, EXPLORE_RECENT_SEARCH_OVERLAY_LIMIT);
+
+  const backdropDismiss = useOwnPointerDismiss(onClose);
 
   useEffect(() => {
     setPortalReady(true);
@@ -186,7 +188,9 @@ export function ExploreSearchOverlay({
         type="button"
         className="explore-search-overlay__backdrop"
         aria-label="Dismiss search"
-        onClick={onClose}
+        onPointerDown={backdropDismiss.onPointerDown}
+        onPointerUp={backdropDismiss.onPointerUp}
+        onClick={backdropDismiss.onClick}
       />
 
       <div
@@ -213,33 +217,27 @@ export function ExploreSearchOverlay({
                 autoComplete="off"
                 value={draft}
                 onChange={(event) => onDraftChange(event.target.value)}
-                placeholder={
-                  locationLabel
-                    ? `Name or keyword near ${locationLabel}…`
-                    : "Name or keyword…"
-                }
+                placeholder={EXPLORE_SEARCH_PLACEHOLDER}
                 aria-label="Search specialists"
                 className="smoac-control explore-search-overlay__input"
               />
               {draft.trim() ? (
-                <button
-                  type="button"
+                <FastActivateButton
                   className="smoac-control explore-search-overlay__clear"
                   aria-label="Clear search"
-                  onClick={() => onDraftChange("")}
+                  onActivate={() => onDraftChange("")}
                 >
                   ×
-                </button>
+                </FastActivateButton>
               ) : null}
             </div>
           </form>
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control explore-search-cancel"
-            onClick={onClose}
+            onActivate={onClose}
           >
             Cancel
-          </button>
+          </FastActivateButton>
         </div>
 
         <div className="explore-search-overlay__body">
@@ -249,10 +247,9 @@ export function ExploreSearchOverlay({
 
           {showLocationPrompt ? (
             <div className="explore-search-overlay__location">
-              <button
-                type="button"
+              <FastActivateButton
                 className="smoac-control explore-search-overlay__location-btn"
-                onClick={handleUseCurrentLocation}
+                onActivate={handleUseCurrentLocation}
                 disabled={geoLoading}
               >
                 <span
@@ -279,7 +276,7 @@ export function ExploreSearchOverlay({
                     Show specialists near you
                   </span>
                 </span>
-              </button>
+              </FastActivateButton>
               {geoError ? (
                 <p
                   className="explore-search-overlay__location-error"
@@ -294,43 +291,30 @@ export function ExploreSearchOverlay({
           {recent.length > 0 ? (
             <PromptRow title="Recent">
               {recent.map((entry) => (
-                <button
+                <FastActivateButton
                   key={entry.id}
-                  type="button"
                   className="smoac-control explore-search-overlay__chip"
-                  onClick={() => handlePrompt(entry.query)}
+                  onActivate={() => handlePrompt(entry.query)}
                 >
                   {entry.query}
-                </button>
+                </FastActivateButton>
               ))}
             </PromptRow>
           ) : null}
 
-          <PromptRow title="Specialists">
-            {EXPLORE_SEARCH_SPECIALIST_PROMPTS.map((prompt) => (
-              <button
-                key={prompt.id}
-                type="button"
-                className="smoac-control explore-search-overlay__chip"
-                onClick={() => handlePrompt(prompt.searchQuery)}
-              >
-                {prompt.label}
-              </button>
-            ))}
-          </PromptRow>
-
-          <PromptRow title="Goals">
-            {EXPLORE_SEARCH_GOAL_PROMPTS.map((prompt) => (
-              <button
-                key={prompt.id}
-                type="button"
-                className="smoac-control explore-search-overlay__chip explore-search-overlay__chip--goal"
-                onClick={() => handlePrompt(prompt.searchQuery)}
-              >
-                {prompt.label}
-              </button>
-            ))}
-          </PromptRow>
+          {EXPLORE_SEARCH_PROMPT_GROUPS.map((group) => (
+            <PromptRow key={group.id} title={group.title}>
+              {group.prompts.map((prompt) => (
+                <FastActivateButton
+                  key={prompt.id}
+                  className="smoac-control explore-search-overlay__chip"
+                  onActivate={() => handlePrompt(prompt.searchQuery)}
+                >
+                  {prompt.label}
+                </FastActivateButton>
+              ))}
+            </PromptRow>
+          ))}
         </div>
       </div>
     </div>,

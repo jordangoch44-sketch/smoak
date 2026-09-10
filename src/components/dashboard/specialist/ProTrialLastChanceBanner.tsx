@@ -1,6 +1,7 @@
 "use client";
 
 import { SMOAC_PRO_PRICE_LABEL } from "@/lib/specialist-premium";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 
 interface ProTrialLastChanceBannerProps {
   daysRemaining?: number | null;
@@ -35,13 +36,12 @@ export function ProTrialLastChanceBanner({
         </p>
       </div>
       <div className="specialist-last-chance-banner__actions">
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control specialist-last-chance-banner__primary"
-          onClick={onUpgrade}
+          onActivate={onUpgrade}
         >
           Upgrade to Pro · {SMOAC_PRO_PRICE_LABEL}
-        </button>
+        </FastActivateButton>
       </div>
     </aside>
   );

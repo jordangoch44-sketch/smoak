@@ -9,6 +9,7 @@ import {
   type SpecialistReviewAggregate,
 } from "@/lib/reviews/specialist-review-types";
 import { resolveTrainerReviewDisplay } from "@/lib/trainer-reviews";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { formatTrainerRating } from "@/lib/utils";
 import type { Trainer } from "@/types";
 
@@ -154,13 +155,12 @@ export function ProfileReviewMeta({
       )}
 
       {canLeaveReview && onLeaveReview ? (
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control profile-hero__leave-review"
-          onClick={onLeaveReview}
+          onActivate={onLeaveReview}
         >
           Trained with {firstName}? Leave a review
-        </button>
+        </FastActivateButton>
       ) : null}
 
       {hasOwnReview ? (

@@ -15,9 +15,8 @@ import {
 } from "@/lib/explore-map-area";
 import {
   warmExploreMapCluster,
-  warmTrainerProfileNavigation,
 } from "@/lib/warm-trainer-profile-navigation";
-import { trainerProfilePath } from "@/lib/trainer-profile-path";
+import { bindExploreMapPopupProfileNav } from "@/lib/explore-map-profile-nav";
 import {
   loadAppleMapKit,
   regionForRadiusMiles,
@@ -316,35 +315,6 @@ export function ExploreMapApple({
     const root = stageRef.current;
     if (!root) return;
 
-    function onPopupLinkClick(event: MouseEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const link = target.closest("a.explore-map-popup__link, a.explore-map-cluster-card__link");
-      if (!(link instanceof HTMLAnchorElement)) return;
-
-      const trainerId =
-        link.getAttribute("data-trainer-id")?.trim() ||
-        link.pathname.split("/trainers/")[1]?.split(/[/?#]/)[0]?.trim() ||
-        "";
-      if (!trainerId) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      const decodedId = decodeURIComponent(trainerId);
-      const trainer = trainersRef.current.find((t) => t.id === decodedId);
-      const href = trainer
-        ? trainerProfilePath(trainer)
-        : `/trainers/${encodeURIComponent(decodedId)}`;
-
-      if (trainer) {
-        warmTrainerProfileNavigation(trainer, router);
-      }
-
-      clearSelection();
-      router.push(href, { scroll: false });
-    }
-
     function onPinActivate(event: Event) {
       const target = event.target;
       if (!(target instanceof Element)) return;
@@ -430,11 +400,16 @@ export function ExploreMapApple({
       }, 50);
     }
 
-    root.addEventListener("click", onPopupLinkClick, true);
+    const unbindPopupNav = bindExploreMapPopupProfileNav(
+      root,
+      () => trainersRef.current,
+      router,
+      clearSelection
+    );
     root.addEventListener("pointerup", onPinActivate, true);
     root.addEventListener("pointerdown", onPointerDown, true);
     return () => {
-      root.removeEventListener("click", onPopupLinkClick, true);
+      unbindPopupNav();
       root.removeEventListener("pointerup", onPinActivate, true);
       root.removeEventListener("pointerdown", onPointerDown, true);
     };

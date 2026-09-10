@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useLayoutEffect, useRef, useState } from "react";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 const BIO_CLAMP_LINES = 3;
@@ -67,12 +68,11 @@ export function ProfileHeroBio({ bio }: ProfileHeroBioProps) {
         {text}
       </p>
       {needsToggle ? (
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control profile-hero-bio__toggle"
           aria-expanded={expanded}
           aria-controls={textId}
-          onClick={() => setExpanded((value) => !value)}
+          onActivate={() => setExpanded((value) => !value)}
         >
           {expanded ? "Show less" : "View more"}
           <span
@@ -84,7 +84,7 @@ export function ProfileHeroBio({ bio }: ProfileHeroBioProps) {
           >
             ›
           </span>
-        </button>
+        </FastActivateButton>
       ) : null}
     </div>
   );

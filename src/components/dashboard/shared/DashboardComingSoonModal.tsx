@@ -2,8 +2,12 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { CloseIcon } from "@/components/ui/icons";
 import { DashboardButton } from "./DashboardButton";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalCloseButton,
+  DashboardModalScrim,
+} from "./DashboardModalScrim";
 
 interface DashboardComingSoonModalProps {
   open: boolean;
@@ -38,25 +42,18 @@ export function DashboardComingSoonModal({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="dashboard-modal" role="presentation" onClick={onClose}>
+    <DashboardModalScrim onDismiss={onClose}>
       <div
         className="dashboard-modal__dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dashboard-modal-title"
         aria-describedby="dashboard-modal-desc"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <div className="dashboard-modal__glow" aria-hidden />
 
-        <button
-          type="button"
-          className="dashboard-modal__close"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <DashboardModalCloseButton onClose={onClose} />
 
         <div className="dashboard-modal__content">
           <p className="dashboard-modal__eyebrow">Coming soon</p>
@@ -69,7 +66,7 @@ export function DashboardComingSoonModal({
           <DashboardButton onClick={onClose}>Got it</DashboardButton>
         </div>
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

@@ -4,10 +4,15 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon, InfoIcon } from "@/components/ui/icons";
 import { getInitials } from "@/lib/utils";
 import { BoostPlacementChoice } from "@/components/dashboard/shared/BoostPlacementChoice";
 import { StripeEmbeddedCheckout } from "@/components/dashboard/shared/StripeEmbeddedCheckout";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalScrim,
+} from "@/components/dashboard/shared/DashboardModalScrim";
 import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
 import "@/styles/dashboard.css";
 import {
@@ -179,42 +184,39 @@ export function BoostVisibilityModal({
   const canGoBack = step === "budget" || step === "checkout";
 
   return createPortal(
-    <div
-      className="dashboard-modal dashboard-modal--boost"
-      role="presentation"
-      onClick={onClose}
+    <DashboardModalScrim
+      className="dashboard-modal--boost"
+      onDismiss={onClose}
     >
       <div
         className="dashboard-modal__dialog dashboard-modal__dialog--boost"
         role="dialog"
         aria-modal="true"
         aria-labelledby="boost-modal-title"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <header className="boost-ig-top">
           {canGoBack ? (
-            <button
-              type="button"
+            <FastActivateButton
               className="boost-ig-icon-btn"
-              onClick={goBack}
+              onActivate={goBack}
               aria-label="Back"
             >
               <BackChevron />
-            </button>
+            </FastActivateButton>
           ) : (
             <span className="boost-ig-icon-btn boost-ig-icon-btn--ghost" />
           )}
           <h2 id="boost-modal-title" className="boost-ig-top__title">
             {STEP_TITLE[step]}
           </h2>
-          <button
-            type="button"
+          <FastActivateButton
             className="boost-ig-icon-btn"
-            onClick={onClose}
+            onActivate={onClose}
             aria-label="Close"
           >
             <CloseIcon className="h-5 w-5" />
-          </button>
+          </FastActivateButton>
         </header>
 
         <div className="boost-ig-progress" aria-hidden>
@@ -249,13 +251,12 @@ export function BoostVisibilityModal({
                 name={displayName}
                 profession={profession}
               />
-              <button
-                type="button"
+              <FastActivateButton
                 className="boost-ig-next"
-                onClick={() => setStep("budget")}
+                onActivate={() => setStep("budget")}
               >
                 Next
-              </button>
+              </FastActivateButton>
             </>
           ) : null}
 
@@ -345,14 +346,13 @@ export function BoostVisibilityModal({
                 </p>
               ) : null}
 
-              <button
-                type="button"
+              <FastActivateButton
                 className="boost-ig-next"
-                onClick={() => void startCheckout()}
+                onActivate={() => void startCheckout()}
                 disabled={busy}
               >
                 {busy ? "Loading…" : "Next"}
-              </button>
+              </FastActivateButton>
             </>
           ) : null}
 
@@ -420,9 +420,12 @@ export function BoostVisibilityModal({
                   {(checkout?.days ?? days) === 1 ? "day" : "days"}
                 </p>
               </div>
-              <button type="button" className="boost-ig-next" onClick={onClose}>
+              <FastActivateButton
+                className="boost-ig-next"
+                onActivate={onClose}
+              >
                 Done
-              </button>
+              </FastActivateButton>
             </>
           ) : null}
 
@@ -433,7 +436,7 @@ export function BoostVisibilityModal({
           ) : null}
         </div>
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

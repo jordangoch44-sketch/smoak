@@ -2,12 +2,17 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { CloseIcon } from "@/components/ui/icons";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   SMOAC_PROFILE_WELCOME,
   SPECIALIST_PROFILE_WELCOME_LOCK_CLASS,
 } from "@/lib/specialist-profile-welcome";
 import { DashboardButton } from "./DashboardButton";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalCloseButton,
+  DashboardModalScrim,
+} from "./DashboardModalScrim";
 
 interface SpecialistProfileWelcomeModalProps {
   open: boolean;
@@ -46,10 +51,9 @@ export function SpecialistProfileWelcomeModal({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="dashboard-modal dashboard-modal--welcome"
-      role="presentation"
-      onClick={onClose}
+    <DashboardModalScrim
+      className="dashboard-modal--welcome"
+      onDismiss={onClose}
     >
       <div
         className="dashboard-modal__dialog dashboard-modal__dialog--welcome"
@@ -57,17 +61,10 @@ export function SpecialistProfileWelcomeModal({
         aria-modal="true"
         aria-labelledby="profile-welcome-title"
         aria-describedby="profile-welcome-desc"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <div className="dashboard-modal__glow" aria-hidden />
-        <button
-          type="button"
-          className="dashboard-modal__close"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <DashboardModalCloseButton onClose={onClose} />
         <div className="dashboard-modal__content">
           <p className="dashboard-modal__eyebrow">
             {SMOAC_PROFILE_WELCOME.eyebrow}
@@ -87,16 +84,15 @@ export function SpecialistProfileWelcomeModal({
           >
             {SMOAC_PROFILE_WELCOME.primaryCta}
           </DashboardButton>
-          <button
-            type="button"
+          <FastActivateButton
             className="dashboard-modal__secondary"
-            onClick={onClose}
+            onActivate={onClose}
           >
             {SMOAC_PROFILE_WELCOME.secondaryCta}
-          </button>
+          </FastActivateButton>
         </div>
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

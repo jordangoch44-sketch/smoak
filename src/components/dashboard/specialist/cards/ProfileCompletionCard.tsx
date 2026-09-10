@@ -9,6 +9,7 @@ import {
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { SPECIALIST_DASHBOARD_PROFILE_TAB_HREF } from "@/lib/auth-routes";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { AlertTriangleIcon, CheckIcon } from "@/components/ui/icons";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
 import type { Trainer } from "@/types";
@@ -103,10 +104,9 @@ function ProfileChecklist({
           )}
         >
           {!item.done && onSelectItem ? (
-            <button
-              type="button"
+            <FastActivateButton
               className="dashboard-checklist__btn"
-              onClick={() => onSelectItem(item.id)}
+              onActivate={() => onSelectItem(item.id)}
               title={`Jump to ${item.label}`}
             >
               <span className="dashboard-checklist__btn-left">
@@ -116,7 +116,7 @@ function ProfileChecklist({
               <span className="dashboard-checklist__arrow" aria-hidden>
                 →
               </span>
-            </button>
+            </FastActivateButton>
           ) : item.done ? (
             <span className="dashboard-checklist__done-row">
               <CheckIcon className="dashboard-checklist__check-icon" />

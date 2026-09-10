@@ -3,11 +3,16 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { CloseIcon } from "@/components/ui/icons";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { SMOAC_PRO_TRIAL_CONFIRM_MODAL } from "@/lib/specialist-premium";
 import { showToast } from "@/lib/toast-store";
 import { DashboardButton } from "./DashboardButton";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalCloseButton,
+  DashboardModalScrim,
+} from "./DashboardModalScrim";
 
 interface SmoacProTrialConfirmModalProps {
   open: boolean;
@@ -89,10 +94,8 @@ export function SmoacProTrialConfirmModal({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div
-      className="dashboard-modal"
-      role="presentation"
-      onClick={() => {
+    <DashboardModalScrim
+      onDismiss={() => {
         if (!busy) onClose();
       }}
     >
@@ -102,19 +105,11 @@ export function SmoacProTrialConfirmModal({
         aria-modal="true"
         aria-labelledby="pro-trial-confirm-title"
         aria-describedby="pro-trial-confirm-desc"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <div className="dashboard-modal__glow dashboard-modal__glow--neon" aria-hidden />
 
-        <button
-          type="button"
-          className="dashboard-modal__close"
-          onClick={onClose}
-          aria-label="Close"
-          disabled={busy}
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <DashboardModalCloseButton onClose={onClose} disabled={busy} />
 
         <div className="dashboard-modal__content">
           <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--neon">
@@ -153,17 +148,16 @@ export function SmoacProTrialConfirmModal({
               : SMOAC_PRO_TRIAL_CONFIRM_MODAL.primaryCta}
           </DashboardButton>
 
-          <button
-            type="button"
+          <FastActivateButton
             className="dashboard-modal__secondary"
-            onClick={onClose}
+            onActivate={onClose}
             disabled={busy}
           >
             {SMOAC_PRO_TRIAL_CONFIRM_MODAL.secondaryCta}
-          </button>
+          </FastActivateButton>
         </div>
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

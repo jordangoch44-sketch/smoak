@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import type { ActiveFilterChip, ActiveFilterKey } from "@/lib/explore-active-filters";
 import { CloseIcon } from "@/components/ui/icons";
+import { useFastActivate } from "@/hooks/useFastActivate";
 
 interface ExploreActiveFilterChipsProps {
   chips: ActiveFilterChip[];
@@ -34,15 +35,24 @@ export function ExploreActiveFilterChips({
         />
       ))}
       {chips.length > 1 && onClearAll ? (
-        <button
-          type="button"
-          className="smoac-control explore-filter-chips__clear-all"
-          onClick={onClearAll}
-        >
-          Clear all
-        </button>
+        <ClearAllFiltersButton onClearAll={onClearAll} />
       ) : null}
     </div>
+  );
+}
+
+function ClearAllFiltersButton({ onClearAll }: { onClearAll: () => void }) {
+  const { onPointerUp, onClick } = useFastActivate(onClearAll);
+
+  return (
+    <button
+      type="button"
+      className="smoac-control explore-filter-chips__clear-all"
+      onPointerUp={onPointerUp}
+      onClick={onClick}
+    >
+      Clear all
+    </button>
   );
 }
 
@@ -54,6 +64,7 @@ function FilterChip({
   onRemove: (key: ActiveFilterKey) => void;
 }) {
   const originRef = useRef<{ x: number; y: number } | null>(null);
+  const openedByPointerRef = useRef(false);
 
   return (
     <button
@@ -67,8 +78,28 @@ function FilterChip({
       onPointerCancel={() => {
         originRef.current = null;
       }}
+      onPointerUp={(event) => {
+        event.stopPropagation();
+        if (event.pointerType === "mouse") return;
+        openedByPointerRef.current = true;
+        const origin = originRef.current;
+        originRef.current = null;
+        if (
+          origin &&
+          Math.hypot(event.clientX - origin.x, event.clientY - origin.y) >
+            TAP_SLOP_PX
+        ) {
+          return;
+        }
+        onRemove(chip.key);
+      }}
       onClick={(event) => {
         event.stopPropagation();
+        if (openedByPointerRef.current) {
+          event.preventDefault();
+          openedByPointerRef.current = false;
+          return;
+        }
         const origin = originRef.current;
         originRef.current = null;
         if (

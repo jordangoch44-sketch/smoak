@@ -1,13 +1,13 @@
 "use client";
 
-import type { MouseEvent } from "react";
 import type { ClientTransformationPhoto } from "@/types";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { PhotosStackIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 interface ProfileHeroTransformationsProps {
   photos: ClientTransformationPhoto[];
-  onOpen: (event: MouseEvent<HTMLButtonElement>, src: string) => void;
+  onOpen: (src: string) => void;
 }
 
 export function ProfileHeroTransformations({
@@ -31,31 +31,29 @@ export function ProfileHeroTransformations({
         aria-label="Client transformation photos"
       >
         {visible.map((photo, index) => (
-          <button
+          <FastActivateButton
             key={photo.id || photo.src}
-            type="button"
             className="profile-hero__pinned-tile"
             aria-label={`Open transformation photo ${index + 1}`}
-            onClick={(event) => onOpen(event, photo.src)}
+            onActivate={() => onOpen(photo.src)}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photo.src} alt="" />
-          </button>
+          </FastActivateButton>
         ))}
         {extraCount > 0 && extraStart ? (
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control profile-hero__more-photos"
             aria-label={`View ${extraCount} more ${
               extraCount === 1 ? "transformation" : "transformations"
             }`}
-            onClick={(event) => onOpen(event, extraStart)}
+            onActivate={() => onOpen(extraStart)}
           >
             <PhotosStackIcon className="profile-hero__more-photos-icon" />
             <span className="profile-hero__more-photos-count">
               +{extraCount}
             </span>
-          </button>
+          </FastActivateButton>
         ) : null}
       </div>
     </div>

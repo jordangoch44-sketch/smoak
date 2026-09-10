@@ -1077,6 +1077,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  pointer-events: none;
 }
 
 .profile-hero__pinned-tile:hover,
@@ -1304,6 +1305,7 @@
   font-size: 1rem;
   line-height: 1;
   transform: rotate(90deg);
+  pointer-events: none;
   transition: transform 0.25s ease;
 }
 
@@ -1967,6 +1969,7 @@
   width: var(--profile-toolbar-icon);
   height: var(--profile-toolbar-icon);
   stroke-width: 1.5;
+  pointer-events: none;
   filter: drop-shadow(0 0.5px 1px rgba(0, 0, 0, 0.35));
 }
 
@@ -2098,6 +2101,7 @@
 .profile-hero__more-photos-icon {
   width: 1.15rem;
   height: 1.15rem;
+  pointer-events: none;
 }
 
 .profile-hero__more-photos-count {
@@ -2146,6 +2150,7 @@
   width: 0.875rem;
   height: 0.875rem;
   flex-shrink: 0;
+  pointer-events: none;
 }
 
 @media (min-width: 640px) {

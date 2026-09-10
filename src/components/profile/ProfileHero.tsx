@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type CSSProperties, type MouseEvent } from "react";
+import { useCallback, useState, type CSSProperties } from "react";
 import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import { formatProviderLocation } from "@/lib/provider-location";
@@ -30,6 +30,7 @@ import {
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
 import { PhotosStackIcon } from "@/components/ui/icons";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileHeroBio } from "./ProfileHeroBio";
@@ -113,13 +114,9 @@ export function ProfileHero({
   const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
 
   const openGallery = useCallback(
-    (event: MouseEvent<HTMLButtonElement>, startUrl?: string) => {
-      event.preventDefault();
-      event.stopPropagation();
+    (startUrl?: string) => {
       setGalleryIndex(
-        startUrl
-          ? resolveGalleryIndexForUrl(galleryMedia, startUrl)
-          : 0
+        startUrl ? resolveGalleryIndexForUrl(galleryMedia, startUrl) : 0
       );
       setGalleryOpen(true);
     },
@@ -231,15 +228,14 @@ export function ProfileHero({
             {isSpecialistLive ? (
               showMetaGalleryButton ? (
                 <div className="profile-hero__meta">
-                  <button
-                    type="button"
+                  <FastActivateButton
                     className="profile-hero__view-gallery"
                     aria-label="View specialist gallery"
-                    onClick={(event) => openGallery(event)}
+                    onActivate={() => openGallery()}
                   >
                     <PhotosStackIcon className="profile-hero__view-gallery-icon" />
                     View Gallery
-                  </button>
+                  </FastActivateButton>
                 </div>
               ) : null
             ) : (
@@ -266,15 +262,14 @@ export function ProfileHero({
                   </div>
                 </div>
                 {showMetaGalleryButton ? (
-                  <button
-                    type="button"
+                  <FastActivateButton
                     className="profile-hero__view-gallery"
                     aria-label="View specialist gallery"
-                    onClick={(event) => openGallery(event)}
+                    onActivate={() => openGallery()}
                   >
                     <PhotosStackIcon className="profile-hero__view-gallery-icon" />
                     View Gallery
-                  </button>
+                  </FastActivateButton>
                 ) : null}
               </div>
             )}
@@ -292,16 +287,15 @@ export function ProfileHero({
                   const isVideo = item?.type === "video";
                   const preview = isVideo ? item.thumbnail || "" : url;
                   return (
-                    <button
+                    <FastActivateButton
                       key={url}
-                      type="button"
                       className="profile-hero__pinned-tile"
                       aria-label={
                         isVideo
                           ? `Play pinned video ${index + 1}`
                           : `Open pinned photo ${index + 1}`
                       }
-                      onClick={(event) => openGallery(event, url)}
+                      onActivate={() => openGallery(url)}
                     >
                       {preview ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -312,25 +306,22 @@ export function ProfileHero({
                           {formatClipSecondsLabel(item.duration ?? 0)}
                         </span>
                       ) : null}
-                    </button>
+                    </FastActivateButton>
                   );
                 })}
                 {remainingPhotoCount > 0 ? (
-                  <button
-                    type="button"
+                  <FastActivateButton
                     className="smoac-control profile-hero__more-photos"
                     aria-label={`View ${remainingPhotoCount} more ${
                       remainingPhotoCount === 1 ? "photo" : "photos"
                     }`}
-                    onClick={(event) =>
-                      openGallery(event, firstRemainingPhotoUrl)
-                    }
+                    onActivate={() => openGallery(firstRemainingPhotoUrl)}
                   >
                     <PhotosStackIcon className="profile-hero__more-photos-icon" />
                     <span className="profile-hero__more-photos-count">
                       +{remainingPhotoCount}
                     </span>
-                  </button>
+                  </FastActivateButton>
                 ) : null}
               </div>
             ) : null}
@@ -338,9 +329,7 @@ export function ProfileHero({
             {transformationPhotos.length > 0 ? (
               <ProfileHeroTransformations
                 photos={transformationPhotos}
-                onOpen={(event, src) => {
-                  event.preventDefault();
-                  event.stopPropagation();
+                onOpen={(src) => {
                   const index = transformationPhotos.findIndex(
                     (photo) => photo.src === src
                   );

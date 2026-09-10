@@ -2,6 +2,23 @@ import type { MobileBottomNavItemId } from "@/lib/mobile-bottom-nav";
 
 export type BottomNavTransitionKind = "none" | "panel";
 
+/** Cmd/Ctrl/Shift/Alt or non-primary button — let the browser handle the link. */
+export function isModifiedNavActivation(event: {
+  button: number;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+}): boolean {
+  return (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  );
+}
+
 /** Lightweight panel slide — transform + opacity only (tablet / fine pointer) */
 export const BOTTOM_NAV_PANEL_MS = 160;
 

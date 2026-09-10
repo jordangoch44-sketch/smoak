@@ -28,6 +28,7 @@ import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOr
 import { TrainerList } from "@/components/trainers";
 import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiriesList";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn, getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 
@@ -229,20 +230,18 @@ export function ClientDashboardPageClient() {
         title={`Welcome back, ${firstName}`}
         subtitle="Your profile, saved specialists, and messages."
         utilityBar={
-          <button
-            type="button"
+          <FastActivateButton
             className="dashboard-signout dashboard-signout--utility"
-            onClick={() => void handleSignOut()}
+            onActivate={() => void handleSignOut()}
           >
             Sign out
-          </button>
+          </FastActivateButton>
         }
       >
         {!profileComplete ? (
-          <button
-            type="button"
+          <FastActivateButton
             className="client-dash-progress"
-            onClick={openProfileEditor}
+            onActivate={openProfileEditor}
           >
             <div className="client-dash-progress__row">
               <span className="client-dash-progress__title">
@@ -268,7 +267,7 @@ export function ClientDashboardPageClient() {
             <p className="client-dash-progress__hint">
               Add a few details for better specialist matches.
             </p>
-          </button>
+          </FastActivateButton>
         ) : (
           <div className="client-dash-progress client-dash-progress--done">
             <span className="client-dash-progress__title">
@@ -283,9 +282,8 @@ export function ClientDashboardPageClient() {
           aria-label="Client dashboard sections"
         >
           {TABS.map((tab) => (
-            <button
+            <FastActivateButton
               key={tab.id}
-              type="button"
               role="tab"
               id={`client-dash-tab-${tab.id}`}
               aria-selected={activeTab === tab.id}
@@ -294,11 +292,7 @@ export function ClientDashboardPageClient() {
                 "client-dash-tabs__btn",
                 activeTab === tab.id && "client-dash-tabs__btn--active"
               )}
-              onPointerDown={(event) => {
-                if (event.button !== 0) return;
-                setActiveTab(tab.id);
-              }}
-              onClick={() => setActiveTab(tab.id)}
+              onActivate={() => setActiveTab(tab.id)}
             >
               {tab.label}
               {tab.id === "saved" && savedCount > 0 ? (
@@ -307,7 +301,7 @@ export function ClientDashboardPageClient() {
               {tab.id === "messages" && messages.some((m) => m.unread) ? (
                 <span className="client-dash-tabs__dot" aria-hidden />
               ) : null}
-            </button>
+            </FastActivateButton>
           ))}
         </div>
 
@@ -360,13 +354,12 @@ export function ClientDashboardPageClient() {
                   </div>
                 </dl>
 
-                <button
-                  type="button"
+                <FastActivateButton
                   className="client-dash-summary__edit"
-                  onClick={openProfileEditor}
+                  onActivate={openProfileEditor}
                 >
                   Edit profile
-                </button>
+                </FastActivateButton>
               </div>
             </section>
           ) : null}

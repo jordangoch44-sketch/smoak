@@ -1,6 +1,7 @@
 "use client";
 
-import Link from "next/link";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { LOGIN_PATH } from "@/lib/auth-routes";
 
 export type QuickClientAccountAuthVariant = "login-gate" | "inquiry-sheet";
@@ -230,46 +231,42 @@ export function QuickClientAccountAuthActions({
   const buttons =
     view === "signup" ? (
       <>
-        <button
-          type="button"
+        <FastActivateButton
           className={classes.primaryBtn}
           disabled={sending}
-          onClick={onSignup}
+          onActivate={onSignup}
         >
           {sending ? "Continuing…" : signupCta}
-        </button>
-        <button
-          type="button"
+        </FastActivateButton>
+        <FastActivateButton
           className={classes.ghostBtn}
-          onClick={onSwitchToSignin}
+          onActivate={onSwitchToSignin}
         >
           {signinSwitchLabel}
-        </button>
+        </FastActivateButton>
       </>
     ) : (
       <>
-        <button
-          type="button"
+        <FastActivateButton
           className={classes.primaryBtn}
           disabled={sending}
-          onClick={onSignIn}
+          onActivate={onSignIn}
         >
           {sending ? "Signing in…" : signInCta}
-        </button>
-        <button
-          type="button"
+        </FastActivateButton>
+        <FastActivateButton
           className={classes.ghostBtn}
-          onClick={onSwitchToSignup}
+          onActivate={onSwitchToSignup}
         >
           Create a quick account instead
-        </button>
-        <Link
+        </FastActivateButton>
+        <HeaderChromeLink
           href={LOGIN_PATH}
           className={classes.linkBtn}
-          onClick={onOpenFullLogin}
+          onActivate={() => onOpenFullLogin?.()}
         >
           Open full sign in
-        </Link>
+        </HeaderChromeLink>
       </>
     );
 

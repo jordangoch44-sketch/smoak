@@ -1,5 +1,7 @@
 "use client";
 
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
+
 interface InquiryNotificationBannerProps {
   unreadCount: number;
   latestSummary?: string | null;
@@ -36,20 +38,18 @@ export function InquiryNotificationBanner({
         </p>
       </div>
       <div className="specialist-inquiry-banner__actions">
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control specialist-inquiry-banner__primary"
-          onClick={onReview}
+          onActivate={onReview}
         >
           Yes
-        </button>
-        <button
-          type="button"
+        </FastActivateButton>
+        <FastActivateButton
           className="smoac-control specialist-inquiry-banner__secondary"
-          onClick={onDismiss}
+          onActivate={onDismiss}
         >
           Not now
-        </button>
+        </FastActivateButton>
       </div>
     </aside>
   );

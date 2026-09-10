@@ -19,9 +19,8 @@ import {
 } from "@/lib/explore-map-area";
 import {
   warmExploreMapCluster,
-  warmTrainerProfileNavigation,
 } from "@/lib/warm-trainer-profile-navigation";
-import { trainerProfilePath } from "@/lib/trainer-profile-path";
+import { bindExploreMapPopupProfileNav } from "@/lib/explore-map-profile-nav";
 import { getExploreMapBasemap } from "@/lib/explore-map-tiles";
 import {
   clusterTrainersForMap,
@@ -285,42 +284,12 @@ export function ExploreMapLeaflet({
   trainersRef.current = trainers;
 
   /*
-   * Map popups use raw HTML anchors. Intercept clicks so we soft-navigate like
-   * list cards (prime + App Router) instead of a full document load that remounts
-   * auth/saves and breaks hearts → Favorites.
+   * Map popups use raw HTML anchors. Intercept pointer-up / click so we
+   * soft-navigate like list cards instead of a full document load.
    */
   useEffect(() => {
     const root = containerRef.current;
     if (!root) return;
-
-    function onPopupLinkClick(event: MouseEvent) {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
-      const link = target.closest("a.explore-map-popup__link, a.explore-map-cluster-card__link");
-      if (!(link instanceof HTMLAnchorElement)) return;
-
-      const trainerId =
-        link.getAttribute("data-trainer-id")?.trim() ||
-        link.pathname.split("/trainers/")[1]?.split(/[/?#]/)[0]?.trim() ||
-        "";
-      if (!trainerId) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      const decodedId = decodeURIComponent(trainerId);
-      const trainer = trainersRef.current.find((t) => t.id === decodedId);
-      const href = trainer
-        ? trainerProfilePath(trainer)
-        : `/trainers/${encodeURIComponent(decodedId)}`;
-
-      if (trainer) {
-        warmTrainerProfileNavigation(trainer, router);
-      }
-
-      mapRef.current?.closePopup();
-      router.push(href, { scroll: false });
-    }
 
     function onPinPress(event: PointerEvent) {
       const target = event.target;
@@ -333,10 +302,17 @@ export function ExploreMapLeaflet({
       if (cluster) warmExploreMapCluster(cluster, routerRef.current);
     }
 
-    root.addEventListener("click", onPopupLinkClick, true);
+    const unbindPopupNav = bindExploreMapPopupProfileNav(
+      root,
+      () => trainersRef.current,
+      router,
+      () => {
+        mapRef.current?.closePopup();
+      }
+    );
     root.addEventListener("pointerdown", onPinPress, true);
     return () => {
-      root.removeEventListener("click", onPopupLinkClick, true);
+      unbindPopupNav();
       root.removeEventListener("pointerdown", onPinPress, true);
     };
   }, [router]);

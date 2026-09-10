@@ -1,5 +1,6 @@
 "use client";
 
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 interface DashboardSignOutButtonProps {
@@ -13,12 +14,11 @@ export function DashboardSignOutButton({
   className,
 }: DashboardSignOutButtonProps) {
   return (
-    <button
-      type="button"
+    <FastActivateButton
       className={cn("dashboard-signout dashboard-signout--utility", className)}
-      onClick={onClick}
+      onActivate={onClick}
     >
       Sign out
-    </button>
+    </FastActivateButton>
   );
 }

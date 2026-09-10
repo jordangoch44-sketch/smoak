@@ -4,6 +4,7 @@ import { useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useToast } from "@/components/ui/toast";
 import { resolveInstagramProfileUrl } from "@/lib/instagram-profile-url";
 import { shareTrainerProfile } from "@/lib/profile-share";
@@ -102,17 +103,16 @@ export function ProfileHeroToolbar({
       )}
       aria-hidden={false}
     >
-      <button
-        type="button"
+      <FastActivateButton
         className="profile-toolbar__close"
         aria-label="Close profile"
-        onClick={handleClose}
+        onActivate={handleClose}
       >
         <ToolbarIcon className="profile-toolbar__icon--close">
           <path d="M18 6 6 18" />
           <path d="m6 6 12 12" />
         </ToolbarIcon>
-      </button>
+      </FastActivateButton>
 
       <div className="profile-toolbar__actions">
         <div
@@ -124,18 +124,19 @@ export function ProfileHeroToolbar({
             <SaveTrainerButton trainerId={trainerId} overlay={false} />
           </div>
 
-          <button
-            type="button"
+          <FastActivateButton
             className="profile-toolbar__btn"
             aria-label="Share profile"
-            onClick={handleShare}
+            onActivate={() => {
+              void handleShare();
+            }}
           >
             <ToolbarIcon>
               <path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7" />
               <path d="M12 3v12" />
               <path d="m7 8 5-5 5 5" />
             </ToolbarIcon>
-          </button>
+          </FastActivateButton>
 
           {instagramHref ? (
             <a

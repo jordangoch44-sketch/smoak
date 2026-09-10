@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { ProfilePhotoCropper } from "@/components/media/ProfilePhotoCropper";
@@ -56,6 +57,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import type { ClientProfileFormState } from "@/types/client-profile";
 import type { Area } from "react-easy-crop";
 import { cn, getInitials } from "@/lib/utils";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import "@/styles/client-profile-sheet.css";
 import "@/styles/profile-photo-cropper.css";
 
@@ -124,6 +126,7 @@ export function ClientProfileEditModal({
   const [emailBusy, setEmailBusy] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailOk, setEmailOk] = useState<string | null>(null);
+  const backdropDismiss = useOwnPointerDismiss(onClose);
 
   useEffect(() => {
     setMounted(true);
@@ -462,7 +465,9 @@ export function ClientProfileEditModal({
             type="button"
             className="client-profile-sheet__backdrop"
             aria-label="Close profile editor"
-            onClick={onClose}
+            onPointerDown={backdropDismiss.onPointerDown}
+            onPointerUp={backdropDismiss.onPointerUp}
+            onClick={backdropDismiss.onClick}
           />
           <div
             className="client-profile-sheet"
@@ -477,14 +482,13 @@ export function ClientProfileEditModal({
             <h2 id={titleId} className="client-profile-sheet__title">
               {form.profileCompleted ? "Your profile" : "Complete your profile"}
             </h2>
-            <button
-              type="button"
+            <FastActivateButton
               className="client-profile-sheet__close"
-              onClick={onClose}
+              onActivate={onClose}
               aria-label="Close"
             >
               <CloseIcon className="h-4 w-4" />
-            </button>
+            </FastActivateButton>
           </div>
         </div>
 
@@ -963,14 +967,13 @@ export function ClientProfileEditModal({
         </div>
 
         <div className="client-profile-sheet__footer">
-          <button
-            type="button"
+          <FastActivateButton
             className="client-profile-save"
             disabled={saving || loading || Boolean(cropImageSrc)}
-            onClick={() => void handleSave()}
+            onActivate={() => void handleSave()}
           >
             {saving ? "Saving…" : "Save changes"}
-          </button>
+          </FastActivateButton>
         </div>
       </div>
     </div>,

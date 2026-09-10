@@ -14,6 +14,7 @@ import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city"
 import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
 import { LocationMarkIcon } from "@/components/ui/icons";
 import { useUserLocation } from "@/hooks/useUserLocation";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 interface LocationSelectorPanelProps {
@@ -189,24 +190,22 @@ export function LocationSelectorPanel({
           <span className="location-selector-panel__current-text">
             {activeSummary ?? "No location set"}
           </span>
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control location-selector-panel__use-chip"
-            onClick={handleUseLocation}
+            onActivate={handleUseLocation}
             disabled={busy}
           >
             {geoLoading ? "Finding…" : "Use my location"}
-          </button>
+          </FastActivateButton>
         </div>
       ) : (
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control location-selector-panel__btn location-selector-panel__btn--gps"
-          onClick={handleUseLocation}
+          onActivate={handleUseLocation}
           disabled={busy}
         >
           {geoLoading ? "Finding your location…" : "Use my location"}
-        </button>
+        </FastActivateButton>
       )}
 
       {geoError ? (
@@ -307,14 +306,13 @@ export function LocationSelectorPanel({
       </form>
 
       {isGate && onSkip ? (
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control location-selector-panel__btn location-selector-panel__btn--skip"
-          onClick={onSkip}
+          onActivate={onSkip}
           disabled={busy}
         >
           Not now
-        </button>
+        </FastActivateButton>
       ) : (
         <p className="location-selector-panel__privacy">
           <svg

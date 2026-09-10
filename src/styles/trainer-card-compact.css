@@ -25,6 +25,7 @@
 
 .trainer-card > a > *,
 .trainer-card > a img {
+  pointer-events: none;
   -webkit-user-drag: none;
 }
 

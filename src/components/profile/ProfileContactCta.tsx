@@ -1,5 +1,6 @@
 "use client";
 
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 interface ProfileContactCtaProps {
@@ -26,13 +27,12 @@ export function ProfileContactCta({
       <p className="profile-contact-cta__support">
         Ask about pricing, availability, services, or anything else.
       </p>
-      <button
-        type="button"
+      <FastActivateButton
         className="smoac-control profile-contact-cta__button"
-        onClick={onContact}
+        onActivate={onContact}
       >
         Contact Specialist
-      </button>
+      </FastActivateButton>
       <p className="profile-contact-cta__helper">
         Your inquiry is sent to their portal and email.
       </p>

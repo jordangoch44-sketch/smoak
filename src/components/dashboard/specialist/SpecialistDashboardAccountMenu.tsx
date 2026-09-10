@@ -1,5 +1,6 @@
 "use client";
 
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 interface SpecialistDashboardAccountMenuProps {
@@ -14,13 +15,12 @@ export function SpecialistDashboardAccountMenu({
 }: SpecialistDashboardAccountMenuProps) {
   return (
     <div className={cn("specialist-dash-account", className)}>
-      <button
-        type="button"
+      <FastActivateButton
         className="smoac-control dashboard-signout dashboard-signout--utility specialist-dash-account__signout"
-        onClick={onSignOut}
+        onActivate={onSignOut}
       >
         Sign out
-      </button>
+      </FastActivateButton>
     </div>
   );
 }

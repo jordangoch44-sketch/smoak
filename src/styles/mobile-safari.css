@@ -150,6 +150,8 @@ html {
     }
 
     .explore-search-shell,
+    .explore-filters-icon-btn,
+    .home-hero-search__field,
     .glass-panel:not(.site-header__frost),
     .save-button,
     .nav-profile__trigger,
@@ -164,6 +166,14 @@ html {
 
     .explore-search-shell {
       background: rgba(14, 14, 20, 0.92) !important;
+    }
+
+    .explore-filters-icon-btn {
+      background: rgba(18, 16, 28, 0.94) !important;
+    }
+
+    .home-hero-search__field {
+      background: rgba(22, 22, 28, 0.96) !important;
     }
 
     /* Filters sheet relied on blur; without it it was unreadable glass */

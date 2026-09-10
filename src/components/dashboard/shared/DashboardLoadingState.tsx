@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
+
 const STALL_MS = 8_000;
 
 interface DashboardLoadingStateProps {
@@ -27,13 +29,12 @@ export function DashboardLoadingState({
       <div className="dashboard-page__content dashboard-page__content--loading">
         <p className="dashboard-page__subtitle">{message}</p>
         {stalled ? (
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control dashboard-loading-retry"
-            onClick={() => window.location.reload()}
+            onActivate={() => window.location.reload()}
           >
             Retry
-          </button>
+          </FastActivateButton>
         ) : null}
       </div>
     </div>

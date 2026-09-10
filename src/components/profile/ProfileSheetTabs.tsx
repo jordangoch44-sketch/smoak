@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, type KeyboardEvent, type ReactNode } from "react";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 export type ProfileSheetTabId = "details" | "reviews" | "inquire";
@@ -72,9 +73,8 @@ export function ProfileSheetTabs({
         {TABS.map((tab) => {
           const selected = value === tab.id;
           return (
-            <button
+            <FastActivateButton
               key={tab.id}
-              type="button"
               role="tab"
               id={`${baseId}-tab-${tab.id}`}
               className={cn(
@@ -85,11 +85,11 @@ export function ProfileSheetTabs({
               aria-controls={`${baseId}-panel-${tab.id}`}
               aria-label={tab.ariaLabel}
               tabIndex={selected ? 0 : -1}
-              onClick={() => onChange(tab.id)}
+              onActivate={() => onChange(tab.id)}
               onKeyDown={onTabKeyDown}
             >
               {tab.label}
-            </button>
+            </FastActivateButton>
           );
         })}
       </div>

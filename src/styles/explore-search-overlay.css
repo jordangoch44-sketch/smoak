@@ -137,8 +137,11 @@
 }
 
 .explore-search-overlay__input::placeholder {
+  overflow: hidden;
   color: rgba(160, 160, 170, 0.88);
   font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .explore-search-overlay__clear {
@@ -224,6 +227,7 @@
   background: var(--smoac-color);
   color: #fff;
   box-shadow: var(--smoac-color-glow);
+  pointer-events: none;
 }
 
 .explore-search-overlay__location-copy {
@@ -231,6 +235,7 @@
   min-width: 0;
   flex-direction: column;
   gap: 0.15rem;
+  pointer-events: none;
 }
 
 .explore-search-overlay__location-label {
@@ -322,17 +327,6 @@
 .explore-search-overlay__chip:focus-visible {
   outline: none;
   box-shadow: var(--smoac-color-focus-ring);
-}
-
-.explore-search-overlay__chip--goal {
-  background:
-    linear-gradient(
-      155deg,
-      rgba(32, 24, 44, 0.96) 0%,
-      rgba(22, 16, 34, 0.94) 100%
-    )
-      padding-box,
-    var(--smoac-color) border-box;
 }
 
 body.explore-search-open .mobile-bottom-nav {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { SpecialistInquirySheet } from "./SpecialistInquirySheet";
 
 interface ProfileInquiryActionProps {
@@ -46,13 +47,12 @@ export function ProfileInquiryAction({
   return (
     <>
       {showButton ? (
-        <button
-          type="button"
+        <FastActivateButton
           className={className ?? "smoac-control profile-inquiry-cta"}
-          onClick={() => setOpen(true)}
+          onActivate={() => setOpen(true)}
         >
           {buttonLabel}
-        </button>
+        </FastActivateButton>
       ) : null}
       <SpecialistInquirySheet
         open={open}

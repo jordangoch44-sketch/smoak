@@ -24,3 +24,9 @@ export { SpecialistProfileWelcomeModal } from "./SpecialistProfileWelcomeModal";
 export { DashboardLoadingState } from "./DashboardLoadingState";
 export { DashboardGrid } from "./DashboardGrid";
 export { DashboardSignOutButton } from "./DashboardSignOutButton";
+export {
+  DashboardModalScrim,
+  DashboardModalCloseButton,
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  stopDashboardDialogPointer,
+} from "./DashboardModalScrim";

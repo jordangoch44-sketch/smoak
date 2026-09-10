@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type MouseEvent,
   type PointerEvent,
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
+import { useMobileBottomNavProfilePhoto } from "@/hooks/useMobileBottomNavProfilePhoto";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
 import {
@@ -34,9 +35,12 @@ import {
   type MobileBottomNavProfileAuthState,
   type MobileBottomNavProfilePresentation,
 } from "@/lib/mobile-bottom-nav";
-import { getBottomNavTransitionKind } from "@/lib/mobile-bottom-nav-transition";
+import {
+  getBottomNavTransitionKind,
+  isModifiedNavActivation,
+} from "@/lib/mobile-bottom-nav-transition";
 import { formatSavedCountBadge } from "@/lib/saved-ui";
-import { canSaveSpecialists, getUserRole } from "@/lib/specialist-saves";
+import { canSaveSpecialists } from "@/lib/specialist-saves";
 import { cn } from "@/lib/utils";
 
 const NavIcon = memo(function NavIcon({
@@ -154,7 +158,9 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   showSaveBadge,
   savedCount,
   onNavigate,
-  onPrefetch,
+  onPointerDown,
+  onPointerCommit,
+  onPointerCancelActivate,
 }: {
   item: MobileBottomNavItem;
   active: boolean;
@@ -162,8 +168,19 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   profilePresentation?: MobileBottomNavProfilePresentation;
   showSaveBadge: boolean;
   savedCount: number;
-  onNavigate: (event: MouseEvent<HTMLAnchorElement>) => void;
-  onPrefetch: (href: string) => void;
+  onNavigate: (
+    item: MobileBottomNavItem,
+    event: MouseEvent<HTMLAnchorElement>
+  ) => void;
+  onPointerDown: (
+    item: MobileBottomNavItem,
+    event: PointerEvent<HTMLAnchorElement>
+  ) => void;
+  onPointerCommit: (
+    item: MobileBottomNavItem,
+    event: PointerEvent<HTMLAnchorElement>
+  ) => void;
+  onPointerCancelActivate: (item: MobileBottomNavItem) => void;
 }) {
   const isProfile = item.id === "profile";
   const signedIn = profileAuthState === "signed-in";
@@ -181,19 +198,39 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       ? `${item.label}, ${savedCount} saved`
       : item.label;
 
+  const handleClick = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      onNavigate(item, event);
+    },
+    [item, onNavigate]
+  );
+
   const handlePointerDown = useCallback(
     (event: PointerEvent<HTMLAnchorElement>) => {
-      if (event.button !== 0) return;
-      onPrefetch(item.href);
+      onPointerDown(item, event);
     },
-    [item.href, onPrefetch]
+    [item, onPointerDown]
   );
+
+  const handlePointerUp = useCallback(
+    (event: PointerEvent<HTMLAnchorElement>) => {
+      onPointerCommit(item, event);
+    },
+    [item, onPointerCommit]
+  );
+
+  const handlePointerCancel = useCallback(() => {
+    onPointerCancelActivate(item);
+  }, [item, onPointerCancelActivate]);
 
   return (
     <TapLink
       href={item.href}
-      onClick={onNavigate}
+      onClick={handleClick}
       onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onPointerLeave={handlePointerCancel}
       className={cn(
         "mobile-bottom-nav__item smoac-hit-target",
         item.isPrimary && "mobile-bottom-nav__item--primary",
@@ -261,7 +298,9 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   showSaveBadge,
   savedCount,
   onNavClick,
-  onPrefetch,
+  onPointerDown,
+  onPointerCommit,
+  onPointerCancelActivate,
 }: {
   items: MobileBottomNavItem[];
   activeById: Record<MobileBottomNavItemId, boolean>;
@@ -273,7 +312,15 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
     item: MobileBottomNavItem,
     event: MouseEvent<HTMLAnchorElement>
   ) => void;
-  onPrefetch: (href: string) => void;
+  onPointerDown: (
+    item: MobileBottomNavItem,
+    event: PointerEvent<HTMLAnchorElement>
+  ) => void;
+  onPointerCommit: (
+    item: MobileBottomNavItem,
+    event: PointerEvent<HTMLAnchorElement>
+  ) => void;
+  onPointerCancelActivate: (item: MobileBottomNavItem) => void;
 }) {
   return (
     <ul className="mobile-bottom-nav__list">
@@ -290,8 +337,10 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
             }
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
-            onNavigate={(event) => onNavClick(item, event)}
-            onPrefetch={onPrefetch}
+            onNavigate={onNavClick}
+            onPointerDown={onPointerDown}
+            onPointerCommit={onPointerCommit}
+            onPointerCancelActivate={onPointerCancelActivate}
           />
         </li>
       ))}
@@ -306,23 +355,18 @@ function SiteNavPillShell({ className }: { className?: string }) {
   const beginBottomNavTransition = useBeginBottomNavTransition();
   const { clientReady } = useStableClientState();
   const { isReady, session } = useAuthSession();
-  const { trainer: managedTrainer, application } = useManagedSpecialistProfile();
+  const specialistPhotoUrl = useMobileBottomNavProfilePhoto();
   const { isReady: savesReady, isSavesReady, savedCount } = useSavedTrainers();
   const [pendingId, setPendingId] = useState<MobileBottomNavItemId | null>(
     null
   );
+  const startedByPointerRef = useRef<MobileBottomNavItemId | null>(null);
 
   const profileAuthState = getMobileBottomNavProfileAuthState(
     clientReady,
     isReady,
     session
   );
-  const specialistPhotoUrl =
-    getUserRole(session) === "specialist"
-      ? application?.media.profilePhotoUrl?.trim() ||
-        managedTrainer?.image?.trim() ||
-        null
-      : null;
   const profilePresentation = useMemo(
     () =>
       getMobileBottomNavProfilePresentation(
@@ -345,6 +389,7 @@ function SiteNavPillShell({ className }: { className?: string }) {
 
   useEffect(() => {
     setPendingId(null);
+    startedByPointerRef.current = null;
   }, [pathname, searchParams]);
 
   const activeById = useMemo(() => {
@@ -358,31 +403,7 @@ function SiteNavPillShell({ className }: { className?: string }) {
     return map;
   }, [items, pathname, pendingId, searchParams]);
 
-  const handleNavClick = useCallback(
-    (item: MobileBottomNavItem, event: MouseEvent<HTMLAnchorElement>) => {
-      if (
-        getBottomNavTransitionKind(item.id, pathname, searchParams, item.href) ===
-        "none"
-      ) {
-        return;
-      }
-
-      const fromId =
-        getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
-
-      event.preventDefault();
-      setPendingId(item.id);
-      try {
-        router.prefetch(item.href);
-      } catch {
-        /* best-effort */
-      }
-      beginBottomNavTransition(item.href, { fromId, toId: item.id });
-    },
-    [beginBottomNavTransition, pathname, router, searchParams]
-  );
-
-  const handlePrefetch = useCallback(
+  const prefetchHref = useCallback(
     (href: string) => {
       try {
         router.prefetch(href);
@@ -391,6 +412,83 @@ function SiteNavPillShell({ className }: { className?: string }) {
       }
     },
     [router]
+  );
+
+  const activateItem = useCallback(
+    (
+      item: MobileBottomNavItem,
+      event: MouseEvent<HTMLAnchorElement> | PointerEvent<HTMLAnchorElement>
+    ) => {
+      if (isModifiedNavActivation(event)) return false;
+
+      if (
+        getBottomNavTransitionKind(
+          item.id,
+          pathname,
+          searchParams,
+          item.href
+        ) === "none"
+      ) {
+        event.preventDefault();
+        setPendingId(null);
+        return true;
+      }
+
+      const fromId =
+        getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
+
+      event.preventDefault();
+      setPendingId(item.id);
+      beginBottomNavTransition(item.href, { fromId, toId: item.id });
+      return true;
+    },
+    [beginBottomNavTransition, pathname, searchParams]
+  );
+
+  const handlePointerDown = useCallback(
+    (
+      item: MobileBottomNavItem,
+      event: PointerEvent<HTMLAnchorElement>
+    ) => {
+      if (isModifiedNavActivation(event)) return;
+      prefetchHref(item.href);
+      if (event.pointerType === "mouse") return;
+      setPendingId(item.id);
+    },
+    [prefetchHref]
+  );
+
+  const handlePointerCommit = useCallback(
+    (
+      item: MobileBottomNavItem,
+      event: PointerEvent<HTMLAnchorElement>
+    ) => {
+      if (event.pointerType === "mouse") return;
+      if (isModifiedNavActivation(event)) return;
+      startedByPointerRef.current = item.id;
+      activateItem(item, event);
+    },
+    [activateItem]
+  );
+
+  const handlePointerCancelActivate = useCallback(
+    (item: MobileBottomNavItem) => {
+      if (startedByPointerRef.current === item.id) return;
+      setPendingId((current) => (current === item.id ? null : current));
+    },
+    []
+  );
+
+  const handleNavClick = useCallback(
+    (item: MobileBottomNavItem, event: MouseEvent<HTMLAnchorElement>) => {
+      if (startedByPointerRef.current === item.id) {
+        event.preventDefault();
+        startedByPointerRef.current = null;
+        return;
+      }
+      activateItem(item, event);
+    },
+    [activateItem]
   );
 
   return (
@@ -406,7 +504,9 @@ function SiteNavPillShell({ className }: { className?: string }) {
         showSaveBadge={showSaveBadge}
         savedCount={savedCount}
         onNavClick={handleNavClick}
-        onPrefetch={handlePrefetch}
+        onPointerDown={handlePointerDown}
+        onPointerCommit={handlePointerCommit}
+        onPointerCancelActivate={handlePointerCancelActivate}
       />
     </div>
   );

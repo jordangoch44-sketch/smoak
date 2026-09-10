@@ -2,10 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { CloseIcon } from "@/components/ui/icons";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { SMOAC_PRO_TRIAL_ENDED_MODAL } from "@/lib/specialist-premium";
 import { createEmbeddedSubscriptionCheckout } from "@/lib/stripe/subscription-checkout";
 import { DashboardButton } from "./DashboardButton";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalCloseButton,
+  DashboardModalScrim,
+} from "./DashboardModalScrim";
 import { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
 
 interface PremiumTrialEndedModalProps {
@@ -83,24 +88,17 @@ export function PremiumTrialEndedModal({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="dashboard-modal" role="presentation" onClick={onClose}>
+    <DashboardModalScrim onDismiss={onClose}>
       <div
         className="dashboard-modal__dialog dashboard-modal__dialog--pro"
         role="dialog"
         aria-modal="true"
         aria-labelledby="trial-ended-title"
         aria-describedby="trial-ended-desc"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <div className="dashboard-modal__glow" aria-hidden />
-        <button
-          type="button"
-          className="dashboard-modal__close"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <DashboardModalCloseButton onClose={onClose} />
         <div className="dashboard-modal__content">
           {step === "prompt" ? (
             <>
@@ -131,25 +129,23 @@ export function PremiumTrialEndedModal({
               >
                 {busy ? "Loading…" : SMOAC_PRO_TRIAL_ENDED_MODAL.primaryCta}
               </DashboardButton>
-              <button
-                type="button"
+              <FastActivateButton
                 className="dashboard-modal__secondary"
-                onClick={onClose}
+                onActivate={onClose}
               >
                 {SMOAC_PRO_TRIAL_ENDED_MODAL.secondaryCta}
-              </button>
+              </FastActivateButton>
             </>
           ) : null}
 
           {step === "checkout" && checkout ? (
             <>
-              <button
-                type="button"
+              <FastActivateButton
                 className="dashboard-modal__secondary"
-                onClick={backToPrompt}
+                onActivate={backToPrompt}
               >
                 ← Back
-              </button>
+              </FastActivateButton>
               <p className="dashboard-modal__eyebrow">
                 {SMOAC_PRO_TRIAL_ENDED_MODAL.eyebrow}
               </p>
@@ -197,7 +193,7 @@ export function PremiumTrialEndedModal({
           ) : null}
         </div>
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

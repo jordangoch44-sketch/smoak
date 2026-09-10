@@ -8,12 +8,10 @@ import {
   type ExploreSearchOverlayAnchor,
 } from "@/components/explore/ExploreSearchOverlay";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { useFastActivate } from "@/hooks/useFastActivate";
 import { useUserLocation } from "@/hooks/useUserLocation";
-import {
-  HOME_SEARCH_PROMPTS,
-  buildHomeSearchHref,
-} from "@/lib/home-browse-categories";
+import { buildHomeSearchHref } from "@/lib/home-browse-categories";
+import { EXPLORE_SEARCH_PLACEHOLDER } from "@/lib/explore-search-prompts";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import { prepareNavScrollReset } from "@/lib/mobile-chrome";
 import { SITE_ROUTES } from "@/lib/navigation";
@@ -22,48 +20,23 @@ import { cn } from "@/lib/utils";
 /** Overlay styles — shared with Explore (not full explore.css) */
 import "@/styles/explore-search-overlay.css";
 
-const ROTATE_MS = 3200;
-
 /**
- * Marketplace feeder for Search: same overlay (recent / specialists / goals /
- * location) as Explore, then navigates to `/explore?q=…`.
+ * Marketplace feeder for Search: same overlay (recent / profession / specialty /
+ * gender / price / location) as Explore, then navigates to `/explore?q=…`.
  */
 export function HomeSearchBar() {
   const router = useRouter();
-  const reduceMotion = usePrefersReducedMotion();
   const { session } = useAuthSession();
-  const { hasLocation, pillLabel, isPlaceholder } = useUserLocation();
+  const { hasLocation } = useUserLocation();
   const optedInLocation = hasLocation || hasClientSearchLocation(session);
 
   const [draft, setDraft] = useState("");
-  const [promptIndex, setPromptIndex] = useState(0);
-  const [promptVisible, setPromptVisible] = useState(true);
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [anchor, setAnchor] = useState<ExploreSearchOverlayAnchor | null>(null);
   const openFromUserRef = useRef(false);
   const searchRowRef = useRef<HTMLDivElement | null>(null);
 
   const trimmed = draft.trim();
-  const showPrompt = trimmed.length === 0 && !overlayOpen;
-  const prompt = HOME_SEARCH_PROMPTS[promptIndex] ?? HOME_SEARCH_PROMPTS[0];
-
-  useEffect(() => {
-    if (reduceMotion || !showPrompt) return;
-
-    let fadeId = 0;
-    const id = window.setInterval(() => {
-      setPromptVisible(false);
-      fadeId = window.setTimeout(() => {
-        setPromptIndex((current) => (current + 1) % HOME_SEARCH_PROMPTS.length);
-        setPromptVisible(true);
-      }, 220);
-    }, ROTATE_MS);
-
-    return () => {
-      window.clearInterval(id);
-      window.clearTimeout(fadeId);
-    };
-  }, [reduceMotion, showPrompt]);
 
   function measureAnchor(): ExploreSearchOverlayAnchor {
     const el = searchRowRef.current;
@@ -115,6 +88,9 @@ export function HomeSearchBar() {
   function handlePointerDown() {
     openFromUserRef.current = true;
   }
+
+  const overlayActivate = useFastActivate(openOverlay);
+  const clearActivate = useFastActivate(() => setDraft(""));
 
   function handleFocus() {
     if (openFromUserRef.current || overlayOpen) {
@@ -180,21 +156,6 @@ export function HomeSearchBar() {
       <div className="home-hero-search__field" ref={searchRowRef}>
         <SearchIcon className="home-hero-search__icon" />
         <div className="home-hero-search__input-wrap">
-          {showPrompt ? (
-            <span
-              key={prompt}
-              className={cn(
-                "home-hero-search__prompt",
-                !reduceMotion &&
-                  (promptVisible
-                    ? "home-hero-search__prompt--in"
-                    : "home-hero-search__prompt--out")
-              )}
-              aria-hidden
-            >
-              {prompt}
-            </span>
-          ) : null}
           <input
             id="home-marketplace-search"
             className="home-hero-search__input"
@@ -207,16 +168,13 @@ export function HomeSearchBar() {
             value={draft}
             tabIndex={overlayOpen ? -1 : 0}
             onPointerDown={handlePointerDown}
+            onPointerUp={overlayActivate.onPointerUp}
             onFocus={handleFocus}
-            onClick={openOverlay}
+            onClick={overlayActivate.onClick}
             aria-label="Search specialists"
             aria-expanded={overlayOpen}
             aria-controls="explore-search-overlay-panel"
-            placeholder={
-              optedInLocation && !isPlaceholder && !showPrompt
-                ? `Search near ${pillLabel}…`
-                : undefined
-            }
+            placeholder={EXPLORE_SEARCH_PLACEHOLDER}
           />
         </div>
         {trimmed && !overlayOpen ? (
@@ -224,9 +182,13 @@ export function HomeSearchBar() {
             type="button"
             className="smoac-control home-hero-search__clear"
             aria-label="Clear search"
+            onPointerUp={(event) => {
+              event.stopPropagation();
+              clearActivate.onPointerUp(event);
+            }}
             onClick={(event) => {
               event.stopPropagation();
-              setDraft("");
+              clearActivate.onClick(event);
             }}
           >
             ×
@@ -242,9 +204,6 @@ export function HomeSearchBar() {
         onClose={closeOverlay}
         onSubmit={handleSubmitFromOverlay}
         showLocationPrompt={!optedInLocation}
-        locationLabel={
-          optedInLocation && !isPlaceholder ? pillLabel : undefined
-        }
       />
     </div>
   );

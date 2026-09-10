@@ -15,7 +15,9 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
+import { useFastActivate, useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { cn } from "@/lib/utils";
 import type { ProfileAvatarFrameId } from "@/lib/specialist-profile-style";
 
@@ -35,6 +37,7 @@ export function ProfileImagePreviewModal({
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
   const reduceMotion = useReducedMotion();
+  const overlayDismiss = useOwnPointerDismiss(onClose);
 
   useEffect(() => {
     if (!open) return;
@@ -72,24 +75,23 @@ export function ProfileImagePreviewModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: reduceMotion ? 0 : 0.2 }}
-          onClick={onClose}
+          onPointerDown={overlayDismiss.onPointerDown}
+          onPointerUp={overlayDismiss.onPointerUp}
+          onClick={overlayDismiss.onClick}
         >
           <div className="profile-image-preview__backdrop" aria-hidden />
           <h2 id={titleId} className="sr-only">
             {alt}
           </h2>
-          <button
+          <FastActivateButton
             ref={closeRef}
-            type="button"
             className="profile-image-preview__close"
             aria-label="Close photo preview"
-            onClick={(event) => {
-              event.stopPropagation();
-              onClose();
-            }}
+            onPointerDown={(event) => event.stopPropagation()}
+            onActivate={onClose}
           >
             <span aria-hidden>×</span>
-          </button>
+          </FastActivateButton>
           <motion.div
             className="profile-image-preview__frame"
             initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
@@ -100,6 +102,7 @@ export function ProfileImagePreviewModal({
                 ? { duration: 0 }
                 : { type: "spring", stiffness: 380, damping: 28, mass: 0.85 }
             }
+            onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
           >
             <Image
@@ -171,6 +174,9 @@ export function ProfileHeroAvatar({
   }, [animate, canExpand, imageSrc, previewOpen, reduceMotion, scope]);
 
   const closePreview = useCallback(() => setPreviewOpen(false), []);
+  const avatarActivate = useFastActivate(() => {
+    void handleActivate();
+  });
 
   const thumbClass = cn(
     "profile-hero__avatar",
@@ -195,9 +201,8 @@ export function ProfileHeroAvatar({
             type="button"
             className="profile-hero__avatar-btn"
             aria-label="View larger profile photo"
-            onClick={() => {
-              void handleActivate();
-            }}
+            onPointerUp={avatarActivate.onPointerUp}
+            onClick={avatarActivate.onClick}
           >
             <TrainerThumbnail
               src={imageSrc}
@@ -218,19 +223,15 @@ export function ProfileHeroAvatar({
           </div>
         )}
         {onEdit ? (
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control profile-hero__avatar-edit"
             aria-label="Edit profile photo"
             data-live-edit-ignore
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onEdit();
-            }}
+            onPointerDown={(event) => event.stopPropagation()}
+            onActivate={onEdit}
           >
             Edit
-          </button>
+          </FastActivateButton>
         ) : null}
       </div>
 

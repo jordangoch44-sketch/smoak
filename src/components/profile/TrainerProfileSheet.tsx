@@ -17,6 +17,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { restoreListingPointerAccess } from "@/lib/chrome-body-classes";
 import { isTrainerProfilePath } from "@/lib/motion";
@@ -203,6 +204,7 @@ export function TrainerProfileSheet({
     dismissingRef.current = true;
     runDismissAnimation({ navigate: true });
   }, [exited, runDismissAnimation]);
+  const backdropDismiss = useOwnPointerDismiss(dismiss);
 
   useLayoutEffect(() => {
     if (isSheetViewport || !intercept || !overlayActive) return;
@@ -388,7 +390,9 @@ export function TrainerProfileSheet({
             type="button"
             className="smoac-control profile-sheet__backdrop profile-sheet__backdrop--fade-in"
             aria-label="Close profile"
-            onClick={dismiss}
+            onPointerDown={backdropDismiss.onPointerDown}
+            onPointerUp={backdropDismiss.onPointerUp}
+            onClick={backdropDismiss.onClick}
           />
 
           <ProfileSheetChrome label={label} y={y} sheetMoving={sheetMoving}>

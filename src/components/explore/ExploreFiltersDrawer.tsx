@@ -22,6 +22,7 @@ import {
   isExploreCategoryActive,
   type ExploreBrowseCategory,
 } from "@/lib/explore-browse-categories";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useActiveUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
 import { useUserLocation } from "@/hooks/useUserLocation";
@@ -72,6 +73,7 @@ export function ExploreFiltersDrawer({
   const reduceMotion = useReducedMotion();
   const [draft, setDraft] = useState(filters);
   const [syncedKey, setSyncedKey] = useState("");
+  const backdropDismiss = useOwnPointerDismiss(onClose);
 
   const draftMatchCount = useMemo(
     () => getMatchCount(draft),
@@ -259,7 +261,9 @@ export function ExploreFiltersDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={backdropTransition}
-            onClick={onClose}
+            onPointerDown={backdropDismiss.onPointerDown}
+            onPointerUp={backdropDismiss.onPointerUp}
+            onClick={backdropDismiss.onClick}
           />
 
           <motion.div

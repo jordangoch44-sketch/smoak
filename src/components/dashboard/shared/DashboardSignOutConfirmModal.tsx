@@ -2,7 +2,12 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { DashboardButton } from "./DashboardButton";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalScrim,
+} from "./DashboardModalScrim";
 
 interface DashboardSignOutConfirmModalProps {
   open: boolean;
@@ -30,14 +35,14 @@ export function DashboardSignOutConfirmModal({
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="dashboard-modal" role="presentation" onClick={onClose}>
+    <DashboardModalScrim onDismiss={onClose}>
       <div
         className="dashboard-modal__dialog dashboard-modal__dialog--signout"
         role="dialog"
         aria-modal="true"
         aria-labelledby="dashboard-signout-title"
         aria-describedby="dashboard-signout-desc"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <div className="dashboard-modal__glow" aria-hidden />
 
@@ -49,18 +54,17 @@ export function DashboardSignOutConfirmModal({
             Are you sure you want to sign out?
           </p>
           <div className="dashboard-modal__actions">
-            <button
-              type="button"
+            <FastActivateButton
               className="smoac-control dashboard-modal__cancel"
-              onClick={onClose}
+              onActivate={onClose}
             >
               Cancel
-            </button>
+            </FastActivateButton>
             <DashboardButton onClick={onConfirm}>Sign out</DashboardButton>
           </div>
         </div>
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

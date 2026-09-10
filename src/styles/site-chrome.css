@@ -153,6 +153,8 @@
 .site-header__btn .brand-logo,
 .site-header__btn .brand-logo *,
 .site-header__btn img,
+.site-header__btn--logo *,
+.site-header__signup__label,
 .site-header__badge {
   pointer-events: none !important;
 }
@@ -260,6 +262,8 @@
   touch-action: manipulation;
 }
 
+.mobile-bottom-nav__float,
+.mobile-bottom-nav__item,
 .home-page,
 .home-hero__content,
 .explore-page,

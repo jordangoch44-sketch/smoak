@@ -32,6 +32,7 @@ export function LocationSelectorDropdown({
   const panelId = useId();
   const titleId = `${panelId}-title`;
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const dismissArmedRef = useRef(false);
   const [visible, setVisible] = useState(false);
 
   const isTypingInPanel = useCallback(() => {
@@ -69,6 +70,7 @@ export function LocationSelectorDropdown({
     }
 
     function onDocumentClick(event: MouseEvent) {
+      if (!dismissArmedRef.current) return;
       const target = event.target as Node | null;
       if (!target) return;
       if (panelRef.current?.contains(target)) return;
@@ -87,12 +89,18 @@ export function LocationSelectorDropdown({
     }
 
     window.addEventListener("keydown", onKeyDown);
+    const onPointerDown = () => {
+      dismissArmedRef.current = true;
+    };
+    dismissArmedRef.current = false;
+    document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("click", onDocumentClick, true);
     window.addEventListener("scroll", onPageScroll, { passive: true });
     return () => {
       document.body.classList.remove("location-selector-open");
       document.documentElement.classList.remove("location-selector-open");
       window.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("click", onDocumentClick, true);
       window.removeEventListener("scroll", onPageScroll);
       /* iOS keyboard can leave the page scrolled — snap map shell back */

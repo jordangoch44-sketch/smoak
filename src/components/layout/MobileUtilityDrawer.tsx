@@ -3,8 +3,9 @@
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { QuickClientAccountModal } from "@/components/auth/QuickClientAccountModal";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { Logo } from "@/components/ui/Logo";
-import { TapLink } from "@/components/ui/TapLink";
 import {
   ChartIcon,
   CloseIcon,
@@ -37,6 +38,7 @@ import {
   type UtilityDrawerNavItem,
 } from "@/lib/utility-drawer-menu";
 import { cn } from "@/lib/utils";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import "@/styles/mobile-utility-drawer.css";
 
 interface MobileUtilityDrawerProps {
@@ -107,29 +109,28 @@ function DrawerAccountCard({
 
   if (card.variant === "auth") {
     return (
-      <button
-        type="button"
+      <FastActivateButton
         className={cn(className, "smoac-control")}
         style={style}
-        onClick={onContinue}
+        onActivate={() => onContinue?.()}
       >
         {body}
-      </button>
+      </FastActivateButton>
     );
   }
 
   if (!card.href) return null;
 
   return (
-    <TapLink
+    <HeaderChromeLink
       href={card.href}
       className={className}
       style={style}
       aria-current={active ? "page" : undefined}
-      onClick={onNavigate}
+      onActivate={onNavigate}
     >
       {body}
-    </TapLink>
+    </HeaderChromeLink>
   );
 }
 
@@ -170,25 +171,24 @@ function DrawerCompanyRow({
   if (item.href) {
     return (
       <li>
-        <TapLink
+        <HeaderChromeLink
           href={item.href}
           className={className}
           style={style}
-          onClick={onNavigate}
+          onActivate={onNavigate}
         >
           {content}
-        </TapLink>
+        </HeaderChromeLink>
       </li>
     );
   }
 
   return (
     <li>
-      <button
-        type="button"
+      <FastActivateButton
         className={className}
         style={style}
-        onClick={() =>
+        onActivate={() =>
           showToast({
             type: "info",
             message: `${item.label} is coming soon.`,
@@ -196,7 +196,7 @@ function DrawerCompanyRow({
         }
       >
         {content}
-      </button>
+      </FastActivateButton>
     </li>
   );
 }
@@ -295,13 +295,13 @@ function DrawerSpecialistAnalytics({
             {growth} Growth
           </p>
         ) : null}
-        <TapLink
+        <HeaderChromeLink
           href={getSpecialistAnalyticsHref()}
           className="smoac-control mobile-utility-drawer__analytics-cta smoac-hit-target"
-          onClick={onNavigate}
+          onActivate={onNavigate}
         >
           View Full Analytics
-        </TapLink>
+        </HeaderChromeLink>
       </div>
     </section>
   );
@@ -313,6 +313,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
   const { clientReady } = useStableClientState();
   const { trainer: managedTrainer } = useManagedSpecialistProfile();
   const [quickAccountOpen, setQuickAccountOpen] = useState(false);
+  const backdropDismiss = useOwnPointerDismiss(onClose);
   const signedIn = clientReady && isReady && isLoggedIn(session);
   const role = getUserRole(session);
   const specialistDisplayName =
@@ -357,7 +358,9 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
           className="smoac-control mobile-utility-drawer__backdrop"
           aria-label="Close menu"
           tabIndex={open ? 0 : -1}
-          onClick={onClose}
+          onPointerDown={backdropDismiss.onPointerDown}
+          onPointerUp={backdropDismiss.onPointerUp}
+          onClick={backdropDismiss.onClick}
         />
 
         <aside
@@ -386,14 +389,13 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
                 Account
               </p>
             </div>
-            <button
-              type="button"
+            <FastActivateButton
               className="smoac-control mobile-utility-drawer__close"
               aria-label="Close menu"
-              onClick={onClose}
+              onActivate={onClose}
             >
               <CloseIcon className="h-4 w-4" />
-            </button>
+            </FastActivateButton>
           </header>
 
           <div className="mobile-utility-drawer__scroll">
@@ -464,8 +466,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
                 className="mobile-utility-drawer__section"
                 aria-label="Session"
               >
-                <button
-                  type="button"
+                <FastActivateButton
                   className={cn(
                     "smoac-control mobile-utility-drawer__row mobile-utility-drawer__row--sign-out smoac-hit-target",
                     open && "mobile-utility-drawer__row--animate"
@@ -473,7 +474,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
                   style={
                     open ? { animationDelay: `${nextDelay()}ms` } : undefined
                   }
-                  onClick={handleLogout}
+                  onActivate={handleLogout}
                 >
                   <span className="mobile-utility-drawer__row-icon" aria-hidden>
                     <LogOutIcon className="mobile-utility-drawer__row-icon-svg" />
@@ -486,7 +487,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
                       End your session on this device
                     </span>
                   </span>
-                </button>
+                </FastActivateButton>
               </section>
             ) : null}
           </div>
@@ -496,18 +497,17 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
               {utilityDrawerLegalLinks.map((item) => (
                 <li key={item.id}>
                   {item.href ? (
-                    <TapLink
+                    <HeaderChromeLink
                       href={item.href}
                       className="smoac-control mobile-utility-drawer__footer-link"
-                      onClick={onClose}
+                      onActivate={onClose}
                     >
                       {item.label}
-                    </TapLink>
+                    </HeaderChromeLink>
                   ) : (
-                    <button
-                      type="button"
+                    <FastActivateButton
                       className="smoac-control mobile-utility-drawer__footer-link"
-                      onClick={() =>
+                      onActivate={() =>
                         showToast({
                           type: "info",
                           message: `${item.label} is coming soon.`,
@@ -515,7 +515,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
                       }
                     >
                       {item.label}
-                    </button>
+                    </FastActivateButton>
                   )}
                 </li>
               ))}

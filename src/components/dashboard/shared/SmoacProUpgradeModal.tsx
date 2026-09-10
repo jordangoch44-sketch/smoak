@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { CloseIcon } from "@/components/ui/icons";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   SMOAC_PRO_PLUS_PRICE_LABEL,
   SMOAC_PRO_UPGRADE_MODAL,
@@ -10,6 +10,11 @@ import {
 import { createEmbeddedSubscriptionCheckout } from "@/lib/stripe/subscription-checkout";
 import type { SmoacMembershipProduct } from "@/lib/stripe/products";
 import { DashboardButton } from "./DashboardButton";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalCloseButton,
+  DashboardModalScrim,
+} from "./DashboardModalScrim";
 import { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
 
 interface SmoacProUpgradeModalProps {
@@ -81,25 +86,18 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="dashboard-modal" role="presentation" onClick={onClose}>
+    <DashboardModalScrim onDismiss={onClose}>
       <div
         className="dashboard-modal__dialog dashboard-modal__dialog--pro"
         role="dialog"
         aria-modal="true"
         aria-labelledby="smoac-pro-modal-title"
         aria-describedby="smoac-pro-modal-desc"
-        onClick={(event) => event.stopPropagation()}
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
         <div className="dashboard-modal__glow" aria-hidden />
 
-        <button
-          type="button"
-          className="dashboard-modal__close"
-          onClick={onClose}
-          aria-label="Close"
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <DashboardModalCloseButton onClose={onClose} />
 
         <div className="dashboard-modal__content">
           {step === "pick" ? (
@@ -125,14 +123,13 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
               >
                 {busy ? "Loading…" : `Continue Pro · ${SMOAC_PRO_UPGRADE_MODAL.price}`}
               </DashboardButton>
-              <button
-                type="button"
+              <FastActivateButton
                 className="dashboard-modal__secondary"
-                onClick={() => void startCheckout("platinum")}
+                onActivate={() => void startCheckout("platinum")}
                 disabled={busy}
               >
                 Or PRO+ · {SMOAC_PRO_PLUS_PRICE_LABEL}
-              </button>
+              </FastActivateButton>
               <p className="dashboard-modal__note">
                 PRO+ adds phone videos (45 seconds), client transformations under
                 your pins, and 20% off Boosts. Pay with Apple Pay, Google Pay,
@@ -143,13 +140,12 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
 
           {step === "checkout" && checkout ? (
             <>
-              <button
-                type="button"
+              <FastActivateButton
                 className="dashboard-modal__secondary"
-                onClick={backToPick}
+                onActivate={backToPick}
               >
                 ← Back to plans
-              </button>
+              </FastActivateButton>
               <p className="dashboard-modal__eyebrow">{SMOAC_PRO_UPGRADE_MODAL.eyebrow}</p>
               <h2 id="smoac-pro-modal-title" className="dashboard-modal__title">
                 {checkout.label}
@@ -194,7 +190,7 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
           ) : null}
         </div>
       </div>
-    </div>,
+    </DashboardModalScrim>,
     document.body
   );
 }

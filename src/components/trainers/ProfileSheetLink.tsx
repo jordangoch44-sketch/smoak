@@ -8,6 +8,7 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from "react";
+import { isModifiedNavActivation } from "@/lib/mobile-bottom-nav-transition";
 import { cn } from "@/lib/utils";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
@@ -15,8 +16,6 @@ import type { Trainer } from "@/types";
 
 /** Carousel / page pan vs a tap with finger jitter. */
 const SWIPE_PX = 22;
-/** Ignore the ghost click after pointerup — not later taps on the same card. */
-const OPEN_GESTURE_MS = 500;
 
 function isSaveControl(target: EventTarget | null): boolean {
   return (
@@ -41,8 +40,8 @@ type ProfileSheetLinkProps = Omit<
 
 /**
  * Marketplace / listing link into the profile intercept sheet.
- * Warms on pointerdown, skips page scroll, and recovers taps that iOS
- * cancels after a 1–2px carousel pan — without eating real clicks.
+ * Touch opens on pointerup (before click) so a busy main thread cannot
+ * drop the tap. Mouse keeps click so drag-off still cancels.
  */
 export function ProfileSheetLink({
   trainer,
@@ -64,8 +63,8 @@ export function ProfileSheetLink({
     y: number;
     pointerId: number;
   } | null>(null);
-  const openedAtRef = useRef(0);
   const swipeRef = useRef(false);
+  const openedByPointerRef = useRef(false);
   const shouldPrefetch = prefetch !== false && !replace;
 
   function warm() {
@@ -75,8 +74,6 @@ export function ProfileSheetLink({
   }
 
   function openSheet() {
-    if (Date.now() - openedAtRef.current < OPEN_GESTURE_MS) return;
-    openedAtRef.current = Date.now();
     warm();
     if (replace) {
       router.replace(dest, { scroll: false });
@@ -90,6 +87,7 @@ export function ProfileSheetLink({
     if (event.defaultPrevented || event.button !== 0) return;
     if (isSaveControl(event.target)) return;
     swipeRef.current = false;
+    openedByPointerRef.current = false;
     pressRef.current = {
       x: event.clientX,
       y: event.clientY,
@@ -102,27 +100,32 @@ export function ProfileSheetLink({
     onPointerUp?.(event);
     const press = pressRef.current;
     pressRef.current = null;
-    if (!press || event.pointerId !== press.pointerId || event.button !== 0) {
-      return;
-    }
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
+    if (!press || event.pointerId !== press.pointerId) return;
+    if (isModifiedNavActivation(event)) return;
     if (isSaveControl(event.target)) return;
     const swiped = isSwipe(event.clientX - press.x, event.clientY - press.y);
     swipeRef.current = swiped;
     if (swiped) return;
+    /* Mouse keeps click-to-go so drag-off still cancels. */
+    if (event.pointerType === "mouse") return;
+    openedByPointerRef.current = true;
     openSheet();
   }
 
   function handlePointerCancel(event: PointerEvent<HTMLAnchorElement>) {
     onPointerCancel?.(event);
     pressRef.current = null;
+    openedByPointerRef.current = false;
   }
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     onClick?.(event);
     if (event.defaultPrevented) return;
+    if (openedByPointerRef.current) {
+      event.preventDefault();
+      openedByPointerRef.current = false;
+      return;
+    }
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       warm();
       return;

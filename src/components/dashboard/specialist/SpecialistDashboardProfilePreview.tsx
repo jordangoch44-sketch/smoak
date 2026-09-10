@@ -27,6 +27,7 @@ import { ProfileTrainerSpecs } from "@/components/profile/ProfileTrainerSpecs";
 import { SmoacReviewsSection } from "@/components/profile/SmoacReviewsSection";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
@@ -416,25 +417,23 @@ function LivePreviewModeToggle({
       role="group"
       aria-label="Profile mode"
     >
-      <button
-        type="button"
+      <FastActivateButton
         aria-pressed={value === "edit"}
         className={cn(
           "smoac-control specialist-live-mode__btn",
           value === "edit" && "specialist-live-mode__btn--active"
         )}
-        onClick={() => onChange("edit")}
+        onActivate={() => onChange("edit")}
       >
         Edit
-      </button>
-      <button
-        type="button"
+      </FastActivateButton>
+      <FastActivateButton
         aria-pressed={value === "live"}
         className={cn(
           "smoac-control specialist-live-mode__btn",
           value === "live" && "specialist-live-mode__btn--active"
         )}
-        onClick={() => onChange("live")}
+        onActivate={() => onChange("live")}
       >
         Live
         {isLivePublished ? (
@@ -446,16 +445,15 @@ function LivePreviewModeToggle({
             <span className="dashboard-live-indicator__dot" aria-hidden />
           </span>
         ) : null}
-      </button>
+      </FastActivateButton>
       {showInquiries ? (
-        <button
-          type="button"
+        <FastActivateButton
           aria-pressed={value === "inquiries"}
           className={cn(
             "smoac-control specialist-live-mode__btn",
             value === "inquiries" && "specialist-live-mode__btn--active"
           )}
-          onClick={() => onChange("inquiries")}
+          onActivate={() => onChange("inquiries")}
         >
           Inquiries
           {inquiryUnreadCount > 0 ? (
@@ -463,16 +461,15 @@ function LivePreviewModeToggle({
               {inquiryUnreadCount}
             </span>
           ) : null}
-        </button>
+        </FastActivateButton>
       ) : null}
       {onSignOut ? (
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control specialist-live-mode__btn specialist-live-mode__btn--signout"
-          onClick={onSignOut}
+          onActivate={onSignOut}
         >
           Sign out
-        </button>
+        </FastActivateButton>
       ) : null}
     </div>
   );

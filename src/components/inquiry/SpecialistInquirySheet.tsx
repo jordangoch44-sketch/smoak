@@ -17,6 +17,7 @@ import {
 } from "framer-motion";
 import Link from "next/link";
 import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
 import {
   QuickClientAccountAuthActions,
@@ -25,6 +26,7 @@ import {
   QuickClientAccountSignupFields,
 } from "@/components/auth/QuickClientAccountAuthUI";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { CLIENT_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { buildLeaveReviewHref } from "@/lib/reviews/leave-review-href";
 import {
@@ -135,6 +137,9 @@ export function SpecialistInquirySheet({
   );
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const backdropDismiss = useOwnPointerDismiss(() => {
+    if (!sending) onClose();
+  });
   const [emailMode, setEmailMode] = useState<"resend" | "console" | null>(null);
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
@@ -440,9 +445,9 @@ export function SpecialistInquirySheet({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={backdropTransition}
-            onClick={() => {
-              if (!sending) onClose();
-            }}
+            onPointerDown={backdropDismiss.onPointerDown}
+            onPointerUp={backdropDismiss.onPointerUp}
+            onClick={backdropDismiss.onClick}
           />
 
           <motion.div
@@ -500,16 +505,15 @@ export function SpecialistInquirySheet({
                     </h2>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={onClose}
+                <FastActivateButton
+                  onActivate={onClose}
                   className="smoac-control inquiry-sheet__close"
                   aria-label="Close"
                   disabled={sending}
                   data-sheet-initial-focus
                 >
                   <CloseIcon className="h-5 w-5" />
-                </button>
+                </FastActivateButton>
               </div>
             </div>
 
@@ -521,15 +525,14 @@ export function SpecialistInquirySheet({
                     {topicOptions.map((topic) => {
                       const selected = draft.inquiryTopics.includes(topic.id);
                       return (
-                        <button
+                        <FastActivateButton
                           key={topic.id}
-                          type="button"
                           aria-pressed={selected}
                           className={cn(
                             "smoac-control inquiry-sheet__topic",
                             selected && "inquiry-sheet__topic--selected"
                           )}
-                          onClick={() => toggleTopic(topic.id)}
+                          onActivate={() => toggleTopic(topic.id)}
                         >
                           <span
                             className={cn(
@@ -539,7 +542,7 @@ export function SpecialistInquirySheet({
                             aria-hidden
                           />
                           {topic.label}
-                        </button>
+                        </FastActivateButton>
                       );
                     })}
                   </div>
@@ -663,13 +666,12 @@ export function SpecialistInquirySheet({
                   >
                     View your inquiry
                   </Link>
-                  <button
-                    type="button"
+                  <FastActivateButton
                     className="smoac-control inquiry-sheet__text-btn"
-                    onClick={onClose}
+                    onActivate={onClose}
                   >
                     Done
-                  </button>
+                  </FastActivateButton>
                   <p className="inquiry-sheet__helper inquiry-sheet__helper--tight">
                     After you connect, you’re welcome to leave a review.
                   </p>
@@ -690,14 +692,13 @@ export function SpecialistInquirySheet({
               <div className="inquiry-sheet__footer">
                 {view === "compose" ? (
                   <>
-                    <button
-                      type="button"
+                    <FastActivateButton
                       className="smoac-control inquiry-sheet__submit"
                       disabled={sending}
-                      onClick={handleSendClick}
+                      onActivate={handleSendClick}
                     >
                       {sending ? "Sending…" : "Send Message"}
-                    </button>
+                    </FastActivateButton>
                     {!isSignedIn ? (
                       <p className="inquiry-sheet__helper">
                         Next you’ll add your name and email — then we send it.
@@ -708,13 +709,12 @@ export function SpecialistInquirySheet({
 
                 {view === "awaiting_email" ? (
                   <>
-                    <button
-                      type="button"
+                    <FastActivateButton
                       className="smoac-control inquiry-sheet__submit"
-                      onClick={onClose}
+                      onActivate={onClose}
                     >
                       Got it — I’ll check my email
-                    </button>
+                    </FastActivateButton>
                     <p className="inquiry-sheet__helper">
                       After you tap the link, come back to SMOAC and your message
                       sends on its own.

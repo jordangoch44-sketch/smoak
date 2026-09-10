@@ -9,8 +9,10 @@ import {
   type ExploreSearchOverlayAnchor,
 } from "./ExploreSearchOverlay";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useFastActivate } from "@/hooks/useFastActivate";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
+import { EXPLORE_SEARCH_PLACEHOLDER } from "@/lib/explore-search-prompts";
 import { cn } from "@/lib/utils";
 
 interface ExploreSearchToolbarProps {
@@ -36,7 +38,7 @@ export function ExploreSearchToolbar({
   onClearFilters,
 }: ExploreSearchToolbarProps) {
   const { session } = useAuthSession();
-  const { hasLocation, pillLabel, isPlaceholder } = useUserLocation();
+  const { hasLocation } = useUserLocation();
   const optedInLocation = hasLocation || hasClientSearchLocation(session);
   const [draft, setDraft] = useState(searchQuery);
   const [appliedQuery, setAppliedQuery] = useState(searchQuery);
@@ -85,6 +87,10 @@ export function ExploreSearchToolbar({
     setDraft("");
     onClearSearch();
   }
+
+  const overlayActivate = useFastActivate(openOverlay);
+  const filtersActivate = useFastActivate(onOpenFilters);
+  const clearActivate = useFastActivate(handleClear);
 
   function handlePointerDown() {
     openFromUserRef.current = true;
@@ -162,13 +168,10 @@ export function ExploreSearchToolbar({
                 value={draft}
                 tabIndex={overlayOpen ? -1 : 0}
                 onPointerDown={handlePointerDown}
+                onPointerUp={overlayActivate.onPointerUp}
                 onFocus={handleFocus}
-                onClick={openOverlay}
-                placeholder={
-                  optedInLocation && !isPlaceholder
-                    ? `Search near ${pillLabel}…`
-                    : "Name or keyword…"
-                }
+                onClick={overlayActivate.onClick}
+                placeholder={EXPLORE_SEARCH_PLACEHOLDER}
                 aria-label="Search specialists"
                 aria-expanded={overlayOpen}
                 aria-controls="explore-search-overlay-panel"
@@ -179,9 +182,13 @@ export function ExploreSearchToolbar({
                   type="button"
                   className="smoac-control explore-search-shell__clear"
                   aria-label="Clear search"
+                  onPointerUp={(event) => {
+                    event.stopPropagation();
+                    clearActivate.onPointerUp(event);
+                  }}
                   onClick={(event) => {
                     event.stopPropagation();
-                    handleClear();
+                    clearActivate.onClick(event);
                   }}
                 >
                   ×
@@ -192,7 +199,8 @@ export function ExploreSearchToolbar({
 
         <button
           type="button"
-          onClick={onOpenFilters}
+          onPointerUp={filtersActivate.onPointerUp}
+          onClick={filtersActivate.onClick}
           tabIndex={overlayOpen ? -1 : 0}
           className={cn(
             "smoac-control explore-filters-icon-btn",
@@ -229,9 +237,6 @@ export function ExploreSearchToolbar({
         onClose={closeOverlay}
         onSubmit={handleSubmitFromOverlay}
         showLocationPrompt={!optedInLocation}
-        locationLabel={
-          optedInLocation && !isPlaceholder ? pillLabel : undefined
-        }
       />
     </div>
   );

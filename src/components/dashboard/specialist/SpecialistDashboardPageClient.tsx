@@ -27,6 +27,7 @@ import { SpecialistDashboardProfileHeader } from "@/components/dashboard/special
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/SpecialistProGhostPreview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
@@ -523,9 +524,8 @@ export function SpecialistDashboardPageClient() {
               aria-label="Specialist dashboard sections"
             >
               {FREE_TABS.map((tab) => (
-                <button
+                <FastActivateButton
                   key={tab.id}
-                  type="button"
                   role="tab"
                   id={`specialist-dash-tab-${tab.id}`}
                   aria-selected={freeTab === tab.id}
@@ -534,10 +534,10 @@ export function SpecialistDashboardPageClient() {
                     "specialist-dash-tabs__btn",
                     freeTab === tab.id && "specialist-dash-tabs__btn--active"
                   )}
-                  onClick={() => replaceDashboardTab(tab.id)}
+                  onActivate={() => replaceDashboardTab(tab.id)}
                 >
                   {tab.label}
-                </button>
+                </FastActivateButton>
               ))}
             </div>
             )}
@@ -697,9 +697,8 @@ export function SpecialistDashboardPageClient() {
               aria-label="Specialist dashboard sections"
             >
               {PREMIUM_TABS.map((tab) => (
-                <button
+                <FastActivateButton
                   key={tab.id}
-                  type="button"
                   role="tab"
                   id={`specialist-dash-tab-premium-${tab.id}`}
                   aria-selected={premiumTab === tab.id}
@@ -708,10 +707,10 @@ export function SpecialistDashboardPageClient() {
                     "specialist-dash-tabs__btn",
                     premiumTab === tab.id && "specialist-dash-tabs__btn--active"
                   )}
-                  onClick={() => replaceDashboardTab(tab.id)}
+                  onActivate={() => replaceDashboardTab(tab.id)}
                 >
                   {tab.label}
-                </button>
+                </FastActivateButton>
               ))}
             </div>
             )}
