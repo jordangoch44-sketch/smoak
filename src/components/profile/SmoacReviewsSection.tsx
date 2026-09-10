@@ -7,6 +7,7 @@ import {
   type SpecialistReviewAggregate,
   type SpecialistReviewSort,
 } from "@/lib/reviews/specialist-review-types";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn, getInitials } from "@/lib/utils";
 import { WriteSpecialistReviewModal } from "./WriteSpecialistReviewModal";
 
@@ -100,13 +101,12 @@ function ReviewBody({ text }: { text: string }) {
         {text}
       </p>
       {overflows && !expanded ? (
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control smoac-review-card__more"
-          onClick={() => setExpanded(true)}
+          onActivate={() => setExpanded(true)}
         >
           More
-        </button>
+        </FastActivateButton>
       ) : null}
     </div>
   );
@@ -173,13 +173,12 @@ export function SmoacReviewsSection({
         aria-label="SMOAC Reviews"
       >
         {canLeaveReview ? (
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-leave-review-btn"
-            onClick={() => onReviewModalOpenChange(true)}
+            onActivate={() => onReviewModalOpenChange(true)}
           >
             Trained with {firstName}? Leave a review
-          </button>
+          </FastActivateButton>
         ) : null}
 
         {showSort ? (
@@ -191,18 +190,17 @@ export function SmoacReviewsSection({
               {SORT_OPTIONS.map((option) => {
                 const selected = sort === option.id;
                 return (
-                  <button
+                  <FastActivateButton
                     key={option.id}
-                    type="button"
                     aria-pressed={selected}
                     className={cn(
                       "smoac-control smoac-reviews-sort__chip",
                       selected && "smoac-reviews-sort__chip--active"
                     )}
-                    onClick={() => onSortChange?.(option.id)}
+                    onActivate={() => onSortChange?.(option.id)}
                   >
                     {option.label}
-                  </button>
+                  </FastActivateButton>
                 );
               })}
             </div>
@@ -222,14 +220,13 @@ export function SmoacReviewsSection({
         )}
 
         {hasMore ? (
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control smoac-reviews-view-all"
             disabled={loadingMore}
-            onClick={onLoadMore}
+            onActivate={onLoadMore}
           >
             {loadingMore ? "Loading…" : "More reviews"}
-          </button>
+          </FastActivateButton>
         ) : null}
       </section>
 

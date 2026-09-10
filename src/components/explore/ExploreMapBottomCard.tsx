@@ -485,6 +485,7 @@ export function ExploreMapBottomCard({
               className="explore-bottom-card__save-slot"
               data-save-control
               onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
               onClick={(e) => e.stopPropagation()}
             >
               <SaveTrainerButton

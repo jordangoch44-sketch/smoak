@@ -31,6 +31,7 @@ import {
   EXPLORE_MAP_SINGLE_PIN_SIZE,
   type ExploreMapCluster,
 } from "@/lib/explore-map-clusters";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ExploreMapBottomCard } from "./ExploreMapBottomCard";
 import { cn } from "@/lib/utils";
 
@@ -689,28 +690,26 @@ export function ExploreMapLeaflet({
         />
         {showChrome ? (
           <>
-            <button
-              type="button"
+            <FastActivateButton
               className={cn(
                 "smoac-control explore-map__recenter",
                 variant === "hero" && "explore-map__recenter--hero"
               )}
-              onClick={handleRecenter}
+              onActivate={handleRecenter}
               aria-label="Recenter map to your 12-mile search area"
             >
               <FoldedMapIcon className="explore-map__recenter-icon" />
-            </button>
+            </FastActivateButton>
             {showSearchHere ? (
-              <button
-                type="button"
+              <FastActivateButton
                 className="smoac-control explore-split__search-here explore-map__search-here"
                 disabled={searchHereLoading || !onSearchHere}
-                onClick={onSearchHere}
+                onActivate={() => onSearchHere?.()}
               >
                 <span className="explore-split__search-here__label">
                   {searchHereLoading ? "Searching…" : "Search here"}
                 </span>
-              </button>
+              </FastActivateButton>
             ) : null}
           </>
         ) : null}

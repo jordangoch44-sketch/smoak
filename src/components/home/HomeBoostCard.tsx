@@ -1,5 +1,6 @@
 "use client";
 
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 interface HomeBoostCardProps {
@@ -142,11 +143,10 @@ function BoostVisual() {
 
 export function HomeBoostCard({ onClick, className }: HomeBoostCardProps) {
   return (
-    <button
-      type="button"
+    <FastActivateButton
       className={cn("home-boost-card", className)}
       aria-label="Boost your profile"
-      onClick={onClick}
+      onActivate={onClick}
     >
       <span className="home-boost-card__main">
         <span className="home-boost-card__copy">
@@ -182,6 +182,6 @@ export function HomeBoostCard({ onClick, className }: HomeBoostCardProps) {
           Real Results
         </span>
       </span>
-    </button>
+    </FastActivateButton>
   );
 }

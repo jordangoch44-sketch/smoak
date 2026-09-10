@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useHydrated } from "@/hooks/useHydrated";
 import { createPortal } from "react-dom";
@@ -14,6 +13,8 @@ const SmoacWelcomeIntro = dynamic(
   { ssr: false }
 );
 import { useRouter } from "next/navigation";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
@@ -159,11 +160,10 @@ function AccountTypeCard({
   onSelect,
 }: AccountTypeCardProps) {
   return (
-    <button
-      type="button"
+    <FastActivateButton
       role="radio"
       aria-checked={selected}
-      onClick={onSelect}
+      onActivate={onSelect}
       className={cn(
         "login-role-card wizard-account-card",
         id === "client" && "wizard-account-card--client",
@@ -184,7 +184,7 @@ function AccountTypeCard({
         <span className="login-role-card__title">{title}</span>
         <span className="login-role-card__desc">{description}</span>
       </span>
-    </button>
+    </FastActivateButton>
   );
 }
 
@@ -636,11 +636,10 @@ export function CreateAccountWizardClient({
                 {CLIENT_GOAL_OPTIONS.map((goal) => {
                   const active = state.clientGoals.includes(goal);
                   return (
-                    <button
+                    <FastActivateButton
                       key={goal}
-                      type="button"
                       aria-pressed={active}
-                      onClick={() =>
+                      onActivate={() =>
                         patchState({
                           clientGoals: toggleInList(state.clientGoals, goal),
                         })
@@ -651,7 +650,7 @@ export function CreateAccountWizardClient({
                       )}
                     >
                       {goal}
-                    </button>
+                    </FastActivateButton>
                   );
                 })}
               </div>
@@ -926,19 +925,17 @@ export function CreateAccountWizardClient({
 
             <div className="wizard-nav">
               {step > 1 && !(isClientQuickSignup && initialAccountType === "client") ? (
-                <button
-                  type="button"
+                <FastActivateButton
                   className="wizard-nav__back"
-                  onClick={handleBack}
+                  onActivate={handleBack}
                   disabled={submitting}
                 >
                   Back
-                </button>
+                </FastActivateButton>
               ) : null}
-              <button
-                type="button"
+              <FastActivateButton
                 className="login-submit wizard-nav__continue"
-                onClick={handleContinue}
+                onActivate={handleContinue}
                 disabled={
                   submitting || (step === 1 && state.accountType == null)
                 }
@@ -950,13 +947,13 @@ export function CreateAccountWizardClient({
                     : step === CREATE_ACCOUNT_TOTAL_STEPS
                       ? "Create Account"
                       : "Continue"}
-              </button>
+              </FastActivateButton>
             </div>
           </div>
 
           <p className="wizard-footer-link">
             <span>Already have an account?</span>
-            <Link href={LOGIN_PATH}>Log in</Link>
+            <HeaderChromeLink href={LOGIN_PATH}>Log in</HeaderChromeLink>
           </p>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { HomeBoostRibbon } from "@/components/home/HomeBoostRibbon";
 import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
@@ -124,13 +125,12 @@ export function ExplorePageClient() {
       <HomeBoostRibbon className="home-boost-card--explore" />
       <div className="explore-results-heading">
         <h2 className="explore-results-heading__title">Top experts near you</h2>
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control explore-results-heading__view-all"
-          onClick={handleViewAll}
+          onActivate={handleViewAll}
         >
           View all
-        </button>
+        </FastActivateButton>
       </div>
       {(filters.profession || filters.specialty) &&
       !filtered.some((t) => t.sponsored) &&

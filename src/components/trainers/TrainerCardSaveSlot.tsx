@@ -13,6 +13,7 @@ export function TrainerCardSaveSlot({ trainerId }: TrainerCardSaveSlotProps) {
       className="trainer-card-save"
       data-save-control
       onPointerDown={(e) => e.stopPropagation()}
+      onPointerUp={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >
       <SaveTrainerButton trainerId={trainerId} overlay={false} />

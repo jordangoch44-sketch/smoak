@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   useActiveUserCoordinates,
@@ -9,6 +8,7 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { TrainerList } from "@/components/trainers";
@@ -212,20 +212,20 @@ export function SavedPanelContent({
               : "Create an account to build your shortlist."}
           </p>
           <div className="explore-empty__actions">
-            <Link
+            <HeaderChromeLink
               href={loginHref}
               className="explore-empty__btn"
-              onClick={handleAuthNavigate}
+              onActivate={handleAuthNavigate}
             >
               {session?.role === "specialist" ? "Log in as client" : "Log in"}
-            </Link>
-            <Link
+            </HeaderChromeLink>
+            <HeaderChromeLink
               href={joinHref}
               className="explore-empty__btn explore-empty__btn--ghost"
-              onClick={handleAuthNavigate}
+              onActivate={handleAuthNavigate}
             >
               {session?.role === "specialist" ? "Create client account" : "Create account"}
-            </Link>
+            </HeaderChromeLink>
           </div>
         </div>
       )}

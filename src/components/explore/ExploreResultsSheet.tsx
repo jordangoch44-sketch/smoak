@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
 } from "react";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 /** Results panel height as % of the map shell */
@@ -145,21 +146,19 @@ export function ExploreResultsSheet({
       {!open ? (
         <div className="explore-split__cta-dock">
           {showSearchHere ? (
-            <button
-              type="button"
+            <FastActivateButton
               className="smoac-control explore-split__search-here"
-              onClick={onSearchHere}
+              onActivate={() => onSearchHere?.()}
               disabled={searchHereLoading || !onSearchHere}
             >
               <span className="explore-split__search-here__label">
                 {searchHereLoading ? "Searching…" : "Search here"}
               </span>
-            </button>
+            </FastActivateButton>
           ) : null}
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control explore-split__cta"
-            onClick={openResults}
+            onActivate={openResults}
           >
             <span className="explore-split__cta-label">
               {seeResultsLabel(resultCount)}
@@ -167,7 +166,7 @@ export function ExploreResultsSheet({
             <span className="explore-split__cta-chevron" aria-hidden>
               ⌃
             </span>
-          </button>
+          </FastActivateButton>
         </div>
       ) : null}
 
@@ -208,13 +207,12 @@ export function ExploreResultsSheet({
               </h2>
               <p className="explore-split__hint">Drag down for map</p>
             </div>
-            <button
-              type="button"
+            <FastActivateButton
               className="smoac-control explore-split__map-btn"
-              onClick={closeToMap}
+              onActivate={closeToMap}
             >
               Map
-            </button>
+            </FastActivateButton>
           </div>
         </div>
         <div ref={bodyRef} className="explore-split__body">

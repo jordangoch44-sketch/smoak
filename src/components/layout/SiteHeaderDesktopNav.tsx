@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { Suspense, useMemo } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
@@ -53,7 +53,7 @@ function SiteHeaderDesktopNavInner() {
 
           return (
             <li key={item.id} className="site-header-desktop-nav__item">
-              <Link
+              <HeaderChromeLink
                 href={item.href}
                 className={cn(
                   "site-header-desktop-nav__link smoac-tap",
@@ -69,7 +69,7 @@ function SiteHeaderDesktopNavInner() {
                     {formatSavedCountBadge(savedCount)}
                   </span>
                 ) : null}
-              </Link>
+              </HeaderChromeLink>
             </li>
           );
         })}

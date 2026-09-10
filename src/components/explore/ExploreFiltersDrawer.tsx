@@ -28,6 +28,7 @@ import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { clearUserLocation } from "@/lib/user-location-store";
 import { cn } from "@/lib/utils";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
 import { ExploreBrowseCategories } from "./ExploreBrowseCategories";
 import { TrainerFilters as FiltersPanel } from "./TrainerFilters";
@@ -297,15 +298,14 @@ export function ExploreFiltersDrawer({
                 <h2 id={titleId} className="explore-filters-drawer__title">
                   Filters
                 </h2>
-                <button
-                  type="button"
-                  onClick={onClose}
+                <FastActivateButton
+                  onActivate={onClose}
                   className="smoac-control explore-filters-drawer__close"
                   aria-label="Close"
                   data-sheet-initial-focus
                 >
                   <CloseIcon className="h-5 w-5" />
-                </button>
+                </FastActivateButton>
               </div>
             </div>
 
@@ -325,9 +325,8 @@ export function ExploreFiltersDrawer({
             </div>
 
             <div className="explore-filters-drawer__footer">
-              <button
-                type="button"
-                onClick={handleClear}
+              <FastActivateButton
+                onActivate={handleClear}
                 className={cn(
                   "smoac-control explore-filters-drawer__clear",
                   !canClear && "explore-filters-drawer__clear--muted"
@@ -335,14 +334,13 @@ export function ExploreFiltersDrawer({
                 disabled={!canClear}
               >
                 Clear all
-              </button>
-              <button
-                type="button"
-                onClick={handleApply}
+              </FastActivateButton>
+              <FastActivateButton
+                onActivate={handleApply}
                 className="smoac-control explore-filters-drawer__apply"
               >
                 {formatShowResultsLabel(draftMatchCount)}
-              </button>
+              </FastActivateButton>
             </div>
           </motion.div>
         </div>

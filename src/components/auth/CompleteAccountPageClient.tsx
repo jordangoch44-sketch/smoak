@@ -1,10 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
@@ -93,6 +94,7 @@ export function CompleteAccountPageClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const settledRef = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const resumeSave = searchParams.get("save") === "1";
 
@@ -324,18 +326,18 @@ export function CompleteAccountPageClient() {
             </p>
           </div>
           <div className="login-form__section login-form__section--cta complete-account-actions">
-            <Link
+            <HeaderChromeLink
               href={LOGIN_PATH}
               className="login-submit complete-account-actions__primary"
             >
               Sign in with password
-            </Link>
-            <Link
+            </HeaderChromeLink>
+            <HeaderChromeLink
               href="/login/forgot-password"
               className="login-card__link complete-account-actions__secondary"
             >
               Forgot password?
-            </Link>
+            </HeaderChromeLink>
           </div>
         </>
       ) : null}
@@ -353,20 +355,18 @@ export function CompleteAccountPageClient() {
             </p>
           </div>
           <div className="login-form__section login-form__section--cta complete-account-actions">
-            <button
-              type="button"
+            <FastActivateButton
               className="login-submit"
-              onClick={() => unlockAndContinue("profile")}
+              onActivate={() => unlockAndContinue("profile")}
             >
               Finish creating your profile
-            </button>
-            <button
-              type="button"
+            </FastActivateButton>
+            <FastActivateButton
               className="login-submit login-submit--ghost"
-              onClick={() => unlockAndContinue("browse")}
+              onActivate={() => unlockAndContinue("browse")}
             >
               Continue browsing
-            </button>
+            </FastActivateButton>
           </div>
         </>
       ) : null}
@@ -384,6 +384,7 @@ export function CompleteAccountPageClient() {
           </div>
 
           <form
+            ref={formRef}
             className="login-card__form complete-account-form"
             onSubmit={handleSubmit}
             noValidate
@@ -500,14 +501,15 @@ export function CompleteAccountPageClient() {
             ) : null}
 
             <div className="complete-account-form__submit">
-              <button
-                type="submit"
+              <FastActivateButton
+                type="button"
                 className={cn(
                   "login-submit complete-account-submit",
                   submitting && "login-submit--loading"
                 )}
                 disabled={!canSubmit}
                 aria-busy={submitting}
+                onActivate={() => formRef.current?.requestSubmit()}
               >
                 {submitting ? (
                   <span className="complete-account-submit-row">
@@ -517,7 +519,7 @@ export function CompleteAccountPageClient() {
                 ) : (
                   "Create password"
                 )}
-              </button>
+              </FastActivateButton>
             </div>
           </form>
         </>

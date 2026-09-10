@@ -1,4 +1,6 @@
-import Link from "next/link";
+"use client";
+
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { Logo } from "@/components/ui/Logo";
 import { FOOTER_NAV_GROUPS } from "@/lib/footer-nav";
 
@@ -33,9 +35,9 @@ export function Footer() {
                 <ul className="site-footer__list">
                   {group.links.map((link) => (
                     <li key={link.href}>
-                      <Link href={link.href} className="site-footer__link">
+                      <HeaderChromeLink href={link.href} className="site-footer__link">
                         {link.label}
-                      </Link>
+                      </HeaderChromeLink>
                     </li>
                   ))}
                 </ul>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 const HEART_OUTLINE_PATH =
@@ -39,15 +40,10 @@ export function SaveButton({
     prevSavedRef.current = saved;
   }, [saved]);
 
-  function handleClick(event: MouseEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-    onToggle();
-  }
-
   return (
-    <button
-      type="button"
+    <FastActivateButton
       data-save-control
+      stopPropagation
       className={cn(
         "smoac-control smoac-tap save-button inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white",
         saved ? "save-button--saved" : "save-button--unsaved",
@@ -61,7 +57,7 @@ export function SaveButton({
       }
       aria-pressed={saved}
       disabled={disabled}
-      onClick={handleClick}
+      onActivate={onToggle}
     >
       <span className="save-button__icons" aria-hidden>
         <svg
@@ -84,6 +80,6 @@ export function SaveButton({
           <path d={HEART_FILLED_PATH} />
         </svg>
       </span>
-    </button>
+    </FastActivateButton>
   );
 }

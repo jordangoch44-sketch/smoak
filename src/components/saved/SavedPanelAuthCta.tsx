@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import "@/styles/saved-panel-auth.css";
 
 export interface SavedPanelAuthCtaProps {
@@ -20,21 +20,21 @@ export function SavedPanelAuthCta({
   return (
     <div className="saved-panel-auth">
       <div className="saved-panel-auth__cta">
-        <Link
+        <HeaderChromeLink
           href={loginHref}
           className="smoac-control saved-panel-auth__login"
-          onClick={onNavigate}
+          onActivate={onNavigate}
         >
           {loginLabel}
-        </Link>
+        </HeaderChromeLink>
         {joinHref ? (
-          <Link
+          <HeaderChromeLink
             href={joinHref}
             className="smoac-control saved-panel-auth__join"
-            onClick={onNavigate}
+            onActivate={onNavigate}
           >
             Create account
-          </Link>
+          </HeaderChromeLink>
         ) : null}
       </div>
     </div>

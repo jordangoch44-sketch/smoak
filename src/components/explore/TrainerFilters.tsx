@@ -18,6 +18,7 @@ import {
   isFullExplorePriceRange,
   parseExplorePriceBound,
 } from "@/lib/explore-price-range";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { LocationMarkIcon } from "@/components/ui/icons";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { cn } from "@/lib/utils";
@@ -231,13 +232,12 @@ export function TrainerFilters({
         <div className="explore-filters__header">
           <h2 className="explore-filters__title">Filters</h2>
           {hasFilters ? (
-            <button
-              type="button"
-              onClick={clearAll}
+            <FastActivateButton
+              onActivate={clearAll}
               className="explore-filters__clear"
             >
               Clear all
-            </button>
+            </FastActivateButton>
           ) : null}
         </div>
       )}
@@ -254,24 +254,22 @@ export function TrainerFilters({
             Location
           </h3>
           {isLocationActive ? (
-            <button
-              type="button"
-              onClick={clearLocation}
+            <FastActivateButton
+              onActivate={clearLocation}
               className="explore-filter-section__clear"
             >
               Clear location
-            </button>
+            </FastActivateButton>
           ) : null}
         </div>
 
-        <button
-          type="button"
+        <FastActivateButton
           className={cn(
             "smoac-control explore-filter-location-btn",
             isLocationActive && !geoLoading && "explore-filter-location-btn--active",
             geoLoading && "explore-filter-location-btn--loading"
           )}
-          onClick={handleUseCurrentLocation}
+          onActivate={handleUseCurrentLocation}
           disabled={geoLoading}
           aria-pressed={isLocationActive}
         >
@@ -300,7 +298,7 @@ export function TrainerFilters({
                 : "Show specialists near you"}
             </span>
           </span>
-        </button>
+        </FastActivateButton>
 
         <div className="explore-filter-location-divider" aria-hidden>
           <span>or enter a ZIP</span>
@@ -419,19 +417,18 @@ function FilterChipGroup({
         {options.map((opt) => {
           const selected = value === opt.value;
           return (
-            <button
+            <FastActivateButton
               key={`${opt.label}-${opt.value || "any"}`}
-              type="button"
               className={cn(
                 "smoac-control explore-filter-seg__chip",
                 selected && "explore-filter-seg__chip--selected"
               )}
               aria-pressed={selected}
               title={opt.hint}
-              onClick={() => onChange(opt.value)}
+              onActivate={() => onChange(opt.value)}
             >
               {opt.label}
-            </button>
+            </FastActivateButton>
           );
         })}
       </div>

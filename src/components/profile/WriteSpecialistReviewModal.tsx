@@ -7,9 +7,11 @@ import {
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
 import { createPortal } from "react-dom";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -49,6 +51,10 @@ function ReviewModalForm({
   const [submitting, setSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const backdropDismiss = useOwnPointerDismiss(() => {
+    if (submittingRef.current) return;
+    onClose();
+  });
 
   useEffect(() => {
     const previous = document.body.classList.contains("review-modal-open");
@@ -153,18 +159,15 @@ function ReviewModalForm({
     <div
       className="review-modal-root"
       role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !submitting) {
-          onClose();
-        }
-      }}
+      onPointerDown={backdropDismiss.onPointerDown}
+      onPointerUp={backdropDismiss.onPointerUp}
+      onClick={backdropDismiss.onClick}
     >
-      <button
-        type="button"
+      <FastActivateButton
         className="review-modal__backdrop smoac-control"
         aria-label="Close review"
         disabled={submitting}
-        onClick={onClose}
+        onActivate={onClose}
       />
       <div
         className="review-modal"
@@ -172,20 +175,22 @@ function ReviewModalForm({
         aria-modal="true"
         aria-labelledby={titleId}
         style={{ maxHeight: sheetMaxHeight }}
+        onPointerDown={(event) => event.stopPropagation()}
+        onPointerUp={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <header className="review-modal__header">
           <h2 id={titleId} className="review-modal__title">
             Leave a review for {specialistName}
           </h2>
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control review-modal__close"
             aria-label="Close review"
             disabled={submitting}
-            onClick={onClose}
+            onActivate={onClose}
           >
             <CloseIcon className="h-5 w-5" />
-          </button>
+          </FastActivateButton>
         </header>
 
         <div className="review-modal__body">
@@ -197,9 +202,8 @@ function ReviewModalForm({
             {[1, 2, 3, 4, 5].map((value) => {
               const active = value <= displayStars;
               return (
-                <button
+                <FastActivateButton
                   key={value}
-                  type="button"
                   role="radio"
                   aria-checked={rating === value}
                   aria-label={`${value} star${value === 1 ? "" : "s"}`}
@@ -212,10 +216,10 @@ function ReviewModalForm({
                   onMouseLeave={() => setHovered(0)}
                   onFocus={() => setHovered(value)}
                   onBlur={() => setHovered(0)}
-                  onClick={() => setRating(value)}
+                  onActivate={() => setRating(value)}
                 >
                   ★
-                </button>
+                </FastActivateButton>
               );
             })}
           </div>
@@ -261,13 +265,13 @@ function ReviewModalForm({
               {submitError === "not_authenticated" ? (
                 <>
                   {" "}
-                  <Link
+                  <HeaderChromeLink
                     href={LOGIN_PATH}
                     className="review-modal__error-link"
-                    onClick={onClose}
+                    onActivate={onClose}
                   >
                     Log in
-                  </Link>
+                  </HeaderChromeLink>
                 </>
               ) : null}
             </p>
@@ -275,22 +279,20 @@ function ReviewModalForm({
         </div>
 
         <footer className="review-modal__footer">
-          <button
-            type="button"
+          <FastActivateButton
             className="smoac-control review-modal__submit"
             disabled={!canSubmit}
-            onClick={() => void handleSubmit()}
+            onActivate={() => void handleSubmit()}
           >
             {submitting ? "Submitting…" : "Submit Review"}
-          </button>
-          <button
-            type="button"
+          </FastActivateButton>
+          <FastActivateButton
             className="smoac-control review-modal__cancel"
             disabled={submitting}
-            onClick={onClose}
+            onActivate={onClose}
           >
             Cancel
-          </button>
+          </FastActivateButton>
         </footer>
       </div>
     </div>

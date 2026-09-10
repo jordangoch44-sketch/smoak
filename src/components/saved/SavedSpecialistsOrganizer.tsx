@@ -1,7 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState, type MouseEvent } from "react";
+import { useMemo, useRef, useState, type MouseEvent, type PointerEvent } from "react";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { TrainerCard } from "@/components/trainers/TrainerCard";
 import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { formatProviderLocation } from "@/lib/provider-location";
@@ -80,6 +82,8 @@ export function SavedSpecialistsOrganizer({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [comparePair, setComparePair] = useState<ComparePair | null>(null);
   const coords = useExplicitUserCoordinates();
+  const openedByPointerRef = useRef(false);
+  const compareDismiss = useOwnPointerDismiss(() => setComparePair(null));
 
   const trainersById = useMemo(
     () => new Map(trainers.map((trainer) => [trainer.id, trainer])),
@@ -87,13 +91,7 @@ export function SavedSpecialistsOrganizer({
   );
   const selectedCount = selectedIds.length;
 
-  function handleCardClick(event: MouseEvent<HTMLDivElement>, trainerId: string) {
-    if (!compareMode) return;
-    const target = event.target as HTMLElement;
-    if (target.closest("[data-save-control]")) return;
-    event.preventDefault();
-    event.stopPropagation();
-
+  function applyCompareSelect(trainerId: string) {
     setSelectedIds((current) => {
       if (current.includes(trainerId)) {
         return current.filter((id) => id !== trainerId);
@@ -103,6 +101,35 @@ export function SavedSpecialistsOrganizer({
       }
       return [...current, trainerId];
     });
+  }
+
+  function handleCardPointerUp(
+    event: PointerEvent<HTMLDivElement>,
+    trainerId: string
+  ) {
+    if (!compareMode) return;
+    if (event.pointerType === "mouse") return;
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-save-control]")) return;
+    event.preventDefault();
+    event.stopPropagation();
+    openedByPointerRef.current = true;
+    applyCompareSelect(trainerId);
+  }
+
+  function handleCardClick(event: MouseEvent<HTMLDivElement>, trainerId: string) {
+    if (!compareMode) return;
+    const target = event.target as HTMLElement;
+    if (target.closest("[data-save-control]")) return;
+    if (openedByPointerRef.current) {
+      openedByPointerRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    applyCompareSelect(trainerId);
   }
 
   function openCompareFromSelection() {
@@ -160,16 +187,15 @@ export function SavedSpecialistsOrganizer({
           Tap Compare, then select two specialists
         </p>
         {trainers.length > 1 ? (
-          <button
-            type="button"
+          <FastActivateButton
             className="saved-organizer-instructions__toggle smoac-control"
-            onClick={() => {
+            onActivate={() => {
               setCompareMode((value) => !value);
               setSelectedIds([]);
             }}
           >
             {compareMode ? "Done" : "Compare"}
-          </button>
+          </FastActivateButton>
         ) : null}
       </div>
 
@@ -186,6 +212,7 @@ export function SavedSpecialistsOrganizer({
               ]
                 .filter(Boolean)
                 .join(" ")}
+              onPointerUpCapture={(event) => handleCardPointerUp(event, trainer.id)}
               onClickCapture={(event) => handleCardClick(event, trainer.id)}
             >
               {compareMode ? (
@@ -207,10 +234,9 @@ export function SavedSpecialistsOrganizer({
 
       {compareMode ? (
         <div className="saved-organizer-compare-action">
-          <button
-            type="button"
+          <FastActivateButton
             className="saved-organizer-compare-action__button smoac-control"
-            onClick={openCompareFromSelection}
+            onActivate={openCompareFromSelection}
             disabled={selectedCount !== 2}
           >
             <span className="saved-organizer-compare-action__label">
@@ -218,7 +244,7 @@ export function SavedSpecialistsOrganizer({
                 ? "Compare selected specialists"
                 : `Select 2 specialists (${selectedCount}/2)`}
             </span>
-          </button>
+          </FastActivateButton>
         </div>
       ) : null}
 
@@ -228,20 +254,23 @@ export function SavedSpecialistsOrganizer({
           role="dialog"
           aria-modal="true"
           aria-labelledby="saved-compare-title"
-          onClick={() => setComparePair(null)}
+          onPointerDown={compareDismiss.onPointerDown}
+          onPointerUp={compareDismiss.onPointerUp}
+          onClick={compareDismiss.onClick}
         >
           <div
             className="saved-compare-modal__dialog"
+            onPointerDown={(event) => event.stopPropagation()}
+            onPointerUp={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
           >
-            <button
-              type="button"
+            <FastActivateButton
               className="saved-compare-modal__close smoac-control"
-              onClick={() => setComparePair(null)}
+              onActivate={() => setComparePair(null)}
               aria-label="Close comparison"
             >
               ×
-            </button>
+            </FastActivateButton>
             <p className="saved-compare-modal__eyebrow">Specialist compare</p>
             <h2 id="saved-compare-title" className="saved-compare-modal__title">
               Quick side-by-side
@@ -288,18 +317,20 @@ export function SavedSpecialistsOrganizer({
               ))}
             </div>
             <div className="saved-compare-modal__actions">
-              <Link
+              <HeaderChromeLink
                 href={`/trainers/${comparePair.dragged.id}`}
                 className="saved-compare-modal__action"
+                onActivate={() => setComparePair(null)}
               >
                 View {comparePair.dragged.name.split(" ")[0]}
-              </Link>
-              <Link
+              </HeaderChromeLink>
+              <HeaderChromeLink
                 href={`/trainers/${comparePair.target.id}`}
                 className="saved-compare-modal__action saved-compare-modal__action--alt"
+                onActivate={() => setComparePair(null)}
               >
                 View {comparePair.target.name.split(" ")[0]}
-              </Link>
+              </HeaderChromeLink>
             </div>
           </div>
         </div>

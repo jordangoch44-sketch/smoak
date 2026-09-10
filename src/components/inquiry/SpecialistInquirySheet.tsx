@@ -15,9 +15,9 @@ import {
   useReducedMotion,
   type PanInfo,
 } from "framer-motion";
-import Link from "next/link";
 import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { CloseIcon } from "@/components/ui/icons";
 import {
   QuickClientAccountAuthActions,
@@ -659,13 +659,13 @@ export function SpecialistInquirySheet({
                       ? "We’ll email you when they respond."
                       : "Your inquiry is saved in your SMOAC account."}
                   </p>
-                  <Link
+                  <HeaderChromeLink
                     href={`${CLIENT_DASHBOARD_PATH}?tab=messages`}
                     className="smoac-control inquiry-sheet__submit"
-                    onClick={onClose}
+                    onActivate={onClose}
                   >
                     View your inquiry
-                  </Link>
+                  </HeaderChromeLink>
                   <FastActivateButton
                     className="smoac-control inquiry-sheet__text-btn"
                     onActivate={onClose}
@@ -675,13 +675,13 @@ export function SpecialistInquirySheet({
                   <p className="inquiry-sheet__helper inquiry-sheet__helper--tight">
                     After you connect, you’re welcome to leave a review.
                   </p>
-                  <Link
+                  <HeaderChromeLink
                     href={buildLeaveReviewHref(specialistId)}
                     className="smoac-control inquiry-sheet__secondary-link"
-                    onClick={onClose}
+                    onActivate={onClose}
                   >
                     Leave a review later
-                  </Link>
+                  </HeaderChromeLink>
                 </div>
               ) : null}
 

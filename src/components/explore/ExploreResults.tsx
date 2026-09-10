@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { memo, useState } from "react";
 import type { Trainer } from "@/types";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { TrainerList } from "@/components/trainers";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
@@ -153,52 +154,46 @@ export const ExploreResults = memo(function ExploreResults({
           </p>
           <div className="explore-empty__actions">
             {areaEmpty && !mapSearchEmpty && onExpandNearby ? (
-              <button
-                type="button"
-                onClick={onExpandNearby}
+              <FastActivateButton
+                onActivate={onExpandNearby}
                 className="explore-empty__btn explore-empty__btn--primary"
               >
                 Broaden filters to find nearby specialists
-              </button>
+              </FastActivateButton>
             ) : null}
             {hasSearch ? (
-              <button
-                type="button"
-                onClick={onClearSearch}
+              <FastActivateButton
+                onActivate={onClearSearch}
                 className="explore-empty__btn explore-empty__btn--ghost"
               >
                 Clear search
-              </button>
+              </FastActivateButton>
             ) : null}
             {activeFilterCount > 0 ? (
-              <button
-                type="button"
-                onClick={onClearFilters}
+              <FastActivateButton
+                onActivate={onClearFilters}
                 className="explore-empty__btn explore-empty__btn--ghost"
               >
                 Clear filters
-              </button>
+              </FastActivateButton>
             ) : null}
             {isUnfilteredEmpty ? (
-              <Link
+              <HeaderChromeLink
                 href="/create-account?role=client"
                 className="explore-empty__btn explore-empty__btn--primary"
               >
                 Create client account
-              </Link>
+              </HeaderChromeLink>
             ) : !areaEmpty && !mapSearchEmpty ? (
-              <Link
+              <HeaderChromeLink
                 href="/explore"
-                onClick={(e) => {
-                  if (hasSearch || activeFilterCount > 0) {
-                    e.preventDefault();
-                    onClearAll();
-                  }
-                }}
                 className="explore-empty__btn explore-empty__btn--ghost"
+                onActivate={() => {
+                  if (hasSearch || activeFilterCount > 0) onClearAll();
+                }}
               >
                 View all specialists
-              </Link>
+              </HeaderChromeLink>
             ) : null}
           </div>
         </div>
@@ -251,8 +246,7 @@ export const ExploreResults = memo(function ExploreResults({
         role="tablist"
         aria-label="Results view"
       >
-        <button
-          type="button"
+        <FastActivateButton
           role="tab"
           aria-selected={viewMode === "list"}
           className={
@@ -260,12 +254,11 @@ export const ExploreResults = memo(function ExploreResults({
               ? "explore-view-toggle__btn explore-view-toggle__btn--active"
               : "explore-view-toggle__btn"
           }
-          onClick={() => setViewMode("list")}
+          onActivate={() => setViewMode("list")}
         >
           List
-        </button>
-        <button
-          type="button"
+        </FastActivateButton>
+        <FastActivateButton
           role="tab"
           aria-selected={viewMode === "map"}
           className={
@@ -273,10 +266,10 @@ export const ExploreResults = memo(function ExploreResults({
               ? "explore-view-toggle__btn explore-view-toggle__btn--active"
               : "explore-view-toggle__btn"
           }
-          onClick={() => setViewMode("map")}
+          onActivate={() => setViewMode("map")}
         >
           Map
-        </button>
+        </FastActivateButton>
       </div>
 
       {expandedNote}

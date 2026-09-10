@@ -8,6 +8,7 @@ import {
   listActiveHomeEssenceSlides,
   type HomeEssenceSlide,
 } from "@/lib/home-essence-slides";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 
 const SWIPE_MIN_PX = 48;
@@ -201,9 +202,8 @@ export function HomeEssenceSlideshow() {
       {slides.length > 1 ? (
         <div className="home-essence__dots" role="tablist" aria-label="Slides">
           {slides.map((slide, i) => (
-            <button
+            <FastActivateButton
               key={slide.id}
-              type="button"
               role="tab"
               aria-selected={i === index}
               aria-label={`Show slide ${i + 1}`}
@@ -211,7 +211,7 @@ export function HomeEssenceSlideshow() {
                 "home-essence__dot",
                 i === index && "home-essence__dot--active"
               )}
-              onClick={() => goTo(i)}
+              onActivate={() => goTo(i)}
             />
           ))}
         </div>

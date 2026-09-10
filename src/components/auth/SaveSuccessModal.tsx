@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import Link from "next/link";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { CloseIcon, HeartIcon } from "@/components/ui/icons";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { cn } from "@/lib/utils";
 
 const COMPLETE_PROFILE_HREF = "/create-account?role=client";
@@ -20,6 +22,7 @@ export function SaveSuccessModal({
   specialistName,
 }: SaveSuccessModalProps) {
   const closingRef = useRef(false);
+  const backdropDismiss = useOwnPointerDismiss(() => dismissNow());
 
   useEffect(() => {
     if (!open) {
@@ -66,14 +69,9 @@ export function SaveSuccessModal({
     <div
       className="login-gate"
       role="presentation"
-      onPointerUp={(event) => {
-        if (event.target !== event.currentTarget) return;
-        dismissNow(event.currentTarget);
-      }}
-      onClick={(event) => {
-        if (event.target !== event.currentTarget) return;
-        dismissNow(event.currentTarget);
-      }}
+      onPointerDown={backdropDismiss.onPointerDown}
+      onPointerUp={backdropDismiss.onPointerUp}
+      onClick={backdropDismiss.onClick}
     >
       <div
         className={cn("login-gate__dialog", "login-gate__dialog--save")}
@@ -82,22 +80,18 @@ export function SaveSuccessModal({
         aria-labelledby="save-success-title"
         aria-describedby="save-success-desc"
         onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
       >
         <div className="login-gate__glow" aria-hidden />
 
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control login-gate__close"
           aria-label="Close"
-          onPointerDown={(event) => {
-            if (event.pointerType === "mouse" && event.button !== 0) return;
-            dismissNow(event.currentTarget);
-          }}
-          onClick={(event) => dismissNow(event.currentTarget)}
+          onActivate={() => dismissNow()}
         >
           <CloseIcon className="h-4 w-4" />
-        </button>
+        </FastActivateButton>
 
         <div className="login-gate__content login-gate__content--save">
           <div className="login-gate__success-icon" aria-hidden>
@@ -116,20 +110,19 @@ export function SaveSuccessModal({
           </p>
 
           <div className="login-gate__actions">
-            <button
-              type="button"
+            <FastActivateButton
               className="smoac-control login-gate__btn login-gate__btn--aurora"
-              onClick={() => dismissNow()}
+              onActivate={() => dismissNow()}
             >
               Continue browsing
-            </button>
-            <Link
+            </FastActivateButton>
+            <HeaderChromeLink
               href={COMPLETE_PROFILE_HREF}
               className="smoac-control login-gate__btn login-gate__btn--ghost"
-              onClick={() => dismissNow()}
+              onActivate={() => dismissNow()}
             >
               Complete my profile
-            </Link>
+            </HeaderChromeLink>
           </div>
         </div>
       </div>

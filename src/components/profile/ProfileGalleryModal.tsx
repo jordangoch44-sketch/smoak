@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useCarousel } from "@/hooks/useCarousel";
 import { useHorizontalSwipe } from "@/hooks/useHorizontalSwipe";
 import type { ProfileGalleryMedia } from "@/types/profile-gallery";
@@ -353,11 +354,10 @@ export function ProfileGalleryModal({
                           }}
                         />
                         {!videoPlaying ? (
-                          <button
-                            type="button"
+                          <FastActivateButton
                             className="profile-gallery-modal__play"
                             data-gallery-protected
-                            onClick={handlePlayVideo}
+                            onActivate={handlePlayVideo}
                             aria-label={`Play ${item.alt ?? "video"}`}
                           >
                             <span
@@ -366,7 +366,7 @@ export function ProfileGalleryModal({
                             >
                               ▶
                             </span>
-                          </button>
+                          </FastActivateButton>
                         ) : null}
                       </>
                     ) : null}
@@ -376,24 +376,22 @@ export function ProfileGalleryModal({
 
               {count > 1 ? (
                 <>
-                  <button
-                    type="button"
+                  <FastActivateButton
                     className="profile-gallery-modal__nav profile-gallery-modal__nav--prev"
                     data-gallery-protected
                     aria-label="Previous"
-                    onClick={() => goToSlide(index - 1)}
+                    onActivate={() => goToSlide(index - 1)}
                   >
                     ‹
-                  </button>
-                  <button
-                    type="button"
+                  </FastActivateButton>
+                  <FastActivateButton
                     className="profile-gallery-modal__nav profile-gallery-modal__nav--next"
                     data-gallery-protected
                     aria-label="Next"
-                    onClick={() => goToSlide(index + 1)}
+                    onActivate={() => goToSlide(index + 1)}
                   >
                     ›
-                  </button>
+                  </FastActivateButton>
                 </>
               ) : null}
             </div>
@@ -407,9 +405,8 @@ export function ProfileGalleryModal({
                 aria-label="Gallery thumbnails"
               >
                 {media.map((item, thumbIndex) => (
-                  <button
+                  <FastActivateButton
                     key={item.id}
-                    type="button"
                     role="tab"
                     data-thumb-index={thumbIndex}
                     aria-selected={thumbIndex === index}
@@ -419,7 +416,7 @@ export function ProfileGalleryModal({
                       thumbIndex === index &&
                         "profile-gallery-modal__thumb--active"
                     )}
-                    onClick={() => goToSlide(thumbIndex)}
+                    onActivate={() => goToSlide(thumbIndex)}
                   >
                     {item.type === "video" && !item.thumbnail ? (
                       <span
@@ -445,7 +442,7 @@ export function ProfileGalleryModal({
                         {formatClipSecondsLabel(item.duration ?? 0)}
                       </span>
                     ) : null}
-                  </button>
+                  </FastActivateButton>
                 ))}
               </div>
             </footer>

@@ -16,6 +16,7 @@ import {
   type ExploreBrowseCategoryIcon,
 } from "@/lib/explore-browse-categories";
 import type { TrainerFilters } from "@/types";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn, withSlashLineBreak } from "@/lib/utils";
 
 const CATEGORY_ICONS: Record<
@@ -87,14 +88,13 @@ export function ExploreBrowseCategories({
           });
 
           return (
-            <button
+            <FastActivateButton
               key={category.id}
-              type="button"
               className={cn(
                 "smoac-control explore-browse__card",
                 isActive && "explore-browse__card--active"
               )}
-              onClick={() => onSelect(category)}
+              onActivate={() => onSelect(category)}
               aria-pressed={isActive}
             >
               <span className="explore-browse__card-icon" aria-hidden>
@@ -103,7 +103,7 @@ export function ExploreBrowseCategories({
               <span className="explore-browse__card-label">
                 {withSlashLineBreak(category.label)}
               </span>
-            </button>
+            </FastActivateButton>
           );
         })}
       </div>

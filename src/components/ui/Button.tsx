@@ -1,7 +1,8 @@
 "use client";
 
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 interface ButtonProps {
   children: React.ReactNode;
@@ -35,15 +36,27 @@ export function Button({
 
   if (href) {
     return (
-      <Link href={href} className={classes} onClick={onClick}>
+      <HeaderChromeLink href={href} className={classes} onActivate={onClick}>
         {children}
-      </Link>
+      </HeaderChromeLink>
+    );
+  }
+
+  if (type === "submit") {
+    return (
+      <button type="submit" className={classes} onClick={onClick}>
+        {children}
+      </button>
     );
   }
 
   return (
-    <button type={type} className={classes} onClick={onClick}>
+    <FastActivateButton
+      type={type}
+      className={classes}
+      onActivate={onClick ?? (() => undefined)}
+    >
       {children}
-    </button>
+    </FastActivateButton>
   );
 }

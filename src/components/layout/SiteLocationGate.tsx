@@ -14,6 +14,7 @@ import { LocationSelectorPanel } from "@/components/location/LocationSelectorPan
 import { Logo } from "@/components/ui/Logo";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { getProfileZipFromSession } from "@/lib/client-profile-location";
 import { isExploreNavPath } from "@/lib/mobile-bottom-nav";
 import { skipLocationPrompt } from "@/lib/user-location-store";
@@ -74,6 +75,7 @@ export function SiteLocationGate() {
     setDismissed(true);
     window.setTimeout(() => notifyExploreMapLayout(), 40);
   }, []);
+  const skipDismiss = useOwnPointerDismiss(handleSkip);
 
   useLayoutEffect(() => {
     if (!shouldShow) return;
@@ -110,11 +112,15 @@ export function SiteLocationGate() {
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
-      onClick={handleSkip}
+      onPointerDown={skipDismiss.onPointerDown}
+      onPointerUp={skipDismiss.onPointerUp}
+      onClick={skipDismiss.onClick}
     >
       <div className="site-location-gate__glow" aria-hidden />
       <div
         className="site-location-gate__panel"
+        onPointerDown={(event) => event.stopPropagation()}
+        onPointerUp={(event) => event.stopPropagation()}
         onClick={(event) => event.stopPropagation()}
       >
         <div className="site-location-gate__brand">

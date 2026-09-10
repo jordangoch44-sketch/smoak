@@ -7,29 +7,35 @@ import { isModifiedNavActivation } from "@/lib/mobile-bottom-nav-transition";
  * Buttons / overlay openers: touch commits on pointerup so a busy main thread
  * cannot drop the later click. Mouse still uses click so drag-off cancels.
  */
-export function useFastActivate(activate: () => void): {
+export function useFastActivate(
+  activate: () => void,
+  options?: { stopPropagation?: boolean }
+): {
   onPointerUp: (event: PointerEvent<Element>) => void;
   onClick: (event: MouseEvent<Element>) => void;
 } {
   const activateRef = useRef(activate);
   activateRef.current = activate;
   const openedByPointerRef = useRef(false);
+  const stopPropagation = Boolean(options?.stopPropagation);
 
   const onPointerUp = useCallback((event: PointerEvent<Element>) => {
+    if (stopPropagation) event.stopPropagation();
     if (event.pointerType === "mouse") return;
     if (isModifiedNavActivation(event)) return;
     openedByPointerRef.current = true;
     activateRef.current();
-  }, []);
+  }, [stopPropagation]);
 
   const onClick = useCallback((event: MouseEvent<Element>) => {
+    if (stopPropagation) event.stopPropagation();
     if (openedByPointerRef.current) {
       event.preventDefault();
       openedByPointerRef.current = false;
       return;
     }
     activateRef.current();
-  }, []);
+  }, [stopPropagation]);
 
   return { onPointerUp, onClick };
 }

@@ -2,7 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import {
   QuickClientAccountAuthActions,
   QuickClientAccountAuthError,
@@ -75,6 +77,7 @@ export function QuickClientAccountModal({
   const [syncedKey, setSyncedKey] = useState("");
   /** React-owned hide — imperative-only styles get wiped if OverlayHost re-renders. */
   const [dismissed, setDismissed] = useState(false);
+  const backdropDismiss = useOwnPointerDismiss(() => requestClose("backdrop"));
 
   const openKey = open ? `${purpose}:${returnPath}` : "";
 
@@ -333,8 +336,7 @@ export function QuickClientAccountModal({
           event.stopPropagation();
           return;
         }
-        if (event.target !== event.currentTarget) return;
-        requestClose("backdrop", event);
+        backdropDismiss.onPointerDown(event);
       }}
       onPointerUp={(event) => {
         if (dismissed) {
@@ -342,8 +344,7 @@ export function QuickClientAccountModal({
           event.stopPropagation();
           return;
         }
-        if (event.target !== event.currentTarget) return;
-        requestClose("backdrop", event);
+        backdropDismiss.onPointerUp(event);
       }}
       onClick={(event) => {
         if (dismissed) {
@@ -351,8 +352,7 @@ export function QuickClientAccountModal({
           event.stopPropagation();
           return;
         }
-        if (event.target !== event.currentTarget) return;
-        requestClose("backdrop", event);
+        backdropDismiss.onClick();
       }}
     >
       <div
@@ -361,23 +361,19 @@ export function QuickClientAccountModal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descId}
-        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="login-gate__glow" aria-hidden />
 
-        <button
-          type="button"
+        <FastActivateButton
           className="smoac-control login-gate__close"
           aria-label="Close"
-          onPointerDown={(event) => {
-            if (event.pointerType === "mouse" && event.button !== 0) return;
-            /* Dismiss on press — waiting for click/up feels laggy on iOS. */
-            requestClose("x", event);
-          }}
+          onActivate={() => requestClose("x")}
         >
           <CloseIcon className="h-4 w-4" />
-        </button>
+        </FastActivateButton>
 
         <div className="login-gate__content login-gate__content--save">
           {view === "signup" ? (

@@ -1,13 +1,15 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { buildJoinFlowHref } from "@/lib/join-flow";
+import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { AlertTriangleIcon, CloseIcon } from "@/components/ui/icons";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -71,6 +73,8 @@ export function LoginPageClient() {
   const [submitting, setSubmitting] = useState(false);
   const [submitPressed, setSubmitPressed] = useState(false);
   const errorFadeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const mismatchDismiss = useOwnPointerDismiss(() => clearRoleMismatchModal());
 
   useEffect(() => {
     if (!roleMismatchActive) return;
@@ -351,6 +355,7 @@ export function LoginPageClient() {
           </div>
 
           <form
+            ref={formRef}
             className="login-card__form"
             onSubmit={handlePasswordSubmit}
             noValidate
@@ -363,12 +368,11 @@ export function LoginPageClient() {
               {PUBLIC_LOGIN_ROLES.map((option) => {
                 const selected = role === option.id;
                 return (
-                  <button
+                  <FastActivateButton
                     key={option.id}
-                    type="button"
                     role="radio"
                     aria-checked={selected}
-                    onClick={() => {
+                    onActivate={() => {
                       setRole(option.id);
                       clearLoginError();
                     }}
@@ -390,7 +394,7 @@ export function LoginPageClient() {
                         {option.description}
                       </span>
                     </span>
-                  </button>
+                  </FastActivateButton>
                 );
               })}
             </div>
@@ -451,8 +455,8 @@ export function LoginPageClient() {
             </div>
 
             <div className="login-form__section login-form__section--cta">
-              <button
-                type="submit"
+              <FastActivateButton
+                type="button"
                 className={cn(
                   "login-submit",
                   submitting && "login-submit--loading",
@@ -460,21 +464,22 @@ export function LoginPageClient() {
                 )}
                 disabled={submitting}
                 aria-busy={submitting}
+                onActivate={() => formRef.current?.requestSubmit()}
               >
                 {submitting ? "Signing in…" : "Sign in"}
-              </button>
+              </FastActivateButton>
             </div>
 
             <div className="login-card__links login-card__links--compact">
-              <Link href={buildJoinFlowHref()} className="login-card__link">
+              <HeaderChromeLink href={buildJoinFlowHref()} className="login-card__link">
                 Create account
-              </Link>
-              <Link
+              </HeaderChromeLink>
+              <HeaderChromeLink
                 href="/login/forgot-password"
                 className="login-card__link"
               >
                 Forgot password?
-              </Link>
+              </HeaderChromeLink>
             </div>
           </form>
         </div>
@@ -490,11 +495,9 @@ export function LoginPageClient() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="role-mismatch-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              clearRoleMismatchModal();
-            }
-          }}
+          onPointerDown={mismatchDismiss.onPointerDown}
+          onPointerUp={mismatchDismiss.onPointerUp}
+          onClick={mismatchDismiss.onClick}
         >
           <div
             className={cn(
@@ -502,15 +505,17 @@ export function LoginPageClient() {
               roleMismatchActive && "login-modal-dialog--active",
               !roleMismatchActive && "login-modal-dialog--closing"
             )}
+            onPointerDown={(e) => e.stopPropagation()}
+            onPointerUp={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
           >
-            <button
-              type="button"
+            <FastActivateButton
               className="login-modal-dialog__close"
-              onClick={clearRoleMismatchModal}
+              onActivate={clearRoleMismatchModal}
               aria-label="Close dialog"
             >
               <CloseIcon className="h-4 w-4" />
-            </button>
+            </FastActivateButton>
 
             <div className="login-modal-dialog__badge" aria-hidden>
               <AlertTriangleIcon className="login-modal-dialog__badge-icon" />
@@ -536,39 +541,36 @@ export function LoginPageClient() {
 
             <div className="login-modal-dialog__actions">
               {roleMismatch.actualRole === "client" ? (
-                <button
-                  type="button"
-                  onClick={() => handleSwitchRole("client")}
+                <FastActivateButton
+                  onActivate={() => handleSwitchRole("client")}
                   className="login-modal-dialog__btn login-modal-dialog__btn--primary"
                   autoFocus
                 >
                   Switch to Client Login
-                </button>
+                </FastActivateButton>
               ) : roleMismatch.actualRole === "specialist" ? (
-                <button
-                  type="button"
-                  onClick={() => handleSwitchRole("specialist")}
+                <FastActivateButton
+                  onActivate={() => handleSwitchRole("specialist")}
                   className="login-modal-dialog__btn login-modal-dialog__btn--primary"
                   autoFocus
                 >
                   Switch to Specialist Login
-                </button>
+                </FastActivateButton>
               ) : (
-                <Link
+                <HeaderChromeLink
                   href="/internal/login"
                   className="login-modal-dialog__btn login-modal-dialog__btn--primary"
                 >
                   Go to Admin Portal
-                </Link>
+                </HeaderChromeLink>
               )}
 
-              <button
-                type="button"
-                onClick={clearRoleMismatchModal}
+              <FastActivateButton
+                onActivate={clearRoleMismatchModal}
                 className="login-modal-dialog__btn login-modal-dialog__btn--ghost"
               >
                 Cancel
-              </button>
+              </FastActivateButton>
             </div>
           </div>
         </div>

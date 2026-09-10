@@ -2,6 +2,7 @@
 
 import { useId } from "react";
 import { SavedPanelContent } from "@/components/saved";
+import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { cn } from "@/lib/utils";
 import { MENU_EASE } from "@/lib/navigation";
 
@@ -13,6 +14,7 @@ interface SavedPanelDropdownProps {
 export function SavedPanelDropdown({ open, onClose }: SavedPanelDropdownProps) {
   const panelId = useId();
   const titleId = `${panelId}-title`;
+  const backdropDismiss = useOwnPointerDismiss(onClose);
 
   return (
     <div
@@ -23,7 +25,9 @@ export function SavedPanelDropdown({ open, onClose }: SavedPanelDropdownProps) {
       <button
         type="button"
         aria-label="Close saved specialists"
-        onClick={onClose}
+        onPointerDown={backdropDismiss.onPointerDown}
+        onPointerUp={backdropDismiss.onPointerUp}
+        onClick={backdropDismiss.onClick}
         className={cn(
           "smoac-control saved-dropdown__backdrop absolute inset-0 bg-black/50 backdrop-blur-[2px] transition-opacity duration-500",
           open ? "opacity-100" : "opacity-0"
