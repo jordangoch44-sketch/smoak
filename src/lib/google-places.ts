@@ -16,6 +16,8 @@ export type GooglePlacesResult =
   | { ok: false; message: string };
 
 const PLACE_ID_RE = /^ChIJ[\w-]+$/;
+/** Google Maps / Business Profile customer ID (cid=), not a ChIJ Place ID. */
+const CID_RE = /^\d{10,20}$/;
 
 function getPlacesApiKey(): string | null {
   const key =
@@ -27,6 +29,131 @@ function getPlacesApiKey(): string | null {
 
 function isPlaceId(value: string): boolean {
   return PLACE_ID_RE.test(value);
+}
+
+function isCid(value: string): boolean {
+  return CID_RE.test(value.trim());
+}
+
+export function extractGoogleCid(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (isCid(trimmed)) return trimmed;
+  try {
+    const url = new URL(
+      /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+    );
+    const fromQuery = url.searchParams.get("cid")?.trim() ?? "";
+    if (isCid(fromQuery)) return fromQuery;
+  } catch {
+    /* not a URL */
+  }
+  const embedded = trimmed.match(/[?&]cid=(\d{10,20})\b/i);
+  return embedded?.[1] ?? null;
+}
+
+function mapsUrlForCid(cid: string): string {
+  return `https://maps.google.com/?cid=${cid}`;
+}
+
+function coordsFromMapsHtml(html: string): { lat: string; lng: string } | null {
+  const decoded = html.replace(/%21/gi, "!");
+  const app = decoded.match(
+    /APP_INITIALIZATION_STATE=\[\[\[([\d.]+),(-?[\d.]+),(-?[\d.]+)/
+  );
+  if (app?.[2] && app?.[3]) {
+    return { lng: app[2], lat: app[3] };
+  }
+  const pb = decoded.match(/!2d(-?\d+\.\d+)!3d(-?\d+\.\d+)/);
+  if (pb?.[1] && pb?.[2]) return { lng: pb[1], lat: pb[2] };
+  return null;
+}
+
+async function findPlaceIdFromCid(
+  cid: string,
+  apiKey: string
+): Promise<string | null> {
+  const cidUrl = mapsUrlForCid(cid);
+  const byText = await findPlaceIdFromTextQuery(cidUrl, apiKey);
+  if (byText) return byText;
+
+  try {
+    const response = await fetch(cidUrl, {
+      method: "GET",
+      redirect: "follow",
+      cache: "no-store",
+      headers: {
+        Accept: "text/html",
+        "User-Agent":
+          "Mozilla/5.0 (compatible; SMOAC-GoogleReviews/1.0; +https://smoac.com)",
+      },
+    });
+    const html = await response.text();
+    const fromHtml =
+      extractGooglePlaceId(html) || extractGooglePlaceId(response.url);
+    if (fromHtml) return fromHtml;
+    const coords = coordsFromMapsHtml(html);
+    if (!coords) return null;
+    return findPlaceIdNearPoint(coords.lat, coords.lng, apiKey);
+  } catch {
+    return null;
+  }
+}
+
+async function findPlaceIdFromTextQuery(
+  input: string,
+  apiKey: string,
+  bias?: { lat: string | null; lng: string | null }
+): Promise<string | null> {
+  const endpoint = new URL(
+    "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+  );
+  endpoint.searchParams.set("input", input);
+  endpoint.searchParams.set("inputtype", "textquery");
+  endpoint.searchParams.set("fields", "place_id");
+  endpoint.searchParams.set("key", apiKey);
+  if (bias?.lat && bias?.lng) {
+    endpoint.searchParams.set("locationbias", `point:${bias.lat},${bias.lng}`);
+  }
+  try {
+    const response = await fetch(endpoint.toString(), {
+      method: "GET",
+      cache: "no-store",
+    });
+    const json = (await response.json()) as {
+      candidates?: Array<{ place_id?: string }>;
+    };
+    const placeId = json.candidates?.[0]?.place_id?.trim() ?? "";
+    return isPlaceId(placeId) ? placeId : null;
+  } catch {
+    return null;
+  }
+}
+
+async function findPlaceIdNearPoint(
+  lat: string,
+  lng: string,
+  apiKey: string
+): Promise<string | null> {
+  const endpoint = new URL(
+    "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
+  );
+  endpoint.searchParams.set("location", `${lat},${lng}`);
+  endpoint.searchParams.set("radius", "40");
+  endpoint.searchParams.set("key", apiKey);
+  try {
+    const response = await fetch(endpoint.toString(), {
+      method: "GET",
+      cache: "no-store",
+    });
+    const json = (await response.json()) as {
+      results?: Array<{ place_id?: string }>;
+    };
+    const placeId = json.results?.[0]?.place_id?.trim() ?? "";
+    return isPlaceId(placeId) ? placeId : null;
+  } catch {
+    return null;
+  }
 }
 
 function asAbsoluteUrl(input: string): URL | null {
@@ -139,34 +266,10 @@ async function findPlaceIdFromMapsListing(
 ): Promise<string | null> {
   const parsed = mapsPlaceNameAndPoint(urlString);
   if (!parsed) return null;
-
-  const endpoint = new URL(
-    "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
-  );
-  endpoint.searchParams.set("input", parsed.name);
-  endpoint.searchParams.set("inputtype", "textquery");
-  endpoint.searchParams.set("fields", "place_id");
-  endpoint.searchParams.set("key", apiKey);
-  if (parsed.lat && parsed.lng) {
-    endpoint.searchParams.set(
-      "locationbias",
-      `point:${parsed.lat},${parsed.lng}`
-    );
-  }
-
-  try {
-    const response = await fetch(endpoint.toString(), {
-      method: "GET",
-      cache: "no-store",
-    });
-    const json = (await response.json()) as {
-      candidates?: Array<{ place_id?: string }>;
-    };
-    const placeId = json.candidates?.[0]?.place_id?.trim() ?? "";
-    return isPlaceId(placeId) ? placeId : null;
-  } catch {
-    return null;
-  }
+  return findPlaceIdFromTextQuery(parsed.name, apiKey, {
+    lat: parsed.lat,
+    lng: parsed.lng,
+  });
 }
 
 function normalizeMapsUrl(raw: string, fallbackPlaceId: string): string {
@@ -193,16 +296,19 @@ export async function fetchGooglePlaceSnapshot(
   }
 
   const resolvedInput = await resolveGoogleMapsShareUrl(placeIdOrUrl);
+  const cid =
+    extractGoogleCid(placeIdOrUrl) || extractGoogleCid(resolvedInput);
   const placeId =
     extractGooglePlaceId(resolvedInput) ||
     extractGooglePlaceId(placeIdOrUrl) ||
+    (cid ? await findPlaceIdFromCid(cid, apiKey) : null) ||
     (await findPlaceIdFromMapsListing(resolvedInput, apiKey));
 
   if (!placeId) {
     return {
       ok: false,
       message:
-        "Could not find that Google Business Profile. Paste a Maps / Business share link or a Place ID (starts with ChIJ…).",
+        "Could not find that Google Business Profile. Paste a Maps / Business share link, a Place ID (ChIJ…), or the listing ID number.",
     };
   }
 

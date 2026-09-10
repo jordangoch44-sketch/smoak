@@ -103,9 +103,9 @@ export function ConnectGoogleReviewsModal({
             Connect Google Reviews
           </h2>
           <p id="connect-google-desc" className="dashboard-modal__body">
-            Paste your Google Business Profile or Maps share link (or a Place ID
-            that starts with ChIJ…). Live stars show on your public profile —
-            tapping them opens your Google listing.
+            Paste a Google Maps or Business Profile share link. A Place ID
+            (ChIJ…) or the listing ID number also works. Live stars show on
+            your public profile — tapping them opens your Google listing.
           </p>
           <form
             className="dashboard-connect-google-form"
@@ -117,7 +117,7 @@ export function ConnectGoogleReviewsModal({
                 className="login-field__input"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="Business Profile / Maps link, or ChIJ…"
+                placeholder="Maps link, ChIJ…, or listing ID"
                 autoComplete="off"
                 disabled={busy}
               />

@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   const placeIdOrUrl = body.placeIdOrUrl?.trim() ?? "";
   if (!placeIdOrUrl) {
     return NextResponse.json(
-      { ok: false, message: "Paste a Google Place ID or Maps link." },
+      { ok: false, message: "Paste a Google Place ID, listing ID, or Maps link." },
       { status: 400 }
     );
   }
