@@ -2934,8 +2934,68 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
     0 24px 64px rgba(0, 0, 0, 0.4);
 }
 
-.dashboard-modal__body--welcome-trial {
-  color: rgba(255, 255, 255, 0.68);
+.dashboard-welcome-tasks {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(42vh, 16.5rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dashboard-welcome-tasks__item {
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard-welcome-tasks__btn,
+.dashboard-welcome-tasks__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.15rem 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  text-align: left;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dashboard-welcome-tasks__btn {
+  cursor: pointer;
+}
+
+.dashboard-welcome-tasks__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.dashboard-modal__trial-headline {
+  margin: 0.35rem 0 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #fff;
+  text-wrap: balance;
+}
+
+@media (max-width: 430px) {
+  .dashboard-modal__trial-headline {
+    font-size: 1.35rem;
+  }
+
+  .dashboard-welcome-tasks {
+    max-height: min(34vh, 12.75rem);
+  }
 }
 
 @media (hover: hover) and (pointer: fine) {

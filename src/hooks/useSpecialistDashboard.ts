@@ -23,6 +23,7 @@ import {
   isDemoSpecialistDashboard,
   profileStatusToLabel,
 } from "@/lib/managed-specialist-profile";
+import { buildProfileWelcomeTasks } from "@/lib/specialist-profile-welcome";
 import {
   resolveSpecialistDashboardMode,
   type SpecialistDashboardMode,
@@ -252,6 +253,7 @@ export function useSpecialistDashboard() {
     formDefaults != null
       ? buildProfileCompletionChecklist(formDefaults, trainer)
       : [];
+  const welcomeTasks = buildProfileWelcomeTasks(formDefaults);
 
   const isPremium = isSpecialistPremium(data.subscription);
 
@@ -301,6 +303,7 @@ export function useSpecialistDashboard() {
     application,
     profileCompletion,
     completionChecklist,
+    welcomeTasks,
     profileStatusLabel,
     analytics,
     rankingRating,

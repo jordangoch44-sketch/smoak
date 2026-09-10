@@ -64,6 +64,10 @@ import {
 type FreeDashboardTab = "plan" | "profile";
 type PremiumDashboardTab = "overview" | "profile";
 
+/** Survives Strict Mode remounts; cleared on full reload so the welcome stays one-time. */
+const welcomeOpenedThisRuntime = new Set<string>();
+const welcomeDismissedThisRuntime = new Set<string>();
+
 const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
   { id: "plan", label: "Plan & upgrade" },
   { id: "profile", label: "Edit profile" },
@@ -156,6 +160,7 @@ export function SpecialistDashboardPageClient() {
     application,
     profileCompletion,
     completionChecklist,
+    welcomeTasks,
     profileStatusLabel,
     analytics,
     isPremium,
@@ -180,7 +185,15 @@ export function SpecialistDashboardPageClient() {
   useEffect(() => {
     if (!isReady || !session || !isHydrated) return;
     if (trialEndedOpen) return;
+    const userId = session.userId;
+    if (userId && welcomeDismissedThisRuntime.has(userId)) {
+      return;
+    }
+    const openedThisRuntime = Boolean(
+      userId && welcomeOpenedThisRuntime.has(userId)
+    );
     if (
+      !openedThisRuntime &&
       !shouldShowSpecialistProfileWelcome({
         session,
         dashboardMode,
@@ -189,6 +202,10 @@ export function SpecialistDashboardPageClient() {
       })
     ) {
       return;
+    }
+    if (userId) {
+      welcomeOpenedThisRuntime.add(userId);
+      markSpecialistProfileWelcomeSeen(userId);
     }
     setWelcomeOpen(true);
   }, [
@@ -367,6 +384,7 @@ export function SpecialistDashboardPageClient() {
     const userId = session?.userId;
     if (userId) {
       markSpecialistProfileWelcomeSeen(userId);
+      welcomeDismissedThisRuntime.add(userId);
     }
     setWelcomeOpen(false);
     if (!welcomeParam) return;
@@ -379,9 +397,13 @@ export function SpecialistDashboardPageClient() {
     );
   }
 
-  function startWelcomeWithPhotos() {
-    setFocusSection("hero");
+  function startWelcomeWithSection(sectionId?: string) {
+    setFocusSection(sectionId || "hero");
     dismissProfileWelcome();
+  }
+
+  function startWelcomeWithPhotos() {
+    startWelcomeWithSection(welcomeTasks[0]?.id ?? "hero");
   }
 
   const liveDot =
@@ -807,8 +829,10 @@ export function SpecialistDashboardPageClient() {
     />
     <SpecialistProfileWelcomeModal
       open={welcomeOpen && !trialEndedOpen}
+      tasks={welcomeTasks}
       onClose={dismissProfileWelcome}
       onStartWithPhotos={startWelcomeWithPhotos}
+      onSelectTask={startWelcomeWithSection}
     />
     <SmoacProUpgradeModal
       open={upgradeOpen}
