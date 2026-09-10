@@ -25,7 +25,9 @@ import {
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
+import { INQUIRY_TOPIC_FREE_FIRST_SESSION } from "@/lib/inquiry-options";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { isTrainerFreeFirstSessionEligible } from "@/lib/free-first-session";
 import { recordSpecialistEngagement } from "@/lib/specialist-engagement-tracking";
 import { overlayTrainerMembership } from "@/lib/trainer-sponsorship";
 import { trainerMatchesPublicKey } from "@/lib/trainer-profile-path";
@@ -94,6 +96,9 @@ export function TrainerProfilePageClient({
         ? overlayTrainerMembership(liveOrPrimed, ssrTrainer)
         : liveOrPrimed;
   const [inquiryOpen, setInquiryOpen] = useState(false);
+  const [inquiryIntent, setInquiryIntent] = useState<
+    "default" | "claim_free_session"
+  >("default");
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
   const [sheetRouteId, setSheetRouteId] = useState(routeId);
@@ -101,6 +106,7 @@ export function TrainerProfilePageClient({
     setSheetRouteId(routeId);
     setSheetTab("details");
     setInquiryOpen(false);
+    setInquiryIntent("default");
     setReviewModalOpen(false);
   }
   /* Reviews are stored by internal specialist id, not the public URL slug. */
@@ -216,6 +222,17 @@ export function TrainerProfilePageClient({
   const pageStyle = {
     "--profile-accent-rgb": getProfileAccentRgb(profileStyle.accent),
   } as CSSProperties;
+  const offersFreeFirstSession = isTrainerFreeFirstSessionEligible(trainer);
+  const openInquiry = (intent: "default" | "claim_free_session") => {
+    recordSpecialistEngagement({
+      event: "contact_click",
+      specialistId: trainer.id,
+      surface: "profile",
+      oncePerSession: true,
+    });
+    setInquiryIntent(intent);
+    setInquiryOpen(true);
+  };
 
   return (
     <TrainerProfileSheet
@@ -244,6 +261,11 @@ export function TrainerProfilePageClient({
           setSheetTab("reviews");
           setReviewModalOpen(true);
         }}
+        onClaimFreeSession={
+          offersFreeFirstSession
+            ? () => openInquiry("claim_free_session")
+            : undefined
+        }
       />
 
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-3 sm:px-6 sm:pb-20 sm:pt-5 lg:py-12">
@@ -275,15 +297,7 @@ export function TrainerProfilePageClient({
             inquire={
               <ProfileContactCta
                 specialistName={trainer.name}
-                onContact={() => {
-                  recordSpecialistEngagement({
-                    event: "contact_click",
-                    specialistId: trainer.id,
-                    surface: "profile",
-                    oncePerSession: true,
-                  });
-                  setInquiryOpen(true);
-                }}
+                onContact={() => openInquiry("default")}
               />
             }
           />
@@ -302,6 +316,12 @@ export function TrainerProfilePageClient({
         open={inquiryOpen}
         onOpenChange={setInquiryOpen}
         showButton={false}
+        offersFreeFirstSession={offersFreeFirstSession}
+        preselectTopicId={
+          inquiryIntent === "claim_free_session"
+            ? INQUIRY_TOPIC_FREE_FIRST_SESSION.id
+            : undefined
+        }
       />
     </TrainerProfileSheet>
   );

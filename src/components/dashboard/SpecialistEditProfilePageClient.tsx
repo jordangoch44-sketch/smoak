@@ -100,6 +100,7 @@ type SectionId =
   | "professional-role"
   | "specialties"
   | "service-area"
+  | "session-experience"
   | "credentials"
   | "photos-links";
 
@@ -1070,11 +1071,6 @@ export function SpecialistEditProfilePageClient({
                   }
                 />
                 <ProfileEditViewField
-                  label="Training options"
-                  value={formatTrainingOptionsLabel(savedForm.trainingOptions)}
-                  emptyLabel="Add training options"
-                />
-                <ProfileEditViewField
                   label="Willing to travel to clients"
                   value={formatTravelToClientsEditorLabel(
                     savedForm.travelToClients
@@ -1230,12 +1226,6 @@ export function SpecialistEditProfilePageClient({
                     ))}
                   </select>
                 </ProfileEditInputField>
-                <SpecialistTrainingOptionsFields
-                  value={form.trainingOptions}
-                  onChange={(trainingOptions) =>
-                    updateField("trainingOptions", trainingOptions)
-                  }
-                />
                 <ProfileEditInputField label="Are you willing to travel to clients?">
                   <select
                     className="login-field__input profile-edit-input"
@@ -1373,6 +1363,28 @@ export function SpecialistEditProfilePageClient({
                   />
                 </ProfileEditInputField>
               </div>
+            }
+          />
+
+          <ProfileEditSection
+            {...sectionProps("session-experience")}
+            title="Training options"
+            description="How you run sessions — same choices as onboarding"
+            incomplete={savedForm.trainingOptions.length === 0}
+            viewContent={
+              <ProfileEditViewField
+                label="Training options"
+                value={formatTrainingOptionsLabel(savedForm.trainingOptions)}
+                emptyLabel="Add training options"
+              />
+            }
+            editContent={
+              <SpecialistTrainingOptionsFields
+                value={form.trainingOptions}
+                onChange={(trainingOptions) =>
+                  updateField("trainingOptions", trainingOptions)
+                }
+              />
             }
           />
 

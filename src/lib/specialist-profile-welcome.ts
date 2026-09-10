@@ -15,17 +15,27 @@ import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit"
 export const SPECIALIST_PROFILE_WELCOME_LOCK_CLASS =
   "specialist-profile-welcome-open";
 
+export const PROFILE_WELCOME_PHOTOS_TASK_ID = "hero";
+
 export const SMOAC_PROFILE_WELCOME = {
-  eyebrow: "Your listing is live",
-  title: "Welcome to your profile",
-  trialHeadline: "Enjoy 30 days of free Pro!",
-  primaryCta: "Start with photos",
-  secondaryCta: "Got it",
+  eyebrow: "Your profile is live",
+  titlePrefix: "Welcome to",
+  subtitle: "Your profile is now visible to clients.",
+  nextStepEyebrow: "Your next step",
+  photosDescription:
+    "Help your profile stand out and get more inquiries from clients.",
+  nextStepFallbackDescription:
+    "Complete this section so clients know what to expect from you.",
+  trialHeadline: "Enjoy 30 days of Pro — free!",
+  trialBody: "Explore all Pro features during your trial.",
+  primaryCta: "Add photos",
+  secondaryCta: "Maybe later",
 } as const;
 
 export type ProfileWelcomeTask = {
   id: string;
   label: string;
+  description?: string;
 };
 
 export type SpecialistProfileWelcomeSession = {
@@ -86,7 +96,12 @@ export function buildProfileWelcomeTasks(
   );
 
   const candidates: Array<ProfileWelcomeTask & { done: boolean }> = [
-    { id: "hero", label: "Pictures / slideshow", done: hasPhoto && hasSlideshow },
+    {
+      id: PROFILE_WELCOME_PHOTOS_TASK_ID,
+      label: SMOAC_PROFILE_WELCOME.primaryCta,
+      description: SMOAC_PROFILE_WELCOME.photosDescription,
+      done: hasPhoto && hasSlideshow,
+    },
     { id: "name", label: "Business name", done: Boolean(form.name.trim()) },
     { id: "headline", label: "Headline", done: Boolean(form.title.trim()) },
     {
@@ -132,7 +147,30 @@ export function buildProfileWelcomeTasks(
 
   return candidates
     .filter((item) => !item.done)
-    .map(({ id, label }) => ({ id, label }));
+    .map(({ id, label, description }) => ({ id, label, description }));
+}
+
+export function splitProfileWelcomeTasks(tasks: ProfileWelcomeTask[]): {
+  nextStep: ProfileWelcomeTask | null;
+  remaining: ProfileWelcomeTask[];
+} {
+  const [nextStep, ...remaining] = tasks;
+  return { nextStep: nextStep ?? null, remaining };
+}
+
+export function profileWelcomeRemainingLabel(count: number): string {
+  return count === 1
+    ? "1 thing left to complete"
+    : `${count} things left to complete`;
+}
+
+export function profileWelcomeTaskDescription(
+  task: ProfileWelcomeTask
+): string {
+  return (
+    task.description?.trim() ||
+    SMOAC_PROFILE_WELCOME.nextStepFallbackDescription
+  );
 }
 
 /** True when first post-approval login should go to the profile welcome. */

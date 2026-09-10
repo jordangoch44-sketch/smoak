@@ -64,7 +64,7 @@ export function cloneSpecialistProfileEditForm(
     homepageSpecialties: [...form.homepageSpecialties],
     serviceArea: [...form.serviceArea],
     pinnedPhotos: [...form.pinnedPhotos],
-    trainingOptions: [...form.trainingOptions],
+    trainingOptions: [...(form.trainingOptions ?? [])],
     certifications: form.certifications.map((cert) => ({ ...cert })),
   };
 }
@@ -106,6 +106,12 @@ const PROFILE_SECTION_FIELDS: Record<
     "travelToClients",
     "travelRadius",
     "serviceArea",
+    "trainingOptions",
+    "pricePerSession",
+    "pricePerSessionMin",
+    "pricePerSessionMax",
+    "offersFreeFirstSession",
+    "bookingAvailability",
   ],
   "session-experience": ["trainingOptions"],
   credentials: ["certifications"],

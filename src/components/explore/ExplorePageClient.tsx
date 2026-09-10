@@ -2,7 +2,6 @@
 
 import { useCallback, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { HomeBoostRibbon } from "@/components/home/HomeBoostRibbon";
@@ -25,8 +24,8 @@ import { ExploreResultsSheet } from "./ExploreResultsSheet";
 export function ExplorePageClient() {
   const searchParams = useSearchParams();
   const isMobile = useMobileViewport(true);
-  const isCompactAtmosphere = useTabletViewport(true);
-  const isDesktopSplit = !isMobile && !isCompactAtmosphere;
+  const isCompactLayout = useTabletViewport(true);
+  const isDesktopSplit = !isMobile && !isCompactLayout;
   const preciseUserLocation = usePreciseUserCoordinates();
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
@@ -170,38 +169,6 @@ export function ExplorePageClient() {
         isMobile && "explore-page--map-hero explore-page--map-shell"
       )}
     >
-      {!isMobile ? (
-        <div className="explore-page__canvas" aria-hidden>
-          {isCompactAtmosphere ? (
-            <>
-              <div className="explore-page__header-glow" />
-              <div className="atmosphere-vignette atmosphere-vignette--soft" />
-            </>
-          ) : (
-            <>
-              <div className="atmosphere-mesh">
-                <div className="atmosphere-blob atmosphere-blob--indigo" />
-                <div className="atmosphere-blob atmosphere-blob--blue" />
-                <div className="atmosphere-blob atmosphere-blob--violet" />
-                <div className="atmosphere-blob atmosphere-blob--magenta" />
-                <div className="atmosphere-blob atmosphere-blob--core" />
-              </div>
-              <AuroraAtmosphere
-                intensity="subtle"
-                starDensity="none"
-                glowPosition="search"
-                glowColor="mixed"
-                enableMotion
-                className="explore-page__cosmic"
-              />
-              <div className="explore-page__header-glow" />
-              <div className="atmosphere-vignette atmosphere-vignette--soft" />
-              <div className="atmosphere-grain" />
-            </>
-          )}
-        </div>
-      ) : null}
-
       <div
         className={cn(
           "explore-page__content",

@@ -42,7 +42,7 @@ import {
 import {
   DEFAULT_INQUIRY_ACTION,
   INQUIRY_MESSAGE_MAX_LENGTH,
-  getInquiryTopicsForProfession,
+  getInquiryTopicOptions,
   type InquiryTopicId,
 } from "@/lib/inquiry-options";
 import {
@@ -87,6 +87,9 @@ interface SpecialistInquirySheetProps {
   specialistName: string;
   specialistProfession?: string;
   profilePath: string;
+  offersFreeFirstSession?: boolean;
+  /** When opening from the profile claim CTA, pre-check this topic if allowed. */
+  preselectTopicId?: string;
 }
 
 function emptyDraft(
@@ -114,6 +117,22 @@ function emptyDraft(
   };
 }
 
+function draftWithAllowedTopics(
+  draft: PendingInquiryDraft,
+  allowedIds: Set<string>,
+  preselectTopicId?: string
+): PendingInquiryDraft {
+  const inquiryTopics = draft.inquiryTopics.filter((id) => allowedIds.has(id));
+  if (
+    preselectTopicId &&
+    allowedIds.has(preselectTopicId) &&
+    !inquiryTopics.includes(preselectTopicId)
+  ) {
+    inquiryTopics.unshift(preselectTopicId);
+  }
+  return { ...draft, inquiryTopics };
+}
+
 export function SpecialistInquirySheet({
   open,
   onClose,
@@ -121,6 +140,8 @@ export function SpecialistInquirySheet({
   specialistName,
   specialistProfession = "",
   profilePath,
+  offersFreeFirstSession = false,
+  preselectTopicId,
 }: SpecialistInquirySheetProps) {
   const titleId = useId();
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -129,7 +150,9 @@ export function SpecialistInquirySheet({
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
   const { session, isSignedIn, refreshSession } = useAuthSession();
-  const topicOptions = getInquiryTopicsForProfession(specialistProfession);
+  const topicOptions = getInquiryTopicOptions(specialistProfession, {
+    offersFreeFirstSession,
+  });
 
   const [view, setView] = useState<SheetView>("compose");
   const [draft, setDraft] = useState<PendingInquiryDraft>(() =>
@@ -152,11 +175,17 @@ export function SpecialistInquirySheet({
     height: 0,
   });
 
-  const openKey = open ? `${specialistId}:${profilePath}` : "";
+  const openKey = open
+    ? `${specialistId}:${profilePath}:${preselectTopicId ?? ""}`
+    : "";
 
   if (open && syncedOpenKey !== openKey) {
     setSyncedOpenKey(openKey);
-    const next = emptyDraft(specialistId, specialistName, profilePath);
+    const next = draftWithAllowedTopics(
+      emptyDraft(specialistId, specialistName, profilePath),
+      new Set(topicOptions.map((topic) => topic.id)),
+      preselectTopicId
+    );
     setDraft(next);
     setView("compose");
     setError(null);

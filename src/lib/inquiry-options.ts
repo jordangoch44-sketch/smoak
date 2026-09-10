@@ -1,5 +1,6 @@
 /** Inquiry actions + profession-aware topic options for specialist profile composer */
 
+import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 
 /**
@@ -21,6 +22,12 @@ export interface InquiryTopicOption {
   id: string;
   label: string;
 }
+
+/** Shown first in How can we help? when the specialist offers a free first session. */
+export const INQUIRY_TOPIC_FREE_FIRST_SESSION: InquiryTopicOption = {
+  id: "free_first_session",
+  label: FREE_FIRST_SESSION_LABEL,
+};
 
 /** Generic topics when profession has no dedicated set */
 export const INQUIRY_TOPICS_DEFAULT: readonly InquiryTopicOption[] = [
@@ -117,13 +124,29 @@ for (const topics of Object.values(INQUIRY_TOPICS_BY_PROFESSION)) {
 }
 // Legacy ids from earlier drafts
 ALL_TOPIC_LABELS.set("in_person_training", "In-Person Training");
+ALL_TOPIC_LABELS.set(
+  INQUIRY_TOPIC_FREE_FIRST_SESSION.id,
+  INQUIRY_TOPIC_FREE_FIRST_SESSION.label
+);
 
-export function getInquiryTopicsForProfession(
+function getInquiryTopicsForProfession(
   profession: string
 ): InquiryTopicOption[] {
   const key = canonicalizeProfessionLabel(profession) ?? profession.trim();
   const topics = INQUIRY_TOPICS_BY_PROFESSION[key] ?? INQUIRY_TOPICS_DEFAULT;
   return [...topics];
+}
+
+export function getInquiryTopicOptions(
+  profession: string,
+  options?: { offersFreeFirstSession?: boolean }
+): InquiryTopicOption[] {
+  const topics = getInquiryTopicsForProfession(profession);
+  if (!options?.offersFreeFirstSession) return topics;
+  if (topics.some((topic) => topic.id === INQUIRY_TOPIC_FREE_FIRST_SESSION.id)) {
+    return topics;
+  }
+  return [INQUIRY_TOPIC_FREE_FIRST_SESSION, ...topics];
 }
 
 export function isInquiryActionId(value: string): value is InquiryActionId {

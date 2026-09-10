@@ -5,6 +5,7 @@ export const SPECIALIST_TRAINING_OPTION_IDS = [
   "semi-private",
   "class",
   "online",
+  "hybrid",
 ] as const;
 
 export type SpecialistTrainingOptionId =
@@ -34,6 +35,11 @@ export const SPECIALIST_TRAINING_OPTIONS: readonly {
     id: "online",
     label: "Online",
     description: "Virtual sessions you can take from anywhere.",
+  },
+  {
+    id: "hybrid",
+    label: "Hybrid",
+    description: "In-person and online combined.",
   },
 ] as const;
 
@@ -88,6 +94,9 @@ export function parseTrainingOptions(
   }
   if (legacy?.onlineCoachingAvailable || /online|virtual/.test(session)) {
     inferred.push("online");
+  }
+  if (/\bhybrid\b/.test(session)) {
+    inferred.push("hybrid");
   }
   return uniqueValid(inferred);
 }

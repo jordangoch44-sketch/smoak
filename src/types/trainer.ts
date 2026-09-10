@@ -119,7 +119,7 @@ export interface Trainer {
   travelRadius?: string;
   /** In-person, virtual, or both — drives matching */
   serviceType?: SpecialistServiceType;
-  /** One-on-one / semi-private / class / online — public “Training options” */
+  /** One-on-one / semi-private / class / online / hybrid — public “Training options” */
   trainingOptions?: SpecialistTrainingOptionId[];
   /** Paid placement — stays above organic results when sorting by user ZIP */
   sponsored?: boolean;

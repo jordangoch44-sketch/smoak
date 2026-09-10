@@ -67,10 +67,3 @@ export function credentialInitials(name: string, issuer: string): string {
   }
   return source.slice(0, 3).toUpperCase() || "C";
 }
-
-export function trainerTextureUrls(trainer: Trainer): string[] {
-  const urls = [trainer.heroImage, ...(trainer.galleryImages ?? [])]
-    .map((url) => (typeof url === "string" ? url.trim() : ""))
-    .filter(Boolean);
-  return [...new Set(urls)];
-}

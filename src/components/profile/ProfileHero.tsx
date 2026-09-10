@@ -24,12 +24,12 @@ import { isTrainerVerified } from "@/lib/trainer-sponsorship";
 import { SessionPrice } from "@/components/ui/SessionPrice";
 import { VerifiedBadgeMark } from "@/components/ui/VerifiedBadgeMark";
 import {
-  FREE_FIRST_SESSION_LABEL,
+  FREE_FIRST_SESSION_CLAIM_LABEL,
   isTrainerFreeFirstSessionEligible,
 } from "@/lib/free-first-session";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
-import { PhotosStackIcon } from "@/components/ui/icons";
+import { CalendarIcon, PhotosStackIcon } from "@/components/ui/icons";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { MEDIA_TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
@@ -54,6 +54,8 @@ interface ProfileHeroProps {
   variant?: "public" | "specialist-live";
   /** Live tab — Edit chip on the circular profile photo */
   onEditProfilePhoto?: () => void;
+  /** Public profile — claim CTA opens inquire */
+  onClaimFreeSession?: () => void;
 }
 
 export function ProfileHero({
@@ -65,6 +67,7 @@ export function ProfileHero({
   onLeaveReview,
   variant = "public",
   onEditProfilePhoto,
+  onClaimFreeSession,
 }: ProfileHeroProps) {
   const isSpecialistLive = variant === "specialist-live";
   const ranking = cityRanking;
@@ -242,9 +245,24 @@ export function ProfileHero({
                     className="profile-hero__meta-price shrink-0"
                   />
                   {isTrainerFreeFirstSessionEligible(trainer) ? (
-                    <span className="profile-hero__free-session">
-                      {FREE_FIRST_SESSION_LABEL}
-                    </span>
+                    onClaimFreeSession ? (
+                      <FastActivateButton
+                        className="smoac-control profile-hero__free-session"
+                        onActivate={onClaimFreeSession}
+                      >
+                        <CalendarIcon className="profile-hero__free-session-icon" />
+                        <span className="profile-hero__free-session-label">
+                          {FREE_FIRST_SESSION_CLAIM_LABEL}
+                        </span>
+                      </FastActivateButton>
+                    ) : (
+                      <span className="profile-hero__free-session">
+                        <CalendarIcon className="profile-hero__free-session-icon" />
+                        <span className="profile-hero__free-session-label">
+                          {FREE_FIRST_SESSION_CLAIM_LABEL}
+                        </span>
+                      </span>
+                    )
                   ) : null}
                 </div>
               </div>

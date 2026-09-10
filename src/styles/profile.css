@@ -197,98 +197,67 @@
   color: rgba(var(--profile-accent-rgb), 0.95);
 }
 
-.profile-train-grid {
+.profile-train-tiles {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.profile-train-grid > .profile-train-card:only-child,
-.profile-train-grid > .profile-train-card:last-child:nth-child(odd) {
-  grid-column: 1 / -1;
-}
-
-.profile-train-card {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
+.profile-train-tile {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  min-height: 8.75rem;
-  padding: 0.85rem 0.8rem 0.9rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(var(--profile-accent-rgb), 0.22);
-  background: rgba(12, 12, 16, 0.72);
-}
-
-.profile-train-card__photo {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 22%;
-  opacity: 0.38;
-  filter: saturate(0.7) brightness(0.55);
-}
-
-.profile-train-card__wash {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: 0.65rem 0.4rem 0.55rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(var(--profile-accent-rgb), 0.34);
   background:
     linear-gradient(
       165deg,
-      rgba(var(--profile-accent-rgb), 0.28) 0%,
-      rgba(8, 8, 12, 0.55) 42%,
-      rgba(8, 8, 12, 0.88) 100%
+      rgba(var(--profile-accent-rgb), 0.2) 0%,
+      rgba(10, 10, 16, 0.62) 100%
     );
-  pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.24);
+  text-align: center;
 }
 
-.profile-train-card__icon,
-.profile-train-card__title,
-.profile-train-card__copy {
-  position: relative;
-  z-index: 2;
-}
-
-.profile-train-card__icon {
+.profile-train-tile__icon {
   display: flex;
-  width: 1.85rem;
-  height: 1.85rem;
+  width: 2.45rem;
+  height: 2.45rem;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  margin-bottom: 0.65rem;
   border-radius: 0.5rem;
+  border: 1px solid rgba(var(--profile-accent-rgb), 0.45);
   background: rgba(var(--profile-accent-rgb), 0.22);
-  color: rgba(var(--profile-accent-rgb), 0.98);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
-}
-
-.profile-train-card__glyph {
-  width: 0.95rem;
-  height: 0.95rem;
-}
-
-.profile-train-card__title {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 0 16px rgba(var(--profile-accent-rgb), 0.16);
   color: #fff;
 }
 
-.profile-train-card__copy {
-  margin: 0.3rem 0 0;
-  font-size: 0.72rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.62);
+.profile-train-tile__glyph {
+  width: 1.35rem;
+  height: 1.35rem;
+}
+
+.profile-train-tile__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.98);
 }
 
 .profile-credentials {
@@ -1024,29 +993,104 @@
 }
 
 .profile-hero__free-session {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
-  border-radius: 9999px;
-  border: 1px solid rgba(196, 181, 253, 0.35);
+  justify-content: center;
+  gap: 0.32rem;
+  min-height: 2.125rem;
+  padding: 0.34rem 0.85rem 0.34rem 0.72rem;
+  border-radius: 980px;
+  border: 1px solid rgba(216, 180, 254, 0.4);
+  background: rgba(var(--smoac-color-violet-rgb), 0.58);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    inset 0 -1px 0 rgba(76, 29, 149, 0.22),
+    0 8px 20px rgba(var(--smoac-color-violet-rgb), 0.28);
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  color: rgba(255, 255, 255, 0.98);
+  font-size: 0.75rem;
+  font-weight: 590;
+  letter-spacing: -0.024em;
+  line-height: 1;
+  white-space: nowrap;
+  text-align: center;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.profile-hero__free-session::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
   background: linear-gradient(
-    135deg,
-    rgba(124, 58, 237, 0.92) 0%,
-    rgba(168, 85, 247, 0.88) 55%,
-    rgba(99, 102, 241, 0.9) 100%
+    165deg,
+    rgba(255, 255, 255, 0.32) 0%,
+    rgba(255, 255, 255, 0.04) 46%,
+    rgba(var(--smoac-color-violet-rgb), 0.18) 100%
   );
-  padding: 0.22rem 0.62rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.96);
+  pointer-events: none;
+}
+
+button.profile-hero__free-session {
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+button.profile-hero__free-session:hover {
+  background: rgba(var(--smoac-color-violet-rgb), 0.7);
+}
+
+button.profile-hero__free-session:active {
+  transform: scale(0.97);
+  background: rgba(var(--smoac-color-violet-rgb), 0.78);
+}
+
+.profile-hero__free-session-icon,
+.profile-hero__free-session-label {
+  position: relative;
+  z-index: 1;
+}
+
+.profile-hero__free-session-icon {
+  width: 0.82rem;
+  height: 0.82rem;
+  flex-shrink: 0;
+  stroke-width: 1.75;
+  opacity: 0.94;
+}
+
+.profile-hero__free-session-label {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button.profile-hero__free-session {
+    transition: none;
+  }
+
+  button.profile-hero__free-session:active {
+    transform: none;
+  }
 }
 
 .profile-hero__pinned {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 1.05rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   max-width: 22rem;
 }
 
@@ -1124,6 +1168,8 @@
 
 .profile-hero__transforms .profile-hero__pinned {
   margin-top: 0.4rem;
+  padding-top: 0;
+  border-top: none;
 }
 
 .profile-hero__reviews {
@@ -3080,9 +3126,9 @@ body.profile-image-preview-open .profile-toolbar {
 }
 
 .profile-discovery .home-portrait-card__body {
-  height: 9.2rem;
-  min-height: 9.2rem;
-  max-height: 9.2rem;
+  height: 9.55rem;
+  min-height: 9.55rem;
+  max-height: 9.55rem;
   padding: 0.65rem 0.7rem 0.7rem;
 }
 

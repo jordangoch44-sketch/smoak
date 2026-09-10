@@ -88,3 +88,67 @@ export const EXPLORE_SEARCH_PROMPT_GROUPS: readonly ExploreSearchPromptGroup[] =
   ] as const;
 
 export const EXPLORE_RECENT_SEARCH_OVERLAY_LIMIT = 3;
+
+const PHRASE_PATTERN_CACHE = new Map<string, RegExp>();
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Whole-phrase match so “Men” does not light up inside “Mental Health”. */
+function phrasePattern(phrase: string): RegExp {
+  const key = phrase.trim();
+  const cached = PHRASE_PATTERN_CACHE.get(key);
+  if (cached) return cached;
+  const pattern = new RegExp(`(?:^|\\s)${escapeRegExp(key)}(?=\\s|$)`, "i");
+  PHRASE_PATTERN_CACHE.set(key, pattern);
+  return pattern;
+}
+
+export function isSearchPromptSelected(
+  draft: string,
+  prompt: ExploreSearchPrompt
+): boolean {
+  const text = draft.trim();
+  if (!text) return false;
+  if (phrasePattern(prompt.searchQuery).test(text)) return true;
+  return (
+    prompt.label !== prompt.searchQuery && phrasePattern(prompt.label).test(text)
+  );
+}
+
+function stripPhrase(draft: string, phrase: string): string {
+  const trimmed = phrase.trim();
+  if (!trimmed) return draft.trim();
+  return draft
+    .replace(phrasePattern(trimmed), " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Toggle a prompt into the draft. One chip per group (profession / specialty /
+ * gender / price); chips across groups stack until Search is tapped.
+ */
+export function toggleSearchPromptInDraft(
+  draft: string,
+  prompt: ExploreSearchPrompt,
+  group: ExploreSearchPromptGroup
+): string {
+  if (isSearchPromptSelected(draft, prompt)) {
+    let next = stripPhrase(draft, prompt.searchQuery);
+    if (prompt.label !== prompt.searchQuery) {
+      next = stripPhrase(next, prompt.label);
+    }
+    return next;
+  }
+
+  let next = draft;
+  for (const other of group.prompts) {
+    next = stripPhrase(next, other.searchQuery);
+    if (other.label !== other.searchQuery) {
+      next = stripPhrase(next, other.label);
+    }
+  }
+  return [next, prompt.searchQuery.trim()].filter(Boolean).join(" ");
+}

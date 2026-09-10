@@ -3,6 +3,7 @@ import {
   AppleFruitIcon,
   BoxingGloveIcon,
   DumbbellIcon,
+  HybridFormatIcon,
   LayoutGridIcon,
   LocationMarkIcon,
   MeditationIcon,
@@ -120,6 +121,7 @@ const TRAINING_ICONS: Record<
   "semi-private": UsersIcon,
   class: LayoutGridIcon,
   online: VirtualFormatIcon,
+  hybrid: HybridFormatIcon,
 };
 
 export function ProfileTrainingKindIcon({

@@ -2074,9 +2074,9 @@
 .home-page--discovery .home-free-first .home-portrait-card__body,
 .home-page--discovery .home-featured .home-portrait-card__body,
 .home-page--discovery .home-sponsored .home-portrait-card__body {
-  height: 9.2rem;
-  min-height: 9.2rem;
-  max-height: 9.2rem;
+  height: 9.55rem;
+  min-height: 9.55rem;
+  max-height: 9.55rem;
   padding: 0.65rem 0.7rem 0.7rem;
 }
 
@@ -2288,6 +2288,7 @@
   flex-direction: column;
   min-height: 0;
   height: 100%;
+  gap: 0.08rem;
 }
 
 .home-portrait-card .trainer-card-details__name,
@@ -2295,7 +2296,8 @@
   margin: 0;
   font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.25;
+  line-height: 1.35;
+  padding-bottom: 0.2em;
   color: #fff;
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -2304,32 +2306,39 @@
   overflow: hidden;
   white-space: normal;
   overflow-wrap: break-word;
-  min-height: calc(1.25em * 2);
+  min-height: calc(1.35em * 2);
+  flex-shrink: 0;
 }
 
 .home-portrait-card__profession {
-  margin: 0.15rem 0 0;
+  margin: 0.08rem 0 0;
   font-size: 0.75rem;
-  line-height: 1.3;
+  line-height: 1.4;
+  padding-bottom: 0.18em;
   color: rgba(255, 255, 255, 0.58);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .home-portrait-card__location.provider-location {
-  margin-top: 0.15rem;
+  margin-top: 0.08rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .home-portrait-card__distance {
   display: block;
-  margin-top: 0.05rem;
+  margin-top: 0.02rem;
+  line-height: 1.4;
+  padding-bottom: 0.18em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .home-portrait-card__meta {

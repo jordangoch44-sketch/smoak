@@ -254,6 +254,16 @@ export function useSpecialistDashboard() {
       ? buildProfileCompletionChecklist(formDefaults, trainer)
       : [];
   const welcomeTasks = buildProfileWelcomeTasks(formDefaults);
+  const welcomeAvatarUrl =
+    formDefaults?.profilePhotoUrl?.trim() ||
+    trainer?.image?.trim() ||
+    application?.media.profilePhotoUrl?.trim() ||
+    "";
+  const welcomeDisplayName =
+    formDefaults?.name?.trim() ||
+    trainer?.name?.trim() ||
+    application?.fullName?.trim() ||
+    firstName;
 
   const isPremium = isSpecialistPremium(data.subscription);
 
@@ -304,6 +314,8 @@ export function useSpecialistDashboard() {
     profileCompletion,
     completionChecklist,
     welcomeTasks,
+    welcomeAvatarUrl,
+    welcomeDisplayName,
     profileStatusLabel,
     analytics,
     rankingRating,

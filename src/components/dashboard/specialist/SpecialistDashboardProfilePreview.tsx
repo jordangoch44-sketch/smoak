@@ -935,12 +935,6 @@ export function SpecialistDashboardProfilePreview({
                 ))}
               </select>
             </label>
-            <SpecialistTrainingOptionsFields
-              value={form.trainingOptions}
-              onChange={(trainingOptions) =>
-                patch("trainingOptions", trainingOptions)
-              }
-            />
             <label className="login-field">
               <span className="login-field__label">
                 Are you willing to travel to clients?
@@ -987,6 +981,7 @@ export function SpecialistDashboardProfilePreview({
             onChange={(trainingOptions) =>
               patch("trainingOptions", trainingOptions)
             }
+            hideLabel
           />
         ) : null}
 
@@ -1448,6 +1443,17 @@ export function SpecialistDashboardProfilePreview({
             variant="specialist-live"
             smoacAggregate={aggregate}
             onEditProfilePhoto={canEdit ? () => startEdit("hero") : undefined}
+            onClaimFreeSession={
+              canEdit
+                ? () => {
+                    showToast({
+                      type: "info",
+                      message:
+                        "Clients use this button to inquire — it isn’t editable.",
+                    });
+                  }
+                : undefined
+            }
           />
         </div>
       </LiveEditZone>

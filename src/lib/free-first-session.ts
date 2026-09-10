@@ -3,8 +3,11 @@ import type { Trainer } from "@/types/trainer";
 /** Homepage rail heading. */
 export const FREE_FIRST_SESSION_RAIL_TITLE = "Try a Trainer for Free";
 
-/** Card ribbon + public profile chip. */
+/** Card ribbon + inquiry topic pill. */
 export const FREE_FIRST_SESSION_LABEL = "Free first session";
+
+/** Public profile sheet CTA — opens inquire. */
+export const FREE_FIRST_SESSION_CLAIM_LABEL = "Claim your free session";
 
 export function isFreeFirstSessionBadge(
   label: string | null | undefined

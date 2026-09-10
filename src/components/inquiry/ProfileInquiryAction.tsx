@@ -14,6 +14,8 @@ interface ProfileInquiryActionProps {
   buttonLabel?: string;
   className?: string;
   showButton?: boolean;
+  offersFreeFirstSession?: boolean;
+  preselectTopicId?: string;
 }
 
 export function ProfileInquiryAction({
@@ -25,6 +27,8 @@ export function ProfileInquiryAction({
   buttonLabel = "Contact Specialist",
   className,
   showButton = true,
+  offersFreeFirstSession = false,
+  preselectTopicId,
 }: ProfileInquiryActionProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
@@ -61,6 +65,8 @@ export function ProfileInquiryAction({
         specialistName={specialistName}
         specialistProfession={specialistProfession}
         profilePath={profilePath || `/trainers/${specialistId}`}
+        offersFreeFirstSession={offersFreeFirstSession}
+        preselectTopicId={preselectTopicId}
       />
     </>
   );

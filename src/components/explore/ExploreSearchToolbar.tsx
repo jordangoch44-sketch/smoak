@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ActiveFilterChip, ActiveFilterKey } from "@/lib/explore-active-filters";
 import { SearchIcon, FilterIcon } from "@/components/ui/icons";
 import { ExploreActiveFilterChips } from "./ExploreActiveFilterChips";
@@ -134,17 +134,6 @@ export function ExploreSearchToolbar({
       visualViewport?.removeEventListener("resize", sync);
       visualViewport?.removeEventListener("scroll", sync);
     };
-  }, [overlayOpen]);
-
-  useEffect(() => {
-    if (!overlayOpen) return;
-    function onVisibility() {
-      if (document.visibilityState === "hidden") {
-        closeOverlay();
-      }
-    }
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [overlayOpen]);
 
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SearchIcon } from "@/components/ui/icons";
 import {
@@ -129,17 +129,6 @@ export function HomeSearchBar() {
       visualViewport?.removeEventListener("resize", sync);
       visualViewport?.removeEventListener("scroll", sync);
     };
-  }, [overlayOpen]);
-
-  useEffect(() => {
-    if (!overlayOpen) return;
-    function onVisibility() {
-      if (document.visibilityState === "hidden") {
-        closeOverlay();
-      }
-    }
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [overlayOpen]);
 
   return (

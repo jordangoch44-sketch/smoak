@@ -60,6 +60,7 @@ import { cn } from "@/lib/utils";
 import {
   markSpecialistProfileWelcomeSeen,
   shouldShowSpecialistProfileWelcome,
+  PROFILE_WELCOME_PHOTOS_TASK_ID,
 } from "@/lib/specialist-profile-welcome";
 
 type FreeDashboardTab = "plan" | "profile";
@@ -162,6 +163,8 @@ export function SpecialistDashboardPageClient() {
     profileCompletion,
     completionChecklist,
     welcomeTasks,
+    welcomeAvatarUrl,
+    welcomeDisplayName,
     profileStatusLabel,
     analytics,
     isPremium,
@@ -404,7 +407,12 @@ export function SpecialistDashboardPageClient() {
   }
 
   function startWelcomeWithPhotos() {
-    startWelcomeWithSection(welcomeTasks[0]?.id ?? "hero");
+    const photosTask = welcomeTasks.find(
+      (task) => task.id === PROFILE_WELCOME_PHOTOS_TASK_ID
+    );
+    startWelcomeWithSection(
+      photosTask?.id ?? welcomeTasks[0]?.id ?? PROFILE_WELCOME_PHOTOS_TASK_ID
+    );
   }
 
   const liveDot =
@@ -835,6 +843,9 @@ export function SpecialistDashboardPageClient() {
     <SpecialistProfileWelcomeModal
       open={welcomeOpen && !trialEndedOpen}
       tasks={welcomeTasks}
+      avatarUrl={welcomeAvatarUrl}
+      specialistName={welcomeDisplayName}
+      showTrial={Boolean(session?.premiumTrialActive)}
       onClose={dismissProfileWelcome}
       onStartWithPhotos={startWelcomeWithPhotos}
       onSelectTask={startWelcomeWithSection}

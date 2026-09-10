@@ -21,7 +21,12 @@ import {
   EXPLORE_RECENT_SEARCH_OVERLAY_LIMIT,
   EXPLORE_SEARCH_PLACEHOLDER,
   EXPLORE_SEARCH_PROMPT_GROUPS,
+  isSearchPromptSelected,
+  toggleSearchPromptInDraft,
+  type ExploreSearchPrompt,
+  type ExploreSearchPromptGroup,
 } from "@/lib/explore-search-prompts";
+import { cn } from "@/lib/utils";
 import {
   getRecentSearchesServerSnapshot,
   getRecentSearchesSnapshot,
@@ -47,7 +52,7 @@ interface ExploreSearchOverlayProps {
 }
 
 /**
- * Portaled Search layer: nebula + search bar + prompts.
+ * Portaled Search layer: charcoal canvas + search bar + prompts.
  * The bar is drawn here (above the backdrop) at the measured on-page position
  * so page stacking contexts cannot hide it.
  */
@@ -119,9 +124,19 @@ export function ExploreSearchOverlay({
     onSubmit(draft);
   }
 
-  function handlePrompt(query: string) {
+  function submitDraft() {
+    onSubmit(draft);
+  }
+
+  function handlePromptToggle(
+    prompt: ExploreSearchPrompt,
+    group: ExploreSearchPromptGroup
+  ) {
+    onDraftChange(toggleSearchPromptInDraft(draft, prompt, group));
+  }
+
+  function handleRecent(query: string) {
     onDraftChange(query);
-    onSubmit(query);
   }
 
   function handleUseCurrentLocation() {
@@ -145,7 +160,6 @@ export function ExploreSearchOverlay({
               setGeoError(result.message);
               return;
             }
-            onClose();
           } catch {
             setGeoError("Couldn’t finish locating you. Try again.");
           } finally {
@@ -245,7 +259,7 @@ export function ExploreSearchOverlay({
             Search specialists
           </h2>
 
-          {showLocationPrompt ? (
+          {showLocationPrompt || geoLoading ? (
             <div className="explore-search-overlay__location">
               <FastActivateButton
                 className="smoac-control explore-search-overlay__location-btn"
@@ -290,31 +304,55 @@ export function ExploreSearchOverlay({
 
           {recent.length > 0 ? (
             <PromptRow title="Recent">
-              {recent.map((entry) => (
-                <FastActivateButton
-                  key={entry.id}
-                  className="smoac-control explore-search-overlay__chip"
-                  onActivate={() => handlePrompt(entry.query)}
-                >
-                  {entry.query}
-                </FastActivateButton>
-              ))}
+              {recent.map((entry) => {
+                const selected =
+                  draft.trim().toLowerCase() === entry.query.trim().toLowerCase();
+                return (
+                  <FastActivateButton
+                    key={entry.id}
+                    className={cn(
+                      "smoac-control explore-search-overlay__chip",
+                      selected && "explore-search-overlay__chip--selected"
+                    )}
+                    aria-pressed={selected}
+                    onActivate={() => handleRecent(entry.query)}
+                  >
+                    {entry.query}
+                  </FastActivateButton>
+                );
+              })}
             </PromptRow>
           ) : null}
 
           {EXPLORE_SEARCH_PROMPT_GROUPS.map((group) => (
             <PromptRow key={group.id} title={group.title}>
-              {group.prompts.map((prompt) => (
-                <FastActivateButton
-                  key={prompt.id}
-                  className="smoac-control explore-search-overlay__chip"
-                  onActivate={() => handlePrompt(prompt.searchQuery)}
-                >
-                  {prompt.label}
-                </FastActivateButton>
-              ))}
+              {group.prompts.map((prompt) => {
+                const selected = isSearchPromptSelected(draft, prompt);
+                return (
+                  <FastActivateButton
+                    key={prompt.id}
+                    className={cn(
+                      "smoac-control explore-search-overlay__chip",
+                      selected && "explore-search-overlay__chip--selected"
+                    )}
+                    aria-pressed={selected}
+                    onActivate={() => handlePromptToggle(prompt, group)}
+                  >
+                    {prompt.label}
+                  </FastActivateButton>
+                );
+              })}
             </PromptRow>
           ))}
+        </div>
+
+        <div className="explore-search-overlay__footer">
+          <FastActivateButton
+            className="smoac-control explore-search-overlay__submit"
+            onActivate={submitDraft}
+          >
+            Search
+          </FastActivateButton>
         </div>
       </div>
     </div>,

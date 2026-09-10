@@ -73,7 +73,6 @@ html {
    * on pinch-zoom ("A problem repeatedly occurred").
    * Prefer absolute (not fixed) so stacking stays under page content.
    */
-  .explore-page__canvas,
   .rankings-page__canvas,
   .login-page__canvas {
     position: absolute !important;
@@ -93,8 +92,7 @@ html {
   }
 
   .atmosphere-blob,
-  .home-hero__canvas .atmosphere-blob,
-  .explore-page__canvas .atmosphere-blob {
+  .home-hero__canvas .atmosphere-blob {
     animation: none !important;
     will-change: auto !important;
     filter: none !important;
@@ -108,7 +106,6 @@ html {
     display: none !important;
   }
 
-  .explore-page__header-glow,
   .dashboard-page__header-glow,
   .site-page-backdrop__blob {
     filter: none !important;
@@ -132,8 +129,6 @@ html {
     .atmosphere-blob,
     .site-page-backdrop__blob,
     .site-page-backdrop__mesh,
-    .explore-page__canvas .atmosphere-mesh,
-    .explore-page__cosmic,
     .aurora-atmosphere__nebula,
     .aurora-atmosphere__starfield,
     .aurora-atmosphere__crosses,
@@ -141,7 +136,6 @@ html {
       display: none !important;
     }
 
-    .explore-page__header-glow,
     .dashboard-page__header-glow,
     .rankings-page__header-glow,
     .home-hero__search-light,
@@ -164,16 +158,10 @@ html {
       -webkit-backdrop-filter: none !important;
     }
 
-    .explore-search-shell {
-      background: rgba(14, 14, 20, 0.92) !important;
-    }
-
-    .explore-filters-icon-btn {
-      background: rgba(18, 16, 28, 0.94) !important;
-    }
-
+    .explore-search-shell,
+    .explore-filters-icon-btn,
     .home-hero-search__field {
-      background: rgba(22, 22, 28, 0.96) !important;
+      background: #15151e !important;
     }
 
     /* Filters sheet relied on blur; without it it was unreadable glass */

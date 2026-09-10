@@ -32,8 +32,6 @@ html.login-gate-open {
 }
 
 /* Freeze expensive Search/home GPU layers while the gate covers them */
-body.login-gate-open .explore-page__canvas,
-body.login-gate-open .explore-page__canvas *,
 body.login-gate-open .site-page-backdrop,
 body.login-gate-open .site-page-backdrop * {
   animation: none !important;
@@ -41,7 +39,6 @@ body.login-gate-open .site-page-backdrop * {
   filter: none !important;
 }
 
-body.login-gate-open .explore-page__canvas,
 body.login-gate-open .site-page-backdrop {
   visibility: hidden;
 }
