@@ -17,9 +17,6 @@ import {
 import {
   getApprovedSpecialistProfilesServerSnapshot,
   getApprovedSpecialistProfilesSnapshot,
-  getApprovedSpecialistProfilesHydratedServerSnapshot,
-  getApprovedSpecialistProfilesHydratedSnapshot,
-  refreshApprovedSpecialistProfilesFromRemoteAsync,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import {
@@ -56,11 +53,6 @@ export function useManagedSpecialistProfile() {
     ensureSpecialistApplicationsHydrated();
   }, [sessionUserId, sessionEmail]);
 
-  useEffect(() => {
-    if (!sessionUserId || session?.role !== "specialist") return;
-    void refreshApprovedSpecialistProfilesFromRemoteAsync();
-  }, [sessionUserId, session?.role, session?.membershipPlan, session?.isPremium]);
-
   const applicationRevision = useSyncExternalStore(
     subscribeSpecialistApplications,
     () => getApplicationRevision(sessionEmail, sessionUserId),
@@ -85,12 +77,6 @@ export function useManagedSpecialistProfile() {
     subscribeApprovedSpecialistProfiles,
     getApprovedSpecialistProfilesSnapshot,
     getApprovedSpecialistProfilesServerSnapshot
-  );
-
-  const catalogHydrated = useSyncExternalStore(
-    subscribeApprovedSpecialistProfiles,
-    getApprovedSpecialistProfilesHydratedSnapshot,
-    getApprovedSpecialistProfilesHydratedServerSnapshot
   );
 
   const trainerId = resolveManagedSpecialistId(sessionEmail, sessionUserId);
@@ -171,7 +157,7 @@ export function useManagedSpecialistProfile() {
     formDefaults,
     profileCompletion,
     saveForm,
-    /** False until applications + approved catalog finish first hydrate. */
-    isHydrated: applicationsHydrated && catalogHydrated,
+    /** Own application only — never wait on the public marketplace catalog. */
+    isHydrated: applicationsHydrated,
   };
 }

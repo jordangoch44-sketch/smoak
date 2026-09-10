@@ -32,6 +32,7 @@ let cachedProfiles: Record<string, Trainer> = EMPTY_SNAPSHOT;
 let hydrated = false;
 let hydrating = false;
 let loadGeneration = 0;
+let hydratePromise: Promise<void> | null = null;
 
 function safeParse<T>(raw: string | null, fallback: T): T {
   if (!raw) return fallback;
@@ -176,6 +177,14 @@ async function syncModerationMirrorsFromRemote(
 
 async function hydrateFromSupabase(): Promise<void> {
   if (typeof window === "undefined") return;
+  if (hydratePromise) return hydratePromise;
+  hydratePromise = runCatalogHydrate().finally(() => {
+    hydratePromise = null;
+  });
+  return hydratePromise;
+}
+
+async function runCatalogHydrate(): Promise<void> {
   if (!isMarketplaceSupabaseActive()) {
     applyCache(readLocalProfiles());
     setPublicCatalogMode("seed");
@@ -254,7 +263,7 @@ async function hydrateFromSupabase(): Promise<void> {
 }
 
 function ensureHydrated(): void {
-  if (hydrated || hydrating) return;
+  if (hydrated || hydrating || hydratePromise) return;
   void hydrateFromSupabase();
 }
 
@@ -479,12 +488,10 @@ export async function restoreApprovedSpecialistProfileAsync(
 }
 
 export function refreshApprovedSpecialistProfilesFromRemote(): void {
-  hydrated = false;
   void hydrateFromSupabase();
 }
 
 export async function refreshApprovedSpecialistProfilesFromRemoteAsync(): Promise<void> {
-  hydrated = false;
   await hydrateFromSupabase();
 }
 

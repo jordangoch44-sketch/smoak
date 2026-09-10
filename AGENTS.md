@@ -49,6 +49,7 @@ AuthSessionProvider
 3. **Mobile page transitions**: `PageTransition` skips `AnimatePresence` on mobile — do not reintroduce exit layers that steal taps.
 4. **Save control**: real `<button>`, heart **outside** card `<Link>`, `data-save-control` on slot — use `onClick` + `stopPropagation`, not pointer-up/click dedupe hacks.
 5. **Header overlays**: mount only when open (`HeaderOverlayRoot`, desktop `SavedPanelDropdown` in `SiteHeader`).
+6. **Specialist dashboard hydrate**: do not block `/specialist-dashboard` on the public marketplace catalog. Refreshing `specialist_profiles` must not set `hydrated = false` (that returns everyone to “Loading your dashboard…”). Coalesce in-flight hydrates so a second fetch cannot cancel the unstick timeout. Loading screens must grow a Retry after a stall.
 
 ## CSS organization
 

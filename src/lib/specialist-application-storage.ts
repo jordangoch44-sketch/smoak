@@ -36,6 +36,7 @@ let cachedApplications: readonly SpecialistApplication[] = EMPTY_APPLICATIONS;
 let hydrated = false;
 let hydrating = false;
 let loadGeneration = 0;
+let hydratePromise: Promise<void> | null = null;
 
 function applicationsSignature(apps: readonly SpecialistApplication[]): string {
   if (apps.length === 0) return "";
@@ -120,23 +121,37 @@ function withSessionUserId(
   return { ...application, userId: session.userId };
 }
 
+function markHydratedAndNotify(): void {
+  const wasHydrated = hydrated;
+  hydrated = true;
+  if (!wasHydrated) {
+    applicationListeners.forEach((listener) => listener());
+  }
+}
+
 async function hydrateFromSupabase(): Promise<void> {
   if (typeof window === "undefined") return;
+  if (hydratePromise) return hydratePromise;
+  hydratePromise = runApplicationsHydrate().finally(() => {
+    hydratePromise = null;
+  });
+  return hydratePromise;
+}
+
+async function runApplicationsHydrate(): Promise<void> {
   if (!isMarketplaceSupabaseActive()) {
     applyCache(readLocalApplications());
-    hydrated = true;
+    markHydratedAndNotify();
     return;
   }
-  if (hydrating) return;
 
   const generation = ++loadGeneration;
   hydrating = true;
   const HYDRATE_MS = 12_000;
   const timeoutId = window.setTimeout(() => {
     if (generation !== loadGeneration || hydrated) return;
-    hydrated = true;
     hydrating = false;
-    applicationListeners.forEach((listener) => listener());
+    markHydratedAndNotify();
   }, HYDRATE_MS);
 
   const supabase = getMarketplaceAuthClient();
@@ -144,7 +159,7 @@ async function hydrateFromSupabase(): Promise<void> {
     if (!supabase) {
       /* Live mode: empty until remote — never promote stale localStorage */
       applyCache([]);
-      hydrated = true;
+      markHydratedAndNotify();
       return;
     }
 
@@ -158,13 +173,13 @@ async function hydrateFromSupabase(): Promise<void> {
         result.message
       );
       /* Keep memory cache — do not invent queue from stale localStorage */
-      hydrated = true;
+      markHydratedAndNotify();
       return;
     }
 
     applyCache(mergeRemoteApplications(result.applications, cachedApplications));
     writeLocalApplications(cachedApplications);
-    hydrated = true;
+    markHydratedAndNotify();
   } finally {
     window.clearTimeout(timeoutId);
     if (generation === loadGeneration) {
@@ -174,7 +189,7 @@ async function hydrateFromSupabase(): Promise<void> {
 }
 
 function ensureHydrated(): void {
-  if (hydrated || hydrating) return;
+  if (hydrated || hydrating || hydratePromise) return;
   /* Wait for an app session so this fetch does not race / timeout login. */
   if (isMarketplaceSupabaseActive() && !getAuthSessionSnapshot()) return;
   void hydrateFromSupabase();
@@ -614,6 +629,5 @@ export async function deleteSiblingSpecialistApplicationsAsync(
 }
 
 export function refreshSpecialistApplicationsFromRemote(): void {
-  hydrated = false;
   void hydrateFromSupabase();
 }

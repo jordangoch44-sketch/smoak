@@ -8,6 +8,7 @@ import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import {
   DashboardPageShell,
+  DashboardLoadingState,
   SmoacProUpgradeModal,
   DashboardSignOutConfirmModal,
 } from "@/components/dashboard/shared";
@@ -377,13 +378,7 @@ export function SpecialistEditProfilePageClient({
         document.body
       );
     }
-    return (
-      <div className="dashboard-page dashboard-page--loading">
-        <div className="dashboard-page__content">
-          <p className="dashboard-page__subtitle">Loading profile editor…</p>
-        </div>
-      </div>
-    );
+    return <DashboardLoadingState message="Loading profile editor…" />;
   }
 
   if (dashboardMode === "onboarding") {
@@ -400,13 +395,7 @@ export function SpecialistEditProfilePageClient({
         document.body
       );
     }
-    return (
-      <div className="dashboard-page dashboard-page--loading">
-        <div className="dashboard-page__content">
-          <p className="dashboard-page__subtitle">Opening your application…</p>
-        </div>
-      </div>
-    );
+    return <DashboardLoadingState message="Opening your application…" />;
   }
 
   if (!savedForm || !form) {
