@@ -1459,6 +1459,7 @@ export function SpecialistDashboardProfilePreview({
               onReviewModalOpenChange={setReviewModalOpen}
               onSubmitted={applySubmittedReview}
               canLeaveReview={false}
+              trainer={trainer}
             />
           }
           inquire={

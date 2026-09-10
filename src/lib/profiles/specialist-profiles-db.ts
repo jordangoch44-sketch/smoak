@@ -17,6 +17,7 @@ import {
 } from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { parseGallerySlideshowFrames } from "@/lib/media/slideshow-frame";
+import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
@@ -647,6 +648,22 @@ export async function upsertSpecialistProfile(
     profileData.isPremium = membership.isPremium;
     profileData.membershipPlan = membership.plan;
     profileData.verified = membership.isPremium;
+    const existingData =
+      existing.profile_data && typeof existing.profile_data === "object"
+        ? (existing.profile_data as Record<string, unknown>)
+        : null;
+    const existingSocial =
+      existingData?.social && typeof existingData.social === "object"
+        ? (existingData.social as SocialLinks)
+        : undefined;
+    const incomingSocial =
+      profileData.social && typeof profileData.social === "object"
+        ? (profileData.social as SocialLinks)
+        : undefined;
+    profileData.social = overlayGoogleSocialIfMissing(
+      incomingSocial,
+      existingSocial
+    );
   }
 
   const { error } = await supabase.from("specialist_profiles").upsert(

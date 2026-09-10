@@ -10,6 +10,8 @@ import {
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn, getInitials } from "@/lib/utils";
 import { WriteSpecialistReviewModal } from "./WriteSpecialistReviewModal";
+import { ProfileGoogleReviewsLink } from "./ProfileGoogleReviewsLink";
+import type { Trainer } from "@/types";
 
 interface SmoacReviewsSectionProps {
   specialistId: string;
@@ -26,6 +28,8 @@ interface SmoacReviewsSectionProps {
   onSubmitted: (review: SpecialistReview) => void;
   canLeaveReview?: boolean;
   scrollToOwnReview?: boolean;
+  /** When connected, Google stars on this tab open the Business Profile. */
+  trainer?: Trainer;
 }
 
 const SORT_OPTIONS: { id: SpecialistReviewSort; label: string }[] = [
@@ -160,6 +164,7 @@ export function SmoacReviewsSection({
   onReviewModalOpenChange,
   onSubmitted,
   canLeaveReview = false,
+  trainer,
 }: SmoacReviewsSectionProps) {
   const sortId = useId();
   const firstName = specialistName.trim().split(/\s+/)[0] || specialistName;
@@ -172,6 +177,10 @@ export function SmoacReviewsSection({
         className="smoac-reviews-feed"
         aria-label="SMOAC Reviews"
       >
+        {trainer ? (
+          <ProfileGoogleReviewsLink trainer={trainer} variant="sheet" />
+        ) : null}
+
         {canLeaveReview ? (
           <FastActivateButton
             className="smoac-leave-review-btn"

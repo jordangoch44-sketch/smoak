@@ -529,6 +529,18 @@ export function mergeApprovedSpecialistProfileLocal(trainer: Trainer): void {
       isPremium: trainer.isPremium,
       membershipPlan: trainer.membershipPlan,
       verified: trainer.verified,
+      social: {
+        ...(current.social ?? {}),
+        ...(trainer.social?.googlePlaceId
+          ? {
+              googlePlaceId: trainer.social.googlePlaceId,
+              googleReviewsUrl: trainer.social.googleReviewsUrl,
+              googleRating: trainer.social.googleRating,
+              googleReviewCount: trainer.social.googleReviewCount,
+              googleFetchedAt: trainer.social.googleFetchedAt,
+            }
+          : {}),
+      },
     },
   });
 }

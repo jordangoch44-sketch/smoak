@@ -103,9 +103,9 @@ export function ConnectGoogleReviewsModal({
             Connect Google Reviews
           </h2>
           <p id="connect-google-desc" className="dashboard-modal__body">
-            Paste your Google Place ID (starts with ChIJ…) or a Maps link with{" "}
-            <code>place_id=</code>. Your live rating and count appear under SMOAC
-            stars — full reviews open on Google.
+            Paste your Google Business Profile or Maps share link (or a Place ID
+            that starts with ChIJ…). Live stars show on your public profile —
+            tapping them opens your Google listing.
           </p>
           <form
             className="dashboard-connect-google-form"
@@ -117,7 +117,7 @@ export function ConnectGoogleReviewsModal({
                 className="login-field__input"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="ChIJ… or https://maps.google.com/?place_id=…"
+                placeholder="Business Profile / Maps link, or ChIJ…"
                 autoComplete="off"
                 disabled={busy}
               />

@@ -25,6 +25,7 @@ import {
 } from "@/lib/specialist-application-storage";
 import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import { requestPublicCatalogRevalidate } from "@/lib/profiles/request-catalog-revalidate";
+import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
 import {
   applySpecialistProfileOverrides,
   formToOverrides,
@@ -193,6 +194,7 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
             ? approved.offersFreeFirstSession
             : fromApp.offersFreeFirstSession,
       gallerySlideshowFrames,
+      social: overlayGoogleSocialIfMissing(fromApp.social, approved.social),
       profileStyle:
         fromApp.profileStyle ??
         (approved.profileStyle
@@ -351,14 +353,17 @@ export function mergeProfileEditsIntoApplication(
         })
       ),
     },
-    social: {
-      ...app.social,
-      instagram: form.instagram.trim() || undefined,
-      website: form.website.trim() || undefined,
-      tiktok: form.tiktok.trim() || undefined,
-      googleReviewsUrl: form.googleReviewsUrl.trim() || undefined,
-      googlePlaceId: form.googlePlaceId.trim() || undefined,
-    },
+    social: overlayGoogleSocialIfMissing(
+      {
+        ...app.social,
+        instagram: form.instagram.trim() || undefined,
+        website: form.website.trim() || undefined,
+        tiktok: form.tiktok.trim() || undefined,
+        googleReviewsUrl: form.googleReviewsUrl.trim() || undefined,
+        googlePlaceId: form.googlePlaceId.trim() || undefined,
+      },
+      app.social
+    ),
     media: {
       ...app.media,
       profilePhotoUrl: form.profilePhotoUrl.trim() || app.media.profilePhotoUrl,

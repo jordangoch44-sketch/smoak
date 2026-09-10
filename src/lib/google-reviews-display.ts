@@ -16,6 +16,41 @@ export function applyGooglePlaceSnapshotToSocial(
   };
 }
 
+/** Keep a connected Google listing when a later save omits Place ID fields. */
+export function overlayGoogleSocialIfMissing(
+  incoming: SocialLinks | undefined,
+  existing: SocialLinks | undefined
+): SocialLinks {
+  const next = incoming ?? {};
+  if (next.googlePlaceId?.trim()) {
+    return { ...(existing ?? {}), ...next };
+  }
+  if (!existing?.googlePlaceId?.trim()) return next;
+  return {
+    ...next,
+    googlePlaceId: existing.googlePlaceId,
+    googleReviewsUrl: existing.googleReviewsUrl,
+    googleRating: existing.googleRating,
+    googleReviewCount: existing.googleReviewCount,
+    googleFetchedAt: existing.googleFetchedAt,
+  };
+}
+
+export function googleBusinessProfileHref(input: {
+  mapsUrl?: string | null;
+  placeId?: string | null;
+}): string | null {
+  const mapsUrl = input.mapsUrl?.trim() ?? "";
+  const placeId = input.placeId?.trim() ?? "";
+  if (mapsUrl) {
+    return /^https?:\/\//i.test(mapsUrl) ? mapsUrl : `https://${mapsUrl}`;
+  }
+  if (placeId) {
+    return `https://www.google.com/maps/place/?q=place_id:${placeId}`;
+  }
+  return null;
+}
+
 export function readGooglePlaceSnapshotFromTrainer(
   trainer: Trainer | null | undefined
 ): {
@@ -62,13 +97,10 @@ export function resolvePublicGoogleReviewsDisplay(trainer: Trainer): {
 } {
   const isPro = Boolean(trainer.isPremium);
   const snap = readGooglePlaceSnapshotFromTrainer(trainer);
-  const mapsHref = snap.mapsUrl
-    ? /^https?:\/\//i.test(snap.mapsUrl)
-      ? snap.mapsUrl
-      : `https://${snap.mapsUrl}`
-    : snap.placeId
-      ? `https://www.google.com/maps/place/?q=place_id:${snap.placeId}`
-      : null;
+  const mapsHref = googleBusinessProfileHref({
+    mapsUrl: snap.mapsUrl,
+    placeId: snap.placeId,
+  });
 
   if (!isPro) {
     return {

@@ -337,13 +337,15 @@ export function applySpecialistProfileOverrides(
           ? overrides.tiktok.trim() || undefined
           : merged.social?.tiktok,
       googleReviewsUrl:
-        overrides.googleReviewsUrl !== undefined
-          ? overrides.googleReviewsUrl.trim() || undefined
-          : merged.social?.googleReviewsUrl,
+        (overrides.googleReviewsUrl !== undefined
+          ? overrides.googleReviewsUrl.trim()
+          : merged.social?.googleReviewsUrl) ||
+        merged.social?.googleReviewsUrl,
       googlePlaceId:
-        overrides.googlePlaceId !== undefined
-          ? overrides.googlePlaceId.trim() || undefined
-          : merged.social?.googlePlaceId,
+        (overrides.googlePlaceId !== undefined
+          ? overrides.googlePlaceId.trim()
+          : merged.social?.googlePlaceId) ||
+        merged.social?.googlePlaceId,
     };
   }
 

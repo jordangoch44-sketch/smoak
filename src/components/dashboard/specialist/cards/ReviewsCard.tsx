@@ -13,8 +13,15 @@ import {
   buildSpecialistReputationHub,
   formatReputationRating,
 } from "@/lib/specialist-reputation";
-import { readGooglePlaceSnapshotFromTrainer } from "@/lib/google-reviews-display";
-import { refreshApprovedSpecialistProfilesFromRemote } from "@/lib/approved-specialist-profiles-store";
+import {
+  applyGooglePlaceSnapshotToSocial,
+  readGooglePlaceSnapshotFromTrainer,
+} from "@/lib/google-reviews-display";
+import {
+  getApprovedSpecialistProfileById,
+  patchApprovedSpecialistProfileFields,
+  refreshApprovedSpecialistProfilesFromRemote,
+} from "@/lib/approved-specialist-profiles-store";
 import {
   ReputationReviewFeedItem,
   ReputationSourceRow,
@@ -88,6 +95,14 @@ export function ReviewsCard({
 
   function handleGoogleConnected(snapshot: GooglePlaceSnapshot) {
     setLocalSnapshot(snapshot);
+    if (profileId) {
+      const current = getApprovedSpecialistProfileById(profileId);
+      if (current) {
+        patchApprovedSpecialistProfileFields(profileId, {
+          social: applyGooglePlaceSnapshotToSocial(current.social, snapshot),
+        });
+      }
+    }
     onTrainerGoogleConnected?.(snapshot);
     refreshApprovedSpecialistProfilesFromRemote();
   }

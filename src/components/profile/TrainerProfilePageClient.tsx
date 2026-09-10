@@ -269,6 +269,7 @@ export function TrainerProfilePageClient({
                 onReviewModalOpenChange={setReviewModalOpen}
                 onSubmitted={applySubmittedReview}
                 canLeaveReview={canLeaveReview}
+                trainer={trainer}
               />
             }
             inquire={

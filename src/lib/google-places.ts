@@ -15,6 +15,8 @@ export type GooglePlacesResult =
   | { ok: true; snapshot: GooglePlaceSnapshot }
   | { ok: false; message: string };
 
+const PLACE_ID_RE = /^ChIJ[\w-]+$/;
+
 function getPlacesApiKey(): string | null {
   const key =
     process.env.GOOGLE_PLACES_API_KEY?.trim() ||
@@ -23,38 +25,148 @@ function getPlacesApiKey(): string | null {
   return key || null;
 }
 
-/** Extract a Place ID from common Maps / share URLs or a raw ChIJ… id. */
+function isPlaceId(value: string): boolean {
+  return PLACE_ID_RE.test(value);
+}
+
+function asAbsoluteUrl(input: string): URL | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  try {
+    return new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+  } catch {
+    return null;
+  }
+}
+
+function isGoogleMapsShortHost(hostname: string): boolean {
+  const host = hostname.replace(/^www\./i, "").toLowerCase();
+  return (
+    host === "maps.app.goo.gl" ||
+    host === "goo.gl" ||
+    host === "g.page" ||
+    host === "g.co"
+  );
+}
+
+/** Follow Business Profile / Maps share short links to the canonical Maps URL. */
+async function resolveGoogleMapsShareUrl(input: string): Promise<string> {
+  const url = asAbsoluteUrl(input);
+  if (!url || !isGoogleMapsShortHost(url.hostname)) return input.trim();
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      redirect: "follow",
+      cache: "no-store",
+      headers: {
+        Accept: "text/html",
+        "User-Agent":
+          "Mozilla/5.0 (compatible; SMOAC-GoogleReviews/1.0; +https://smoac.com)",
+      },
+    });
+    return response.url || url.toString();
+  } catch {
+    return url.toString();
+  }
+}
+
+/** Extract a Place ID from common Maps / Business Profile URLs or a raw ChIJ… id. */
 export function extractGooglePlaceId(input: string): string | null {
   const trimmed = input.trim();
   if (!trimmed) return null;
-
-  if (/^ChIJ[\w-]+$/.test(trimmed)) return trimmed;
+  if (isPlaceId(trimmed)) return trimmed;
 
   try {
     const url = new URL(
       /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
     );
-    const fromQuery =
-      url.searchParams.get("place_id") ||
-      url.searchParams.get("query_place_id");
-    if (fromQuery && /^ChIJ[\w-]+$/.test(fromQuery)) return fromQuery;
 
-    const dataMatch = url.pathname.match(/!1s(0x[\da-f]+:0x[\da-f]+)/i);
-    if (dataMatch?.[1]) {
-      /* Hex ftid form — not a Place ID; caller should paste Place ID. */
-      return null;
+    for (const key of ["place_id", "query_place_id", "placeid", "placeId"]) {
+      const fromQuery = url.searchParams.get(key);
+      if (fromQuery && isPlaceId(fromQuery)) return fromQuery;
     }
 
-    const placePath = url.pathname.match(/\/place\/[^/]+\/([\w-]+)/);
-    if (placePath?.[1] && /^ChIJ[\w-]+$/.test(placePath[1])) {
-      return placePath[1];
-    }
+    const q = url.searchParams.get("q") ?? "";
+    const qPlace = q.match(/place_id:?\s*(ChIJ[\w-]+)/i);
+    if (qPlace?.[1] && isPlaceId(qPlace[1])) return qPlace[1];
+
+    const blob = `${url.pathname}${url.search}${url.hash}`;
+    const bangPlace = blob.match(/!1s(ChIJ[\w-]+)/);
+    if (bangPlace?.[1] && isPlaceId(bangPlace[1])) return bangPlace[1];
+
+    const placePath = url.pathname.match(/\/(?:place|maps\/place)\/[^/]+\/(ChIJ[\w-]+)/);
+    if (placePath?.[1] && isPlaceId(placePath[1])) return placePath[1];
   } catch {
     /* not a URL */
   }
 
   const embedded = trimmed.match(/\b(ChIJ[\w-]+)\b/);
   return embedded?.[1] ?? null;
+}
+
+function mapsPlaceNameAndPoint(urlString: string): {
+  name: string;
+  lat: string | null;
+  lng: string | null;
+} | null {
+  const url = asAbsoluteUrl(urlString);
+  if (!url) return null;
+  const placePart = url.pathname.match(/\/place\/([^/]+)/);
+  if (!placePart?.[1]) return null;
+  let name = placePart[1];
+  try {
+    name = decodeURIComponent(name.replace(/\+/g, " "));
+  } catch {
+    name = name.replace(/\+/g, " ");
+  }
+  name = name.trim();
+  if (!name || isPlaceId(name) || name.startsWith("data=")) return null;
+
+  const at = `${url.pathname}${url.search}`.match(
+    /@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/
+  );
+  return {
+    name,
+    lat: at?.[1] ?? null,
+    lng: at?.[2] ?? null,
+  };
+}
+
+async function findPlaceIdFromMapsListing(
+  urlString: string,
+  apiKey: string
+): Promise<string | null> {
+  const parsed = mapsPlaceNameAndPoint(urlString);
+  if (!parsed) return null;
+
+  const endpoint = new URL(
+    "https://maps.googleapis.com/maps/api/place/findplacefromtext/json"
+  );
+  endpoint.searchParams.set("input", parsed.name);
+  endpoint.searchParams.set("inputtype", "textquery");
+  endpoint.searchParams.set("fields", "place_id");
+  endpoint.searchParams.set("key", apiKey);
+  if (parsed.lat && parsed.lng) {
+    endpoint.searchParams.set(
+      "locationbias",
+      `point:${parsed.lat},${parsed.lng}`
+    );
+  }
+
+  try {
+    const response = await fetch(endpoint.toString(), {
+      method: "GET",
+      cache: "no-store",
+    });
+    const json = (await response.json()) as {
+      candidates?: Array<{ place_id?: string }>;
+    };
+    const placeId = json.candidates?.[0]?.place_id?.trim() ?? "";
+    return isPlaceId(placeId) ? placeId : null;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeMapsUrl(raw: string, fallbackPlaceId: string): string {
@@ -65,7 +177,7 @@ function normalizeMapsUrl(raw: string, fallbackPlaceId: string): string {
 }
 
 /**
- * Fetch rating + review count for a Place ID.
+ * Fetch rating + review count for a Place ID or Google Business / Maps link.
  * Uses Place Details (Fields: place_id,rating,user_ratings_total,url).
  */
 export async function fetchGooglePlaceSnapshot(
@@ -80,15 +192,17 @@ export async function fetchGooglePlaceSnapshot(
     };
   }
 
+  const resolvedInput = await resolveGoogleMapsShareUrl(placeIdOrUrl);
   const placeId =
+    extractGooglePlaceId(resolvedInput) ||
     extractGooglePlaceId(placeIdOrUrl) ||
-    (/^ChIJ[\w-]+$/.test(placeIdOrUrl.trim()) ? placeIdOrUrl.trim() : null);
+    (await findPlaceIdFromMapsListing(resolvedInput, apiKey));
 
   if (!placeId) {
     return {
       ok: false,
       message:
-        "Could not find a Google Place ID. Paste a Place ID (starts with ChIJ…) or a Maps link that includes place_id=.",
+        "Could not find that Google Business Profile. Paste a Maps / Business share link or a Place ID (starts with ChIJ…).",
     };
   }
 
@@ -147,7 +261,7 @@ export async function fetchGooglePlaceSnapshot(
     snapshot: {
       placeId: json.result.place_id,
       mapsUrl: normalizeMapsUrl(
-        json.result.url || placeIdOrUrl,
+        json.result.url || resolvedInput || placeIdOrUrl,
         json.result.place_id
       ),
       rating,
