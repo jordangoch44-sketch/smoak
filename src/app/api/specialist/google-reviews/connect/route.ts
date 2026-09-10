@@ -81,6 +81,7 @@ export async function POST(request: Request) {
 
   const places = await fetchGooglePlaceSnapshot(placeIdOrUrl);
   if (!places.ok) {
+    console.warn("[SMOAC google-reviews] connect failed:", places.message);
     return NextResponse.json(
       { ok: false, message: places.message },
       { status: 422 }
