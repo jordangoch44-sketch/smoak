@@ -95,6 +95,12 @@ body.login-gate-open .site-page-backdrop {
     backdrop-filter: blur(32px) saturate(1.2);
     -webkit-backdrop-filter: blur(32px) saturate(1.2);
   }
+
+  .login-gate__dialog--save {
+    background: rgba(18, 18, 26, 0.97);
+    backdrop-filter: blur(28px) saturate(1.15);
+    -webkit-backdrop-filter: blur(28px) saturate(1.15);
+  }
 }
 
 .login-gate__close {
@@ -220,68 +226,133 @@ body.login-gate-open .site-page-backdrop {
 
 /* Quick-save signup / confirmation — Aurora purple primary CTA + form fields */
 .login-gate__dialog--save {
-  max-height: min(92dvh, 36rem);
+  max-height: min(92dvh, 40rem);
 }
 
 .login-gate__content--save {
   text-align: left;
-  padding-top: 2rem;
+  padding: 1.85rem 1.375rem 1.35rem;
 }
 
-.login-gate__reassure {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  margin-bottom: 0.35rem;
+.login-gate__hero {
   text-align: center;
+  margin-bottom: 1.15rem;
 }
 
-.login-gate__reassure-title {
-  margin: 0;
-  font-size: clamp(1.35rem, 4.2vw, 1.65rem);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  color: rgba(190, 255, 210, 0.98);
-  text-shadow:
-    0 0 12px rgba(52, 255, 136, 0.55),
-    0 0 28px rgba(52, 255, 136, 0.35),
-    0 0 48px rgba(52, 255, 136, 0.18);
+.login-gate__hero-icon {
+  position: relative;
+  display: flex;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto 1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(16, 14, 24, 0.92);
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.12),
+    0 0 28px rgba(var(--aurora-lavender-rgb), 0.42);
 }
 
-.login-gate__reassure-punch {
-  margin: 0;
-  font-size: clamp(1rem, 3vw, 1.125rem);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.25;
-  color: rgba(210, 255, 225, 0.96);
-  text-shadow:
-    0 0 10px rgba(52, 255, 136, 0.42),
-    0 0 22px rgba(52, 255, 136, 0.24);
+.login-gate__hero-icon-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    180deg,
+    rgba(216, 180, 254, 0.95) 0%,
+    rgba(168, 85, 247, 0.7) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
-.login-gate__reassure-sub {
-  margin: 0.15rem 0 0;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  color: rgba(160, 230, 185, 0.75);
-  text-shadow: 0 0 18px rgba(52, 255, 136, 0.18);
+.login-gate__hero-glyph {
+  position: relative;
+  z-index: 1;
+  width: 1.45rem;
+  height: 1.45rem;
 }
 
 .login-gate__content--save .login-gate__title {
   text-align: center;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
 }
 
 .login-gate__content--save .login-gate__body {
   text-align: center;
+  max-width: 18.5rem;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .login-gate__form {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  margin-top: 1.1rem;
+  margin-top: 0;
+}
+
+.login-gate__slides {
+  position: relative;
+  overflow: hidden;
+}
+
+.login-gate__slide {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.login-gate__slide--email {
+  position: relative;
+  transform: translateX(0);
+}
+
+.login-gate__slides--password .login-gate__slide--email {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(-108%);
+}
+
+.login-gate__slide--password {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateX(108%);
+}
+
+.login-gate__slides--password .login-gate__slide--password {
+  position: relative;
+  transform: translateX(0);
+}
+
+.login-gate__field {
+  position: relative;
+}
+
+.login-gate__field-icon {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  width: 1.05rem;
+  height: 1.05rem;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.38);
+  pointer-events: none;
 }
 
 .login-gate__label {
@@ -290,6 +361,10 @@ body.login-gate-open .site-page-backdrop {
   font-weight: 500;
   letter-spacing: 0.01em;
   color: rgba(255, 255, 255, 0.62);
+}
+
+.login-gate__slide .login-gate__label:first-of-type {
+  margin-top: 0;
 }
 
 .login-gate__input {
@@ -305,9 +380,42 @@ body.login-gate-open .site-page-backdrop {
   touch-action: manipulation;
 }
 
+.login-gate__input--icon {
+  padding-left: 2.55rem;
+}
+
+.login-gate__input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
 .login-gate__input:focus {
   border-color: rgba(var(--aurora-lavender-rgb), 0.72);
   box-shadow: 0 0 0 3px rgba(var(--aurora-lavender-rgb), 0.18);
+}
+
+.login-gate__email-back {
+  display: inline-flex;
+  width: auto;
+  max-width: 100%;
+  min-height: 1.75rem;
+  align-items: center;
+  gap: 0.15rem;
+  margin: 0 0 0.2rem;
+  padding: 0;
+  overflow: hidden;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.login-gate__email-back-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex-shrink: 0;
 }
 
 .login-gate__helper {
@@ -326,27 +434,67 @@ body.login-gate-open .site-page-backdrop {
   text-align: center;
 }
 
+.login-gate__form .login-gate__btn--aurora {
+  margin-top: 1.05rem;
+}
+
 .login-gate__btn--aurora {
-  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.55);
-  border-radius: 0.95rem;
-  background:
-    linear-gradient(
-      135deg,
-      rgba(var(--aurora-lavender-rgb), 0.95) 0%,
-      rgba(138, 110, 220, 0.88) 48%,
-      rgba(var(--aurora-lavender-rgb), 0.72) 100%
-    );
+  border: none;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    #c084fc 0%,
+    #a855f7 48%,
+    #9333ea 100%
+  );
   color: #fff;
   font-weight: 600;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 0 28px rgba(var(--aurora-lavender-rgb), 0.35),
+    0 0 28px rgba(168, 85, 247, 0.38),
     0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+.login-gate__cta-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.login-gate__cta-arrow {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.login-gate__footnote {
+  margin: 0.9rem 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.login-gate__footnote-link {
+  display: inline;
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #c084fc;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
 }
 
 @media (hover: hover) {
   .login-gate__btn--aurora:hover {
     filter: brightness(1.05);
+  }
+
+  .login-gate__footnote-link:hover,
+  .login-gate__email-back:hover {
+    color: #e9d5ff;
   }
 }
 
@@ -384,6 +532,11 @@ body.login-gate-open .site-page-backdrop {
   }
 
   .login-gate__close {
+    transition: none;
+  }
+
+  .login-gate__slides-track,
+  .login-gate__slide {
     transition: none;
   }
 }

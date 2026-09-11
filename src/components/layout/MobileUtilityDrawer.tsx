@@ -533,7 +533,7 @@ export function MobileUtilityDrawer({ open, onClose }: MobileUtilityDrawerProps)
         purpose="account"
         returnPath={pathname || "/"}
         signupTitle="Create your account"
-        signupSupport="Enter your first name and email to save specialists, send inquiries, and manage your account."
+        signupSupport="Save specialists now. Finish setting up your account later."
         signupCta="Continue"
         onAuthenticated={() => {
           setQuickAccountOpen(false);

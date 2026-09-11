@@ -30,6 +30,9 @@ export type QuickClientAuthResult =
   | { ok: "email_sent"; email: string }
   | { ok: false; message: string; code?: "existing_account" };
 
+export const QUICK_CLIENT_PASSWORD_MIN_LENGTH = 8;
+export const QUICK_CLIENT_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function existingAccountMessage(source: QuickAccountSource): string {
   if (source === "saved_specialist") {
     return "This email already has an account. Log in to save this specialist.";
@@ -40,44 +43,161 @@ function existingAccountMessage(source: QuickAccountSource): string {
   return "This email already has an account. Sign in to send your message.";
 }
 
-/**
- * Shared low-friction client signup for inquiry + save flows.
- * Prefer magic link / OTP; falls back to ephemeral password when needed.
- */
-export async function startQuickClientAccount(params: {
+function firstNameFromEmail(email: string): string {
+  const local = email.split("@")[0]?.trim() ?? "";
+  return local.replace(/[._+-]+/g, " ").slice(0, 40) || "there";
+}
+
+function mapPasswordSignupResult(
+  result: AuthResult & { userId?: string },
+  email: string,
+  alreadyMsg: string
+): QuickClientAuthResult {
+  if (result.ok === true) {
+    return { ok: true, session: result.session, mode: "session" };
+  }
+  if (result.ok === "confirm_email") {
+    return { ok: "email_sent", email };
+  }
+  if (/already/i.test(result.message)) {
+    return { ok: false, message: alreadyMsg, code: "existing_account" };
+  }
+  return { ok: false, message: result.message };
+}
+
+function writePendingAndResumeFlags(params: {
   firstName: string;
   email: string;
-  returnPath: string;
   accountSource: QuickAccountSource;
-  /** Query flag restored after magic-link callback */
   resumeQuery: "inquiry" | "save" | "account";
-}): Promise<QuickClientAuthResult> {
-  const firstName = params.firstName.trim();
-  const email = params.email.trim().toLowerCase();
-  const alreadyMsg = existingAccountMessage(params.accountSource);
-
-  if (!firstName) {
-    return { ok: false, message: "Enter your first name." };
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return { ok: false, message: "Enter a valid email address." };
-  }
-
+}): void {
   writePendingInquirySignup({
-    firstName,
-    email,
+    firstName: params.firstName,
+    email: params.email,
     accountSource: params.accountSource,
   });
 
   if (params.resumeQuery === "inquiry") {
     setInquiryAutoSendFlag(true);
     setSaveAutoApplyFlag(false);
-  } else if (params.resumeQuery === "save") {
+    return;
+  }
+  if (params.resumeQuery === "save") {
     setSaveAutoApplyFlag(true);
     setInquiryAutoSendFlag(false);
-  } else {
-    setSaveAutoApplyFlag(false);
-    setInquiryAutoSendFlag(false);
+    return;
+  }
+  setSaveAutoApplyFlag(false);
+  setInquiryAutoSendFlag(false);
+}
+
+async function startQuickClientAccountWithPassword(params: {
+  firstName: string;
+  email: string;
+  password: string;
+  returnPath: string;
+  accountSource: QuickAccountSource;
+  resumeQuery: "inquiry" | "save" | "account";
+}): Promise<QuickClientAuthResult> {
+  const alreadyMsg = existingAccountMessage(params.accountSource);
+  const nextPath = params.returnPath.startsWith("/")
+    ? params.returnPath
+    : `/${params.returnPath}`;
+  const emailRedirectTo = getAuthCallbackUrl(nextPath) ?? undefined;
+
+  if (!isMarketplaceSupabaseActive()) {
+    if (process.env.NODE_ENV === "production") {
+      return {
+        ok: false,
+        message:
+          "Sign-up is not available in this build. Configure Supabase and rebuild.",
+      };
+    }
+
+    const result = await signUpWithPassword("client", params.email, params.password, {
+      firstName: params.firstName,
+    });
+    return mapPasswordSignupResult(result, params.email, alreadyMsg);
+  }
+
+  const result = await signUpWithPassword("client", params.email, params.password, {
+    firstName: params.firstName,
+    emailRedirectTo,
+  });
+  const mapped = mapPasswordSignupResult(result, params.email, alreadyMsg);
+  if (mapped.ok !== true) {
+    return mapped;
+  }
+
+  const supabase = getMarketplaceAuthClient();
+  if (supabase) {
+    const profile = await saveInquiryClientProfile(
+      supabase,
+      mapped.session.userId,
+      {
+        email: params.email,
+        firstName: params.firstName,
+        accountSource: params.accountSource,
+        passwordSetupStatus: "complete",
+      }
+    );
+    if (!profile.ok) {
+      return { ok: false, message: profile.message };
+    }
+  }
+
+  return mapped;
+}
+
+/**
+ * Shared low-friction client signup for inquiry + save flows.
+ * Password signup (save / account menu) creates the client immediately.
+ * Inquiry still prefers magic link / OTP, with an ephemeral password fallback.
+ */
+export async function startQuickClientAccount(params: {
+  firstName?: string;
+  email: string;
+  password?: string;
+  returnPath: string;
+  accountSource: QuickAccountSource;
+  /** Query flag restored after magic-link callback */
+  resumeQuery: "inquiry" | "save" | "account";
+}): Promise<QuickClientAuthResult> {
+  const email = params.email.trim().toLowerCase();
+  const password = params.password?.trim() ?? "";
+  const firstName =
+    params.firstName?.trim() || (password ? firstNameFromEmail(email) : "");
+  const alreadyMsg = existingAccountMessage(params.accountSource);
+
+  if (!password && !firstName) {
+    return { ok: false, message: "Enter your first name." };
+  }
+  if (!QUICK_CLIENT_EMAIL_PATTERN.test(email)) {
+    return { ok: false, message: "Enter a valid email address." };
+  }
+  if (password && password.length < QUICK_CLIENT_PASSWORD_MIN_LENGTH) {
+    return {
+      ok: false,
+      message: `Password must be at least ${QUICK_CLIENT_PASSWORD_MIN_LENGTH} characters.`,
+    };
+  }
+
+  writePendingAndResumeFlags({
+    firstName,
+    email,
+    accountSource: params.accountSource,
+    resumeQuery: params.resumeQuery,
+  });
+
+  if (password) {
+    return startQuickClientAccountWithPassword({
+      firstName,
+      email,
+      password,
+      returnPath: params.returnPath,
+      accountSource: params.accountSource,
+      resumeQuery: params.resumeQuery,
+    });
   }
 
   if (!isMarketplaceSupabaseActive()) {
@@ -197,8 +317,9 @@ export async function startInquiryQuickAccount(params: {
 }
 
 export async function startSaveQuickAccount(params: {
-  firstName: string;
+  firstName?: string;
   email: string;
+  password?: string;
   returnPath: string;
 }): Promise<QuickClientAuthResult> {
   return startQuickClientAccount({
@@ -209,8 +330,9 @@ export async function startSaveQuickAccount(params: {
 }
 
 export async function startMenuQuickAccount(params: {
-  firstName: string;
+  firstName?: string;
   email: string;
+  password?: string;
   returnPath: string;
 }): Promise<QuickClientAuthResult> {
   return startQuickClientAccount({
@@ -284,7 +406,11 @@ export async function ensureInquiryClientProfileAfterAuth(session: AuthSession):
       firstName: firstName || session.firstName,
       email,
       profileCompletionStatus: "incomplete",
-      passwordSetupStatus: "pending",
+      passwordSetupStatus:
+        session.passwordSetupStatus === "complete" ||
+        session.passwordSetupStatus === "skipped"
+          ? session.passwordSetupStatus
+          : "pending",
     },
   };
 }

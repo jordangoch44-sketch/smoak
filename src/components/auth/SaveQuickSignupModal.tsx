@@ -66,12 +66,12 @@ export function SaveQuickSignupModal({
       signupSupport={
         isSpecialistSession
           ? "You are signed in to a specialist profile. To save favorites, create or log in to a client account."
-          : "Enter your first name and email to add this specialist to your saved list."
+          : "Save them now. Finish setting up your account later."
       }
       signupCta={
         isSpecialistSession
           ? "Create Client Account"
-          : "Continue & Save"
+          : "Save Specialist"
       }
       signInTitle={
         isSpecialistSession

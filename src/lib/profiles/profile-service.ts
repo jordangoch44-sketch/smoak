@@ -348,6 +348,7 @@ export async function saveInquiryClientProfile(
     email: string;
     firstName: string;
     accountSource?: string;
+    passwordSetupStatus?: "pending" | "complete";
   }
 ): Promise<ProfileUpsertResult> {
   const existing = await fetchProfileRow(supabase, userId);
@@ -358,6 +359,7 @@ export async function saveInquiryClientProfile(
     params.firstName.trim() || existing?.first_name?.trim() || "";
   const email =
     params.email.trim().toLowerCase() || existing?.email?.trim().toLowerCase() || "";
+  const passwordSetupStatus = params.passwordSetupStatus ?? "pending";
 
   if (existing) {
     const nextFirst = existing.first_name.trim() || firstName;
@@ -369,6 +371,10 @@ export async function saveInquiryClientProfile(
       typeof existing.profile_completion_status === "string"
         ? existing.profile_completion_status.trim()
         : "";
+    const existingPasswordStatus =
+      typeof existing.password_setup_status === "string"
+        ? existing.password_setup_status.trim()
+        : "";
     const { error } = await supabase
       .from("profiles")
       .update({
@@ -377,6 +383,10 @@ export async function saveInquiryClientProfile(
         account_source:
           existingSource || params.accountSource || "specialist_inquiry",
         profile_completion_status: existingStatus || "incomplete",
+        password_setup_status:
+          existingPasswordStatus === "complete" || passwordSetupStatus === "complete"
+            ? "complete"
+            : existingPasswordStatus || passwordSetupStatus,
       })
       .eq("user_id", userId);
 
@@ -393,7 +403,7 @@ export async function saveInquiryClientProfile(
     last_name: "",
     ...emptyProfileFields(),
     profile_completion_status: "incomplete",
-    password_setup_status: "pending",
+    password_setup_status: passwordSetupStatus,
     account_source: params.accountSource ?? "specialist_inquiry",
   });
 }

@@ -3,16 +3,25 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { CloseIcon } from "@/components/ui/icons";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CloseIcon,
+  HeartIcon,
+  LockIcon,
+  MailIcon,
+  UserPlusIcon,
+} from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import {
   QuickClientAccountAuthActions,
   QuickClientAccountAuthError,
   QuickClientAccountSigninFields,
-  QuickClientAccountSignupFields,
 } from "@/components/auth/QuickClientAccountAuthUI";
 import {
   ensureInquiryClientProfileAfterAuth,
+  QUICK_CLIENT_EMAIL_PATTERN,
+  QUICK_CLIENT_PASSWORD_MIN_LENGTH,
   signInClientForAccount,
   signInClientForSave,
   startMenuQuickAccount,
@@ -24,6 +33,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { cn } from "@/lib/utils";
 
 type View = "signup" | "signin" | "awaiting_email";
+type SignupStep = "email" | "password";
 
 export type QuickClientAccountPurpose = "save" | "account";
 
@@ -69,12 +79,15 @@ export function QuickClientAccountModal({
   const { session, refreshSession } = useAuthSession();
   const isSpecialistSession = session?.role === "specialist";
   const [view, setView] = useState<View>("signup");
-  const [firstName, setFirstName] = useState("");
+  const [signupStep, setSignupStep] = useState<SignupStep>("email");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [syncedKey, setSyncedKey] = useState("");
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const passwordInputRef = useRef<HTMLInputElement>(null);
   /** React-owned hide — imperative-only styles get wiped if OverlayHost re-renders. */
   const [dismissed, setDismissed] = useState(false);
   const backdropDismiss = useOwnPointerDismiss(() => requestClose("backdrop"));
@@ -84,14 +97,24 @@ export function QuickClientAccountModal({
   if (open && syncedKey !== openKey) {
     setSyncedKey(openKey);
     setView("signup");
+    setSignupStep("email");
     setError(null);
     setSending(false);
     setPassword("");
+    setConfirmPassword("");
     closingRef.current = false;
     setDismissed(false);
   } else if (!open && syncedKey) {
     setSyncedKey("");
   }
+
+  useEffect(() => {
+    if (!open || view !== "signup" || signupStep !== "password") return;
+    const frame = window.requestAnimationFrame(() => {
+      passwordInputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, view, signupStep]);
 
   useEffect(() => {
     return () => {
@@ -214,8 +237,8 @@ export function QuickClientAccountModal({
     const start =
       purpose === "save" ? startSaveQuickAccount : startMenuQuickAccount;
     const result = await start({
-      firstName,
       email,
+      password,
       returnPath,
     });
 
@@ -232,6 +255,9 @@ export function QuickClientAccountModal({
       setError(result.message);
       if (result.code === "existing_account") {
         setView("signin");
+        setSignupStep("email");
+        setPassword("");
+        setConfirmPassword("");
       }
       return;
     }
@@ -249,6 +275,41 @@ export function QuickClientAccountModal({
     await onAuthenticated();
     setSending(false);
     submittingRef.current = false;
+  }
+
+  function handleSignupPrimary() {
+    if (sending) return;
+    setError(null);
+
+    if (signupStep === "email") {
+      const nextEmail = email.trim().toLowerCase();
+      if (!QUICK_CLIENT_EMAIL_PATTERN.test(nextEmail)) {
+        setError("Enter a valid email address.");
+        return;
+      }
+      setEmail(nextEmail);
+      setSignupStep("password");
+      return;
+    }
+
+    if (password.length < QUICK_CLIENT_PASSWORD_MIN_LENGTH) {
+      setError(
+        `Password must be at least ${QUICK_CLIENT_PASSWORD_MIN_LENGTH} characters.`
+      );
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords don’t match.");
+      return;
+    }
+
+    void handleQuickSignup();
+  }
+
+  function handleBackToEmail() {
+    setSignupStep("email");
+    setError(null);
+    window.requestAnimationFrame(() => emailInputRef.current?.focus());
   }
 
   async function handleSignIn() {
@@ -294,10 +355,10 @@ export function QuickClientAccountModal({
   const resolvedSignupSupport =
     signupSupport ??
     (purpose === "save"
-      ? "Enter your first name and email to add this specialist to your saved list."
-      : "Enter your first name and email to create a lightweight account.");
+      ? "Save them now. Finish setting up your account later."
+      : "Save specialists now. Finish setting up your account later.");
   const resolvedSignupCta =
-    signupCta ?? (purpose === "save" ? "Continue & Save" : "Continue");
+    signupCta ?? (purpose === "save" ? "Save Specialist" : "Continue");
   const resolvedSignInTitle =
     signInTitle ?? (purpose === "save" ? "Log in to save" : "Log in");
   const resolvedSignInSupport =
@@ -318,13 +379,24 @@ export function QuickClientAccountModal({
       ? resolvedSignInTitle
       : view === "awaiting_email"
         ? "Check your email"
-        : resolvedSignupTitle;
+        : isSpecialistSession
+          ? (signupTitle ?? "Client account required")
+          : resolvedSignupTitle;
   const support =
     view === "signin"
       ? resolvedSignInSupport
       : view === "awaiting_email"
         ? resolvedAwaiting
-        : resolvedSignupSupport;
+        : isSpecialistSession
+          ? (signupSupport ??
+            "You are signed in to a specialist profile. To save favorites, create or log in to a client account.")
+          : resolvedSignupSupport;
+  const signupButtonLabel =
+    sending && signupStep === "password"
+      ? purpose === "save"
+        ? "Saving…"
+        : "Creating…"
+      : resolvedSignupCta;
 
   return createPortal(
     <div
@@ -376,80 +448,190 @@ export function QuickClientAccountModal({
         </FastActivateButton>
 
         <div className="login-gate__content login-gate__content--save">
-          {view === "signup" ? (
-            <div className="login-gate__reassure">
-              <h2 id={titleId} className="login-gate__reassure-title">
-                {isSpecialistSession
-                  ? (signupTitle ?? "Client account required")
-                  : (signupTitle ?? "Quick sign up")}
-              </h2>
-              <p className="login-gate__reassure-punch">
-                {isSpecialistSession
-                  ? "Create or log in to a client account"
-                  : "Email and that's it!"}
-              </p>
-              <p id={descId} className="login-gate__reassure-sub">
-                {isSpecialistSession
-                  ? (signupSupport ?? "Specialist profiles cannot save favorites. Create or log in to a client account to save specialists.")
-                  : resolvedSignupSupport}
-              </p>
+          <div className="login-gate__hero">
+            <div className="login-gate__hero-icon">
+              <span className="login-gate__hero-icon-ring" />
+              {purpose === "save" ? (
+                <HeartIcon className="login-gate__hero-glyph" />
+              ) : (
+                <UserPlusIcon className="login-gate__hero-glyph" />
+              )}
             </div>
-          ) : (
-            <>
-              <h2 id={titleId} className="login-gate__title">
-                {title}
-              </h2>
-              <p id={descId} className="login-gate__body">
-                {support}
-              </p>
-            </>
-          )}
+            <h2 id={titleId} className="login-gate__title">
+              {title}
+            </h2>
+            <p id={descId} className="login-gate__body">
+              {support}
+            </p>
+          </div>
 
           {view === "signup" ? (
-            <QuickClientAccountSignupFields
-              variant="login-gate"
-              idPrefix={formId}
-              firstName={firstName}
-              email={email}
-              onFirstNameChange={setFirstName}
-              onEmailChange={setEmail}
-            />
+            <form
+              className="login-gate__form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                handleSignupPrimary();
+              }}
+            >
+              <div
+                className={cn(
+                  "login-gate__slides",
+                  signupStep === "password" && "login-gate__slides--password"
+                )}
+              >
+                <div
+                  className="login-gate__slide login-gate__slide--email"
+                  {...(signupStep !== "email" ? { inert: true } : {})}
+                >
+                  <label
+                    className="login-gate__label"
+                    htmlFor={`${formId}-email`}
+                  >
+                    Email address
+                  </label>
+                  <div className="login-gate__field">
+                    <MailIcon className="login-gate__field-icon" />
+                    <input
+                      ref={emailInputRef}
+                      id={`${formId}-email`}
+                      type="email"
+                      className="login-gate__input login-gate__input--icon"
+                      autoComplete="email"
+                      inputMode="email"
+                      placeholder="you@email.com"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className="login-gate__slide login-gate__slide--password"
+                  {...(signupStep !== "password" ? { inert: true } : {})}
+                >
+                  <FastActivateButton
+                    className="smoac-control login-gate__email-back"
+                    onActivate={handleBackToEmail}
+                  >
+                    <ChevronLeftIcon className="login-gate__email-back-icon" />
+                    <span>{email || "Use a different email"}</span>
+                  </FastActivateButton>
+                  <label
+                    className="login-gate__label"
+                    htmlFor={`${formId}-password`}
+                  >
+                    Password
+                  </label>
+                  <div className="login-gate__field">
+                    <LockIcon className="login-gate__field-icon" />
+                    <input
+                      ref={passwordInputRef}
+                      id={`${formId}-password`}
+                      type="password"
+                      className="login-gate__input login-gate__input--icon"
+                      autoComplete="new-password"
+                      placeholder="Create a password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                    />
+                  </div>
+                  <label
+                    className="login-gate__label"
+                    htmlFor={`${formId}-confirm-password`}
+                  >
+                    Confirm password
+                  </label>
+                  <div className="login-gate__field">
+                    <LockIcon className="login-gate__field-icon" />
+                    <input
+                      id={`${formId}-confirm-password`}
+                      type="password"
+                      className="login-gate__input login-gate__input--icon"
+                      autoComplete="new-password"
+                      placeholder="Re-enter your password"
+                      value={confirmPassword}
+                      onChange={(event) =>
+                        setConfirmPassword(event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <QuickClientAccountAuthError
+                variant="login-gate"
+                message={error}
+              />
+
+              <FastActivateButton
+                className="smoac-control login-gate__btn login-gate__btn--aurora"
+                disabled={sending}
+                onActivate={handleSignupPrimary}
+              >
+                <span className="login-gate__cta-label">
+                  {signupButtonLabel}
+                  {sending ? null : (
+                    <ChevronRightIcon className="login-gate__cta-arrow" />
+                  )}
+                </span>
+              </FastActivateButton>
+
+              <p className="login-gate__footnote">
+                Already have an account?{" "}
+                <FastActivateButton
+                  className="smoac-control login-gate__footnote-link"
+                  onActivate={() => {
+                    setView("signin");
+                    setSignupStep("email");
+                    setPassword("");
+                    setConfirmPassword("");
+                    setError(null);
+                  }}
+                >
+                  Log in
+                </FastActivateButton>
+              </p>
+            </form>
           ) : null}
 
           {view === "signin" ? (
-            <QuickClientAccountSigninFields
-              variant="login-gate"
-              idPrefix={formId}
-              email={email}
-              password={password}
-              onEmailChange={setEmail}
-              onPasswordChange={setPassword}
-            />
-          ) : null}
-
-          <QuickClientAccountAuthError variant="login-gate" message={error} />
-
-          {view !== "awaiting_email" ? (
-            <QuickClientAccountAuthActions
-              variant="login-gate"
-              view={view === "signin" ? "signin" : "signup"}
-              sending={sending}
-              signupCta={resolvedSignupCta}
-              signInCta={resolvedSignInCta}
-              onSignup={() => void handleQuickSignup()}
-              onSignIn={() => void handleSignIn()}
-              onSwitchToSignin={() => {
-                setView("signin");
-                setError(null);
-              }}
-              onSwitchToSignup={() => {
-                setView("signup");
-                setError(null);
-              }}
-              onOpenFullLogin={(event) => {
-                if (event) requestClose("link", event);
-              }}
-            />
+            <>
+              <QuickClientAccountSigninFields
+                variant="login-gate"
+                idPrefix={formId}
+                email={email}
+                password={password}
+                onEmailChange={setEmail}
+                onPasswordChange={setPassword}
+              />
+              <QuickClientAccountAuthError
+                variant="login-gate"
+                message={error}
+              />
+              <QuickClientAccountAuthActions
+                variant="login-gate"
+                view="signin"
+                sending={sending}
+                signupCta={resolvedSignupCta}
+                signInCta={resolvedSignInCta}
+                onSignup={() => void handleQuickSignup()}
+                onSignIn={() => void handleSignIn()}
+                onSwitchToSignin={() => {
+                  setView("signin");
+                  setError(null);
+                }}
+                onSwitchToSignup={() => {
+                  setView("signup");
+                  setSignupStep("email");
+                  setPassword("");
+                  setConfirmPassword("");
+                  setError(null);
+                }}
+                onOpenFullLogin={(event) => {
+                  if (event) requestClose("link", event);
+                }}
+              />
+            </>
           ) : null}
         </div>
       </div>
