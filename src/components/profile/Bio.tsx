@@ -1,5 +1,6 @@
 import type { Trainer } from "@/types";
 import { specialtyIconId } from "@/lib/profile-details-visual";
+import { sanitizeMarketplaceSpecialties } from "@/lib/specialty-display";
 import { ProfileSpecialtyIcon } from "./ProfileDetailsIcons";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
@@ -10,11 +11,7 @@ interface BioProps {
 
 /** Specialties in the Details tab — bio lives in the hero with expand. */
 export function Bio({ trainer }: BioProps) {
-  const specialties = Array.isArray(trainer.specialty)
-    ? trainer.specialty.filter(
-        (item) => typeof item === "string" && item.trim().length > 0
-      )
-    : [];
+  const specialties = sanitizeMarketplaceSpecialties(trainer.specialty);
 
   if (specialties.length === 0) return null;
 

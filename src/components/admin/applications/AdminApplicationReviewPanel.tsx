@@ -863,7 +863,7 @@ export function AdminApplicationReviewPanel({
                   )}
                   {draft.bestClientTypes && (
                     <div>
-                      <span className="admin-review-kv__label">Best Client Types</span>
+                      <span className="admin-review-kv__label">Are we the right fit?</span>
                       <div className="admin-review-text-box admin-review-text-box--secondary">
                         {draft.bestClientTypes}
                       </div>

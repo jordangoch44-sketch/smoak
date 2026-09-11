@@ -236,12 +236,12 @@ export interface LocationTravelDisplay {
   map: LocationTravelMap | null;
 }
 
-function formatCityZipLine(trainer: Trainer): string {
-  const city = trainer.city?.trim() ?? "";
-  const zip = trainer.zipCode?.trim() ?? "";
-  if (city && zip) return `${city} · ${zip}`;
-  if (city) return city;
-  if (zip) return `ZIP ${zip}`;
+function formatCityZipLine(city: string, zip: string): string {
+  const place = city.trim();
+  const code = zip.trim();
+  if (place && code) return `${place} · ${code}`;
+  if (place) return place;
+  if (code) return `ZIP ${code}`;
   return "";
 }
 
@@ -258,10 +258,17 @@ export function buildLocationTravelDisplay(
       session.some((s) => /in-home/i.test(s)),
       session.some((s) => /online/i.test(s))
     );
-  const cityZip = formatCityZipLine(trainer);
+  const cityZip = formatCityZipLine(trainer.city ?? "", trainer.zipCode ?? "");
   const workAddress = trainer.workAddress?.trim() ?? "";
   const showPreciseAddress =
     Boolean(workAddress) && trainer.locationPrecision === "address";
+  const secondaryCityZip = formatCityZipLine(
+    trainer.city2 ?? "",
+    trainer.zipCode2 ?? ""
+  );
+  const secondaryAddress = trainer.workAddress2?.trim() ?? "";
+  const showSecondaryAddress =
+    Boolean(secondaryAddress) && trainer.locationPrecision2 === "address";
   const travelToClients = resolveTravelToClients(trainer);
   const radiusLabel = formatTravelRadiusLabel(trainer.travelRadius);
   const isVirtualOnly = serviceType === "virtual";
@@ -305,6 +312,27 @@ export function buildLocationTravelDisplay(
             : undefined,
       icon: "place",
     });
+  }
+
+  if (showSecondaryAddress || secondaryCityZip) {
+    const secondaryValue = showSecondaryAddress
+      ? secondaryCityZip &&
+        !secondaryAddress.includes(secondaryCityZip.split(" · ")[0] ?? "")
+        ? `${secondaryAddress}\n${secondaryCityZip}`
+        : secondaryAddress
+      : secondaryCityZip;
+    if (secondaryValue) {
+      facts.push({
+        label: "Also trains at",
+        value: secondaryValue,
+        hint: trainer.neighborhood2?.trim()
+          ? `${trainer.neighborhood2.trim()}${
+              trainer.city2?.trim() ? `, ${trainer.city2.trim()}` : ""
+            }.`
+          : "Second studio or gym.",
+        icon: "place",
+      });
+    }
   }
 
   if (travelToClients === "yes") {

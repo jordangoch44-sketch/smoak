@@ -140,19 +140,49 @@
   color: #fff;
 }
 
+.profile-section-header-row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding-bottom: 0.85rem;
+}
+
+.profile-section-header-row::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(var(--smoac-color-rose-rgb), 0.22) 0%,
+    rgba(var(--smoac-color-violet-rgb), 0.55) 42%,
+    rgba(var(--smoac-color-indigo-rgb), 0.38) 72%,
+    rgba(var(--smoac-color-cool-rgb), 0.16) 100%
+  );
+  box-shadow:
+    0 0 8px rgba(var(--smoac-color-violet-rgb), 0.35),
+    0 0 16px rgba(var(--smoac-color-violet-rgb), 0.18);
+}
+
 .profile-section-header {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
+  color: #fff;
 }
 
 .profile-trainer-specs .profile-section-header {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
 }
 
 .profile-details-pills {
@@ -337,7 +367,7 @@
 }
 
 .profile-section-body {
-  margin-top: 1.25rem;
+  margin-top: 1rem;
 }
 
 .profile-section-body--loose {
@@ -349,6 +379,11 @@
   font-weight: 400;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.62);
+}
+
+.profile-right-fit__copy {
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 /* Hero — image fade + identity overlay */
@@ -984,7 +1019,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.35rem;
+  gap: 0.75rem;
   margin-left: auto;
 }
 
@@ -1155,6 +1190,10 @@ button.profile-hero__free-session:active {
 
 .profile-hero__transforms {
   margin-top: 0.65rem;
+}
+
+.profile-hero__pinned + .profile-hero__transforms {
+  margin-top: 1.25rem;
 }
 
 .profile-hero__transforms-label {
@@ -1724,7 +1763,12 @@ button.profile-hero__free-session:active {
   }
 
   .profile-section-body {
-    margin-top: 1.375rem;
+    margin-top: 1.125rem;
+  }
+
+  .profile-section-header,
+  .profile-trainer-specs .profile-section-header {
+    font-size: 1.25rem;
   }
 
   .profile-body-text {
@@ -2746,6 +2790,18 @@ body.profile-image-preview-open .profile-toolbar {
   background: #12151c;
 }
 
+.profile-details-map__apple {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.profile-details-map__apple > div {
+  width: 100%;
+  height: 100%;
+}
+
 .profile-details-map__tile {
   position: absolute;
   inset: -12%;
@@ -2768,6 +2824,12 @@ body.profile-image-preview-open .profile-toolbar {
   transform: translate(-50%, -50%);
   box-shadow: 0 0 28px rgba(var(--profile-accent-rgb), 0.2);
   pointer-events: none;
+}
+
+.profile-details-map--apple .profile-details-map__radius,
+.profile-details-map--apple .profile-details-map__pin,
+.profile-details-map--apple .profile-details-map__badge {
+  z-index: 3;
 }
 
 .profile-details-map__pin {

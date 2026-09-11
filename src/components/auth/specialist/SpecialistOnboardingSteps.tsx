@@ -4,27 +4,17 @@ import { PasswordInput } from "@/components/ui/PasswordInput";
 import {
   GENDER_OPTIONS,
   PROFESSIONAL_TYPE_OPTIONS,
-  SPECIALIST_SPECIALTY_OPTIONS,
 } from "@/constants/specialist-onboarding-options";
 import { EMPTY_CERTIFICATION } from "@/lib/specialist-profile-overrides";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import type { Certification } from "@/types/trainer";
 import { cn } from "@/lib/utils";
 import { applicationPricingFromRange } from "@/lib/session-price";
-import {
-  HOMEPAGE_FEATURED_SPECIALTY_LIMIT,
-  orderSpecialtyPickerOptions,
-} from "@/lib/specialty-display";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
+import { MarketplaceSpecialtyPicker } from "@/components/auth/specialist/MarketplaceSpecialtyPicker";
 import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import type { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
-
-function toggleInList(list: string[], value: string): string[] {
-  return list.includes(value)
-    ? list.filter((item) => item !== value)
-    : [...list, value];
-}
 
 function RequiredMark() {
   return (
@@ -424,49 +414,18 @@ export function SpecialistOnboardingSteps({
             Specialties
             <RequiredMark />
           </p>
-          <p className="wizard-field-hint">
-            The first {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} you select appear on
-            your marketplace card. Extra specialties still show on your profile.
-          </p>
-          <div
-            className="wizard-pill-grid wizard-pill-grid--wide"
-            role="group"
-            aria-label="Specialties"
-            aria-required="true"
-          >
-            {orderSpecialtyPickerOptions(
-              SPECIALIST_SPECIALTY_OPTIONS,
-              state.specialties
-            ).map((specialty) => {
-              const active = state.specialties.includes(specialty);
-              const onCard =
-                active &&
-                state.specialties.indexOf(specialty) <
-                  HOMEPAGE_FEATURED_SPECIALTY_LIMIT;
-              return (
-                <button
-                  key={specialty}
-                  type="button"
-                  aria-pressed={active}
-                  aria-label={
-                    onCard ? `${specialty} (on your card)` : specialty
-                  }
-                  onClick={() =>
-                    onPatch({
-                      specialties: toggleInList(state.specialties, specialty),
-                    })
-                  }
-                  className={cn(
-                    "wizard-pill",
-                    active && "wizard-pill--active",
-                    onCard && "wizard-pill--card-featured"
-                  )}
-                >
-                  {specialty}
-                </button>
-              );
-            })}
-          </div>
+          <MarketplaceSpecialtyPicker
+            variant="wizard"
+            required
+            selected={state.specialties}
+            homepageSpecialties={state.homepageSpecialties}
+            onChange={({ specialty, homepageSpecialties }) =>
+              onPatch({
+                specialties: specialty,
+                homepageSpecialties,
+              })
+            }
+          />
           <div className="login-fields" style={{ marginTop: "1.25rem" }}>
             <p className="wizard-step-subsection-title">Certifications</p>
             {certRows.map((cert, index) => (

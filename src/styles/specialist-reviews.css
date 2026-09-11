@@ -672,18 +672,7 @@ a.profile-hero__reviews-google {
   cursor: pointer;
 }
 
-.profile-hero__reviews-google-open {
-  margin-left: 0.15rem;
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
-  white-space: nowrap;
-}
-
-a.profile-hero__reviews-google:hover .smoac-star-rating__count,
-a.profile-hero__reviews-google:hover .profile-hero__reviews-google-open {
+a.profile-hero__reviews-google:hover .smoac-star-rating__count {
   color: rgba(255, 255, 255, 0.78);
 }
 

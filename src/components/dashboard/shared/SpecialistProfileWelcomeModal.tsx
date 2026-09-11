@@ -72,7 +72,7 @@ function WelcomeAvatar({
 }
 
 /**
- * One-time glass welcome after a specialist is approved and first signs in.
+ * One-time welcome after a specialist is approved and first signs in.
  * Live avatar, one featured next step, leftover sections, then the Pro trial.
  */
 export function SpecialistProfileWelcomeModal({

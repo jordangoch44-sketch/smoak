@@ -29,11 +29,13 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 
 - `specialist-profile-store.ts` — override persistence + listeners (`smoac_specialist_profile_overrides`)
 - `specialist-profile-overrides.ts` — form ↔ overrides, apply to Trainer
+- `specialist-right-fit.ts` — “Are we the right fit?” copy + starter prompts
 
 ## Public marketplace / catalog
 
 - `marketplace-public-catalog.ts` — approved-only public list; pending hidden via `smoac_hidden_specialists`
 - `explore.ts`, `explore-url.ts`, `explore-active-filters.ts`, `explore-location-filters.ts`
+- `apple-maps.ts` — MapKit JS loader (Explore + profile radius preview)
 - `recent-searches-store.ts`, `recent-searches-storage.ts` — Explore query history (writes on search; read UI TBD)
 - `search-query-parser.ts`, `trainers.ts` (filter helpers)
 - `trainer-reviews.ts` — seed/demo hero ★ + card counts (catalog; not live SMOAC)

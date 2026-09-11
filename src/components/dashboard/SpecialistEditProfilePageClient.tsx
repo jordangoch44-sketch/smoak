@@ -5,7 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
-import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import {
   DashboardPageShell,
   DashboardLoadingState,
@@ -21,7 +20,7 @@ import {
 } from "@/components/dashboard/specialist/ProfileEditSection";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
-import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
+import { SpecialistWorkSpotFields } from "@/components/dashboard/specialist/SpecialistWorkSpotFields";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
@@ -30,8 +29,6 @@ import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
-import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
-import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
   EMPTY_CERTIFICATION,
   cloneSpecialistProfileEditForm,
@@ -63,8 +60,19 @@ import {
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
 import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
+import { MarketplaceSpecialtyPicker } from "@/components/auth/specialist/MarketplaceSpecialtyPicker";
+import { SpecialistRightFitFields } from "@/components/dashboard/specialist/SpecialistRightFitFields";
 import { formatTravelToClientsEditorLabel } from "@/lib/specialist-service-area";
-import { HOMEPAGE_FEATURED_SPECIALTY_LIMIT } from "@/lib/specialty-display";
+import {
+  applyPrimaryWorkSpot,
+  applySecondaryWorkSpot,
+  clearSecondaryWorkSpot,
+  formatWorkSpotPlaceLine,
+  hasWorkSpotContent,
+  primaryWorkSpotFromForm,
+  secondaryWorkSpotFromForm,
+} from "@/lib/specialist-work-spots";
+import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import {
   PROFILE_ACCENT_OPTIONS,
   PROFILE_AVATAR_FRAME_OPTIONS,
@@ -91,11 +99,13 @@ import {
 import { parseGender } from "@/lib/gender";
 import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
+import { RIGHT_FIT_SECTION_TITLE } from "@/lib/specialist-right-fit";
 
 type SectionId =
   | "basic-info"
   | "profile-style"
   | "bio"
+  | "ideal-clients"
   | "experience"
   | "professional-role"
   | "specialties"
@@ -128,6 +138,7 @@ export function SpecialistEditProfilePageClient({
   const [sectionDraft, setSectionDraft] = useState<SpecialistProfileEditForm | null>(
     null
   );
+  const [secondLocationOpen, setSecondLocationOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [modalMounted, setModalMounted] = useState(false);
   const [requestReviewBusy, setRequestReviewBusy] = useState(false);
@@ -232,6 +243,7 @@ export function SpecialistEditProfilePageClient({
       return;
     }
     setEditingSection(sectionId);
+    setSecondLocationOpen(false);
     const next = cloneSpecialistProfileEditForm(savedForm);
     if (sectionId === "experience") {
       next.trainingStyle = formatCoachingStyleSelection(
@@ -248,6 +260,7 @@ export function SpecialistEditProfilePageClient({
   function cancelEdit() {
     setEditingSection(null);
     setSectionDraft(null);
+    setSecondLocationOpen(false);
   }
 
   function updateField<K extends keyof SpecialistProfileEditForm>(
@@ -255,45 +268,6 @@ export function SpecialistEditProfilePageClient({
     value: SpecialistProfileEditForm[K]
   ) {
     setSectionDraft((prev) => (prev ? { ...prev, [key]: value } : prev));
-  }
-
-  function toggleSpecialty(specialty: string) {
-    setSectionDraft((prev) => {
-      if (!prev) return prev;
-      const has = prev.specialty.includes(specialty);
-      const specialtyNext = has
-        ? prev.specialty.filter((item) => item !== specialty)
-        : [...prev.specialty, specialty];
-      return {
-        ...prev,
-        specialty: specialtyNext,
-        homepageSpecialties: prev.homepageSpecialties.filter((item) =>
-          specialtyNext.includes(item)
-        ),
-      };
-    });
-  }
-
-  function toggleHomepageSpecialty(specialty: string) {
-    setSectionDraft((prev) => {
-      if (!prev) return prev;
-      if (!prev.specialty.includes(specialty)) return prev;
-      const has = prev.homepageSpecialties.includes(specialty);
-      if (has) {
-        return {
-          ...prev,
-          homepageSpecialties: prev.homepageSpecialties.filter(
-            (item) => item !== specialty
-          ),
-        };
-      }
-      if (prev.homepageSpecialties.length >= HOMEPAGE_FEATURED_SPECIALTY_LIMIT)
-        return prev;
-      return {
-        ...prev,
-        homepageSpecialties: [...prev.homepageSpecialties, specialty],
-      };
-    });
   }
 
   function updateCert(index: number, patch: Partial<Certification>) {
@@ -802,6 +776,27 @@ export function SpecialistEditProfilePageClient({
           />
 
           <ProfileEditSection
+            {...sectionProps("ideal-clients")}
+            title={RIGHT_FIT_SECTION_TITLE}
+            description="Help clients see if you are a good match"
+            incomplete={!savedForm.servicesOffered.trim()}
+            viewContent={
+              <ProfileEditViewField
+                label={RIGHT_FIT_SECTION_TITLE}
+                value={savedForm.servicesOffered}
+                emptyLabel="Add who you work best with"
+                multiline
+              />
+            }
+            editContent={
+              <SpecialistRightFitFields
+                value={form.servicesOffered}
+                onChange={(next) => updateField("servicesOffered", next)}
+              />
+            }
+          />
+
+          <ProfileEditSection
             {...sectionProps("experience")}
             title="Experience & training"
             description="Credentials clients trust"
@@ -830,12 +825,6 @@ export function SpecialistEditProfilePageClient({
                   )}
                   emptyLabel="Add coaching style"
                 />
-                <ProfileEditViewField
-                  label="Services offered"
-                  value={savedForm.servicesOffered}
-                  emptyLabel="Add ideal clients or services"
-                  multiline
-                />
               </>
             }
             editContent={
@@ -862,16 +851,6 @@ export function SpecialistEditProfilePageClient({
                   multiple
                   hint="Select every style that fits how you coach."
                 />
-                <ProfileEditInputField label="Services offered">
-                  <textarea
-                    className="login-field__input dashboard-edit-textarea profile-edit-input"
-                    rows={4}
-                    value={form.servicesOffered}
-                    onChange={(event) =>
-                      updateField("servicesOffered", event.target.value)
-                    }
-                  />
-                </ProfileEditInputField>
               </div>
             }
           />
@@ -880,11 +859,7 @@ export function SpecialistEditProfilePageClient({
             {...sectionProps("professional-role")}
             title="Professional role"
             description="Your main profession category"
-            incomplete={
-              !canonicalizeProfessionLabel(savedForm.profession) ||
-              parseCoachingStyleSelection(savedForm.trainingStyle).length === 0 ||
-              !savedForm.servicesOffered.trim()
-            }
+            incomplete={!canonicalizeProfessionLabel(savedForm.profession)}
             viewContent={
               <ProfileEditViewField
                 label="Category"
@@ -912,123 +887,45 @@ export function SpecialistEditProfilePageClient({
             description="Tags on cards and filters"
             incomplete={savedForm.specialty.length === 0}
             viewContent={
-              <>
-                {savedForm.specialty.length > 0 ? (
-                  <div className="dashboard-edit-chip-grid profile-edit-chip-grid--view">
-                    {savedForm.specialty.map((specialty) => (
+              savedForm.specialty.length > 0 ? (
+                <div className="dashboard-edit-chip-grid profile-edit-chip-grid--view">
+                  {savedForm.specialty.map((specialty) => {
+                    const onCard = sanitizeHomepageSpecialties(
+                      savedForm.specialty,
+                      savedForm.homepageSpecialties
+                    ).includes(specialty);
+                    return (
                       <span
                         key={specialty}
-                        className="dashboard-edit-chip dashboard-edit-chip--active"
+                        className={
+                          onCard
+                            ? "dashboard-edit-chip dashboard-edit-chip--active dashboard-edit-chip--card-featured"
+                            : "dashboard-edit-chip dashboard-edit-chip--active"
+                        }
                       >
                         {specialty}
                       </span>
-                    ))}
-                  </div>
-                ) : (
-                  <ProfileEditViewField
-                    label="Specialties"
-                    value=""
-                    emptyLabel="Add specialties"
-                  />
-                )}
-                <div className="profile-edit-homepage-specialties">
-                  <p className="profile-edit-field__label">
-                    Homepage Featured Specialties
-                  </p>
-                  <p className="profile-edit-homepage-specialties__help">
-                    These {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} specialties will
-                    appear on your marketplace card. Your full list of
-                    specialties will still be displayed on your detailed profile.
-                  </p>
-                  {savedForm.homepageSpecialties.length > 0 ? (
-                    <div className="dashboard-edit-chip-grid profile-edit-chip-grid--view">
-                      {savedForm.homepageSpecialties.map((specialty) => (
-                        <span
-                          key={specialty}
-                          className="dashboard-edit-chip dashboard-edit-chip--active"
-                        >
-                          {specialty}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="profile-edit-field__value profile-edit-field__value--empty">
-                      Using first {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} specialties
-                      by default
-                    </p>
-                  )}
-                </div>
-              </>
-            }
-            editContent={
-              <>
-                <div className="dashboard-edit-chip-grid">
-                  {marketplaceSpecialtyOptions.map((specialty) => {
-                    const active = form.specialty.includes(specialty);
-                    return (
-                      <button
-                        key={specialty}
-                        type="button"
-                        className={
-                          active
-                            ? "dashboard-edit-chip dashboard-edit-chip--active"
-                            : "dashboard-edit-chip"
-                        }
-                        onClick={() => toggleSpecialty(specialty)}
-                        aria-pressed={active}
-                      >
-                        {specialty}
-                      </button>
                     );
                   })}
                 </div>
-                <div className="profile-edit-homepage-specialties">
-                  <p className="profile-edit-field__label">
-                    Homepage Featured Specialties
-                  </p>
-                  <p className="profile-edit-homepage-specialties__help">
-                    These {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} specialties will
-                    appear on your marketplace card. Your full list of
-                    specialties will still be displayed on your detailed profile.
-                  </p>
-                  {form.specialty.length > 0 ? (
-                    <div className="dashboard-edit-chip-grid">
-                      {form.specialty.map((specialty) => {
-                        const featured =
-                          form.homepageSpecialties.includes(specialty);
-                        const atLimit =
-                          form.homepageSpecialties.length >=
-                            HOMEPAGE_FEATURED_SPECIALTY_LIMIT && !featured;
-                        return (
-                          <button
-                            key={`home-${specialty}`}
-                            type="button"
-                            className={
-                              featured
-                                ? "dashboard-edit-chip dashboard-edit-chip--active"
-                                : "dashboard-edit-chip"
-                            }
-                            onClick={() => toggleHomepageSpecialty(specialty)}
-                            aria-pressed={featured}
-                            disabled={atLimit}
-                            title={
-                              atLimit
-                                ? "Remove one featured specialty to choose another"
-                                : undefined
-                            }
-                          >
-                            {specialty}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="profile-edit-field__value profile-edit-field__value--empty">
-                      Select specialties above first
-                    </p>
-                  )}
-                </div>
-              </>
+              ) : (
+                <ProfileEditViewField
+                  label="Specialties"
+                  value=""
+                  emptyLabel="Add specialties"
+                />
+              )
+            }
+            editContent={
+              <MarketplaceSpecialtyPicker
+                selected={form.specialty}
+                homepageSpecialties={form.homepageSpecialties}
+                onChange={({ specialty, homepageSpecialties }) =>
+                  setSectionDraft((prev) =>
+                    prev ? { ...prev, specialty, homepageSpecialties } : prev
+                  )
+                }
+              />
             }
           />
 
@@ -1062,6 +959,21 @@ export function SpecialistEditProfilePageClient({
                   value={savedForm.zipCode}
                   emptyLabel="Add ZIP code"
                 />
+                {hasWorkSpotContent(secondaryWorkSpotFromForm(savedForm)) ? (
+                  <ProfileEditViewField
+                    label="Second location (profile only)"
+                    value={
+                      formatWorkSpotPlaceLine(
+                        secondaryWorkSpotFromForm(savedForm)
+                      ) ||
+                      (savedForm.locationPrecision2 === "address" &&
+                      savedForm.workAddress2.trim()
+                        ? savedForm.workAddress2
+                        : "")
+                    }
+                    emptyLabel="Add"
+                  />
+                ) : null}
                 <ProfileEditViewField
                   label="Session format"
                   value={
@@ -1111,91 +1023,72 @@ export function SpecialistEditProfilePageClient({
               </>
             }
             editContent={
-              <div className="dashboard-edit-fields">
-                {form.serviceType === "in-person" ||
-                form.serviceType === "both" ? (
-                  <SpecialistPreciseLocationField
-                    workAddress={form.workAddress}
-                    locationPrecision={form.locationPrecision}
-                    onDraftChange={(workAddress) =>
-                      setSectionDraft((prev) =>
-                        prev ? { ...prev, workAddress } : prev
-                      )
-                    }
-                    onResolved={(value) =>
-                      setSectionDraft((prev) =>
-                        prev
-                          ? {
-                              ...prev,
-                              workAddress: value.workAddress,
-                              locationPrecision: "address",
-                              latitude: value.latitude,
-                              longitude: value.longitude,
-                              ...(value.zipCode
-                                ? { zipCode: value.zipCode }
-                                : {}),
-                              ...(value.city ? { city: value.city } : {}),
-                            }
-                          : prev
-                      )
-                    }
-                    onCleared={() => {
-                      void (async () => {
-                        const zip = normalizeZipCode(form.zipCode);
-                        const result = isValidZipCode(zip)
-                          ? await lookupZipPlace(zip)
-                          : null;
-                        setSectionDraft((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                workAddress: "",
-                                locationPrecision: "zip",
-                                latitude: result?.latitude ?? null,
-                                longitude: result?.longitude ?? null,
-                                ...(result?.city
-                                  ? { city: result.city }
-                                  : {}),
-                              }
-                            : prev
-                        );
-                      })();
-                    }}
-                  />
-                ) : (
-                  <p className="wizard-field-hint">
-                    Virtual coaches use specialty matching — no street address
-                    needed. Existing profiles keep ZIP-based distance until
-                    updated.
-                  </p>
-                )}
-                <ProfileEditInputField label="City">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    value={form.city}
-                    onChange={(event) => updateField("city", event.target.value)}
-                  />
-                </ProfileEditInputField>
-                <ProfileEditInputField label="Primary neighborhood">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    value={form.neighborhood}
-                    onChange={(event) =>
-                      updateField("neighborhood", event.target.value)
-                    }
-                  />
-                </ProfileEditInputField>
-                <ProfileEditInputField label="ZIP code">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    value={form.zipCode}
-                    onChange={(event) =>
-                      updateField("zipCode", event.target.value)
-                    }
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                  />
-                </ProfileEditInputField>
+              <div className="dashboard-edit-fields specialist-dash-profile__fields--service-area">
+                {(() => {
+                  const showAddress =
+                    form.serviceType === "in-person" ||
+                    form.serviceType === "both";
+                  const secondary = secondaryWorkSpotFromForm(form);
+                  const showSecond =
+                    secondLocationOpen || hasWorkSpotContent(secondary);
+                  return (
+                    <>
+                      <SpecialistWorkSpotFields
+                        value={primaryWorkSpotFromForm(form)}
+                        onChange={(spot) =>
+                          setSectionDraft((prev) =>
+                            prev ? applyPrimaryWorkSpot(prev, spot) : prev
+                          )
+                        }
+                        showAddress={showAddress}
+                        heading={showSecond ? "Primary location" : undefined}
+                        headingHint={
+                          showSecond
+                            ? "Maps and search use this pin only"
+                            : undefined
+                        }
+                        virtualHint="Virtual coaches use specialty matching — no street address needed. Existing profiles keep ZIP-based distance until updated."
+                      />
+                      {showSecond ? (
+                        <SpecialistWorkSpotFields
+                          className="specialist-work-spot--secondary"
+                          value={secondary}
+                          onChange={(spot) =>
+                            setSectionDraft((prev) =>
+                              prev ? applySecondaryWorkSpot(prev, spot) : prev
+                            )
+                          }
+                          showAddress={showAddress}
+                          heading="Second location"
+                          headingHint="Shows on your profile — not a second map pin"
+                          addressLabel="Second work / studio address"
+                          addressHint="Clients see this on your profile. Explore still uses your primary location."
+                          virtualHint="Virtual coaches don’t need a second street address."
+                          onRemove={() => {
+                            setSecondLocationOpen(false);
+                            setSectionDraft((prev) =>
+                              prev ? clearSecondaryWorkSpot(prev) : prev
+                            );
+                          }}
+                        />
+                      ) : showAddress ? (
+                        <div className="specialist-service-area-add-wrap">
+                          <button
+                            type="button"
+                            className="smoac-control specialist-service-area-add"
+                            onClick={() => setSecondLocationOpen(true)}
+                          >
+                            + Add a second location
+                          </button>
+                          <p className="specialist-service-area-add__hint">
+                            Profile only — maps and search stay on your primary
+                            location.
+                          </p>
+                        </div>
+                      ) : null}
+                    </>
+                  );
+                })()}
                 <ProfileEditInputField label="Session format">
                   <select
                     className="login-field__input profile-edit-input"
@@ -1211,6 +1104,8 @@ export function SpecialistEditProfilePageClient({
                                 serviceType: next,
                                 workAddress: "",
                                 locationPrecision: "zip",
+                                workAddress2: "",
+                                locationPrecision2: "zip",
                               }
                             : prev
                         );

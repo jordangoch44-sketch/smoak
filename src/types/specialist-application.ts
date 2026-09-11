@@ -130,7 +130,7 @@ export interface SpecialistApplication {
   locationPrecision?: "zip" | "address";
 
   specialties: string[];
-  /** Up to three specialties shown on marketplace cards — dashboard "Featured specialties". */
+  /** Up to three specialties shown on marketplace cards — first selections. */
   homepageSpecialties?: string[];
   /** Profile toggle — Pro / PRO+ listing perk. Omitted means default On. */
   offersFreeFirstSession?: boolean;
@@ -197,6 +197,7 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   facilityAddress: "",
   locationPrecision: "zip",
   specialties: [],
+  homepageSpecialties: [],
   certifications: [{ name: "", issuer: "", year: new Date().getFullYear() }],
   collegeAttended: "",
   degree: "",

@@ -1,6 +1,7 @@
 /** Trust-building profile highlights per trainer */
 
 export interface TrainerCuratedProfile {
+  /** “Are we the right fit?” paragraph (one item) or legacy client-type pills */
   bestFor: string[];
   coachingStyle: string[];
   whyClientsChoose: string[];
@@ -24,12 +25,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Direct Messaging",
     ],
     bestFor: [
-      "Busy professionals",
-      "Former athletes",
-      "HYROX athletes",
-      "Strength rebuilders",
-      "Executive fitness",
-      "Weight loss beginners",
+      "My ideal client is a busy professional or former athlete who wants structured strength work, HYROX prep, or a clear path back to feeling athletic.",
     ],
     coachingStyle: [
       "Science-Based",
@@ -61,11 +57,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Direct Messaging",
     ],
     bestFor: [
-      "Women 40+",
-      "Stress recovery",
-      "Desk workers",
-      "Flexibility beginners",
-      "Mind-body seekers",
+      "I work best with clients who are women 40+, desk workers, or anyone rebuilding flexibility and wanting a calmer mind-body practice.",
     ],
     coachingStyle: [
       "Supportive Coaching",
@@ -96,11 +88,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Nutrition Guidance",
     ],
     bestFor: [
-      "HYROX athletes",
-      "Former athletes",
-      "Combat sports enthusiasts",
-      "High-intensity seekers",
-      "Weight loss beginners",
+      "We will be a great fit if you want high-intensity sessions, HYROX or combat-sport energy, and a coach who will push you hard.",
     ],
     coachingStyle: [
       "Tough Love",
@@ -132,11 +120,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Direct Messaging",
     ],
     bestFor: [
-      "Women 40+",
-      "Wellness-focused professionals",
-      "Nutrition rebuilders",
-      "Recovery seekers",
-      "Busy professionals",
+      "My ideal client is a wellness-focused professional — especially women 40+ — who wants nutrition, recovery, and a plan that fits a full life.",
     ],
     coachingStyle: [
       "Science-Based",
@@ -167,11 +151,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Nutrition Guidance",
     ],
     bestFor: [
-      "Marathon trainees",
-      "Running beginners",
-      "Endurance athletes",
-      "Busy professionals",
-      "Weight loss beginners",
+      "I work best with clients who are building toward a race — first-time runners, marathon trainees, and busy people who want endurance without burnout.",
     ],
     coachingStyle: [
       "Science-Based",
@@ -202,11 +182,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Direct Messaging",
     ],
     bestFor: [
-      "Women 40+",
-      "Strength beginners",
-      "Powerlifting curious",
-      "Former athletes",
-      "HYROX athletes",
+      "We will be a great fit if you want to get strong — women 40+, first-time lifters, and athletes chasing power or HYROX.",
     ],
     coachingStyle: [
       "Supportive Coaching",
@@ -238,11 +214,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Nutrition Guidance",
     ],
     bestFor: [
-      "Chronic pain sufferers",
-      "Desk workers",
-      "Recovery seekers",
-      "Mobility beginners",
-      "Women 40+",
+      "My ideal client is dealing with chronic pain, a stiff desk-job body, or a long recovery and wants mobility work that actually feels safe.",
     ],
     coachingStyle: [
       "Supportive Coaching",
@@ -273,11 +245,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Nutrition Guidance",
     ],
     bestFor: [
-      "Women 40+",
-      "Posture improvement",
-      "Core strength seekers",
-      "Pilates beginners",
-      "Desk workers",
+      "I work best with clients who want better posture and a stronger core — Pilates beginners, desk workers, and women 40+ starting fresh.",
     ],
     coachingStyle: [
       "Supportive Coaching",
@@ -308,10 +276,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Structured Workouts",
     ],
     bestFor: [
-      "Post-injury athletes",
-      "Mobility limitations",
-      "Runners rebuilding",
-      "Desk workers in pain",
+      "We will be a great fit if you are coming back from injury, limited mobility, or desk-job pain and need a clear rehab-minded plan.",
     ],
     coachingStyle: ["Science-Based", "Supportive Coaching", "Results-Focused"],
     whyClientsChoose: [
@@ -338,10 +303,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Form Analysis",
     ],
     bestFor: [
-      "Back pain sufferers",
-      "Desk workers",
-      "Weekend athletes",
-      "Posture improvement",
+      "My ideal client is dealing with back pain, desk stiffness, or weekend-athlete aches and wants gentle, posture-first care.",
     ],
     coachingStyle: ["Science-Based", "Supportive Coaching"],
     whyClientsChoose: [
@@ -368,10 +330,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Structured Check-ins",
     ],
     bestFor: [
-      "Fat loss goals",
-      "Busy professionals",
-      "Athletes fueling",
-      "Meal prep beginners",
+      "I work best with clients who want fat loss, better fueling, or simple meal prep — busy professionals and athletes included.",
     ],
     coachingStyle: ["Supportive Coaching", "Science-Based", "Beginner Friendly"],
     whyClientsChoose: [
@@ -398,10 +357,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Structured Sessions",
     ],
     bestFor: [
-      "Overtrained athletes",
-      "Mobility limitations",
-      "Recovery between blocks",
-      "Stress relief seekers",
+      "We will be a great fit if you are overtrained, tight, or stuck between training blocks and need hands-on recovery — not another hard session.",
     ],
     coachingStyle: ["Supportive Coaching", "Beginner Friendly"],
     whyClientsChoose: [
@@ -428,10 +384,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
       "Performance Testing",
     ],
     bestFor: [
-      "Field sport athletes",
-      "Speed development",
-      "Strength builders",
-      "HYROX competitors",
+      "My ideal client is a field-sport or HYROX athlete who wants speed, strength, and programming that holds up in competition.",
     ],
     coachingStyle: [
       "Athletic Performance",

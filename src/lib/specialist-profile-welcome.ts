@@ -1,6 +1,6 @@
 /**
  * First login after a specialist is approved: land on Edit profile and
- * show a one-time glass welcome (incomplete sections + 30-day Pro trial).
+ * show a one-time welcome (incomplete sections + 30-day Pro trial).
  */
 import { parseCoachingStyleSelection } from "@/constants/specialist-onboarding-options";
 import { SPECIALIST_PROFILE_WELCOME_SEEN_PREFIX } from "@/lib/dev-storage-keys";
@@ -127,7 +127,8 @@ export function buildProfileWelcomeTasks(
     },
     {
       id: "ideal-clients",
-      label: "Best for",
+      label: "Are we the right fit?",
+      description: "Help clients see if you are a good match.",
       done: Boolean(form.servicesOffered.trim()),
     },
     {

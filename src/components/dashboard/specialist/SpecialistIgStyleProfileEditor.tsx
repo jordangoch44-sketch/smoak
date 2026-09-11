@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
+import { formatDualLocationPreview } from "@/lib/specialist-work-spots";
 import { formatMembershipShortLabel, isProPlusPlan, isTrainerProPlus, membershipBadgeToneForSession, membershipRoleBadgeClassName } from "@/lib/specialist-premium";
 import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
 import {
@@ -48,8 +48,7 @@ export type IgEditRowId =
   | "contact"
   | "gender"
   | "experience"
-  | "profile-style"
-  | "featured-specialties";
+  | "profile-style";
 
 function previewOrAdd(value: string, empty = "Add"): string {
   const trimmed = value.trim();
@@ -188,12 +187,26 @@ export function SpecialistIgStyleProfileEditor({
         ? formDefaults.specialty
         : trainer.specialty,
     }) || formDefaults.profession;
-  const location = formatProviderLocation({
-    ...trainer,
-    city: formDefaults.city || trainer.city,
-    neighborhood: formDefaults.neighborhood || trainer.neighborhood,
-    zipCode: formDefaults.zipCode || trainer.zipCode,
-  });
+  const location = formatDualLocationPreview(
+    {
+      workAddress: formDefaults.workAddress,
+      locationPrecision: formDefaults.locationPrecision,
+      city: formDefaults.city || trainer.city,
+      neighborhood: formDefaults.neighborhood || trainer.neighborhood,
+      zipCode: formDefaults.zipCode || trainer.zipCode,
+      latitude: formDefaults.latitude,
+      longitude: formDefaults.longitude,
+    },
+    {
+      workAddress: formDefaults.workAddress2,
+      locationPrecision: formDefaults.locationPrecision2,
+      city: formDefaults.city2,
+      neighborhood: formDefaults.neighborhood2,
+      zipCode: formDefaults.zipCode2,
+      latitude: formDefaults.latitude2,
+      longitude: formDefaults.longitude2,
+    }
+  );
   const specialtyPreview =
     formDefaults.specialty.length > 0
       ? formDefaults.specialty.slice(0, 2).join(", ") +
@@ -221,12 +234,6 @@ export function SpecialistIgStyleProfileEditor({
     formDefaults.phone.trim() && "Phone",
     formDefaults.email.trim() && "Email",
   ].filter(Boolean);
-  const featuredPreview =
-    formDefaults.homepageSpecialties.length > 0
-      ? formDefaults.homepageSpecialties.join(", ")
-      : formDefaults.specialty.length > 0
-        ? "Using first specialties"
-        : "Add";
   const stylePreview = [
     profileStyleAccentLabel(formDefaults.profileAccent),
     profileStyleFrameLabel(formDefaults.profileAvatarFrame),
@@ -349,7 +356,7 @@ export function SpecialistIgStyleProfileEditor({
           sectionKey="service-area"
           label="Location"
           value={previewOrAdd(location)}
-          incomplete={!location.trim() && !formDefaults.zipCode.trim() && !formDefaults.city.trim() && !formDefaults.workAddress.trim()}
+          incomplete={!location.trim() && !formDefaults.zipCode.trim() && !formDefaults.city.trim() && !formDefaults.workAddress.trim() && !formDefaults.workAddress2.trim() && !formDefaults.zipCode2.trim()}
           highlighted={isHighlighted("service-area")}
           onClick={() => onEditSection("service-area")}
         />
@@ -371,7 +378,7 @@ export function SpecialistIgStyleProfileEditor({
         <IgEditRow
           id="ig-edit-row-ideal-clients"
           sectionKey="ideal-clients"
-          label="Best for"
+          label="Are we the right fit?"
           value={previewOrAdd(formDefaults.servicesOffered)}
           incomplete={!formDefaults.servicesOffered.trim()}
           highlighted={isHighlighted("ideal-clients")}
@@ -500,18 +507,6 @@ export function SpecialistIgStyleProfileEditor({
           value={stylePreview}
           highlighted={isHighlighted("profile-style")}
           onClick={() => onEditSection("profile-style")}
-        />
-        <IgEditRow
-          id="ig-edit-row-featured-specialties"
-          sectionKey="featured-specialties"
-          label="Featured specialties"
-          value={featuredPreview}
-          incomplete={
-            formDefaults.specialty.length === 0 &&
-            formDefaults.homepageSpecialties.length === 0
-          }
-          highlighted={isHighlighted("featured-specialties")}
-          onClick={() => onEditSection("featured-specialties")}
         />
       </div>
 

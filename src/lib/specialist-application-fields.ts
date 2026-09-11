@@ -7,6 +7,10 @@ import {
 } from "@/types/specialist-training-options";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import {
+  sanitizeMarketplaceSpecialties,
+  syncHomepageSpecialties,
+} from "@/lib/specialty-display";
+import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistApplication,
   type SpecialistOnboardingState,
@@ -90,8 +94,11 @@ export function normalizeSpecialistApplicationShape(
     gymName: asString(app.gymName),
     trainingOptions,
     facilityAddress: asString(app.facilityAddress),
-    specialties: asStringArray(app.specialties),
-    homepageSpecialties: asStringArray(app.homepageSpecialties),
+    specialties: sanitizeMarketplaceSpecialties(asStringArray(app.specialties)),
+    homepageSpecialties: syncHomepageSpecialties(
+      asStringArray(app.specialties),
+      asStringArray(app.homepageSpecialties)
+    ),
     offersFreeFirstSession:
       typeof app.offersFreeFirstSession === "boolean"
         ? app.offersFreeFirstSession

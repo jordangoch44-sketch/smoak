@@ -21,6 +21,8 @@ interface SpecialistPreciseLocationFieldProps {
   locationPrecision: SpecialistLocationPrecision;
   disabled?: boolean;
   className?: string;
+  label?: string;
+  hint?: string;
   onResolved: (value: SpecialistPreciseLocationValue) => void;
   onCleared: () => void;
   onDraftChange?: (workAddress: string) => void;
@@ -35,6 +37,8 @@ export function SpecialistPreciseLocationField({
   locationPrecision,
   disabled = false,
   className,
+  label = "Exact work / studio address",
+  hint = "Best for helping clients discover you",
   onResolved,
   onCleared,
   onDraftChange,
@@ -259,11 +263,11 @@ export function SpecialistPreciseLocationField({
     >
       <label className="login-field specialist-precise-location__field">
         <span className="login-field__label specialist-precise-location__label">
-          Exact work / studio address
+          {label}
         </span>
-        <span className="specialist-precise-location__hint">
-          Best for helping clients discover you
-        </span>
+        {hint ? (
+          <span className="specialist-precise-location__hint">{hint}</span>
+        ) : null}
         <div className="specialist-precise-location__search">
           <span className="specialist-precise-location__search-icon" aria-hidden>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

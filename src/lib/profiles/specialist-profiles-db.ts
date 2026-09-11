@@ -266,6 +266,35 @@ function trainerFromProfileData(
       profileData.locationPrecision === "zip"
         ? profileData.locationPrecision
         : undefined,
+    workAddress2:
+      typeof profileData.workAddress2 === "string"
+        ? profileData.workAddress2
+        : undefined,
+    locationPrecision2:
+      profileData.locationPrecision2 === "address" ||
+      profileData.locationPrecision2 === "zip"
+        ? profileData.locationPrecision2
+        : undefined,
+    city2:
+      typeof profileData.city2 === "string" ? profileData.city2 : undefined,
+    neighborhood2:
+      typeof profileData.neighborhood2 === "string"
+        ? profileData.neighborhood2
+        : undefined,
+    zipCode2:
+      typeof profileData.zipCode2 === "string"
+        ? profileData.zipCode2
+        : undefined,
+    latitude2:
+      typeof profileData.latitude2 === "number" &&
+      Number.isFinite(profileData.latitude2)
+        ? profileData.latitude2
+        : undefined,
+    longitude2:
+      typeof profileData.longitude2 === "number" &&
+      Number.isFinite(profileData.longitude2)
+        ? profileData.longitude2
+        : undefined,
     willingToTravel:
       typeof profileData.willingToTravel === "boolean"
         ? profileData.willingToTravel
@@ -452,6 +481,13 @@ export function specialistProfileFromRow(row: SpecialistProfileRow): {
             : 0,
       workAddress: trainer.workAddress,
       locationPrecision: trainer.locationPrecision,
+      workAddress2: trainer.workAddress2,
+      locationPrecision2: trainer.locationPrecision2,
+      city2: trainer.city2,
+      neighborhood2: trainer.neighborhood2,
+      zipCode2: trainer.zipCode2,
+      latitude2: trainer.latitude2,
+      longitude2: trainer.longitude2,
       specialty: trainer.specialty?.length
         ? trainer.specialty
         : asStringArray(row.specialty),

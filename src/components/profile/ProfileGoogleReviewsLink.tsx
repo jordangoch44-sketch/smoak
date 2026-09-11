@@ -102,7 +102,6 @@ export function ProfileGoogleReviewsLink({
         onClick={(event) => event.stopPropagation()}
       >
         {googleRow}
-        <span className="profile-hero__reviews-google-open">View on Google</span>
       </a>
     );
   }

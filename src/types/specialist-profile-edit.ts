@@ -34,6 +34,14 @@ export interface SpecialistProfileOverrides {
   locationPrecision?: "zip" | "address";
   latitude?: number;
   longitude?: number;
+  /** Optional second studio / gym — public profile only; not used for maps/search */
+  workAddress2?: string;
+  locationPrecision2?: "zip" | "address";
+  city2?: string;
+  neighborhood2?: string;
+  zipCode2?: string;
+  latitude2?: number;
+  longitude2?: number;
   pricePerSession?: number;
   pricePerSessionMin?: number;
   pricePerSessionMax?: number;
@@ -62,6 +70,7 @@ export interface SpecialistProfileOverrides {
   googlePlaceId?: string;
   experienceYears?: string;
   trainingStyle?: string;
+  /** “Are we the right fit?” paragraph (stored as bestClientTypes / bestFor) */
   servicesOffered?: string;
   /** Curated look: accent, avatar frame, name font */
   profileStyle?: SpecialistProfileStyle;
@@ -87,6 +96,11 @@ export type SpecialistProfileEditForm = Required<
     | "serviceArea"
     | "workAddress"
     | "locationPrecision"
+    | "workAddress2"
+    | "locationPrecision2"
+    | "city2"
+    | "neighborhood2"
+    | "zipCode2"
     | "pricePerSession"
     | "pricePerSessionMin"
     | "pricePerSessionMax"
@@ -119,4 +133,6 @@ export type SpecialistProfileEditForm = Required<
   /** Set when pinning an exact address; ZIP centroid when precision is zip */
   latitude: number | null;
   longitude: number | null;
+  latitude2: number | null;
+  longitude2: number | null;
 };

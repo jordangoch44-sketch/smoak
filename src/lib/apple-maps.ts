@@ -1,5 +1,5 @@
 /**
- * Apple MapKit JS helpers for Explore.
+ * Apple MapKit JS helpers for Explore and the profile Location and travel preview.
  * Token: Apple Developer → Maps → MapKit JS → Create a Maps Token
  * (static domain-bound token). Set NEXT_PUBLIC_APPLE_MAPS_TOKEN.
  */

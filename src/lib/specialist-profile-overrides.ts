@@ -1,6 +1,10 @@
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
-import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
+import {
+  sanitizeMarketplaceSpecialties,
+  syncHomepageSpecialties,
+  withSanitizedMarketplaceSpecialties,
+} from "@/lib/specialty-display";
 import { buildTrainerGalleryImages, syncTrainerGalleryImages } from "@/lib/trainer-gallery";
 import {
   normalizePinnedPhotos,
@@ -35,6 +39,7 @@ import {
   withSyncedSessionPrices,
 } from "@/lib/session-price";
 import type { Certification, Trainer } from "@/types";
+import { rightFitCopyFromItems } from "@/lib/specialist-right-fit";
 import type {
   SpecialistProfileEditForm,
   SpecialistProfileOverrides,
@@ -102,6 +107,13 @@ const PROFILE_SECTION_FIELDS: Record<
     "city",
     "neighborhood",
     "zipCode",
+    "workAddress2",
+    "locationPrecision2",
+    "latitude2",
+    "longitude2",
+    "city2",
+    "neighborhood2",
+    "zipCode2",
     "serviceType",
     "travelToClients",
     "travelRadius",
@@ -128,7 +140,6 @@ const PROFILE_SECTION_FIELDS: Record<
   gender: ["gender"],
   experience: ["experienceYears"],
   "profile-style": ["profileAccent", "profileAvatarFrame", "profileNameFont"],
-  "featured-specialties": ["homepageSpecialties"],
   "basic-info": [
     "name",
     "title",
@@ -170,9 +181,10 @@ export function overlayProfileSectionDraft(
     Object.assign(next, { [key]: value });
   }
   if (section === "specialties") {
-    next.homepageSpecialties = sanitizeHomepageSpecialties(
+    next.specialty = sanitizeMarketplaceSpecialties(next.specialty);
+    next.homepageSpecialties = syncHomepageSpecialties(
       next.specialty,
-      draft.homepageSpecialties
+      next.homepageSpecialties
     );
   }
   return cloneSpecialistProfileEditForm(next);
@@ -236,7 +248,9 @@ export function applySpecialistProfileOverrides(
   overrides: SpecialistProfileOverrides | null | undefined
 ): Trainer {
   if (!overrides) {
-    return stripGalleryVideosUnlessProPlus(base);
+    return stripGalleryVideosUnlessProPlus(
+      withSanitizedMarketplaceSpecialties(base)
+    );
   }
 
   const merged: Trainer = {
@@ -274,7 +288,8 @@ export function applySpecialistProfileOverrides(
     });
   }
 
-  merged.homepageSpecialties = sanitizeHomepageSpecialties(
+  merged.specialty = sanitizeMarketplaceSpecialties(merged.specialty);
+  merged.homepageSpecialties = syncHomepageSpecialties(
     merged.specialty,
     merged.homepageSpecialties
   );
@@ -305,6 +320,48 @@ export function applySpecialistProfileOverrides(
     }
   }
 
+  if (overrides.workAddress2 !== undefined) {
+    const address = overrides.workAddress2.trim();
+    if (address) merged.workAddress2 = address;
+    else delete merged.workAddress2;
+  }
+  if (
+    overrides.locationPrecision2 === "address" ||
+    overrides.locationPrecision2 === "zip"
+  ) {
+    merged.locationPrecision2 = overrides.locationPrecision2;
+  }
+  if (overrides.city2 !== undefined) {
+    const city = overrides.city2.trim();
+    if (city) merged.city2 = city;
+    else delete merged.city2;
+  }
+  if (overrides.neighborhood2 !== undefined) {
+    const neighborhood = overrides.neighborhood2.trim();
+    if (neighborhood) merged.neighborhood2 = neighborhood;
+    else delete merged.neighborhood2;
+  }
+  if (overrides.zipCode2 !== undefined) {
+    const zip = overrides.zipCode2.trim();
+    if (zip) merged.zipCode2 = zip;
+    else delete merged.zipCode2;
+  }
+  if (overrides.latitude2 != null && overrides.longitude2 != null) {
+    merged.latitude2 = overrides.latitude2;
+    merged.longitude2 = overrides.longitude2;
+  } else if (merged.locationPrecision2 !== "address" && merged.zipCode2) {
+    const fromZip = zipCodeToCoordinates(merged.zipCode2);
+    if (fromZip) {
+      merged.latitude2 = fromZip.latitude;
+      merged.longitude2 = fromZip.longitude;
+      merged.locationPrecision2 = "zip";
+    }
+  } else if (!merged.zipCode2 && !merged.workAddress2) {
+    delete merged.latitude2;
+    delete merged.longitude2;
+    delete merged.locationPrecision2;
+  }
+
   if (overrides.bookingAvailability?.trim()) {
     const slots = parseCommaList(overrides.bookingAvailability);
     if (slots.length > 0) {
@@ -317,9 +374,9 @@ export function applySpecialistProfileOverrides(
     const pills = parsePillList(overrides.trainingStyle);
     if (pills.length > 0) merged.coachingStyle = pills;
   }
-  if (overrides.servicesOffered?.trim()) {
-    const pills = parsePillList(overrides.servicesOffered);
-    if (pills.length > 0) merged.bestFor = pills;
+  if (overrides.servicesOffered !== undefined) {
+    const copy = overrides.servicesOffered.trim();
+    merged.bestFor = copy ? [copy] : [];
   }
   if (
     overrides.instagram !== undefined ||
@@ -492,14 +549,17 @@ export function overridesFromTrainer(
   const style = normalizeProfileStyle(
     stored?.profileStyle ?? trainer.profileStyle
   );
+  const specialty = sanitizeMarketplaceSpecialties(
+    stored?.specialty ?? trainer.specialty ?? []
+  );
   return {
     name: stored?.name ?? trainer.name,
     title: stored?.title ?? trainer.title,
     gender: stored?.gender ?? trainer.gender,
     profession: stored?.profession ?? trainer.profession,
-    specialty: [...(stored?.specialty ?? trainer.specialty ?? [])],
-    homepageSpecialties: sanitizeHomepageSpecialties(
-      stored?.specialty ?? trainer.specialty ?? [],
+    specialty,
+    homepageSpecialties: syncHomepageSpecialties(
+      specialty,
       stored?.homepageSpecialties ?? trainer.homepageSpecialties
     ),
     certifications: (
@@ -537,6 +597,17 @@ export function overridesFromTrainer(
         : "zip",
     latitude: stored?.latitude ?? trainer.latitude ?? null,
     longitude: stored?.longitude ?? trainer.longitude ?? null,
+    workAddress2: stored?.workAddress2 ?? trainer.workAddress2 ?? "",
+    locationPrecision2:
+      stored?.locationPrecision2 === "address" ||
+      trainer.locationPrecision2 === "address"
+        ? "address"
+        : "zip",
+    city2: stored?.city2 ?? trainer.city2 ?? "",
+    neighborhood2: stored?.neighborhood2 ?? trainer.neighborhood2 ?? "",
+    zipCode2: stored?.zipCode2 ?? trainer.zipCode2 ?? "",
+    latitude2: stored?.latitude2 ?? trainer.latitude2 ?? null,
+    longitude2: stored?.longitude2 ?? trainer.longitude2 ?? null,
     ...(() => {
       const range = resolveTrainerSessionPriceRange({
         pricePerSession: stored?.pricePerSession ?? trainer.pricePerSession,
@@ -662,10 +733,7 @@ export function overridesFromTrainer(
         .filter(Boolean)
         .join(" · ") || ""),
     servicesOffered:
-      stored?.servicesOffered ??
-      ((Array.isArray(trainer.bestFor) ? trainer.bestFor : [])
-        .filter(Boolean)
-        .join(", ") || ""),
+      stored?.servicesOffered ?? rightFitCopyFromItems(trainer.bestFor),
     profileAccent: style.accent,
     profileAvatarFrame: style.avatarFrame,
     profileNameFont: style.nameFont,
@@ -675,8 +743,8 @@ export function overridesFromTrainer(
 export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProfileOverrides {
   const travel = form.travelRadius.trim();
   const radiusMiles = parseTravelRadiusMiles(travel);
-  const specialty = form.specialty.map((s) => s.trim()).filter(Boolean);
-  const homepageSpecialties = sanitizeHomepageSpecialties(
+  const specialty = sanitizeMarketplaceSpecialties(form.specialty);
+  const homepageSpecialties = syncHomepageSpecialties(
     specialty,
     form.homepageSpecialties
   );
@@ -701,6 +769,14 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     locationPrecision: form.locationPrecision,
     ...(form.latitude != null && form.longitude != null
       ? { latitude: form.latitude, longitude: form.longitude }
+      : {}),
+    workAddress2: form.workAddress2.trim(),
+    locationPrecision2: form.locationPrecision2,
+    city2: form.city2.trim(),
+    neighborhood2: form.neighborhood2.trim(),
+    zipCode2: form.zipCode2.trim(),
+    ...(form.latitude2 != null && form.longitude2 != null
+      ? { latitude2: form.latitude2, longitude2: form.longitude2 }
       : {}),
     ...(() => {
       const range = resolveTrainerSessionPriceRange({

@@ -31,6 +31,10 @@ import {
   formToOverrides,
   loadSpecialistOverridesForId,
 } from "@/lib/specialist-profile-overrides";
+import {
+  sanitizeMarketplaceSpecialties,
+  syncHomepageSpecialties,
+} from "@/lib/specialty-display";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
 import { resolveSpecialistFormLocation } from "@/lib/specialist-form-location";
 import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
@@ -296,8 +300,11 @@ export function mergeProfileEditsIntoApplication(
     headline: form.title.trim(),
     gender: form.gender,
     professionalType: form.profession.trim(),
-    specialties: form.specialty,
-    homepageSpecialties: form.homepageSpecialties.map((s) => s.trim()).filter(Boolean),
+    specialties: sanitizeMarketplaceSpecialties(form.specialty),
+    homepageSpecialties: syncHomepageSpecialties(
+      form.specialty,
+      form.homepageSpecialties
+    ),
     offersFreeFirstSession: form.offersFreeFirstSession,
     certifications: form.certifications.filter((cert) => cert.name.trim()),
     city: form.city.trim(),

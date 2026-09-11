@@ -109,6 +109,15 @@ export interface Trainer {
   workAddress?: string;
   /** zip = ZIP centroid (default for existing profiles); address = pinned street */
   locationPrecision?: "zip" | "address";
+  /** Optional second studio / gym — shown on the public profile only.
+   * Maps, Explore distance, and search stay on the primary pin. */
+  workAddress2?: string;
+  locationPrecision2?: "zip" | "address";
+  city2?: string;
+  neighborhood2?: string;
+  zipCode2?: string;
+  latitude2?: number;
+  longitude2?: number;
   /** Yes / no / n/a — whether the specialist travels to the client */
   travelToClients?: TravelToClients;
   /** When true, user ZIP within serviceRadiusMiles can match in Explore */
@@ -170,6 +179,7 @@ export interface Trainer {
   image: string;
   heroImage: string;
   bio: string;
+  /** “Are we the right fit?” copy — one paragraph, or legacy client-type pills */
   bestFor: string[];
   coachingStyle: string[];
   whyClientsChoose: string[];

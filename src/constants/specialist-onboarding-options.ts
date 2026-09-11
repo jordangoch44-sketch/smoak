@@ -1,3 +1,4 @@
+import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 
 /** Specialist onboarding — short signup path; depth deferred to dashboard after approval */
@@ -5,29 +6,8 @@ export const SPECIALIST_ONBOARDING_TOTAL_STEPS = 6;
 
 export const PROFESSIONAL_TYPE_OPTIONS = MAIN_PROFESSION_CATEGORIES;
 
-export const SPECIALIST_SPECIALTY_OPTIONS = [
-  "Fat Loss",
-  "Muscle Gain",
-  "Strength",
-  "Powerlifting",
-  "Athletic Performance",
-  "HYROX",
-  "Rehab",
-  "Mobility",
-  "Women's Fitness",
-  "Senior Fitness",
-  "Youth Training",
-  "Sports Specific",
-  "Nutrition",
-  "Posture",
-  "Back Pain",
-  "Corrective Exercise",
-  "Bodybuilding",
-  "General Fitness",
-  "Endurance",
-  "Tactical Fitness",
-  "Functional Fitness",
-] as const;
+/** Same tags as Explore / dashboard — do not keep a second specialty vocabulary. */
+export const SPECIALIST_SPECIALTY_OPTIONS = marketplaceSpecialtyOptions;
 
 export const AGE_RANGE_OPTIONS = [
   "18–25",

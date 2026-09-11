@@ -16,8 +16,8 @@ import {
   withSyncedSessionPrices,
 } from "@/lib/session-price";
 import {
-  featuredSpecialtiesFromSelection,
-  sanitizeHomepageSpecialties,
+  sanitizeMarketplaceSpecialties,
+  syncHomepageSpecialties,
 } from "@/lib/specialty-display";
 import type {
   SpecialistApplication,
@@ -95,16 +95,13 @@ export function applicationToTrainer(
     app.media?.profilePhotoUrl?.trim() || "/trainers/placeholder.jpg";
   const mediaUrls = linesToUrls(app.media?.trainingVideoUrls ?? "");
   const headline = app.headline?.trim() ?? "";
-  const specialties = Array.isArray(app.specialties) ? app.specialties : [];
-  const homepageSpecialties = (() => {
-    const saved = sanitizeHomepageSpecialties(
-      specialties,
-      app.homepageSpecialties
-    );
-    return saved.length > 0
-      ? saved
-      : featuredSpecialtiesFromSelection(specialties);
-  })();
+  const specialties = sanitizeMarketplaceSpecialties(
+    Array.isArray(app.specialties) ? app.specialties : []
+  );
+  const homepageSpecialties = syncHomepageSpecialties(
+    specialties,
+    app.homepageSpecialties
+  );
   const certifications = Array.isArray(app.certifications)
     ? app.certifications.filter((c) => c?.name?.trim())
     : [];
@@ -188,11 +185,7 @@ export function applicationToTrainer(
     image: photo,
     heroImage: mediaUrls[0] || photo,
     bio: app.bio?.trim() || "",
-    bestFor: bestClientTypes
-      .split(/[,;\n]/)
-      .map((item) => item.trim())
-      .filter(Boolean)
-      .slice(0, 8),
+    bestFor: bestClientTypes.trim() ? [bestClientTypes.trim()] : [],
     coachingStyle: coachingPhilosophy
       ? coachingPhilosophy
           .split(/[,;\n·]+/)
@@ -275,7 +268,9 @@ export function applicationToProfileOverrides(
       ? { latitude: app.latitude, longitude: app.longitude }
       : zipCodeToCoordinates(zip);
 
-  const specialties = Array.isArray(app.specialties) ? app.specialties : [];
+  const specialties = sanitizeMarketplaceSpecialties(
+    Array.isArray(app.specialties) ? app.specialties : []
+  );
   const trainingStyle = [
     app.coachingPhilosophy?.trim() ?? "",
     app.communicationStyle?.trim() ?? "",
@@ -295,15 +290,10 @@ export function applicationToProfileOverrides(
         specialty: specialties,
       }) || app.professionalType,
     specialty: specialties,
-    homepageSpecialties: (() => {
-      const saved = sanitizeHomepageSpecialties(
-        specialties,
-        app.homepageSpecialties
-      );
-      return saved.length > 0
-        ? saved
-        : featuredSpecialtiesFromSelection(specialties);
-    })(),
+    homepageSpecialties: syncHomepageSpecialties(
+      specialties,
+      app.homepageSpecialties
+    ),
     certifications: Array.isArray(app.certifications) ? app.certifications : [],
     city: app.city?.trim() ?? "",
     state: app.state?.trim() ?? "",
