@@ -17,6 +17,7 @@ import {
   patchApprovedSpecialistProfileFields,
   refreshApprovedSpecialistProfilesFromRemote,
 } from "@/lib/approved-specialist-profiles-store";
+import { GoogleReviewsConnectGuide } from "@/components/dashboard/specialist/GoogleReviewsConnectGuide";
 import type { GooglePlaceSnapshot } from "@/lib/google-places";
 import { cn } from "@/lib/utils";
 
@@ -26,14 +27,6 @@ interface GoogleReviewsCardProps {
   onUpgrade?: () => void;
   defaultOpen?: boolean;
 }
-
-const CONNECT_STEPS = [
-  "Open Google Maps",
-  "Search your business",
-  "Tap Share",
-  "Copy the link",
-  "Paste it here",
-] as const;
 
 async function postGoogleConnect(
   placeIdOrUrl: string
@@ -194,11 +187,6 @@ export function GoogleReviewsCard({
         </div>
       ) : (
         <div className="dashboard-google-reviews">
-          <ol className="dashboard-google-reviews__steps">
-            {CONNECT_STEPS.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
           <form
             className="dashboard-connect-google-form"
             onSubmit={(event) => {
@@ -206,17 +194,11 @@ export function GoogleReviewsCard({
               void handleConnect();
             }}
           >
-            <label className="login-field">
-              <span className="login-field__label">Maps share link</span>
-              <input
-                className="login-field__input"
-                value={value}
-                onChange={(event) => setValue(event.target.value)}
-                placeholder="https://maps.app.goo.gl/…"
-                autoComplete="off"
-                disabled={busy}
-              />
-            </label>
+            <GoogleReviewsConnectGuide
+              value={value}
+              onChange={setValue}
+              disabled={busy}
+            />
             {error ? (
               <p className="dashboard-connect-google-form__error" role="alert">
                 {error}

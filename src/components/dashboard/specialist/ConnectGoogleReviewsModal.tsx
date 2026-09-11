@@ -9,6 +9,7 @@ import {
   DashboardModalCloseButton,
   DashboardModalScrim,
 } from "@/components/dashboard/shared/DashboardModalScrim";
+import { GoogleReviewsConnectGuide } from "@/components/dashboard/specialist/GoogleReviewsConnectGuide";
 import type { GooglePlaceSnapshot } from "@/lib/google-places";
 
 interface ConnectGoogleReviewsModalProps {
@@ -103,30 +104,17 @@ export function ConnectGoogleReviewsModal({
             Connect Google Reviews
           </h2>
           <p id="connect-google-desc" className="dashboard-modal__body">
-            Paste a Google Maps share link.
+            Follow the steps, then paste your Google Maps share link.
           </p>
-          <ol className="dashboard-google-reviews__steps dashboard-google-reviews__steps--modal">
-            <li>Open Google Maps</li>
-            <li>Search your business</li>
-            <li>Tap Share</li>
-            <li>Copy the link</li>
-            <li>Paste it here</li>
-          </ol>
           <form
-            className="dashboard-connect-google-form"
+            className="dashboard-connect-google-form dashboard-connect-google-form--modal"
             onSubmit={(e) => void handleSubmit(e)}
           >
-            <label className="login-field">
-              <span className="login-field__label">Maps share link</span>
-              <input
-                className="login-field__input"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder="https://maps.app.goo.gl/…"
-                autoComplete="off"
-                disabled={busy}
-              />
-            </label>
+            <GoogleReviewsConnectGuide
+              value={value}
+              onChange={setValue}
+              disabled={busy}
+            />
             {error ? (
               <p className="dashboard-connect-google-form__error" role="alert">
                 {error}
