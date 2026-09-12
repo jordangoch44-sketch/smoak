@@ -321,7 +321,7 @@ export function ExploreMapApple({
       if (!(target instanceof Element)) return;
       if (
         target.closest(
-          ".explore-hub-tray, .explore-map-callout, .explore-map-popup-wrap, .explore-bottom-card-dock, .smoac-control"
+          ".explore-map-callout, .explore-map-popup-wrap, .explore-bottom-card-dock, .smoac-control"
         )
       ) {
         return;
@@ -366,7 +366,7 @@ export function ExploreMapApple({
       if (!(target instanceof Element)) return;
       if (
         target.closest(
-          ".explore-map-callout, .explore-hub-tray, .explore-bottom-card-dock, .explore-bottom-card, .explore-bottom-card__carousel, .explore-map-cluster-popup__carousel"
+          ".explore-map-callout, .explore-bottom-card-dock, .explore-bottom-card, .explore-bottom-card__carousel, .explore-map-cluster-popup__carousel"
         )
       ) {
         return;

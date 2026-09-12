@@ -11,6 +11,9 @@ interface SpecialistInquiriesInboxProps {
   initialConversationId?: string | null;
   onCloseThread?: () => void;
   onHideLead?: (id: string) => void | Promise<void>;
+  onMarkRead?: (ids: string[]) => void | Promise<void>;
+  onMarkUnread?: (ids: string[]) => void | Promise<void>;
+  onBack?: () => void;
 }
 
 export function SpecialistInquiriesInbox({
@@ -20,6 +23,9 @@ export function SpecialistInquiriesInbox({
   initialConversationId,
   onCloseThread,
   onHideLead,
+  onMarkRead,
+  onMarkUnread,
+  onBack,
 }: SpecialistInquiriesInboxProps) {
   const demoLeads = leads.filter((lead) => isDemoInquiryConversationId(lead.id));
 
@@ -35,7 +41,10 @@ export function SpecialistInquiriesInbox({
         demoLeads={demoLeads}
         previewLeads={leads}
         onCloseThread={onCloseThread}
+        onExitPage={onBack}
         onHideConversation={onHideLead}
+        onMarkConversationsRead={onMarkRead}
+        onMarkConversationsUnread={onMarkUnread}
         onOpenConversation={(id) => {
           const lead = leads.find((item) => item.id === id);
           if (lead) onOpenLead?.(lead);

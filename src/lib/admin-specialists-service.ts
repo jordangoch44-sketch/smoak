@@ -452,22 +452,6 @@ export async function setAdminSpecialistAccountKindAsync(
   return { ok: true };
 }
 
-/** @deprecated Prefer setAdminSpecialistProtectedAsync */
-export function setAdminSpecialistProtected(
-  trainerId: string,
-  isProtected: boolean
-): void {
-  void setAdminSpecialistProtectedAsync(trainerId, isProtected);
-}
-
-/** @deprecated Prefer setAdminSpecialistAccountKindAsync */
-export function setAdminSpecialistAccountKind(
-  trainerId: string,
-  accountKind: "real" | "test"
-): void {
-  void setAdminSpecialistAccountKindAsync(trainerId, accountKind);
-}
-
 export type AdminSpecialistFlag =
   | "featured"
   | "sponsored"
@@ -632,21 +616,4 @@ export async function updateAdminSpecialistBasicsAsync(
   await refreshApprovedSpecialistProfilesFromRemoteAsync();
   await refreshAdminSpecialistDirectoryFromRemote();
   return { ok: true };
-}
-
-/** @deprecated Prefer updateAdminSpecialistBasicsAsync */
-export function updateAdminSpecialistBasics(
-  trainerId: string,
-  basics: {
-    profession?: string;
-    specialty?: string[];
-    city?: string;
-    state?: string;
-    neighborhood?: string;
-    zipCode?: string;
-    serviceType?: "in-person" | "virtual" | "both";
-    travelRadius?: string;
-  }
-): void {
-  void updateAdminSpecialistBasicsAsync(trainerId, basics);
 }

@@ -21,7 +21,6 @@ Live when Supabase env is configured. Specialist dashboard media fields upload t
 | `src/lib/supabase/storage-paths.ts` | Path builders & validation |
 | `src/lib/supabase/storage.ts` | `uploadSpecialistMedia`, `removeSpecialistMedia` |
 | `src/components/dashboard/specialist/ProfileMediaUploadField.tsx` | UI upload → Storage when live |
-| `src/types/supabase-storage.ts` | Upload options & result types |
 | `supabase/migrations/*.sql` | Bucket + RLS policies |
 
 ## Local dev without Supabase

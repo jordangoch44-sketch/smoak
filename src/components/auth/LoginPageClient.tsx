@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { AlertTriangleIcon, CloseIcon } from "@/components/ui/icons";
+import { SITE_ROUTES } from "@/lib/navigation";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
@@ -313,7 +316,11 @@ export function LoginPageClient() {
         <div className="login-page__shell">
           <div className="login-card">
             <p className="login-card__eyebrow">Welcome back</p>
-            <h1 className="login-card__title">Opening your account…</h1>
+            <PageWaitState
+              label="Opening your account"
+              compact
+              className="login-card__wait"
+            />
             <p className="login-card__subtitle">
               {hasPendingSpecialistProfileWelcome(session)
                 ? "Taking you to your profile."
@@ -481,6 +488,11 @@ export function LoginPageClient() {
                 Forgot password?
               </HeaderChromeLink>
             </div>
+            <p className="auth-legal-notice">
+              <Link href={SITE_ROUTES.privacy}>Privacy Policy</Link>
+              {" · "}
+              <Link href={SITE_ROUTES.terms}>Terms of Service</Link>
+            </p>
           </form>
         </div>
       </div>

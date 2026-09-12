@@ -69,12 +69,6 @@ export function getDefaultHomeEssenceConfig(): HomeEssenceConfig {
   };
 }
 
-/** @deprecated Prefer getDefaultHomeEssenceConfig().slides — kept for imports. */
-export const HOME_ESSENCE_SLIDES = DEFAULT_HOME_ESSENCE_SLIDES;
-
-/** @deprecated Prefer config.intervalMs */
-export const HOME_ESSENCE_INTERVAL_MS = HOME_ESSENCE_DEFAULT_INTERVAL_MS;
-
 function asString(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
 }

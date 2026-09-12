@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -575,6 +576,8 @@ export function QuickClientAccountModal({
                   )}
                 </span>
               </FastActivateButton>
+
+              <LegalAgreementNotice />
 
               <p className="login-gate__footnote">
                 Already have an account?{" "}

@@ -71,8 +71,6 @@ const FALLBACK_CENTER: ExploreMapArea = {
   longitude: -117.1611,
 };
 
-/** @deprecated Prefer DEFAULT_EXPLORE_RADIUS_MILES — kept for existing imports */
-export const DEFAULT_EXPLORE_MAP_RADIUS_MILES = DEFAULT_EXPLORE_RADIUS_MILES;
 const METERS_PER_MILE = 1609.344;
 
 function frameRadiusMiles(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { DashboardSection } from "@/components/dashboard";
 
 interface TeamMember {
@@ -166,7 +167,7 @@ export function AdminTeamPanel() {
       {error ? <p className="admin-status-error">{error}</p> : null}
 
       {loading ? (
-        <p className="admin-empty">Loading team…</p>
+        <PageWaitState label="Loading team" compact />
       ) : members.length === 0 ? (
         <p className="admin-empty">No admin users found.</p>
       ) : (

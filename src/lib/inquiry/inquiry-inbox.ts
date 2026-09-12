@@ -25,6 +25,10 @@ import {
 } from "@/lib/inquiry-options";
 import { markSpecialistInquiryNotificationRead } from "@/lib/inquiry/specialist-inquiry-notifications";
 import { isInquiryHidden, listHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
+import {
+  applySpecialistUnreadFlags,
+  unflagInquiryUnread,
+} from "@/lib/inquiry/inquiry-unread-flag-store";
 
 export interface ClientInquiryListItem {
   id: string;
@@ -328,8 +332,12 @@ export async function loadSpecialistInquiryLeads(
         .reverse()
         .find((m) => m.sender_role === "client");
       return conversationToLead(record.conversation, {
-        unread: record.messages.some(
-          (m) => m.sender_role === "client" && !m.is_read
+        unread: applySpecialistUnreadFlags(
+          specialistId,
+          record.messages.some(
+            (m) => m.sender_role === "client" && !m.is_read
+          ),
+          record.conversation.id
         ),
         latestBody: latest?.body,
       });
@@ -343,7 +351,10 @@ export async function loadSpecialistInquiryLeads(
   return rows
     .filter(({ conversation }) => !hidden.has(conversation.id))
     .map(({ conversation, unread, latestBody }) =>
-      conversationToLead(conversation, { unread, latestBody })
+      conversationToLead(conversation, {
+        unread: applySpecialistUnreadFlags(specialistId, unread, conversation.id),
+        latestBody,
+      })
     );
 }
 
@@ -373,6 +384,7 @@ export async function markSpecialistInquiryRead(
   specialistId: string,
   conversationId: string
 ): Promise<void> {
+  unflagInquiryUnread(specialistId, conversationId);
   markSpecialistInquiryNotificationRead(specialistId, conversationId);
   await markInquiryThreadRead(conversationId, "specialist");
 }

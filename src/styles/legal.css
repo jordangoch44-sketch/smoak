@@ -55,6 +55,39 @@
   color: rgba(255, 255, 255, 0.42);
 }
 
+.legal-page__notice {
+  margin: 0.85rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(248, 226, 186, 0.22);
+  background: rgba(248, 226, 186, 0.08);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(248, 226, 186, 0.88);
+}
+
+.auth-legal-notice {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+}
+
+.auth-legal-notice a {
+  color: rgba(248, 226, 186, 0.88);
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+.auth-legal-notice a:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.auth-legal-notice--start {
+  text-align: left;
+}
+
 .legal-page__body {
   display: flex;
   flex-direction: column;

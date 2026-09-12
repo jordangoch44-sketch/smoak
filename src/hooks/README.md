@@ -1,8 +1,6 @@
 # Hooks
 
-Client-side React hooks. **Prefer direct imports:** `@/hooks/useAuthSession`.
-
-`hooks/index.ts` is an optional catalog barrel (not used by app code today). See `ARCHITECTURE.md` → Imports.
+Client-side React hooks. **Prefer direct imports:** `@/hooks/useAuthSession`. See `ARCHITECTURE.md` → Imports.
 
 ## Common hooks
 

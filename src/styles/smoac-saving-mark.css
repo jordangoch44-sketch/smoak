@@ -71,6 +71,40 @@
   letter-spacing: 0.1em;
 }
 
+.page-wait-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  min-height: min(52dvh, 28rem);
+  padding: 3rem 1.25rem;
+  text-align: center;
+}
+
+.page-wait-state--compact {
+  min-height: 0;
+  padding: 1.35rem 0.5rem;
+}
+
+.page-wait-state--embedded {
+  min-height: 0;
+  padding: 0;
+}
+
+.page-wait-state__retry {
+  min-height: 2.5rem;
+  padding: 0 1.15rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .smoac-saving-mark__ring {
     animation: none;

@@ -15,7 +15,7 @@ export default function PricingPage() {
   return (
     <LegalDocumentPage
       title="Pricing"
-      description="How discovery, inquiries, and specialist listing work during early access."
+      description="Client discovery is free. Specialists can subscribe to Pro or PRO+ and run Boost campaigns."
       effectiveDate={LEGAL_EFFECTIVE_DATE}
       sections={PRICING_SECTIONS}
       related={[

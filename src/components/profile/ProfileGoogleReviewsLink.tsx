@@ -70,7 +70,9 @@ export function ProfileGoogleReviewsLink({
 
   const googleRow = (
     <>
-      <GoogleMark className="profile-hero__reviews-mark profile-hero__reviews-mark--google" />
+      <span className="profile-hero__reviews-mark-slot" aria-hidden>
+        <GoogleMark className="profile-hero__reviews-mark profile-hero__reviews-mark--google" />
+      </span>
       <GoogleStars
         reviewCount={google.reviewCount}
         avgRating={google.rating}

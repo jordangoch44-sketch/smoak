@@ -22,13 +22,17 @@ import { CLIENT_SEARCH_RADIUS_OPTIONS } from "@/constants/client-profile-options
 import type { ClientProfileFormState } from "@/types/client-profile";
 import {
   DashboardEmptyState,
+  DashboardLoadingState,
   DashboardPageShell,
 } from "@/components/dashboard";
 import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOrganizer";
 import { TrainerList } from "@/components/trainers";
 import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiriesList";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
+import { ClientWorkoutsEntry } from "@/components/dashboard/client/workouts/ClientWorkoutsEntry";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { CheckIcon } from "@/components/ui/icons";
 import { cn, getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 
@@ -154,13 +158,7 @@ export function ClientDashboardPageClient() {
   }, [isSavesLoading]);
 
   if (!isReady || !session) {
-    return (
-      <div className="dashboard-page dashboard-page--loading">
-        <div className="dashboard-page__content">
-          <p className="dashboard-page__subtitle">Loading your dashboard…</p>
-        </div>
-      </div>
-    );
+    return <DashboardLoadingState />;
   }
 
   const firstName = session.firstName?.trim() || "there";
@@ -268,13 +266,7 @@ export function ClientDashboardPageClient() {
               Add a few details for better specialist matches.
             </p>
           </FastActivateButton>
-        ) : (
-          <div className="client-dash-progress client-dash-progress--done">
-            <span className="client-dash-progress__title">
-              Profile complete ✓
-            </span>
-          </div>
-        )}
+        ) : null}
 
         <div
           className="client-dash-tabs"
@@ -315,18 +307,31 @@ export function ClientDashboardPageClient() {
             >
               <div className="client-dash-summary">
                 <div className="client-dash-summary__identity">
-                  <div className="client-dash-summary__avatar">
-                    {avatarUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- auth avatar URLs
-                      <img src={avatarUrl} alt="" />
-                    ) : (
-                      <span aria-hidden>{initials}</span>
-                    )}
+                  <div className="client-dash-summary__avatar-wrap">
+                    <div className="client-dash-summary__avatar">
+                      {avatarUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- auth avatar URLs
+                        <img src={avatarUrl} alt="" />
+                      ) : (
+                        <span aria-hidden>{initials}</span>
+                      )}
+                    </div>
+                    {profileComplete ? (
+                      <span
+                        className="client-dash-summary__avatar-badge"
+                        title="Profile complete"
+                        aria-label="Profile complete"
+                      >
+                        <CheckIcon className="client-dash-summary__avatar-badge-icon" />
+                      </span>
+                    ) : null}
                   </div>
                   <div className="client-dash-summary__copy">
                     <h2 className="client-dash-summary__name">{displayName}</h2>
                     <p className="client-dash-summary__location">
-                      {form ? formatLocation(form) : "—"}
+                      <span className="client-dash-summary__location-chip">
+                        <span>{form ? formatLocation(form) : "—"}</span>
+                      </span>
                     </p>
                   </div>
                 </div>
@@ -361,6 +366,8 @@ export function ClientDashboardPageClient() {
                   Edit profile
                 </FastActivateButton>
               </div>
+
+              <ClientWorkoutsEntry userId={session.userId} />
             </section>
           ) : null}
 
@@ -372,9 +379,10 @@ export function ClientDashboardPageClient() {
               className="client-dash-panel"
             >
               {!isSavesReady && !loadTimedOut ? (
-                <p className="client-dash-panel__status">
-                  Loading your saved specialists…
-                </p>
+                <PageWaitState
+                  label="Loading your saved specialists"
+                  compact
+                />
               ) : saved.length >= 2 ? (
                 <SavedSpecialistsOrganizer
                   trainers={saved}

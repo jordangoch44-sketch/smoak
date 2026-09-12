@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/Logo";
 import { UserPlusIcon } from "@/components/ui/icons";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
 import { getDashboardPathForRole } from "@/lib/auth-routes";
@@ -90,7 +91,10 @@ export function ProfileHubPageClient() {
   if (!hydrated || !isReady) {
     return (
       <div className="profile-hub profile-hub--loading" aria-busy="true">
-        <p className="profile-hub__loading-text">Loading your profile…</p>
+        <PageWaitState
+          label="Loading your profile"
+          className="page-wait-state--embedded"
+        />
       </div>
     );
   }
@@ -98,7 +102,10 @@ export function ProfileHubPageClient() {
   if (signedIn && role) {
     return (
       <div className="profile-hub profile-hub--loading" aria-busy="true">
-        <p className="profile-hub__loading-text">Opening your account…</p>
+        <PageWaitState
+          label="Opening your account"
+          className="page-wait-state--embedded"
+        />
       </div>
     );
   }

@@ -37,6 +37,11 @@ import {
 } from "@/lib/inquiry/inquiry-inbox";
 import { hideSpecialistInquiryConversation } from "@/lib/inquiry/inquiry-client-preview";
 import { hideInquiryId, listHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
+import {
+  flagInquiryUnreadIds,
+  isInquiryFlaggedUnread,
+  unflagInquiryUnread,
+} from "@/lib/inquiry/inquiry-unread-flag-store";
 import { hideLocalInquiryForSpecialist } from "@/lib/inquiry/inquiry-local-store";
 import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
 import { markAllSpecialistInquiryNotificationsRead } from "@/lib/inquiry/specialist-inquiry-notifications";
@@ -211,6 +216,7 @@ export function useSpecialistDashboard() {
   async function handleHideInquiry(conversationId: string) {
     if (!trainerId || !conversationId) return;
     hideInquiryId(trainerId, conversationId);
+    unflagInquiryUnread(trainerId, conversationId);
     hideLocalInquiryForSpecialist(conversationId);
     const result = await hideSpecialistInquiryConversation(conversationId);
     if (!result.ok && !isDemoInquiryConversationId(conversationId)) {
@@ -220,6 +226,34 @@ export function useSpecialistDashboard() {
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("smoac:inquiry-updated"));
     }
+  }
+
+  async function handleMarkInquiriesRead(conversationIds: string[]) {
+    if (!trainerId) return;
+    const ids = [...new Set(conversationIds.filter(Boolean))];
+    if (ids.length === 0) return;
+    await Promise.all(
+      ids.map((conversationId) =>
+        markSpecialistInquiryRead(trainerId, conversationId)
+      )
+    );
+    setInquiryLeads((prev) =>
+      prev.map((item) =>
+        ids.includes(item.id) ? { ...item, unread: false } : item
+      )
+    );
+  }
+
+  async function handleMarkInquiriesUnread(conversationIds: string[]) {
+    if (!trainerId) return;
+    const ids = [...new Set(conversationIds.filter(Boolean))];
+    if (ids.length === 0) return;
+    flagInquiryUnreadIds(trainerId, ids);
+    setInquiryLeads((prev) =>
+      prev.map((item) =>
+        ids.includes(item.id) ? { ...item, unread: true } : item
+      )
+    );
   }
 
   const trainer = managedTrainer ?? data.trainer;
@@ -285,7 +319,12 @@ export function useSpecialistDashboard() {
       : useDemoData
         ? data.newLeads
         : []
-    ).filter((lead) => !hiddenIds.has(lead.id));
+    ).filter((lead) => !hiddenIds.has(lead.id))
+    .map((lead) =>
+      trainerId && isInquiryFlaggedUnread(trainerId, lead.id)
+        ? { ...lead, unread: true }
+        : lead
+    );
 
   async function handleSignOut() {
     await signOut();
@@ -328,6 +367,8 @@ export function useSpecialistDashboard() {
     handleOpenInquiryLead,
     handleDismissInquiryNotifications,
     handleHideInquiry,
+    handleMarkInquiriesRead,
+    handleMarkInquiriesUnread,
     isHydrated,
   };
 }

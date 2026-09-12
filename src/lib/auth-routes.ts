@@ -6,6 +6,7 @@ export const SPECIALIST_DASHBOARD_PATH = "/specialist-dashboard";
 export const SPECIALIST_DASHBOARD_OVERVIEW_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=overview`;
 export const SPECIALIST_DASHBOARD_PROFILE_TAB_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile`;
 export const SPECIALIST_DASHBOARD_WELCOME_HREF = `${SPECIALIST_DASHBOARD_PROFILE_TAB_HREF}&welcome=1`;
+export const SPECIALIST_DASHBOARD_EDIT_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=edit`;
 export const SPECIALIST_DASHBOARD_INQUIRIES_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=inquiries`;
 export const LOGIN_PATH = "/login";
 

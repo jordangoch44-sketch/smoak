@@ -13,6 +13,8 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "location-selector-open",
   "profile-sheet-open",
   "inquiry-sheet-open",
+  "inquiry-inbox-open",
+  "specialist-edit-profile-open",
   "login-gate-open",
   "site-location-gate-open",
   "complete-account-lock",
@@ -20,6 +22,7 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "gallery-modal-open",
   "profile-image-preview-open",
   "admin-review-open",
+  "client-workouts-open",
   MODAL_OPEN_BODY_CLASS,
 ] as const;
 
@@ -47,6 +50,9 @@ const STALE_OVERLAY_ROOTS: ReadonlyArray<readonly [string, string]> = [
   ["login-gate-open", ".login-gate"],
   ["site-location-gate-open", ".site-location-gate"],
   ["complete-account-lock", ".complete-account-lock-shell, .login-page--complete-account"],
+  ["client-workouts-open", ".client-workouts-root"],
+  ["inquiry-inbox-open", ".inquiry-inbox-page"],
+  ["specialist-edit-profile-open", ".specialist-edit-profile-page"],
 ];
 
 function nudgeAppMainHitTesting(main: HTMLElement): void {

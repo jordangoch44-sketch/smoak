@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { DashboardSection } from "@/components/dashboard";
 import { AdminHomepageEssencePanel } from "@/components/admin/panels/AdminHomepageEssencePanel";
 
@@ -68,7 +69,7 @@ export function AdminSettingsPanel() {
       >
         {error ? <p className="admin-status-error">{error}</p> : null}
         {!status && !error ? (
-          <p className="admin-empty">Loading status…</p>
+          <PageWaitState label="Loading status" compact />
         ) : null}
         {status ? (
           <div className="admin-placeholder-grid">

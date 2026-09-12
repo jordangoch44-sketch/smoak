@@ -80,7 +80,7 @@ export function isSpecialistDashboardProfileTab(
   return tab !== "overview" && tab !== "plan";
 }
 
-/** Specialist dashboard overview / plan tab — Favorites slot when logged in. */
+/** Specialist dashboard overview / plan tab — Overview slot when logged in. */
 export function isSpecialistDashboardOverviewTab(
   pathname: string,
   searchParams?: URLSearchParams | null
@@ -196,7 +196,7 @@ export function getMobileBottomNavProfilePresentation(
 /**
  * Single source of truth for bottom-nav active state.
  * Search owns all `/explore` routes (Specialists tab removed).
- * Specialists: Favorites slot = dashboard overview; Profile = edit-profile tab.
+ * Specialists: Overview slot = dashboard overview; Profile = live marketplace view.
  */
 export function isActiveNavItem(
   itemId: MobileBottomNavItemId,

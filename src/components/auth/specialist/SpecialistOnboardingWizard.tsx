@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
+import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
 import { useToast } from "@/components/ui/toast";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -796,6 +797,7 @@ export function SpecialistOnboardingWizard({
                   {continueLabel()}
                 </button>
               </div>
+              {accountAlreadyCreated ? null : <LegalAgreementNotice />}
             </div>
 
             {accountAlreadyCreated ? null : (

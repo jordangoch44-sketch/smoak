@@ -67,7 +67,7 @@ Specialist profiles show **two separate** reputation systems:
 | Source | Module / UI | Notes |
 |--------|-------------|--------|
 | **SMOAC client reviews** | `lib/reviews/`, `SmoacReviewsSection`, `useSpecialistReviews` | Live Supabase; submit via `submit_specialist_review` RPC |
-| **Catalog / Google demo** | `lib/trainer-reviews.ts`, `Reviews.tsx` | Seed `reviewSources` + legacy review list; hero ★ uses `resolveTrainerReviewDisplay` |
+| **Catalog / Google demo** | `lib/trainer-reviews.ts`, `ProfileGoogleReviewsLink` | Seed `reviewSources`; hero ★ uses `resolveTrainerReviewDisplay` |
 | **Dashboard reputation** | `lib/specialist-reputation.ts` | Specialist dashboard mock feed only |
 
 Never average SMOAC and Google counts. Hero shows classic ★ + total plus a separate SMOAK line.

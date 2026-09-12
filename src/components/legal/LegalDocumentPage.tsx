@@ -15,6 +15,8 @@ interface LegalDocumentPageProps {
   effectiveDate: string;
   sections: LegalSection[];
   related?: { label: string; href: string }[];
+  /** Counsel-status note — used on Privacy, Terms, and Cookies until review. */
+  notice?: string;
   children?: ReactNode;
 }
 
@@ -28,6 +30,7 @@ export function LegalDocumentPage({
   effectiveDate,
   sections,
   related,
+  notice,
   children,
 }: LegalDocumentPageProps) {
   return (
@@ -39,6 +42,7 @@ export function LegalDocumentPage({
           <h1 className="legal-page__title">{title}</h1>
           <p className="legal-page__lede">{description}</p>
           <p className="legal-page__meta">Effective {effectiveDate}</p>
+          {notice ? <p className="legal-page__notice">{notice}</p> : null}
         </header>
 
         <div className="legal-page__body">

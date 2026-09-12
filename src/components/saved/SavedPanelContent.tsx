@@ -8,6 +8,7 @@ import {
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePersonalizationCity } from "@/hooks/usePersonalizationCity";
 import { sortTrainersByPersonalizationCity } from "@/lib/personalized-trainers";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -180,7 +181,7 @@ export function SavedPanelContent({
         <div
           className={isOverlay ? "saved-dropdown__empty" : "explore-empty mt-10"}
         >
-          <p className="explore-empty__title">Loading your shortlist…</p>
+          <PageWaitState label="Loading your shortlist" compact />
           <p className="explore-empty__text">Syncing saved specialists.</p>
         </div>
       ) : isEmptyClient ? (

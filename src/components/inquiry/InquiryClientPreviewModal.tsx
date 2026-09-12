@@ -79,8 +79,47 @@ export function InquiryClientPreviewModal({
       >
         <div className="dashboard-modal__glow" aria-hidden />
         <div className="dashboard-modal__content">
-          {loading && !preview ? (
-            <p className="inquiry-client-preview__loading">Loading profile…</p>
+          {loading ? (
+            <>
+              <div className="inquiry-client-preview__loading-shell">
+                {preview ? (
+                  <div className="inquiry-client-preview__hero inquiry-client-preview__hero--loading">
+                    <InquiryAvatar
+                      name={preview.name}
+                      src={preview.avatarUrl}
+                      size="lg"
+                    />
+                    <div>
+                      <p className="inquiry-client-preview__eyebrow">
+                        Client profile
+                      </p>
+                      <h2
+                        id="inquiry-client-preview-title"
+                        className="inquiry-client-preview__name"
+                      >
+                        {preview.name}
+                      </h2>
+                    </div>
+                  </div>
+                ) : null}
+                <div
+                  className="inquiry-client-preview__skeleton"
+                  aria-hidden
+                >
+                  <span className="inquiry-client-preview__skeleton-line" />
+                  <span className="inquiry-client-preview__skeleton-line inquiry-client-preview__skeleton-line--short" />
+                  <span className="inquiry-client-preview__skeleton-line" />
+                  <span className="inquiry-client-preview__skeleton-chips">
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                </div>
+              </div>
+              <p className="inquiry-client-preview__loading" role="status">
+                Loading profile…
+              </p>
+            </>
           ) : preview ? (
             <>
               <div className="inquiry-client-preview__hero">
@@ -140,6 +179,7 @@ export function InquiryClientPreviewModal({
 interface InquiryDeleteConfirmModalProps {
   open: boolean;
   name: string;
+  count?: number;
   busy?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
@@ -148,6 +188,7 @@ interface InquiryDeleteConfirmModalProps {
 export function InquiryDeleteConfirmModal({
   open,
   name,
+  count = 1,
   busy = false,
   onCancel,
   onConfirm,
@@ -179,11 +220,12 @@ export function InquiryDeleteConfirmModal({
         <div className="dashboard-modal__glow" aria-hidden />
         <div className="dashboard-modal__content">
           <h2 id="inquiry-delete-title" className="dashboard-modal__title">
-            Delete conversation?
+            {count > 1 ? "Delete conversations?" : "Delete conversation?"}
           </h2>
           <p id="inquiry-delete-desc" className="dashboard-modal__body">
-            {name.trim() || "This client"} will be removed from your Inquiries.
-            They can still message you later.
+            {count > 1
+              ? `${count} conversations will be removed from your Inquiries. Those clients can still message you later.`
+              : `${name.trim() || "This client"} will be removed from your Inquiries. They can still message you later.`}
           </p>
           <div className="dashboard-modal__actions">
             <button

@@ -14,6 +14,8 @@ const SmoacWelcomeIntro = dynamic(
 );
 import { useRouter } from "next/navigation";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -838,7 +840,7 @@ export function CreateAccountWizardClient({
     return (
       <div className="login-page login-page--wizard" aria-busy="true">
         <div className="login-page__shell">
-          <p className="wizard-question__subtitle">Opening your application…</p>
+          <PageWaitState label="Opening your application" />
         </div>
       </div>
     );
@@ -949,6 +951,11 @@ export function CreateAccountWizardClient({
                       : "Continue"}
               </FastActivateButton>
             </div>
+
+            {(isClientQuickSignup && step === 2) ||
+            step === CREATE_ACCOUNT_TOTAL_STEPS ? (
+              <LegalAgreementNotice />
+            ) : null}
           </div>
 
           <p className="wizard-footer-link">

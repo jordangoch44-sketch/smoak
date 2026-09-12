@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import {
   AdminEmailEditor,
@@ -802,7 +803,7 @@ function RecipientHistorySheet({
           {email.name || "Untitled"} · {email.subject || "No subject"}
         </p>
         {loading ? (
-          <p className="admin-empty">Loading recipients…</p>
+          <PageWaitState label="Loading recipients" compact />
         ) : recipients.length === 0 ? (
           <p className="admin-empty">No recipient events yet. Send this email to see logs here.</p>
         ) : (

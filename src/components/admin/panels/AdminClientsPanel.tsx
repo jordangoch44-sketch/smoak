@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { DashboardSection } from "@/components/dashboard";
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import {
@@ -312,7 +313,7 @@ export function AdminClientsPanel({ canDelete }: AdminClientsPanelProps) {
       ) : null}
 
       {users === null && !error ? (
-        <p className="admin-empty">Loading clients…</p>
+        <PageWaitState label="Loading clients" compact />
       ) : null}
 
       {users !== null && filtered.length === 0 ? (

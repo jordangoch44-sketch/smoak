@@ -13,6 +13,7 @@ import {
   type StripeElementsOptions,
   type StripeExpressCheckoutElementConfirmEvent,
 } from "@stripe/stripe-js";
+import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
 import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
 import { ChevronDownIcon } from "@/components/ui/icons";
 
@@ -65,6 +66,14 @@ const EXPRESS_PAY = {
   },
 };
 
+const EXPRESS_SETUP = {
+  ...EXPRESS_SUBSCRIBE,
+  buttonType: {
+    applePay: "plain" as const,
+    googlePay: "plain" as const,
+  },
+};
+
 function billingReturnUrl(): string {
   return `${window.location.origin}/specialist-dashboard?billing=success`;
 }
@@ -73,11 +82,12 @@ interface StripeEmbeddedPayFormProps {
   productLabel: string;
   priceLabel: string;
   submitLabel?: string;
-  walletMode?: "subscribe" | "pay";
+  walletMode?: "subscribe" | "pay" | "setup";
+  intentMode?: "payment" | "setup";
   /** Collapse Card / Bank / Link fields until the specialist opens them. */
   foldCard?: boolean;
   onFoldChange?: (open: boolean) => void;
-  onPaid: () => void;
+  onPaid: (result?: { paymentMethodId?: string }) => void;
   onError: (message: string) => void;
 }
 
@@ -86,6 +96,7 @@ function StripeEmbeddedPayForm({
   priceLabel,
   submitLabel,
   walletMode = "subscribe",
+  intentMode = "payment",
   foldCard = false,
   onFoldChange,
   onPaid,
@@ -113,6 +124,29 @@ function StripeEmbeddedPayForm({
     setBusy(true);
     onError("");
     try {
+      if (intentMode === "setup") {
+        const result = await stripe.confirmSetup({
+          elements,
+          redirect: "if_required",
+          confirmParams: {
+            return_url: billingReturnUrl(),
+          },
+        });
+        if (result.error) {
+          event?.paymentFailed({
+            reason: "fail",
+            message: result.error.message,
+          });
+          onError(result.error.message ?? "Card update failed. Try again.");
+          return;
+        }
+        const pm = result.setupIntent?.payment_method;
+        const paymentMethodId =
+          typeof pm === "string" ? pm : pm && "id" in pm ? pm.id : undefined;
+        onPaid({ paymentMethodId });
+        return;
+      }
+
       const result = await stripe.confirmPayment({
         elements,
         redirect: "if_required",
@@ -139,6 +173,9 @@ function StripeEmbeddedPayForm({
 
   return (
     <div className="stripe-pay">
+      {!stripe || !elements ? (
+        <SmoacSavingOverlay label="Loading checkout" />
+      ) : null}
       <div
         className={
           walletState === "empty"
@@ -147,7 +184,13 @@ function StripeEmbeddedPayForm({
         }
       >
         <ExpressCheckoutElement
-          options={walletMode === "pay" ? EXPRESS_PAY : EXPRESS_SUBSCRIBE}
+          options={
+            walletMode === "pay"
+              ? EXPRESS_PAY
+              : walletMode === "setup"
+                ? EXPRESS_SETUP
+                : EXPRESS_SUBSCRIBE
+          }
           onReady={(event) => {
             const methods = event.availablePaymentMethods;
             setWalletState(
@@ -197,7 +240,12 @@ function StripeEmbeddedPayForm({
             onClick={() => void confirm()}
             disabled={!stripe || !elements || busy}
           >
-            {busy ? "Processing…" : submitLabel ?? `Subscribe · ${priceLabel}`}
+            {busy
+              ? "Processing…"
+              : submitLabel ??
+                (intentMode === "setup"
+                  ? "Save card"
+                  : `Subscribe · ${priceLabel}`)}
           </DashboardButton>
         </div>
       ) : null}
@@ -213,10 +261,11 @@ interface StripeEmbeddedCheckoutProps {
   productLabel: string;
   priceLabel: string;
   submitLabel?: string;
-  walletMode?: "subscribe" | "pay";
+  walletMode?: "subscribe" | "pay" | "setup";
+  intentMode?: "payment" | "setup";
   foldCard?: boolean;
   onFoldChange?: (open: boolean) => void;
-  onPaid: () => void;
+  onPaid: (result?: { paymentMethodId?: string }) => void;
   onError: (message: string) => void;
 }
 
@@ -226,6 +275,7 @@ export function StripeEmbeddedCheckout({
   priceLabel,
   submitLabel,
   walletMode = "subscribe",
+  intentMode = "payment",
   foldCard = false,
   onFoldChange,
   onPaid,
@@ -254,6 +304,7 @@ export function StripeEmbeddedCheckout({
         priceLabel={priceLabel}
         submitLabel={submitLabel}
         walletMode={walletMode}
+        intentMode={intentMode}
         foldCard={foldCard}
         onFoldChange={onFoldChange}
         onPaid={onPaid}

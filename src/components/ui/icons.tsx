@@ -21,25 +21,6 @@ export function SearchIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-export function ShieldCheckIcon({ className = "h-5 w-5" }: IconProps) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-      />
-    </svg>
-  );
-}
-
 export function FilterIcon({ className = "h-4 w-4" }: IconProps) {
   return (
     <svg
@@ -588,6 +569,44 @@ export function MessageBubbleIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function PencilIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"
+      />
+    </svg>
+  );
+}
+
+export function MenuIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+      />
+    </svg>
+  );
+}
+
 /** Explore browse category — Personal Trainer */
 export function DumbbellIcon({ className = "h-5 w-5" }: IconProps) {
   return (
@@ -702,25 +721,6 @@ export function RunningShoeIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-/** Explore browse category — Sports Performance */
-export function AthleticBallIcon({ className = "h-5 w-5" }: IconProps) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="8" />
-      <path d="M12 4c2.2 2.4 3.4 5.1 3.4 8s-1.2 5.6-3.4 8M12 4c-2.2 2.4-3.4 5.1-3.4 8s1.2 5.6 3.4 8M4.5 10.5c2.5.6 5 .9 7.5.9s5-.3 7.5-.9M4.5 13.5c2.5-.6 5-.9 7.5-.9s5 .3 7.5.9" />
-    </svg>
-  );
-}
-
 /** Explore browse category — Yoga Instructor */
 export function MeditationIcon({ className = "h-5 w-5" }: IconProps) {
   return (
@@ -773,27 +773,6 @@ export function MedicalCrossIcon({ className = "h-5 w-5" }: IconProps) {
     >
       <path d="M12 7.5v9M7.5 12h9" />
       <rect x="4.5" y="4.5" width="15" height="15" rx="3" />
-    </svg>
-  );
-}
-
-/** Explore browse category — Strength Coach */
-export function StrengthArmIcon({ className = "h-5 w-5" }: IconProps) {
-  return (
-    <svg
-      className={className}
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M9.25 8.25a2.35 2.35 0 114.7 0 2.35 2.35 0 01-4.7 0z" />
-      <path d="M7.5 11.25c1.4-1.2 2.7-1.7 4.1-1.1 2.1 1 2.9 3.5 2.2 6.3-.7 2.8-2.8 4.2-4.9 4.2" />
-      <path d="M11 13c.7 1.4.7 2.8 0 4.2" />
-      <path d="M14.75 12.5c1.1.3 2 .2 2.9-.5.7-.6 1.1-1.5 1.1-2.4" />
     </svg>
   );
 }

@@ -5,8 +5,6 @@ import {
   useId,
   useRef,
   useState,
-  type CSSProperties,
-  type MouseEvent,
   type ReactNode,
 } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -16,25 +14,21 @@ import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialis
 import { SpecialistInquiriesInbox } from "@/components/dashboard/specialist/SpecialistInquiriesInbox";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
-import { ProfileContactCta } from "@/components/profile/ProfileContactCta";
-import { ProfileHero } from "@/components/profile/ProfileHero";
-import {
-  ProfileSheetTabs,
-  type ProfileSheetTabId,
-} from "@/components/profile/ProfileSheetTabs";
-import { ProfileTrainerSpecs } from "@/components/profile/ProfileTrainerSpecs";
-import { SmoacReviewsSection } from "@/components/profile/SmoacReviewsSection";
+import { TrainerProfileView } from "@/components/profile/TrainerProfileView";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import { MarketplaceSpecialtyPicker } from "@/components/auth/specialist/MarketplaceSpecialtyPicker";
 import { SpecialistWorkSpotFields } from "@/components/dashboard/specialist/SpecialistWorkSpotFields";
 import { SpecialistRightFitFields } from "@/components/dashboard/specialist/SpecialistRightFitFields";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import {
+  ChevronLeftIcon,
+  MenuIcon,
+  MessageBubbleIcon,
+} from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
-import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
+import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
 import {
-  getProfileAccentRgb,
-  normalizeProfileStyle,
   PROFILE_ACCENT_OPTIONS,
   PROFILE_AVATAR_FRAME_OPTIONS,
   PROFILE_NAME_FONT_OPTIONS,
@@ -72,8 +66,9 @@ import {
 import { parseGender } from "@/lib/gender";
 import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 import { ProfileEditChipGroup } from "@/components/dashboard/specialist/ProfileEditSection";
-import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
+import { FREE_FIRST_SESSION_LABEL, isTrainerFreeFirstSessionEligible } from "@/lib/free-first-session";
 import type { Trainer } from "@/types/trainer";
+import type { TrainerCityRanking } from "@/data/city-rankings";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
@@ -82,7 +77,17 @@ import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
 
 type ProfilePreviewMode = "edit" | "live" | "inquiries";
 const LOCK_CLASS = "specialist-live-edit-open";
+const EDIT_PAGE_LOCK_CLASS = "specialist-edit-profile-open";
 const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
+
+function previewModeFromSearch(
+  viewParam: string,
+  conversationParam: string
+): ProfilePreviewMode {
+  if (conversationParam || viewParam === "inquiries") return "inquiries";
+  if (viewParam === "edit") return "edit";
+  return "live";
+}
 
 type SectionId =
   | "hero"
@@ -137,6 +142,7 @@ interface SpecialistDashboardProfilePreviewProps {
   onClearFocus?: () => void;
   onUpgrade?: () => void;
   onSignOut?: () => void;
+  cityRanking?: TrainerCityRanking | null;
   inquiryLeads?: SpecialistLead[];
   inquirySenderUserId?: string;
   inquiryUnreadCount?: number;
@@ -144,6 +150,8 @@ interface SpecialistDashboardProfilePreviewProps {
   onOpenInquiryLead?: (lead: SpecialistLead) => void;
   onCloseInquiryThread?: () => void;
   onHideInquiryLead?: (id: string) => void | Promise<void>;
+  onMarkInquiryLeadsRead?: (ids: string[]) => void | Promise<void>;
+  onMarkInquiryLeadsUnread?: (ids: string[]) => void | Promise<void>;
 }
 
 function mapTargetSectionToSectionId(target: string | null | undefined): SectionId | null {
@@ -213,63 +221,6 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
     default:
       return null;
   }
-}
-
-function LiveEditZone({
-  label,
-  canEdit,
-  onEdit,
-  children,
-  className,
-  incomplete = false,
-}: {
-  label: string;
-  canEdit: boolean;
-  onEdit: () => void;
-  children: ReactNode;
-  className?: string;
-  incomplete?: boolean;
-}) {
-  if (!canEdit) {
-    return <div className={className}>{children}</div>;
-  }
-
-  function handleZoneClick(event: MouseEvent<HTMLDivElement>) {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-    if (
-      target.closest(
-        "a, button, input, textarea, select, [role='button'], [data-live-edit-ignore]"
-      )
-    ) {
-      return;
-    }
-    onEdit();
-  }
-
-  return (
-    <div
-      className={cn(
-        "specialist-live-zone",
-        incomplete && "specialist-live-zone--incomplete",
-        className
-      )}
-      onClick={handleZoneClick}
-    >
-      <button
-        type="button"
-        className="smoac-control specialist-live-zone__edit"
-        aria-label={`Edit ${label}`}
-        onClick={(event) => {
-          event.stopPropagation();
-          onEdit();
-        }}
-      >
-        Edit
-      </button>
-      <div className="specialist-live-zone__content">{children}</div>
-    </div>
-  );
 }
 
 function LiveEditSheet({
@@ -398,103 +349,101 @@ function LiveEditSheet({
   );
 }
 
-function LivePreviewModeToggle({
-  value,
-  onChange,
-  isLivePublished = false,
-  onSignOut,
-  showInquiries = false,
-  inquiryUnreadCount = 0,
+function LiveProfileChrome({
+  showInquiries,
+  inquiryUnreadCount,
+  onOpenInquiries,
+  onOpenEdit,
 }: {
-  value: ProfilePreviewMode;
-  onChange: (value: ProfilePreviewMode) => void;
-  isLivePublished?: boolean;
-  onSignOut?: () => void;
-  showInquiries?: boolean;
-  inquiryUnreadCount?: number;
+  showInquiries: boolean;
+  inquiryUnreadCount: number;
+  onOpenInquiries: () => void;
+  onOpenEdit: () => void;
 }) {
-  return (
-    <div
-      className={cn(
-        "specialist-live-mode",
-        onSignOut && "specialist-live-mode--with-account",
-        showInquiries && "specialist-live-mode--with-inquiries"
-      )}
-      role="group"
-      aria-label="Profile mode"
-    >
-      <FastActivateButton
-        aria-pressed={value === "edit"}
-        className={cn(
-          "smoac-control specialist-live-mode__btn",
-          value === "edit" && "specialist-live-mode__btn--active"
-        )}
-        onActivate={() => onChange("edit")}
-      >
-        Edit
-      </FastActivateButton>
-      <FastActivateButton
-        aria-pressed={value === "live"}
-        className={cn(
-          "smoac-control specialist-live-mode__btn",
-          value === "live" && "specialist-live-mode__btn--active"
-        )}
-        onActivate={() => onChange("live")}
-      >
-        Live
-        {isLivePublished ? (
-          <span
-            className="dashboard-live-indicator"
-            title="Live on Marketplace"
-            aria-label="Live on Marketplace"
-          >
-            <span className="dashboard-live-indicator__dot" aria-hidden />
-          </span>
-        ) : null}
-      </FastActivateButton>
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="specialist-live-chrome">
       {showInquiries ? (
         <FastActivateButton
-          aria-pressed={value === "inquiries"}
-          className={cn(
-            "smoac-control specialist-live-mode__btn",
-            value === "inquiries" && "specialist-live-mode__btn--active"
-          )}
-          onActivate={() => onChange("inquiries")}
+          className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--messages"
+          aria-label={
+            inquiryUnreadCount > 0
+              ? `Inquiries, ${inquiryUnreadCount} unread`
+              : "Inquiries"
+          }
+          onActivate={onOpenInquiries}
         >
-          Inquiries
+          <MessageBubbleIcon className="specialist-live-chrome__icon" />
           {inquiryUnreadCount > 0 ? (
-            <span className="specialist-live-mode__count">
-              {inquiryUnreadCount}
+            <span className="specialist-live-chrome__badge">
+              {inquiryUnreadCount > 9 ? "9+" : inquiryUnreadCount}
             </span>
           ) : null}
         </FastActivateButton>
-      ) : null}
-      {onSignOut ? (
-        <FastActivateButton
-          className="smoac-control specialist-live-mode__btn specialist-live-mode__btn--signout"
-          onActivate={onSignOut}
-        >
-          Sign out
-        </FastActivateButton>
-      ) : null}
-    </div>
+      ) : (
+        <span className="specialist-live-chrome__spacer" aria-hidden />
+      )}
+      <p className="specialist-live-chrome__live" role="status">
+        <span className="specialist-live-chrome__live-dot" aria-hidden />
+        Live view
+      </p>
+      <FastActivateButton
+        className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--edit"
+        aria-label="Edit profile"
+        onActivate={onOpenEdit}
+      >
+        <MenuIcon className="specialist-live-chrome__icon" />
+      </FastActivateButton>
+    </div>,
+    document.body
+  );
+}
+
+function EditProfilePageChrome({
+  titleId,
+  onBack,
+}: {
+  titleId: string;
+  onBack: () => void;
+}) {
+  return (
+    <header className="specialist-edit-profile-page__chrome">
+      <FastActivateButton
+        className="smoac-control specialist-edit-profile-page__back"
+        aria-label="Back to live profile"
+        onActivate={onBack}
+      >
+        <ChevronLeftIcon className="specialist-edit-profile-page__back-icon" />
+      </FastActivateButton>
+      <h1 id={titleId} className="specialist-edit-profile-page__title">
+        Edit Profile
+      </h1>
+      <span className="specialist-edit-profile-page__spacer" aria-hidden />
+    </header>
   );
 }
 
 /**
- * Edit profile tab — Instagram-style list for owners; live preview for
- * read-only / pending views. Saves use the same managed profile path.
+ * Specialist Profile tab — live marketplace view by default; edit and
+ * inquiries open from the overlay buttons on that live screen.
  */
 export function SpecialistDashboardProfilePreview({
   trainer: trainerProp,
   editable = false,
   isPremium = false,
   isProPlus = false,
-  isLivePublished = false,
   focusSection = null,
   onClearFocus,
   onUpgrade,
   onSignOut,
+  cityRanking = null,
   inquiryLeads = [],
   inquirySenderUserId,
   inquiryUnreadCount = 0,
@@ -502,10 +451,13 @@ export function SpecialistDashboardProfilePreview({
   onOpenInquiryLead,
   onCloseInquiryThread,
   onHideInquiryLead,
+  onMarkInquiryLeadsRead,
+  onMarkInquiryLeadsUnread,
 }: SpecialistDashboardProfilePreviewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const editTitleId = useId();
   const {
     formDefaults,
     saveForm,
@@ -515,6 +467,9 @@ export function SpecialistDashboardProfilePreview({
   } = useManagedSpecialistProfile();
 
   const listing = managedTrainer ?? trainerProp;
+  const marketplaceTrainer = useTrainerWithOverrides(
+    trainerId ?? listing.id
+  );
   const listingPlan = parseMembershipPlan(listing.membershipPlan);
   const sessionPlan = isProPlus
     ? "platinum"
@@ -530,6 +485,7 @@ export function SpecialistDashboardProfilePreview({
   const approvedListing = getApprovedSpecialistProfileById(
     trainerId ?? listing.id
   );
+  const isLiveListing = application?.profileStatus === "APPROVED";
   const trainer = {
     ...listing,
     isPremium: membershipPlan !== "free",
@@ -542,40 +498,36 @@ export function SpecialistDashboardProfilePreview({
     reviewCount: listing.reviewCount || approvedListing?.reviewCount || 0,
     reviewSources: listing.reviewSources ?? approvedListing?.reviewSources,
   } as Trainer;
-  const isLiveListing = application?.profileStatus === "APPROVED";
+  /* Live === Marketplace: same public catalog row clients see. */
+  const liveTrainer = (marketplaceTrainer ??
+    (isLiveListing && approvedListing ? approvedListing : listing)) as Trainer;
 
   const [editing, setEditing] = useState<SectionId | null>(null);
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [secondLocationOpen, setSecondLocationOpen] = useState(false);
   const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
-  const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
-  const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const conversationParam = searchParams.get("c")?.trim() || "";
   const viewParam = searchParams.get("view")?.trim() || "";
   const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
-    conversationParam || viewParam === "inquiries" ? "inquiries" : "edit"
+    previewModeFromSearch(viewParam, conversationParam)
   );
-  const {
-    aggregate,
-    reviews: smoacReviews,
-    hasMore,
-    loadingMore,
-    loadMore,
-    sort,
-    setSort,
-    applySubmittedReview,
-  } = useSpecialistReviews(trainer.id);
-
   const canEdit = editable && Boolean(formDefaults && trainerId);
   const showInquiries = canEdit && Boolean(inquirySenderUserId);
 
   useEffect(() => {
-    if (!showInquiries) return;
-    if (conversationParam || viewParam === "inquiries") {
-      setPreviewMode("inquiries");
-    }
-  }, [conversationParam, showInquiries, viewParam]);
+    setPreviewMode(previewModeFromSearch(viewParam, conversationParam));
+  }, [conversationParam, viewParam]);
+
+  useEffect(() => {
+    if (previewMode !== "edit") return;
+    document.body.classList.add(EDIT_PAGE_LOCK_CLASS);
+    document.documentElement.classList.add(EDIT_PAGE_LOCK_CLASS);
+    return () => {
+      document.body.classList.remove(EDIT_PAGE_LOCK_CLASS);
+      document.documentElement.classList.remove(EDIT_PAGE_LOCK_CLASS);
+    };
+  }, [previewMode]);
 
   function replacePreviewMode(next: ProfilePreviewMode) {
     setPreviewMode(next);
@@ -583,6 +535,9 @@ export function SpecialistDashboardProfilePreview({
     params.set("tab", "profile");
     if (next === "inquiries") {
       params.set("view", "inquiries");
+    } else if (next === "edit") {
+      params.set("view", "edit");
+      params.delete("c");
     } else {
       params.delete("view");
       params.delete("c");
@@ -602,6 +557,16 @@ export function SpecialistDashboardProfilePreview({
 
     setHighlightedRow(mapped);
 
+    if (viewParam !== "edit") {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", "profile");
+      params.set("view", "edit");
+      router.replace(
+        `${SPECIALIST_DASHBOARD_PATH}?${params.toString()}`,
+        { scroll: false }
+      );
+    }
+
     const scrollTimer = window.setTimeout(() => {
       const el =
         document.getElementById(`ig-edit-row-${mapped}`) ||
@@ -620,7 +585,7 @@ export function SpecialistDashboardProfilePreview({
       window.clearTimeout(scrollTimer);
       window.clearTimeout(clearTimer);
     };
-  }, [focusSection, searchParams, onClearFocus]);
+  }, [focusSection, searchParams, onClearFocus, viewParam, router]);
 
   function startEdit(section: SectionId) {
     if (!canEdit || !formDefaults) return;
@@ -686,10 +651,6 @@ export function SpecialistDashboardProfilePreview({
   const selectedProfession = form
     ? canonicalizeProfessionLabel(form.profession)
     : null;
-  const profileStyle = normalizeProfileStyle(trainer.profileStyle);
-  const pageStyle = {
-    "--profile-accent-rgb": getProfileAccentRgb(profileStyle.accent),
-  } as CSSProperties;
 
   const editSheet =
     editing && form ? (
@@ -1292,36 +1253,40 @@ export function SpecialistDashboardProfilePreview({
       </LiveEditSheet>
     ) : null;
 
-  const modeToggle = canEdit ? (
-    <LivePreviewModeToggle
-      value={previewMode}
-      onChange={replacePreviewMode}
-      isLivePublished={isLivePublished}
-      onSignOut={onSignOut}
-      showInquiries={showInquiries}
-      inquiryUnreadCount={inquiryUnreadCount}
-    />
-  ) : null;
-
-  /* Owner edit tab — Instagram-style list (does not change public profile layout). */
+  /* Owner edit — Instagram-style list (does not change public profile layout). */
   if (canEdit && formDefaults && previewMode === "edit") {
     return (
-      <div id={LIVE_PROFILE_ANCHOR_ID} className="specialist-profile-mode">
-        {modeToggle}
-        <div className="ig-profile-edit-wrap">
-          <SpecialistIgStyleProfileEditor
-            trainer={trainer}
-            formDefaults={formDefaults}
-            onEditSection={(id) => startEdit(id)}
-            highlightedSection={highlightedRow}
-            onUpgrade={onUpgrade}
-            footer={
-              <p className="ig-profile-edit__hint">
-                Changes go live on Marketplace when you save. Clients still see
-                your normal SMOAC profile layout.
-              </p>
-            }
+      <div
+        id={LIVE_PROFILE_ANCHOR_ID}
+        className="specialist-profile-mode specialist-profile-mode--edit"
+      >
+        <div
+          className="specialist-edit-profile-page"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={editTitleId}
+        >
+          <EditProfilePageChrome
+            titleId={editTitleId}
+            onBack={() => replacePreviewMode("live")}
           />
+          <div className="specialist-edit-profile-page__body">
+            <div className="ig-profile-edit-wrap">
+              <SpecialistIgStyleProfileEditor
+                trainer={trainer}
+                formDefaults={formDefaults}
+                onEditSection={(id) => startEdit(id)}
+                highlightedSection={highlightedRow}
+                onUpgrade={onUpgrade}
+                footer={
+                  <p className="ig-profile-edit__hint">
+                    Changes go live on Marketplace when you save. Clients still see
+                    your normal SMOAC profile layout.
+                  </p>
+                }
+              />
+            </div>
+          </div>
         </div>
         {editSheet}
       </div>
@@ -1334,7 +1299,6 @@ export function SpecialistDashboardProfilePreview({
         id={LIVE_PROFILE_ANCHOR_ID}
         className="specialist-profile-mode specialist-profile-mode--inquiries"
       >
-        {modeToggle}
         <SpecialistInquiriesInbox
           leads={inquiryLeads}
           senderUserId={inquirySenderUserId}
@@ -1342,90 +1306,51 @@ export function SpecialistDashboardProfilePreview({
           initialConversationId={initialConversationId}
           onCloseThread={onCloseInquiryThread}
           onHideLead={onHideInquiryLead}
+          onMarkRead={onMarkInquiryLeadsRead}
+          onMarkUnread={onMarkInquiryLeadsUnread}
+          onBack={() => replacePreviewMode("live")}
         />
       </div>
     );
   }
 
+  const selfPreviewNote = () => {
+    showToast({
+      type: "info",
+      message: "Clients use this button to inquire — it isn’t editable.",
+    });
+  };
+
   return (
-    <div id={LIVE_PROFILE_ANCHOR_ID} className="specialist-profile-mode">
-      {modeToggle}
-      <article
-        className="specialist-live-marketplace profile-page--styled"
-        style={pageStyle}
-        data-profile-accent={profileStyle.accent}
-        aria-label="Live marketplace profile"
-      >
-      <LiveEditZone
-        label="Photos & identity"
-        canEdit={canEdit}
-        onEdit={() => startEdit("hero")}
-        className="specialist-live-zone--hero"
-      >
-        <div data-live-edit-ignore>
-          <ProfileHero
-            trainer={trainer}
-            variant="specialist-live"
-            smoacAggregate={aggregate}
-            onEditProfilePhoto={canEdit ? () => startEdit("hero") : undefined}
-            onClaimFreeSession={
-              canEdit
-                ? () => {
-                    showToast({
-                      type: "info",
-                      message:
-                        "Clients use this button to inquire — it isn’t editable.",
-                    });
-                  }
-                : undefined
-            }
-          />
-        </div>
-      </LiveEditZone>
-
-      <div className="specialist-live-marketplace__stream profile-content profile-content--streamlined">
-        <ProfileSheetTabs
-          value={sheetTab}
-          onChange={setSheetTab}
-          details={<ProfileTrainerSpecs trainer={trainer} />}
-          reviews={
-            <SmoacReviewsSection
-              specialistId={trainer.id}
-              specialistName={trainer.name}
-              aggregate={aggregate}
-              reviews={smoacReviews}
-              hasMore={hasMore}
-              loadingMore={loadingMore}
-              onLoadMore={() => void loadMore()}
-              sort={sort}
-              onSortChange={setSort}
-              reviewModalOpen={reviewModalOpen}
-              onReviewModalOpenChange={setReviewModalOpen}
-              onSubmitted={applySubmittedReview}
-              canLeaveReview={false}
-              trainer={trainer}
-            />
-          }
-          inquire={
-            <div className="specialist-live-contact-preview" data-live-edit-ignore>
-              <ProfileContactCta
-                specialistName={trainer.name}
-                onContact={() => {
-                  if (!canEdit) return;
-                  showToast({
-                    type: "info",
-                    message:
-                      "Clients use this button to inquire — it isn’t editable.",
-                  });
-                }}
-              />
-            </div>
-          }
+    <div
+      id={LIVE_PROFILE_ANCHOR_ID}
+      className="specialist-profile-mode specialist-profile-mode--live"
+    >
+      {canEdit ? (
+        <LiveProfileChrome
+          showInquiries={showInquiries}
+          inquiryUnreadCount={inquiryUnreadCount}
+          onOpenInquiries={() => replacePreviewMode("inquiries")}
+          onOpenEdit={() => replacePreviewMode("edit")}
         />
-      </div>
-
-      {editSheet}
-      </article>
+      ) : null}
+      <TrainerProfileView
+        trainer={liveTrainer}
+        cityRanking={cityRanking}
+        variant="specialist-live"
+        onClaimFreeSession={selfPreviewNote}
+        onInquire={selfPreviewNote}
+      />
+      {canEdit && onSignOut ? (
+        <div className="specialist-live-signout">
+          <FastActivateButton
+            className="smoac-control specialist-live-signout__btn"
+            onActivate={onSignOut}
+          >
+            Sign out
+          </FastActivateButton>
+        </div>
+      ) : null}
     </div>
   );
 }

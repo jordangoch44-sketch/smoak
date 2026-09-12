@@ -2,6 +2,7 @@
 
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
 import { LOGIN_PATH } from "@/lib/auth-routes";
 
 export type QuickClientAccountAuthVariant = "login-gate" | "inquiry-sheet";
@@ -109,6 +110,9 @@ export function QuickClientAccountSignupFields({
           finish your profile later.
         </p>
       )}
+      <LegalAgreementNotice
+        className={variant === "inquiry-sheet" ? "auth-legal-notice--start" : undefined}
+      />
     </>
   );
 

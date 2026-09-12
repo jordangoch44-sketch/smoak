@@ -144,7 +144,7 @@ Name mapping (do not rename): `photoNotes` ↔ `media.trainingVideoUrls` (slides
 ```
 ProfileReviewMeta          ★ rating + total + source tags (catalog/demo)
 SmoacReviewsSection        live SMOAC reviews (Supabase via useSpecialistReviews)
-Reviews                    Google / seed review list (never merged with SMOAC)
+ProfileGoogleReviewsLink   Google / seed review link (never merged with SMOAC)
 ```
 
 Submit path: `lib/reviews/specialist-reviews-client.ts` → RPC `submit_specialist_review`.  

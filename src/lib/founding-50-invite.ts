@@ -5,9 +5,6 @@
 
 export const FOUNDING_50_PATH = "/founding-50";
 
-/** @deprecated Use FOUNDING_50_PATH — kept for old redirects/bookmarks */
-export const FOUNDING_TRAINERS_PATH = FOUNDING_50_PATH;
-
 export const FOUNDING_50_LABEL = "Founding 50";
 
 export const FOUNDING_INVITE_CODE_PARAM = "code";
@@ -18,16 +15,10 @@ export const FOUNDING_50_STORAGE_KEY = "smoac.founding-50-invite";
 
 export const FOUNDING_50_CAP = 50;
 
-/** @deprecated Use FOUNDING_50_CAP */
-export const FOUNDING_TRAINER_CAP = FOUNDING_50_CAP;
-
 export interface Founding50InviteSession {
   code: string;
   acceptedAt: string;
 }
-
-/** @deprecated Use Founding50InviteSession */
-export type FoundingTrainerInviteSession = Founding50InviteSession;
 
 export function getFounding50InviteCodeExpected(): string | null {
   const code =
@@ -35,9 +26,6 @@ export function getFounding50InviteCodeExpected(): string | null {
     process.env.FOUNDING_TRAINER_INVITE_CODE?.trim();
   return code || null;
 }
-
-/** @deprecated Use getFounding50InviteCodeExpected */
-export const getFoundingTrainerInviteCodeExpected = getFounding50InviteCodeExpected;
 
 export function isFounding50InviteCodeValid(
   code: string | null | undefined
@@ -48,9 +36,6 @@ export function isFounding50InviteCodeValid(
   return Boolean(trimmed) && trimmed === expected;
 }
 
-/** @deprecated Use isFounding50InviteCodeValid */
-export const isFoundingInviteCodeValid = isFounding50InviteCodeValid;
-
 export function buildFounding50InviteHref(code?: string): string {
   const params = new URLSearchParams();
   const trimmed = code?.trim();
@@ -58,9 +43,6 @@ export function buildFounding50InviteHref(code?: string): string {
   const qs = params.toString();
   return qs ? `${FOUNDING_50_PATH}?${qs}` : FOUNDING_50_PATH;
 }
-
-/** @deprecated Use buildFounding50InviteHref */
-export const buildFoundingTrainersInviteHref = buildFounding50InviteHref;
 
 export function buildFounding50JoinHref(options?: {
   inviteCode?: string;
@@ -72,9 +54,6 @@ export function buildFounding50JoinHref(options?: {
   if (trimmed) params.set(FOUNDING_INVITE_CODE_PARAM, trimmed);
   return `/create-account?${params.toString()}`;
 }
-
-/** @deprecated Use buildFounding50JoinHref */
-export const buildFoundingTrainerJoinHref = buildFounding50JoinHref;
 
 export function parseJoinFoundingFlag(
   value: string | string[] | undefined
@@ -100,9 +79,6 @@ export function readFounding50InviteSession(): Founding50InviteSession | null {
   }
 }
 
-/** @deprecated Use readFounding50InviteSession */
-export const readFoundingTrainerInviteSession = readFounding50InviteSession;
-
 export function persistFounding50InviteSession(
   session: Founding50InviteSession
 ): void {
@@ -113,17 +89,11 @@ export function persistFounding50InviteSession(
   );
 }
 
-/** @deprecated Use persistFounding50InviteSession */
-export const persistFoundingTrainerInviteSession = persistFounding50InviteSession;
-
 export function clearFounding50InviteSession(): void {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(FOUNDING_50_STORAGE_KEY);
   window.sessionStorage.removeItem("smoac.founding-trainer-invite");
 }
-
-/** @deprecated Use clearFounding50InviteSession */
-export const clearFoundingTrainerInviteSession = clearFounding50InviteSession;
 
 export async function fetchFounding50Full(): Promise<boolean> {
   if (typeof window === "undefined") return false;
@@ -139,9 +109,6 @@ export async function fetchFounding50Full(): Promise<boolean> {
   }
 }
 
-/** @deprecated Use fetchFounding50Full */
-export const fetchFoundingTrainerCohortFull = fetchFounding50Full;
-
 export function formatFounding50SpotsRemaining(
   claimed: number,
   cap: number
@@ -150,9 +117,6 @@ export function formatFounding50SpotsRemaining(
   return String(remaining).padStart(2, "0");
 }
 
-/** @deprecated Use formatFounding50SpotsRemaining */
-export const formatFoundingSpotsRemaining = formatFounding50SpotsRemaining;
-
 export function formatFounding50MemberIndex(
   claimed: number,
   cap: number
@@ -160,6 +124,3 @@ export function formatFounding50MemberIndex(
   const next = Math.min(claimed + 1, cap);
   return String(next).padStart(2, "0");
 }
-
-/** @deprecated Use formatFounding50MemberIndex */
-export const formatFoundingCohortIndex = formatFounding50MemberIndex;

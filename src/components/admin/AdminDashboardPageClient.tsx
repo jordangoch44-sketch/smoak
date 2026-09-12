@@ -167,7 +167,7 @@ export function AdminDashboardPageClient() {
   }, [resolvedSection, attentionItemIds]);
 
   if (!isReady || !session || !access) {
-    return <DashboardLoadingState message="Loading admin dashboard…" />;
+    return <DashboardLoadingState message="Loading admin dashboard" />;
   }
 
   const { permissions, roleLabel, allowedSectionIds, isOwnerAdmin } = access;

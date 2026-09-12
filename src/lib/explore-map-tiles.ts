@@ -64,8 +64,3 @@ export function getExploreMapBasemap(): ExploreMapBasemap {
     tileModifierClass: "explore-map-tiles--street-dark",
   };
 }
-
-/** @deprecated Use getExploreMapBasemap */
-export function getExploreMapTileConfig() {
-  return getExploreMapBasemap();
-}

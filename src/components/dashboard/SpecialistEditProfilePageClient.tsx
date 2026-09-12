@@ -21,6 +21,7 @@ import {
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistWorkSpotFields } from "@/components/dashboard/specialist/SpecialistWorkSpotFields";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
@@ -345,15 +346,19 @@ export function SpecialistEditProfilePageClient({
       return createPortal(
         <div className="specialist-full-editor" role="presentation">
           <div className="specialist-full-editor__panel">
-            <p className="specialist-full-editor__loading">
-              Loading profile editor…
-            </p>
+            <div className="specialist-full-editor__loading">
+              <PageWaitState
+                label="Loading profile editor"
+                compact
+                className="page-wait-state--embedded"
+              />
+            </div>
           </div>
         </div>,
         document.body
       );
     }
-    return <DashboardLoadingState message="Loading profile editor…" />;
+    return <DashboardLoadingState message="Loading profile editor" />;
   }
 
   if (dashboardMode === "onboarding") {
@@ -362,15 +367,19 @@ export function SpecialistEditProfilePageClient({
       return createPortal(
         <div className="specialist-full-editor" role="presentation">
           <div className="specialist-full-editor__panel">
-            <p className="specialist-full-editor__loading">
-              Opening your application…
-            </p>
+            <div className="specialist-full-editor__loading">
+              <PageWaitState
+                label="Opening your application"
+                compact
+                className="page-wait-state--embedded"
+              />
+            </div>
           </div>
         </div>,
         document.body
       );
     }
-    return <DashboardLoadingState message="Opening your application…" />;
+    return <DashboardLoadingState message="Opening your application" />;
   }
 
   if (!savedForm || !form) {

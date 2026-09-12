@@ -5,7 +5,7 @@ export interface SpecialistLead {
   name: string;
   intent: string;
   receivedAt: string;
-  /** Unread client message waiting for email follow-up */
+  /** Unread for the specialist inbox badge — includes local “read later” flags */
   unread: boolean;
   clientEmail: string;
   actionLabel: string;

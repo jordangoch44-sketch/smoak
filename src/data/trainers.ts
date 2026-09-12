@@ -560,10 +560,3 @@ export const specialties = [
   ]),
 ].sort();
 export const genders = ["male", "female"] as const;
-export const priceRanges = [
-  { label: "Any price", value: "" },
-  { label: "Under $130", value: "130" },
-  { label: "Under $150", value: "150" },
-  { label: "Under $175", value: "175" },
-  { label: "Under $200", value: "200" },
-];

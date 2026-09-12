@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { DashboardSection } from "@/components/dashboard";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
@@ -189,7 +190,7 @@ export function AdminHomepageEssencePanel() {
       title="Homepage essence banner"
       description="Switch slides on/off, reorder, set how long each stays, and upload new stills. Saves go live on the marketplace."
     >
-      {loading ? <p className="admin-empty">Loading banner…</p> : null}
+      {loading ? <PageWaitState label="Loading banner" compact /> : null}
       {error ? <p className="admin-status-error">{error}</p> : null}
       {status ? <p className="admin-status-ok">{status}</p> : null}
 

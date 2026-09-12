@@ -8,5 +8,4 @@ export { DashboardGrid } from "./shared/DashboardGrid";
 export { DashboardMetricCard } from "./shared/DashboardMetricCard";
 export { DashboardLoadingState } from "./shared/DashboardLoadingState";
 export { DashboardEmptyState } from "./shared/DashboardEmptyState";
-export { DashboardListItem } from "./shared/DashboardListItem";
 export { SpecialistDashboardPageClient } from "./specialist/SpecialistDashboardPageClient";

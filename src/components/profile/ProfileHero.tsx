@@ -29,7 +29,7 @@ import {
 } from "@/lib/free-first-session";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
-import { CalendarIcon, PhotosStackIcon } from "@/components/ui/icons";
+import { PhotosStackIcon } from "@/components/ui/icons";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { MEDIA_TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
@@ -50,7 +50,7 @@ interface ProfileHeroProps {
   canLeaveReview?: boolean;
   hasOwnReview?: boolean;
   onLeaveReview?: () => void;
-  /** Specialist Live tab — same client profile, minus toolbar / leave-review / distance */
+  /** Dashboard Live tab — same client hero, minus sheet toolbar (close/save would leave the dashboard) */
   variant?: "public" | "specialist-live";
   /** Live tab — Edit chip on the circular profile photo */
   onEditProfilePhoto?: () => void;
@@ -208,13 +208,11 @@ export function ProfileHero({
                   <p className="profile-hero__location">
                     {formatProviderLocation(trainer)}
                   </p>
-                  {isSpecialistLive ? null : (
-                    <TrainerDistanceLabel
-                      trainer={trainer}
-                      showIcon
-                      className="profile-hero__distance"
-                    />
-                  )}
+                  <TrainerDistanceLabel
+                    trainer={trainer}
+                    showIcon
+                    className="profile-hero__distance"
+                  />
                 </div>
               </div>
             </div>
@@ -250,14 +248,12 @@ export function ProfileHero({
                         className="smoac-control profile-hero__free-session"
                         onActivate={onClaimFreeSession}
                       >
-                        <CalendarIcon className="profile-hero__free-session-icon" />
                         <span className="profile-hero__free-session-label">
                           {FREE_FIRST_SESSION_CLAIM_LABEL}
                         </span>
                       </FastActivateButton>
                     ) : (
                       <span className="profile-hero__free-session">
-                        <CalendarIcon className="profile-hero__free-session-icon" />
                         <span className="profile-hero__free-session-label">
                           {FREE_FIRST_SESSION_CLAIM_LABEL}
                         </span>

@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { createPortal } from "react-dom";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -29,6 +30,7 @@ import {
   updateAuthEmail,
   updatePassword,
 } from "@/lib/auth/marketplace-auth";
+import { accountDeletionMailto } from "@/lib/site-contact";
 import {
   ClientAvatarPipelineError,
   formatClientAvatarPipelineError,
@@ -494,7 +496,7 @@ export function ClientProfileEditModal({
 
         <div className="client-profile-sheet__body">
           {loading ? (
-            <p className="client-profile-section__hint">Loading your profile…</p>
+            <PageWaitState label="Loading your profile" compact />
           ) : (
             <>
               <section className="client-profile-section">
@@ -731,6 +733,15 @@ export function ClientProfileEditModal({
                     ) : null}
                   </div>
                 ) : null}
+                <a
+                  className="client-profile-delete-link"
+                  href={accountDeletionMailto("client")}
+                >
+                  Request account deletion
+                </a>
+                <p className="client-profile-section__hint">
+                  We’ll email you to confirm, then remove this account from SMOAC.
+                </p>
               </section>
 
               <section className="client-profile-section">

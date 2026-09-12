@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -520,6 +521,7 @@ export function CompleteAccountPageClient() {
                   "Create password"
                 )}
               </FastActivateButton>
+              <LegalAgreementNotice />
             </div>
           </form>
         </>

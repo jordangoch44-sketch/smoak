@@ -1,27 +1,5 @@
 /* Saved specialists — header dropdown overlay + /saved route */
 
-/* ── Navbar heart toggle ── */
-.navbar-saved-trigger {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.navbar-saved-trigger--has-saves:not(.navbar-saved-trigger--active) {
-  color: rgba(var(--save-heart-glow-rgb), 0.92);
-}
-
-.navbar-saved-trigger--has-saves:not(.navbar-saved-trigger--active) svg {
-  filter: drop-shadow(0 0 8px rgba(var(--save-heart-rgb), 0.35));
-}
-
-.navbar-saved-trigger--active {
-  background: rgba(var(--save-heart-rgb), 0.12);
-  box-shadow:
-    0 0 0 1px rgba(var(--save-heart-rgb), 0.24),
-    0 0 22px rgba(var(--save-heart-glow-rgb), 0.22);
-  color: rgba(255, 228, 232, 0.98);
-}
-
 /* ── Dropdown overlay (slides from under header) ── */
 .saved-dropdown__backdrop {
   z-index: 0;
@@ -228,6 +206,13 @@
 .saved-page-route__content {
   position: relative;
   z-index: 1;
+}
+
+.saved-page-route--loading .saved-page-route__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(70dvh, 36rem);
 }
 
 /* Logged-out Favorites — charcoal canvas (matches Marketplace + Profile) */

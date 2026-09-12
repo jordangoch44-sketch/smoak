@@ -14,9 +14,6 @@ export type Founding50InviteStatus = {
   isFull: boolean;
 };
 
-/** @deprecated Use Founding50InviteStatus */
-export type FoundingTrainerInviteStatus = Founding50InviteStatus;
-
 export async function countFounding50Applications(): Promise<number | null> {
   const supabase = createSupabaseServiceClient();
   if (!supabase) return null;
@@ -30,9 +27,6 @@ export async function countFounding50Applications(): Promise<number | null> {
   if (error) return null;
   return count ?? 0;
 }
-
-/** @deprecated Use countFounding50Applications */
-export const countFoundingTrainerApplications = countFounding50Applications;
 
 export async function getFounding50InviteStatus(
   inviteCode: string | null | undefined
@@ -53,18 +47,3 @@ export async function getFounding50InviteStatus(
     isFull,
   };
 }
-
-/** @deprecated Use getFounding50InviteStatus */
-export const getFoundingTrainerInviteStatus = getFounding50InviteStatus;
-
-export async function assertFounding50CapacityAvailable(): Promise<void> {
-  const claimed = await countFounding50Applications();
-  if (claimed === null) return;
-  if (claimed >= FOUNDING_50_CAP) {
-    throw new Error("FOUNDING_50_FULL");
-  }
-}
-
-/** @deprecated Use assertFounding50CapacityAvailable */
-export const assertFoundingTrainerCapacityAvailable =
-  assertFounding50CapacityAvailable;

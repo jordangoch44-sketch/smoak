@@ -37,6 +37,8 @@ export const SPECIALIST_INQUIRY_NOTIFICATIONS_KEY =
   "smoac_specialist_inquiry_notifications";
 /** Explore search history (write-only until recent-search chips ship) */
 export { RECENT_SEARCHES_STORAGE_KEY } from "@/lib/recent-searches-storage";
+/** Per-client workout calendar (local until synced) */
+export const CLIENT_WORKOUTS_STORAGE_PREFIX = "smoac_client_workouts_";
 
 /** @deprecated DEV migration source */
 export const LEGACY_AUTH_STORAGE_KEY = "smoac-auth-session";

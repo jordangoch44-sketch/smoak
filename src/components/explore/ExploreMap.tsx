@@ -9,7 +9,6 @@ import {
 import { ExploreMapApple } from "./ExploreMapApple";
 
 export type { ExploreMapArea, ExploreMapProps };
-export { DEFAULT_EXPLORE_MAP_RADIUS_MILES } from "./ExploreMapLeaflet";
 export {
   clusterTrainersForMap,
   type ExploreMapCluster,

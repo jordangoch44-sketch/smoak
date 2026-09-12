@@ -72,12 +72,12 @@ const welcomeDismissedThisRuntime = new Set<string>();
 
 const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
   { id: "plan", label: "Plan & upgrade" },
-  { id: "profile", label: "Edit profile" },
+  { id: "profile", label: "Profile" },
 ];
 
 const PREMIUM_TABS: ReadonlyArray<{ id: PremiumDashboardTab; label: string }> = [
   { id: "overview", label: "Overview" },
-  { id: "profile", label: "Edit profile" },
+  { id: "profile", label: "Profile" },
 ];
 
 type SpecialistDashHeaderSurface = "overview" | "profile" | "plan" | "status";
@@ -133,6 +133,7 @@ export function SpecialistDashboardPageClient() {
   const tabParam = searchParams.get("tab");
   const conversationParam = searchParams.get("c")?.trim() || "";
   const inquiriesView = searchParams.get("view") === "inquiries";
+  const editView = searchParams.get("view") === "edit";
   const openInquiries = Boolean(conversationParam) || inquiriesView;
   const welcomeParam = searchParams.get("welcome") === "1";
   const [freeTab, setFreeTab] = useState<FreeDashboardTab>(() =>
@@ -177,6 +178,8 @@ export function SpecialistDashboardPageClient() {
     handleOpenInquiryLead,
     handleDismissInquiryNotifications,
     handleHideInquiry,
+    handleMarkInquiriesRead,
+    handleMarkInquiriesUnread,
     isHydrated,
   } = useSpecialistDashboard();
 
@@ -311,7 +314,7 @@ export function SpecialistDashboardPageClient() {
   }
 
   if (dashboardMode === "onboarding") {
-    return <DashboardLoadingState message="Opening your application…" />;
+    return <DashboardLoadingState message="Opening your application" />;
   }
 
   const isLivePublished = profileStatusLabel === "Published";
@@ -325,6 +328,14 @@ export function SpecialistDashboardPageClient() {
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
   const premiumDashboard = showsPremiumDashboard(dashboardMode);
   const hasProfilePreview = Boolean(application && trainer);
+  const cityRanking =
+    data.ranking && trainer
+      ? {
+          rank: data.ranking.rank,
+          city: trainer.city,
+          listingTitle: data.ranking.listingTitle,
+        }
+      : null;
   const showsInquiries =
     dashboardMode === "approved-free" ||
     dashboardMode === "approved-premium" ||
@@ -374,6 +385,12 @@ export function SpecialistDashboardPageClient() {
           void handleHideInquiry(id);
           if (conversationParam === id) replaceConversationParam(null);
         },
+        onMarkInquiryLeadsRead: (ids: string[]) => {
+          void handleMarkInquiriesRead(ids);
+        },
+        onMarkInquiryLeadsUnread: (ids: string[]) => {
+          void handleMarkInquiriesUnread(ids);
+        },
       }
     : {};
 
@@ -381,7 +398,15 @@ export function SpecialistDashboardPageClient() {
     if (sectionId) {
       setFocusSection(sectionId);
     }
-    replaceDashboardTab("profile");
+    const next = new URLSearchParams(searchParams.toString());
+    next.set("tab", "profile");
+    next.set("view", "edit");
+    if (sectionId) next.set("focus", sectionId);
+    else next.delete("focus");
+    next.delete("c");
+    router.replace(`${SPECIALIST_DASHBOARD_PATH}?${next.toString()}`, {
+      scroll: false,
+    });
   }
 
   function dismissProfileWelcome() {
@@ -528,14 +553,14 @@ export function SpecialistDashboardPageClient() {
       }
     >
       <div className="specialist-dash-layout">
-        {showLastChance ? (
+        {showLastChance && headerSurface !== "profile" ? (
           <ProTrialLastChanceBanner
             daysRemaining={session.premiumTrialDaysRemaining}
             onUpgrade={() => setUpgradeOpen(true)}
           />
         ) : null}
 
-        {showsInquiries && !openInquiries ? (
+        {showsInquiries && headerSurface !== "profile" ? (
           <InquiryNotificationBanner
             unreadCount={inquiryUnreadCount}
             latestSummary={latestInquirySummary}
@@ -548,7 +573,7 @@ export function SpecialistDashboardPageClient() {
 
         {isFreeLive ? (
           <>
-            {openInquiries ? null : (
+            {freeTab !== "profile" ? (
             <div
               className="specialist-dash-tabs"
               role="tablist"
@@ -571,7 +596,7 @@ export function SpecialistDashboardPageClient() {
                 </FastActivateButton>
               ))}
             </div>
-            )}
+            ) : null}
 
             <div className="specialist-dash-panels">
               {freeTab === "plan" ? (
@@ -607,6 +632,7 @@ export function SpecialistDashboardPageClient() {
                       isPremium={isPremium}
                       isProPlus={isProPlus}
                       isLivePublished={isLivePublished}
+                      cityRanking={cityRanking}
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
@@ -620,9 +646,9 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
-                  {openInquiries ? null : (
+                  {editView ? (
                     <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
-                  )}
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -687,6 +713,7 @@ export function SpecialistDashboardPageClient() {
                     editable={false}
                     isPremium={isPremium}
                     isProPlus={isProPlus}
+                    cityRanking={cityRanking}
                   />
                 </div>
               </div>
@@ -721,7 +748,7 @@ export function SpecialistDashboardPageClient() {
 
         {premiumDashboard ? (
           <>
-            {openInquiries ? null : (
+            {premiumTab !== "profile" ? (
             <div
               className="specialist-dash-tabs"
               role="tablist"
@@ -744,7 +771,7 @@ export function SpecialistDashboardPageClient() {
                 </FastActivateButton>
               ))}
             </div>
-            )}
+            ) : null}
 
             <div className="specialist-dash-panels">
               {premiumTab === "overview" ? (
@@ -804,6 +831,7 @@ export function SpecialistDashboardPageClient() {
                       isPremium={isPremium}
                       isProPlus={isProPlus}
                       isLivePublished={isLivePublished}
+                      cityRanking={cityRanking}
                       focusSection={focusSection}
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
@@ -817,7 +845,7 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
-                  {openInquiries ? null : (
+                  {editView ? (
                     <>
                       <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
 
@@ -828,7 +856,7 @@ export function SpecialistDashboardPageClient() {
                         />
                       </div>
                     </>
-                  )}
+                  ) : null}
                 </div>
               ) : null}
             </div>

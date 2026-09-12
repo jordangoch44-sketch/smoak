@@ -8,7 +8,7 @@ import {
 } from "@/components/dashboard/shared";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
-import { SPECIALIST_DASHBOARD_PROFILE_TAB_HREF } from "@/lib/auth-routes";
+import { SPECIALIST_DASHBOARD_EDIT_HREF } from "@/lib/auth-routes";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { AlertTriangleIcon, CheckIcon } from "@/components/ui/icons";
 import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
@@ -74,7 +74,7 @@ export function ProfileCompletionCard({
           ) : (
             <DashboardButton
               inline
-              href={SPECIALIST_DASHBOARD_PROFILE_TAB_HREF}
+              href={SPECIALIST_DASHBOARD_EDIT_HREF}
             >
               Edit Profile
             </DashboardButton>

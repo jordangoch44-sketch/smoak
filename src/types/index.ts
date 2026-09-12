@@ -24,3 +24,9 @@ export type {
   MarketplaceConversionFunnel,
 } from "./admin-conversion-funnel";
 
+export type {
+  ClientWorkoutExercise,
+  ClientWorkoutDay,
+  ClientWorkoutLog,
+} from "./client-workout";
+

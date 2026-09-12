@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { useInternalAuthSession } from "@/hooks/useInternalAuthSession";
 import { INTERNAL_INVALID_LOGIN_MESSAGE } from "@/lib/internal-auth";
 import { INTERNAL_DASHBOARD_PATH } from "@/lib/internal-routes";
@@ -52,6 +53,14 @@ export function InternalLoginPageClient() {
     if (!isReady || !session) return;
     router.replace(INTERNAL_DASHBOARD_PATH);
   }, [isReady, session, router]);
+
+  if (isReady && session) {
+    return (
+      <div className="internal-login" aria-busy="true">
+        <PageWaitState label="Opening admin" />
+      </div>
+    );
+  }
 
   useEffect(() => {
     return () => {

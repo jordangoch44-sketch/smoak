@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 import { SMOAC_PRO_PRICE_LABEL } from "@/lib/specialist-premium";
 import { membershipPlanLabel } from "@/lib/stripe/products";
-import { DashboardButton, DashboardSection } from "@/components/dashboard/shared";
+import { accountDeletionMailto } from "@/lib/site-contact";
+import { PageWaitState } from "@/components/brand/PageWaitState";
+import { DashboardButton, DashboardSection, ManageBillingModal } from "@/components/dashboard/shared";
 
 interface BillingLine {
   product: string;
@@ -53,8 +55,8 @@ export function SubscriptionCard({
   subscription,
   onOpenBoost,
 }: SubscriptionCardProps) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [billingOpen, setBillingOpen] = useState(false);
+  const [summaryNonce, setSummaryNonce] = useState(0);
   const [summary, setSummary] = useState<BillingSummary | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
@@ -68,6 +70,7 @@ export function SubscriptionCard({
           setSummaryError(body.error);
           return;
         }
+        setSummaryError(null);
         setSummary({
           plan: body.plan,
           status: body.status,
@@ -85,25 +88,7 @@ export function SubscriptionCard({
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  async function openPortal() {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/stripe/portal", { method: "POST" });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        setError(data.error ?? "Billing portal is not available yet.");
-        return;
-      }
-      window.location.href = data.url;
-    } catch {
-      setError("Could not open billing. Try again.");
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, [summaryNonce]);
 
   const adLines = summary?.lines.filter((l) => l.kind === "addon") ?? [];
   const planLines = summary?.lines.filter((l) => l.kind === "plan") ?? [];
@@ -163,7 +148,7 @@ export function SubscriptionCard({
           ) : null}
 
           {!summary && !summaryError ? (
-            <p className="dashboard-ad-spend__empty">Loading ad spend…</p>
+            <PageWaitState label="Loading ad spend" compact />
           ) : null}
 
           {summary ? (
@@ -232,19 +217,24 @@ export function SubscriptionCard({
           ) : null}
         </div>
 
-        {error ? (
-          <p className="dashboard-account-card__error" role="alert">
-            {error}
-          </p>
-        ) : null}
         <DashboardButton
           variant="link"
-          onClick={() => void openPortal()}
-          disabled={busy || (summary ? !summary.hasStripeCustomer : false)}
+          onClick={() => setBillingOpen(true)}
         >
-          {busy ? "Opening billing…" : "Manage billing →"}
+          Manage billing →
         </DashboardButton>
+        <a
+          className="dashboard-account-delete-link"
+          href={accountDeletionMailto("specialist")}
+        >
+          Request account deletion
+        </a>
       </div>
+      <ManageBillingModal
+        open={billingOpen}
+        onClose={() => setBillingOpen(false)}
+        onChanged={() => setSummaryNonce((n) => n + 1)}
+      />
     </DashboardSection>
   );
 }

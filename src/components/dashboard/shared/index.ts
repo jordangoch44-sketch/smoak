@@ -9,13 +9,13 @@ export { DashboardButton } from "./DashboardButton";
 export type { DashboardButtonProps } from "./DashboardButton";
 export { StatTile } from "./StatTile";
 export { DashboardMetricCard } from "./DashboardMetricCard";
-export { DashboardListItem } from "./DashboardListItem";
 export { DashboardEmptyState } from "./DashboardEmptyState";
 export { DashboardComingSoonModal } from "./DashboardComingSoonModal";
 export { DashboardSignOutConfirmModal } from "./DashboardSignOutConfirmModal";
 export { PremiumLockedValues } from "./PremiumLockedValues";
 export { PremiumUnlockCta } from "./PremiumUnlockCta";
 export { SmoacProUpgradeModal } from "./SmoacProUpgradeModal";
+export { ManageBillingModal } from "./ManageBillingModal";
 export { SmoacProTrialConfirmModal } from "./SmoacProTrialConfirmModal";
 export { BoostVisibilityModal } from "./BoostVisibilityModal";
 export { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
@@ -23,7 +23,6 @@ export { PremiumTrialEndedModal } from "./PremiumTrialEndedModal";
 export { SpecialistProfileWelcomeModal } from "./SpecialistProfileWelcomeModal";
 export { DashboardLoadingState } from "./DashboardLoadingState";
 export { DashboardGrid } from "./DashboardGrid";
-export { DashboardSignOutButton } from "./DashboardSignOutButton";
 export {
   DashboardModalScrim,
   DashboardModalCloseButton,

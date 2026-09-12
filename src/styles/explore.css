@@ -925,8 +925,7 @@ body.explore-hub-open .explore-split__cta-dock {
   }
 
   .explore-page--map-shell:has(.explore-split--results-open)
-    .explore-bottom-card-dock,
-  .explore-page--map-shell:has(.explore-split--results-open) .explore-hub-tray {
+    .explore-bottom-card-dock {
     display: none !important;
     pointer-events: none !important;
     visibility: hidden !important;
@@ -1087,14 +1086,12 @@ body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
  * so the profile sheet X / heart / tabs / photos stay tappable.
  */
 body.profile-sheet-open .explore-bottom-card-dock,
-body.profile-sheet-open .explore-hub-tray,
 body.profile-sheet-open .explore-split__cta-dock,
 body.profile-sheet-open .explore-map-hero__controls,
 body.profile-sheet-open .explore-map__recenter,
 body.profile-sheet-open .explore-map__search-here,
 body.profile-sheet-open .explore-page--map-shell .leaflet-top,
 body.profile-sheet-dismissing .explore-bottom-card-dock,
-body.profile-sheet-dismissing .explore-hub-tray,
 body.profile-sheet-dismissing .explore-split__cta-dock,
 body.profile-sheet-dismissing .explore-map-hero__controls,
 body.profile-sheet-dismissing .explore-map__recenter,
@@ -2047,8 +2044,7 @@ body.location-selector-open .explore-map__recenter--hero {
   }
 }
 
-.explore-bottom-card-dock,
-.explore-hub-tray {
+.explore-bottom-card-dock {
   position: fixed;
   left: 0.75rem;
   right: 0.75rem;
@@ -2078,8 +2074,7 @@ body.location-selector-open .explore-map__recenter--hero {
 }
 
 @media (min-width: 768px) {
-  .explore-bottom-card-dock,
-  .explore-hub-tray {
+  .explore-bottom-card-dock {
     position: absolute;
     left: 50%;
     right: auto;
@@ -2093,21 +2088,18 @@ body.location-selector-open .explore-map__recenter--hero {
   }
 }
 
-.explore-map--column .explore-bottom-card-dock,
-.explore-map--column .explore-hub-tray {
+.explore-map--column .explore-bottom-card-dock {
   max-width: calc(100% - 1.5rem);
   bottom: 0.85rem;
 }
 
-.explore-bottom-card-dock--dragging,
-.explore-hub-tray--dragging {
+.explore-bottom-card-dock--dragging {
   animation: none !important;
   transition: none !important;
 }
 
 /* Drag Handle */
-.explore-bottom-card__drag-handle-hit,
-.explore-hub-tray__handle-hit {
+.explore-bottom-card__drag-handle-hit {
   width: 100%;
   display: flex;
   justify-content: center;
@@ -2116,8 +2108,7 @@ body.location-selector-open .explore-map__recenter--hero {
   touch-action: none;
 }
 
-.explore-bottom-card__drag-handle,
-.explore-hub-tray__handle {
+.explore-bottom-card__drag-handle {
   width: 38px;
   height: 4px;
   border-radius: 9999px;
@@ -2125,14 +2116,12 @@ body.location-selector-open .explore-map__recenter--hero {
   transition: background 150ms ease;
 }
 
-.explore-bottom-card__drag-handle-hit:hover .explore-bottom-card__drag-handle,
-.explore-hub-tray__handle-hit:hover .explore-hub-tray__handle {
+.explore-bottom-card__drag-handle-hit:hover .explore-bottom-card__drag-handle {
   background: rgba(255, 255, 255, 0.45);
 }
 
 /* Hub Header */
-.explore-bottom-card__header,
-.explore-hub-tray__header {
+.explore-bottom-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2141,8 +2130,7 @@ body.location-selector-open .explore-map__recenter--hero {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.explore-bottom-card__header-left,
-.explore-hub-tray__header-left {
+.explore-bottom-card__header-left {
   min-width: 0;
   flex: 1 1 auto;
   display: flex;
@@ -2150,8 +2138,7 @@ body.location-selector-open .explore-map__recenter--hero {
   gap: 0.4rem;
 }
 
-.explore-bottom-card__hub-pill,
-.explore-hub-tray__hub-pill {
+.explore-bottom-card__hub-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -2161,8 +2148,7 @@ body.location-selector-open .explore-map__recenter--hero {
   border: 1px solid rgba(16, 185, 129, 0.28);
 }
 
-.explore-bottom-card__pulse-dot,
-.explore-hub-tray__pulse-dot {
+.explore-bottom-card__pulse-dot {
   width: 6.5px;
   height: 6.5px;
   border-radius: 9999px;
@@ -2172,8 +2158,7 @@ body.location-selector-open .explore-map__recenter--hero {
   flex-shrink: 0;
 }
 
-.explore-bottom-card__hub-label,
-.explore-hub-tray__hub-title {
+.explore-bottom-card__hub-label {
   font-size: 0.6875rem;
   font-weight: 750;
   letter-spacing: -0.01em;
@@ -2192,8 +2177,7 @@ body.location-selector-open .explore-map__recenter--hero {
   flex-shrink: 0;
 }
 
-.explore-bottom-card__counter-pill,
-.explore-hub-tray__count-pill {
+.explore-bottom-card__counter-pill {
   display: inline-flex;
   align-items: center;
   padding: 0.15rem 0.45rem;
@@ -2271,8 +2255,7 @@ body.location-selector-open .explore-map__recenter--hero {
 }
 
 /* Close Button */
-.explore-bottom-card__close-btn,
-.explore-hub-tray__close-btn {
+.explore-bottom-card__close-btn {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 9999px;
@@ -2293,16 +2276,14 @@ body.location-selector-open .explore-map__recenter--hero {
   z-index: 20;
 }
 
-.explore-bottom-card__close-btn:hover,
-.explore-hub-tray__close-btn:hover {
+.explore-bottom-card__close-btn:hover {
   background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.25);
   transform: scale(1.05);
 }
 
-.explore-bottom-card__close-btn:active,
-.explore-hub-tray__close-btn:active {
+.explore-bottom-card__close-btn:active {
   transform: scale(0.95);
 }
 

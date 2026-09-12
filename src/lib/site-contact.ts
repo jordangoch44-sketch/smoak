@@ -16,3 +16,17 @@ export function supportMailto(options?: {
     ? `mailto:${SUPPORT_EMAIL}?${query}`
     : `mailto:${SUPPORT_EMAIL}`;
 }
+
+/** Prefills a deletion request so support can confirm the account email. */
+export function accountDeletionMailto(role?: "client" | "specialist"): string {
+  const who =
+    role === "specialist"
+      ? "specialist account"
+      : role === "client"
+        ? "client account"
+        : "account";
+  return supportMailto({
+    subject: "Account deletion request",
+    body: `Please delete my SMOAC ${who}.\n\nAccount email:\n\nI understand this may remove my profile, saved specialists, and access to inquiries.`,
+  });
+}

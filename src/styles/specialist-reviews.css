@@ -643,26 +643,26 @@ body.review-modal-open .profile-toolbar {
 }
 
 /* Hero meta — SMOAC line under classic ★ / total reviews */
-.profile-hero__reviews-smoac {
-  display: flex;
+.profile-hero__reviews-smoac,
+.profile-hero__reviews-google {
+  display: grid;
+  grid-template-columns: 0.875rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.35rem;
+  column-gap: 0.35rem;
   min-width: 0;
 }
 
+.profile-hero__reviews-smoac {
+  margin-top: 0.35rem;
+}
+
 .profile-hero__reviews-google {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
   margin-top: 0.28rem;
-  min-width: 0;
   text-decoration: none;
   color: inherit;
   border-radius: 0.35rem;
   width: fit-content;
   max-width: 100%;
-  flex-wrap: wrap;
   pointer-events: auto;
   cursor: default;
   touch-action: manipulation;
@@ -691,15 +691,35 @@ a.profile-hero__reviews-google:focus-visible {
   filter: grayscale(1);
 }
 
-.profile-hero__reviews-mark {
-  flex-shrink: 0;
+.profile-hero__reviews-mark-slot {
+  display: flex;
   width: 0.875rem;
   height: 0.875rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.profile-hero__reviews-mark {
+  display: block;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin: 0;
   object-fit: contain;
 }
 
 .profile-hero__reviews-mark--google {
   display: block;
+  overflow: visible;
+}
+
+.profile-hero__reviews-smoac .smoac-star-rating,
+.profile-hero__reviews-google .smoac-star-rating {
+  display: flex;
+  min-width: min-content;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 .profile-hero__reviews-line-text {
@@ -731,6 +751,9 @@ a.profile-hero__reviews-google:focus-visible {
   pointer-events: auto;
   cursor: pointer;
   touch-action: manipulation;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .smoac-google-reviews-link:hover {

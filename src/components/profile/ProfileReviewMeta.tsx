@@ -67,13 +67,15 @@ export function ProfileReviewMeta({
       ) : null}
 
       <div className="profile-hero__reviews-smoac">
-        <Image
-          src={LOGO_SRC}
-          alt=""
-          width={14}
-          height={14}
-          className="profile-hero__reviews-mark"
-        />
+        <span className="profile-hero__reviews-mark-slot" aria-hidden>
+          <Image
+            src={LOGO_SRC}
+            alt=""
+            width={14}
+            height={14}
+            className="profile-hero__reviews-mark"
+          />
+        </span>
         <SmoacStarRating
           reviewCount={smoacCount}
           avgRating={smoacAvg}

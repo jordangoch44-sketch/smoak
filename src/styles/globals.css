@@ -207,6 +207,8 @@ body.explore-search-open,
 body.location-selector-open,
 body.profile-sheet-open,
 body.inquiry-sheet-open,
+body.inquiry-inbox-open,
+body.specialist-edit-profile-open,
 body.review-modal-open,
 html.review-modal-open,
 body.saved-panel-open,
@@ -215,6 +217,7 @@ body.site-location-gate-open,
 body.specialist-profile-welcome-open,
 body.complete-account-lock,
 body.client-profile-sheet-open,
+body.client-workouts-open,
 body.admin-review-open {
   overflow: hidden;
   overscroll-behavior: none;
@@ -228,6 +231,8 @@ body.admin-review-open {
   body.location-selector-open,
   body.profile-sheet-open,
   body.inquiry-sheet-open,
+  body.inquiry-inbox-open,
+  body.specialist-edit-profile-open,
   body.review-modal-open,
 html.review-modal-open,
   body.saved-panel-open,
@@ -236,6 +241,7 @@ html.review-modal-open,
   body.specialist-profile-welcome-open,
   body.complete-account-lock,
   body.client-profile-sheet-open,
+  body.client-workouts-open,
   body.admin-review-open {
     overflow: visible;
     overscroll-behavior: none;
@@ -247,6 +253,8 @@ html.review-modal-open,
   body.location-selector-open .app-main,
   body.profile-sheet-open .app-main,
   body.inquiry-sheet-open .app-main,
+  body.inquiry-inbox-open .app-main,
+  body.specialist-edit-profile-open .app-main,
   body.review-modal-open .app-main,
   body.saved-panel-open .app-main,
   body.login-gate-open .app-main,
@@ -254,6 +262,7 @@ html.review-modal-open,
   body.specialist-profile-welcome-open .app-main,
   body.complete-account-lock .app-main,
   body.client-profile-sheet-open .app-main,
+  body.client-workouts-open .app-main,
   body.admin-review-open .app-main {
     overflow: hidden;
     overscroll-behavior: none;
@@ -264,7 +273,10 @@ html.review-modal-open,
   html.site-location-gate-open,
   html.specialist-profile-welcome-open,
   html.complete-account-lock,
-  html.client-profile-sheet-open {
+  html.client-profile-sheet-open,
+  html.client-workouts-open,
+  html.inquiry-inbox-open,
+  html.specialist-edit-profile-open {
     overflow: visible;
   }
 }

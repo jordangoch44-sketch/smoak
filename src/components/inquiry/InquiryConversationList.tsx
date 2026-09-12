@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useId, useRef, useState, type PointerEvent } from "react";
+import { CheckIcon } from "@/components/ui/icons";
 import { InquiryAvatar } from "./InquiryAvatar";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,8 @@ interface InquiryConversationListProps {
   rows: InquiryInboxRow[];
   onSelect: (id: string) => void;
   swipeActions?: boolean;
+  selecting?: boolean;
+  selectedIds?: string[];
   onViewProfile?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
@@ -29,6 +32,8 @@ export function InquiryConversationList({
   rows,
   onSelect,
   swipeActions = false,
+  selecting = false,
+  selectedIds = [],
   onViewProfile,
   onDelete,
 }: InquiryConversationListProps) {
@@ -36,38 +41,66 @@ export function InquiryConversationList({
 
   return (
     <ul className="inquiry-inbox-list">
-      {rows.map((row) => (
-        <li key={row.id}>
-          {swipeActions ? (
-            <InquirySwipeRow
-              row={row}
-              open={openId === row.id}
-              onOpenChange={(next) => setOpenId(next ? row.id : null)}
-              onSelect={() => onSelect(row.id)}
-              onViewProfile={() => onViewProfile?.(row.id)}
-              onDelete={() => onDelete?.(row.id)}
-            />
-          ) : (
-            <button
-              type="button"
-              className={cn(
-                "smoac-control inquiry-inbox-row",
-                row.unread && "inquiry-inbox-row--unread"
-              )}
-              onClick={() => onSelect(row.id)}
-            >
-              <InquiryRowContent row={row} />
-            </button>
-          )}
-        </li>
-      ))}
+      {rows.map((row) => {
+        const selected = selectedIds.includes(row.id);
+        return (
+          <li key={row.id}>
+            {swipeActions && !selecting ? (
+              <InquirySwipeRow
+                row={row}
+                open={openId === row.id}
+                onOpenChange={(next) => setOpenId(next ? row.id : null)}
+                onSelect={() => onSelect(row.id)}
+                onViewProfile={() => onViewProfile?.(row.id)}
+                onDelete={() => onDelete?.(row.id)}
+              />
+            ) : (
+              <button
+                type="button"
+                className={cn(
+                  "smoac-control inquiry-inbox-row",
+                  row.unread && "inquiry-inbox-row--unread",
+                  selecting && selected && "inquiry-inbox-row--selected"
+                )}
+                aria-pressed={selecting ? selected : undefined}
+                onClick={() => onSelect(row.id)}
+              >
+                <InquiryRowContent
+                  row={row}
+                  selecting={selecting}
+                  selected={selected}
+                />
+              </button>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
 
-function InquiryRowContent({ row }: { row: InquiryInboxRow }) {
+function InquiryRowContent({
+  row,
+  selecting = false,
+  selected = false,
+}: {
+  row: InquiryInboxRow;
+  selecting?: boolean;
+  selected?: boolean;
+}) {
   return (
     <>
+      {selecting ? (
+        <span
+          className={cn(
+            "inquiry-inbox-row__check",
+            selected && "inquiry-inbox-row__check--on"
+          )}
+          aria-hidden
+        >
+          {selected ? <CheckIcon className="inquiry-inbox-row__check-icon" /> : null}
+        </span>
+      ) : null}
       <InquiryAvatar name={row.name} src={row.avatarUrl} size="md" />
       <span className="inquiry-inbox-row__copy">
         <span className="inquiry-inbox-row__top">
@@ -130,7 +163,6 @@ function InquirySwipeRow({
     startX.current = event.clientX;
     startY.current = event.clientY;
     setOffset(open ? -SWIPE_OPEN_PX : 0);
-    setDraggingNow(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -142,6 +174,7 @@ function InquirySwipeRow({
       if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
       axisLocked.current = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
       if (axisLocked.current === "y") return;
+      setDraggingNow(true);
     }
     if (axisLocked.current !== "x") return;
     event.preventDefault();
@@ -152,16 +185,17 @@ function InquirySwipeRow({
   function endPointer(event: PointerEvent<HTMLButtonElement>) {
     if (!dragging.current) return;
     dragging.current = false;
-    setDraggingNow(false);
     const dx = event.clientX - startX.current;
     const dy = event.clientY - startY.current;
     const wasHorizontal = axisLocked.current === "x";
     axisLocked.current = null;
+    setDraggingNow(false);
     if (wasHorizontal) {
       suppressClick.current = true;
       settle(open ? -SWIPE_OPEN_PX + dx : dx);
       return;
     }
+    setOffset(open ? -SWIPE_OPEN_PX : 0);
     if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
       if (open) {
         suppressClick.current = true;
@@ -171,7 +205,13 @@ function InquirySwipeRow({
   }
 
   return (
-    <div className={cn("inquiry-inbox-swipe", open && "inquiry-inbox-swipe--open")}>
+    <div
+      className={cn(
+        "inquiry-inbox-swipe",
+        open && "inquiry-inbox-swipe--open",
+        draggingNow && "inquiry-inbox-swipe--dragging"
+      )}
+    >
       <div className="inquiry-inbox-swipe__actions" aria-hidden={!open}>
         <button
           type="button"

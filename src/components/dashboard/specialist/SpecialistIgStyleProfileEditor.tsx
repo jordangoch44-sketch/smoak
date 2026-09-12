@@ -316,15 +316,6 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("name")}
         />
         <IgEditRow
-          id="ig-edit-row-headline"
-          sectionKey="headline"
-          label="Headline"
-          value={previewOrAdd(formDefaults.title)}
-          incomplete={!formDefaults.title.trim()}
-          highlighted={isHighlighted("headline")}
-          onClick={() => onEditSection("headline")}
-        />
-        <IgEditRow
           id="ig-edit-row-profession"
           sectionKey="profession"
           label="Category"
@@ -332,24 +323,6 @@ export function SpecialistIgStyleProfileEditor({
           incomplete={!profession.trim()}
           highlighted={isHighlighted("profession")}
           onClick={() => onEditSection("profession")}
-        />
-        <IgEditRow
-          id="ig-edit-row-bio"
-          sectionKey="bio"
-          label="Bio"
-          value={previewOrAdd(formDefaults.bio)}
-          incomplete={!formDefaults.bio.trim() || formDefaults.bio.trim().length < 40}
-          highlighted={isHighlighted("bio")}
-          onClick={() => onEditSection("bio")}
-        />
-        <IgEditRow
-          id="ig-edit-row-specialties"
-          sectionKey="specialties"
-          label="Specialties"
-          value={specialtyPreview}
-          incomplete={formDefaults.specialty.length === 0}
-          highlighted={isHighlighted("specialties")}
-          onClick={() => onEditSection("specialties")}
         />
         <IgEditRow
           id="ig-edit-row-service-area"
@@ -361,48 +334,40 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("service-area")}
         />
         <IgEditRow
-          id="ig-edit-row-philosophy"
-          sectionKey="philosophy"
-          label="Coaching style"
-          value={previewOrAdd(
-            formatCoachingStyleSelection(
-              parseCoachingStyleSelection(formDefaults.trainingStyle)
-            )
-          )}
-          incomplete={
-            parseCoachingStyleSelection(formDefaults.trainingStyle).length === 0
-          }
-          highlighted={isHighlighted("philosophy")}
-          onClick={() => onEditSection("philosophy")}
+          id="ig-edit-row-bio"
+          sectionKey="bio"
+          label="Bio"
+          value={previewOrAdd(formDefaults.bio)}
+          incomplete={!formDefaults.bio.trim() || formDefaults.bio.trim().length < 40}
+          highlighted={isHighlighted("bio")}
+          onClick={() => onEditSection("bio")}
         />
         <IgEditRow
-          id="ig-edit-row-ideal-clients"
-          sectionKey="ideal-clients"
-          label="Are we the right fit?"
-          value={previewOrAdd(formDefaults.servicesOffered)}
-          incomplete={!formDefaults.servicesOffered.trim()}
-          highlighted={isHighlighted("ideal-clients")}
-          onClick={() => onEditSection("ideal-clients")}
+          id="ig-edit-row-pricing"
+          sectionKey="pricing"
+          label="Pricing"
+          value={price}
+          incomplete={!hasSessionPrice(sessionPrice)}
+          highlighted={isHighlighted("pricing")}
+          onClick={() => onEditSection("pricing")}
         />
         <IgEditRow
-          id="ig-edit-row-session-experience"
-          sectionKey="session-experience"
-          label="Training options"
-          value={previewOrAdd(
-            formatTrainingOptionsLabel(formDefaults.trainingOptions)
-          )}
-          incomplete={formDefaults.trainingOptions.length === 0}
-          highlighted={isHighlighted("session-experience")}
-          onClick={() => onEditSection("session-experience")}
-        />
-        <IgEditRow
-          id="ig-edit-row-credentials"
-          sectionKey="credentials"
-          label="Credentials"
-          value={previewOrAdd(certPreview === "Add" ? "" : certPreview)}
-          incomplete={certPreview === "Add" || !formDefaults.certifications.some((c) => c && c.name.trim().length > 0)}
-          highlighted={isHighlighted("credentials")}
-          onClick={() => onEditSection("credentials")}
+          id="ig-edit-row-free-first-session"
+          sectionKey="free-first-session"
+          label={FREE_FIRST_SESSION_LABEL}
+          value={formDefaults.offersFreeFirstSession ? "On" : "Off"}
+          highlighted={isHighlighted("free-first-session")}
+          locked={!isPremium}
+          lockPlan="Pro"
+          onClick={() => {
+            if (!isPremium) {
+              if (onUpgrade) {
+                onUpgrade();
+                return;
+              }
+            }
+            onEditSection("free-first-session");
+          }}
         />
         <IgEditRow
           id="ig-edit-row-transformations"
@@ -438,6 +403,59 @@ export function SpecialistIgStyleProfileEditor({
           highlighted={isHighlighted("social")}
           onClick={() => onEditSection("social")}
         />
+        <IgEditRow
+          id="ig-edit-row-specialties"
+          sectionKey="specialties"
+          label="Specialties"
+          value={specialtyPreview}
+          incomplete={formDefaults.specialty.length === 0}
+          highlighted={isHighlighted("specialties")}
+          onClick={() => onEditSection("specialties")}
+        />
+        <IgEditRow
+          id="ig-edit-row-ideal-clients"
+          sectionKey="ideal-clients"
+          label="Are we the right fit?"
+          value={previewOrAdd(formDefaults.servicesOffered)}
+          incomplete={!formDefaults.servicesOffered.trim()}
+          highlighted={isHighlighted("ideal-clients")}
+          onClick={() => onEditSection("ideal-clients")}
+        />
+        <IgEditRow
+          id="ig-edit-row-session-experience"
+          sectionKey="session-experience"
+          label="Training options"
+          value={previewOrAdd(
+            formatTrainingOptionsLabel(formDefaults.trainingOptions)
+          )}
+          incomplete={formDefaults.trainingOptions.length === 0}
+          highlighted={isHighlighted("session-experience")}
+          onClick={() => onEditSection("session-experience")}
+        />
+        <IgEditRow
+          id="ig-edit-row-credentials"
+          sectionKey="credentials"
+          label="Credentials"
+          value={previewOrAdd(certPreview === "Add" ? "" : certPreview)}
+          incomplete={certPreview === "Add" || !formDefaults.certifications.some((c) => c && c.name.trim().length > 0)}
+          highlighted={isHighlighted("credentials")}
+          onClick={() => onEditSection("credentials")}
+        />
+        <IgEditRow
+          id="ig-edit-row-philosophy"
+          sectionKey="philosophy"
+          label="Coaching style"
+          value={previewOrAdd(
+            formatCoachingStyleSelection(
+              parseCoachingStyleSelection(formDefaults.trainingStyle)
+            )
+          )}
+          incomplete={
+            parseCoachingStyleSelection(formDefaults.trainingStyle).length === 0
+          }
+          highlighted={isHighlighted("philosophy")}
+          onClick={() => onEditSection("philosophy")}
+        />
       </div>
 
       <div className="ig-profile-edit__section-label">
@@ -445,31 +463,13 @@ export function SpecialistIgStyleProfileEditor({
       </div>
       <div className="ig-profile-edit__list" role="list">
         <IgEditRow
-          id="ig-edit-row-pricing"
-          sectionKey="pricing"
-          label="Pricing"
-          value={price}
-          incomplete={!hasSessionPrice(sessionPrice)}
-          highlighted={isHighlighted("pricing")}
-          onClick={() => onEditSection("pricing")}
-        />
-        <IgEditRow
-          id="ig-edit-row-free-first-session"
-          sectionKey="free-first-session"
-          label={FREE_FIRST_SESSION_LABEL}
-          value={formDefaults.offersFreeFirstSession ? "On" : "Off"}
-          highlighted={isHighlighted("free-first-session")}
-          locked={!isPremium}
-          lockPlan="Pro"
-          onClick={() => {
-            if (!isPremium) {
-              if (onUpgrade) {
-                onUpgrade();
-                return;
-              }
-            }
-            onEditSection("free-first-session");
-          }}
+          id="ig-edit-row-headline"
+          sectionKey="headline"
+          label="Headline"
+          value={previewOrAdd(formDefaults.title)}
+          incomplete={!formDefaults.title.trim()}
+          highlighted={isHighlighted("headline")}
+          onClick={() => onEditSection("headline")}
         />
         <IgEditRow
           id="ig-edit-row-contact"

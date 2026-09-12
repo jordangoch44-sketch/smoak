@@ -1,4 +1,5 @@
-import "@/styles/profile-hub.css";
+import { PageWaitState } from "@/components/brand/PageWaitState";
+import "@/styles/saved-panel.css";
 
 /** Instant shell while /saved client tree mounts */
 export default function SavedLoading() {
@@ -8,7 +9,7 @@ export default function SavedLoading() {
       aria-busy="true"
     >
       <div className="saved-page-route__content">
-        <p className="profile-hub__loading-text">Loading saved…</p>
+        <PageWaitState label="Loading saved" />
       </div>
     </div>
   );

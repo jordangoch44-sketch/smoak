@@ -1,30 +1,38 @@
 /**
  * Informational + legal page copy for the public site.
- * TODO: Have legal counsel review before public launch.
+ * Product-accurate MVP language. Not counsel-approved.
+ * Inventory for review: docs/PRIVACY_DATA_INVENTORY.md
+ * TODO: Have legal counsel review before a broader public launch.
  */
 
 import type { LegalSection } from "@/components/legal/LegalDocumentPage";
 import { SUPPORT_EMAIL } from "@/lib/site-contact";
 
-export const LEGAL_EFFECTIVE_DATE = "July 16, 2026";
+export const LEGAL_EFFECTIVE_DATE = "September 10, 2026";
+
+export const LEGAL_COUNSEL_NOTICE =
+  "This page describes how SMOAC works today. It has not been reviewed by legal counsel. We will replace this copy before a broader public launch.";
 
 export const PRIVACY_SECTIONS: LegalSection[] = [
   {
     title: "Overview",
     paragraphs: [
-      "SMOAC (“we,” “us”) operates a luxury wellness marketplace that helps clients discover specialists and send inquiries. This Privacy Policy explains what information we collect, how we use it, and the choices you have.",
-      "This MVP notice is written for early users. We will update it as product features and infrastructure expand.",
+      "SMOAC (“we,” “us”) operates a wellness marketplace that helps clients discover independent specialists and send inquiries. This Privacy Policy explains what information we collect, how we use it, and the choices you have.",
+      "This notice is written to match the current product. We will update it as features, vendors, and legal review change.",
     ],
   },
   {
     title: "Information we collect",
     paragraphs: ["Depending on how you use SMOAC, we may collect:"],
     bullets: [
-      "Account details such as name, email address, and role (client or specialist).",
-      "Profile and application information you submit (specialties, bio, location, media, pricing preferences).",
+      "Account details such as name, email address, password, phone number (specialists), and role (client or specialist).",
+      "Profile and application information you submit (specialties, bio, location, service area, pricing preferences, and similar listing details).",
+      "Photos, videos, and related media you upload for a specialist profile or application, including crop data and video thumbnails.",
       "Inquiry content you send to specialists, including selected topics and your message.",
-      "Saved specialists and basic product analytics needed to operate the marketplace.",
-      "Device and usage data typical of web apps (such as browser type and pages viewed).",
+      "Saved specialists, client profile preferences (such as goals, budget, and search radius), and location you choose to share (ZIP, city, and optional device coordinates).",
+      "Payment and billing details when a specialist buys membership or a Boost. Card data is handled by Stripe; SMOAC stores customer and subscription identifiers, plan status, and invoice history needed to run billing.",
+      "Device and usage data typical of web apps (browser type, pages viewed, referrer, and campaign tags).",
+      "A random visitor identifier stored on your device for first-party traffic analytics. It is not your name or email.",
     ],
   },
   {
@@ -33,22 +41,40 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     bullets: [
       "Create and manage your account and dashboards.",
       "Show specialist listings and deliver client inquiries.",
-      "Notify specialists of new inquiries by email and in their portal.",
-      "Improve reliability, prevent abuse, and support customers.",
+      "Notify you by email (for example new messages, application status, password reset, and plan notices).",
+      "Process specialist membership and Boost payments.",
+      "Show maps, address search, and (when you connect them) public review sources.",
+      "Measure product usage, prevent abuse, and support customers.",
       "Comply with law and enforce our Terms of Service.",
     ],
   },
   {
     title: "Sharing",
     paragraphs: [
-      "When you inquire about a specialist, we share relevant inquiry details with that specialist so they can reply in SMOAC. We also email both of you when a new message arrives.",
-      "We use service providers (for example authentication, database, and email delivery) to run SMOAC. We do not sell your personal information.",
+      "When you inquire about a specialist, we share relevant inquiry details—including your name and email—with that specialist so they can reply in SMOAC. We also email both of you when a new message arrives.",
+      "Specialist listings you publish (name, photo, bio, location area, media, and similar profile content) are visible to people using the marketplace.",
+      "We use service providers to run SMOAC. The main ones today are Supabase (accounts, database, and file storage), Resend (email), Stripe (payments), Google (address lookup and optional review connect), and map providers (Apple Maps or OpenFreeMap). They process information only as needed to provide those services.",
+      "We do not sell your personal information.",
+    ],
+  },
+  {
+    title: "Location",
+    paragraphs: [
+      "You can set a ZIP or place to personalize Explore. If you allow location access, we may store coordinates on your device and, when you are signed in as a client, on your profile. You can clear location in the product. Specialists provide a service area as part of their listing.",
+    ],
+  },
+  {
+    title: "Payments",
+    paragraphs: [
+      "Client browsing and inquiries do not require a card. Session fees, if any, are arranged between you and the specialist outside SMOAC.",
+      "Specialists who buy Pro, PRO+, or a Boost pay through Stripe. Stripe receives the payment details needed to charge you. SMOAC receives confirmation, customer IDs, and subscription or campaign status so we can unlock the matching features.",
     ],
   },
   {
     title: "Your choices",
     paragraphs: [
-      "You may update profile information in your account, request access or deletion by contacting support, and stop using the product at any time. Email notifications follow your provider’s unsubscribe and spam controls where applicable.",
+      "You may update profile information in your account. You can unsubscribe from marketing email using the link in those messages. Transactional email (such as inquiry notices and security mail) is needed to run the product.",
+      `To request a copy of your information or deletion of your account, email ${SUPPORT_EMAIL} from the address on the account and put “Account deletion” in the subject line. We will confirm by email. Public listings, billing records we must keep, and messages already delivered to another person may not disappear immediately or in full.`,
     ],
   },
   {
@@ -63,14 +89,20 @@ export const TERMS_SECTIONS: LegalSection[] = [
   {
     title: "Agreement",
     paragraphs: [
-      "By using SMOAC you agree to these Terms of Service. If you do not agree, do not use the marketplace.",
+      "By creating an account or using SMOAC you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use the marketplace.",
       "SMOAC connects clients with independent wellness specialists. SMOAC is a platform—not the provider of training, coaching, medical, or therapy services.",
+    ],
+  },
+  {
+    title: "Eligibility",
+    paragraphs: [
+      "You must be at least 18 years old to create an account or use SMOAC. Do not use the product on behalf of someone who cannot legally agree to these Terms.",
     ],
   },
   {
     title: "Accounts",
     paragraphs: [
-      "You are responsible for accurate account information and for activity under your login. Specialists are responsible for the accuracy of their listings and for responding to inquiries professionally.",
+      "You are responsible for accurate account information and for activity under your login. Keep your password confidential. Specialists are responsible for the accuracy of their listings and for responding to inquiries professionally.",
     ],
   },
   {
@@ -83,6 +115,23 @@ export const TERMS_SECTIONS: LegalSection[] = [
     title: "Marketplace role",
     paragraphs: [
       "Any engagement between a client and a specialist is solely between those parties. SMOAC does not guarantee availability, outcomes, credentials, or response times. Verify specialists independently as needed for your situation.",
+      "Specialists listed on SMOAC are independent providers. They are not employees, agents, or representatives of SMOAC.",
+    ],
+  },
+  {
+    title: "Listings and media",
+    paragraphs: [
+      "If you upload photos, videos, or other content, you confirm you have the right to use it. You grant SMOAC a license to host, display, crop, and promote that content on the marketplace (including listings, Boost placements, and related emails) for as long as your listing is active.",
+      "Profile videos are a paid membership feature with a short length limit. Do not upload content that is illegal, infringing, or sexually explicit involving minors.",
+    ],
+  },
+  {
+    title: "Payments",
+    paragraphs: [
+      "Browsing and sending inquiries is free for clients. Session rates and packages are set by each specialist. SMOAC does not process those session payments today.",
+      "Specialists may purchase SMOAC Pro, SMOAC PRO+, or Boost campaigns. Those charges are billed through Stripe. Membership renews until you cancel. Boost campaigns are prepaid for the days and daily budget you choose. PRO+ includes a Boost discount described in the product at checkout.",
+      "Approved specialists may receive a complimentary Pro trial. When the trial ends, the account returns to Free unless you subscribe. Prices shown in the product at checkout control if they differ from marketing copy.",
+      "For billing issues, email support. Refunds, if any, are handled case by case until a formal refund policy is published after legal review.",
     ],
   },
   {
@@ -108,6 +157,12 @@ export const TERMS_SECTIONS: LegalSection[] = [
     ],
   },
   {
+    title: "Account closure",
+    paragraphs: [
+      "You may request deletion as described in the Privacy Policy. We may limit access, remove content, or disable accounts when we believe these Terms, our Community Guidelines, or the law have been violated.",
+    ],
+  },
+  {
     title: "Changes",
     paragraphs: [
       "We may update these Terms as the product evolves. Continued use after changes means you accept the updated Terms. The effective date above will change when we publish revisions.",
@@ -126,7 +181,7 @@ export const ABOUT_SECTIONS: LegalSection[] = [
   {
     title: "How it works",
     paragraphs: [
-      "Browse and save specialists, send an inquiry from a profile, and continue the conversation by email. Specialists manage their presence and leads from a dedicated portal.",
+      "Browse and save specialists, send an inquiry from a profile, and continue the conversation in SMOAC. Specialists manage their presence and leads from a dedicated portal.",
     ],
   },
   {
@@ -147,7 +202,7 @@ export const SUPPORT_SECTIONS: LegalSection[] = [
   {
     title: "How we can help",
     paragraphs: [
-      "For account access, inquiry issues, specialist listing questions, or privacy requests, reach out and include the email on your SMOAC account so we can assist faster.",
+      "For account access, inquiry issues, specialist listing questions, billing questions, or privacy requests, reach out and include the email on your SMOAC account so we can assist faster.",
     ],
   },
   {
@@ -157,6 +212,14 @@ export const SUPPORT_SECTIONS: LegalSection[] = [
       "Client inquiries: specialists receive portal notifications and email when configured.",
       "Specialist profiles: edits sync to the public marketplace after approval.",
       "Saves: signed-in clients keep specialists in their saved list across devices when connected.",
+      "Plans and Boosts: specialists manage membership and placement from the specialist dashboard.",
+    ],
+  },
+  {
+    title: "Delete your account",
+    paragraphs: [
+      `Email ${SUPPORT_EMAIL} from the address on your account with the subject “Account deletion.” Include whether you are a client or a specialist. We will confirm before removing the account.`,
+      "You can also start that email from Account in the client profile editor, or from billing settings on the specialist dashboard.",
     ],
   },
   {
@@ -203,7 +266,7 @@ export const FAQ_SECTIONS: LegalSection[] = [
   {
     title: "How do I find a specialist?",
     paragraphs: [
-      "Use Explore to browse listings, filter by what you need, save favorites, and open a profile to learn more. From a profile you can send an inquiry to continue by email.",
+      "Use Explore to browse listings, filter by what you need, save favorites, and open a profile to learn more. From a profile you can send an inquiry to continue in SMOAC.",
     ],
   },
   {
@@ -215,7 +278,8 @@ export const FAQ_SECTIONS: LegalSection[] = [
   {
     title: "How do payments and booking work?",
     paragraphs: [
-      "Today, SMOAC focuses on discovery and inquiry. Scheduling and payment arrangements are typically handled directly between you and the specialist after you connect.",
+      "Browsing and inquiries are free for clients. Session rates and scheduling are typically handled between you and the specialist after you connect. SMOAC does not process those session payments today.",
+      "Specialists may subscribe to SMOAC Pro or PRO+, or run a Boost campaign, through Stripe. See Pricing for current membership amounts.",
     ],
   },
   {
@@ -225,10 +289,14 @@ export const FAQ_SECTIONS: LegalSection[] = [
     ],
   },
   {
-    title: "Where can I get more help?",
+    title: "How do I delete my account?",
     paragraphs: [
-      `Visit Help Center or email ${SUPPORT_EMAIL}.`,
+      `Email ${SUPPORT_EMAIL} from your account address with the subject “Account deletion,” or use the request link in your dashboard account settings.`,
     ],
+  },
+  {
+    title: "Where can I get more help?",
+    paragraphs: [`Visit Help Center or email ${SUPPORT_EMAIL}.`],
   },
 ];
 
@@ -236,19 +304,29 @@ export const PRICING_SECTIONS: LegalSection[] = [
   {
     title: "For clients",
     paragraphs: [
-      "Browsing SMOAC and exploring specialist profiles is free. When you inquire, the specialist responds directly—session rates and packages are set by each independent professional and typically appear on their profile or in follow-up email.",
+      "Browsing SMOAC, saving specialists, and sending inquiries is free. Session rates and packages are set by each independent professional and typically appear on their profile or in follow-up messages. SMOAC does not charge clients a booking fee today and does not process session payments.",
     ],
   },
   {
-    title: "For specialists",
+    title: "For specialists — membership",
     paragraphs: [
-      "SMOAC is in early access. Listing and inquiry tools for approved specialists are available as part of the marketplace MVP. Paid placement, promotions, or subscription plans may be introduced later and will be described clearly before any charges apply.",
+      "Approved specialists can list on the marketplace on the Free plan. New approved specialists may receive a complimentary 30-day Pro trial (no card required).",
+      "SMOAC Pro is $9.99 per month. It unlocks specialist analytics and related Pro listing perks shown in the dashboard.",
+      "SMOAC PRO+ is $19.99 per month. It includes Pro, plus short profile videos, client transformations, and 20% off Boost campaigns.",
+      "Membership is billed through Stripe and renews until you cancel. When a trial ends without a paid plan, the account returns to Free.",
+    ],
+  },
+  {
+    title: "For specialists — Boosts",
+    paragraphs: [
+      "Boosts are optional paid placement campaigns. You choose duration (1–30 days) and a daily budget. The campaign total is charged up front through Stripe and can appear in Marketplace, Search, and Homepage placements for that window.",
+      "PRO+ members receive 20% off Boost totals at checkout. Membership itself does not include Homepage Featured or Sponsored placement.",
     ],
   },
   {
     title: "Questions",
     paragraphs: [
-      `If you need clarity about plans or invoices, email ${SUPPORT_EMAIL}.`,
+      `The amount shown at Stripe checkout is the charge. If you need clarity about a plan or invoice, email ${SUPPORT_EMAIL}.`,
     ],
   },
 ];
@@ -336,7 +414,7 @@ export const COOKIE_SECTIONS: LegalSection[] = [
   {
     title: "Overview",
     paragraphs: [
-      "This Cookie Policy describes how SMOAC uses cookies and similar technologies when you use the marketplace website.",
+      "This Cookie Policy describes how SMOAC uses cookies and similar technologies—including browser storage—when you use the marketplace website.",
     ],
   },
   {
@@ -345,14 +423,17 @@ export const COOKIE_SECTIONS: LegalSection[] = [
       "Depending on your browser and how you use SMOAC, we may use:",
     ],
     bullets: [
-      "Essential cookies and storage needed to keep you signed in, remember preferences, and secure the product.",
-      "Analytics or performance technologies that help us understand product usage so we can improve reliability.",
+      "Essential cookies and storage needed to keep you signed in, remember preferences, and secure the product (including session cookies from our authentication provider).",
+      "Location you choose to save (ZIP or coordinates) in browser storage and, if you are signed in, on your profile.",
+      "A first-party visitor key in local storage plus page path, referrer, and campaign tags, used for product traffic analytics. This is not a third-party advertising cookie.",
+      "Cookies or storage set by Stripe when you complete a payment, and by map providers when a map loads.",
     ],
   },
   {
     title: "Your choices",
     paragraphs: [
-      "You can control cookies through your browser settings. Blocking some cookies may affect sign-in or other core features.",
+      "You can control cookies and site data through your browser settings. Blocking some storage may affect sign-in, saves, or location features.",
+      "We do not currently show a separate cookie-consent banner. Counsel will decide whether one is required before a broader public launch.",
     ],
   },
   {
@@ -363,9 +444,7 @@ export const COOKIE_SECTIONS: LegalSection[] = [
   },
   {
     title: "Contact",
-    paragraphs: [
-      `Questions about cookies or privacy: ${SUPPORT_EMAIL}.`,
-    ],
+    paragraphs: [`Questions about cookies or privacy: ${SUPPORT_EMAIL}.`],
   },
 ];
 

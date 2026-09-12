@@ -46,7 +46,7 @@ body:has(.profile-hub) .site-footer__glow {
 }
 
 .profile-hub--loading {
-  min-height: 40vh;
+  min-height: min(70dvh, 36rem);
 }
 
 .profile-hub__loading-text {

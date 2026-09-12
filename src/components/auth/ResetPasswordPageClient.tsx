@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PageWaitState } from "@/components/brand/PageWaitState";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
@@ -85,12 +86,14 @@ export function ResetPasswordPageClient() {
         </header>
 
         <div className="login-card">
+          {!sessionReady ? (
+            <PageWaitState label="Loading secure session" compact />
+          ) : (
+            <>
           <div className="login-card__header">
             <h1 className="login-card__title">Choose a new password</h1>
             <p className="login-card__subtitle">
-              {sessionReady
-                ? "Enter your new password below."
-                : "Loading secure session…"}
+              Enter your new password below.
             </p>
           </div>
 
@@ -152,6 +155,8 @@ export function ResetPasswordPageClient() {
               </Link>
             </div>
           </form>
+            </>
+          )}
         </div>
       </div>
     </div>

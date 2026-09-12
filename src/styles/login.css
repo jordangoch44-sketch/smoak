@@ -244,6 +244,10 @@ body:has(.login-page) main {
   color: #fff;
 }
 
+.login-card__wait {
+  padding: 0.35rem 0 0.15rem;
+}
+
 .login-card--minimal {
   padding-top: 0.25rem;
 }
