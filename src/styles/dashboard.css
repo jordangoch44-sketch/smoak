@@ -8158,6 +8158,23 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   animation: specialist-edit-profile-page-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/*
+ * Overlay lives inside `.app-main` (z-index 1). The site footer is a later
+ * sibling with the same z-index, so it paints on top and looks stuck while
+ * the editor scrolls. Hide marketplace chrome for the same reason inquiries
+ * / profile sheets do.
+ */
+body.specialist-edit-profile-open .site-footer,
+body.inquiry-inbox-open .site-footer,
+body:has(.specialist-edit-profile-page) .site-footer,
+body:has(.inquiry-inbox-page) .site-footer,
+body.specialist-edit-profile-open .mobile-bottom-nav,
+body.inquiry-inbox-open .mobile-bottom-nav,
+body:has(.specialist-edit-profile-page) .mobile-bottom-nav,
+body:has(.inquiry-inbox-page) .mobile-bottom-nav {
+  display: none !important;
+}
+
 @keyframes specialist-edit-profile-page-in {
   from {
     opacity: 0;
