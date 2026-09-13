@@ -13,16 +13,19 @@ import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
 import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
 import { SpecialistInquiriesInbox } from "@/components/dashboard/specialist/SpecialistInquiriesInbox";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
+import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
+import { SpecialistVideosEditor } from "@/components/dashboard/specialist/SpecialistVideosEditor";
 import { TrainerProfileView } from "@/components/profile/TrainerProfileView";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import { MarketplaceSpecialtyPicker } from "@/components/auth/specialist/MarketplaceSpecialtyPicker";
 import { SpecialistWorkSpotFields } from "@/components/dashboard/specialist/SpecialistWorkSpotFields";
 import { SpecialistRightFitFields } from "@/components/dashboard/specialist/SpecialistRightFitFields";
+import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   ChevronLeftIcon,
-  MenuIcon,
+  MenuPencilIcon,
   MessageBubbleIcon,
 } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
@@ -30,11 +33,7 @@ import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
 import {
   PROFILE_ACCENT_OPTIONS,
-  PROFILE_AVATAR_FRAME_OPTIONS,
-  PROFILE_NAME_FONT_OPTIONS,
   type ProfileAccentId,
-  type ProfileAvatarFrameId,
-  type ProfileNameFontId,
 } from "@/lib/specialist-profile-style";
 import {
   EMPTY_CERTIFICATION,
@@ -50,6 +49,7 @@ import {
   secondaryWorkSpotFromForm,
 } from "@/lib/specialist-work-spots";
 import { cn } from "@/lib/utils";
+import { resolveTrainerSessionPriceRange } from "@/lib/session-price";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
 import {
@@ -66,7 +66,8 @@ import {
 import { parseGender } from "@/lib/gender";
 import { canonicalizeProfessionLabel } from "@/lib/profession-category";
 import { ProfileEditChipGroup } from "@/components/dashboard/specialist/ProfileEditSection";
-import { FREE_FIRST_SESSION_LABEL, isTrainerFreeFirstSessionEligible } from "@/lib/free-first-session";
+import { SpecialistPricingFields } from "@/components/dashboard/specialist/SpecialistPricingOfferingsFields";
+import { FREE_FIRST_SESSION_LABEL, trainerOffersFreeFirstSession } from "@/lib/free-first-session";
 import type { Trainer } from "@/types/trainer";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
@@ -74,10 +75,14 @@ import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
 import { getApprovedSpecialistProfileById } from "@/lib/approved-specialist-profiles-store";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
+import { updatePassword } from "@/lib/auth/marketplace-auth";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 type ProfilePreviewMode = "edit" | "live" | "inquiries";
 const LOCK_CLASS = "specialist-live-edit-open";
 const EDIT_PAGE_LOCK_CLASS = "specialist-edit-profile-open";
+const MIN_PASSWORD_LENGTH = 8;
+const LIVE_PAGE_LOCK_CLASS = "specialist-live-profile-open";
 const LIVE_PROFILE_ANCHOR_ID = "specialist-live-profile";
 
 function previewModeFromSearch(
@@ -91,6 +96,8 @@ function previewModeFromSearch(
 
 type SectionId =
   | "hero"
+  | "videos"
+  | "avatar"
   | "name"
   | "headline"
   | "profession"
@@ -107,15 +114,16 @@ type SectionId =
   | "free-first-session"
   | "contact"
   | "gender"
-  | "experience"
   | "profile-style";
 
 const SECTION_TITLES: Record<SectionId, string> = {
   hero: "Pictures / slideshow",
+  videos: "Videos",
+  avatar: "Profile photo",
   name: "Business name",
   headline: "Headline",
   profession: "Category",
-  transformations: "Client transformations",
+  transformations: "Client Results",
   specialties: "Specialties",
   bio: "Bio",
   philosophy: "Coaching style",
@@ -126,10 +134,9 @@ const SECTION_TITLES: Record<SectionId, string> = {
   social: "Connect",
   pricing: "Pricing",
   "free-first-session": FREE_FIRST_SESSION_LABEL,
-  contact: "Contact",
+  contact: "Account details",
   gender: "Gender",
-  experience: "Experience",
-  "profile-style": "Profile style",
+  "profile-style": "Ambience glow",
 };
 
 interface SpecialistDashboardProfilePreviewProps {
@@ -159,10 +166,17 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
   const lower = target.toLowerCase().trim();
   switch (lower) {
     case "photo":
-    case "hero":
     case "avatar":
     case "picture":
+    case "profile-photo":
+      return "avatar";
+    case "hero":
+    case "slideshow":
+    case "pictures":
       return "hero";
+    case "videos":
+    case "video":
+      return "videos";
     case "name":
     case "business-name":
       return "name";
@@ -207,12 +221,12 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
     case "contact":
     case "phone":
     case "email":
+    case "account":
+    case "account-details":
+    case "password":
       return "contact";
     case "gender":
       return "gender";
-    case "experience":
-    case "years-experience":
-      return "experience";
     case "profile-style":
     case "style":
       return "profile-style";
@@ -230,13 +244,17 @@ function LiveEditSheet({
   onSave,
   children,
   variant = "default",
+  isLiveListing = false,
+  subtitle,
 }: {
   title: string;
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
   children: ReactNode;
-  variant?: "default" | "photos";
+  variant?: "default" | "photos" | "pricing";
+  isLiveListing?: boolean;
+  subtitle?: string;
 }) {
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
@@ -300,7 +318,10 @@ function LiveEditSheet({
         }}
       />
       <div
-        className="specialist-live-sheet__dialog"
+        className={cn(
+          "specialist-live-sheet__dialog",
+          variant === "pricing" && "specialist-live-sheet__dialog--pricing"
+        )}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
@@ -309,9 +330,15 @@ function LiveEditSheet({
           <h2 id={titleId} className="specialist-live-sheet__title">
             {title}
           </h2>
-          {variant === "photos" ? (
+          {subtitle ? (
+            <p className="specialist-live-sheet__sub">{subtitle}</p>
+          ) : variant === "photos" ? (
             <p className="specialist-live-sheet__sub">
               Tap to replace · Save when done
+            </p>
+          ) : variant === "pricing" ? (
+            <p className="specialist-live-sheet__sub">
+              Set how your pricing appears across your profile and marketplace.
             </p>
           ) : (
             <p className="specialist-live-sheet__sub">
@@ -344,6 +371,33 @@ function LiveEditSheet({
           </button>
         </div>
       </div>
+      {saving ? (
+        <div
+          className="specialist-publishing-overlay"
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          aria-label={
+            variant === "photos"
+              ? "Saving photos"
+              : isLiveListing
+                ? "Posting live"
+                : "Saving your profile"
+          }
+        >
+          <div className="specialist-publishing-overlay__panel">
+            <SmoacSavingMark
+              label={
+                variant === "photos"
+                  ? "Saving photos"
+                  : isLiveListing
+                    ? "Posting live"
+                    : "Saving your profile"
+              }
+            />
+          </div>
+        </div>
+      ) : null}
     </div>,
     document.body
   );
@@ -360,16 +414,8 @@ function LiveProfileChrome({
   onOpenInquiries: () => void;
   onOpenEdit: () => void;
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div className="specialist-live-chrome">
+  return (
+    <header className="specialist-live-chrome">
       {showInquiries ? (
         <FastActivateButton
           className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--messages"
@@ -390,19 +436,18 @@ function LiveProfileChrome({
       ) : (
         <span className="specialist-live-chrome__spacer" aria-hidden />
       )}
-      <p className="specialist-live-chrome__live" role="status">
+      <h1 className="specialist-live-chrome__title">
         <span className="specialist-live-chrome__live-dot" aria-hidden />
         Live view
-      </p>
+      </h1>
       <FastActivateButton
         className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--edit"
         aria-label="Edit profile"
         onActivate={onOpenEdit}
       >
-        <MenuIcon className="specialist-live-chrome__icon" />
+        <MenuPencilIcon className="specialist-live-chrome__icon" />
       </FastActivateButton>
-    </div>,
-    document.body
+    </header>
   );
 }
 
@@ -432,7 +477,7 @@ function EditProfilePageChrome({
 
 /**
  * Specialist Profile tab — live marketplace view by default; edit and
- * inquiries open from the overlay buttons on that live screen.
+ * inquiries open from the live header.
  */
 export function SpecialistDashboardProfilePreview({
   trainer: trainerProp,
@@ -507,13 +552,22 @@ export function SpecialistDashboardProfilePreview({
   const [saving, setSaving] = useState(false);
   const [secondLocationOpen, setSecondLocationOpen] = useState(false);
   const [highlightedRow, setHighlightedRow] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const conversationParam = searchParams.get("c")?.trim() || "";
   const viewParam = searchParams.get("view")?.trim() || "";
   const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
     previewModeFromSearch(viewParam, conversationParam)
   );
+  const [portalReady, setPortalReady] = useState(false);
   const canEdit = editable && Boolean(formDefaults && trainerId);
   const showInquiries = canEdit && Boolean(inquirySenderUserId);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useEffect(() => {
     setPreviewMode(previewModeFromSearch(viewParam, conversationParam));
@@ -528,6 +582,16 @@ export function SpecialistDashboardProfilePreview({
       document.documentElement.classList.remove(EDIT_PAGE_LOCK_CLASS);
     };
   }, [previewMode]);
+
+  useEffect(() => {
+    if (!canEdit || previewMode !== "live") return;
+    document.body.classList.add(LIVE_PAGE_LOCK_CLASS);
+    document.documentElement.classList.add(LIVE_PAGE_LOCK_CLASS);
+    return () => {
+      document.body.classList.remove(LIVE_PAGE_LOCK_CLASS);
+      document.documentElement.classList.remove(LIVE_PAGE_LOCK_CLASS);
+    };
+  }, [canEdit, previewMode]);
 
   function replacePreviewMode(next: ProfilePreviewMode) {
     setPreviewMode(next);
@@ -593,7 +657,10 @@ export function SpecialistDashboardProfilePreview({
       onUpgrade?.();
       return;
     }
-    if (section === "transformations" && !isProPlus) {
+    if (
+      (section === "transformations" || section === "videos") &&
+      !isProPlus
+    ) {
       onUpgrade?.();
       return;
     }
@@ -610,12 +677,18 @@ export function SpecialistDashboardProfilePreview({
     setEditing(section);
     setDraft(next);
     setSecondLocationOpen(false);
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError(null);
   }
 
   function cancelEdit() {
     setEditing(null);
     setDraft(null);
     setSecondLocationOpen(false);
+    setNewPassword("");
+    setConfirmPassword("");
+    setPasswordError(null);
   }
 
   function patch<K extends keyof SpecialistProfileEditForm>(
@@ -628,26 +701,58 @@ export function SpecialistDashboardProfilePreview({
   async function publish() {
     if (!draft || !formDefaults || !editing) return;
     setSaving(true);
-    const payload = overlayProfileSectionDraft(formDefaults, draft, editing);
-    const result = await saveForm(payload);
-    setSaving(false);
-    if (result.ok) {
+    try {
+      const payload = overlayProfileSectionDraft(formDefaults, draft, editing);
+      const result = await saveForm(payload);
+      if (result.ok) {
+        showToast({
+          type: "success",
+          message: isLiveListing
+            ? "Saved — changes are live on Marketplace."
+            : "Saved — still under review (not public yet).",
+        });
+        cancelEdit();
+        return;
+      }
       showToast({
-        type: "success",
-        message: isLiveListing
-          ? "Saved — changes are live on Marketplace."
-          : "Saved — still under review (not public yet).",
+        type: "info",
+        message: result.ok === false ? result.error : "Unable to save changes",
       });
-      cancelEdit();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handlePasswordReset() {
+    setPasswordError(null);
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
-    showToast({
-      type: "info",
-      message: result.ok === false ? result.error : "Unable to save changes",
-    });
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+    setPasswordBusy(true);
+    const result = await updatePassword(newPassword);
+    setPasswordBusy(false);
+    if (!result.ok) {
+      setPasswordError(result.message);
+      return;
+    }
+    setNewPassword("");
+    setConfirmPassword("");
+    showToast({ type: "success", message: "Password updated." });
   }
 
   const form = draft;
+  const pricingRange = form
+    ? resolveTrainerSessionPriceRange({
+        pricePerSession: form.pricePerSession,
+        pricePerSessionMin: form.pricePerSessionMin,
+        pricePerSessionMax: form.pricePerSessionMax,
+      })
+    : { min: 0, max: 0 };
   const selectedProfession = form
     ? canonicalizeProfessionLabel(form.profession)
     : null;
@@ -657,21 +762,43 @@ export function SpecialistDashboardProfilePreview({
       <LiveEditSheet
         title={SECTION_TITLES[editing]}
         saving={saving}
+        isLiveListing={isLiveListing}
         onClose={cancelEdit}
         onSave={() => void publish()}
-        variant={editing === "hero" ? "photos" : "default"}
+        subtitle={
+          editing === "contact"
+            ? "Phone and email can appear on your profile. Password is only for signing in."
+            : undefined
+        }
+        variant={
+          editing === "hero" || editing === "videos" || editing === "avatar"
+            ? "photos"
+            : editing === "pricing"
+              ? "pricing"
+              : "default"
+        }
       >
+        {editing === "avatar" ? (
+          <div className="specialist-dash-profile__fields">
+            <ProfileMediaUploadField
+              label="Profile photo"
+              value={form.profilePhotoUrl}
+              specialistId={trainerId ?? application?.id ?? trainer.id}
+              onChange={(value) => patch("profilePhotoUrl", value)}
+              onClear={() => patch("profilePhotoUrl", "")}
+            />
+          </div>
+        ) : null}
+
         {editing === "hero" ? (
           <div className="specialist-dash-profile__fields">
             <SpecialistProfileMediaEditor
-              profilePhotoUrl={form.profilePhotoUrl}
               coverImageUrl={form.coverImageUrl}
               photoNotes={form.photoNotes}
               slideshowFramesJson={form.slideshowFramesJson}
               videoNotes={form.videoNotes}
               videoPostersJson={form.videoPostersJson}
               pinnedPhotos={form.pinnedPhotos}
-              transformationNotes={form.transformationNotes}
               isPremium={isPremium}
               isProPlus={isProPlus}
               specialistId={trainerId ?? application?.id ?? trainer.id}
@@ -681,6 +808,21 @@ export function SpecialistDashboardProfilePreview({
               }}
             />
           </div>
+        ) : null}
+
+        {editing === "videos" ? (
+          <SpecialistVideosEditor
+            videoNotes={form.videoNotes}
+            videoPostersJson={form.videoPostersJson}
+            pinnedPhotos={form.pinnedPhotos}
+            isPremium={isPremium}
+            isProPlus={isProPlus}
+            specialistId={trainerId ?? application?.id ?? trainer.id}
+            onUpgrade={onUpgrade}
+            onChange={(next) => {
+              setDraft((prev) => (prev ? { ...prev, ...next } : prev));
+            }}
+          />
         ) : null}
 
         {editing === "name" ? (
@@ -793,7 +935,7 @@ export function SpecialistDashboardProfilePreview({
                       )
                     }
                     showAddress={showAddress}
-                    heading={showSecond ? "Primary location" : undefined}
+                    heading={showSecond ? "Primary facility" : undefined}
                     headingHint={
                       showSecond
                         ? "Maps and search use this pin only"
@@ -801,7 +943,7 @@ export function SpecialistDashboardProfilePreview({
                     }
                     addressLabel={
                       showSecond
-                        ? "Exact work / studio address"
+                        ? "Exact facility address"
                         : undefined
                     }
                   />
@@ -815,9 +957,9 @@ export function SpecialistDashboardProfilePreview({
                         )
                       }
                       showAddress={showAddress}
-                      heading="Second location"
+                      heading="Second facility"
                       headingHint="Shows on your profile — not a second map pin"
-                      addressLabel="Second work / studio address"
+                      addressLabel="Second facility address"
                       addressHint="Clients see this on your profile. Explore still uses your primary location."
                       virtualHint="Virtual coaches don’t need a second street address."
                       onRemove={() => {
@@ -834,7 +976,7 @@ export function SpecialistDashboardProfilePreview({
                         className="smoac-control specialist-service-area-add"
                         onClick={() => setSecondLocationOpen(true)}
                       >
-                        + Add a second location
+                        + Add a second facility
                       </button>
                       <p className="specialist-service-area-add__hint">
                         Profile only — maps and search stay on your primary
@@ -1031,49 +1173,26 @@ export function SpecialistDashboardProfilePreview({
         ) : null}
 
         {editing === "pricing" ? (
-          <div className="session-price-range-fields">
-            <label className="login-field">
-              <span className="login-field__label">From (USD)</span>
-              <input
-                className="login-field__input profile-edit-input"
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                value={form.pricePerSessionMin || ""}
-                onChange={(e) => {
-                  const min = Number(e.target.value) || 0;
-                  const max = form.pricePerSessionMax || form.pricePerSession;
-                  patch("pricePerSessionMin", min);
-                  patch("pricePerSessionMax", max);
-                  patch("pricePerSession", max > 0 ? max : min);
-                }}
-                placeholder="80"
-              />
-            </label>
-            <span className="session-price-range-fields__dash" aria-hidden="true">
-              –
-            </span>
-            <label className="login-field">
-              <span className="login-field__label">To (USD)</span>
-              <input
-                className="login-field__input profile-edit-input"
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                value={form.pricePerSessionMax || form.pricePerSession || ""}
-                onChange={(e) => {
-                  const max = Number(e.target.value) || 0;
-                  const min = form.pricePerSessionMin || max;
-                  patch("pricePerSessionMin", min);
-                  patch("pricePerSessionMax", max);
-                  patch("pricePerSession", max);
-                }}
-                placeholder="120"
-              />
-            </label>
-          </div>
+          <SpecialistPricingFields
+            priceMin={pricingRange.min}
+            priceMax={pricingRange.max}
+            onRangeChange={(min, max) => {
+              setDraft((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      pricePerSessionMin: min,
+                      pricePerSessionMax: max,
+                      pricePerSession: max,
+                    }
+                  : prev
+              );
+            }}
+            offerings={form.pricingOfferings ?? []}
+            onOfferingsChange={(pricingOfferings) =>
+              patch("pricingOfferings", pricingOfferings)
+            }
+          />
         ) : null}
 
         {editing === "free-first-session" ? (
@@ -1086,11 +1205,11 @@ export function SpecialistDashboardProfilePreview({
               <button
                 type="button"
                 className={
-                  form.offersFreeFirstSession
+                  trainerOffersFreeFirstSession(form)
                     ? "dashboard-edit-chip dashboard-edit-chip--active"
                     : "dashboard-edit-chip"
                 }
-                aria-pressed={form.offersFreeFirstSession}
+                aria-pressed={trainerOffersFreeFirstSession(form)}
                 onClick={() => patch("offersFreeFirstSession", true)}
               >
                 On
@@ -1098,11 +1217,11 @@ export function SpecialistDashboardProfilePreview({
               <button
                 type="button"
                 className={
-                  !form.offersFreeFirstSession
+                  !trainerOffersFreeFirstSession(form)
                     ? "dashboard-edit-chip dashboard-edit-chip--active"
                     : "dashboard-edit-chip"
                 }
-                aria-pressed={!form.offersFreeFirstSession}
+                aria-pressed={!trainerOffersFreeFirstSession(form)}
                 onClick={() => patch("offersFreeFirstSession", false)}
               >
                 Off
@@ -1133,6 +1252,48 @@ export function SpecialistDashboardProfilePreview({
                 onChange={(e) => patch("email", e.target.value)}
               />
             </label>
+            <div className="specialist-account-password">
+              <p className="specialist-account-password__title">Reset password</p>
+              <label className="login-field">
+                <span className="login-field__label">New password</span>
+                <PasswordInput
+                  className="profile-edit-input"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    setPasswordError(null);
+                  }}
+                  autoComplete="new-password"
+                  placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">Confirm password</span>
+                <PasswordInput
+                  className="profile-edit-input"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    setPasswordError(null);
+                  }}
+                  autoComplete="new-password"
+                  placeholder="Re-enter password"
+                />
+              </label>
+              {passwordError ? (
+                <p className="specialist-account-password__error" role="alert">
+                  {passwordError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                className="smoac-control specialist-account-password__submit"
+                disabled={passwordBusy || saving}
+                onClick={() => void handlePasswordReset()}
+              >
+                {passwordBusy ? "Updating…" : "Reset password"}
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -1145,26 +1306,14 @@ export function SpecialistDashboardProfilePreview({
           />
         ) : null}
 
-        {editing === "experience" ? (
-          <label className="login-field">
-            <span className="login-field__label">Years of experience</span>
-            <input
-              className="login-field__input profile-edit-input"
-              value={form.experienceYears}
-              onChange={(e) => patch("experienceYears", e.target.value)}
-              placeholder="e.g. 8"
-            />
-          </label>
-        ) : null}
-
         {editing === "profile-style" ? (
           <div className="specialist-dash-profile__fields">
             <div>
-              <p className="login-field__label">Accent color</p>
+              <p className="login-field__label">Ambience glow</p>
               <div
                 className="profile-style-swatches"
                 role="radiogroup"
-                aria-label="Accent color"
+                aria-label="Ambience glow"
               >
                 {PROFILE_ACCENT_OPTIONS.map((option) => (
                   <button
@@ -1190,64 +1339,6 @@ export function SpecialistDashboardProfilePreview({
                 ))}
               </div>
             </div>
-            <div>
-              <p className="login-field__label">Avatar frame</p>
-              <div
-                className="profile-style-options"
-                role="radiogroup"
-                aria-label="Avatar frame"
-              >
-                {PROFILE_AVATAR_FRAME_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={form.profileAvatarFrame === option.id}
-                    className={cn(
-                      "smoac-control profile-style-option",
-                      form.profileAvatarFrame === option.id &&
-                        "profile-style-option--active"
-                    )}
-                    onClick={() =>
-                      patch(
-                        "profileAvatarFrame",
-                        option.id as ProfileAvatarFrameId
-                      )
-                    }
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="login-field__label">Name font</p>
-              <div
-                className="profile-style-options"
-                role="radiogroup"
-                aria-label="Name font"
-              >
-                {PROFILE_NAME_FONT_OPTIONS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={form.profileNameFont === option.id}
-                    className={cn(
-                      "smoac-control profile-style-option",
-                      `profile-style-option--font-${option.id}`,
-                      form.profileNameFont === option.id &&
-                        "profile-style-option--active"
-                    )}
-                    onClick={() =>
-                      patch("profileNameFont", option.id as ProfileNameFontId)
-                    }
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         ) : null}
       </LiveEditSheet>
@@ -1255,41 +1346,43 @@ export function SpecialistDashboardProfilePreview({
 
   /* Owner edit — Instagram-style list (does not change public profile layout). */
   if (canEdit && formDefaults && previewMode === "edit") {
-    return (
+    const page = (
       <div
-        id={LIVE_PROFILE_ANCHOR_ID}
-        className="specialist-profile-mode specialist-profile-mode--edit"
+        className="specialist-edit-profile-page"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={editTitleId}
       >
-        <div
-          className="specialist-edit-profile-page"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={editTitleId}
-        >
-          <EditProfilePageChrome
-            titleId={editTitleId}
-            onBack={() => replacePreviewMode("live")}
-          />
-          <div className="specialist-edit-profile-page__body">
-            <div className="ig-profile-edit-wrap">
-              <SpecialistIgStyleProfileEditor
-                trainer={trainer}
-                formDefaults={formDefaults}
-                onEditSection={(id) => startEdit(id)}
-                highlightedSection={highlightedRow}
-                onUpgrade={onUpgrade}
-                footer={
-                  <p className="ig-profile-edit__hint">
-                    Changes go live on Marketplace when you save. Clients still see
-                    your normal SMOAC profile layout.
-                  </p>
-                }
-              />
-            </div>
+        <EditProfilePageChrome
+          titleId={editTitleId}
+          onBack={() => replacePreviewMode("live")}
+        />
+        <div className="specialist-edit-profile-page__body">
+          <div className="ig-profile-edit-wrap">
+            <SpecialistIgStyleProfileEditor
+              trainer={trainer}
+              formDefaults={formDefaults}
+              onEditSection={(id) => startEdit(id)}
+              highlightedSection={highlightedRow}
+              onUpgrade={onUpgrade}
+              onSignOut={onSignOut}
+              footer={
+                <p className="ig-profile-edit__hint">
+                  Changes go live on Marketplace when you save. Clients still
+                  see your normal SMOAC profile layout.
+                </p>
+              }
+            />
           </div>
         </div>
-        {editSheet}
       </div>
+    );
+
+    return (
+      <>
+        {portalReady ? createPortal(page, document.body) : page}
+        {editSheet}
+      </>
     );
   }
 
@@ -1324,33 +1417,38 @@ export function SpecialistDashboardProfilePreview({
   return (
     <div
       id={LIVE_PROFILE_ANCHOR_ID}
-      className="specialist-profile-mode specialist-profile-mode--live"
+      className={cn(
+        "specialist-profile-mode specialist-profile-mode--live",
+        canEdit && "specialist-live-page"
+      )}
     >
       {canEdit ? (
-        <LiveProfileChrome
-          showInquiries={showInquiries}
-          inquiryUnreadCount={inquiryUnreadCount}
-          onOpenInquiries={() => replacePreviewMode("inquiries")}
-          onOpenEdit={() => replacePreviewMode("edit")}
+        <>
+          <LiveProfileChrome
+            showInquiries={showInquiries}
+            inquiryUnreadCount={inquiryUnreadCount}
+            onOpenInquiries={() => replacePreviewMode("inquiries")}
+            onOpenEdit={() => replacePreviewMode("edit")}
+          />
+          <div className="specialist-live-page__body">
+            <TrainerProfileView
+              trainer={liveTrainer}
+              cityRanking={cityRanking}
+              variant="specialist-live"
+              onClaimFreeSession={selfPreviewNote}
+              onInquire={selfPreviewNote}
+            />
+          </div>
+        </>
+      ) : (
+        <TrainerProfileView
+          trainer={liveTrainer}
+          cityRanking={cityRanking}
+          variant="specialist-live"
+          onClaimFreeSession={selfPreviewNote}
+          onInquire={selfPreviewNote}
         />
-      ) : null}
-      <TrainerProfileView
-        trainer={liveTrainer}
-        cityRanking={cityRanking}
-        variant="specialist-live"
-        onClaimFreeSession={selfPreviewNote}
-        onInquire={selfPreviewNote}
-      />
-      {canEdit && onSignOut ? (
-        <div className="specialist-live-signout">
-          <FastActivateButton
-            className="smoac-control specialist-live-signout__btn"
-            onActivate={onSignOut}
-          >
-            Sign out
-          </FastActivateButton>
-        </div>
-      ) : null}
+      )}
     </div>
   );
 }

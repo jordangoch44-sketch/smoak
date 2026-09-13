@@ -72,18 +72,6 @@ export function isProfileAccentId(value: unknown): value is ProfileAccentId {
   return PROFILE_ACCENT_OPTIONS.some((option) => option.id === value);
 }
 
-export function isProfileAvatarFrameId(
-  value: unknown
-): value is ProfileAvatarFrameId {
-  return PROFILE_AVATAR_FRAME_OPTIONS.some((option) => option.id === value);
-}
-
-export function isProfileNameFontId(
-  value: unknown
-): value is ProfileNameFontId {
-  return PROFILE_NAME_FONT_OPTIONS.some((option) => option.id === value);
-}
-
 export function normalizeProfileStyle(
   style?: Partial<SpecialistProfileStyle> | null
 ): SpecialistProfileStyle {
@@ -91,12 +79,9 @@ export function normalizeProfileStyle(
     accent: isProfileAccentId(style?.accent)
       ? style.accent
       : DEFAULT_PROFILE_STYLE.accent,
-    avatarFrame: isProfileAvatarFrameId(style?.avatarFrame)
-      ? style.avatarFrame
-      : DEFAULT_PROFILE_STYLE.avatarFrame,
-    nameFont: isProfileNameFontId(style?.nameFont)
-      ? style.nameFont
-      : DEFAULT_PROFILE_STYLE.nameFont,
+    /* Font + ring are no longer specialist-editable. */
+    avatarFrame: DEFAULT_PROFILE_STYLE.avatarFrame,
+    nameFont: DEFAULT_PROFILE_STYLE.nameFont,
   };
 }
 
@@ -111,19 +96,5 @@ export function profileStyleAccentLabel(accent: ProfileAccentId): string {
   return (
     PROFILE_ACCENT_OPTIONS.find((option) => option.id === accent)?.label ??
     "Violet"
-  );
-}
-
-export function profileStyleFrameLabel(frame: ProfileAvatarFrameId): string {
-  return (
-    PROFILE_AVATAR_FRAME_OPTIONS.find((option) => option.id === frame)?.label ??
-    "None"
-  );
-}
-
-export function profileStyleFontLabel(font: ProfileNameFontId): string {
-  return (
-    PROFILE_NAME_FONT_OPTIONS.find((option) => option.id === font)?.label ??
-    "Classic"
   );
 }

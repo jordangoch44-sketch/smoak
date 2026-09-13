@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
+import { FoundingLaunchCountdown } from "@/components/founding/FoundingLaunchCountdown";
 import {
   FOUNDING_50_LABEL,
   FOUNDING_INVITE_CODE_PARAM,
@@ -102,7 +103,9 @@ export function Founding50InvitePage({
         ) : isFull ? (
           <section className="founding-invite-page__panel">
             <p className="founding-invite-page__eyebrow">{FOUNDING_50_LABEL}</p>
-            <h1 className="founding-invite-page__title">All 50 spots claimed.</h1>
+            <h1 className="founding-invite-page__title">
+              All {FOUNDING_50_CAP} spots claimed.
+            </h1>
             <p className="founding-invite-page__lede">
               {FOUNDING_50_LABEL} invitations are closed. We&apos;ll open the
               next wave quietly — watch your inbox.
@@ -123,6 +126,7 @@ export function Founding50InvitePage({
               SMOAC — Explore. Discover. Move. Find health and wellness
               professionals near you, at your fingertips.
             </p>
+            <FoundingLaunchCountdown />
             <p className="founding-invite-page__lede founding-invite-page__lede--invite">
               You&apos;ve been invited to join the {FOUNDING_50_LABEL} on SMOAC —
               one of the first specialists on the marketplace. Apply now, and

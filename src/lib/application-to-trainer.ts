@@ -1,3 +1,4 @@
+import { normalizeOffersFreeFirstSession } from "@/lib/free-first-session";
 import { getDefaultZipForMarketplaceCity } from "@/lib/marketplace-city-default-zip";
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
@@ -175,10 +176,9 @@ export function applicationToTrainer(
       pricePerSessionMin: sessionPrice.min,
       pricePerSessionMax: sessionPrice.max,
     }),
-    offersFreeFirstSession:
-      typeof app.offersFreeFirstSession === "boolean"
-        ? app.offersFreeFirstSession
-        : true,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      app.offersFreeFirstSession
+    ),
     rating: 0,
     reviewCount: 0,
     galleryImages: mediaUrls.length > 0 ? mediaUrls : [photo],
@@ -210,7 +210,7 @@ export function applicationToTrainer(
     ).map((src, index) => ({
       id: `t-${index}`,
       src,
-      alt: "Client transformation",
+      alt: "Client result",
     })),
     featured: false,
     certifications,
@@ -323,10 +323,9 @@ export function applicationToProfileOverrides(
     pricePerSession: priceRange.max,
     pricePerSessionMin: priceRange.min,
     pricePerSessionMax: priceRange.max,
-    offersFreeFirstSession:
-      typeof app.offersFreeFirstSession === "boolean"
-        ? app.offersFreeFirstSession
-        : true,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      app.offersFreeFirstSession
+    ),
     bio: app.bio?.trim() ?? "",
     profilePhotoUrl: app.media?.profilePhotoUrl?.trim() ?? "",
     phone: app.phone?.trim() ?? "",

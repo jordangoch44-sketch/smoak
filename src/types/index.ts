@@ -13,6 +13,12 @@ export type {
   Trainer,
 } from "./trainer";
 
+export type {
+  SpecialistPricingOffering,
+  SpecialistPricingOfferingType,
+} from "./specialist-pricing";
+export { SPECIALIST_PRICING_OFFERING_TYPES } from "./specialist-pricing";
+
 export type { TrainerFilters } from "./filters";
 
 export type {

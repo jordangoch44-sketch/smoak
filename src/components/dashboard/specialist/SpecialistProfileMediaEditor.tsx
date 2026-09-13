@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useState, type ChangeEvent } from "react";
-import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { ProfilePhotoCropper } from "@/components/media/ProfilePhotoCropper";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
@@ -34,31 +33,23 @@ import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
 import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
-import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
-import { SpecialistVideosEditor } from "@/components/dashboard/specialist/SpecialistVideosEditor";
 
 interface SpecialistProfileMediaEditorProps {
-  profilePhotoUrl: string;
   coverImageUrl: string;
   photoNotes: string;
   slideshowFramesJson: string;
   videoNotes: string;
   videoPostersJson?: string;
   pinnedPhotos: string[];
-  transformationNotes?: string;
   isPremium: boolean;
   isProPlus?: boolean;
   specialistId?: string | null;
   onUpgrade?: () => void;
   onChange: (patch: {
-    profilePhotoUrl?: string;
     coverImageUrl?: string;
     photoNotes?: string;
     slideshowFramesJson?: string;
-    videoNotes?: string;
-    videoPostersJson?: string;
     pinnedPhotos?: string[];
-    transformationNotes?: string;
   }) => void;
 }
 
@@ -75,16 +66,14 @@ interface CropQueueState {
   uploadedFrames: SlideshowFrameMap;
 }
 
-/** Profile photo, header slideshow, and pins — short labels, multi-photo selection, in-browser crop. */
+/** Header slideshow and pins — short labels, multi-photo selection, in-browser crop. */
 export function SpecialistProfileMediaEditor({
-  profilePhotoUrl,
   coverImageUrl,
   photoNotes,
   slideshowFramesJson,
   videoNotes,
   videoPostersJson = "",
   pinnedPhotos,
-  transformationNotes = "",
   isPremium,
   isProPlus = false,
   specialistId,
@@ -309,17 +298,6 @@ export function SpecialistProfileMediaEditor({
 
   return (
     <div className="specialist-media-editor">
-      <ProfileMediaUploadField
-        label="Profile photo"
-        value={profilePhotoUrl}
-        onChange={(value) => {
-          setError(null);
-          onChange({ profilePhotoUrl: value });
-        }}
-        specialistId={specialistId}
-        onClear={() => onChange({ profilePhotoUrl: "" })}
-      />
-
       <div className="specialist-media-editor__header-block">
         <div className="specialist-media-editor__header-top">
           <p className="login-field__label">Header slideshow</p>
@@ -509,25 +487,6 @@ export function SpecialistProfileMediaEditor({
           </button>
         ) : null}
       </div>
-
-      <SpecialistTransformationsEditor
-        transformationNotes={transformationNotes}
-        isProPlus={isProPlus}
-        specialistId={specialistId}
-        onUpgrade={onUpgrade}
-        onChange={(next) => onChange({ transformationNotes: next })}
-      />
-
-      <SpecialistVideosEditor
-        videoNotes={videoNotes}
-        videoPostersJson={videoPostersJson}
-        pinnedPhotos={pins}
-        isPremium={isPremium}
-        isProPlus={isProPlus}
-        specialistId={specialistId}
-        onUpgrade={onUpgrade}
-        onChange={(next) => onChange(next)}
-      />
 
       {error ? (
         <p className="dashboard-upload-error" role="alert">

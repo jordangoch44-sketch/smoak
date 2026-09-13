@@ -44,23 +44,61 @@ export async function shareTrainerProfile(options: {
     }
   }
 
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(url);
-    return "copied";
+  await copyTextToClipboard(url);
+  return "copied";
+}
+
+export async function copyTextToClipboard(text: string): Promise<void> {
+  if (typeof document === "undefined") {
+    throw new Error("Clipboard is unavailable on this device.");
   }
 
-  throw new Error("Share is unavailable on this device.");
+  const secureClipboard =
+    typeof window !== "undefined" &&
+    window.isSecureContext &&
+    typeof navigator !== "undefined" &&
+    typeof navigator.clipboard?.writeText === "function";
+
+  if (secureClipboard) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      /* iOS / permission failures fall through to execCommand. */
+    }
+  }
+
+  copyTextWithExecCommand(text);
+}
+
+function copyTextWithExecCommand(text: string): void {
+  const input = document.createElement("textarea");
+  input.value = text;
+  input.setAttribute("readonly", "");
+  input.setAttribute("aria-hidden", "true");
+  input.style.cssText =
+    "position:fixed;top:0;left:0;width:1px;height:1px;padding:0;border:0;outline:none;box-shadow:none;background:transparent;opacity:0.01;font-size:16px;";
+  document.body.appendChild(input);
+  input.focus();
+  input.select();
+  input.setSelectionRange(0, text.length);
+
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } finally {
+    input.remove();
+  }
+
+  if (!copied) {
+    throw new Error("Clipboard is unavailable on this device.");
+  }
 }
 
 export async function copyTrainerProfileLink(
   trainer: string | TrainerPublicIdentity
 ): Promise<void> {
-  const url = getTrainerProfileUrl(trainer);
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(url);
-    return;
-  }
-  throw new Error("Clipboard is unavailable on this device.");
+  await copyTextToClipboard(getTrainerProfileUrl(trainer));
 }
 
 export function scrollToProfileConsultation(): void {

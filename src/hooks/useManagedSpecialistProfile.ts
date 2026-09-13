@@ -87,7 +87,7 @@ export function useManagedSpecialistProfile() {
   const base = trainerId ? getManagedTrainerBaseById(trainerId) : undefined;
   const storedOverrides = trainerId ? overridesMap[trainerId] ?? null : null;
   /* Live mode keeps overrides in memory only — after reload, rebuild from the
-   * application so More Details / transformations still round-trip. */
+   * application so More Details / client results still round-trip. */
   const fromApplication = application
     ? applicationToProfileOverrides(application)
     : null;

@@ -1,11 +1,11 @@
 /**
- * Founding 50 invite — hidden shareable landing for the first 50 specialists.
+ * Founding 100 invite — hidden shareable landing for the first 100 specialists.
  * Not linked from public nav; validated via env invite code + cap.
  */
 
-export const FOUNDING_50_PATH = "/founding-50";
+export const FOUNDING_50_PATH = "/founding-100";
 
-export const FOUNDING_50_LABEL = "Founding 50";
+export const FOUNDING_50_LABEL = "Founding 100";
 
 export const FOUNDING_INVITE_CODE_PARAM = "code";
 
@@ -13,7 +13,40 @@ export const JOIN_FOUNDING_PARAM = "founding";
 
 export const FOUNDING_50_STORAGE_KEY = "smoac.founding-50-invite";
 
-export const FOUNDING_50_CAP = 50;
+export const FOUNDING_50_CAP = 100;
+
+/** Marketplace launch — Dec 12, 2026, 10:00 AM Pacific (PST). */
+export const FOUNDING_LAUNCH_AT_MS = Date.parse("2026-12-12T10:00:00-08:00");
+
+export const FOUNDING_LAUNCH_LABEL = "December 12, 2026 · 10 AM PT";
+
+export type FoundingCountdownParts = {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  done: boolean;
+};
+
+export function getFoundingCountdownParts(
+  nowMs = Date.now()
+): FoundingCountdownParts {
+  const remainingSec = Math.max(
+    0,
+    Math.floor((FOUNDING_LAUNCH_AT_MS - nowMs) / 1000)
+  );
+  return {
+    days: Math.floor(remainingSec / 86400),
+    hours: Math.floor((remainingSec % 86400) / 3600),
+    minutes: Math.floor((remainingSec % 3600) / 60),
+    seconds: remainingSec % 60,
+    done: remainingSec === 0,
+  };
+}
+
+export function padCountdownUnit(value: number, digits = 2): string {
+  return String(value).padStart(digits, "0");
+}
 
 export interface Founding50InviteSession {
   code: string;
@@ -114,7 +147,7 @@ export function formatFounding50SpotsRemaining(
   cap: number
 ): string {
   const remaining = Math.max(0, cap - claimed);
-  return String(remaining).padStart(2, "0");
+  return String(remaining).padStart(3, "0");
 }
 
 export function formatFounding50MemberIndex(
@@ -122,5 +155,5 @@ export function formatFounding50MemberIndex(
   cap: number
 ): string {
   const next = Math.min(claimed + 1, cap);
-  return String(next).padStart(2, "0");
+  return String(next).padStart(3, "0");
 }

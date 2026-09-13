@@ -297,12 +297,16 @@
 .profile-toolbar__save,
 .profile-toolbar__save .save-button,
 .specialist-live-chrome__btn,
-.specialist-live-signout__btn,
 .inquiry-inbox-page__back,
 .inquiry-inbox-page__select,
 .inquiry-inbox-page__delete,
 .inquiry-inbox-page__mark,
 .specialist-edit-profile-page__back,
+.specialist-live-sheet select,
+.profile-pricing-card__toggle,
+.ig-profile-edit__row,
+.ig-profile-edit__avatar-btn,
+.ig-profile-edit__photo-chip,
 .inquiry-thread-overlay .inquiry-thread__back,
 .inquiry-thread-overlay .inquiry-thread__send {
   pointer-events: auto !important;

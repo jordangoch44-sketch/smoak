@@ -27,7 +27,7 @@ export function SpecialistWorkSpotFields({
   headingHint,
   addressLabel,
   addressHint,
-  virtualHint = "Virtual coaches don’t need a street address. Switch session format below if you also train in person.",
+  virtualHint = "Virtual coaches don’t need a street address. Switch session format below if you also see clients in person.",
   onRemove,
   className,
 }: SpecialistWorkSpotFieldsProps) {

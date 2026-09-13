@@ -1,4 +1,4 @@
-/* Founding 50 invite — minimal Bond-meets-space dossier landing */
+/* Founding 100 invite — minimal Bond-meets-space dossier landing */
 
 body:has(.founding-invite-page) {
   background: #000 !important;
@@ -23,7 +23,8 @@ body:has(.founding-invite-page) .app-main {
   flex: 1;
   flex-direction: column;
   padding: 0 !important;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: #000;
 }
 
@@ -35,7 +36,8 @@ body:has(.founding-invite-page) .app-main {
   flex-direction: column;
   color: rgba(255, 255, 255, 0.92);
   background: #000;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   isolation: isolate;
 }
 
@@ -99,7 +101,7 @@ body:has(.founding-invite-page) .app-main {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: safe center;
   gap: 2.5rem;
   width: min(100%, 28rem);
   margin: 0 auto;
@@ -167,6 +169,63 @@ body:has(.founding-invite-page) .app-main {
   font-size: 0.9375rem;
   line-height: 1.65;
   color: rgba(255, 255, 255, 0.58);
+}
+
+.founding-invite-page__timer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.65rem;
+  margin: 0.15rem 0 0.1rem;
+}
+
+.founding-invite-page__timer--pending {
+  visibility: hidden;
+}
+
+.founding-invite-page__timer-caption {
+  margin: 0;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(248, 226, 186, 0.55);
+}
+
+.founding-invite-page__timer-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.founding-invite-page__timer-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem 0.2rem 0.6rem;
+  border: 1px solid rgba(248, 226, 186, 0.18);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.founding-invite-page__timer-value {
+  font-family: var(--font-founding-countdown), "Orbitron", system-ui, sans-serif;
+  font-size: clamp(1.15rem, 4.4vw, 1.65rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.96);
+  text-shadow: var(--smoac-color-glow);
+}
+
+.founding-invite-page__timer-label {
+  font-size: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .founding-invite-page__lede--invite {

@@ -126,7 +126,7 @@ Email is a ping, not the inbox. Deep links: `/client-dashboard?tab=messages&c=�
 SpecialistProfileMediaEditor          Live tab + /specialist-dashboard/edit-profile
   ├── ProfileMediaUploadField         avatar crop
   ├── slideshow crop queue           4:5 baked JPEG
-  └── SpecialistTransformationsEditor PRO+ before/after photos
+  └── SpecialistTransformationsEditor PRO+ client results photos
   └── SpecialistVideosEditor          PRO+ phone clips (45s, signed upload)
         └── lib/media/specialist-media-upload.ts
               photos: POST /api/media/specialist-application

@@ -16,10 +16,7 @@ export interface PostLoginNavigation {
 export interface PostLoginNavigationOptions {
   /** After auth from saved panel, land on /saved instead of dashboard */
   returnToSaved?: boolean;
-  session?: Pick<
-    AuthSession,
-    "userId" | "role" | "premiumTrialActive" | "premiumTrialJustEnded"
-  > | null;
+  session?: Pick<AuthSession, "userId" | "role"> | null;
 }
 
 /** DEV ONLY — dashboard route + toast after login with optional pending save */
@@ -27,11 +24,6 @@ export function resolvePostLoginNavigation(
   role: PublicAuthRole,
   options?: PostLoginNavigationOptions
 ): PostLoginNavigation {
-  /* First login after approval: profile editor + one-time welcome. */
-  if (hasPendingSpecialistProfileWelcome(options?.session)) {
-    return { path: SPECIALIST_DASHBOARD_WELCOME_HREF };
-  }
-
   const pendingId = peekPendingSave();
   const returnToSaved =
     Boolean(options?.returnToSaved) &&
@@ -50,6 +42,11 @@ export function resolvePostLoginNavigation(
 
   if (returnToSaved) {
     return { path: "/saved" };
+  }
+
+  /* Every specialist login — including the first — opens the welcome. */
+  if (hasPendingSpecialistProfileWelcome(options?.session)) {
+    return { path: SPECIALIST_DASHBOARD_WELCOME_HREF };
   }
 
   return {

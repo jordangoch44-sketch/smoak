@@ -607,6 +607,32 @@ export function MenuIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+/** Sandwich + pencil — live-profile edit tools. */
+export function MenuPencilIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.5 8.15h11.4M3.5 12.85h17M3.5 17.55h17"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M16.2 8.2 19.7 3.55a.95.95 0 0 1 1.55.92L17.8 9.05c-.1.18-.27.3-.47.36l-1.2.32a.26.26 0 0 1-.32-.32l.32-1.2c.06-.2.18-.38.36-.47z"
+      />
+      <path strokeLinecap="round" d="M18.85 4.85l.55.38" />
+    </svg>
+  );
+}
+
 /** Explore browse category — Personal Trainer */
 export function DumbbellIcon({ className = "h-5 w-5" }: IconProps) {
   return (
@@ -901,6 +927,25 @@ export function CameraIcon({ className = "h-5 w-5" }: IconProps) {
     >
       <path d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316z" />
       <path d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0z" />
+    </svg>
+  );
+}
+
+export function PercentIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M19.5 4.5 4.5 19.5" />
+      <circle cx="6.75" cy="6.75" r="2.25" />
+      <circle cx="17.25" cy="17.25" r="2.25" />
     </svg>
   );
 }

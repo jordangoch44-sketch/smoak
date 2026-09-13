@@ -150,8 +150,14 @@ export function ProfilePhotoCropper({
           rotation={rotation}
           aspect={aspect}
           cropShape={cropShape}
+          objectFit={cropShape === "round" ? "cover" : "contain"}
           showGrid={true}
           restrictPosition={true}
+          style={
+            cropShape === "round"
+              ? { mediaStyle: { maxWidth: "none", maxHeight: "none" } }
+              : {}
+          }
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onRotationChange={setRotation}

@@ -23,8 +23,13 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/founding-50",
+        destination: "/founding-100",
+        permanent: true,
+      },
+      {
         source: "/founding-trainers",
-        destination: "/founding-50",
+        destination: "/founding-100",
         permanent: true,
       },
       {
@@ -41,6 +46,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ["framer-motion"],
+    /* Default disk cache was stalling local compiles 15–50s on a pressured FS. */
+    turbopackFileSystemCacheForDev: false,
   },
   images: {
     qualities: [75, 90, 100],

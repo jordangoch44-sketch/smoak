@@ -10,7 +10,7 @@ const TRAINERS_WITH_TRANSFORMATIONS = new Set([
   "david-okonkwo",
 ]);
 
-/** Client before/after photos — empty array shows smoked-glass placeholder */
+/** Client before/after photos — empty when the specialist has none */
 export function getTrainerTransformations(
   trainerId: string
 ): ClientTransformationPhoto[] {
@@ -21,7 +21,7 @@ export function getTrainerTransformations(
   return [1, 2, 3].map((n) => ({
     id: `${trainerId}-transform-${n}`,
     src: `https://picsum.photos/seed/smoac-transform-${n}-${trainerId}/960/720`,
-    alt: `Client transformation ${n}`,
+    alt: `Client result ${n}`,
   }));
 }
 

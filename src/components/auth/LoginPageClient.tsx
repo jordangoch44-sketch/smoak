@@ -21,7 +21,6 @@ import type { AuthRole } from "@/types/auth";
 import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation, navigateAfterAuth } from "@/lib/post-login-flow";
-import { hasPendingSpecialistProfileWelcome } from "@/lib/specialist-profile-welcome";
 import { cn } from "@/lib/utils";
 
 const LOGIN_FAILURE_DELAY_MS = 300;
@@ -322,7 +321,10 @@ export function LoginPageClient() {
               className="login-card__wait"
             />
             <p className="login-card__subtitle">
-              {hasPendingSpecialistProfileWelcome(session)
+              {resolvePostLoginNavigation(publicSessionRole, {
+                returnToSaved,
+                session,
+              }).path.includes("welcome=1")
                 ? "Taking you to your profile."
                 : `Taking you to your ${publicSessionRole} dashboard.`}
             </p>

@@ -29,7 +29,7 @@ interface SpecialistPreciseLocationFieldProps {
 }
 
 /**
- * Optional street / studio address search with autocomplete.
+ * Optional street / facility address search with autocomplete.
  * Street text stays private — marketplace uses lat/lng only.
  */
 export function SpecialistPreciseLocationField({
@@ -37,7 +37,7 @@ export function SpecialistPreciseLocationField({
   locationPrecision,
   disabled = false,
   className,
-  label = "Exact work / studio address",
+  label = "Exact facility address",
   hint = "Best for helping clients discover you",
   onResolved,
   onCleared,

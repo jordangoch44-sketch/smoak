@@ -83,15 +83,15 @@ Takes a few minutes. Then you're findable.`,
   }),
   template({
     id: "8e1a0c10-4b2e-4d3a-9f01-000000000003",
-    name: "Welcome to Founding Specialists",
-    subject: "Welcome to SMOAC, {{first_name}} — you're a founding specialist",
+    name: "Welcome to the Founding 100",
+    subject: "Welcome to SMOAC, {{first_name}} — you're in the Founding 100",
     triggerKind: "after_approval",
     triggerLabel: "After Approval",
-    preheader: "You're in. This is the early specialist community.",
-    title: "Welcome to Founding Specialists",
+    preheader: "You're in. This is the Founding 100.",
+    title: "Welcome to the Founding 100",
     body: `Hi {{first_name}},
 
-You're approved — welcome to SMOAC's founding specialists.
+You're approved — welcome to SMOAC's Founding 100.
 
 This is the early community. Finish anything still open on your profile, share your listing, and tell us what you need. You help shape what specialists see next.
 

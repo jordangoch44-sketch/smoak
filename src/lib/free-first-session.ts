@@ -22,13 +22,22 @@ export function isFreeFirstSessionBadge(
 export const FREE_FIRST_SESSION_RAIL_LIMIT = 8;
 
 /**
+ * Missing / unset means On. Only an explicit `false` turns the offer off.
+ */
+export function normalizeOffersFreeFirstSession(
+  value: boolean | null | undefined
+): boolean {
+  return value !== false;
+}
+
+/**
  * Existing listings default ON so current specialists appear until they
  * turn the offer off in profile.
  */
 export function trainerOffersFreeFirstSession(
   trainer: Pick<Trainer, "offersFreeFirstSession">
 ): boolean {
-  return trainer.offersFreeFirstSession !== false;
+  return normalizeOffersFreeFirstSession(trainer.offersFreeFirstSession);
 }
 
 /** Pro, PRO+, or complimentary Pro trial (`isPremium`). */

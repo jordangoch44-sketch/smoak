@@ -58,15 +58,16 @@ import {
 import { membershipPlanLabel } from "@/lib/stripe/products";
 import { cn } from "@/lib/utils";
 import {
-  markSpecialistProfileWelcomeSeen,
   shouldShowSpecialistProfileWelcome,
+  resolveProfileWelcomeMembership,
+  PROFILE_WELCOME_AVATAR_TASK_ID,
   PROFILE_WELCOME_PHOTOS_TASK_ID,
 } from "@/lib/specialist-profile-welcome";
 
 type FreeDashboardTab = "plan" | "profile";
 type PremiumDashboardTab = "overview" | "profile";
 
-/** Survives Strict Mode remounts; cleared on full reload so the welcome stays one-time. */
+/** Survives Strict Mode remounts; cleared on full reload so login can show it again. */
 const welcomeOpenedThisRuntime = new Set<string>();
 const welcomeDismissedThisRuntime = new Set<string>();
 
@@ -212,7 +213,6 @@ export function SpecialistDashboardPageClient() {
     }
     if (userId) {
       welcomeOpenedThisRuntime.add(userId);
-      markSpecialistProfileWelcomeSeen(userId);
     }
     setWelcomeOpen(true);
   }, [
@@ -412,7 +412,6 @@ export function SpecialistDashboardPageClient() {
   function dismissProfileWelcome() {
     const userId = session?.userId;
     if (userId) {
-      markSpecialistProfileWelcomeSeen(userId);
       welcomeDismissedThisRuntime.add(userId);
     }
     setWelcomeOpen(false);
@@ -426,6 +425,15 @@ export function SpecialistDashboardPageClient() {
     );
   }
 
+  function openWelcomeMembership(action: "join" | "upgrade" | "boost") {
+    dismissProfileWelcome();
+    if (action === "boost") {
+      setBoostOpen(true);
+      return;
+    }
+    setUpgradeOpen(true);
+  }
+
   function startWelcomeWithSection(sectionId?: string) {
     setFocusSection(sectionId || "hero");
     dismissProfileWelcome();
@@ -433,10 +441,12 @@ export function SpecialistDashboardPageClient() {
 
   function startWelcomeWithPhotos() {
     const photosTask = welcomeTasks.find(
-      (task) => task.id === PROFILE_WELCOME_PHOTOS_TASK_ID
+      (task) =>
+        task.id === PROFILE_WELCOME_AVATAR_TASK_ID ||
+        task.id === PROFILE_WELCOME_PHOTOS_TASK_ID
     );
     startWelcomeWithSection(
-      photosTask?.id ?? welcomeTasks[0]?.id ?? PROFILE_WELCOME_PHOTOS_TASK_ID
+      photosTask?.id ?? welcomeTasks[0]?.id ?? PROFILE_WELCOME_AVATAR_TASK_ID
     );
   }
 
@@ -873,10 +883,14 @@ export function SpecialistDashboardPageClient() {
       tasks={welcomeTasks}
       avatarUrl={welcomeAvatarUrl}
       specialistName={welcomeDisplayName}
-      showTrial={Boolean(session?.premiumTrialActive)}
+      firstName={firstName}
+      membership={resolveProfileWelcomeMembership(session)}
       onClose={dismissProfileWelcome}
       onStartWithPhotos={startWelcomeWithPhotos}
       onSelectTask={startWelcomeWithSection}
+      onGetMembership={() => openWelcomeMembership("join")}
+      onUpgrade={() => openWelcomeMembership("upgrade")}
+      onBoost={() => openWelcomeMembership("boost")}
     />
     <SmoacProUpgradeModal
       open={upgradeOpen}

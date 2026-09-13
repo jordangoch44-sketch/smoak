@@ -1,14 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
-  SMOAC_PRO_PLUS_PRICE_LABEL,
-  SMOAC_PRO_UPGRADE_MODAL,
+  CalendarIcon,
+  CameraIcon,
+  ChartIcon,
+  CheckCircleIcon,
+  CheckIcon,
+  EyeIcon,
+  PercentIcon,
+  PhotosStackIcon,
+  TrophyIcon,
+  UsersIcon,
+} from "@/components/ui/icons";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { LOGO_ICON_SRC } from "@/lib/brand";
+import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
+import {
+  isMembershipUpgradeOffer,
+  resolveMembershipUpgradeOffer,
+  type MembershipUpgradeOffer,
 } from "@/lib/specialist-premium";
 import { createEmbeddedSubscriptionCheckout } from "@/lib/stripe/subscription-checkout";
 import type { SmoacMembershipProduct } from "@/lib/stripe/products";
+import { cn } from "@/lib/utils";
+import { BoostVisibilityModal } from "./BoostVisibilityModal";
 import { DashboardButton } from "./DashboardButton";
 import {
   DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
@@ -17,9 +35,40 @@ import {
 } from "./DashboardModalScrim";
 import { StripeEmbeddedCheckout } from "./StripeEmbeddedCheckout";
 
+const PERK_ICONS: Record<string, ComponentType<{ className?: string }>> = {
+  "Full profile analytics": ChartIcon,
+  "Visibility and ranking intelligence": TrophyIcon,
+  "Client engagement metrics": UsersIcon,
+  "Free 1st session marketplace placement": CalendarIcon,
+  "Growth insights on your live profile": EyeIcon,
+  "Everything in Pro": CheckCircleIcon,
+  "Phone videos up to 45 seconds": CameraIcon,
+  "Client results under Specialties": PhotosStackIcon,
+  "20% off Boost campaigns": PercentIcon,
+};
+
+function UpgradeMark() {
+  return (
+    <span className="dashboard-upgrade__mark" aria-hidden>
+      {/* eslint-disable-next-line @next/next/no-img-element -- official plate crop, paints with the modal */}
+      <img
+        src={LOGO_ICON_SRC}
+        alt=""
+        width={86}
+        height={86}
+        decoding="sync"
+        fetchPriority="high"
+        className="dashboard-upgrade__s"
+      />
+    </span>
+  );
+}
+
 interface SmoacProUpgradeModalProps {
   open: boolean;
   onClose: () => void;
+  /** Force the trial-ended Pro continue prompt. */
+  trialEnded?: boolean;
 }
 
 type CheckoutPayload = {
@@ -31,17 +80,112 @@ type CheckoutPayload = {
 
 type Step = "pick" | "checkout" | "paid";
 
-export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProps) {
+function splitPriceLabel(label: string): { amount: string; cadence: string } {
+  const slash = label.lastIndexOf("/");
+  if (slash <= 0) return { amount: label, cadence: "" };
+  return {
+    amount: label.slice(0, slash).trim(),
+    cadence: `/${label.slice(slash + 1).trim()}`,
+  };
+}
+
+function MembershipUpgradePick({
+  offer,
+  busy,
+  error,
+  onCheckout,
+  onClose,
+}: {
+  offer: MembershipUpgradeOffer;
+  busy: boolean;
+  error: string | null;
+  onCheckout: () => void;
+  onClose: () => void;
+}) {
+  const price = splitPriceLabel(offer.price);
+
+  return (
+    <div className="dashboard-upgrade">
+      <div className="dashboard-upgrade__hero">
+        <UpgradeMark />
+        <p className="dashboard-modal__eyebrow dashboard-upgrade__eyebrow">
+          {offer.eyebrow}
+        </p>
+        <h2 id="smoac-pro-modal-title" className="dashboard-upgrade__title">
+          {offer.title}
+        </h2>
+        <p id="smoac-pro-modal-desc" className="dashboard-upgrade__body">
+          {offer.description}
+        </p>
+      </div>
+
+      <div className="dashboard-upgrade__price-card">
+        <p className="dashboard-upgrade__price">
+          <span className="dashboard-upgrade__amount">{price.amount}</span>
+          {price.cadence ? (
+            <span className="dashboard-upgrade__cadence">{price.cadence}</span>
+          ) : null}
+        </p>
+        <p className="dashboard-upgrade__billing">{offer.note}</p>
+      </div>
+
+      <ul className="dashboard-upgrade__perks">
+        {offer.benefits.map((benefit) => {
+          const PerkIcon = PERK_ICONS[benefit] ?? CheckIcon;
+          return (
+            <li key={benefit}>
+              <span className="dashboard-upgrade__perk-icon-wrap" aria-hidden>
+                <PerkIcon className="dashboard-upgrade__perk-icon" />
+              </span>
+              <span>{benefit}</span>
+            </li>
+          );
+        })}
+      </ul>
+
+      {error ? (
+        <p className="dashboard-modal__error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <DashboardButton
+        className="dashboard-pro-upgrade-btn dashboard-upgrade__cta"
+        onClick={onCheckout}
+        disabled={busy}
+      >
+        {busy ? "Loading…" : offer.cta}
+      </DashboardButton>
+      {offer.secondaryCta ? (
+        <FastActivateButton
+          className="dashboard-modal__secondary"
+          onActivate={onClose}
+        >
+          {offer.secondaryCta}
+        </FastActivateButton>
+      ) : null}
+    </div>
+  );
+}
+
+export function SmoacProUpgradeModal({
+  open,
+  onClose,
+  trialEnded = false,
+}: SmoacProUpgradeModalProps) {
+  const { session } = useAuthSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("pick");
   const [checkout, setCheckout] = useState<CheckoutPayload | null>(null);
+  const offer = resolveMembershipUpgradeOffer(session, { trialEnded });
+  const offersBoost = offer.intent === "boost";
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || offersBoost) return;
 
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.classList.add(MODAL_OPEN_BODY_CLASS);
+    document.documentElement.classList.add(MODAL_OPEN_BODY_CLASS);
     setError(null);
     setBusy(false);
     setCheckout(null);
@@ -53,15 +197,23 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
+      document.body.classList.remove(MODAL_OPEN_BODY_CLASS);
+      document.documentElement.classList.remove(MODAL_OPEN_BODY_CLASS);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, onClose]);
+  }, [open, onClose, offersBoost]);
 
-  async function startCheckout(product: SmoacMembershipProduct) {
+  if (!open || typeof document === "undefined") return null;
+
+  if (!isMembershipUpgradeOffer(offer)) {
+    return <BoostVisibilityModal open={open} onClose={onClose} />;
+  }
+
+  async function startCheckout() {
+    if (!isMembershipUpgradeOffer(offer)) return;
     setBusy(true);
     setError(null);
-    const result = await createEmbeddedSubscriptionCheckout(product);
+    const result = await createEmbeddedSubscriptionCheckout(offer.product);
     if (!result.ok) {
       setError(result.error);
       setBusy(false);
@@ -69,7 +221,7 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
     }
     setCheckout({
       clientSecret: result.checkout.clientSecret,
-      product,
+      product: offer.product,
       label: result.checkout.label,
       priceLabel: result.checkout.priceLabel,
     });
@@ -83,78 +235,73 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
     setStep("pick");
   }
 
-  if (!open || typeof document === "undefined") return null;
+  const dialogClass = cn(
+    "dashboard-modal__dialog dashboard-modal__dialog--pro dashboard-modal__dialog--upgrade",
+    `dashboard-modal__dialog--upgrade-${offer.tone}`
+  );
 
   return createPortal(
-    <DashboardModalScrim onDismiss={onClose}>
+    <DashboardModalScrim
+      className={`dashboard-modal--upgrade dashboard-modal--upgrade-${offer.tone}`}
+      onDismiss={onClose}
+    >
       <div
-        className="dashboard-modal__dialog dashboard-modal__dialog--pro"
+        className={dialogClass}
         role="dialog"
         aria-modal="true"
         aria-labelledby="smoac-pro-modal-title"
         aria-describedby="smoac-pro-modal-desc"
         {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
-        <div className="dashboard-modal__glow" aria-hidden />
+        <div
+          className={cn(
+            "dashboard-modal__glow dashboard-upgrade__glow",
+            `dashboard-upgrade__glow--${offer.tone}`
+          )}
+          aria-hidden
+        />
 
         <DashboardModalCloseButton onClose={onClose} />
 
-        <div className="dashboard-modal__content">
+        <div className="dashboard-modal__content dashboard-upgrade-content">
           {step === "pick" ? (
-            <>
-              <p className="dashboard-modal__eyebrow">{SMOAC_PRO_UPGRADE_MODAL.eyebrow}</p>
-              <h2 id="smoac-pro-modal-title" className="dashboard-modal__title">
-                {SMOAC_PRO_UPGRADE_MODAL.title}
-              </h2>
-              <p id="smoac-pro-modal-desc" className="dashboard-modal__body">
-                {SMOAC_PRO_UPGRADE_MODAL.description}
-              </p>
-              <p className="dashboard-modal__price">{SMOAC_PRO_UPGRADE_MODAL.price}</p>
-              <p className="dashboard-modal__note">{SMOAC_PRO_UPGRADE_MODAL.note}</p>
-              {error ? (
-                <p className="dashboard-modal__error" role="alert">
-                  {error}
-                </p>
-              ) : null}
-              <DashboardButton
-                className="dashboard-pro-upgrade-btn"
-                onClick={() => void startCheckout("premium")}
-                disabled={busy}
-              >
-                {busy ? "Loading…" : `Continue Pro · ${SMOAC_PRO_UPGRADE_MODAL.price}`}
-              </DashboardButton>
-              <FastActivateButton
-                className="dashboard-modal__secondary"
-                onActivate={() => void startCheckout("platinum")}
-                disabled={busy}
-              >
-                Or PRO+ · {SMOAC_PRO_PLUS_PRICE_LABEL}
-              </FastActivateButton>
-              <p className="dashboard-modal__note">
-                PRO+ adds phone videos (45 seconds), client transformations under
-                your pins, and 20% off Boosts. Pay with Apple Pay, Google Pay,
-                Link, or card.
-              </p>
-            </>
+            <MembershipUpgradePick
+              offer={offer}
+              busy={busy}
+              error={error}
+              onCheckout={() => void startCheckout()}
+              onClose={onClose}
+            />
           ) : null}
 
           {step === "checkout" && checkout ? (
-            <>
+            <div className="dashboard-upgrade">
               <FastActivateButton
-                className="dashboard-modal__secondary"
+                className="dashboard-modal__secondary dashboard-upgrade__back"
                 onActivate={backToPick}
               >
-                ← Back to plans
+                ← Back
               </FastActivateButton>
-              <p className="dashboard-modal__eyebrow">{SMOAC_PRO_UPGRADE_MODAL.eyebrow}</p>
-              <h2 id="smoac-pro-modal-title" className="dashboard-modal__title">
+              <p className="dashboard-modal__eyebrow dashboard-upgrade__eyebrow">
+                {offer.eyebrow}
+              </p>
+              <h2 id="smoac-pro-modal-title" className="dashboard-upgrade__title">
                 {checkout.label}
               </h2>
-              <p id="smoac-pro-modal-desc" className="dashboard-modal__body">
+              <p id="smoac-pro-modal-desc" className="dashboard-upgrade__body">
                 Pay in one tap, or enter a card. Billed monthly. Cancel anytime
                 from Subscription settings.
               </p>
-              <p className="dashboard-modal__price">{checkout.priceLabel}</p>
+              <p className="dashboard-upgrade__price dashboard-upgrade__price--inline">
+                <span className="dashboard-upgrade__amount">
+                  {splitPriceLabel(checkout.priceLabel).amount}
+                </span>
+                {splitPriceLabel(checkout.priceLabel).cadence ? (
+                  <span className="dashboard-upgrade__cadence">
+                    {splitPriceLabel(checkout.priceLabel).cadence}
+                  </span>
+                ) : null}
+              </p>
               {error ? (
                 <p className="dashboard-modal__error" role="alert">
                   {error}
@@ -167,26 +314,29 @@ export function SmoacProUpgradeModal({ open, onClose }: SmoacProUpgradeModalProp
                 onPaid={() => setStep("paid")}
                 onError={(message) => setError(message || null)}
               />
-            </>
+            </div>
           ) : null}
 
           {step === "paid" ? (
-            <>
-              <p className="dashboard-modal__eyebrow">{SMOAC_PRO_UPGRADE_MODAL.eyebrow}</p>
-              <h2 id="smoac-pro-modal-title" className="dashboard-modal__title">
+            <div className="dashboard-upgrade">
+              <UpgradeMark />
+              <p className="dashboard-modal__eyebrow dashboard-upgrade__eyebrow">
+                {offer.eyebrow}
+              </p>
+              <h2 id="smoac-pro-modal-title" className="dashboard-upgrade__title">
                 {checkout?.label ?? "Pro"} is active
               </h2>
-              <p id="smoac-pro-modal-desc" className="dashboard-modal__body">
+              <p id="smoac-pro-modal-desc" className="dashboard-upgrade__body">
                 Your plan will unlock shortly. Manage billing anytime in
                 Subscription / account settings.
               </p>
               <DashboardButton
-                className="dashboard-pro-upgrade-btn"
+                className="dashboard-pro-upgrade-btn dashboard-upgrade__cta"
                 onClick={onClose}
               >
                 Done
               </DashboardButton>
-            </>
+            </div>
           ) : null}
         </div>
       </div>

@@ -166,7 +166,7 @@ async function submitSpecialistApplicationOnce(
     const isFull = await fetchFounding50Full();
     if (isFull) {
       throw new ApplicationSubmitError(
-        "Founding 50 is full. We'll notify you when more spots open."
+        "Founding 100 is full. We'll notify you when more spots open."
       );
     }
   }

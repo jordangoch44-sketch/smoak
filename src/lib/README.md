@@ -23,12 +23,13 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 - `specialist-dashboard-mode.ts` — pending / free / pro dashboard modes
 - `specialist-dashboard-analytics.ts`, `specialist-dashboard-stats.ts`, `specialist-dashboard-subscription.ts`
 - `specialist-premium.ts`
-- `specialist-profile-welcome.ts` — first post-approval login → profile + one-time Pro trial welcome
+- `specialist-profile-welcome.ts` — every specialist login → incomplete tasks + membership/trial/boost prompt
 
 ## Specialist profile edit
 
 - `specialist-profile-store.ts` — override persistence + listeners (`smoac_specialist_profile_overrides`)
 - `specialist-profile-overrides.ts` — form ↔ overrides, apply to Trainer
+- `specialist-pricing.ts` — in-depth profile offerings (type, price, included, commitment); Marketplace card range is `session-price.ts`
 - `specialist-right-fit.ts` — “Are we the right fit?” copy + starter prompts
 
 ## Public marketplace / catalog

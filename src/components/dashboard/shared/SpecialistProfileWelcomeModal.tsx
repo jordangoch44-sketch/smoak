@@ -10,14 +10,16 @@ import {
   ChevronRightIcon,
   CrownIcon,
 } from "@/components/ui/icons";
-import { BRAND_NAME } from "@/lib/brand";
 import {
+  PROFILE_WELCOME_AVATAR_TASK_ID,
   PROFILE_WELCOME_PHOTOS_TASK_ID,
+  PROFILE_WELCOME_REMAINING_PREVIEW,
   SMOAC_PROFILE_WELCOME,
   SPECIALIST_PROFILE_WELCOME_LOCK_CLASS,
   profileWelcomeRemainingLabel,
   profileWelcomeTaskDescription,
   splitProfileWelcomeTasks,
+  type ProfileWelcomeMembershipPrompt,
   type ProfileWelcomeTask,
 } from "@/lib/specialist-profile-welcome";
 import { getInitials } from "@/lib/utils";
@@ -33,10 +35,14 @@ interface SpecialistProfileWelcomeModalProps {
   tasks: ProfileWelcomeTask[];
   avatarUrl?: string;
   specialistName?: string;
-  showTrial?: boolean;
+  firstName?: string;
+  membership?: ProfileWelcomeMembershipPrompt | null;
   onClose: () => void;
   onStartWithPhotos: () => void;
   onSelectTask?: (sectionId: string) => void;
+  onGetMembership?: () => void;
+  onUpgrade?: () => void;
+  onBoost?: () => void;
 }
 
 function WelcomeAvatar({
@@ -72,20 +78,30 @@ function WelcomeAvatar({
 }
 
 /**
- * One-time welcome after a specialist is approved and first signs in.
- * Live avatar, one featured next step, leftover sections, then the Pro trial.
+ * Welcome after each specialist login. Live avatar, unfinished profile
+ * tasks, then a membership prompt (join, trial days, or upgrade/boost).
  */
 export function SpecialistProfileWelcomeModal({
   open,
   tasks,
   avatarUrl,
   specialistName = "Specialist",
-  showTrial = true,
+  firstName,
+  membership = null,
   onClose,
   onStartWithPhotos,
   onSelectTask,
+  onGetMembership,
+  onUpgrade,
+  onBoost,
 }: SpecialistProfileWelcomeModalProps) {
   const { nextStep, remaining } = splitProfileWelcomeTasks(tasks);
+  const remainingPreview = remaining.slice(
+    0,
+    PROFILE_WELCOME_REMAINING_PREVIEW
+  );
+  const greetingName =
+    firstName?.trim() || specialistName.trim().split(/\s+/)[0] || "there";
 
   useEffect(() => {
     if (!open) return;
@@ -111,8 +127,8 @@ export function SpecialistProfileWelcomeModal({
   const describedBy = [
     "profile-welcome-subtitle",
     nextStep ? "profile-welcome-next" : null,
-    remaining.length > 0 ? "profile-welcome-tasks" : null,
-    showTrial ? "profile-welcome-trial" : null,
+    remainingPreview.length > 0 ? "profile-welcome-tasks" : null,
+    membership ? "profile-welcome-membership" : null,
   ]
     .filter(Boolean)
     .join(" ");
@@ -125,7 +141,22 @@ export function SpecialistProfileWelcomeModal({
     onStartWithPhotos();
   }
 
-  const primaryLabel = nextStep?.label ?? SMOAC_PROFILE_WELCOME.primaryCta;
+  function activateMembershipPrimary() {
+    if (!membership) return;
+    if (membership.kind === "boost") {
+      onBoost?.();
+      return;
+    }
+    if (membership.kind === "join") {
+      onGetMembership?.();
+      return;
+    }
+    onUpgrade?.();
+  }
+
+  const subtitle = nextStep
+    ? SMOAC_PROFILE_WELCOME.subtitle
+    : SMOAC_PROFILE_WELCOME.subtitleComplete;
 
   return createPortal(
     <DashboardModalScrim
@@ -153,10 +184,10 @@ export function SpecialistProfileWelcomeModal({
             </p>
             <h2 id="profile-welcome-title" className="dashboard-welcome__title">
               {SMOAC_PROFILE_WELCOME.titlePrefix}{" "}
-              <span className="smoac-color-text">{BRAND_NAME}</span>
+              <span className="smoac-color-text">{greetingName}</span>
             </h2>
             <p id="profile-welcome-subtitle" className="dashboard-welcome__subtitle">
-              {SMOAC_PROFILE_WELCOME.subtitle}
+              {subtitle}
             </p>
           </div>
 
@@ -167,7 +198,8 @@ export function SpecialistProfileWelcomeModal({
               onActivate={() => activateTask(nextStep.id)}
             >
               <span className="dashboard-welcome-card__icon" aria-hidden>
-                {nextStep.id === PROFILE_WELCOME_PHOTOS_TASK_ID ? (
+                {nextStep.id === PROFILE_WELCOME_PHOTOS_TASK_ID ||
+                nextStep.id === PROFILE_WELCOME_AVATAR_TASK_ID ? (
                   <CameraIcon className="dashboard-welcome-card__glyph" />
                 ) : (
                   <AlertTriangleIcon className="dashboard-welcome-card__glyph" />
@@ -186,13 +218,13 @@ export function SpecialistProfileWelcomeModal({
             </FastActivateButton>
           ) : null}
 
-          {remaining.length > 0 ? (
+          {remainingPreview.length > 0 ? (
             <div id="profile-welcome-tasks" className="dashboard-welcome-remaining">
               <p className="dashboard-welcome-remaining__label">
                 {profileWelcomeRemainingLabel(remaining.length)}
               </p>
               <ul className="dashboard-welcome-remaining__list">
-                {remaining.map((task) => (
+                {remainingPreview.map((task) => (
                   <li key={task.id} className="dashboard-welcome-remaining__item">
                     {onSelectTask ? (
                       <FastActivateButton
@@ -229,31 +261,56 @@ export function SpecialistProfileWelcomeModal({
             </div>
           ) : null}
 
-          {showTrial ? (
+          {membership ? (
             <div
-              id="profile-welcome-trial"
-              className="dashboard-welcome-card dashboard-welcome-card--trial"
+              id="profile-welcome-membership"
+              className={
+                membership.kind === "boost"
+                  ? "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-boost"
+                  : membership.kind === "upgrade-or-boost"
+                    ? "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-pro-plus"
+                    : membership.kind === "trial"
+                      ? "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-trial"
+                      : "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-pro"
+              }
             >
               <span className="dashboard-welcome-card__icon dashboard-welcome-card__icon--trial" aria-hidden>
                 <CrownIcon className="dashboard-welcome-card__glyph" />
               </span>
               <span className="dashboard-welcome-card__copy">
                 <span className="dashboard-welcome-card__title">
-                  {SMOAC_PROFILE_WELCOME.trialHeadline}
+                  {membership.headline}
                 </span>
                 <span className="dashboard-welcome-card__body">
-                  {SMOAC_PROFILE_WELCOME.trialBody}
+                  {membership.body}
                 </span>
               </span>
             </div>
           ) : null}
 
-          {nextStep ? (
+          {membership ? (
+            <div className="dashboard-welcome__cta-row">
+              <DashboardButton
+                className="dashboard-pro-upgrade-btn dashboard-welcome__cta"
+                onClick={activateMembershipPrimary}
+              >
+                {membership.primaryCta}
+              </DashboardButton>
+              {membership.kind === "upgrade-or-boost" ? (
+                <FastActivateButton
+                  className="dashboard-modal__secondary dashboard-welcome__later"
+                  onActivate={() => onBoost?.()}
+                >
+                  {membership.secondaryCta}
+                </FastActivateButton>
+              ) : null}
+            </div>
+          ) : nextStep ? (
             <DashboardButton
               className="dashboard-pro-upgrade-btn dashboard-welcome__cta"
               onClick={() => activateTask(nextStep.id)}
             >
-              {primaryLabel}
+              {nextStep.label}
             </DashboardButton>
           ) : null}
           <FastActivateButton

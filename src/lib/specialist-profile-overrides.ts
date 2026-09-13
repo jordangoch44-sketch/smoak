@@ -1,5 +1,6 @@
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
+import { normalizeOffersFreeFirstSession } from "@/lib/free-first-session";
 import {
   sanitizeMarketplaceSpecialties,
   syncHomepageSpecialties,
@@ -38,6 +39,10 @@ import {
   resolveTrainerSessionPriceRange,
   withSyncedSessionPrices,
 } from "@/lib/session-price";
+import {
+  clonePricingOfferings,
+  parsePricingOfferings,
+} from "@/lib/specialist-pricing";
 import type { Certification, Trainer } from "@/types";
 import { rightFitCopyFromItems } from "@/lib/specialist-right-fit";
 import type {
@@ -71,6 +76,7 @@ export function cloneSpecialistProfileEditForm(
     pinnedPhotos: [...form.pinnedPhotos],
     trainingOptions: [...(form.trainingOptions ?? [])],
     certifications: form.certifications.map((cert) => ({ ...cert })),
+    pricingOfferings: clonePricingOfferings(form.pricingOfferings ?? []),
   };
 }
 
@@ -81,15 +87,13 @@ const PROFILE_SECTION_FIELDS: Record<
   readonly (keyof SpecialistProfileEditForm)[]
 > = {
   hero: [
-    "profilePhotoUrl",
     "coverImageUrl",
     "photoNotes",
     "slideshowFramesJson",
-    "videoNotes",
-    "videoPostersJson",
     "pinnedPhotos",
-    "transformationNotes",
   ],
+  avatar: ["profilePhotoUrl"],
+  videos: ["videoNotes", "videoPostersJson", "pinnedPhotos"],
   transformations: ["transformationNotes"],
   name: ["name"],
   headline: ["title"],
@@ -119,9 +123,6 @@ const PROFILE_SECTION_FIELDS: Record<
     "travelRadius",
     "serviceArea",
     "trainingOptions",
-    "pricePerSession",
-    "pricePerSessionMin",
-    "pricePerSessionMax",
     "offersFreeFirstSession",
     "bookingAvailability",
   ],
@@ -134,17 +135,20 @@ const PROFILE_SECTION_FIELDS: Record<
     "googleReviewsUrl",
     "googlePlaceId",
   ],
-  pricing: ["pricePerSession", "pricePerSessionMin", "pricePerSessionMax"],
+  pricing: [
+    "pricingOfferings",
+    "pricePerSession",
+    "pricePerSessionMin",
+    "pricePerSessionMax",
+  ],
   "free-first-session": ["offersFreeFirstSession"],
   contact: ["phone", "email"],
   gender: ["gender"],
-  experience: ["experienceYears"],
-  "profile-style": ["profileAccent", "profileAvatarFrame", "profileNameFont"],
+  "profile-style": ["profileAccent"],
   "basic-info": [
     "name",
     "title",
     "gender",
-    "experienceYears",
     "phone",
     "email",
     "profession",
@@ -186,6 +190,9 @@ export function overlayProfileSectionDraft(
       next.specialty,
       next.homepageSpecialties
     );
+  }
+  if (section === "pricing") {
+    next.pricingOfferings = parsePricingOfferings(next.pricingOfferings);
   }
   return cloneSpecialistProfileEditForm(next);
 }
@@ -261,10 +268,9 @@ export function applySpecialistProfileOverrides(
       overrides.homepageSpecialties ?? base.homepageSpecialties,
     serviceArea: overrides.serviceArea ?? base.serviceArea,
     certifications: overrides.certifications ?? base.certifications,
-    offersFreeFirstSession:
-      overrides.offersFreeFirstSession ??
-      base.offersFreeFirstSession ??
-      true,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      overrides.offersFreeFirstSession ?? base.offersFreeFirstSession
+    ),
     profileStyle: normalizeProfileStyle(
       overrides.profileStyle ?? base.profileStyle
     ),
@@ -525,7 +531,7 @@ export function applySpecialistProfileOverrides(
     merged.clientTransformations = transformUrls.map((src, index) => ({
       id: `profile-transform-${index}`,
       src,
-      alt: `Client transformation ${index + 1}`,
+      alt: `Client result ${index + 1}`,
     }));
   }
 
@@ -538,6 +544,13 @@ export function applySpecialistProfileOverrides(
   merged.sponsored = base.sponsored;
   merged.topRanked = base.topRanked;
   merged.categorySpotlight = base.categorySpotlight;
+
+  const offerings = parsePricingOfferings(
+    overrides.pricingOfferings ?? base.pricingOfferings
+  );
+  if (overrides.pricingOfferings !== undefined || offerings.length > 0) {
+    merged.pricingOfferings = offerings;
+  }
 
   return withSyncedSessionPrices(syncLocation(syncTrainerGalleryImages(merged)));
 }
@@ -616,16 +629,19 @@ export function overridesFromTrainer(
         pricePerSessionMax:
           stored?.pricePerSessionMax ?? trainer.pricePerSessionMax,
       });
+      const pricingOfferings = parsePricingOfferings(
+        stored?.pricingOfferings ?? trainer.pricingOfferings
+      );
       return {
+        pricingOfferings,
         pricePerSession: range.max,
         pricePerSessionMin: range.min,
         pricePerSessionMax: range.max,
       };
     })(),
-    offersFreeFirstSession:
-      stored?.offersFreeFirstSession ??
-      trainer.offersFreeFirstSession ??
-      true,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      stored?.offersFreeFirstSession ?? trainer.offersFreeFirstSession
+    ),
     bio: stored?.bio ?? trainer.bio,
     photoNotes:
       stored?.photoNotes?.trim()
@@ -779,18 +795,22 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
       ? { latitude2: form.latitude2, longitude2: form.longitude2 }
       : {}),
     ...(() => {
+      const offerings = parsePricingOfferings(form.pricingOfferings);
       const range = resolveTrainerSessionPriceRange({
         pricePerSession: form.pricePerSession,
         pricePerSessionMin: form.pricePerSessionMin,
         pricePerSessionMax: form.pricePerSessionMax,
       });
       return {
+        pricingOfferings: offerings,
         pricePerSession: range.max,
         pricePerSessionMin: range.min,
         pricePerSessionMax: range.max,
       };
     })(),
-    offersFreeFirstSession: form.offersFreeFirstSession,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      form.offersFreeFirstSession
+    ),
     bio: form.bio.trim(),
     photoNotes: form.photoNotes.trim(),
     slideshowFramesJson: form.slideshowFramesJson.trim(),

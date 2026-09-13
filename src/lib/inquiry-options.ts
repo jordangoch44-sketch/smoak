@@ -142,7 +142,7 @@ export function getInquiryTopicOptions(
   options?: { offersFreeFirstSession?: boolean }
 ): InquiryTopicOption[] {
   const topics = getInquiryTopicsForProfession(profession);
-  if (!options?.offersFreeFirstSession) return topics;
+  if (options?.offersFreeFirstSession === false) return topics;
   if (topics.some((topic) => topic.id === INQUIRY_TOPIC_FREE_FIRST_SESSION.id)) {
     return topics;
   }

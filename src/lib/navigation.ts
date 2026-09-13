@@ -36,8 +36,8 @@ export const SITE_ROUTES = {
   findSanDiegoPersonalTrainers: "/find/san-diego/personal-trainers",
   /** Acquisition tool — not primary chrome */
   calorieCalculator: "/calorie-calculator",
-  /** Hidden Founding 50 invite — not linked from public chrome */
-  founding50: "/founding-50",
+  /** Hidden Founding 100 invite — not linked from public chrome */
+  founding50: "/founding-100",
 } as const;
 
 /** Desktop header text links (saved uses heart control) */

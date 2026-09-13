@@ -26,6 +26,7 @@ import {
 import { updateOwnProfileAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import { requestPublicCatalogRevalidate } from "@/lib/profiles/request-catalog-revalidate";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
+import { normalizeOffersFreeFirstSession } from "@/lib/free-first-session";
 import {
   applySpecialistProfileOverrides,
   formToOverrides,
@@ -191,12 +192,7 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
           : approved.homepageSpecialties?.length
             ? approved.homepageSpecialties
             : fromApp.homepageSpecialties,
-      offersFreeFirstSession:
-        typeof application.offersFreeFirstSession === "boolean"
-          ? fromApp.offersFreeFirstSession
-          : typeof approved.offersFreeFirstSession === "boolean"
-            ? approved.offersFreeFirstSession
-            : fromApp.offersFreeFirstSession,
+      offersFreeFirstSession: fromApp.offersFreeFirstSession,
       gallerySlideshowFrames,
       social: overlayGoogleSocialIfMissing(fromApp.social, approved.social),
       profileStyle:
@@ -249,8 +245,9 @@ export function syncProfileOverridesFromApplication(
       generated.homepageSpecialties?.length
         ? generated.homepageSpecialties
         : existing?.homepageSpecialties,
-    offersFreeFirstSession:
-      generated.offersFreeFirstSession ?? existing?.offersFreeFirstSession,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      generated.offersFreeFirstSession ?? existing?.offersFreeFirstSession
+    ),
     phone: generated.phone?.trim() || existing?.phone,
     email: generated.email?.trim() || existing?.email,
     experienceYears:
@@ -305,7 +302,9 @@ export function mergeProfileEditsIntoApplication(
       form.specialty,
       form.homepageSpecialties
     ),
-    offersFreeFirstSession: form.offersFreeFirstSession,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      form.offersFreeFirstSession
+    ),
     certifications: form.certifications.filter((cert) => cert.name.trim()),
     city: form.city.trim(),
     neighborhood: form.neighborhood.trim(),
@@ -478,8 +477,8 @@ export function buildProfileCompletionChecklist(
           pricePerSessionMax: form.pricePerSessionMax,
         });
         return hasSessionPrice(range)
-          ? `Session price · ${formatSessionPriceRange(range)}`
-          : "Set session price range";
+          ? `General pricing · ${formatSessionPriceRange(range)}`
+          : "Add general pricing";
       })(),
       done: hasSessionPrice(
         resolveTrainerSessionPriceRange({

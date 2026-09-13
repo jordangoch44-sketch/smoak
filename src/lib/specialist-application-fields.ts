@@ -10,6 +10,7 @@ import {
   sanitizeMarketplaceSpecialties,
   syncHomepageSpecialties,
 } from "@/lib/specialty-display";
+import { normalizeOffersFreeFirstSession } from "@/lib/free-first-session";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistApplication,
@@ -99,10 +100,9 @@ export function normalizeSpecialistApplicationShape(
       asStringArray(app.specialties),
       asStringArray(app.homepageSpecialties)
     ),
-    offersFreeFirstSession:
-      typeof app.offersFreeFirstSession === "boolean"
-        ? app.offersFreeFirstSession
-        : undefined,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      app.offersFreeFirstSession
+    ),
     certifications,
     collegeAttended: asString(app.collegeAttended),
     degree: asString(app.degree),

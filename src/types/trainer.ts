@@ -1,5 +1,6 @@
 import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
 import type { SpecialistTrainingOptionId } from "@/types/specialist-training-options";
+import type { SpecialistPricingOffering } from "@/types/specialist-pricing";
 import type { SpecialistProfileStyle } from "@/lib/specialist-profile-style";
 
 export type Gender = "male" | "female" | "non-binary";
@@ -103,13 +104,13 @@ export interface Trainer {
   latitude: number;
   longitude: number;
   /**
-   * Work / studio / gym address from onboarding. Shown on the Details tab
+   * Work / facility address from onboarding. Shown on the Details tab
    * when the specialist opted into a precise pin (`locationPrecision: address`).
    */
   workAddress?: string;
   /** zip = ZIP centroid (default for existing profiles); address = pinned street */
   locationPrecision?: "zip" | "address";
-  /** Optional second studio / gym — shown on the public profile only.
+  /** Optional second facility — shown on the public profile only.
    * Maps, Explore distance, and search stay on the primary pin. */
   workAddress2?: string;
   locationPrecision2?: "zip" | "address";
@@ -155,6 +156,8 @@ export interface Trainer {
   pricePerSessionMin?: number;
   /** High end of the advertised 1:1 session range (USD). */
   pricePerSessionMax?: number;
+  /** Specialist-authored packages on the Details tab (Pricing & Packages). */
+  pricingOfferings?: SpecialistPricingOffering[];
   /**
    * Opt into the marketplace “Free 1st session” rail.
    * Defaults ON when unset. Public placement still requires Pro / PRO+.
@@ -198,7 +201,7 @@ export interface Trainer {
    * Independent of Boost placement flags.
    */
   membershipPlan?: "free" | "premium" | "platinum";
-  /** Curated profile personalization (accent, avatar frame, name font) */
+  /** Curated profile personalization (ambience glow accent) */
   profileStyle?: SpecialistProfileStyle;
   certifications: Certification[];
   reviews: Review[];

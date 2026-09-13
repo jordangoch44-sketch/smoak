@@ -15,7 +15,7 @@ export type ApplicationMediaUploadResult =
   | { ok: true; application: SpecialistApplication }
   | { ok: false; message: string };
 
-/** Line-delimited URL fields (transformations, certifications, videos). */
+/** Line-delimited URL fields (client results, certifications, videos). */
 async function uploadLineField(value: string, basePath: string): Promise<string> {
   if (!value.includes("data:")) return value;
   const lines = value

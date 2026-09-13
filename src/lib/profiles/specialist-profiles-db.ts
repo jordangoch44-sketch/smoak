@@ -18,6 +18,7 @@ import {
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { parseGallerySlideshowFrames } from "@/lib/media/slideshow-frame";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
+import { normalizeOffersFreeFirstSession } from "@/lib/free-first-session";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
 import { parseGender } from "@/lib/gender";
 import { parseTravelToClients } from "@/types/specialist-service-area";
@@ -128,7 +129,7 @@ function asClientTransformations(
         return {
           id: `transform-${index}`,
           src,
-          alt: `Client transformation ${index + 1}`,
+          alt: `Client result ${index + 1}`,
         };
       }
       if (!item || typeof item !== "object") return null;
@@ -326,10 +327,9 @@ function trainerFromProfileData(
     specialty: asStringArray(profileData.specialty),
     homepageSpecialties: asStringArray(profileData.homepageSpecialties),
     gender: asGender(profileData.gender),
-    offersFreeFirstSession:
-      typeof profileData.offersFreeFirstSession === "boolean"
-        ? profileData.offersFreeFirstSession
-        : true,
+    offersFreeFirstSession: normalizeOffersFreeFirstSession(
+      profileData.offersFreeFirstSession as boolean | undefined
+    ),
     ...withSyncedSessionPrices({
       pricePerSession: asNumber(profileData.pricePerSession, 0),
       pricePerSessionMin: asNumber(profileData.pricePerSessionMin, 0),
@@ -374,6 +374,24 @@ function trainerFromProfileData(
   };
 }
 
+/**
+ * Anon / client RLS cannot read `profiles`. After the first permission miss,
+ * skip the extra round-trip for the rest of this process so catalog SSR and
+ * client hydrate are not waiting on a query that always fails.
+ */
+let skipFirstNameEnrichQuery = false;
+let loggedFirstNameEnrichSkip = false;
+
+function withoutBusinessDerivedFirstNames(trainers: Trainer[]): Trainer[] {
+  return trainers.map((trainer) => {
+    const first = firstNameFromPersonName(trainer.specialistFirstName ?? "");
+    if (!first || isBusinessDerivedFirstName(first, trainer.name ?? "")) {
+      return { ...trainer, specialistFirstName: undefined };
+    }
+    return trainer;
+  });
+}
+
 /** Attach personal first name from profiles (source of truth over business name). */
 export async function enrichTrainersWithSpecialistFirstNames(
   supabase: SupabaseClient,
@@ -388,7 +406,9 @@ export async function enrichTrainersWithSpecialistFirstNames(
     ),
   ];
 
-  if (needUserIds.length === 0) return trainers;
+  if (needUserIds.length === 0 || skipFirstNameEnrichQuery) {
+    return withoutBusinessDerivedFirstNames(trainers);
+  }
 
   const { data, error } = await supabase
     .from("profiles")
@@ -397,18 +417,17 @@ export async function enrichTrainersWithSpecialistFirstNames(
 
   if (error || !data?.length) {
     if (error) {
-      console.warn(
-        "[SMOAC profiles] specialist first-name enrich skipped:",
-        error.message
-      );
-    }
-    return trainers.map((trainer) => {
-      const first = firstNameFromPersonName(trainer.specialistFirstName ?? "");
-      if (!first || isBusinessDerivedFirstName(first, trainer.name ?? "")) {
-        return { ...trainer, specialistFirstName: undefined };
+      const permissionDenied = /permission denied/i.test(error.message);
+      if (permissionDenied) skipFirstNameEnrichQuery = true;
+      if (!loggedFirstNameEnrichSkip) {
+        loggedFirstNameEnrichSkip = true;
+        console.warn(
+          "[SMOAC profiles] specialist first-name enrich skipped:",
+          error.message
+        );
       }
-      return trainer;
-    });
+    }
+    return withoutBusinessDerivedFirstNames(trainers);
   }
 
   const firstByUser = new Map<string, string>();

@@ -3,6 +3,9 @@ import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
 /**
  * Body classes that lock scroll or indicate full-screen chrome overlays.
  * Keep in sync with scroll-lock rules in globals.css and modal-open.css.
+ *
+ * `specialist-live-profile-open` locks scroll in globals.css but is not
+ * listed here — Live view keeps the mobile toolbar.
  */
 
 export const CHROME_BODY_OVERLAY_CLASSES = [
@@ -53,6 +56,7 @@ const STALE_OVERLAY_ROOTS: ReadonlyArray<readonly [string, string]> = [
   ["client-workouts-open", ".client-workouts-root"],
   ["inquiry-inbox-open", ".inquiry-inbox-page"],
   ["specialist-edit-profile-open", ".specialist-edit-profile-page"],
+  ["specialist-live-profile-open", ".specialist-live-page"],
 ];
 
 function nudgeAppMainHitTesting(main: HTMLElement): void {

@@ -4,7 +4,12 @@
  * Requires allowedDevOrigins in next.config.ts (LAN IPs are blocked by default in Next 16).
  */
 import { spawn } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildLanOrigin, getDefaultPort, getLanIpv4 } from "./lan-utils.mjs";
+
+const rootDir = path.dirname(fileURLToPath(new URL("../package.json", import.meta.url)));
+const nextBin = path.join(rootDir, "node_modules", ".bin", "next");
 
 const PORT = getDefaultPort();
 const lanIp = getLanIpv4();
@@ -26,8 +31,8 @@ console.log("  Restart required after next.config.ts changes.");
 console.log("");
 
 const child = spawn(
-  "npx",
-  ["next", "dev", "-p", PORT, "-H", "0.0.0.0"],
+  nextBin,
+  ["dev", "-p", PORT, "-H", "0.0.0.0"],
   {
     stdio: "inherit",
     env: {

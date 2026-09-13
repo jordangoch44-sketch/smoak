@@ -1,33 +1,53 @@
 /**
- * First login after a specialist is approved: land on Edit profile and
- * show a one-time welcome (incomplete sections + 30-day Pro trial).
+ * Specialist dashboard welcome after login: incomplete profile tasks plus
+ * a membership prompt (join, trial days left, or upgrade/boost).
  */
 import { parseCoachingStyleSelection } from "@/constants/specialist-onboarding-options";
-import { SPECIALIST_PROFILE_WELCOME_SEEN_PREFIX } from "@/lib/dev-storage-keys";
 import {
   hasSessionPrice,
   resolveTrainerSessionPriceRange,
 } from "@/lib/session-price";
 import type { SpecialistDashboardMode } from "@/lib/specialist-dashboard-mode";
 import { parseMediaUrlList } from "@/lib/specialist-media-limits";
+import {
+  isProPlusPlan,
+  isSpecialistPayingPro,
+} from "@/lib/specialist-premium";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
 
 export const SPECIALIST_PROFILE_WELCOME_LOCK_CLASS =
   "specialist-profile-welcome-open";
 
 export const PROFILE_WELCOME_PHOTOS_TASK_ID = "hero";
+export const PROFILE_WELCOME_AVATAR_TASK_ID = "avatar";
+export const PROFILE_WELCOME_REMAINING_PREVIEW = 4;
 
 export const SMOAC_PROFILE_WELCOME = {
   eyebrow: "Your profile is live",
-  titlePrefix: "Welcome to",
-  subtitle: "Your profile is now visible to clients.",
+  titlePrefix: "Welcome",
+  subtitle:
+    "Finish a few profile items, then grow with a membership or Boost.",
+  subtitleComplete: "Your profile looks complete. Here's a way to grow.",
   nextStepEyebrow: "Your next step",
   photosDescription:
     "Help your profile stand out and get more inquiries from clients.",
   nextStepFallbackDescription:
     "Complete this section so clients know what to expect from you.",
-  trialHeadline: "Enjoy 30 days of Pro — free!",
-  trialBody: "Explore all Pro features during your trial.",
+  joinHeadline: "Upgrade to Pro",
+  joinBody:
+    "Unlock analytics, ranking insights, and more inquiries with SMOAC Pro.",
+  joinCta: "Upgrade to Pro",
+  trialFallbackHeadline: "Your Pro trial is running out",
+  trialBody:
+    "Keep Pro before your trial ends — analytics, ranking insights, and growth tools stay unlocked.",
+  trialCta: "Keep Pro",
+  upgradeBoostHeadline: "Upgrade to PRO+",
+  upgradeBoostBody:
+    "Add phone videos, client results, and 20% off Boosts.",
+  upgradeCta: "Upgrade to PRO+",
+  boostHeadline: "Boost your profile",
+  boostBody: "Put your profile in front of more clients near you.",
+  boostCta: "Boost profile",
   primaryCta: "Add photos",
   secondaryCta: "Maybe later",
 } as const;
@@ -38,34 +58,30 @@ export type ProfileWelcomeTask = {
   description?: string;
 };
 
+export type ProfileWelcomeMembershipKind =
+  | "join"
+  | "trial"
+  | "upgrade-or-boost"
+  | "boost";
+
+export type ProfileWelcomeMembershipPrompt = {
+  kind: ProfileWelcomeMembershipKind;
+  headline: string;
+  body: string;
+  primaryCta: string;
+  secondaryCta?: string;
+};
+
 export type SpecialistProfileWelcomeSession = {
   userId?: string;
   role?: string | null;
+  isPremium?: boolean;
+  premiumIsPaid?: boolean;
+  membershipPlan?: string | null;
   premiumTrialActive?: boolean;
+  premiumTrialDaysRemaining?: number | null;
   premiumTrialJustEnded?: boolean;
 };
-
-function storageKey(userId: string): string {
-  return `${SPECIALIST_PROFILE_WELCOME_SEEN_PREFIX}${userId}`;
-}
-
-export function hasSeenSpecialistProfileWelcome(userId: string): boolean {
-  if (typeof window === "undefined" || !userId) return true;
-  try {
-    return window.localStorage.getItem(storageKey(userId)) === "1";
-  } catch {
-    return true;
-  }
-}
-
-export function markSpecialistProfileWelcomeSeen(userId: string): void {
-  if (typeof window === "undefined" || !userId) return;
-  try {
-    window.localStorage.setItem(storageKey(userId), "1");
-  } catch {
-    /* ignore quota / private mode */
-  }
-}
 
 /** Incomplete profile rows — same warning-icon sections as the live editor. */
 export function buildProfileWelcomeTasks(
@@ -97,10 +113,16 @@ export function buildProfileWelcomeTasks(
 
   const candidates: Array<ProfileWelcomeTask & { done: boolean }> = [
     {
-      id: PROFILE_WELCOME_PHOTOS_TASK_ID,
-      label: SMOAC_PROFILE_WELCOME.primaryCta,
+      id: PROFILE_WELCOME_AVATAR_TASK_ID,
+      label: "Profile photo",
       description: SMOAC_PROFILE_WELCOME.photosDescription,
-      done: hasPhoto && hasSlideshow,
+      done: hasPhoto,
+    },
+    {
+      id: PROFILE_WELCOME_PHOTOS_TASK_ID,
+      label: "Pictures / slideshow",
+      description: SMOAC_PROFILE_WELCOME.photosDescription,
+      done: hasSlideshow,
     },
     { id: "name", label: "Business name", done: Boolean(form.name.trim()) },
     { id: "headline", label: "Headline", done: Boolean(form.title.trim()) },
@@ -141,7 +163,8 @@ export function buildProfileWelcomeTasks(
     { id: "pricing", label: "Pricing", done: hasPrice },
     {
       id: "contact",
-      label: "Contact",
+      label: "Account details",
+      description: "Add a phone or email so clients can reach you.",
       done: Boolean(form.phone.trim() || form.email.trim()),
     },
   ];
@@ -174,15 +197,69 @@ export function profileWelcomeTaskDescription(
   );
 }
 
-/** True when first post-approval login should go to the profile welcome. */
+export function profileWelcomeTrialHeadline(
+  daysRemaining: number | null | undefined
+): string {
+  if (typeof daysRemaining !== "number") {
+    return SMOAC_PROFILE_WELCOME.trialFallbackHeadline;
+  }
+  if (daysRemaining <= 0) {
+    return "Your trial ends today — upgrade to keep Pro";
+  }
+  if (daysRemaining === 1) {
+    return "1 day left before you need to upgrade";
+  }
+  return `${daysRemaining} days left before you need to upgrade`;
+}
+
+export function resolveProfileWelcomeMembership(
+  session: SpecialistProfileWelcomeSession | null | undefined
+): ProfileWelcomeMembershipPrompt | null {
+  if (!session || session.role !== "specialist") return null;
+
+  if (session.premiumTrialActive) {
+    return {
+      kind: "trial",
+      headline: profileWelcomeTrialHeadline(session.premiumTrialDaysRemaining),
+      body: SMOAC_PROFILE_WELCOME.trialBody,
+      primaryCta: SMOAC_PROFILE_WELCOME.trialCta,
+    };
+  }
+
+  if (isProPlusPlan(session.membershipPlan)) {
+    return {
+      kind: "boost",
+      headline: SMOAC_PROFILE_WELCOME.boostHeadline,
+      body: SMOAC_PROFILE_WELCOME.boostBody,
+      primaryCta: SMOAC_PROFILE_WELCOME.boostCta,
+    };
+  }
+
+  if (isSpecialistPayingPro(session)) {
+    return {
+      kind: "upgrade-or-boost",
+      headline: SMOAC_PROFILE_WELCOME.upgradeBoostHeadline,
+      body: SMOAC_PROFILE_WELCOME.upgradeBoostBody,
+      primaryCta: SMOAC_PROFILE_WELCOME.upgradeCta,
+      secondaryCta: SMOAC_PROFILE_WELCOME.boostCta,
+    };
+  }
+
+  return {
+    kind: "join",
+    headline: SMOAC_PROFILE_WELCOME.joinHeadline,
+    body: SMOAC_PROFILE_WELCOME.joinBody,
+    primaryCta: SMOAC_PROFILE_WELCOME.joinCta,
+  };
+}
+
+/** True when specialist login should land on the dashboard welcome. */
 export function hasPendingSpecialistProfileWelcome(
   session: SpecialistProfileWelcomeSession | null | undefined
 ): boolean {
   if (!session || session.role !== "specialist") return false;
-  if (session.premiumTrialJustEnded) return false;
-  if (!session.premiumTrialActive) return false;
   if (!session.userId) return false;
-  return !hasSeenSpecialistProfileWelcome(session.userId);
+  return true;
 }
 
 export function shouldShowSpecialistProfileWelcome(input: {
@@ -191,17 +268,14 @@ export function shouldShowSpecialistProfileWelcome(input: {
   openInquiries?: boolean;
   force?: boolean;
 }): boolean {
+  if (!input.force) return false;
   if (input.openInquiries) return false;
   if (
     input.dashboardMode !== "approved-premium" &&
-    input.dashboardMode !== "approved-free"
+    input.dashboardMode !== "approved-free" &&
+    input.dashboardMode !== "demo-premium"
   ) {
     return false;
   }
-  const userId = input.session?.userId;
-  if (!userId) return false;
-  /* Seen flag always wins — `?welcome=1` cannot replay after first view. */
-  if (hasSeenSpecialistProfileWelcome(userId)) return false;
-  if (input.force) return true;
-  return hasPendingSpecialistProfileWelcome(input.session);
+  return Boolean(input.session?.userId);
 }

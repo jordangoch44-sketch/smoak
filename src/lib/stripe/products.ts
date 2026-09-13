@@ -4,7 +4,7 @@
  * Rules:
  * - Pro (`premium` key) / PRO+ (`platinum` key) set membership only
  *   (`is_premium`). PRO+ does not grant Featured — that is a Boost.
- * - PRO+ perks: phone videos (45s), client transformations, and 20% off Boosts.
+ * - PRO+ perks: phone videos (45s), client results, and 20% off Boosts.
  * - Pro membership never grants sponsored placement by itself.
  * - Add-ons set placement flags independently and do not require Pro.
  */
@@ -124,7 +124,7 @@ export function productDescription(key: SmoacStripeProductKey): string {
     case "premium":
       return "Full analytics, ranking intelligence, growth insights, and the Free 1st session marketplace rail.";
     case "platinum":
-      return "Everything in Pro, plus profile videos, client transformations, and 20% off Boosts.";
+      return "Everything in Pro, plus profile videos, client results, and 20% off Boosts.";
     case "boosted_profile":
       return "Homepage Sponsored rail near clients in your area.";
     case "category_spotlight":

@@ -5,12 +5,8 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatDualLocationPreview } from "@/lib/specialist-work-spots";
 import { formatMembershipShortLabel, isProPlusPlan, isTrainerProPlus, membershipBadgeToneForSession, membershipRoleBadgeClassName } from "@/lib/specialist-premium";
-import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
-import {
-  profileStyleAccentLabel,
-  profileStyleFontLabel,
-  profileStyleFrameLabel,
-} from "@/lib/specialist-profile-style";
+import { FREE_FIRST_SESSION_LABEL, trainerOffersFreeFirstSession } from "@/lib/free-first-session";
+import { profileStyleAccentLabel } from "@/lib/specialist-profile-style";
 import {
   formatCoachingStyleSelection,
   GENDER_OPTIONS,
@@ -31,6 +27,8 @@ import { formatTrainingOptionsLabel } from "@/types/specialist-training-options"
 
 export type IgEditRowId =
   | "hero"
+  | "videos"
+  | "avatar"
   | "name"
   | "headline"
   | "profession"
@@ -47,7 +45,6 @@ export type IgEditRowId =
   | "free-first-session"
   | "contact"
   | "gender"
-  | "experience"
   | "profile-style";
 
 function previewOrAdd(value: string, empty = "Add"): string {
@@ -71,18 +68,22 @@ function IgEditRow({
   highlighted = false,
   locked = false,
   lockPlan,
+  action = false,
 }: {
   id?: string;
   sectionKey?: string;
   label: string;
-  value: string;
+  value?: string;
   onClick: () => void;
   incomplete?: boolean;
   highlighted?: boolean;
   locked?: boolean;
   lockPlan?: "Pro" | "PRO+";
+  action?: boolean;
 }) {
-  const isEmpty = value === "Add" || value.startsWith("Add ");
+  const isEmpty = Boolean(
+    value && (value === "Add" || value.startsWith("Add "))
+  );
   const lockTitle = lockPlan ? `Unlocks with ${lockPlan}` : "Unlocks with a higher plan";
   return (
     <button
@@ -90,7 +91,8 @@ function IgEditRow({
       type="button"
       data-edit-section={sectionKey}
       className={cn(
-        "ig-profile-edit__row",
+        "smoac-control ig-profile-edit__row",
+        action && "ig-profile-edit__row--action",
         incomplete && !locked && "ig-profile-edit__row--incomplete",
         locked && "ig-profile-edit__row--locked",
         highlighted && "ig-profile-edit__row--highlighted"
@@ -105,7 +107,7 @@ function IgEditRow({
             <LockIcon className="ig-profile-edit__text-lock" />
           ) : null}
         </span>
-        {locked ? null : incomplete ? (
+        {action || locked ? null : incomplete ? (
           <span
             className="ig-profile-edit__badge ig-profile-edit__badge--incomplete"
             title="Needs attention"
@@ -123,14 +125,16 @@ function IgEditRow({
           </span>
         )}
       </div>
-      <span
-        className={cn(
-          "ig-profile-edit__row-value",
-          isEmpty && !locked && "ig-profile-edit__row-value--empty"
-        )}
-      >
-        {value}
-      </span>
+      {action || value == null ? null : (
+        <span
+          className={cn(
+            "ig-profile-edit__row-value",
+            isEmpty && !locked && "ig-profile-edit__row-value--empty"
+          )}
+        >
+          {value}
+        </span>
+      )}
       {locked ? (
         <span className="ig-profile-edit__row-lock" title={lockTitle} aria-hidden>
           <LockIcon className="ig-profile-edit__row-lock-icon" />
@@ -151,6 +155,7 @@ interface SpecialistIgStyleProfileEditorProps {
   highlightedSection?: string | null;
   footer?: ReactNode;
   onUpgrade?: () => void;
+  onSignOut?: () => void;
 }
 
 /** Instagram-style list editor — same fields/saves, familiar mobile layout. */
@@ -161,6 +166,7 @@ export function SpecialistIgStyleProfileEditor({
   highlightedSection,
   footer,
   onUpgrade,
+  onSignOut,
 }: SpecialistIgStyleProfileEditorProps) {
   const { session } = useAuthSession();
   const isPremium = Boolean(session?.isPremium);
@@ -172,12 +178,18 @@ export function SpecialistIgStyleProfileEditor({
   const hasPhoto = Boolean(formDefaults.profilePhotoUrl.trim());
   const slideshowCount = parseMediaUrlList(formDefaults.photoNotes).length;
   const hasSlideshow = slideshowCount > 0;
-  const picturesPreview =
-    hasPhoto && hasSlideshow
-      ? slideshowCount === 1
-        ? "1 photo"
-        : `${slideshowCount} photos`
-      : "Add";
+  const picturesPreview = hasSlideshow
+    ? slideshowCount === 1
+      ? "1 photo"
+      : `${slideshowCount} photos`
+    : "Add";
+  const videoCount = parseMediaUrlList(formDefaults.videoNotes).length;
+  const videosPreview =
+    videoCount === 0
+      ? "Add"
+      : videoCount === 1
+        ? "1 video"
+        : `${videoCount} videos`;
   const photo = formDefaults.profilePhotoUrl.trim() || trainer.image;
   const profession =
     resolveTrainerProfessionCategory({
@@ -227,35 +239,38 @@ export function SpecialistIgStyleProfileEditor({
     pricePerSessionMin: formDefaults.pricePerSessionMin,
     pricePerSessionMax: formDefaults.pricePerSessionMax,
   });
-  const price = hasSessionPrice(sessionPrice)
+  const pricePreview = hasSessionPrice(sessionPrice)
     ? formatSessionPriceRange(sessionPrice)
     : "Add";
   const contactBits = [
     formDefaults.phone.trim() && "Phone",
     formDefaults.email.trim() && "Email",
   ].filter(Boolean);
-  const stylePreview = [
-    profileStyleAccentLabel(formDefaults.profileAccent),
-    profileStyleFrameLabel(formDefaults.profileAvatarFrame),
-    profileStyleFontLabel(formDefaults.profileNameFont),
-  ].join(" · ");
+  const stylePreview = profileStyleAccentLabel(formDefaults.profileAccent);
 
   const isHighlighted = (key: string) =>
     highlightedSection === key ||
-    (key === "hero" && highlightedSection === "photo") ||
+    (key === "avatar" &&
+      (highlightedSection === "photo" || highlightedSection === "picture")) ||
+    (key === "videos" && highlightedSection === "video") ||
     (key === "pricing" && highlightedSection === "price") ||
     (key === "service-area" && highlightedSection === "location") ||
     (key === "session-experience" && highlightedSection === "booking");
 
   return (
     <div className="ig-profile-edit" aria-label="Edit profile">
-      <div className="ig-profile-edit__media">
+      <div
+        className={cn(
+          "ig-profile-edit__media",
+          isHighlighted("avatar") && "ig-profile-edit__media--highlighted"
+        )}
+      >
         <div className="ig-profile-edit__avatar-wrap">
           <button
             type="button"
             className="ig-profile-edit__avatar-btn smoac-control"
-            onClick={() => onEditSection("hero")}
-            aria-label="Edit pictures and slideshow"
+            onClick={() => onEditSection("avatar")}
+            aria-label={hasPhoto ? "Edit profile photo" : "Add profile photo"}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={photo} alt="" className="ig-profile-edit__avatar" />
@@ -278,6 +293,18 @@ export function SpecialistIgStyleProfileEditor({
           </button>
         </div>
         <div className="ig-profile-edit__media-actions">
+          <button
+            id="ig-edit-row-avatar"
+            type="button"
+            data-edit-section="avatar"
+            className={cn(
+              "smoac-control ig-profile-edit__photo-chip",
+              isHighlighted("avatar") && "ig-profile-edit__photo-chip--highlighted"
+            )}
+            onClick={() => onEditSection("avatar")}
+          >
+            {hasPhoto ? "Edit photo" : "Add photo"}
+          </button>
           <span
             className={cn(
               "ig-profile-edit__plan-badge",
@@ -302,9 +329,51 @@ export function SpecialistIgStyleProfileEditor({
           sectionKey="hero"
           label="Pictures / slideshow"
           value={picturesPreview}
-          incomplete={!hasPhoto || !hasSlideshow}
+          incomplete={!hasSlideshow}
           highlighted={isHighlighted("hero")}
           onClick={() => onEditSection("hero")}
+        />
+        <IgEditRow
+          id="ig-edit-row-videos"
+          sectionKey="videos"
+          label="Videos"
+          value={videosPreview}
+          incomplete={isProPlus && videoCount === 0}
+          highlighted={isHighlighted("videos")}
+          locked={!isProPlus}
+          lockPlan="PRO+"
+          onClick={() => {
+            if (!isProPlus) {
+              if (onUpgrade) {
+                onUpgrade();
+                return;
+              }
+            }
+            onEditSection("videos");
+          }}
+        />
+        <IgEditRow
+          id="ig-edit-row-transformations"
+          sectionKey="transformations"
+          label="Client Results"
+          value={
+            formDefaults.transformationNotes.trim()
+              ? "Photos added"
+              : "Add"
+          }
+          incomplete={isProPlus && !formDefaults.transformationNotes.trim()}
+          highlighted={isHighlighted("transformations")}
+          locked={!isProPlus}
+          lockPlan="PRO+"
+          onClick={() => {
+            if (!isProPlus) {
+              if (onUpgrade) {
+                onUpgrade();
+                return;
+              }
+            }
+            onEditSection("transformations");
+          }}
         />
         <IgEditRow
           id="ig-edit-row-name"
@@ -343,19 +412,10 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("bio")}
         />
         <IgEditRow
-          id="ig-edit-row-pricing"
-          sectionKey="pricing"
-          label="Pricing"
-          value={price}
-          incomplete={!hasSessionPrice(sessionPrice)}
-          highlighted={isHighlighted("pricing")}
-          onClick={() => onEditSection("pricing")}
-        />
-        <IgEditRow
           id="ig-edit-row-free-first-session"
           sectionKey="free-first-session"
           label={FREE_FIRST_SESSION_LABEL}
-          value={formDefaults.offersFreeFirstSession ? "On" : "Off"}
+          value={trainerOffersFreeFirstSession(formDefaults) ? "On" : "Off"}
           highlighted={isHighlighted("free-first-session")}
           locked={!isPremium}
           lockPlan="Pro"
@@ -367,29 +427,6 @@ export function SpecialistIgStyleProfileEditor({
               }
             }
             onEditSection("free-first-session");
-          }}
-        />
-        <IgEditRow
-          id="ig-edit-row-transformations"
-          sectionKey="transformations"
-          label="Transformations"
-          value={
-            formDefaults.transformationNotes.trim()
-              ? "Photos added"
-              : "Add"
-          }
-          incomplete={isProPlus && !formDefaults.transformationNotes.trim()}
-          highlighted={isHighlighted("transformations")}
-          locked={!isProPlus}
-          lockPlan="PRO+"
-          onClick={() => {
-            if (!isProPlus) {
-              if (onUpgrade) {
-                onUpgrade();
-                return;
-              }
-            }
-            onEditSection("transformations");
           }}
         />
         <IgEditRow
@@ -433,6 +470,15 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("session-experience")}
         />
         <IgEditRow
+          id="ig-edit-row-pricing"
+          sectionKey="pricing"
+          label="Pricing"
+          value={pricePreview}
+          incomplete={!hasSessionPrice(sessionPrice)}
+          highlighted={isHighlighted("pricing")}
+          onClick={() => onEditSection("pricing")}
+        />
+        <IgEditRow
           id="ig-edit-row-credentials"
           sectionKey="credentials"
           label="Credentials"
@@ -472,17 +518,6 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("headline")}
         />
         <IgEditRow
-          id="ig-edit-row-contact"
-          sectionKey="contact"
-          label="Contact"
-          value={
-            contactBits.length > 0 ? contactBits.join(" · ") : "Add phone or email"
-          }
-          incomplete={contactBits.length === 0}
-          highlighted={isHighlighted("contact")}
-          onClick={() => onEditSection("contact")}
-        />
-        <IgEditRow
           id="ig-edit-row-gender"
           sectionKey="gender"
           label="Gender"
@@ -492,22 +527,36 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("gender")}
         />
         <IgEditRow
-          id="ig-edit-row-experience"
-          sectionKey="experience"
-          label="Experience"
-          value={previewOrAdd(formDefaults.experienceYears)}
-          incomplete={!formDefaults.experienceYears.trim()}
-          highlighted={isHighlighted("experience")}
-          onClick={() => onEditSection("experience")}
-        />
-        <IgEditRow
           id="ig-edit-row-profile-style"
           sectionKey="profile-style"
-          label="Profile style"
+          label="Ambience glow"
           value={stylePreview}
           highlighted={isHighlighted("profile-style")}
           onClick={() => onEditSection("profile-style")}
         />
+      </div>
+
+      <div className="ig-profile-edit__section-label">Account</div>
+      <div className="ig-profile-edit__list" role="list">
+        <IgEditRow
+          id="ig-edit-row-contact"
+          sectionKey="contact"
+          label="Account details"
+          value={
+            contactBits.length > 0 ? contactBits.join(" · ") : "Add phone or email"
+          }
+          incomplete={contactBits.length === 0}
+          highlighted={isHighlighted("contact")}
+          onClick={() => onEditSection("contact")}
+        />
+        {onSignOut ? (
+          <IgEditRow
+            id="ig-edit-row-sign-out"
+            label="Sign out"
+            action
+            onClick={onSignOut}
+          />
+        ) : null}
       </div>
 
       {footer ? <div className="ig-profile-edit__footer">{footer}</div> : null}

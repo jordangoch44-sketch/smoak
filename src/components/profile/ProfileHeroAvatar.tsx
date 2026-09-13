@@ -109,8 +109,8 @@ export function ProfileImagePreviewModal({
               src={src}
               alt={alt}
               fill
-              sizes="90vw"
-              className="profile-image-preview__img"
+              sizes="min(86vw, 28rem)"
+              className="profile-image-preview__img object-cover object-[50%_20%]"
               priority
             />
           </motion.div>

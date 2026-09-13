@@ -1,7 +1,7 @@
 /** How a specialist delivers sessions — collected on join application */
 export type SpecialistServiceType = "in-person" | "virtual" | "both";
 
-/** One studio / gym pin on a specialist profile (primary or second location). */
+/** One facility pin on a specialist profile (primary or second location). */
 export interface SpecialistWorkSpot {
   workAddress: string;
   locationPrecision: "zip" | "address";

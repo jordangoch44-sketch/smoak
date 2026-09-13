@@ -8,6 +8,9 @@ export const BRAND_NAME = "SMOAC";
  */
 export const LOGO_SRC = "/smoac-mark.png";
 
+/** Official S + rainbow spark, cropped for small icon wells */
+export const LOGO_ICON_SRC = "/brand/smoac-mark-icon.png";
+
 /** Transparent raster wordmark — custom SMOAC letterforms (brand “font”) */
 export const WORDMARK_SRC = "/smoac-wordmark.png";
 export const WORDMARK_WIDTH = 978;

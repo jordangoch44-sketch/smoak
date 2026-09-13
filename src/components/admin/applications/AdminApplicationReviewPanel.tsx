@@ -394,7 +394,7 @@ export function AdminApplicationReviewPanel({
               <AdminStatusBadge label={statusLabel} />
               {isFounding && (
                 <span className="admin-review-badge admin-review-badge--gold">
-                  Founding 50
+                  Founding 100
                 </span>
               )}
             </div>
@@ -518,11 +518,6 @@ export function AdminApplicationReviewPanel({
                       <span className="admin-review-pill admin-review-pill--highlight">
                         {profession}
                       </span>
-                      {draft.yearsExperience && (
-                        <span className="admin-review-pill">
-                          {draft.yearsExperience} yrs exp
-                        </span>
-                      )}
                       {draft.gender && (
                         <span className="admin-review-pill">
                           {draft.gender}
@@ -639,7 +634,7 @@ export function AdminApplicationReviewPanel({
                   </div>
                   {draft.gymName && (
                     <div className="admin-review-kv admin-review-kv--full">
-                      <span className="admin-review-kv__label">Facility / Gym</span>
+                      <span className="admin-review-kv__label">Facility</span>
                       <span className="admin-review-kv__value">
                         {draft.gymName}
                         {draft.facilityAddress ? ` · ${draft.facilityAddress}` : ""}
@@ -1212,7 +1207,7 @@ export function AdminApplicationReviewPanel({
                   </label>
                   <div className="admin-review-grid admin-review-grid--2col">
                     <label className="admin-field-label">
-                      Gym / Studio Name
+                      Facility Name
                       <input
                         className="admin-field"
                         value={draft.gymName}
@@ -1234,24 +1229,14 @@ export function AdminApplicationReviewPanel({
               <details className="admin-review-section" open>
                 <summary>Professional Profile & Specialties</summary>
                 <div className="admin-review-fields">
-                  <div className="admin-review-grid admin-review-grid--2col">
-                    <label className="admin-field-label">
-                      Category / Profession
-                      <input
-                        className="admin-field"
-                        value={draft.professionalType}
-                        onChange={(e) => patch("professionalType", e.target.value)}
-                      />
-                    </label>
-                    <label className="admin-field-label">
-                      Years Experience
-                      <input
-                        className="admin-field"
-                        value={draft.yearsExperience}
-                        onChange={(e) => patch("yearsExperience", e.target.value)}
-                      />
-                    </label>
-                  </div>
+                  <label className="admin-field-label">
+                    Category / Profession
+                    <input
+                      className="admin-field"
+                      value={draft.professionalType}
+                      onChange={(e) => patch("professionalType", e.target.value)}
+                    />
+                  </label>
                   <label className="admin-field-label">
                     Headline
                     <input

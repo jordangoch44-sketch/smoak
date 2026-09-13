@@ -37,7 +37,6 @@ import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileHeroBio } from "./ProfileHeroBio";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
-import { ProfileHeroTransformations } from "./ProfileHeroTransformations";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileReviewMeta } from "./ProfileReviewMeta";
 import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
@@ -92,17 +91,6 @@ export function ProfileHero({
         pinAllowList(coverImages, pinVideos)
       )
     : [];
-  const transformationPhotos = isTrainerProPlus(trainer)
-    ? (trainer.clientTransformations ?? []).filter(
-        (photo) => typeof photo?.src === "string" && photo.src.trim().length > 0
-      )
-    : [];
-  const transformationMedia = transformationPhotos.map((photo) => ({
-    id: photo.id,
-    type: "image" as const,
-    url: photo.src,
-    alt: photo.alt,
-  }));
   const pinnedPhotoSet = new Set(pinnedPhotos);
   const remainingGalleryPhotos = galleryMedia.filter(
     (item) => item.type === "image" && !pinnedPhotoSet.has(item.url)
@@ -113,8 +101,6 @@ export function ProfileHero({
     remainingPhotoCount > 0 && pinnedPhotos.length === 0;
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [transformOpen, setTransformOpen] = useState(false);
-  const [transformIndex, setTransformIndex] = useState(0);
   const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
 
   const openGallery = useCallback(
@@ -327,19 +313,6 @@ export function ProfileHero({
                 ) : null}
               </div>
             ) : null}
-
-            {transformationPhotos.length > 0 ? (
-              <ProfileHeroTransformations
-                photos={transformationPhotos}
-                onOpen={(src) => {
-                  const index = transformationPhotos.findIndex(
-                    (photo) => photo.src === src
-                  );
-                  setTransformIndex(index >= 0 ? index : 0);
-                  setTransformOpen(true);
-                }}
-              />
-            ) : null}
           </div>
         </div>
       </section>
@@ -350,13 +323,6 @@ export function ProfileHero({
         initialIndex={galleryIndex}
         trainerName={trainer.name}
         onClose={closeGallery}
-      />
-      <ProfileGalleryModal
-        open={transformOpen}
-        media={transformationMedia}
-        initialIndex={transformIndex}
-        trainerName={`${trainer.name} transformations`}
-        onClose={() => setTransformOpen(false)}
       />
 
       {isSpecialistLive ? null : (

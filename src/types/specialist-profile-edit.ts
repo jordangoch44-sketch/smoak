@@ -1,6 +1,7 @@
 import type { Certification, Gender } from "@/types/trainer";
 import type { SpecialistServiceType, TravelToClients } from "@/types/specialist-service-area";
 import type { SpecialistTrainingOptionId } from "@/types/specialist-training-options";
+import type { SpecialistPricingOffering } from "@/types/specialist-pricing";
 import type {
   ProfileAccentId,
   ProfileAvatarFrameId,
@@ -34,7 +35,7 @@ export interface SpecialistProfileOverrides {
   locationPrecision?: "zip" | "address";
   latitude?: number;
   longitude?: number;
-  /** Optional second studio / gym — public profile only; not used for maps/search */
+  /** Optional second facility — public profile only; not used for maps/search */
   workAddress2?: string;
   locationPrecision2?: "zip" | "address";
   city2?: string;
@@ -45,7 +46,9 @@ export interface SpecialistProfileOverrides {
   pricePerSession?: number;
   pricePerSessionMin?: number;
   pricePerSessionMax?: number;
-  /** Profile toggle — Pro / PRO+ listing perk */
+  /** Rate cards — one-on-one, membership, pack, drop-in, online, free consult. */
+  pricingOfferings?: SpecialistPricingOffering[];
+  /** Profile toggle — Pro / PRO+ listing perk. Unset means On. */
   offersFreeFirstSession?: boolean;
   bio?: string;
   photoNotes?: string;
@@ -72,7 +75,7 @@ export interface SpecialistProfileOverrides {
   trainingStyle?: string;
   /** “Are we the right fit?” paragraph (stored as bestClientTypes / bestFor) */
   servicesOffered?: string;
-  /** Curated look: accent, avatar frame, name font */
+  /** Curated look: ambience glow accent (font/ring are locked) */
   profileStyle?: SpecialistProfileStyle;
 }
 
@@ -104,6 +107,7 @@ export type SpecialistProfileEditForm = Required<
     | "pricePerSession"
     | "pricePerSessionMin"
     | "pricePerSessionMax"
+    | "pricingOfferings"
     | "offersFreeFirstSession"
     | "bio"
     | "photoNotes"

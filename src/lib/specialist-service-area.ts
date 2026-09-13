@@ -179,7 +179,7 @@ function friendlyTrainingOption(raw: string): string {
   return value;
 }
 
-/** Where sessions happen — from onboarding session flags, gym, and service type. */
+/** Where sessions happen — from onboarding session flags, facility, and service type. */
 export function trainingOptionsFromTrainer(trainer: Trainer): string[] {
   const session = Array.isArray(trainer.sessionExperience)
     ? trainer.sessionExperience
@@ -245,7 +245,7 @@ function formatCityZipLine(city: string, zip: string): string {
   return "";
 }
 
-/** Public Details location: gym / area / anywhere, plus travel distance. */
+/** Public Details location: facility / area / anywhere, plus travel distance. */
 export function buildLocationTravelDisplay(
   trainer: Trainer
 ): LocationTravelDisplay | null {
@@ -280,7 +280,7 @@ export function buildLocationTravelDisplay(
   let placeLabel = "Area";
 
   if (showPreciseAddress) {
-    placeLabel = "Gym";
+    placeLabel = "Facility";
     placeValue = cityZip && !workAddress.includes(cityZip.split(" · ")[0] ?? "")
       ? `${workAddress}\n${cityZip}`
       : workAddress;
@@ -303,7 +303,7 @@ export function buildLocationTravelDisplay(
     facts.push({
       label: placeLabel,
       value: placeValue,
-      hint: placeLabel === "Gym"
+      hint: placeLabel === "Facility"
         ? "Sessions at this facility."
         : isVirtualOnly
           ? "Online sessions from this area."
@@ -323,13 +323,13 @@ export function buildLocationTravelDisplay(
       : secondaryCityZip;
     if (secondaryValue) {
       facts.push({
-        label: "Also trains at",
+        label: "Second facility",
         value: secondaryValue,
         hint: trainer.neighborhood2?.trim()
           ? `${trainer.neighborhood2.trim()}${
               trainer.city2?.trim() ? `, ${trainer.city2.trim()}` : ""
             }.`
-          : "Second studio or gym.",
+          : "Second facility.",
         icon: "place",
       });
     }
@@ -339,7 +339,7 @@ export function buildLocationTravelDisplay(
     facts.push({
       label: "Travel",
       value: "Travels to clients",
-      hint: "Home, gym, or outdoors.",
+      hint: "Home, facility, or outdoors.",
       icon: "travel",
     });
     if (radiusLabel) {

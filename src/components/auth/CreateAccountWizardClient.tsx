@@ -195,7 +195,7 @@ interface CreateAccountWizardClientProps {
   initialReturnToSaved?: boolean;
   /** From `?role=specialist|client` — deep links from promos / save complete */
   initialAccountType?: PublicAuthRole | null;
-  /** From Founding 50 invite CTA (`?founding=1`) */
+  /** From Founding 100 invite CTA (`?founding=1`) */
   initialFoundingInvite?: boolean;
   initialFoundingInviteCode?: string | null;
 }
@@ -235,7 +235,7 @@ export function CreateAccountWizardClient({
   useEffect(() => {
     if (!initialFoundingInvite) return;
     persistFounding50InviteSession({
-      code: initialFoundingInviteCode?.trim() || "founding-50",
+      code: initialFoundingInviteCode?.trim() || "founding-100",
       acceptedAt: new Date().toISOString(),
     });
   }, [initialFoundingInvite, initialFoundingInviteCode]);

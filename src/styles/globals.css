@@ -209,6 +209,7 @@ body.profile-sheet-open,
 body.inquiry-sheet-open,
 body.inquiry-inbox-open,
 body.specialist-edit-profile-open,
+body.specialist-live-profile-open,
 body.review-modal-open,
 html.review-modal-open,
 body.saved-panel-open,
@@ -233,6 +234,7 @@ body.admin-review-open {
   body.inquiry-sheet-open,
   body.inquiry-inbox-open,
   body.specialist-edit-profile-open,
+  body.specialist-live-profile-open,
   body.review-modal-open,
 html.review-modal-open,
   body.saved-panel-open,
@@ -255,6 +257,7 @@ html.review-modal-open,
   body.inquiry-sheet-open .app-main,
   body.inquiry-inbox-open .app-main,
   body.specialist-edit-profile-open .app-main,
+  body.specialist-live-profile-open .app-main,
   body.review-modal-open .app-main,
   body.saved-panel-open .app-main,
   body.login-gate-open .app-main,
@@ -276,7 +279,8 @@ html.review-modal-open,
   html.client-profile-sheet-open,
   html.client-workouts-open,
   html.inquiry-inbox-open,
-  html.specialist-edit-profile-open {
+  html.specialist-edit-profile-open,
+  html.specialist-live-profile-open {
     overflow: visible;
   }
 }

@@ -12,7 +12,7 @@ export interface TrainerCuratedProfile {
 export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
   "marcus-chen": {
     resultsSnapshot: [
-      "40+ Client Transformations",
+      "40+ Client Results",
       "8 Years Coaching",
       "Former Collegiate Athlete",
     ],
@@ -232,7 +232,7 @@ export const trainerCuratedById: Record<string, TrainerCuratedProfile> = {
   },
   "isabella-romano": {
     resultsSnapshot: [
-      "90+ Posture Transformations",
+      "90+ Posture Results",
       "9 Years Pilates",
       "STOTT Certified",
     ],

@@ -11,21 +11,36 @@ export const SMOAC_PRO_PLUS_PRICE_LABEL = "$19.99/mo";
 export const SMOAC_FREE_PLAN_LABEL = "Current plan · Free";
 
 export const SMOAC_PRO_UNLOCK = {
-  title: "Continue with SMOAC Pro",
+  title: "Upgrade to SMOAC Pro",
   description:
-    "Your free Pro month has ended. Keep full analytics, ranking intelligence, and growth insights.",
-  cta: `Continue for ${SMOAC_PRO_PRICE_LABEL}`,
+    "Unlock full analytics, ranking intelligence, and growth insights.",
+  cta: `Upgrade for ${SMOAC_PRO_PRICE_LABEL}`,
   afterTrial: "Cancel anytime from billing settings.",
 } as const;
 
 export const SMOAC_PRO_UPGRADE_MODAL = {
   eyebrow: "SMOAC Pro",
-  title: "Continue with Pro",
+  title: "Upgrade to Pro",
   description:
-    "Keep full access to profile analytics, visibility and ranking insights, client engagement metrics, and marketplace performance data.",
+    "Unlock full profile analytics, ranking intelligence, client engagement metrics, and marketplace growth insights.",
   price: SMOAC_PRO_PRICE_LABEL,
   note: "Billed monthly. Cancel anytime.",
 } as const;
+
+export const SMOAC_PRO_BENEFITS = [
+  "Full profile analytics",
+  "Visibility and ranking intelligence",
+  "Client engagement metrics",
+  "Free 1st session marketplace placement",
+  "Growth insights on your live profile",
+] as const;
+
+export const SMOAC_PRO_PLUS_BENEFITS = [
+  "Everything in Pro",
+  "Phone videos up to 45 seconds",
+  "Client results under Specialties",
+  "20% off Boost campaigns",
+] as const;
 
 /** Confirm before starting the one-time complimentary Pro trial */
 export const SMOAC_PRO_TRIAL_CONFIRM_MODAL = {
@@ -186,7 +201,7 @@ export function showProTrialLastChance(session: {
   return typeof days === "number" && days <= 1;
 }
 
-function isSpecialistPayingPro(session: {
+export function isSpecialistPayingPro(session: {
   premiumIsPaid?: boolean;
   premiumTrialActive?: boolean;
   isPremium?: boolean;
@@ -194,6 +209,134 @@ function isSpecialistPayingPro(session: {
   if (session.premiumIsPaid) return true;
   /* Legacy sessions without premiumIsPaid: Pro without an active free trial. */
   return Boolean(session.isPremium && !session.premiumTrialActive);
+}
+
+export type MembershipGrowthSession = {
+  premiumIsPaid?: boolean;
+  premiumTrialActive?: boolean;
+  premiumTrialDaysRemaining?: number | null;
+  premiumTrialJustEnded?: boolean;
+  isPremium?: boolean;
+  membershipPlan?: string | null;
+};
+
+/** Next growth step from the current specialist plan. */
+export type MembershipGrowthIntent = "pro" | "pro-plus" | "boost";
+
+export type MembershipUpgradeTone = "pro" | "trial" | "pro-plus";
+
+export type MembershipUpgradeOffer = {
+  intent: Exclude<MembershipGrowthIntent, "boost">;
+  product: "premium" | "platinum";
+  tone: MembershipUpgradeTone;
+  eyebrow: string;
+  title: string;
+  description: string;
+  price: string;
+  note: string;
+  cta: string;
+  secondaryCta?: string;
+  benefits: readonly string[];
+};
+
+export type MembershipGrowthOffer =
+  | MembershipUpgradeOffer
+  | { intent: "boost" };
+
+export function resolveMembershipGrowthIntent(
+  session: MembershipGrowthSession | null | undefined
+): MembershipGrowthIntent {
+  if (isProPlusPlan(session?.membershipPlan)) return "boost";
+  if (session && isSpecialistPayingPro(session)) return "pro-plus";
+  return "pro";
+}
+
+function trialKeepTitle(daysRemaining: number | null | undefined): string {
+  if (typeof daysRemaining !== "number") {
+    return "Keep Pro before your trial ends";
+  }
+  if (daysRemaining <= 0) return "Your trial ends today — keep Pro";
+  if (daysRemaining === 1) return "1 day left — keep Pro";
+  return `${daysRemaining} days left — keep Pro`;
+}
+
+/**
+ * Copy + Stripe product for upgrade popups.
+ * Free / Pro trial → Pro. Paid Pro → PRO+. PRO+ → Boost (handled by caller).
+ */
+export function resolveMembershipUpgradeOffer(
+  session: MembershipGrowthSession | null | undefined,
+  options?: { trialEnded?: boolean }
+): MembershipGrowthOffer {
+  if (options?.trialEnded) {
+    return {
+      intent: "pro",
+      product: "premium",
+      tone: "trial",
+      eyebrow: SMOAC_PRO_TRIAL_ENDED_MODAL.eyebrow,
+      title: SMOAC_PRO_TRIAL_ENDED_MODAL.title,
+      description: SMOAC_PRO_TRIAL_ENDED_MODAL.description,
+      price: SMOAC_PRO_TRIAL_ENDED_MODAL.price,
+      note: SMOAC_PRO_TRIAL_ENDED_MODAL.note,
+      cta: SMOAC_PRO_TRIAL_ENDED_MODAL.primaryCta,
+      secondaryCta: SMOAC_PRO_TRIAL_ENDED_MODAL.secondaryCta,
+      benefits: SMOAC_PRO_BENEFITS,
+    };
+  }
+
+  const intent = resolveMembershipGrowthIntent(session);
+  if (intent === "boost") return { intent: "boost" };
+
+  if (intent === "pro-plus") {
+    return {
+      intent: "pro-plus",
+      product: "platinum",
+      tone: "pro-plus",
+      eyebrow: "SMOAC PRO+",
+      title: "Upgrade to PRO+",
+      description:
+        "You're on Pro. PRO+ adds phone videos, client results under Specialties, and 20% off Boosts.",
+      price: SMOAC_PRO_PLUS_PRICE_LABEL,
+      note: "Billed monthly. Cancel anytime.",
+      cta: `Upgrade to PRO+ · ${SMOAC_PRO_PLUS_PRICE_LABEL}`,
+      benefits: SMOAC_PRO_PLUS_BENEFITS,
+    };
+  }
+
+  if (session?.premiumTrialActive) {
+    return {
+      intent: "pro",
+      product: "premium",
+      tone: "trial",
+      eyebrow: "Pro trial ending",
+      title: trialKeepTitle(session.premiumTrialDaysRemaining),
+      description:
+        "Subscribe now to keep Pro analytics, ranking intelligence, and growth insights when your trial ends.",
+      price: SMOAC_PRO_PRICE_LABEL,
+      note: "Billed monthly. Cancel anytime.",
+      cta: `Keep Pro · ${SMOAC_PRO_PRICE_LABEL}`,
+      benefits: SMOAC_PRO_BENEFITS,
+    };
+  }
+
+  return {
+    intent: "pro",
+    product: "premium",
+    tone: "pro",
+    eyebrow: SMOAC_PRO_UPGRADE_MODAL.eyebrow,
+    title: SMOAC_PRO_UPGRADE_MODAL.title,
+    description: SMOAC_PRO_UPGRADE_MODAL.description,
+    price: SMOAC_PRO_UPGRADE_MODAL.price,
+    note: SMOAC_PRO_UPGRADE_MODAL.note,
+    cta: `Upgrade to Pro · ${SMOAC_PRO_PRICE_LABEL}`,
+    benefits: SMOAC_PRO_BENEFITS,
+  };
+}
+
+export function isMembershipUpgradeOffer(
+  offer: MembershipGrowthOffer
+): offer is MembershipUpgradeOffer {
+  return offer.intent !== "boost";
 }
 
 /**

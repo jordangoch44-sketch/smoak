@@ -99,19 +99,19 @@ export function SpecialistTransformationsEditor({
     >
       <div className="specialist-media-editor__label-row">
         <p className="login-field__label">
-          Client transformations · {urls.length}/{CLIENT_TRANSFORMATIONS_MAX}
+          Client results · {urls.length}/{CLIENT_TRANSFORMATIONS_MAX}
         </p>
         {!isProPlus ? (
           <LockIcon className="specialist-media-editor__label-lock" />
         ) : null}
       </div>
       <p className="specialist-media-editor__hint">
-        Multi-select photos. They appear under pinned photos on your public
-        profile.
+        Multi-select photos. They appear as a slider under Specialties on your
+        public profile.
       </p>
       <div
         className="specialist-media-editor__pin-row"
-        aria-label="Transformation photos"
+        aria-label="Client result photos"
       >
         {urls.map((url, index) => (
           <button
@@ -127,8 +127,8 @@ export function SpecialistTransformationsEditor({
             }}
             aria-label={
               isProPlus
-                ? `Remove transformation ${index + 1}`
-                : "Unlock transformations with PRO+"
+                ? `Remove client result ${index + 1}`
+                : "Unlock client results with PRO+"
             }
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -163,7 +163,7 @@ export function SpecialistTransformationsEditor({
               type="button"
               className="smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add specialist-media-editor__pin-tile--locked"
               onClick={() => onUpgrade?.()}
-              aria-label="Unlock transformations with PRO+"
+              aria-label="Unlock client results with PRO+"
             >
               <LockIcon className="specialist-media-editor__add-lock" />
               <span>Add</span>

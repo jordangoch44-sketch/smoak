@@ -114,7 +114,7 @@ export const AdminApplicationCard = memo(function AdminApplicationCard({
                 <h3 className="admin-app-card__title">{displayName}</h3>
                 {application.foundingInvite ? (
                   <span className="admin-app-card__tag admin-app-card__tag--founding">
-                    Founding 50
+                    Founding 100
                   </span>
                 ) : null}
               </div>

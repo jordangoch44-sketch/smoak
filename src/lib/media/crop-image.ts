@@ -88,6 +88,35 @@ function scaleToMaxEdge(
   return { width: outWidth, height: outHeight };
 }
 
+/** Keep the crop rectangle on real photo pixels — never pad with empty/black. */
+export function clampPixelCrop(
+  crop: Area,
+  imageWidth: number,
+  imageHeight: number
+): Area {
+  const maxW = Math.max(1, imageWidth);
+  const maxH = Math.max(1, imageHeight);
+  const aspect = crop.width / Math.max(crop.height, 1e-6);
+
+  let width = Math.min(Math.max(1, crop.width), maxW);
+  let height = Math.min(Math.max(1, crop.height), maxH);
+
+  if (width / height > aspect) {
+    width = Math.min(maxW, height * aspect);
+    height = width / aspect;
+  } else {
+    height = Math.min(maxH, width / aspect);
+    width = height * aspect;
+  }
+
+  width = Math.min(Math.max(1, width), maxW);
+  height = Math.min(Math.max(1, height), maxH);
+
+  const x = Math.min(Math.max(0, crop.x), Math.max(0, maxW - width));
+  const y = Math.min(Math.max(0, crop.y), Math.max(0, maxH - height));
+  return { x, y, width, height };
+}
+
 /** Render cropped region to JPEG/PNG data URL for specialist onboarding & profile editor. */
 export async function getCroppedImageDataUrl(
   imageSrc: string,
@@ -105,8 +134,9 @@ export async function getCroppedImageDataUrl(
   }
 
   const normalizedRotation = ((rotation % 360) + 360) % 360;
-  const cropWidth = Math.max(1, Math.round(pixelCrop.width));
-  const cropHeight = Math.max(1, Math.round(pixelCrop.height));
+  const crop = clampPixelCrop(pixelCrop, image.width, image.height);
+  const cropWidth = Math.max(1, Math.round(crop.width));
+  const cropHeight = Math.max(1, Math.round(crop.height));
   const { width: outWidth, height: outHeight } = scaleToMaxEdge(
     cropWidth,
     cropHeight,
@@ -122,10 +152,10 @@ export async function getCroppedImageDataUrl(
     ctx.imageSmoothingQuality = "high";
     ctx.drawImage(
       image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
+      crop.x,
+      crop.y,
+      crop.width,
+      crop.height,
       0,
       0,
       outWidth,
@@ -148,10 +178,11 @@ export async function getCroppedImageDataUrl(
   ctx.translate(-image.width / 2, -image.height / 2);
   ctx.drawImage(image, 0, 0);
 
-  const cropX = Math.max(0, Math.round(pixelCrop.x));
-  const cropY = Math.max(0, Math.round(pixelCrop.y));
-  const srcWidth = Math.min(canvas.width - cropX, cropWidth);
-  const srcHeight = Math.min(canvas.height - cropY, cropHeight);
+  const rotatedCrop = clampPixelCrop(crop, canvas.width, canvas.height);
+  const cropX = Math.round(rotatedCrop.x);
+  const cropY = Math.round(rotatedCrop.y);
+  const srcWidth = Math.round(rotatedCrop.width);
+  const srcHeight = Math.round(rotatedCrop.height);
 
   const finalCanvas = document.createElement("canvas");
   const finalCtx = finalCanvas.getContext("2d");
@@ -197,6 +228,7 @@ export async function getCroppedAvatarFile(
   }
 
   const normalizedRotation = ((rotation % 360) + 360) % 360;
+  const crop = clampPixelCrop(pixelCrop, image.width, image.height);
 
   if (normalizedRotation === 0) {
     canvas.width = AVATAR_OUTPUT_SIZE;
@@ -206,10 +238,10 @@ export async function getCroppedAvatarFile(
 
     ctx.drawImage(
       image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
+      crop.x,
+      crop.y,
+      crop.width,
+      crop.height,
       0,
       0,
       AVATAR_OUTPUT_SIZE,
@@ -239,12 +271,13 @@ export async function getCroppedAvatarFile(
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = "high";
 
+    const rotatedCrop = clampPixelCrop(crop, rotCanvas.width, rotCanvas.height);
     ctx.drawImage(
       rotCanvas,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
+      rotatedCrop.x,
+      rotatedCrop.y,
+      rotatedCrop.width,
+      rotatedCrop.height,
       0,
       0,
       AVATAR_OUTPUT_SIZE,

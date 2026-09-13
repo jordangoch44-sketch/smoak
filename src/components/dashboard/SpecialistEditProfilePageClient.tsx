@@ -19,6 +19,9 @@ import {
   ProfileEditViewField,
 } from "@/components/dashboard/specialist/ProfileEditSection";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
+import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
+import { SpecialistVideosEditor } from "@/components/dashboard/specialist/SpecialistVideosEditor";
+import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistWorkSpotFields } from "@/components/dashboard/specialist/SpecialistWorkSpotFields";
 import { PageWaitState } from "@/components/brand/PageWaitState";
@@ -61,6 +64,7 @@ import {
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
 import { formatTrainingOptionsLabel } from "@/types/specialist-training-options";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
+import { SpecialistPricingFields } from "@/components/dashboard/specialist/SpecialistPricingOfferingsFields";
 import { MarketplaceSpecialtyPicker } from "@/components/auth/specialist/MarketplaceSpecialtyPicker";
 import { SpecialistRightFitFields } from "@/components/dashboard/specialist/SpecialistRightFitFields";
 import { formatTravelToClientsEditorLabel } from "@/lib/specialist-service-area";
@@ -76,14 +80,8 @@ import {
 import { sanitizeHomepageSpecialties } from "@/lib/specialty-display";
 import {
   PROFILE_ACCENT_OPTIONS,
-  PROFILE_AVATAR_FRAME_OPTIONS,
-  PROFILE_NAME_FONT_OPTIONS,
   profileStyleAccentLabel,
-  profileStyleFontLabel,
-  profileStyleFrameLabel,
   type ProfileAccentId,
-  type ProfileAvatarFrameId,
-  type ProfileNameFontId,
 } from "@/lib/specialist-profile-style";
 import { cn, getInitials } from "@/lib/utils";
 import {
@@ -92,6 +90,10 @@ import {
   resolveTrainerSessionPriceRange,
 } from "@/lib/session-price";
 import {
+  formatOfferingsPreview,
+  INQUIRE_FOR_PRICING_DETAILS,
+} from "@/lib/specialist-pricing";
+import {
   COACHING_STYLE_OPTIONS,
   formatCoachingStyleSelection,
   GENDER_OPTIONS,
@@ -99,7 +101,7 @@ import {
 } from "@/constants/specialist-onboarding-options";
 import { parseGender } from "@/lib/gender";
 import { canonicalizeProfessionLabel } from "@/lib/profession-category";
-import { FREE_FIRST_SESSION_LABEL } from "@/lib/free-first-session";
+import { FREE_FIRST_SESSION_LABEL, trainerOffersFreeFirstSession } from "@/lib/free-first-session";
 import { RIGHT_FIT_SECTION_TITLE } from "@/lib/specialist-right-fit";
 
 type SectionId =
@@ -107,11 +109,12 @@ type SectionId =
   | "profile-style"
   | "bio"
   | "ideal-clients"
-  | "experience"
+  | "philosophy"
   | "professional-role"
   | "specialties"
   | "service-area"
   | "session-experience"
+  | "pricing"
   | "credentials"
   | "photos-links";
 
@@ -246,7 +249,7 @@ export function SpecialistEditProfilePageClient({
     setEditingSection(sectionId);
     setSecondLocationOpen(false);
     const next = cloneSpecialistProfileEditForm(savedForm);
-    if (sectionId === "experience") {
+    if (sectionId === "philosophy") {
       next.trainingStyle = formatCoachingStyleSelection(
         parseCoachingStyleSelection(next.trainingStyle)
       );
@@ -641,32 +644,22 @@ export function SpecialistEditProfilePageClient({
 
           <ProfileEditSection
             {...sectionProps("profile-style")}
-            title="Profile style"
-            description="Accent color, avatar frame, and name font"
+            title="Ambience glow"
+            description="Color that tints your public profile"
             incomplete={false}
             viewContent={
-              <>
-                <ProfileEditViewField
-                  label="Accent"
-                  value={profileStyleAccentLabel(savedForm.profileAccent)}
-                />
-                <ProfileEditViewField
-                  label="Avatar frame"
-                  value={profileStyleFrameLabel(savedForm.profileAvatarFrame)}
-                />
-                <ProfileEditViewField
-                  label="Name font"
-                  value={profileStyleFontLabel(savedForm.profileNameFont)}
-                />
-              </>
+              <ProfileEditViewField
+                label="Ambience glow"
+                value={profileStyleAccentLabel(savedForm.profileAccent)}
+              />
             }
             editContent={
               <div className="dashboard-edit-fields">
-                <ProfileEditInputField label="Accent color">
+                <ProfileEditInputField label="Ambience glow">
                   <div
                     className="profile-style-swatches"
                     role="radiogroup"
-                    aria-label="Accent color"
+                    aria-label="Ambience glow"
                   >
                     {PROFILE_ACCENT_OPTIONS.map((option) => (
                       <button
@@ -692,65 +685,6 @@ export function SpecialistEditProfilePageClient({
                           style={{ background: option.swatch }}
                           aria-hidden
                         />
-                      </button>
-                    ))}
-                  </div>
-                </ProfileEditInputField>
-                <ProfileEditInputField label="Avatar frame">
-                  <div
-                    className="profile-style-options"
-                    role="radiogroup"
-                    aria-label="Avatar frame"
-                  >
-                    {PROFILE_AVATAR_FRAME_OPTIONS.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={form.profileAvatarFrame === option.id}
-                        className={cn(
-                          "smoac-control profile-style-option",
-                          form.profileAvatarFrame === option.id &&
-                            "profile-style-option--active"
-                        )}
-                        onClick={() =>
-                          updateField(
-                            "profileAvatarFrame",
-                            option.id as ProfileAvatarFrameId
-                          )
-                        }
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </ProfileEditInputField>
-                <ProfileEditInputField label="Name font">
-                  <div
-                    className="profile-style-options"
-                    role="radiogroup"
-                    aria-label="Name font"
-                  >
-                    {PROFILE_NAME_FONT_OPTIONS.map((option) => (
-                      <button
-                        key={option.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={form.profileNameFont === option.id}
-                        className={cn(
-                          "smoac-control profile-style-option",
-                          `profile-style-option--font-${option.id}`,
-                          form.profileNameFont === option.id &&
-                            "profile-style-option--active"
-                        )}
-                        onClick={() =>
-                          updateField(
-                            "profileNameFont",
-                            option.id as ProfileNameFontId
-                          )
-                        }
-                      >
-                        {option.label}
                       </button>
                     ))}
                   </div>
@@ -806,61 +740,35 @@ export function SpecialistEditProfilePageClient({
           />
 
           <ProfileEditSection
-            {...sectionProps("experience")}
-            title="Experience & training"
-            description="Credentials clients trust"
+            {...sectionProps("philosophy")}
+            title="Coaching style"
+            description="How you work with clients"
             incomplete={
-              !hasSessionPrice(
-                resolveTrainerSessionPriceRange({
-                  pricePerSession: savedForm.pricePerSession,
-                  pricePerSessionMin: savedForm.pricePerSessionMin,
-                  pricePerSessionMax: savedForm.pricePerSessionMax,
-                })
-              ) ||
-              !savedForm.bookingAvailability.trim() ||
-              !savedForm.experienceYears.trim()
+              parseCoachingStyleSelection(savedForm.trainingStyle).length === 0
             }
             viewContent={
-              <>
-                <ProfileEditViewField
-                  label="Years of experience"
-                  value={savedForm.experienceYears}
-                  emptyLabel="Add experience"
-                />
-                <ProfileEditViewField
-                  label="Coaching style"
-                  value={formatCoachingStyleSelection(
-                    parseCoachingStyleSelection(savedForm.trainingStyle)
-                  )}
-                  emptyLabel="Add coaching style"
-                />
-              </>
+              <ProfileEditViewField
+                label="Coaching style"
+                value={formatCoachingStyleSelection(
+                  parseCoachingStyleSelection(savedForm.trainingStyle)
+                )}
+                emptyLabel="Add coaching style"
+              />
             }
             editContent={
-              <div className="dashboard-edit-fields">
-                <ProfileEditInputField label="Years of experience">
-                  <input
-                    className="login-field__input profile-edit-input"
-                    value={form.experienceYears}
-                    onChange={(event) =>
-                      updateField("experienceYears", event.target.value)
-                    }
-                  />
-                </ProfileEditInputField>
-                <ProfileEditChipGroup
-                  label="Coaching style"
-                  options={COACHING_STYLE_OPTIONS}
-                  selected={parseCoachingStyleSelection(form.trainingStyle)}
-                  onChange={(next) =>
-                    updateField(
-                      "trainingStyle",
-                      formatCoachingStyleSelection(next)
-                    )
-                  }
-                  multiple
-                  hint="Select every style that fits how you coach."
-                />
-              </div>
+              <ProfileEditChipGroup
+                label="Coaching style"
+                options={COACHING_STYLE_OPTIONS}
+                selected={parseCoachingStyleSelection(form.trainingStyle)}
+                onChange={(next) =>
+                  updateField(
+                    "trainingStyle",
+                    formatCoachingStyleSelection(next)
+                  )
+                }
+                multiple
+                hint="Select every style that fits how you coach."
+              />
             }
           />
 
@@ -941,7 +849,7 @@ export function SpecialistEditProfilePageClient({
           <ProfileEditSection
             {...sectionProps("service-area")}
             title="Service area"
-            description="Where you train and neighborhoods you serve"
+            description="Where you work and neighborhoods you serve"
             incomplete={
               !savedForm.city.trim() &&
               !savedForm.zipCode.trim() &&
@@ -970,7 +878,7 @@ export function SpecialistEditProfilePageClient({
                 />
                 {hasWorkSpotContent(secondaryWorkSpotFromForm(savedForm)) ? (
                   <ProfileEditViewField
-                    label="Second location (profile only)"
+                    label="Second facility (profile only)"
                     value={
                       formatWorkSpotPlaceLine(
                         secondaryWorkSpotFromForm(savedForm)
@@ -1004,24 +912,9 @@ export function SpecialistEditProfilePageClient({
                   emptyLabel="Add neighborhoods"
                 />
                 <ProfileEditViewField
-                  label="Price per session"
-                  value={formatSessionPriceRange(
-                    resolveTrainerSessionPriceRange({
-                      pricePerSession: savedForm.pricePerSession,
-                      pricePerSessionMin: savedForm.pricePerSessionMin,
-                      pricePerSessionMax: savedForm.pricePerSessionMax,
-                    })
-                  )}
-                  emptyLabel="Add pricing"
-                />
-                <ProfileEditViewField
                   label={FREE_FIRST_SESSION_LABEL}
                   value={
-                    isPremium
-                      ? savedForm.offersFreeFirstSession
-                        ? "On"
-                        : "Off"
-                      : "Unlocks with Pro"
+                    trainerOffersFreeFirstSession(savedForm) ? "On" : "Off"
                   }
                 />
                 <ProfileEditViewField
@@ -1050,7 +943,7 @@ export function SpecialistEditProfilePageClient({
                           )
                         }
                         showAddress={showAddress}
-                        heading={showSecond ? "Primary location" : undefined}
+                        heading={showSecond ? "Primary facility" : undefined}
                         headingHint={
                           showSecond
                             ? "Maps and search use this pin only"
@@ -1068,9 +961,9 @@ export function SpecialistEditProfilePageClient({
                             )
                           }
                           showAddress={showAddress}
-                          heading="Second location"
+                          heading="Second facility"
                           headingHint="Shows on your profile — not a second map pin"
-                          addressLabel="Second work / studio address"
+                          addressLabel="Second facility address"
                           addressHint="Clients see this on your profile. Explore still uses your primary location."
                           virtualHint="Virtual coaches don’t need a second street address."
                           onRemove={() => {
@@ -1087,7 +980,7 @@ export function SpecialistEditProfilePageClient({
                             className="smoac-control specialist-service-area-add"
                             onClick={() => setSecondLocationOpen(true)}
                           >
-                            + Add a second location
+                            + Add a second facility
                           </button>
                           <p className="specialist-service-area-add__hint">
                             Profile only — maps and search stay on your primary
@@ -1167,43 +1060,6 @@ export function SpecialistEditProfilePageClient({
                     }
                   />
                 </ProfileEditInputField>
-                <div className="session-price-range-fields">
-                  <ProfileEditInputField label="From (USD)">
-                    <input
-                      className="login-field__input profile-edit-input"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={form.pricePerSessionMin || ""}
-                      onChange={(event) => {
-                        const min = Number(event.target.value) || 0;
-                        const max = form.pricePerSessionMax || form.pricePerSession;
-                        updateField("pricePerSessionMin", min);
-                        updateField("pricePerSessionMax", max);
-                        updateField("pricePerSession", max > 0 ? max : min);
-                      }}
-                    />
-                  </ProfileEditInputField>
-                  <span className="session-price-range-fields__dash" aria-hidden="true">
-                    –
-                  </span>
-                  <ProfileEditInputField label="To (USD)">
-                    <input
-                      className="login-field__input profile-edit-input"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={form.pricePerSessionMax || form.pricePerSession || ""}
-                      onChange={(event) => {
-                        const max = Number(event.target.value) || 0;
-                        const min = form.pricePerSessionMin || max;
-                        updateField("pricePerSessionMin", min);
-                        updateField("pricePerSessionMax", max);
-                        updateField("pricePerSession", max);
-                      }}
-                    />
-                  </ProfileEditInputField>
-                </div>
                 {isPremium ? (
                   <ProfileEditInputField
                     label={FREE_FIRST_SESSION_LABEL}
@@ -1217,11 +1073,11 @@ export function SpecialistEditProfilePageClient({
                       <button
                         type="button"
                         className={
-                          form.offersFreeFirstSession
+                          trainerOffersFreeFirstSession(form)
                             ? "dashboard-edit-chip dashboard-edit-chip--active"
                             : "dashboard-edit-chip"
                         }
-                        aria-pressed={form.offersFreeFirstSession}
+                        aria-pressed={trainerOffersFreeFirstSession(form)}
                         onClick={() =>
                           updateField("offersFreeFirstSession", true)
                         }
@@ -1231,11 +1087,11 @@ export function SpecialistEditProfilePageClient({
                       <button
                         type="button"
                         className={
-                          !form.offersFreeFirstSession
+                          !trainerOffersFreeFirstSession(form)
                             ? "dashboard-edit-chip dashboard-edit-chip--active"
                             : "dashboard-edit-chip"
                         }
-                        aria-pressed={!form.offersFreeFirstSession}
+                        aria-pressed={!trainerOffersFreeFirstSession(form)}
                         onClick={() =>
                           updateField("offersFreeFirstSession", false)
                         }
@@ -1287,6 +1143,75 @@ export function SpecialistEditProfilePageClient({
                 value={form.trainingOptions}
                 onChange={(trainingOptions) =>
                   updateField("trainingOptions", trainingOptions)
+                }
+              />
+            }
+          />
+
+          <ProfileEditSection
+            {...sectionProps("pricing")}
+            title="Pricing"
+            description="Marketplace card range, plus Pricing & Packages on your Details tab"
+            incomplete={
+              !hasSessionPrice(
+                resolveTrainerSessionPriceRange({
+                  pricePerSession: savedForm.pricePerSession,
+                  pricePerSessionMin: savedForm.pricePerSessionMin,
+                  pricePerSessionMax: savedForm.pricePerSessionMax,
+                })
+              )
+            }
+            viewContent={
+              <>
+                <ProfileEditViewField
+                  label="General pricing"
+                  value={formatSessionPriceRange(
+                    resolveTrainerSessionPriceRange({
+                      pricePerSession: savedForm.pricePerSession,
+                      pricePerSessionMin: savedForm.pricePerSessionMin,
+                      pricePerSessionMax: savedForm.pricePerSessionMax,
+                    })
+                  )}
+                  emptyLabel="Add card price"
+                />
+                <ProfileEditViewField
+                  label="Pricing & Packages"
+                  value={formatOfferingsPreview(savedForm.pricingOfferings)}
+                  emptyLabel={INQUIRE_FOR_PRICING_DETAILS}
+                />
+              </>
+            }
+            editContent={
+              <SpecialistPricingFields
+                priceMin={
+                  resolveTrainerSessionPriceRange({
+                    pricePerSession: form.pricePerSession,
+                    pricePerSessionMin: form.pricePerSessionMin,
+                    pricePerSessionMax: form.pricePerSessionMax,
+                  }).min
+                }
+                priceMax={
+                  resolveTrainerSessionPriceRange({
+                    pricePerSession: form.pricePerSession,
+                    pricePerSessionMin: form.pricePerSessionMin,
+                    pricePerSessionMax: form.pricePerSessionMax,
+                  }).max
+                }
+                onRangeChange={(min, max) => {
+                  setSectionDraft((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          pricePerSessionMin: min,
+                          pricePerSessionMax: max,
+                          pricePerSession: max,
+                        }
+                      : prev
+                  );
+                }}
+                offerings={form.pricingOfferings ?? []}
+                onOfferingsChange={(pricingOfferings) =>
+                  updateField("pricingOfferings", pricingOfferings)
                 }
               />
             }
@@ -1385,7 +1310,18 @@ export function SpecialistEditProfilePageClient({
                   emptyLabel="Pin from header photos"
                 />
                 <ProfileEditViewField
-                  label="Transformations"
+                  label="Videos"
+                  value={
+                    savedForm.videoNotes.trim()
+                      ? `${savedForm.videoNotes
+                          .split("\n")
+                          .filter(Boolean).length} video(s)`
+                      : ""
+                  }
+                  emptyLabel="Add profile videos"
+                />
+                <ProfileEditViewField
+                  label="Client Results"
                   value={
                     savedForm.transformationNotes.trim()
                       ? `${savedForm.transformationNotes
@@ -1393,7 +1329,7 @@ export function SpecialistEditProfilePageClient({
                           .filter(Boolean).length} photo(s)`
                       : ""
                   }
-                  emptyLabel="Add under pinned photos"
+                  emptyLabel="Add under Specialties"
                 />
                 <ProfileEditViewField label="Instagram" value={savedForm.instagram} />
                 <ProfileEditViewField label="TikTok" value={savedForm.tiktok} />
@@ -1402,15 +1338,20 @@ export function SpecialistEditProfilePageClient({
             }
             editContent={
               <>
+                <ProfileMediaUploadField
+                  label="Profile photo"
+                  value={form.profilePhotoUrl}
+                  specialistId={trainerId}
+                  onChange={(value) => updateField("profilePhotoUrl", value)}
+                  onClear={() => updateField("profilePhotoUrl", "")}
+                />
                 <SpecialistProfileMediaEditor
-                  profilePhotoUrl={form.profilePhotoUrl}
                   coverImageUrl={form.coverImageUrl}
                   photoNotes={form.photoNotes}
                   slideshowFramesJson={form.slideshowFramesJson}
                   videoNotes={form.videoNotes}
                   videoPostersJson={form.videoPostersJson}
                   pinnedPhotos={form.pinnedPhotos}
-                  transformationNotes={form.transformationNotes}
                   isPremium={isPremium}
                   isProPlus={isProPlus}
                   specialistId={trainerId}
@@ -1420,6 +1361,29 @@ export function SpecialistEditProfilePageClient({
                       prev ? { ...prev, ...next } : prev
                     );
                   }}
+                />
+                <SpecialistVideosEditor
+                  videoNotes={form.videoNotes}
+                  videoPostersJson={form.videoPostersJson}
+                  pinnedPhotos={form.pinnedPhotos}
+                  isPremium={isPremium}
+                  isProPlus={isProPlus}
+                  specialistId={trainerId}
+                  onUpgrade={() => setUpgradeOpen(true)}
+                  onChange={(next) => {
+                    setSectionDraft((prev) =>
+                      prev ? { ...prev, ...next } : prev
+                    );
+                  }}
+                />
+                <SpecialistTransformationsEditor
+                  transformationNotes={form.transformationNotes}
+                  isProPlus={isProPlus}
+                  specialistId={trainerId}
+                  onUpgrade={() => setUpgradeOpen(true)}
+                  onChange={(transformationNotes) =>
+                    updateField("transformationNotes", transformationNotes)
+                  }
                 />
                 <div className="dashboard-edit-fields">
                   <ProfileEditInputField label="Instagram">

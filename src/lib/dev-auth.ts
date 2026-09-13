@@ -18,6 +18,7 @@ export interface DevTestAccount {
   email: string;
   password: string;
   displayName?: string;
+  firstName?: string;
   isPremium?: boolean;
   /** When role is admin — owner vs staff permissions */
   adminRole?: AdminRoleType;
@@ -38,6 +39,7 @@ export const DEV_SPECIALIST_CREDENTIALS: DevTestAccount = {
   email: "specialist@smoac.com",
   password: "specialist123",
   displayName: "Anthony Brooks",
+  firstName: "Anthony",
   isPremium: true,
 };
 
@@ -66,6 +68,7 @@ export const DEV_FREE_SPECIALIST_CREDENTIALS: DevTestAccount = {
   email: "free-specialist@smoac.test",
   password: "Test123!",
   displayName: "Free Specialist Test",
+  firstName: "Alex",
   isPremium: false,
   city: "San Diego",
   specialty: "Personal Training",
@@ -151,11 +154,12 @@ export function validateDevLogin(
 export function getDevSessionFields(
   role: AuthRole,
   email: string
-): Pick<AuthSession, "displayName" | "isPremium" | "adminRole"> {
+): Pick<AuthSession, "displayName" | "firstName" | "isPremium" | "adminRole"> {
   const account = findDevAccount(role, email);
   if (account) {
     return {
       displayName: account.displayName,
+      ...(account.firstName ? { firstName: account.firstName } : {}),
       isPremium: account.isPremium,
       adminRole: role === "admin" ? account.adminRole : undefined,
     };
