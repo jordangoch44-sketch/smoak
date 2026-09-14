@@ -5,14 +5,21 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { MODAL_OPEN_BODY_CLASS } from "@/lib/blocking-modal";
 import { SMOAC_PRO_TRIAL_CONFIRM_MODAL } from "@/lib/specialist-premium";
 import { showToast } from "@/lib/toast-store";
-import { DashboardButton } from "./DashboardButton";
 import {
   DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
   DashboardModalCloseButton,
   DashboardModalScrim,
 } from "./DashboardModalScrim";
+import {
+  UpgradeCta,
+  UpgradeFooter,
+  UpgradeMark,
+  UpgradePerkList,
+  UpgradeTitleText,
+} from "./SmoacProUpgradeModal";
 
 interface SmoacProTrialConfirmModalProps {
   open: boolean;
@@ -36,8 +43,8 @@ export function SmoacProTrialConfirmModal({
   useEffect(() => {
     if (!open) return;
 
-    const previousBodyOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    document.body.classList.add(MODAL_OPEN_BODY_CLASS);
+    document.documentElement.classList.add(MODAL_OPEN_BODY_CLASS);
     setError(null);
     setBusy(false);
 
@@ -47,7 +54,8 @@ export function SmoacProTrialConfirmModal({
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = previousBodyOverflow;
+      document.body.classList.remove(MODAL_OPEN_BODY_CLASS);
+      document.documentElement.classList.remove(MODAL_OPEN_BODY_CLASS);
       window.removeEventListener("keydown", onKeyDown);
     };
   }, [open, onClose, busy]);
@@ -93,68 +101,68 @@ export function SmoacProTrialConfirmModal({
 
   if (!open || typeof document === "undefined") return null;
 
+  const copy = SMOAC_PRO_TRIAL_CONFIRM_MODAL;
+
   return createPortal(
     <DashboardModalScrim
+      className="dashboard-modal--upgrade dashboard-modal--upgrade-trial"
       onDismiss={() => {
         if (!busy) onClose();
       }}
     >
       <div
-        className="dashboard-modal__dialog dashboard-modal__dialog--pro-trial"
+        className="dashboard-modal__dialog dashboard-modal__dialog--pro dashboard-modal__dialog--upgrade dashboard-modal__dialog--upgrade-trial"
         role="dialog"
         aria-modal="true"
         aria-labelledby="pro-trial-confirm-title"
         aria-describedby="pro-trial-confirm-desc"
         {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
       >
-        <div className="dashboard-modal__glow dashboard-modal__glow--neon" aria-hidden />
+        <div
+          className="dashboard-modal__glow dashboard-upgrade__glow dashboard-upgrade__glow--trial"
+          aria-hidden
+        />
 
         <DashboardModalCloseButton onClose={onClose} disabled={busy} />
 
-        <div className="dashboard-modal__content">
-          <p className="dashboard-modal__eyebrow dashboard-modal__eyebrow--neon">
-            {SMOAC_PRO_TRIAL_CONFIRM_MODAL.eyebrow}
-          </p>
-          <h2 id="pro-trial-confirm-title" className="dashboard-modal__title">
-            {SMOAC_PRO_TRIAL_CONFIRM_MODAL.title}
-          </h2>
-          <p id="pro-trial-confirm-desc" className="dashboard-modal__body">
-            {SMOAC_PRO_TRIAL_CONFIRM_MODAL.description}
-          </p>
+        <div className="dashboard-modal__content dashboard-upgrade-content">
+          <div className="dashboard-upgrade">
+            <div className="dashboard-upgrade__hero">
+              <UpgradeMark />
+              <p className="dashboard-modal__eyebrow dashboard-upgrade__eyebrow">
+                {copy.eyebrow}
+              </p>
+              <h2 id="pro-trial-confirm-title" className="dashboard-upgrade__title">
+                <UpgradeTitleText title={copy.title} />
+              </h2>
+              <p id="pro-trial-confirm-desc" className="dashboard-upgrade__body">
+                {copy.description}
+              </p>
+            </div>
 
-          <ul className="dashboard-pro-trial-benefits">
-            {SMOAC_PRO_TRIAL_CONFIRM_MODAL.benefits.map((benefit) => (
-              <li key={benefit}>{benefit}</li>
-            ))}
-          </ul>
+            <UpgradePerkList benefits={copy.benefits} />
 
-          <p className="dashboard-modal__note">
-            {SMOAC_PRO_TRIAL_CONFIRM_MODAL.note}
-          </p>
+            <p className="dashboard-modal__note">{copy.note}</p>
 
-          {error ? (
-            <p className="dashboard-modal__error" role="alert">
-              {error}
-            </p>
-          ) : null}
+            {error ? (
+              <p className="dashboard-modal__error" role="alert">
+                {error}
+              </p>
+            ) : null}
 
-          <DashboardButton
-            className="dashboard-pro-trial-confirm-btn"
-            onClick={() => void confirmStartTrial()}
-            disabled={busy}
-          >
-            {busy
-              ? "Starting trial…"
-              : SMOAC_PRO_TRIAL_CONFIRM_MODAL.primaryCta}
-          </DashboardButton>
+            <UpgradeCta busy={busy} onClick={() => void confirmStartTrial()}>
+              {busy ? "Starting trial…" : copy.primaryCta}
+            </UpgradeCta>
 
-          <FastActivateButton
-            className="dashboard-modal__secondary"
-            onActivate={onClose}
-            disabled={busy}
-          >
-            {SMOAC_PRO_TRIAL_CONFIRM_MODAL.secondaryCta}
-          </FastActivateButton>
+            <FastActivateButton
+              className="dashboard-modal__secondary"
+              onActivate={onClose}
+              disabled={busy}
+            >
+              {copy.secondaryCta}
+            </FastActivateButton>
+            <UpgradeFooter />
+          </div>
         </div>
       </div>
     </DashboardModalScrim>,

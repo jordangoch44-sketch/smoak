@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
+import {
+  isDemoInquiryConversationId,
+  isSmoacWelcomeConversationId,
+} from "@/lib/inquiry/inquiry-paths";
 
 export const runtime = "nodejs";
 
@@ -49,7 +52,10 @@ export async function POST(request: Request) {
     );
   }
 
-  if (isDemoInquiryConversationId(conversationId)) {
+  if (
+    isDemoInquiryConversationId(conversationId) ||
+    isSmoacWelcomeConversationId(conversationId)
+  ) {
     return NextResponse.json({ ok: true, localOnly: true });
   }
 

@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
-import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
+import {
+  isDemoInquiryConversationId,
+  isSmoacWelcomeConversationId,
+} from "@/lib/inquiry/inquiry-paths";
 import { labelsForInquiryTopics } from "@/lib/inquiry-options";
 import { previewFromProfileRow } from "@/lib/inquiry/inquiry-client-preview";
+import {
+  isSmoacWelcomeConversation,
+  smoacTeamClientPreview,
+} from "@/lib/inquiry/specialist-welcome-inquiry";
 import { fetchClientProfileEditorRow } from "@/lib/profiles/profile-service";
 import type { InquiryConversationRow } from "@/types/inquiry";
 
@@ -42,7 +49,16 @@ export async function GET(request: Request) {
     );
   }
 
-  if (isDemoInquiryConversationId(conversationId)) {
+  if (
+    isDemoInquiryConversationId(conversationId) ||
+    isSmoacWelcomeConversationId(conversationId)
+  ) {
+    if (isSmoacWelcomeConversationId(conversationId)) {
+      return NextResponse.json({
+        ok: true,
+        preview: smoacTeamClientPreview(conversationId),
+      });
+    }
     return NextResponse.json(
       { ok: false, message: "Demo conversation." },
       { status: 404 }
@@ -63,6 +79,13 @@ export async function GET(request: Request) {
   }
 
   const row = conversation as InquiryConversationRow;
+  if (isSmoacWelcomeConversation(row)) {
+    return NextResponse.json({
+      ok: true,
+      preview: smoacTeamClientPreview(row.id),
+    });
+  }
+
   const specialistUserId = row.specialist_user_id?.trim() ?? "";
   if (row.client_user_id === user.id || (specialistUserId && specialistUserId !== user.id)) {
     return NextResponse.json(

@@ -24,7 +24,7 @@ import {
 } from "@/types/specialist-service-area";
 import { purgeSpecialistFromMarketplace } from "@/lib/admin-specialist-purge-client";
 import { AdminChangePlanModal } from "@/components/admin/specialists/AdminChangePlanModal";
-import { parseMembershipPlan } from "@/lib/specialist-premium";
+import { parseMembershipPlan, formatProTrialBadgeLabel } from "@/lib/specialist-premium";
 
 interface AdminSpecialistsPanelProps {
   specialists: AdminSpecialistRow[];
@@ -142,7 +142,14 @@ function SpecialistCard({
             <p className="admin-entity-card__sub">{locationLine}</p>
           ) : null}
         </div>
-        <AdminStatusBadge label={row.visibility} />
+        <div className="admin-entity-card__head-badges">
+          {row.premiumTrialActive ? (
+            <span className="admin-chip admin-chip--trial">
+              {formatProTrialBadgeLabel(row.premiumTrialDaysRemaining)}
+            </span>
+          ) : null}
+          <AdminStatusBadge label={row.visibility} />
+        </div>
       </div>
 
       <div className="admin-entity-card__actions admin-entity-card__actions--row">
@@ -197,6 +204,10 @@ function SpecialistCard({
             ) : null}
             {row.membershipPlan === "platinum" ? (
               <span className="admin-chip">PRO+</span>
+            ) : row.premiumTrialActive ? (
+              <span className="admin-chip admin-chip--trial">
+                {formatProTrialBadgeLabel(row.premiumTrialDaysRemaining)}
+              </span>
             ) : row.isPremium ? (
               <span className="admin-chip">Pro</span>
             ) : null}
@@ -684,7 +695,9 @@ export function AdminSpecialistsPanel({
                       )}
                     </td>
                     <td>
-                      {permissions.canFeatureSpecialists ? (
+                      {row.premiumTrialActive
+                        ? formatProTrialBadgeLabel(row.premiumTrialDaysRemaining)
+                        : permissions.canFeatureSpecialists ? (
                         <label className="admin-check">
                           <input
                             type="checkbox"

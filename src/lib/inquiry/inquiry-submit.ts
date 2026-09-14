@@ -20,7 +20,10 @@ import {
   composeInquiryThreadBody,
   validateThreadMessage,
 } from "@/lib/inquiry/inquiry-message-body";
-import { inquiryThreadHref } from "@/lib/inquiry/inquiry-paths";
+import {
+  inquiryThreadHref,
+  isSmoacWelcomeConversationId,
+} from "@/lib/inquiry/inquiry-paths";
 import {
   validateInquiryDraft,
   type PendingInquiryDraft,
@@ -255,7 +258,12 @@ export async function submitInquiryReply(input: {
   }
 
   try {
-    if (isMarketplaceSupabaseActive() && typeof window !== "undefined") {
+    const useRemote =
+      isMarketplaceSupabaseActive() &&
+      typeof window !== "undefined" &&
+      !isSmoacWelcomeConversationId(input.conversationId);
+
+    if (useRemote) {
       const response = await fetch("/api/inquiry/reply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

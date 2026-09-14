@@ -45,6 +45,7 @@ import {
 import { hideLocalInquiryForSpecialist } from "@/lib/inquiry/inquiry-local-store";
 import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
 import { markAllSpecialistInquiryNotificationsRead } from "@/lib/inquiry/specialist-inquiry-notifications";
+import { ensureSpecialistWelcomeInquiry } from "@/lib/inquiry/specialist-welcome-inquiry";
 import type {
   SpecialistDashboardRanking,
   SpecialistLead,
@@ -307,6 +308,45 @@ export function useSpecialistDashboard() {
     application,
     subscription: data.subscription,
   });
+
+  useEffect(() => {
+    if (!trainerId || !session?.userId) return;
+    const canReceiveWelcome =
+      dashboardMode === "approved-free" ||
+      dashboardMode === "approved-premium" ||
+      dashboardMode === "demo-premium";
+    if (!canReceiveWelcome) return;
+
+    let cancelled = false;
+    void ensureSpecialistWelcomeInquiry({
+      specialistId: trainerId,
+      specialistName:
+        managedTrainer?.name?.trim() ||
+        application?.fullName?.trim() ||
+        "Specialist",
+      specialistUserId: session.userId,
+      firstName:
+        session.firstName?.trim() ||
+        application?.fullName.trim().split(/\s+/)[0] ||
+        "",
+    }).then((result) => {
+      if (cancelled || !result.created) return;
+      void loadSpecialistInquiryLeads(trainerId).then((leads) => {
+        if (!cancelled) setInquiryLeads(leads);
+      });
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    trainerId,
+    dashboardMode,
+    session?.userId,
+    session?.firstName,
+    managedTrainer?.name,
+    application?.fullName,
+  ]);
 
   /* Prefer real inquiries; demo leads only when demo mode has nothing live. */
   const hiddenIds =

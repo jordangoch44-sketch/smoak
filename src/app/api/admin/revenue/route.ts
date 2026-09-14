@@ -5,6 +5,7 @@ import {
   fetchStripeMrrCents,
   subscriptionGrantsPremium,
 } from "@/lib/stripe/sync-subscription";
+import { SPECIALIST_TIER_CATALOG } from "@/data/admin-specialist-billing-catalog";
 import { getStripe, getStripePremiumPriceId } from "@/lib/stripe/config";
 
 export interface AdminStripeBillingRow {
@@ -42,12 +43,13 @@ async function requireAdminCaller() {
 }
 
 async function resolvePremiumMonthlyCents(): Promise<number> {
+  const fallbackCents = SPECIALIST_TIER_CATALOG.premium.monthlyCents;
   const priceId = getStripePremiumPriceId();
   const stripe = getStripe();
-  if (!stripe || !priceId) return 999; /* known SMOAC Pro list price fallback */
+  if (!stripe || !priceId) return fallbackCents;
   try {
     const price = await stripe.prices.retrieve(priceId);
-    const amount = price.unit_amount ?? 999;
+    const amount = price.unit_amount ?? fallbackCents;
     const interval = price.recurring?.interval;
     const intervalCount = price.recurring?.interval_count ?? 1;
     if (interval === "year") return Math.round(amount / 12);
@@ -57,7 +59,7 @@ async function resolvePremiumMonthlyCents(): Promise<number> {
     }
     return amount;
   } catch {
-    return 999;
+    return fallbackCents;
   }
 }
 

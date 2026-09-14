@@ -10,7 +10,11 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { MAIN_PROFESSION_CATEGORIES } from "@/data/professions";
-import { SpecialistIgStyleProfileEditor } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
+import {
+  SpecialistIgStyleProfileEditor,
+  type IgEditRowId,
+} from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
+import { SpecialistIgBillingSheet } from "@/components/dashboard/specialist/SpecialistIgBillingSheet";
 import { SpecialistInquiriesInbox } from "@/components/dashboard/specialist/SpecialistInquiriesInbox";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
@@ -556,6 +560,7 @@ export function SpecialistDashboardProfilePreview({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [billingOpen, setBillingOpen] = useState(false);
   const conversationParam = searchParams.get("c")?.trim() || "";
   const viewParam = searchParams.get("view")?.trim() || "";
   const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
@@ -572,6 +577,10 @@ export function SpecialistDashboardProfilePreview({
   useEffect(() => {
     setPreviewMode(previewModeFromSearch(viewParam, conversationParam));
   }, [conversationParam, viewParam]);
+
+  useEffect(() => {
+    if (previewMode !== "edit") setBillingOpen(false);
+  }, [previewMode]);
 
   useEffect(() => {
     if (previewMode !== "edit") return;
@@ -650,6 +659,14 @@ export function SpecialistDashboardProfilePreview({
       window.clearTimeout(clearTimer);
     };
   }, [focusSection, searchParams, onClearFocus, viewParam, router]);
+
+  function openEditSection(id: IgEditRowId) {
+    if (id === "billing") {
+      setBillingOpen(true);
+      return;
+    }
+    startEdit(id);
+  }
 
   function startEdit(section: SectionId) {
     if (!canEdit || !formDefaults) return;
@@ -1362,7 +1379,7 @@ export function SpecialistDashboardProfilePreview({
             <SpecialistIgStyleProfileEditor
               trainer={trainer}
               formDefaults={formDefaults}
-              onEditSection={(id) => startEdit(id)}
+              onEditSection={openEditSection}
               highlightedSection={highlightedRow}
               onUpgrade={onUpgrade}
               onSignOut={onSignOut}
@@ -1382,6 +1399,10 @@ export function SpecialistDashboardProfilePreview({
       <>
         {portalReady ? createPortal(page, document.body) : page}
         {editSheet}
+        <SpecialistIgBillingSheet
+          open={billingOpen}
+          onClose={() => setBillingOpen(false)}
+        />
       </>
     );
   }

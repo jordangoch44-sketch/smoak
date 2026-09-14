@@ -19,16 +19,13 @@ import type { AppRole } from "@/types/auth-roles";
 import { isAdminAppRole, isPublicAuthRole } from "@/types/auth-roles";
 import { getAuthAppUrl } from "@/lib/auth/site-origin";
 
-/** Prefer SITE_URL when the request host is a bind/loopback address. */
+/**
+ * Keep the browser on the host it typed (localhost stays localhost).
+ * Only bounce unusable bind addresses (0.0.0.0) to SITE_URL.
+ */
 function redirectToAppPath(request: NextRequest, pathname: string) {
   const host = request.nextUrl.hostname;
-  if (
-    host === "0.0.0.0" ||
-    host === "localhost" ||
-    host === "127.0.0.1" ||
-    host === "::" ||
-    host === "::1"
-  ) {
+  if (host === "0.0.0.0" || host === "::") {
     const absolute = getAuthAppUrl(pathname);
     if (absolute) {
       return NextResponse.redirect(absolute);

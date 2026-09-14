@@ -513,6 +513,18 @@ export async function saveDefaultPaymentMethod(input: {
   return { ok: true };
 }
 
+/** Pull live Stripe subscriptions onto specialist_billing after Wallet checkout. */
+export async function syncManageBillingFromStripe(
+  ctx: BillingContext
+): Promise<void> {
+  if (!ctx.customerId) return;
+  await syncSpecialistCustomerBilling({
+    userId: ctx.user.id,
+    specialistProfileId: ctx.specialistProfileId,
+    customerId: ctx.customerId,
+  });
+}
+
 export async function setSubscriptionCancelAtPeriodEnd(input: {
   ctx: BillingContext;
   subscriptionId: string;

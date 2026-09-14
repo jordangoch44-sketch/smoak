@@ -28,7 +28,7 @@ export async function POST() {
 
   const { data: roleRow } = await supabase
     .from("user_roles")
-    .select("role, premium_trial_started_at, premium_trial_ends_at")
+    .select("role")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -37,16 +37,6 @@ export async function POST() {
       { ok: false, message: "Specialist access required." },
       { status: 403 }
     );
-  }
-
-  if (roleRow.premium_trial_started_at) {
-    return NextResponse.json({
-      ok: true,
-      granted: false,
-      alreadyUsed: true,
-      trialEndsAt: roleRow.premium_trial_ends_at ?? null,
-      message: "Your free Pro month was already claimed.",
-    });
   }
 
   const service = createSupabaseServiceClient();
@@ -69,30 +59,35 @@ export async function POST() {
     profile?.id ?? null
   );
 
-  if (!result.granted) {
-    if (result.trialEndsAt) {
-      return NextResponse.json({
-        ok: true,
-        granted: false,
-        alreadyUsed: true,
-        trialEndsAt: result.trialEndsAt,
-        message: "Your free Pro month was already claimed.",
-      });
-    }
-    return NextResponse.json(
-      {
-        ok: false,
-        message: "Could not start free Pro trial. Try again.",
-      },
-      { status: 500 }
-    );
+  if (result.granted || result.extended) {
+    return NextResponse.json({
+      ok: true,
+      granted: result.granted || result.extended,
+      alreadyUsed: false,
+      founding: result.founding,
+      trialDays: result.trialDays,
+      trialEndsAt: result.trialEndsAt,
+      message: `Pro unlocked for ${result.trialDays} days — no card required.`,
+    });
   }
 
-  return NextResponse.json({
-    ok: true,
-    granted: true,
-    alreadyUsed: false,
-    trialEndsAt: result.trialEndsAt,
-    message: "Pro unlocked for 30 days — no card required.",
-  });
+  if (result.trialEndsAt) {
+    return NextResponse.json({
+      ok: true,
+      granted: false,
+      alreadyUsed: true,
+      founding: result.founding,
+      trialDays: result.trialDays,
+      trialEndsAt: result.trialEndsAt,
+      message: "Your free Pro trial was already claimed.",
+    });
+  }
+
+  return NextResponse.json(
+    {
+      ok: false,
+      message: "Could not start free Pro trial. Try again.",
+    },
+    { status: 500 }
+  );
 }

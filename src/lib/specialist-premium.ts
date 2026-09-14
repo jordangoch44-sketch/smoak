@@ -1,11 +1,11 @@
 /**
  * SMOAC Pro — pricing + upgrade copy.
- * Going live includes a complimentary 30-day Pro trial; after that, $9.99/mo via Stripe.
+ * Going live includes a complimentary 30-day Pro trial; after that, $19.99/mo via Stripe.
  */
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 
-export const SMOAC_PRO_PRICE_LABEL = "$9.99/mo";
-export const SMOAC_PRO_PLUS_PRICE_LABEL = "$19.99/mo";
+export const SMOAC_PRO_PRICE_LABEL = "$19.99/mo";
+export const SMOAC_PRO_PLUS_PRICE_LABEL = "$29.99/mo";
 
 /** Header badge for free specialists — Free details live on Live profile, not Plan tab. */
 export const SMOAC_FREE_PLAN_LABEL = "Current plan · Free";
@@ -27,20 +27,54 @@ export const SMOAC_PRO_UPGRADE_MODAL = {
   note: "Billed monthly. Cancel anytime.",
 } as const;
 
-export const SMOAC_PRO_BENEFITS = [
-  "Full profile analytics",
-  "Visibility and ranking intelligence",
-  "Client engagement metrics",
-  "Free 1st session marketplace placement",
-  "Growth insights on your live profile",
-] as const;
+export type MembershipBenefit = {
+  title: string;
+  detail: string;
+};
 
-export const SMOAC_PRO_PLUS_BENEFITS = [
-  "Everything in Pro",
-  "Phone videos up to 45 seconds",
-  "Client results under Specialties",
-  "20% off Boost campaigns",
-] as const;
+export const SMOAC_PRO_BENEFITS: readonly MembershipBenefit[] = [
+  {
+    title: "Full profile analytics",
+    detail: "Track views, clicks, and performance",
+  },
+  {
+    title: "Visibility and ranking intelligence",
+    detail: "See how you rank and opportunities to grow",
+  },
+  {
+    title: "Client engagement metrics",
+    detail: "Understand inquiries and activity",
+  },
+  {
+    title: "Free 1st session marketplace placement",
+    detail: "Get featured in client search",
+  },
+  {
+    title: "Growth insights on your live profile",
+    detail: "Personalized tips to level up",
+  },
+];
+
+export const SMOAC_PRO_PLUS_BENEFITS: readonly MembershipBenefit[] = [
+  {
+    title: "Everything in Pro",
+    detail: "Analytics, ranking intelligence, and growth tools",
+  },
+  {
+    title: "Phone videos up to 45 seconds",
+    detail: "Upload clips straight from your phone",
+  },
+  {
+    title: "Client results under Specialties",
+    detail: "Show transformations on your profile",
+  },
+  {
+    title: "20% off Boost campaigns",
+    detail: "Promote your listing for less",
+  },
+];
+
+export const SMOAC_UPGRADE_FOOTER = "Invest in your growth";
 
 /** Confirm before starting the one-time complimentary Pro trial */
 export const SMOAC_PRO_TRIAL_CONFIRM_MODAL = {
@@ -48,13 +82,7 @@ export const SMOAC_PRO_TRIAL_CONFIRM_MODAL = {
   title: "Start your free Pro month",
   description:
     "No card required. Full Pro access for 30 days — then you return to Free unless you upgrade.",
-  benefits: [
-    "Full profile analytics unlocked",
-    "Visibility & ranking intelligence",
-    "Client engagement metrics",
-    "Free 1st session marketplace placement",
-    "Growth insights across your marketplace profile",
-  ] as const,
+  benefits: SMOAC_PRO_BENEFITS,
   note: "Available once per specialist account.",
   primaryCta: "Confirm & start trial",
   secondaryCta: "Not now",
@@ -236,7 +264,9 @@ export type MembershipUpgradeOffer = {
   note: string;
   cta: string;
   secondaryCta?: string;
-  benefits: readonly string[];
+  badgeLabel: string;
+  badgeCaption: string;
+  benefits: readonly MembershipBenefit[];
 };
 
 export type MembershipGrowthOffer =
@@ -280,6 +310,8 @@ export function resolveMembershipUpgradeOffer(
       note: SMOAC_PRO_TRIAL_ENDED_MODAL.note,
       cta: SMOAC_PRO_TRIAL_ENDED_MODAL.primaryCta,
       secondaryCta: SMOAC_PRO_TRIAL_ENDED_MODAL.secondaryCta,
+      badgeLabel: "PRO",
+      badgeCaption: "Keep your momentum",
       benefits: SMOAC_PRO_BENEFITS,
     };
   }
@@ -299,6 +331,8 @@ export function resolveMembershipUpgradeOffer(
       price: SMOAC_PRO_PLUS_PRICE_LABEL,
       note: "Billed monthly. Cancel anytime.",
       cta: `Upgrade to PRO+ · ${SMOAC_PRO_PLUS_PRICE_LABEL}`,
+      badgeLabel: "PRO+",
+      badgeCaption: "Go further",
       benefits: SMOAC_PRO_PLUS_BENEFITS,
     };
   }
@@ -315,6 +349,8 @@ export function resolveMembershipUpgradeOffer(
       price: SMOAC_PRO_PRICE_LABEL,
       note: "Billed monthly. Cancel anytime.",
       cta: `Keep Pro · ${SMOAC_PRO_PRICE_LABEL}`,
+      badgeLabel: "PRO",
+      badgeCaption: "Keep your momentum",
       benefits: SMOAC_PRO_BENEFITS,
     };
   }
@@ -329,6 +365,8 @@ export function resolveMembershipUpgradeOffer(
     price: SMOAC_PRO_UPGRADE_MODAL.price,
     note: SMOAC_PRO_UPGRADE_MODAL.note,
     cta: `Upgrade to Pro · ${SMOAC_PRO_PRICE_LABEL}`,
+    badgeLabel: "PRO",
+    badgeCaption: "Unlock your growth",
     benefits: SMOAC_PRO_BENEFITS,
   };
 }

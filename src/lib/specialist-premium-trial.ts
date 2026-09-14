@@ -1,8 +1,9 @@
 /**
  * SMOAC Pro complimentary trial — 30 days free when a specialist goes live
- * (admin activate / approve). After that, free tier unless they subscribe via
- * Stripe ($9.99/mo, no second free month). Idempotent; safe to call on every
- * activate. Manual Plan-tab claim remains for older accounts that never got one.
+ * (admin activate / approve). Founding 100 get 60 days. After that, free tier
+ * unless they subscribe via Stripe ($19.99/mo, no second free month). Idempotent;
+ * safe to call on every activate. Manual Plan-tab claim remains for older
+ * accounts that never got one.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readActiveAdminOverride } from "@/lib/admin-plan-override";
@@ -15,9 +16,74 @@ import {
   parseMembershipPlan,
   type SpecialistMembershipPlan,
 } from "@/lib/specialist-premium";
+import { FOUNDING_PREMIUM_TRIAL_DAYS } from "@/lib/founding-50-invite";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export const PREMIUM_TRIAL_DAYS = 30;
+
+export type PremiumTrialGrantResult = {
+  granted: boolean;
+  extended: boolean;
+  trialEndsAt: string | null;
+  trialDays: number;
+  founding: boolean;
+};
+
+function emptyGrantResult(
+  partial?: Partial<PremiumTrialGrantResult>
+): PremiumTrialGrantResult {
+  return {
+    granted: false,
+    extended: false,
+    trialEndsAt: null,
+    trialDays: PREMIUM_TRIAL_DAYS,
+    founding: false,
+    ...partial,
+  };
+}
+
+export function premiumTrialDaysForFounding(founding: boolean): number {
+  return founding ? FOUNDING_PREMIUM_TRIAL_DAYS : PREMIUM_TRIAL_DAYS;
+}
+
+function applicationDataIsFounding(data: unknown): boolean {
+  if (!data || typeof data !== "object") return false;
+  const rec = data as {
+    foundingInvite?: unknown;
+    foundingInviteCode?: unknown;
+  };
+  return (
+    rec.foundingInvite === true ||
+    Boolean(String(rec.foundingInviteCode ?? "").trim())
+  );
+}
+
+async function specialistIsFoundingInvite(
+  supabase: SupabaseClient,
+  userId: string,
+  specialistId?: string | null
+): Promise<boolean> {
+  const trimmedUser = userId.trim();
+  const trimmedId = specialistId?.trim() || "";
+  if (!trimmedUser && !trimmedId) return false;
+
+  let query = supabase
+    .from("specialist_applications")
+    .select("application_data")
+    .limit(8);
+
+  if (trimmedUser && trimmedId) {
+    query = query.or(`user_id.eq.${trimmedUser},id.eq.${trimmedId}`);
+  } else if (trimmedId) {
+    query = query.eq("id", trimmedId);
+  } else {
+    query = query.eq("user_id", trimmedUser);
+  }
+
+  const { data, error } = await query;
+  if (error || !data?.length) return false;
+  return data.some((row) => applicationDataIsFounding(row.application_data));
+}
 
 export interface SpecialistPremiumAccess {
   isPremium: boolean;
@@ -43,6 +109,40 @@ function daysUntil(endsAt: string, now = Date.now()): number {
   return Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
 }
 
+export type ComplimentaryProTrialSignals = {
+  trialEndsAt: string | null;
+  isPaid: boolean;
+  adminOverrideActive: boolean;
+};
+
+export function isComplimentaryProTrialWindowOpen(
+  trialEndsAt: string | null | undefined,
+  now = Date.now()
+): boolean {
+  if (!trialEndsAt) return false;
+  const ms = Date.parse(trialEndsAt);
+  return Number.isFinite(ms) && ms > now;
+}
+
+/** Complimentary 30/60-day Pro trial — not Stripe, not an admin grant. */
+export function isComplimentaryProTrialActive(
+  signals: ComplimentaryProTrialSignals | null | undefined,
+  now = Date.now()
+): boolean {
+  if (!signals || signals.isPaid || signals.adminOverrideActive) return false;
+  return isComplimentaryProTrialWindowOpen(signals.trialEndsAt, now);
+}
+
+export function complimentaryProTrialDaysRemaining(
+  signals: ComplimentaryProTrialSignals | null | undefined,
+  now = Date.now()
+): number | null {
+  if (!isComplimentaryProTrialActive(signals, now) || !signals?.trialEndsAt) {
+    return null;
+  }
+  return daysUntil(signals.trialEndsAt, now);
+}
+
 async function hasActiveStripeSubscription(
   supabase: SupabaseClient,
   userId: string
@@ -57,14 +157,23 @@ async function hasActiveStripeSubscription(
 }
 
 /**
- * Start the one-time 30-day Pro trial if this specialist has never had one.
- * Idempotent — safe to call on every go-live activate.
+ * Start the one-time Pro trial if this specialist has never had one.
+ * Founding 100 get 60 days; everyone else gets 30. If a founding specialist
+ * already started a shorter trial that is still active, extend to 60 days
+ * from the original start. Idempotent — safe to call on every go-live activate.
  */
 export async function grantSpecialistPremiumTrialIfNeeded(
   supabase: SupabaseClient,
   userId: string,
   specialistProfileId?: string | null
-): Promise<{ granted: boolean; trialEndsAt: string | null }> {
+): Promise<PremiumTrialGrantResult> {
+  const founding = await specialistIsFoundingInvite(
+    supabase,
+    userId,
+    specialistProfileId
+  );
+  const trialDays = premiumTrialDaysForFounding(founding);
+
   const { data: role, error } = await supabase
     .from("user_roles")
     .select(
@@ -74,18 +183,64 @@ export async function grantSpecialistPremiumTrialIfNeeded(
     .maybeSingle();
 
   if (error || !role || role.role !== "specialist") {
-    return { granted: false, trialEndsAt: null };
+    return emptyGrantResult({ founding, trialDays });
   }
 
   if (role.premium_trial_started_at) {
-    return {
-      granted: false,
-      trialEndsAt: role.premium_trial_ends_at ?? null,
-    };
+    const currentEndsAt = (role.premium_trial_ends_at as string | null) ?? null;
+    const currentEndsMs = currentEndsAt ? Date.parse(currentEndsAt) : 0;
+    const desiredEndsAt = addDays(role.premium_trial_started_at, trialDays);
+    const desiredEndsMs = Date.parse(desiredEndsAt);
+    const stillActive =
+      Number.isFinite(currentEndsMs) && currentEndsMs > Date.now();
+
+    if (
+      stillActive &&
+      Number.isFinite(desiredEndsMs) &&
+      desiredEndsMs > currentEndsMs + 60_000
+    ) {
+      const nowIso = new Date().toISOString();
+      const { error: extendError } = await supabase
+        .from("user_roles")
+        .update({
+          is_premium: true,
+          premium_trial_ends_at: desiredEndsAt,
+          updated_at: nowIso,
+        })
+        .eq("user_id", userId);
+
+      if (extendError) {
+        console.warn("[SMOAC trial] extend failed:", extendError.message);
+        return emptyGrantResult({
+          founding,
+          trialDays,
+          trialEndsAt: currentEndsAt,
+        });
+      }
+
+      await syncListingMembership(supabase, "premium", {
+        profileId: specialistProfileId,
+        userId,
+      });
+
+      return {
+        granted: false,
+        extended: true,
+        trialEndsAt: desiredEndsAt,
+        trialDays,
+        founding,
+      };
+    }
+
+    return emptyGrantResult({
+      founding,
+      trialDays,
+      trialEndsAt: currentEndsAt,
+    });
   }
 
   const startedAt = new Date().toISOString();
-  const endsAt = addDays(startedAt, PREMIUM_TRIAL_DAYS);
+  const endsAt = addDays(startedAt, trialDays);
 
   const { error: updateError } = await supabase
     .from("user_roles")
@@ -99,7 +254,7 @@ export async function grantSpecialistPremiumTrialIfNeeded(
 
   if (updateError) {
     console.warn("[SMOAC trial] grant failed:", updateError.message);
-    return { granted: false, trialEndsAt: null };
+    return emptyGrantResult({ founding, trialDays });
   }
 
   await syncListingMembership(supabase, "premium", {
@@ -107,7 +262,13 @@ export async function grantSpecialistPremiumTrialIfNeeded(
     userId,
   });
 
-  return { granted: true, trialEndsAt: endsAt };
+  return {
+    granted: true,
+    extended: false,
+    trialEndsAt: endsAt,
+    trialDays,
+    founding,
+  };
 }
 
 async function syncListingMembership(

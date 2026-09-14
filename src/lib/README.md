@@ -24,6 +24,7 @@ Logical grouping for navigation (files stay at current paths until a dedicated m
 - `specialist-dashboard-analytics.ts`, `specialist-dashboard-stats.ts`, `specialist-dashboard-subscription.ts`
 - `specialist-premium.ts`
 - `specialist-profile-welcome.ts` — every specialist login → incomplete tasks + membership/trial/boost prompt
+- `inquiry/specialist-welcome-inquiry.ts` — one-time SMOAC Team welcome thread in Inquiries (new specialists)
 
 ## Specialist profile edit
 

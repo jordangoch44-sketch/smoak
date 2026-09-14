@@ -51,13 +51,16 @@ export function buildSpecialistBillingRecord(input: {
   sponsored?: boolean;
   topRanked?: boolean;
   membershipPlan?: string | null;
+  premiumTrialActive?: boolean;
 }): SpecialistBillingRecord {
   const tier = resolveTier(
     input.isPremium,
     input.featured,
     input.membershipPlan
   );
+  const isTrialing = Boolean(input.premiumTrialActive) && tier !== "platinum";
   const tierMeta = SPECIALIST_TIER_CATALOG[tier];
+  const tierMonthlyCents = isTrialing ? 0 : tierMeta.monthlyCents;
   const addOnIds = resolveAddOnIdsFromFlags(input);
   const activeAddOns = buildAddOns(addOnIds);
   const addOnMonthlyCents = activeAddOns.reduce(
@@ -69,11 +72,12 @@ export function buildSpecialistBillingRecord(input: {
     specialistId: input.specialistId,
     specialistName: input.specialistName,
     tier,
-    tierLabel: tierMeta.label,
-    tierMonthlyCents: tierMeta.monthlyCents,
+    tierLabel: isTrialing ? "Pro Trial" : tierMeta.label,
+    tierMonthlyCents,
     activeAddOns,
     addOnMonthlyCents,
-    totalMonthlyCents: tierMeta.monthlyCents + addOnMonthlyCents,
+    totalMonthlyCents: tierMonthlyCents + addOnMonthlyCents,
+    isTrialing,
   };
 }
 
@@ -85,6 +89,7 @@ type SpecialistBillingRowInput = {
   sponsored?: boolean;
   topRanked?: boolean;
   membershipPlan?: string | null;
+  premiumTrialActive?: boolean;
 };
 
 export function listSpecialistBillingFromRows(
@@ -100,6 +105,7 @@ export function listSpecialistBillingFromRows(
         sponsored: row.sponsored,
         topRanked: row.topRanked,
         membershipPlan: row.membershipPlan,
+        premiumTrialActive: row.premiumTrialActive,
       })
     )
     .sort((a, b) => b.totalMonthlyCents - a.totalMonthlyCents);
@@ -137,7 +143,7 @@ export function getAdminOwnerRevenueDashboard(
   const key = specialistRows
     .map(
       (r) =>
-        `${r.id}:${r.isPremium}:${r.featured}:${Boolean(r.sponsored)}:${Boolean(r.topRanked)}:${r.membershipPlan ?? ""}`
+        `${r.id}:${r.isPremium}:${r.featured}:${Boolean(r.sponsored)}:${Boolean(r.topRanked)}:${r.membershipPlan ?? ""}:${Boolean(r.premiumTrialActive)}`
     )
     .join("|");
   const cached = OWNER_REVENUE_CACHE.get(key);

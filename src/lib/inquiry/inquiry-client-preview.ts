@@ -8,6 +8,10 @@ import {
   resolvePricePreset,
 } from "@/lib/profiles/client-profile-form";
 import { resolveAvatarUrlFromProfile } from "@/lib/profiles/profile-avatar";
+import {
+  isDemoInquiryConversationId,
+  isSmoacWelcomeConversationId,
+} from "@/lib/inquiry/inquiry-paths";
 import type { ProfileRow } from "@/types/database";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 
@@ -178,6 +182,9 @@ export async function hideSpecialistInquiryConversation(
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const id = conversationId.trim();
   if (!id) return { ok: false, message: "Conversation not found." };
+  if (isDemoInquiryConversationId(id) || isSmoacWelcomeConversationId(id)) {
+    return { ok: true };
+  }
   try {
     const response = await fetch("/api/inquiry/hide", {
       method: "POST",

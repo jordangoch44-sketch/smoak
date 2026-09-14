@@ -1,3 +1,8 @@
+import {
+  emailBrandInlineAttachments,
+  rewriteEmailBrandImagesToCid,
+} from "@/lib/email/email-inline-images";
+
 export interface OutboundEmail {
   to: string;
   subject: string;
@@ -42,7 +47,12 @@ export async function sendOutboundEmail(
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from =
     process.env.EMAIL_FROM?.trim() || "SMOAC <onboarding@resend.dev>";
-  const html = payload.html?.trim() || undefined;
+  const rawHtml = payload.html?.trim() || undefined;
+  const html = rawHtml ? rewriteEmailBrandImagesToCid(rawHtml) : undefined;
+  const brandAttachments =
+    html && /cid:smoac-(?:mark|wordmark)/i.test(html)
+      ? emailBrandInlineAttachments()
+      : [];
   const replyTo = payload.replyTo?.trim().toLowerCase() || undefined;
 
   if (apiKey) {
@@ -59,6 +69,9 @@ export async function sendOutboundEmail(
           subject: payload.subject,
           text: payload.text,
           ...(html ? { html } : {}),
+          ...(brandAttachments.length > 0
+            ? { attachments: brandAttachments }
+            : {}),
           ...(replyTo ? { reply_to: replyTo } : {}),
           ...(payload.tags && payload.tags.length > 0
             ? { tags: payload.tags }

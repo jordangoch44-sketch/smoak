@@ -17,3 +17,7 @@ export function inquiryThreadHref(
 export function isDemoInquiryConversationId(id: string): boolean {
   return id.startsWith("lead-");
 }
+
+export function isSmoacWelcomeConversationId(id: string): boolean {
+  return id.startsWith("smoac-welcome-");
+}

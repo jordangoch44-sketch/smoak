@@ -311,7 +311,7 @@ export async function activateSpecialistFromApplicationAsync(
     );
   }
 
-  /* Go live → one-time 30-day Pro trial (idempotent; skips if already used). */
+  /* Go live → one-time Pro trial (30 days, or 60 for Founding 100). */
   const userId = approved.userId?.trim() || "";
   if (userId && typeof window !== "undefined") {
     try {

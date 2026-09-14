@@ -32,7 +32,9 @@ export function AdminSpecialistsTierNav({
             type="button"
             role="tab"
             aria-selected={isActive}
-            className={`admin-tier-card${isActive ? " admin-tier-card--active" : ""}`}
+            className={`admin-tier-card${isActive ? " admin-tier-card--active" : ""}${
+              category.id === "trial" ? " admin-tier-card--trial" : ""
+            }`}
             onClick={() => onSelect(category.id)}
           >
             <span className="admin-tier-card__count">{count}</span>

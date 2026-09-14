@@ -1413,6 +1413,21 @@
   border-color: rgba(var(--aurora-lavender-rgb), 0.35);
 }
 
+.admin-chip--trial {
+  color: #ede9fe;
+  background: rgba(139, 92, 246, 0.28);
+  border-color: rgba(167, 139, 250, 0.55);
+  box-shadow: 0 0 16px rgba(139, 92, 246, 0.28);
+}
+
+.admin-entity-card__head-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
 .admin-entity-card__actions,
 .admin-card__actions {
   display: flex;
@@ -2944,8 +2959,14 @@
 
 @media (min-width: 640px) {
   .admin-tier-nav {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
+  }
+}
+
+@media (min-width: 960px) {
+  .admin-tier-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
@@ -2992,6 +3013,15 @@
   box-shadow:
     0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.3),
     0 8px 28px rgba(var(--aurora-violet-rgb), 0.18);
+}
+
+.admin-tier-card--trial:not(.admin-tier-card--active) {
+  border-color: rgba(167, 139, 250, 0.28);
+  background: linear-gradient(
+    180deg,
+    rgba(139, 92, 246, 0.12) 0%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
 }
 
 .admin-tier-card--static {
@@ -6029,6 +6059,356 @@ button.admin-email-tool:disabled {
 
   .admin-email-hero__callout {
     white-space: normal;
+  }
+}
+
+/* ==========================================================================
+   ADMIN APP SHELL — centered column, not edge-to-edge on desktop
+   ========================================================================== */
+
+.admin-apple-layout {
+  --admin-shell-max: 80rem;
+  --admin-shell-gutter: 1.25rem;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  background-color: #0b0b0f;
+  color: #ececec;
+  font-family: var(--font-inter, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 768px) {
+  .admin-apple-layout {
+    --admin-shell-gutter: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-apple-layout {
+    --admin-shell-max: 80rem;
+    --admin-shell-gutter: 2.5rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  .admin-apple-layout {
+    --admin-shell-max: 88rem;
+    --admin-shell-gutter: 3rem;
+  }
+}
+
+.admin-apple-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(11, 11, 15, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@supports (backdrop-filter: blur(20px)) {
+  .admin-apple-topbar {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+
+.admin-apple-topbar__inner,
+.admin-apple-topbar__nav-inner,
+.admin-apple-main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--admin-shell-max);
+  min-width: 0;
+  margin-inline: auto;
+  padding-inline: max(var(--admin-shell-gutter), env(safe-area-inset-left, 0px))
+    max(var(--admin-shell-gutter), env(safe-area-inset-right, 0px));
+}
+
+.admin-apple-topbar__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.admin-apple-topbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.admin-apple-topbar__logo {
+  display: flex;
+  align-items: center;
+}
+
+.admin-apple-topbar__wordmark {
+  height: 22px !important;
+  width: auto !important;
+  object-fit: contain;
+  filter: brightness(1.1);
+}
+
+.admin-apple-topbar__status {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (min-width: 720px) {
+  .admin-apple-topbar__status {
+    display: flex;
+  }
+}
+
+.admin-apple-topbar__pulse-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  background: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.7);
+  animation: adminStatusDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes adminStatusDotPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-apple-topbar__pulse-dot,
+  .admin-exec-overview__live-dot {
+    animation: none;
+  }
+}
+
+.admin-apple-topbar__status-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
+.admin-apple-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.admin-apple-topbar__refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #a1a1aa;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.admin-apple-topbar__refresh-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.admin-apple-topbar__refresh-icon {
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.admin-apple-topbar__user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-apple-topbar__user-text {
+  display: none;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+}
+
+@media (min-width: 900px) {
+  .admin-apple-topbar__user-text {
+    display: flex;
+  }
+}
+
+.admin-apple-topbar__user-name {
+  font-size: 0.78125rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.admin-apple-topbar__user-role {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: #a1a1aa;
+  text-transform: uppercase;
+}
+
+.admin-apple-topbar__user-avatar {
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+  color: #ffffff;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
+}
+
+.admin-apple-topbar__signout-btn {
+  padding: 0.4rem 0.85rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #a1a1aa;
+  font-size: 0.78125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.admin-apple-topbar__signout-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.admin-apple-topbar__nav-bar {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(11, 11, 15, 0.6);
+}
+
+.admin-apple-topbar__nav-inner {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Tabs live in the sticky header — drop the old full-bleed pill shell */
+.admin-apple-layout .admin-nav {
+  position: static;
+  top: auto;
+  z-index: auto;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+.admin-apple-layout .admin-nav__scroll {
+  gap: 0.15rem;
+  padding: 0;
+}
+
+.admin-apple-layout .admin-nav__link {
+  min-height: 2.75rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: #71717a;
+}
+
+.admin-apple-layout .admin-nav__link:hover {
+  color: #e4e4e7;
+  background: transparent;
+}
+
+.admin-apple-layout .admin-nav__link--active {
+  color: #ffffff;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.admin-apple-layout .admin-nav__indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 2.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #8b5cf6 0%, #a855f7 100%);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.75);
+}
+
+.admin-apple-layout .admin-nav__badge {
+  position: static;
+  min-width: 1.05rem;
+  height: 1.05rem;
+  margin-left: 0.15rem;
+  box-shadow: none;
+}
+
+.admin-apple-main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-top: 1.5rem;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .admin-apple-main {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .admin-apple-layout .admin-nav {
+    top: auto;
+    border-radius: 0;
+  }
+
+  .admin-apple-layout .admin-nav__scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+@media (min-width: 1600px) {
+  .admin-apple-main {
+    padding-top: 2.25rem;
   }
 }
 

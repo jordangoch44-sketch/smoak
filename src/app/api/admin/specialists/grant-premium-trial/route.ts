@@ -10,8 +10,9 @@ interface Body {
 }
 
 /**
- * Admin: start the one-time 30-day Pro trial when a specialist goes live.
- * Idempotent — skips if they already claimed/started a trial.
+ * Admin: start the one-time Pro trial when a specialist goes live.
+ * Founding 100 get 60 days; everyone else gets 30. Idempotent — skips if
+ * already claimed, and extends an active shorter founding trial to 60 days.
  */
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -81,11 +82,16 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     granted: result.granted,
+    extended: result.extended,
+    founding: result.founding,
+    trialDays: result.trialDays,
     trialEndsAt: result.trialEndsAt,
     message: result.granted
-      ? "Pro trial started for 30 days."
-      : result.trialEndsAt
-        ? "Pro trial already started previously."
-        : "Could not start Pro trial (check specialist role).",
+      ? `Pro trial started for ${result.trialDays} days.`
+      : result.extended
+        ? `Pro trial extended to ${result.trialDays} days.`
+        : result.trialEndsAt
+          ? "Pro trial already started previously."
+          : "Could not start Pro trial (check specialist role).",
   });
 }

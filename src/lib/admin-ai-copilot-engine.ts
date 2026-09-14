@@ -114,7 +114,7 @@ export function generateCopilotTelemetryResponse(
   ) {
     let reply = `### Marketplace Growth Strategy\n\n`;
     reply += `With **${specialistsTotal} active specialists**, **${clientsTotal} clients**, and **${uniqueVisitors.toLocaleString()} weekly visitors**, here are your highest-leverage growth actions:\n\n`;
-    reply += `1. **Founding 100 Campaign**: Invite elite regional trainers via \`/founding-100\` with complimentary 30-day Pro Badges to rapidly deepen local catalog density.\n`;
+    reply += `1. **Founding 100 Campaign**: Invite elite regional trainers via \`/founding-100\` with complimentary 60-day Pro trials to rapidly deepen local catalog density.\n`;
     if (topSource && topSource !== "Direct") {
       reply += `2. **Channel Amplification**: ${topSource} drives **${topSourceShare}%** of your traffic. Distribute specialist results spotlights directly on this channel.\n`;
     } else {
@@ -154,9 +154,9 @@ export function generateCopilotTelemetryResponse(
     reply += `- **Roster**: **${specialistsTotal} approved specialists** on platform.\n\n`;
     reply += `**Recommended Revenue Action**:\n`;
     if (paidCount === 0 && specialistsTotal > 0) {
-      reply += `Offer a 14-day Pro trial ($9.99/mo) to your top 3 most-viewed specialists to initiate recurring software subscription revenue.\n`;
+      reply += `Offer a 14-day Pro trial ($19.99/mo) to your top 3 most-viewed specialists to initiate recurring software subscription revenue.\n`;
     } else {
-      reply += `Encourage specialists with high inquiry volume to upgrade to PRO+ ($19.99/mo) for analytics plus Featured homepage spotlight.\n`;
+      reply += `Encourage specialists with high inquiry volume to upgrade to PRO+ ($29.99/mo) for analytics plus Featured homepage spotlight.\n`;
     }
 
     return {

@@ -9,8 +9,8 @@ export const SPECIALIST_TIER_CATALOG: Record<
   { label: string; monthlyCents: number }
 > = {
   free: { label: "Free", monthlyCents: 0 },
-  premium: { label: "Pro", monthlyCents: 999 },
-  platinum: { label: "PRO+", monthlyCents: 1999 },
+  premium: { label: "Pro", monthlyCents: 1999 },
+  platinum: { label: "PRO+", monthlyCents: 2999 },
 };
 
 /** Paid ad add-ons (monthly, USD cents) */

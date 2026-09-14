@@ -24,6 +24,8 @@ export interface SpecialistBillingRecord {
   tier: SpecialistBillingTier;
   tierLabel: string;
   tierMonthlyCents: number;
+  /** Complimentary Pro trial — not Stripe MRR. */
+  isTrialing: boolean;
   activeAddOns: readonly SpecialistAdAddOn[];
   addOnMonthlyCents: number;
   totalMonthlyCents: number;

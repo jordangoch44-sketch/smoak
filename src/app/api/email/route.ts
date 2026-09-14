@@ -57,6 +57,12 @@ export async function POST(request: Request) {
     );
     void dispatchAfterSignupCatalogEmail({ to, audience: "specialist" });
   }
+  if (result.success && kind === "approval_specialist") {
+    const { dispatchAfterApprovalCatalogEmail } = await import(
+      "@/lib/admin-email-send"
+    );
+    void dispatchAfterApprovalCatalogEmail({ to });
+  }
   return NextResponse.json(
     { success: result.success, mode: result.mode, providerId: result.providerId },
     { status: result.success ? 200 : 502 }

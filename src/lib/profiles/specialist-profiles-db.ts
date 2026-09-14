@@ -27,6 +27,8 @@ import {
   parseMembershipPlan,
   type SpecialistMembershipPlan,
 } from "@/lib/specialist-premium";
+import { isAdminOverrideActive } from "@/lib/admin-plan-override";
+import type { ComplimentaryProTrialSignals } from "@/lib/specialist-premium-trial";
 import { hydrateTrainerPublicSlugs } from "@/lib/trainer-profile-path";
 import {
   applyCampaignExpiryToTrainerFlags,
@@ -1057,7 +1059,85 @@ export type AdminSpecialistDirectoryEntry = {
   status: SpecialistProfileRow["status"];
   /** Account / application email when resolvable (admin roster). */
   email: string | null;
+  trial: ComplimentaryProTrialSignals | null;
 };
+
+async function fetchAdminTrialSignalsByUserIds(
+  supabase: SupabaseClient,
+  userIds: string[]
+): Promise<Map<string, ComplimentaryProTrialSignals>> {
+  const unique = [...new Set(userIds.map((id) => id.trim()).filter(Boolean))];
+  const map = new Map<string, ComplimentaryProTrialSignals>();
+  if (unique.length === 0) return map;
+
+  const rolesPromise = supabase
+    .from("user_roles")
+    .select("user_id, premium_trial_ends_at")
+    .in("user_id", unique);
+
+  type BillingTrialRow = {
+    user_id: string;
+    status?: string | null;
+    admin_override_plan?: string | null;
+    admin_override_ends_at?: string | null;
+  };
+
+  const billingWithOverride = await supabase
+    .from("specialist_billing")
+    .select("user_id, status, admin_override_plan, admin_override_ends_at")
+    .in("user_id", unique);
+
+  let billingRows: BillingTrialRow[] = [];
+  if (billingWithOverride.error) {
+    const billingFallback = await supabase
+      .from("specialist_billing")
+      .select("user_id, status")
+      .in("user_id", unique);
+    billingRows = (billingFallback.data ?? []) as BillingTrialRow[];
+  } else {
+    billingRows = (billingWithOverride.data ?? []) as BillingTrialRow[];
+  }
+
+  const { data: roles } = await rolesPromise;
+
+  const billingByUser = new Map<string, BillingTrialRow>();
+  for (const row of billingRows) {
+    billingByUser.set(row.user_id, row);
+  }
+
+  const userIdsFromRoles = new Set<string>();
+  for (const row of (roles ?? []) as Array<{
+    user_id: string;
+    premium_trial_ends_at?: string | null;
+  }>) {
+    userIdsFromRoles.add(row.user_id);
+    const billing = billingByUser.get(row.user_id);
+    const status = String(billing?.status ?? "");
+    const overridePlan = billing?.admin_override_plan ?? null;
+    map.set(row.user_id, {
+      trialEndsAt: row.premium_trial_ends_at ?? null,
+      isPaid: status === "active" || status === "trialing",
+      adminOverrideActive:
+        overridePlan !== "free" &&
+        isAdminOverrideActive(overridePlan, billing?.admin_override_ends_at),
+    });
+  }
+
+  for (const [userId, billing] of billingByUser) {
+    if (userIdsFromRoles.has(userId)) continue;
+    const status = String(billing.status ?? "");
+    const overridePlan = billing.admin_override_plan ?? null;
+    map.set(userId, {
+      trialEndsAt: null,
+      isPaid: status === "active" || status === "trialing",
+      adminOverrideActive:
+        overridePlan !== "free" &&
+        isAdminOverrideActive(overridePlan, billing.admin_override_ends_at),
+    });
+  }
+
+  return map;
+}
 
 async function fetchEmailsByUserIds(
   supabase: SupabaseClient,
@@ -1130,10 +1210,12 @@ export async function fetchAdminSpecialistDirectory(
     .map((row) => row.application_id)
     .filter((id): id is string => Boolean(id));
 
-  const [emailsByUserId, emailsByApplicationId] = await Promise.all([
-    fetchEmailsByUserIds(supabase, userIds),
-    fetchEmailsByApplicationIds(supabase, applicationIds),
-  ]);
+  const [emailsByUserId, emailsByApplicationId, trialByUserId] =
+    await Promise.all([
+      fetchEmailsByUserIds(supabase, userIds),
+      fetchEmailsByApplicationIds(supabase, applicationIds),
+      fetchAdminTrialSignalsByUserIds(supabase, userIds),
+    ]);
 
   const entries: AdminSpecialistDirectoryEntry[] = [];
   for (const row of rows) {
@@ -1147,6 +1229,7 @@ export async function fetchAdminSpecialistDirectory(
       trainer: parsed.trainer,
       status: row.status,
       email: fromProfile || fromApplication || null,
+      trial: (row.user_id && trialByUserId.get(row.user_id)) || null,
     });
   }
   return { ok: true, entries };

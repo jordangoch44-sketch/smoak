@@ -5,6 +5,7 @@ import {
   requireSpecialistBillingContext,
   saveDefaultPaymentMethod,
   setSubscriptionCancelAtPeriodEnd,
+  syncManageBillingFromStripe,
 } from "@/lib/stripe/manage-billing";
 
 export const runtime = "nodejs";
@@ -77,6 +78,11 @@ export async function POST(request: Request) {
           { status: result.status }
         );
       }
+      return NextResponse.json(await jsonBilling());
+    }
+
+    if (body.action === "sync") {
+      await syncManageBillingFromStripe(ctx);
       return NextResponse.json(await jsonBilling());
     }
 

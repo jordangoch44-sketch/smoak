@@ -11,13 +11,21 @@ import {
 } from "@/lib/auth/marketplace-auth";
 import { resolveSpecialistListingAvatar } from "@/lib/inquiry/inquiry-avatars";
 import { displayInquiryMessageBody } from "@/lib/inquiry/inquiry-message-body";
-import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
+import {
+  isDemoInquiryConversationId,
+  isSmoacWelcomeConversationId,
+} from "@/lib/inquiry/inquiry-paths";
 import {
   getLocalInquiryRecord,
   listLocalInquiriesForClient,
   listLocalInquiriesForSpecialist,
   markLocalInquiryRead,
+  findLocalWelcomeInquiry,
 } from "@/lib/inquiry/inquiry-local-store";
+import {
+  isSmoacWelcomeConversation,
+  smoacWelcomeAvatarUrl,
+} from "@/lib/inquiry/specialist-welcome-inquiry";
 import {
   labelForInquiryAction,
   isInquiryActionId,
@@ -92,7 +100,9 @@ function conversationToLead(
     topicLabels: topics,
     messagePreview,
     messageBody: displayInquiryMessageBody(body),
-    avatarUrl: conversation.client_avatar_url?.trim() ?? "",
+    avatarUrl: isSmoacWelcomeConversation(conversation)
+      ? smoacWelcomeAvatarUrl(conversation.client_avatar_url)
+      : conversation.client_avatar_url?.trim() ?? "",
     clientUserId: conversation.client_user_id?.trim() ?? "",
   };
 }
@@ -295,7 +305,11 @@ export async function loadInquiryThread(
   }
 
   const supabase = getMarketplaceAuthClient();
-  if (!supabase) return null;
+  if (!supabase) {
+    const record = getLocalInquiryRecord(conversationId);
+    if (!record) return null;
+    return threadFromRecord(record.conversation, record.messages, true);
+  }
 
   const { data: conversation, error } = await supabase
     .from("inquiry_conversations")
@@ -303,7 +317,11 @@ export async function loadInquiryThread(
     .eq("id", conversationId)
     .maybeSingle();
 
-  if (error || !conversation) return null;
+  if (error || !conversation) {
+    const record = getLocalInquiryRecord(conversationId);
+    if (!record) return null;
+    return threadFromRecord(record.conversation, record.messages, true);
+  }
 
   const { data: messages } = await supabase
     .from("inquiry_messages")
@@ -348,7 +366,7 @@ export async function loadSpecialistInquiryLeads(
   if (!supabase) return [];
   const hidden = new Set(listHiddenInquiryIds(specialistId));
   const rows = await fetchSpecialistConversations(supabase, specialistId);
-  return rows
+  const leads = rows
     .filter(({ conversation }) => !hidden.has(conversation.id))
     .map(({ conversation, unread, latestBody }) =>
       conversationToLead(conversation, {
@@ -356,6 +374,36 @@ export async function loadSpecialistInquiryLeads(
         latestBody,
       })
     );
+
+  const hasRemoteWelcome = rows.some(({ conversation }) =>
+    isSmoacWelcomeConversation(conversation)
+  );
+  if (!hasRemoteWelcome) {
+    const localWelcome = findLocalWelcomeInquiry(specialistId);
+    if (
+      localWelcome &&
+      !localWelcome.conversation.specialist_hidden_at &&
+      !hidden.has(localWelcome.conversation.id)
+    ) {
+      const latest = [...localWelcome.messages]
+        .reverse()
+        .find((m) => m.sender_role === "client");
+      leads.unshift(
+        conversationToLead(localWelcome.conversation, {
+          unread: applySpecialistUnreadFlags(
+            specialistId,
+            localWelcome.messages.some(
+              (m) => m.sender_role === "client" && !m.is_read
+            ),
+            localWelcome.conversation.id
+          ),
+          latestBody: latest?.body,
+        })
+      );
+    }
+  }
+
+  return leads;
 }
 
 export async function markInquiryThreadRead(
@@ -364,7 +412,11 @@ export async function markInquiryThreadRead(
 ): Promise<void> {
   const counterpart = readerRole === "client" ? "specialist" : "client";
 
-  if (!isMarketplaceSupabaseActive()) {
+  if (
+    !isMarketplaceSupabaseActive() ||
+    isDemoInquiryConversationId(conversationId) ||
+    isSmoacWelcomeConversationId(conversationId)
+  ) {
     markLocalInquiryRead(conversationId, readerRole);
     return;
   }

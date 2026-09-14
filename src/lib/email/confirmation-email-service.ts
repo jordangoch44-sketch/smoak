@@ -10,6 +10,7 @@ import { getSiteUrlForStripe } from "@/lib/stripe/config";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { CLIENT_DASHBOARD_PATH, LOGIN_PATH } from "@/lib/auth-routes";
 import { CLIENT_WELCOME_EMAIL_SENT_PREFIX } from "@/lib/dev-storage-keys";
+import { FOUNDING_PREMIUM_TRIAL_DAYS } from "@/lib/founding-50-invite";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 export interface ConfirmationEmailPayload {
@@ -97,10 +98,16 @@ function buildSpecialistApprovalEmail(
       slug: application.slug,
     })
   );
+  const isFounding = Boolean(
+    application.foundingInvite || application.foundingInviteCode?.trim()
+  );
+  const foundingLine = isFounding
+    ? `As a Founding 100 specialist, you have ${FOUNDING_PREMIUM_TRIAL_DAYS} days of complimentary SMOAC Pro — no card required.`
+    : "";
   const text = `Hi ${firstName},
 
 Great news — your SMOAC specialist account is approved and your profile is live on Marketplace.
-
+${foundingLine ? `\n${foundingLine}\n` : ""}
 Add your link to your Instagram bio:
 Your personal landing page is live. Share this link on your Instagram bio, TikTok, or website so clients can view your verified credentials and book you directly:
 ${profileUrl}
@@ -124,11 +131,14 @@ The SMOAC team`;
     viewPageLabel: "View Your Live Page",
   });
 
+  const introParagraphs = [
+    `Hi ${firstName},`,
+    "Your specialist account is approved and your profile is live on Marketplace for clients to discover.",
+    ...(foundingLine ? [foundingLine] : []),
+  ];
+
   const bodyHtml = [
-    renderEmailParagraphs([
-      `Hi ${firstName},`,
-      "Your specialist account is approved and your profile is live on Marketplace for clients to discover.",
-    ]),
+    renderEmailParagraphs(introParagraphs),
     bioLinkBubbleHtml,
     renderEmailParagraphs([
       "Log in with the email and password you used to apply. Choose Continue as Specialist, then use Edit profile anytime to deepen availability, photos, credentials, and coaching details.",
@@ -216,24 +226,13 @@ export async function sendSpecialistApplicationConfirmationEmail(
 ): Promise<ConfirmationEmailResult> {
   try {
     const payload = buildSpecialistConfirmationEmail(application);
-    const result = await dispatchTransactionalEmail({
+    return await dispatchTransactionalEmail({
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
       html: payload.html,
       kind: "confirmation_specialist",
     });
-    if (typeof window === "undefined" && result.success) {
-      const { dispatchAfterSignupCatalogEmail } = await import(
-        "@/lib/admin-email-send"
-      );
-      void dispatchAfterSignupCatalogEmail({
-        to: payload.to,
-        firstName: specialistFirstName(application),
-        audience: "specialist",
-      });
-    }
-    return result;
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist confirmation email failed", error);
     return { success: false };
@@ -246,23 +245,13 @@ export async function sendSpecialistApplicationApprovedEmail(
 ): Promise<ConfirmationEmailResult> {
   try {
     const payload = buildSpecialistApprovalEmail(application);
-    const result = await dispatchTransactionalEmail({
+    return await dispatchTransactionalEmail({
       to: payload.to,
       subject: payload.subject,
       text: payload.text,
       html: payload.html,
       kind: "approval_specialist",
     });
-    if (typeof window === "undefined" && result.success) {
-      const { dispatchAfterApprovalCatalogEmail } = await import(
-        "@/lib/admin-email-send"
-      );
-      void dispatchAfterApprovalCatalogEmail({
-        to: payload.to,
-        firstName: specialistFirstName(application),
-      });
-    }
-    return result;
   } catch (error) {
     console.warn("[SMOAC EMAIL] Specialist approval email failed", error);
     return { success: false };
@@ -383,16 +372,6 @@ export async function sendClientWelcomeEmail(
     });
     if (result.success) {
       markClientWelcomeSent(to);
-      if (typeof window === "undefined") {
-        const { dispatchAfterSignupCatalogEmail } = await import(
-          "@/lib/admin-email-send"
-        );
-        void dispatchAfterSignupCatalogEmail({
-          to,
-          firstName: input.firstName,
-          audience: "client",
-        });
-      }
     }
     return result;
   } catch (error) {

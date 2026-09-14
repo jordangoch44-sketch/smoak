@@ -40,6 +40,10 @@ import {
 import { saveTrainerProfileOverrides } from "@/lib/specialist-profile-store";
 import { parseTravelRadiusMiles } from "@/lib/specialist-service-area";
 import {
+  complimentaryProTrialDaysRemaining,
+  isComplimentaryProTrialActive,
+} from "@/lib/specialist-premium-trial";
+import {
   getSpecialistApplicationById,
   listSpecialistApplications,
 } from "@/lib/specialist-application-storage";
@@ -65,6 +69,10 @@ export interface AdminSpecialistRow {
   topRanked: boolean;
   isPremium: boolean;
   membershipPlan?: "free" | "premium" | "platinum";
+  /** Complimentary Pro trial currently active. */
+  premiumTrialActive: boolean;
+  premiumTrialEndsAt: string | null;
+  premiumTrialDaysRemaining: number | null;
   isProtected: boolean;
   accountKind: "real" | "test";
   inSeedCatalog: boolean;
@@ -84,7 +92,7 @@ function directorySignature(
     .sort()
     .map(
       (id) =>
-        `${id}:${map[id]?.status}:${map[id]?.trainer.name}:${map[id]?.trainer.featured}:${map[id]?.trainer.sponsored}:${map[id]?.trainer.topRanked}:${map[id]?.trainer.isPremium}:${map[id]?.trainer.membershipPlan ?? ""}:${map[id]?.email ?? ""}`
+        `${id}:${map[id]?.status}:${map[id]?.trainer.name}:${map[id]?.trainer.featured}:${map[id]?.trainer.sponsored}:${map[id]?.trainer.topRanked}:${map[id]?.trainer.isPremium}:${map[id]?.trainer.membershipPlan ?? ""}:${map[id]?.email ?? ""}:${map[id]?.trial?.trialEndsAt ?? ""}:${map[id]?.trial?.isPaid ?? ""}:${map[id]?.trial?.adminOverrideActive ?? ""}`
     )
     .join("|");
 }
@@ -171,6 +179,26 @@ function statusToVisibility(
   return null;
 }
 
+function trialFieldsFromDirectory(
+  id: string,
+  membershipPlan?: string | null
+): {
+  premiumTrialActive: boolean;
+  premiumTrialEndsAt: string | null;
+  premiumTrialDaysRemaining: number | null;
+} {
+  const trial = directoryById[id]?.trial ?? null;
+  const premiumTrialActive =
+    membershipPlan !== "platinum" && isComplimentaryProTrialActive(trial);
+  return {
+    premiumTrialActive,
+    premiumTrialEndsAt: trial?.trialEndsAt ?? null,
+    premiumTrialDaysRemaining: premiumTrialActive
+      ? complimentaryProTrialDaysRemaining(trial)
+      : null,
+  };
+}
+
 function applicationAsTrainerRow(
   id: string,
   visibility: AdminSpecialistVisibility
@@ -180,6 +208,11 @@ function applicationAsTrainerRow(
   const meta = getAdminSpecialistMeta(id);
   const approved = getApprovedSpecialistProfileById(id);
   const directory = directoryById[id]?.trainer;
+  const membershipPlan =
+    meta.membershipPlan ??
+    approved?.membershipPlan ??
+    directory?.membershipPlan ??
+    "free";
   return {
     id,
     name: app.displayName.trim() || app.fullName.trim() || id,
@@ -202,11 +235,8 @@ function applicationAsTrainerRow(
       typeof meta.isPremium === "boolean"
         ? meta.isPremium
         : (approved?.isPremium ?? directory?.isPremium ?? false),
-    membershipPlan:
-      meta.membershipPlan ??
-      approved?.membershipPlan ??
-      directory?.membershipPlan ??
-      "free",
+    membershipPlan,
+    ...trialFieldsFromDirectory(id, membershipPlan),
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? "test",
     inSeedCatalog: false,
@@ -224,6 +254,10 @@ function rowFromTrainer(
   directoryEmail?: string | null
 ): AdminSpecialistRow {
   const meta = getAdminSpecialistMeta(trainer.id);
+  const membershipPlan =
+    meta.membershipPlan ??
+    trainer.membershipPlan ??
+    (trainer.isPremium ? "premium" : "free");
   return {
     id: trainer.id,
     name: trainer.name,
@@ -244,10 +278,8 @@ function rowFromTrainer(
       typeof meta.isPremium === "boolean"
         ? meta.isPremium
         : Boolean(trainer.isPremium),
-    membershipPlan:
-      meta.membershipPlan ??
-      trainer.membershipPlan ??
-      (trainer.isPremium ? "premium" : "free"),
+    membershipPlan,
+    ...trialFieldsFromDirectory(trainer.id, membershipPlan),
     isProtected: meta.isProtected ?? false,
     accountKind: meta.accountKind ?? (inSeedCatalog ? "test" : "real"),
     inSeedCatalog,

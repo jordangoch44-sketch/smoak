@@ -3,7 +3,12 @@ import type { AdminSpecialistRow } from "@/lib/admin-specialists-service";
 import type { SpecialistBillingRecord } from "@/types/admin-specialist-billing";
 
 /** Owner Specialists subcategory — maps to Stripe tier + add-on products later */
-export type SpecialistTierCategory = "free" | "premium" | "platinum" | "addons";
+export type SpecialistTierCategory =
+  | "free"
+  | "trial"
+  | "premium"
+  | "platinum"
+  | "addons";
 
 export interface SpecialistTierCategoryMeta {
   id: SpecialistTierCategory;
@@ -22,17 +27,24 @@ export const SPECIALIST_TIER_CATEGORIES: readonly SpecialistTierCategoryMeta[] =
     description: "Free tier specialists",
   },
   {
+    id: "trial",
+    label: "Pro Trial",
+    tierLabel: "Pro Trial",
+    priceLabel: "Complimentary",
+    description: "Specialists on the complimentary Pro trial",
+  },
+  {
     id: "premium",
     label: "Pro",
     tierLabel: "Pro",
-    priceLabel: "$9.99/month",
+    priceLabel: "$19.99/month",
     description: "Pro tier specialists",
   },
   {
     id: "platinum",
     label: "PRO+",
     tierLabel: "PRO+",
-    priceLabel: "$19.99/month",
+    priceLabel: "$29.99/month",
     description: "PRO+ specialists",
   },
   {
@@ -45,13 +57,20 @@ export const SPECIALIST_TIER_CATEGORIES: readonly SpecialistTierCategoryMeta[] =
 ] as const;
 
 export function specialistMatchesTierCategory(
+  row: AdminSpecialistRow,
   billing: SpecialistBillingRecord | undefined,
   category: SpecialistTierCategory
 ): boolean {
-  if (!billing) return category === "free";
+  const onTrial = Boolean(row.premiumTrialActive || billing?.isTrialing);
+  if (category === "trial") return onTrial;
   if (category === "addons") {
-    return billing.activeAddOns.length > 0 && billing.addOnMonthlyCents > 0;
+    return Boolean(
+      billing && billing.activeAddOns.length > 0 && billing.addOnMonthlyCents > 0
+    );
   }
+  if (!billing) return category === "free" && !onTrial;
+  if (category === "premium") return billing.tier === "premium" && !onTrial;
+  if (category === "free") return billing.tier === "free" && !onTrial;
   return billing.tier === category;
 }
 
@@ -61,7 +80,7 @@ export function filterSpecialistsByTierCategory(
   category: SpecialistTierCategory
 ): AdminSpecialistRow[] {
   return specialists.filter((row) =>
-    specialistMatchesTierCategory(billingById.get(row.id), category)
+    specialistMatchesTierCategory(row, billingById.get(row.id), category)
   );
 }
 
@@ -70,11 +89,17 @@ export function countSpecialistsByTierCategory(
   billingById: ReadonlyMap<string, SpecialistBillingRecord>
 ): Record<SpecialistTierCategory, number> {
   return {
-    free: filterSpecialistsByTierCategory(specialists, billingById, "free").length,
+    free: filterSpecialistsByTierCategory(specialists, billingById, "free")
+      .length,
+    trial: filterSpecialistsByTierCategory(specialists, billingById, "trial")
+      .length,
     premium: filterSpecialistsByTierCategory(specialists, billingById, "premium")
       .length,
-    platinum: filterSpecialistsByTierCategory(specialists, billingById, "platinum")
-      .length,
+    platinum: filterSpecialistsByTierCategory(
+      specialists,
+      billingById,
+      "platinum"
+    ).length,
     addons: filterSpecialistsByTierCategory(specialists, billingById, "addons")
       .length,
   };
@@ -82,8 +107,8 @@ export function countSpecialistsByTierCategory(
 
 /** Display price for tier cards (catalog-backed, Stripe-ready) */
 export function tierCategoryPriceLabel(category: SpecialistTierCategory): string {
-  if (category === "addons") {
-    return SPECIALIST_TIER_CATEGORIES.find((c) => c.id === "addons")!.priceLabel;
+  if (category === "addons" || category === "trial") {
+    return SPECIALIST_TIER_CATEGORIES.find((c) => c.id === category)!.priceLabel;
   }
   const cents = SPECIALIST_TIER_CATALOG[category].monthlyCents;
   if (cents === 0) return "$0/month";

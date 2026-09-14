@@ -44,6 +44,7 @@ export type IgEditRowId =
   | "pricing"
   | "free-first-session"
   | "contact"
+  | "billing"
   | "gender"
   | "profile-style";
 
@@ -69,6 +70,7 @@ function IgEditRow({
   locked = false,
   lockPlan,
   action = false,
+  settings = false,
 }: {
   id?: string;
   sectionKey?: string;
@@ -80,6 +82,8 @@ function IgEditRow({
   locked?: boolean;
   lockPlan?: "Pro" | "PRO+";
   action?: boolean;
+  /** Account/settings row — no completeness badge. */
+  settings?: boolean;
 }) {
   const isEmpty = Boolean(
     value && (value === "Add" || value.startsWith("Add "))
@@ -93,6 +97,7 @@ function IgEditRow({
       className={cn(
         "smoac-control ig-profile-edit__row",
         action && "ig-profile-edit__row--action",
+        settings && "ig-profile-edit__row--settings",
         incomplete && !locked && "ig-profile-edit__row--incomplete",
         locked && "ig-profile-edit__row--locked",
         highlighted && "ig-profile-edit__row--highlighted"
@@ -107,7 +112,7 @@ function IgEditRow({
             <LockIcon className="ig-profile-edit__text-lock" />
           ) : null}
         </span>
-        {action || locked ? null : incomplete ? (
+        {action || settings || locked ? null : incomplete ? (
           <span
             className="ig-profile-edit__badge ig-profile-edit__badge--incomplete"
             title="Needs attention"
@@ -548,6 +553,15 @@ export function SpecialistIgStyleProfileEditor({
           incomplete={contactBits.length === 0}
           highlighted={isHighlighted("contact")}
           onClick={() => onEditSection("contact")}
+        />
+        <IgEditRow
+          id="ig-edit-row-billing"
+          sectionKey="billing"
+          label="Billing"
+          value={resolvedPlanLabel}
+          settings
+          highlighted={isHighlighted("billing")}
+          onClick={() => onEditSection("billing")}
         />
         {onSignOut ? (
           <IgEditRow

@@ -13,6 +13,7 @@ import {
   formatFounding50SpotsRemaining,
   persistFounding50InviteSession,
   FOUNDING_50_CAP,
+  FOUNDING_PREMIUM_TRIAL_DAYS,
 } from "@/lib/founding-50-invite";
 import type { Founding50InviteStatus } from "@/lib/founding-50-invite-server";
 import { cn } from "@/lib/utils";
@@ -130,8 +131,8 @@ export function Founding50InvitePage({
             <p className="founding-invite-page__lede founding-invite-page__lede--invite">
               You&apos;ve been invited to join the {FOUNDING_50_LABEL} on SMOAC —
               one of the first specialists on the marketplace. Apply now, and
-              when you go live you get the same complimentary month of Pro as
-              every specialist who joins.
+              when you go live you get {FOUNDING_PREMIUM_TRIAL_DAYS} days of
+              complimentary Pro — double the trial every other specialist gets.
             </p>
 
             <dl className="founding-invite-page__dossier">
@@ -161,7 +162,9 @@ export function Founding50InvitePage({
 
             <p className="founding-invite-page__fineprint">
               Accepting continues into specialist onboarding. Profiles go live
-              after admin review — same process as every specialist.
+              after admin review. {FOUNDING_50_LABEL} includes{" "}
+              {FOUNDING_PREMIUM_TRIAL_DAYS} days of complimentary Pro — no card
+              required.
             </p>
           </section>
         )}

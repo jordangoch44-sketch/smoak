@@ -15,6 +15,9 @@ export const FOUNDING_50_STORAGE_KEY = "smoac.founding-50-invite";
 
 export const FOUNDING_50_CAP = 100;
 
+/** Complimentary Pro trial days granted when a Founding 100 specialist goes live. */
+export const FOUNDING_PREMIUM_TRIAL_DAYS = 60;
+
 /** Marketplace launch — Dec 12, 2026, 10:00 AM Pacific (PST). */
 export const FOUNDING_LAUNCH_AT_MS = Date.parse("2026-12-12T10:00:00-08:00");
 

@@ -25,7 +25,7 @@ const CATALOG = [
     name: "SMOAC Pro",
     description:
       "Specialist premium analytics, ranking intelligence, and growth insights.",
-    unitAmount: 999,
+    unitAmount: 1999,
     env: "STRIPE_PRICE_PREMIUM",
     kind: "plan",
   },
@@ -33,7 +33,7 @@ const CATALOG = [
     key: "platinum",
     name: "SMOAC Pro Plus",
     description: "Everything in Pro, plus featured marketplace placement.",
-    unitAmount: 1999,
+    unitAmount: 2999,
     env: "STRIPE_PRICE_PLATINUM",
     kind: "plan",
   },

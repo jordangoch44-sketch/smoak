@@ -8,7 +8,7 @@ interface PremiumTrialEndedModalProps {
 }
 
 /**
- * Day-30 notice: complimentary Pro ended → free tier + option to continue at $9.99.
+ * Day-30 notice: complimentary Pro ended → free tier + option to continue at $19.99.
  */
 export function PremiumTrialEndedModal({
   open,

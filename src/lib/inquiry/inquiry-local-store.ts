@@ -192,3 +192,76 @@ export function hideLocalInquiryForSpecialist(conversationId: string): void {
   record.conversation.updated_at = new Date().toISOString();
   writeLocalAll(all);
 }
+
+const LOCAL_SMOAC_WELCOME_SOURCE = "smoac_welcome";
+const LOCAL_SMOAC_TEAM_USER_ID = "smoac-team";
+
+export function findLocalWelcomeInquiry(
+  specialistId: string
+): LocalInquiryRecord | undefined {
+  const id = specialistId.trim();
+  if (!id) return undefined;
+  return readLocalAll().find(
+    (row) =>
+      row.conversation.specialist_id === id &&
+      (row.conversation.source === LOCAL_SMOAC_WELCOME_SOURCE ||
+        row.conversation.id.startsWith("smoac-welcome-"))
+  );
+}
+
+export function saveLocalSmoacWelcomeInquiry(input: {
+  specialistId: string;
+  specialistName: string;
+  specialistUserId: string;
+  body: string;
+  avatarUrl: string;
+}): { conversationId: string; created: boolean } {
+  const existing = findLocalWelcomeInquiry(input.specialistId);
+  if (existing) {
+    return { conversationId: existing.conversation.id, created: false };
+  }
+
+  const now = new Date().toISOString();
+  const conversationId = `smoac-welcome-${input.specialistId.trim()}`;
+  const messageId =
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `local-msg-${Date.now()}`;
+
+  const record: LocalInquiryRecord = {
+    conversation: {
+      id: conversationId,
+      client_user_id: LOCAL_SMOAC_TEAM_USER_ID,
+      specialist_id: input.specialistId,
+      specialist_user_id: input.specialistUserId || null,
+      specialist_name: input.specialistName,
+      inquiry_action: "Welcome",
+      inquiry_topics: [],
+      source: LOCAL_SMOAC_WELCOME_SOURCE,
+      client_first_name: "SMOAC Team",
+      client_email: "support@smoac.com",
+      client_avatar_url: input.avatarUrl,
+      last_message_at: now,
+      created_at: now,
+      updated_at: now,
+    },
+    messages: [
+      {
+        id: messageId,
+        conversation_id: conversationId,
+        sender_user_id: LOCAL_SMOAC_TEAM_USER_ID,
+        sender_role: "client",
+        body: input.body,
+        inquiry_action: "Welcome",
+        inquiry_topics: [],
+        is_read: false,
+        created_at: now,
+      },
+    ],
+  };
+
+  const all = readLocalAll();
+  all.unshift(record);
+  writeLocalAll(all);
+  return { conversationId, created: true };
+}

@@ -2,12 +2,7 @@
  * Shared SMOAC transactional email chrome — dark graphite, silver type,
  * SMOAC Color spectrum accents. Table-based for email client compatibility.
  */
-import {
-  BRAND_NAME,
-  LOGO_SRC,
-  SMOAC_COLOR,
-  WORDMARK_SRC,
-} from "@/lib/brand";
+import { BRAND_NAME, SMOAC_COLOR } from "@/lib/brand";
 
 const COLORS = {
   page: "#050506",
@@ -42,19 +37,79 @@ export interface EmailDetailRow {
   imageUrl?: string;
 }
 
-export function emailSiteOrigin(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return window.location.origin;
+const EMAIL_PUBLIC_ORIGIN = "https://smoac.com";
+
+function isPrivateOrLocalHostname(hostname: string): boolean {
+  const host = hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  if (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "0.0.0.0" ||
+    host === "::1" ||
+    host === "::" ||
+    host.endsWith(".local")
+  ) {
+    return true;
   }
-  return "http://localhost:3000";
+  if (host.startsWith("192.168.") || host.startsWith("10.")) return true;
+  const match = /^172\.(\d+)\./.exec(host);
+  if (match) {
+    const second = Number(match[1]);
+    if (second >= 16 && second <= 31) return true;
+  }
+  return false;
+}
+
+function originIfPublicHttps(value: string | undefined): string | null {
+  const raw = value?.trim().replace(/\/$/, "") ?? "";
+  if (!raw) return null;
+  try {
+    const url = new URL(raw.includes("://") ? raw : `https://${raw}`);
+    if (url.protocol !== "https:") return null;
+    if (isPrivateOrLocalHostname(url.hostname)) return null;
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Public https origin for email links. Never localhost / LAN — those URLs
+ * break in Apple Mail Privacy Protection (fetched from Apple's servers).
+ */
+export function emailSiteOrigin(): string {
+  const fromEnv = originIfPublicHttps(process.env.NEXT_PUBLIC_SITE_URL);
+  if (fromEnv) return fromEnv;
+  const fromVercel = originIfPublicHttps(
+    process.env.VERCEL_PROJECT_PRODUCTION_URL
+  );
+  if (fromVercel) return fromVercel;
+  return EMAIL_PUBLIC_ORIGIN;
 }
 
 export function emailAbsoluteUrl(pathOrUrl: string): string {
   const raw = pathOrUrl.trim();
   if (!raw) return emailSiteOrigin();
-  if (/^(https?:|mailto:)/i.test(raw)) return raw;
+  if (/^mailto:/i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      if (url.protocol === "https:" && !isPrivateOrLocalHostname(url.hostname)) {
+        return raw;
+      }
+      return `${emailSiteOrigin()}${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      /* fall through */
+    }
+  }
+  const origin = emailSiteOrigin();
+  return `${origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
+}
+
+/** Hosted brand / icon files — always the public site, never the request host. */
+export function emailPublicAssetUrl(path: string): string {
+  const raw = path.trim();
+  if (/^https:\/\//i.test(raw)) return emailAbsoluteUrl(raw);
   const origin = emailSiteOrigin();
   return `${origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
@@ -84,7 +139,15 @@ function emailSafeImageUrl(value: string | undefined): string {
   const raw = value?.trim() ?? "";
   if (!raw || raw.toLowerCase().startsWith("data:")) return "";
   const absolute = /^https?:\/\//i.test(raw) ? raw : emailAbsoluteUrl(raw);
-  return /^https?:\/\//i.test(absolute) ? absolute : "";
+  try {
+    const url = new URL(absolute);
+    if (url.protocol !== "https:" || isPrivateOrLocalHostname(url.hostname)) {
+      return "";
+    }
+    return absolute;
+  } catch {
+    return "";
+  }
 }
 
 function renderEmailDetailValue(row: EmailDetailRow): string {
@@ -183,9 +246,9 @@ export function renderEmailBioLinkBubble(
   const displayUrl = escapeEmailHtml(
     profileUrl.replace(/^https?:\/\//i, "")
   );
-  const igIcon = emailAbsoluteUrl("/email/icon-instagram.png");
-  const tiktokIcon = emailAbsoluteUrl("/email/icon-tiktok.png");
-  const webIcon = emailAbsoluteUrl("/email/icon-website.png");
+  const igIcon = emailPublicAssetUrl("/email/icon-instagram.png");
+  const tiktokIcon = emailPublicAssetUrl("/email/icon-tiktok.png");
+  const webIcon = emailPublicAssetUrl("/email/icon-website.png");
 
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 22px;border-collapse:collapse;">
   <tr>
@@ -270,8 +333,8 @@ export function wrapTransactionalEmailHtml(
   options: WrapTransactionalEmailOptions
 ): string {
   const origin = emailSiteOrigin();
-  const logoUrl = emailAbsoluteUrl(LOGO_SRC);
-  const wordmarkUrl = emailAbsoluteUrl(WORDMARK_SRC);
+  const logoUrl = emailPublicAssetUrl("/smoac-mark.png");
+  const wordmarkUrl = emailPublicAssetUrl("/smoac-wordmark.png");
   const preheader = escapeEmailHtml(options.preheader ?? options.title);
   const eyebrow = options.eyebrow
     ? escapeEmailHtml(options.eyebrow)
