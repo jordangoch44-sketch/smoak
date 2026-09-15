@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { HomeBoostRibbon } from "@/components/home/HomeBoostRibbon";
@@ -9,6 +9,7 @@ import { useExploreTrainers } from "@/hooks/useExploreTrainers";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
+import { peekDesktopProfilePopup } from "@/lib/desktop-profile-popup";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
@@ -22,6 +23,7 @@ import { ExploreResults } from "./ExploreResults";
 import { ExploreResultsSheet } from "./ExploreResultsSheet";
 
 export function ExplorePageClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useMobileViewport(true);
   const isCompactLayout = useTabletViewport(true);
@@ -63,6 +65,12 @@ export function ExplorePageClient() {
     initialCatalog: trainers,
     catalogMode,
   });
+
+  useLayoutEffect(() => {
+    const href = peekDesktopProfilePopup();
+    if (!href) return;
+    router.push(href, { scroll: false });
+  }, [router]);
 
   const handlePendingSearchAreaChange = useCallback(
     (area: ExploreSearchArea | null) => {

@@ -1,4 +1,5 @@
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { openMarketplaceProfileSheet } from "@/lib/desktop-profile-popup";
 import { isModifiedNavActivation } from "@/lib/mobile-bottom-nav-transition";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
@@ -44,7 +45,7 @@ export function bindExploreMapPopupProfileNav(
       warmTrainerProfileNavigation(trainer, router);
     }
     onNavigate?.();
-    router.push(href, { scroll: false });
+    openMarketplaceProfileSheet(href, router);
   }
 
   function onPointerDown(event: PointerEvent) {

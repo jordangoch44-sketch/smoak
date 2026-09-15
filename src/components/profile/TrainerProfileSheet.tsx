@@ -20,6 +20,7 @@ import { useHydrated } from "@/hooks/useHydrated";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import { restoreListingPointerAccess } from "@/lib/chrome-body-classes";
+import { clearDesktopProfilePopup } from "@/lib/desktop-profile-popup";
 import { isTrainerProfilePath } from "@/lib/motion";
 import { navigateToProfileSheetReturn } from "@/lib/profile-sheet-return";
 import { ProfileSheetDismissProvider } from "./ProfileSheetDismissContext";
@@ -108,7 +109,7 @@ function clearSheetDismissing(owner?: number) {
  * Mobile/tablet: bottom sheet over the still-mounted previous page
  * (`@modal` intercept). Close via X / backdrop / Escape / browser back.
  * No swipe-drag dismissal — one unified slide-down exit.
- * Desktop: pass-through.
+ * Desktop intercept: thinner centered popup over Search.
  */
 export function TrainerProfileSheet({
   children,
@@ -208,11 +209,12 @@ export function TrainerProfileSheet({
 
   useLayoutEffect(() => {
     if (isSheetViewport || !intercept || !overlayActive) return;
-    lockOwnerRef.current = lockSheetChrome();
-    const owner = lockOwnerRef.current;
+    clearDesktopProfilePopup();
+    document.body.classList.add("profile-desktop-popup-open");
+    document.documentElement.classList.add("profile-desktop-popup-open");
     return () => {
-      unlockSheetChrome(owner);
-      clearSheetDismissing(owner);
+      document.body.classList.remove("profile-desktop-popup-open");
+      document.documentElement.classList.remove("profile-desktop-popup-open");
     };
   }, [intercept, isSheetViewport, overlayActive]);
 
@@ -358,14 +360,11 @@ export function TrainerProfileSheet({
 
     return (
       <ProfileSheetDismissProvider dismiss={navigateAway}>
-        <div
-          className="profile-intercept-page"
-          role="dialog"
-          aria-modal="true"
-          aria-label={label}
-        >
-          {children}
-        </div>
+        <ProfileSheetToolbarHostProvider>
+          <DesktopProfileIntercept label={label} onDismiss={navigateAway}>
+            {children}
+          </DesktopProfileIntercept>
+        </ProfileSheetToolbarHostProvider>
       </ProfileSheetDismissProvider>
     );
   }
@@ -402,6 +401,62 @@ export function TrainerProfileSheet({
       </ProfileSheetToolbarHostProvider>
     </ProfileSheetDismissProvider>,
     document.body
+  );
+}
+
+function DesktopProfileIntercept({
+  label,
+  onDismiss,
+  children,
+}: {
+  label: string;
+  onDismiss: () => void;
+  children: ReactNode;
+}) {
+  const toolbarHost = useProfileSheetToolbarHost();
+  const backdropDismiss = useOwnPointerDismiss(onDismiss);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      if (
+        document.body.classList.contains("gallery-modal-open") ||
+        document.body.classList.contains("profile-image-preview-open") ||
+        document.body.classList.contains("inquiry-sheet-open")
+      ) {
+        return;
+      }
+      event.preventDefault();
+      onDismiss();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onDismiss]);
+
+  return (
+    <div className="profile-intercept-page" role="presentation">
+      <button
+        type="button"
+        className="smoac-control profile-intercept-page__backdrop"
+        aria-label="Close profile"
+        onPointerDown={backdropDismiss.onPointerDown}
+        onPointerUp={backdropDismiss.onPointerUp}
+        onClick={backdropDismiss.onClick}
+      />
+      <div
+        className="profile-intercept-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label={label}
+      >
+        <div
+          ref={toolbarHost?.hostRef}
+          className="profile-sheet__toolbar-host"
+        />
+        <div className="profile-intercept-dialog__body">{children}</div>
+      </div>
+    </div>
   );
 }
 

@@ -32,16 +32,107 @@
   visibility: hidden;
 }
 
-/* Desktop soft-nav: previous listing stays mounted — cover it so a card
- * tap actually shows the profile instead of looking like a dead tap. */
+/* Desktop soft-nav: thinner centered popup over still-mounted Search. */
 .profile-intercept-page {
   position: fixed;
   inset: 0;
   z-index: var(--z-profile-sheet);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.profile-intercept-page__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(6, 6, 10, 0.72);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.profile-intercept-dialog {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(calc(100% - 2.5rem), 27.5rem);
+  max-height: min(90dvh, 52rem);
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #080b10;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 28px 80px rgba(0, 0, 0, 0.55);
+}
+
+.profile-intercept-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  background: #080b10;
-  pointer-events: auto;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+}
+
+.profile-intercept-dialog .profile-hero__stage {
+  height: 16.25rem;
+  min-height: 16.25rem;
+  max-height: 16.25rem;
+}
+
+.profile-intercept-dialog .profile-hero__name {
+  font-size: 1.45rem;
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.profile-intercept-dialog .profile-hero__name-row {
+  flex-wrap: wrap;
+}
+
+.profile-intercept-dialog .profile-hero__identity-row {
+  gap: 0.85rem;
+  margin-bottom: -2.4rem;
+}
+
+.profile-intercept-dialog .profile-hero__avatar {
+  width: 6.5rem !important;
+  height: 6.5rem !important;
+}
+
+.profile-intercept-dialog .profile-hero__identity-copy {
+  min-width: 0;
+}
+
+.profile-intercept-dialog .profile-page--styled > .mx-auto {
+  max-width: none;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.75rem;
+  padding-bottom: 2rem;
+}
+
+.profile-intercept-dialog .profile-toolbar--in-sheet {
+  --profile-toolbar-top: 0.85rem;
+}
+
+.profile-intercept-dialog .profile-toolbar--in-sheet .profile-toolbar__close {
+  left: 0.85rem;
+}
+
+.profile-intercept-dialog .profile-toolbar--in-sheet .profile-toolbar__actions {
+  right: 0.85rem;
+}
+
+body.profile-desktop-popup-open,
+html.profile-desktop-popup-open {
+  overflow: hidden;
 }
 
 .profile-sheet__backdrop {

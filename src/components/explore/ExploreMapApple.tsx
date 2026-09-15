@@ -7,6 +7,7 @@ import {
   useProfileSheetOpen,
   useSiteLocationGateOpen,
 } from "@/hooks/useProfileSheetOpen";
+import { useExploreMapLayoutEpoch } from "@/hooks/useExploreMapLayoutEpoch";
 import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import {
@@ -178,6 +179,35 @@ function applyAppleCamera(
 }
 
 /**
+ * MapKit JS sizes to its parent on window resize, not CSS layout.
+ * Desktop split rail gets height after mount — reassign region + notify
+ * resize so the canvas fills the column (Leaflet’s invalidateSize equivalent).
+ */
+function recaptureAppleMapSize(
+  map: MapKitMap | null | undefined,
+  container: HTMLElement | null | undefined,
+  lastSizeKey: { current: string },
+  suppressUntil?: { current: number }
+): boolean {
+  if (!map || !container?.isConnected) return false;
+  const { width, height } = container.getBoundingClientRect();
+  if (width <= 0 || height <= 0) return false;
+  const key = `${Math.round(width)}x${Math.round(height)}`;
+  if (key === lastSizeKey.current) return false;
+  lastSizeKey.current = key;
+  if (suppressUntil) suppressUntil.current = Date.now() + 280;
+  try {
+    const region = map.region;
+    if (region) map.region = region;
+    window.dispatchEvent(new Event("resize"));
+    return true;
+  } catch {
+    lastSizeKey.current = "";
+    return false;
+  }
+}
+
+/**
  * Real Apple Maps (MapKit JS) — dark color scheme.
  * Option B multi-trainer clustering with avatar stack and horizontal carousel callouts.
  */
@@ -230,7 +260,9 @@ export function ExploreMapApple({
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
   const mapPaused = profileSheetOpen || locationGateOpen;
+  const layoutEpoch = useExploreMapLayoutEpoch();
   const wasPausedRef = useRef(false);
+  const mapSizeKeyRef = useRef("");
 
   const clusters = useMemo(() => {
     return clusterTrainersForMap(trainers);
@@ -519,8 +551,10 @@ export function ExploreMapApple({
         });
 
         mapRef.current = map;
+        mapSizeKeyRef.current = "";
         suppressUntilRef.current = Date.now() + 400;
         applyLiveCamera();
+        recaptureAppleMapSize(map, el, mapSizeKeyRef, suppressUntilRef);
         setMapEpoch((value) => value + 1);
 
         // User pan/zoom → dismiss callout (don't let it follow the map)
@@ -574,10 +608,39 @@ export function ExploreMapApple({
     map.isScrollEnabled = enable;
     map.isZoomEnabled = enable;
     if (wasPausedRef.current && !mapPaused) {
+      mapSizeKeyRef.current = "";
+      recaptureAppleMapSize(
+        map,
+        containerRef.current,
+        mapSizeKeyRef,
+        suppressUntilRef
+      );
       notifyExploreMapLayout();
     }
     wasPausedRef.current = mapPaused;
   }, [locked, mapPaused, mapEpoch]);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new ResizeObserver(() => {
+      const map = mapRef.current;
+      if (!map || mapPaused) return;
+      recaptureAppleMapSize(map, el, mapSizeKeyRef, suppressUntilRef);
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [mapEpoch, variant, layoutEpoch, mapPaused]);
+
+  useEffect(() => {
+    recaptureAppleMapSize(
+      mapRef.current,
+      containerRef.current,
+      mapSizeKeyRef,
+      suppressUntilRef
+    );
+  }, [layoutEpoch]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -63,8 +63,11 @@ function sessionSignature(session: AuthSession | null): string {
 }
 
 export function setAuthSession(session: AuthSession | null): void {
+  /* Admin accounts belong on /internal — never publish them as a public
+   * marketplace session (that painted Hide / Delete on live profiles). */
+  const next = session && session.role !== "admin" ? session : null;
   const prev = readCache();
-  if (session === null) {
+  if (next === null) {
     if (prev === null && cachedSession === null) return;
     cachedSession = null;
     persistAuthSession(null);
@@ -72,9 +75,9 @@ export function setAuthSession(session: AuthSession | null): void {
     return;
   }
 
-  if (sessionSignature(prev) === sessionSignature(session)) return;
+  if (sessionSignature(prev) === sessionSignature(next)) return;
 
-  cachedSession = session;
-  persistAuthSession(session);
+  cachedSession = next;
+  persistAuthSession(next);
   listeners.forEach((listener) => listener());
 }

@@ -125,7 +125,9 @@ export function TrainerProfilePageClient({
   ]);
 
   useLayoutEffect(() => {
-    const sheetBody = document.querySelector(".profile-sheet__body");
+    const sheetBody = document.querySelector(
+      ".profile-intercept-dialog__body, .profile-sheet__body"
+    );
     if (sheetBody instanceof HTMLElement) {
       sheetBody.scrollTop = 0;
       return;

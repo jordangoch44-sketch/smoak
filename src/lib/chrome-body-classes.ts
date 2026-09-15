@@ -15,6 +15,7 @@ export const CHROME_BODY_OVERLAY_CLASSES = [
   "explore-search-open",
   "location-selector-open",
   "profile-sheet-open",
+  "profile-desktop-popup-open",
   "inquiry-sheet-open",
   "inquiry-inbox-open",
   "specialist-edit-profile-open",
@@ -48,6 +49,7 @@ const LIVE_PROFILE_SHEET_ROOT =
 
 const STALE_OVERLAY_ROOTS: ReadonlyArray<readonly [string, string]> = [
   ["profile-sheet-open", LIVE_PROFILE_SHEET_ROOT],
+  ["profile-desktop-popup-open", ".profile-intercept-page"],
   ["profile-sheet-dismissing", ".profile-sheet-root:not(.profile-sheet-root--exited)"],
   ["site-intro-open", ".smoac-welcome-intro"],
   ["login-gate-open", ".login-gate"],

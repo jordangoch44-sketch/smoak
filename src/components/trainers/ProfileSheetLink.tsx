@@ -8,6 +8,7 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from "react";
+import { openMarketplaceProfileSheet } from "@/lib/desktop-profile-popup";
 import { isModifiedNavActivation } from "@/lib/mobile-bottom-nav-transition";
 import { cn } from "@/lib/utils";
 import { warmTrainerProfileNavigation } from "@/lib/warm-trainer-profile-navigation";
@@ -75,11 +76,7 @@ export function ProfileSheetLink({
 
   function openSheet() {
     warm();
-    if (replace) {
-      router.replace(dest, { scroll: false });
-    } else {
-      router.push(dest, { scroll: false });
-    }
+    openMarketplaceProfileSheet(dest, router, { replace });
   }
 
   function handlePointerDown(event: PointerEvent<HTMLAnchorElement>) {

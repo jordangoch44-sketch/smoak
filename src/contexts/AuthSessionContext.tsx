@@ -36,6 +36,7 @@ import { clearSavedTrainersActiveSession } from "@/lib/saved-trainers-store";
 import { clearAuthClientState } from "@/lib/auth/clear-auth-client-state";
 import { showToast } from "@/lib/toast-store";
 import { hydrateClientLocationFromSession } from "@/lib/client-profile-location";
+import { isLoggedIn } from "@/lib/auth-session-helpers-core";
 import { clearSavedUserZipLocation } from "@/lib/user-location-storage";
 
 export interface AuthSessionContextValue {
@@ -447,7 +448,7 @@ export function AuthSessionProvider({
     (): AuthSessionContextValue => ({
       isReady,
       session,
-      isSignedIn: Boolean(session),
+      isSignedIn: isLoggedIn(session),
       signInWithPassword: handleSignInWithPassword,
       signUp: handleSignUp,
       signOut,

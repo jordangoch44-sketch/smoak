@@ -3,7 +3,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
-import { AdminProfileModerationBar } from "@/components/admin/AdminProfileModerationBar";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
 import { isTrainerFreeFirstSessionEligible } from "@/lib/free-first-session";
@@ -86,12 +85,6 @@ export function TrainerProfileView({
       data-profile-accent={profileStyle.accent}
       data-profile-name-font={profileStyle.nameFont}
     >
-      {isSpecialistLive ? null : (
-        <AdminProfileModerationBar
-          specialistId={trainer.id}
-          specialistName={trainer.name}
-        />
-      )}
       <ProfileHero
         trainer={trainer}
         variant={variant}
