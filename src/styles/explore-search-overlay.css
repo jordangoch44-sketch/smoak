@@ -361,3 +361,15 @@ body.explore-search-open .mobile-bottom-nav {
   outline: none;
   box-shadow: var(--smoac-color-focus-ring);
 }
+
+@media (min-width: 1024px) {
+  .explore-search-overlay__input {
+    min-height: 2.7rem;
+    font-size: 0.9375rem;
+    padding: 0.5rem 2.65rem 0.5rem 2.85rem;
+  }
+
+  .explore-search-cancel {
+    min-height: 2.7rem;
+  }
+}

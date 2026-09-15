@@ -22,7 +22,8 @@ export function isFreeFirstSessionBadge(
 export const FREE_FIRST_SESSION_RAIL_LIMIT = 8;
 
 /**
- * Missing / unset means On. Only an explicit `false` turns the offer off.
+ * Missing / unset means On for listings that never stored the flag.
+ * New applications persist Off. Only an explicit `false` turns the offer off.
  */
 export function normalizeOffersFreeFirstSession(
   value: boolean | null | undefined
@@ -31,8 +32,8 @@ export function normalizeOffersFreeFirstSession(
 }
 
 /**
- * Existing listings default ON so current specialists appear until they
- * turn the offer off in profile.
+ * Existing listings that never stored the flag stay On until they turn it
+ * off in profile. New specialists start Off and opt in from edit profile.
  */
 export function trainerOffersFreeFirstSession(
   trainer: Pick<Trainer, "offersFreeFirstSession">
@@ -52,8 +53,8 @@ export function isTrainerProOrProPlus(
 
 /**
  * Marketplace Free 1st session rail + public profile chip.
- * Defaults ON when the flag was never set. Changing the offer in profile
- * is a Pro / PRO+ control.
+ * Legacy listings stay On when the flag was never set. New specialists
+ * start Off and can opt in from edit profile (Pro / PRO+).
  */
 export function isTrainerFreeFirstSessionEligible(
   trainer: Pick<Trainer, "offersFreeFirstSession">

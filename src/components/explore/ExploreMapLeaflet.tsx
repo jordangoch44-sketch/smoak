@@ -346,6 +346,7 @@ export function ExploreMapLeaflet({
 
   const applyLiveCamera = useCallback(
     (map: import("leaflet").Map, L: typeof import("leaflet")) => {
+      suppressUntilRef.current = Date.now() + 1000;
       const origin = areaCenterRef.current;
       const currentClusters = clustersRef.current;
       if (origin) {
@@ -656,6 +657,12 @@ export function ExploreMapLeaflet({
     onRecenterSearch?.();
   }, [onRecenterSearch, mapPaused, applyLiveCamera, suppressMoves]);
 
+  const handleSearchHereActivate = useCallback(() => {
+    if (!onSearchHere) return;
+    suppressMoves(1200);
+    onSearchHere();
+  }, [onSearchHere, suppressMoves]);
+
   const totalMappedTrainers = clusters.reduce((acc, c) => acc + c.count, 0);
   const missing = trainers.length - totalMappedTrainers;
   const showChrome = !locked && !mapPaused;
@@ -702,7 +709,7 @@ export function ExploreMapLeaflet({
               <FastActivateButton
                 className="smoac-control explore-split__search-here explore-map__search-here"
                 disabled={searchHereLoading || !onSearchHere}
-                onActivate={() => onSearchHere?.()}
+                onActivate={handleSearchHereActivate}
               >
                 <span className="explore-split__search-here__label">
                   {searchHereLoading ? "Searching…" : "Search here"}

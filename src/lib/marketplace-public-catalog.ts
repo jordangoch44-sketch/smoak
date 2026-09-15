@@ -261,7 +261,7 @@ export function listPublicSponsoredTrainers(
   return listPublicMarketplaceTrainers(options).filter(isTrainerSponsored);
 }
 
-/** Specialists who opted into a free first session (default ON). */
+/** Specialists who opted into a free first session. */
 export function listPublicFreeFirstSessionTrainers(
   options: PublicCatalogOptions = {}
 ): Trainer[] {

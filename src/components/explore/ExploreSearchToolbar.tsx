@@ -58,9 +58,21 @@ export function ExploreSearchToolbar({
     const el = searchRowRef.current;
     if (!el) return null;
     const rect = el.getBoundingClientRect();
+    const isDesktop = window.matchMedia("(min-width: 1024px)").matches;
+    const header = document.getElementById("site-header");
+    const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
+    /*
+     * Desktop: lift chrome under the site header so the on-map bar can ghost
+     * away. Keep the overlay the same width as the map search row.
+     * Phone/tablet: keep the field where the in-page bar sits.
+     */
+    const top = isDesktop
+      ? Math.max(0, headerBottom + 10)
+      : Math.max(0, rect.top);
     return {
-      top: Math.max(0, rect.top),
+      top,
       insetInline: Math.max(0, rect.left),
+      insetInlineEnd: Math.max(0, window.innerWidth - rect.right),
     };
   }
 
@@ -113,7 +125,8 @@ export function ExploreSearchToolbar({
         if (
           prev &&
           Math.abs(prev.top - next.top) < 0.5 &&
-          Math.abs(prev.insetInline - next.insetInline) < 0.5
+          Math.abs(prev.insetInline - next.insetInline) < 0.5 &&
+          Math.abs((prev.insetInlineEnd ?? prev.insetInline) - (next.insetInlineEnd ?? next.insetInline)) < 0.5
         ) {
           return prev;
         }

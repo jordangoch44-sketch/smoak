@@ -48,7 +48,7 @@ export interface SpecialistProfileOverrides {
   pricePerSessionMax?: number;
   /** Rate cards — one-on-one, membership, pack, drop-in, online, free consult. */
   pricingOfferings?: SpecialistPricingOffering[];
-  /** Profile toggle — Pro / PRO+ listing perk. Unset means On. */
+  /** Profile toggle — Pro / PRO+ listing perk. New specialists start Off. */
   offersFreeFirstSession?: boolean;
   bio?: string;
   photoNotes?: string;

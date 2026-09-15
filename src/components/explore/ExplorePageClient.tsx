@@ -174,16 +174,18 @@ export function ExplorePageClient() {
     <div
       className={cn(
         "explore-page explore-page--results",
-        isMobile && "explore-page--map-hero explore-page--map-shell"
+        isMobile && "explore-page--map-hero explore-page--map-shell",
+        isDesktopSplit && "explore-page--desktop-split"
       )}
     >
       <div
         className={cn(
           "explore-page__content",
-          isMobile && "explore-page__content--map-hero"
+          isMobile && "explore-page__content--map-hero",
+          isDesktopSplit && "explore-page__content--desktop-split"
         )}
       >
-        {!isMobile ? <ExplorePageHeader /> : null}
+        {!isMobile && !isDesktopSplit ? <ExplorePageHeader /> : null}
 
         {isMobile ? (
           <section className="explore-map-hero" aria-label="Search map">
@@ -202,7 +204,7 @@ export function ExplorePageClient() {
               {searchToolbar}
             </div>
           </section>
-        ) : (
+        ) : isDesktopSplit ? null : (
           searchToolbar
         )}
 
@@ -233,6 +235,9 @@ export function ExplorePageClient() {
                   variant="column"
                   showNotes={false}
                 />
+                <div className="explore-page__map-rail-controls">
+                  {searchToolbar}
+                </div>
               </div>
             </aside>
             <div className="explore-page__results-rail">{resultsMain}</div>

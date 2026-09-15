@@ -37,8 +37,10 @@ import { completeGeolocationAsync } from "@/lib/user-location-store";
 export type ExploreSearchOverlayAnchor = {
   /** Viewport Y where the search chrome should sit */
   top: number;
-  /** Matching horizontal inset of the in-page search row */
+  /** Matching left inset of the in-page search row */
   insetInline: number;
+  /** Right inset of the in-page search row (defaults to insetInline) */
+  insetInlineEnd?: number;
 };
 
 interface ExploreSearchOverlayProps {
@@ -213,7 +215,7 @@ export function ExploreSearchOverlay({
         style={{
           paddingTop: `${Math.max(0, anchor.top)}px`,
           paddingLeft: `${anchor.insetInline}px`,
-          paddingRight: `${anchor.insetInline}px`,
+          paddingRight: `${anchor.insetInlineEnd ?? anchor.insetInline}px`,
         }}
       >
         <div className="explore-search-overlay__chrome">

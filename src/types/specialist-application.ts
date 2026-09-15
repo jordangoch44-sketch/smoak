@@ -132,7 +132,7 @@ export interface SpecialistApplication {
   specialties: string[];
   /** Up to three specialties shown on marketplace cards — first selections. */
   homepageSpecialties?: string[];
-  /** Profile toggle — Pro / PRO+ listing perk. Omitted means default On. */
+  /** Profile toggle — Pro / PRO+ listing perk. New applications default Off. */
   offersFreeFirstSession?: boolean;
 
   certifications: Certification[];
@@ -198,7 +198,7 @@ export const INITIAL_SPECIALIST_ONBOARDING_STATE: SpecialistOnboardingState = {
   locationPrecision: "zip",
   specialties: [],
   homepageSpecialties: [],
-  offersFreeFirstSession: true,
+  offersFreeFirstSession: false,
   certifications: [{ name: "", issuer: "", year: new Date().getFullYear() }],
   collegeAttended: "",
   degree: "",

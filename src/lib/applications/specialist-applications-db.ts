@@ -51,6 +51,12 @@ export function specialistApplicationFromRow(
     submittedAt: row.submitted_at,
     updatedAt: row.updated_at,
     userId: row.user_id,
+    /* Keep missing as unset so legacy listings still normalize On.
+     * New applications persist explicit false from onboarding INITIAL. */
+    offersFreeFirstSession:
+      typeof data.offersFreeFirstSession === "boolean"
+        ? data.offersFreeFirstSession
+        : undefined,
   } as SpecialistApplication);
 }
 

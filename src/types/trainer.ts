@@ -160,7 +160,8 @@ export interface Trainer {
   pricingOfferings?: SpecialistPricingOffering[];
   /**
    * Opt into the marketplace “Free 1st session” rail.
-   * Defaults ON when unset. Public placement still requires Pro / PRO+.
+   * New specialists start Off; unset on older listings still reads as On.
+   * Public placement still requires Pro / PRO+.
    */
   offersFreeFirstSession?: boolean;
   rating: number;

@@ -566,6 +566,10 @@ body:has(.explore-page) .site-footer__glow {
   z-index: 450;
   left: 50%;
   bottom: 0.75rem;
+  /* Column map stage is a flex container; stretch would make this full-width. */
+  align-self: center;
+  width: max-content;
+  max-width: calc(100% - 5.5rem);
   transform: translateX(-50%);
   pointer-events: auto;
 }
@@ -1741,6 +1745,8 @@ body.profile-sheet-dismissing .explore-page--map-shell .leaflet-top {
 body.explore-hub-open .explore-map__recenter,
 body.explore-hub-open .explore-map__recenter--hero,
 body.explore-hub-open .explore-map__search-here,
+body.explore-search-open .explore-map__search-here,
+body.explore-search-open .explore-map__recenter,
 body.explore-search-open .explore-map__recenter--hero,
 body.drawer-open .explore-map__recenter--hero,
 body.location-selector-open .explore-map__recenter--hero {
@@ -3274,6 +3280,12 @@ body.location-selector-open .explore-map__recenter--hero {
     margin-top: 2.25rem;
   }
 
+  .explore-page--desktop-split .explore-page__content--desktop-split {
+    max-width: none;
+    padding-top: 0.75rem;
+    padding-bottom: 1.25rem;
+  }
+
   .explore-page__layout--split {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -3281,18 +3293,71 @@ body.location-selector-open .explore-map__recenter--hero {
     align-items: start;
   }
 
+  .explore-page--desktop-split .explore-page__layout--split {
+    margin-top: 0;
+  }
+
   .explore-page__map-rail {
     position: sticky;
-    top: calc(var(--site-header-total-height) + 0.85rem);
+    top: calc(var(--site-header-total-height) + 0.65rem);
     align-self: start;
     min-width: 0;
   }
 
   .explore-page__map-rail-inner {
+    position: relative;
     display: flex;
     flex-direction: column;
-    height: calc(100dvh - var(--site-header-total-height) - 2.75rem);
+    height: calc(100dvh - var(--site-header-total-height) - 1.5rem);
     min-height: 22rem;
+  }
+
+  .explore-page__map-rail-controls {
+    position: absolute;
+    z-index: 6;
+    top: 0.75rem;
+    right: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    padding-inline: 0.75rem;
+    pointer-events: none;
+  }
+
+  .explore-page__map-rail-controls > * {
+    pointer-events: auto;
+  }
+
+  .explore-page__map-rail-controls .explore-toolbar {
+    margin-top: 0;
+    gap: 0.45rem;
+  }
+
+  .explore-page__map-rail-controls .explore-search-row {
+    max-width: none;
+  }
+
+  .explore-page__map-rail-controls .explore-search-shell {
+    max-width: none;
+    border-radius: 9999px;
+  }
+
+  .explore-page__map-rail-controls .explore-search-shell__input {
+    min-height: 2.7rem;
+    font-size: 0.9375rem;
+    padding: 0.5rem 2.65rem 0.5rem 2.85rem;
+  }
+
+  .explore-page__map-rail-controls .explore-search-shell__icon {
+    left: 0.95rem;
+    height: 1.1rem;
+    width: 1.1rem;
+  }
+
+  .explore-page__map-rail-controls .explore-filters-icon-btn {
+    width: 2.7rem;
+    height: 2.7rem;
   }
 
   .explore-page__map-rail .explore-map--column {
@@ -3323,7 +3388,7 @@ body.location-selector-open .explore-map__recenter--hero {
 
   .explore-page__results-rail {
     min-width: 0;
-    max-height: calc(100dvh - var(--site-header-total-height) - 2.75rem);
+    max-height: calc(100dvh - var(--site-header-total-height) - 1.5rem);
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
