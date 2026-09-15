@@ -179,9 +179,11 @@ function applyAppleCamera(
 }
 
 /**
- * MapKit JS sizes to its parent on window resize, not CSS layout.
- * Desktop split rail gets height after mount — reassign region + notify
- * resize so the canvas fills the column (Leaflet’s invalidateSize equivalent).
+ * MapKit JS sizes .mk-map-view with height: 100%, which stays 0px inside a
+ * flex column unless CSS absolutely fills the canvas. After a real size
+ * change, pin the view to the canvas box and reassign region so tiles load
+ * (Leaflet’s invalidateSize equivalent). Do not fake window.resize — MapKit
+ * ignores it when innerWidth/innerHeight did not change.
  */
 function recaptureAppleMapSize(
   map: MapKitMap | null | undefined,
@@ -196,10 +198,14 @@ function recaptureAppleMapSize(
   if (key === lastSizeKey.current) return false;
   lastSizeKey.current = key;
   if (suppressUntil) suppressUntil.current = Date.now() + 280;
+  const view = container.querySelector<HTMLElement>(".mk-map-view");
+  if (view) {
+    view.style.width = `${Math.round(width)}px`;
+    view.style.height = `${Math.round(height)}px`;
+  }
   try {
     const region = map.region;
     if (region) map.region = region;
-    window.dispatchEvent(new Event("resize"));
     return true;
   } catch {
     lastSizeKey.current = "";

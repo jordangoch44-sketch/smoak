@@ -149,6 +149,7 @@ interface SpecialistDashboardProfilePreviewProps {
   isPremium?: boolean;
   isProPlus?: boolean;
   isLivePublished?: boolean;
+  chromeStatus?: "live" | "pending";
   focusSection?: string | null;
   onClearFocus?: () => void;
   onUpgrade?: () => void;
@@ -408,19 +409,27 @@ function LiveEditSheet({
 }
 
 function LiveProfileChrome({
+  status = "live",
   showInquiries,
   inquiryUnreadCount,
   onOpenInquiries,
   onOpenEdit,
 }: {
+  status?: "live" | "pending";
   showInquiries: boolean;
   inquiryUnreadCount: number;
   onOpenInquiries: () => void;
   onOpenEdit: () => void;
 }) {
+  const isPending = status === "pending";
   return (
-    <header className="specialist-live-chrome">
-      {showInquiries ? (
+    <header
+      className={cn(
+        "specialist-live-chrome",
+        isPending && "specialist-live-chrome--pending"
+      )}
+    >
+      {showInquiries && !isPending ? (
         <FastActivateButton
           className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--messages"
           aria-label={
@@ -440,17 +449,32 @@ function LiveProfileChrome({
       ) : (
         <span className="specialist-live-chrome__spacer" aria-hidden />
       )}
-      <h1 className="specialist-live-chrome__title">
-        <span className="specialist-live-chrome__live-dot" aria-hidden />
-        Live view
-      </h1>
-      <FastActivateButton
-        className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--edit"
-        aria-label="Edit profile"
-        onActivate={onOpenEdit}
+      <h1
+        className={cn(
+          "specialist-live-chrome__title",
+          isPending && "specialist-live-chrome__title--pending"
+        )}
       >
-        <MenuPencilIcon className="specialist-live-chrome__icon" />
-      </FastActivateButton>
+        <span
+          className={cn(
+            "specialist-live-chrome__live-dot",
+            isPending && "specialist-live-chrome__live-dot--pending"
+          )}
+          aria-hidden
+        />
+        {isPending ? "Pending" : "Live view"}
+      </h1>
+      {isPending ? (
+        <span className="specialist-live-chrome__spacer" aria-hidden />
+      ) : (
+        <FastActivateButton
+          className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--edit"
+          aria-label="Edit profile"
+          onActivate={onOpenEdit}
+        >
+          <MenuPencilIcon className="specialist-live-chrome__icon" />
+        </FastActivateButton>
+      )}
     </header>
   );
 }
@@ -488,6 +512,8 @@ export function SpecialistDashboardProfilePreview({
   editable = false,
   isPremium = false,
   isProPlus = false,
+  isLivePublished = false,
+  chromeStatus,
   focusSection = null,
   onClearFocus,
   onUpgrade,
@@ -534,7 +560,13 @@ export function SpecialistDashboardProfilePreview({
   const approvedListing = getApprovedSpecialistProfileById(
     trainerId ?? listing.id
   );
-  const isLiveListing = application?.profileStatus === "APPROVED";
+  const isLiveListing =
+    isLivePublished || application?.profileStatus === "APPROVED";
+  const isPendingListing =
+    chromeStatus === "pending" ||
+    application?.profileStatus === "PENDING_APPROVAL";
+  const liveChromeStatus =
+    chromeStatus ?? (isPendingListing ? "pending" : "live");
   const trainer = {
     ...listing,
     isPremium: membershipPlan !== "free",
@@ -568,7 +600,9 @@ export function SpecialistDashboardProfilePreview({
   );
   const [portalReady, setPortalReady] = useState(false);
   const canEdit = editable && Boolean(formDefaults && trainerId);
-  const showInquiries = canEdit && Boolean(inquirySenderUserId);
+  const showInquiries =
+    canEdit && Boolean(inquirySenderUserId) && !isPendingListing;
+  const showLiveChrome = canEdit || isPendingListing;
 
   useEffect(() => {
     setPortalReady(true);
@@ -593,16 +627,17 @@ export function SpecialistDashboardProfilePreview({
   }, [previewMode]);
 
   useEffect(() => {
-    if (!canEdit || previewMode !== "live") return;
+    if (!showLiveChrome || previewMode !== "live") return;
     document.body.classList.add(LIVE_PAGE_LOCK_CLASS);
     document.documentElement.classList.add(LIVE_PAGE_LOCK_CLASS);
     return () => {
       document.body.classList.remove(LIVE_PAGE_LOCK_CLASS);
       document.documentElement.classList.remove(LIVE_PAGE_LOCK_CLASS);
     };
-  }, [canEdit, previewMode]);
+  }, [showLiveChrome, previewMode]);
 
   function replacePreviewMode(next: ProfilePreviewMode) {
+    if (isPendingListing && next !== "live") return;
     setPreviewMode(next);
     const params = new URLSearchParams(searchParams.toString());
     params.set("tab", "profile");
@@ -1362,7 +1397,7 @@ export function SpecialistDashboardProfilePreview({
     ) : null;
 
   /* Owner edit — Instagram-style list (does not change public profile layout). */
-  if (canEdit && formDefaults && previewMode === "edit") {
+  if (canEdit && formDefaults && previewMode === "edit" && !isPendingListing) {
     const page = (
       <div
         className="specialist-edit-profile-page"
@@ -1440,18 +1475,25 @@ export function SpecialistDashboardProfilePreview({
       id={LIVE_PROFILE_ANCHOR_ID}
       className={cn(
         "specialist-profile-mode specialist-profile-mode--live",
-        canEdit && "specialist-live-page"
+        showLiveChrome && "specialist-live-page"
       )}
     >
-      {canEdit ? (
+      {showLiveChrome ? (
         <>
           <LiveProfileChrome
+            status={liveChromeStatus}
             showInquiries={showInquiries}
             inquiryUnreadCount={inquiryUnreadCount}
             onOpenInquiries={() => replacePreviewMode("inquiries")}
             onOpenEdit={() => replacePreviewMode("edit")}
           />
           <div className="specialist-live-page__body">
+            {isPendingListing ? (
+              <p className="specialist-live-pending-banner" role="status">
+                Under review — typically within 24 hours. You’ll get an email
+                when you’re approved.
+              </p>
+            ) : null}
             <TrainerProfileView
               trainer={liveTrainer}
               cityRanking={cityRanking}

@@ -15,11 +15,13 @@ import { cn } from "@/lib/utils";
 interface SpecialistServiceAreaFieldsProps {
   state: SpecialistOnboardingState;
   onPatch: (partial: Partial<SpecialistOnboardingState>) => void;
+  invalidFieldLabels?: string[];
 }
 
 export function SpecialistServiceAreaFields({
   state,
   onPatch,
+  invalidFieldLabels = [],
 }: SpecialistServiceAreaFieldsProps) {
   const [zipLookupBusy, setZipLookupBusy] = useState(false);
   const [zipLookupError, setZipLookupError] = useState<string | null>(null);
@@ -29,6 +31,9 @@ export function SpecialistServiceAreaFields({
   const zipValid = isValidZipCode(normalizedZip);
   const wantsPreciseLocation =
     state.serviceType === "in-person" || state.serviceType === "both";
+  const serviceTypeInvalid = invalidFieldLabels.includes("Service type");
+  const zipInvalid =
+    invalidFieldLabels.includes("Primary ZIP code") || Boolean(zipLookupError);
   const pinnedAddress =
     state.locationPrecision === "address" &&
     Boolean(state.facilityAddress.trim());
@@ -120,7 +125,14 @@ export function SpecialistServiceAreaFields({
 
   return (
     <div className="login-fields specialist-service-area-fields">
-      <fieldset className="login-field specialist-service-area-fields__section">
+      <fieldset
+        className={cn(
+          "login-field specialist-service-area-fields__section",
+          serviceTypeInvalid && "specialist-service-area-fields__section--error"
+        )}
+        data-wizard-field="service-type"
+        data-wizard-invalid={serviceTypeInvalid ? "true" : undefined}
+      >
         <legend className="login-field__label">
           Service type
           <span className="login-field__label-required" aria-hidden="true">
@@ -128,10 +140,14 @@ export function SpecialistServiceAreaFields({
           </span>
         </legend>
         <div
-          className="wizard-pill-grid wizard-pill-grid--wide"
+          className={cn(
+            "wizard-pill-grid wizard-pill-grid--wide",
+            serviceTypeInvalid && "wizard-pill-grid--error"
+          )}
           role="radiogroup"
           aria-label="Service type"
           aria-required="true"
+          aria-invalid={serviceTypeInvalid}
         >
           {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => {
             const active = state.serviceType === option.value;
@@ -152,6 +168,11 @@ export function SpecialistServiceAreaFields({
             );
           })}
         </div>
+        {serviceTypeInvalid ? (
+          <p className="wizard-field-error" role="alert">
+            Select in-person, virtual, or both.
+          </p>
+        ) : null}
       </fieldset>
 
       {wantsPreciseLocation ? (
@@ -180,7 +201,15 @@ export function SpecialistServiceAreaFields({
         </p>
       ) : null}
 
-      <fieldset className="login-field specialist-service-area-fields__section">
+      <fieldset
+        className={cn(
+          "login-field specialist-service-area-fields__section",
+          zipInvalid &&
+            "specialist-service-area-fields__section--error login-fields--error"
+        )}
+        data-wizard-field="zip"
+        data-wizard-invalid={zipInvalid ? "true" : undefined}
+      >
         <legend className="login-field__label">
           Primary ZIP code
           {state.serviceType !== "virtual" ? (
@@ -198,7 +227,7 @@ export function SpecialistServiceAreaFields({
           autoComplete="postal-code"
           placeholder="92129"
           maxLength={5}
-          aria-invalid={state.zipCode.length === 5 && !zipValid}
+          aria-invalid={zipInvalid || (state.zipCode.length === 5 && !zipValid)}
           aria-describedby="specialist-zip-hint"
           aria-required={state.serviceType !== "virtual"}
           required={state.serviceType !== "virtual"}
@@ -213,6 +242,10 @@ export function SpecialistServiceAreaFields({
         {zipLookupError ? (
           <p className="wizard-field-error" role="alert">
             {zipLookupError}
+          </p>
+        ) : zipInvalid ? (
+          <p className="wizard-field-error" role="alert">
+            Enter a valid 5-digit ZIP code.
           </p>
         ) : null}
       </fieldset>

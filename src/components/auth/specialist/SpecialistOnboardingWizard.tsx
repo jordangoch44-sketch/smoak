@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Logo } from "@/components/ui/Logo";
@@ -34,6 +34,7 @@ import {
   type SpecialistOnboardingStep,
 } from "@/lib/specialist-onboarding-validation";
 import { isValidEmail } from "@/lib/validation/email";
+import { scrollDocumentToTop } from "@/lib/scroll-document-top";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistOnboardingState,
@@ -123,6 +124,7 @@ export function SpecialistOnboardingWizard({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordFieldsError, setPasswordFieldsError] = useState(false);
   const [shakePasswordFields, setShakePasswordFields] = useState(false);
+  const [invalidFieldLabels, setInvalidFieldLabels] = useState<string[]>([]);
   const profilePhotoCrop = useProfilePhotoCropSession();
   const verifiedRef = useRef(false);
   const credentialsRef = useRef({ email: "", password: "" });
@@ -263,11 +265,21 @@ export function SpecialistOnboardingWizard({
     };
   }, []);
 
-  /* Each Continue / Back question should land the user at the top of the step. */
-  useEffect(() => {
+  /* Each Continue / Back question should land at the heading — not the CTA. */
+  useLayoutEffect(() => {
     if (!draftReady) return;
-    if (typeof window === "undefined") return;
-    window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+    const run = () => {
+      scrollDocumentToTop();
+    };
+    run();
+    const frame = window.requestAnimationFrame(run);
+    const retrySoon = window.setTimeout(run, 60);
+    const retryAfterPaint = window.setTimeout(run, 360);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(retrySoon);
+      window.clearTimeout(retryAfterPaint);
+    };
   }, [step, draftReady]);
 
   const goToPendingApplicationPortal = useCallback(async () => {
@@ -319,6 +331,7 @@ export function SpecialistOnboardingWizard({
       };
     });
     setError(null);
+    setInvalidFieldLabels([]);
   }, []);
 
   function handleBack() {
@@ -333,6 +346,7 @@ export function SpecialistOnboardingWizard({
     }
     setStep((prev) => (prev - 1) as OnboardingStep);
     setError(null);
+    setInvalidFieldLabels([]);
   }
 
   async function verifyEmailBeforeContinue(): Promise<boolean> {
@@ -433,9 +447,17 @@ export function SpecialistOnboardingWizard({
         setPasswordFieldsError(false);
       }
       if (stepGaps.length > 0) {
-        setError(`Complete required fields: ${stepGaps.map((g) => g.label).join(", ")}`);
+        const labels = stepGaps.map((g) => g.label);
+        setInvalidFieldLabels(labels);
+        setError(`Complete required fields: ${labels.join(", ")}`);
+        window.requestAnimationFrame(() => {
+          document
+            .querySelector("[data-wizard-field][data-wizard-invalid]")
+            ?.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
         return;
       }
+      setInvalidFieldLabels([]);
     }
 
     if (step === 2) {
@@ -750,7 +772,11 @@ export function SpecialistOnboardingWizard({
                   }
                   patchState(partial);
                 }}
-                onEditStep={(editStep) => setStep(editStep as OnboardingStep)}
+                onEditStep={(editStep) => {
+                  setInvalidFieldLabels([]);
+                  setError(null);
+                  setStep(editStep as OnboardingStep);
+                }}
                 profilePhotoCrop={profilePhotoCrop}
                 confirmPassword={confirmPassword}
                 passwordFieldsError={passwordFieldsError}
@@ -758,6 +784,7 @@ export function SpecialistOnboardingWizard({
                 hidePasswordFields={accountAlreadyCreated}
                 emailLocked={accountAlreadyCreated}
                 onPasswordShakeEnd={() => setShakePasswordFields(false)}
+                invalidFieldLabels={invalidFieldLabels}
                 onConfirmPasswordChange={(value) => {
                   setConfirmPassword(value);
                   clearPasswordFieldsError();

@@ -25,6 +25,7 @@
   align-items: flex-start;
   min-height: calc(100dvh - 3.5rem - env(safe-area-inset-top, 0px));
   height: auto;
+  overflow-anchor: none;
 }
 
 /* Specialist / Health & Wellness Professional — neon blue glow */
@@ -454,6 +455,7 @@ body:has(.login-page--wizard) main {
   display: flex;
   flex-direction: column;
   gap: var(--wizard-space-lg);
+  overflow-anchor: none;
   animation: wizard-step-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -1345,6 +1347,24 @@ body:has(.login-page--wizard) main {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+}
+
+.specialist-service-area-fields__section--error .login-field__label {
+  color: #f87171;
+}
+
+.wizard-pill-grid--error .wizard-pill:not(.wizard-pill--active) {
+  border-color: rgba(210, 110, 120, 0.55);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(48, 14, 22, 0.42) 0%,
+      rgba(24, 8, 12, 0.38) 100%
+    ),
+    rgba(0, 0, 0, 0.32);
+  box-shadow:
+    0 0 0 1px rgba(210, 90, 105, 0.18),
+    0 0 18px rgba(180, 70, 95, 0.14);
 }
 
 .login-page--specialist-onboarding .wizard-step {

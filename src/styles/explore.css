@@ -575,6 +575,7 @@ body:has(.explore-page) .site-footer__glow {
 }
 
 .explore-map__canvas {
+  position: relative;
   width: 100%;
   height: min(62vh, 28rem);
   min-height: 16rem;
@@ -1202,12 +1203,22 @@ body.profile-sheet-dismissing .explore-page--map-shell .leaflet-top {
 }
 
 .explore-map__canvas {
+  position: relative;
   width: 100%;
   height: 100%;
   background: #1c1c1e;
 }
 
-.explore-map--apple .explore-map__canvas > div {
+/*
+ * MapKit’s .mk-map-view is height: 100%. Percentage height does not resolve
+ * against a flex item’s used height (desktop Search rail), so the view stays
+ * 0px and overflow:hidden clips the tiles. Absolute fill uses the canvas’s
+ * used box instead. Mobile hero already has a definite inset box.
+ */
+.explore-map--apple .explore-map__canvas > div,
+.explore-map--apple .mk-map-view {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
 }
@@ -3280,28 +3291,33 @@ body.location-selector-open .explore-map__recenter--hero {
   .explore-page__map-rail-inner {
     display: flex;
     flex-direction: column;
-    min-height: calc(100dvh - var(--site-header-total-height) - 2.75rem);
+    height: calc(100dvh - var(--site-header-total-height) - 2.75rem);
+    min-height: 22rem;
   }
 
   .explore-page__map-rail .explore-map--column {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
+    width: 100%;
+    height: 100%;
     min-height: 0;
     gap: 0;
   }
 
   .explore-map--column .explore-map__stage {
     flex: 1 1 auto;
-    min-height: 22rem;
-    max-height: calc(100dvh - var(--site-header-total-height) - 4.5rem);
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
   }
 
   .explore-map--column .explore-map__canvas {
     flex: 1 1 auto;
     width: 100%;
     height: 100%;
-    min-height: 22rem;
+    min-height: 0;
     max-height: none;
   }
 

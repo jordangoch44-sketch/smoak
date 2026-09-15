@@ -70,6 +70,7 @@ export interface SpecialistOnboardingStepsProps {
   onPasswordShakeEnd?: () => void;
   hidePasswordFields?: boolean;
   emailLocked?: boolean;
+  invalidFieldLabels?: string[];
 }
 
 export function SpecialistOnboardingSteps({
@@ -85,6 +86,7 @@ export function SpecialistOnboardingSteps({
   onPasswordShakeEnd,
   hidePasswordFields = false,
   emailLocked = false,
+  invalidFieldLabels = [],
 }: SpecialistOnboardingStepsProps) {
   function handleProfilePhotoFile(file: File) {
     profilePhotoCrop.openCropFromFile(file, (payload) => {
@@ -399,7 +401,11 @@ export function SpecialistOnboardingSteps({
             title="Where do you work with clients?"
             subtitle="Enter your ZIP so clients can find you. Street address is optional."
           />
-          <SpecialistServiceAreaFields state={state} onPatch={onPatch} />
+          <SpecialistServiceAreaFields
+            state={state}
+            onPatch={onPatch}
+            invalidFieldLabels={invalidFieldLabels}
+          />
         </WizardStepPanel>
       );
 

@@ -24,7 +24,6 @@ import {
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
-import { SpecialistDashboardProfileHeader } from "@/components/dashboard/specialist/SpecialistDashboardProfileHeader";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/SpecialistProGhostPreview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
@@ -342,6 +341,8 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "demo-premium";
   const isPendingGate =
     dashboardMode === "pending" || dashboardMode === "rejected";
+  const showPendingLiveView =
+    dashboardMode === "pending" && hasProfilePreview;
   const isFreeLive = dashboardMode === "approved-free";
   const onProTrial = Boolean(session.premiumTrialActive);
   const isProPlus =
@@ -349,17 +350,19 @@ export function SpecialistDashboardPageClient() {
     isTrainerProPlus(trainer ?? {});
   const showLastChance = showProTrialLastChance(session);
 
-  const headerSurface: SpecialistDashHeaderSurface = isPendingGate
-    ? "status"
-    : premiumDashboard
-      ? premiumTab === "profile"
-        ? "profile"
-        : "overview"
-      : isFreeLive
-        ? freeTab === "profile"
+  const headerSurface: SpecialistDashHeaderSurface = showPendingLiveView
+    ? "profile"
+    : isPendingGate
+      ? "status"
+      : premiumDashboard
+        ? premiumTab === "profile"
           ? "profile"
-          : "plan"
-        : "status";
+          : "overview"
+        : isFreeLive
+          ? freeTab === "profile"
+            ? "profile"
+            : "plan"
+          : "status";
 
   function openProfileInquiries() {
     const latest = data.newLeads.find((lead) => lead.unread);
@@ -667,6 +670,18 @@ export function SpecialistDashboardPageClient() {
 
         {profileFirst && !isFreeLive ? (
           <>
+            {showPendingLiveView ? (
+              <SpecialistDashboardProfilePreview
+                trainer={trainer!}
+                editable={false}
+                isPremium={isPremium}
+                isProPlus={isProPlus}
+                isLivePublished={false}
+                chromeStatus="pending"
+                cityRanking={cityRanking}
+              />
+            ) : (
+              <>
             {isPendingGate ? (
               <SpecialistPendingApprovalNotice
                 variant={
@@ -690,10 +705,6 @@ export function SpecialistDashboardPageClient() {
               />
             ) : null}
 
-            {dashboardMode === "pending" && hasProfilePreview ? (
-              <SpecialistDashboardProfileHeader variant="pending" />
-            ) : null}
-
             {hasProfilePreview ? (
               <div
                 className={
@@ -702,15 +713,6 @@ export function SpecialistDashboardPageClient() {
                     : undefined
                 }
               >
-                {dashboardMode === "pending" ? (
-                  <div
-                    className="specialist-dash-pending-preview__badge"
-                    aria-hidden
-                  >
-                    <span className="specialist-dash-pending-preview__badge-icon" />
-                    <span>Pending verification</span>
-                  </div>
-                ) : null}
                 <div
                   className={
                     isPendingGate
@@ -742,17 +744,14 @@ export function SpecialistDashboardPageClient() {
                 Edit submitted profile
               </DashboardButton>
             ) : null}
-            {dashboardMode === "pending" ? (
-              <p className="specialist-dash-notice__text">
-                If some information was entered incorrectly, it can be fixed
-                once your application is approved.
-              </p>
-            ) : dashboardMode === "rejected" ? (
+            {dashboardMode === "rejected" ? (
               <p className="specialist-dash-notice__text">
                 After approval, come back here to finish your full in-depth
                 profile — pricing, availability, media, and more.
               </p>
             ) : null}
+              </>
+            )}
           </>
         ) : null}
 
