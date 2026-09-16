@@ -2,12 +2,12 @@
  * Marketplace media caps for specialist public profiles.
  * Free: header slideshow images only.
  * Pro: more images + pins.
- * PRO+: same images + up to 2 profile videos (45 seconds each, from the phone).
+ * PRO+: same images + up to 5 profile videos (45 seconds each, from the phone).
  */
 export const SPECIALIST_MEDIA_LIMITS = {
   free: { images: 4, videos: 0 },
   premium: { images: 8, videos: 0 },
-  proPlus: { images: 8, videos: 2 },
+  proPlus: { images: 8, videos: 5 },
 } as const;
 
 /** Max length for a PRO+ profile video. */

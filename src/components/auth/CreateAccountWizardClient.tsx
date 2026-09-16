@@ -1,34 +1,18 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { useHydrated } from "@/hooks/useHydrated";
-import { createPortal } from "react-dom";
-
-const SmoacWelcomeIntro = dynamic(
-  () =>
-    import("@/components/brand/SmoacWelcomeIntro").then(
-      (mod) => mod.SmoacWelcomeIntro
-    ),
-  { ssr: false }
-);
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
+import Link from "next/link";
+import { CreateAccountPageSkeleton } from "@/components/auth/CreateAccountPageSkeleton";
 import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
-import { PageWaitState } from "@/components/brand/PageWaitState";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
 import { useSaveToast } from "@/contexts/SaveToastContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import {
-  BUDGET_RANGE_OPTIONS,
   CLIENT_ACCOUNT_OPTION,
-  CLIENT_GOAL_OPTIONS,
-  CREATE_ACCOUNT_TOTAL_STEPS,
   SPECIALIST_ACCOUNT_OPTION,
-  TRAINING_STYLE_OPTIONS,
 } from "@/constants/create-account-options";
 import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
@@ -49,31 +33,36 @@ import {
   type CreateAccountProfile,
   type CreateAccountWizardState,
 } from "@/types/create-account";
-import { getClientAccountMissingFieldsForStep } from "@/lib/client-account-validation";
 import { hydrateClientLocationFromSession } from "@/lib/client-profile-location";
 import { cn } from "@/lib/utils";
 import { SpecialistOnboardingWizard } from "@/components/auth/specialist/SpecialistOnboardingWizard";
-import { useCreateAccountIntroGate } from "@/hooks/useCreateAccountIntroGate";
 import { persistFounding50InviteSession } from "@/lib/founding-50-invite";
 
-type WizardStep = 1 | 2 | 3 | 4 | 5;
+type WizardStep = 1 | 2;
 
+const CREATE_ACCOUNT_STEP_COUNT = 2;
 const ACCOUNT_OPTIONS = [CLIENT_ACCOUNT_OPTION, SPECIALIST_ACCOUNT_OPTION];
 
-function stepProgressPercent(step: WizardStep): number {
-  return Math.round(((step - 1) / CREATE_ACCOUNT_TOTAL_STEPS) * 100);
-}
-
-function toggleInList(list: string[], value: string): string[] {
-  return list.includes(value)
-    ? list.filter((item) => item !== value)
-    : [...list, value];
-}
-
-function accountTypeLabel(role: PublicAuthRole | null): string {
-  if (role === "client") return "Client";
-  if (role === "specialist") return "Health & Wellness Professional";
-  return "—";
+function createAccountInterviewCopy(step: WizardStep): {
+  introTitle: string;
+  introSub: string;
+  cardTitle: string;
+  cardSubtitle: string;
+} {
+  if (step === 2) {
+    return {
+      introTitle: "Quick sign up",
+      introSub: "Browse and compare specialists near you instantly.",
+      cardTitle: "Create your account",
+      cardSubtitle: "Email and that’s it!",
+    };
+  }
+  return {
+    introTitle: "Quick & easy signup",
+    introSub: "A few short questions — then you’re in.",
+    cardTitle: "How would you like to join?",
+    cardSubtitle: "We’ll tailor the next steps to you.",
+  };
 }
 
 function WizardStepPanel({
@@ -129,23 +118,6 @@ function SpecialistAccountIcon() {
   );
 }
 
-function WizardStepHeading({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="wizard-step-heading">
-      <h2 className="wizard-question">{title}</h2>
-      {subtitle ? (
-        <p className="wizard-question__subtitle">{subtitle}</p>
-      ) : null}
-    </div>
-  );
-}
-
 interface AccountTypeCardProps {
   id: PublicAuthRole;
   title: string;
@@ -191,7 +163,6 @@ function AccountTypeCard({
 }
 
 interface CreateAccountWizardClientProps {
-  initialJoinIntro?: boolean;
   initialReturnToSaved?: boolean;
   /** From `?role=specialist|client` — deep links from promos / save complete */
   initialAccountType?: PublicAuthRole | null;
@@ -201,7 +172,6 @@ interface CreateAccountWizardClientProps {
 }
 
 export function CreateAccountWizardClient({
-  initialJoinIntro = false,
   initialReturnToSaved = false,
   initialAccountType = null,
   initialFoundingInvite = false,
@@ -223,14 +193,8 @@ export function CreateAccountWizardClient({
   const [error, setError] = useState<string | null>(null);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(
-    () =>
-      (initialAccountType === "specialist" && !initialJoinIntro) ||
-      (initialFoundingInvite && initialAccountType === "specialist")
+    () => initialAccountType === "specialist"
   );
-  const { ready: introReady, showIntro, completeIntro } =
-    useCreateAccountIntroGate(initialJoinIntro);
-  const portalReady = useHydrated();
-  const [introVisible, setIntroVisible] = useState(false);
 
   useEffect(() => {
     if (!initialFoundingInvite) return;
@@ -240,22 +204,9 @@ export function CreateAccountWizardClient({
     });
   }, [initialFoundingInvite, initialFoundingInviteCode]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle(
-      "join-intro-open",
-      showIntro && introVisible
-    );
-    document.body.classList.toggle("join-intro-open", showIntro && introVisible);
-    return () => {
-      document.documentElement.classList.remove("join-intro-open");
-      document.body.classList.remove("join-intro-open");
-    };
-  }, [showIntro, introVisible]);
-
-  const progressPercent = stepProgressPercent(step);
-  const isClientQuickSignup = state.accountType === "client";
-  /* Keep the role-picker header stable — client copy only after they continue. */
-  const showClientQuickHeader = isClientQuickSignup && step > 1;
+  const interviewCopy = createAccountInterviewCopy(step);
+  const showBack = step > 1 && initialAccountType !== "client";
+  const createAccountProgressPercent = step <= 1 ? 0 : 100;
 
   function wantsReturnToSaved(): boolean {
     if (initialReturnToSaved) return true;
@@ -325,7 +276,7 @@ export function CreateAccountWizardClient({
 
   function handleBack() {
     if (step === 1) return;
-    setStep((prev) => (prev - 1) as WizardStep);
+    setStep(1);
     setError(null);
   }
 
@@ -345,56 +296,31 @@ export function CreateAccountWizardClient({
       setError(null);
       return;
     }
-    /* Client path: credentials only — sign up from this screen */
-    if (isClientQuickSignup && step === 2) {
-      void handleCreateAccount();
-      return;
-    }
-    if (
-      step === 4 &&
-      state.accountType === "client" &&
-      getClientAccountMissingFieldsForStep(4, state).length > 0
-    ) {
-      const labels = getClientAccountMissingFieldsForStep(4, state).map(
-        (field) => field.label
-      );
-      setError(`Complete required fields: ${labels.join(", ")}`);
-      return;
-    }
-    if (step < CREATE_ACCOUNT_TOTAL_STEPS) {
-      setStep((prev) => (prev + 1) as WizardStep);
-      setError(null);
-      return;
-    }
     void handleCreateAccount();
   }
 
   async function handleCreateAccount() {
     if (submitting) return;
 
-    if (!state.accountType) {
+    if (state.accountType !== "client") {
       setError("Choose Client or Health & Wellness Professional to continue.");
       setStep(1);
       return;
     }
 
-    const resolvedAccountType = state.accountType;
     const trimmedEmail = state.email.trim();
-    const quickClient = resolvedAccountType === "client";
 
-    if (quickClient) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-        setError("Enter a valid email address.");
-        return;
-      }
-      if (state.password.trim().length < 6) {
-        setError("Password must be at least 6 characters.");
-        return;
-      }
-      if (state.password !== confirmPassword) {
-        setError("Passwords do not match.");
-        return;
-      }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+    if (state.password.trim().length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (state.password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
     }
 
     setSubmitting(true);
@@ -407,44 +333,26 @@ export function CreateAccountWizardClient({
 
     try {
       const profile: CreateAccountProfile = {
-        accountType: resolvedAccountType,
+        accountType: "client",
         firstName: derivedFirst,
         lastName: state.lastName.trim(),
         email: trimmedEmail,
         createdAt: new Date().toISOString(),
-        ...(resolvedAccountType === "client"
-          ? {
-              clientGoals: state.clientGoals,
-              clientCity: state.clientCity.trim(),
-              clientNeighborhood: state.clientNeighborhood.trim(),
-              clientZipCode: state.clientZipCode.trim(),
-              clientBudget: state.clientBudget,
-              clientTrainingStyle: state.clientTrainingStyle,
-            }
-          : {
-              specialistType: state.specialistType,
-              specialistCity: state.specialistCity.trim(),
-              specialistNeighborhood: state.specialistNeighborhood.trim(),
-              specialistFormat: state.specialistFormat,
-              specialistStartingPrice: state.specialistStartingPrice.trim(),
-            }),
+        clientGoals: state.clientGoals,
+        clientCity: state.clientCity.trim(),
+        clientNeighborhood: state.clientNeighborhood.trim(),
+        clientZipCode: state.clientZipCode.trim(),
+        clientBudget: state.clientBudget,
+        clientTrainingStyle: state.clientTrainingStyle,
       };
 
       persistCreateAccountProfile(profile);
 
-      const signUpResult = await signUp(
-        resolvedAccountType,
-        trimmedEmail,
-        state.password,
-        {
-          firstName: derivedFirst,
-          lastName: state.lastName.trim(),
-          clientProfile:
-            resolvedAccountType === "client" ? profile : undefined,
-          specialistProfile:
-            resolvedAccountType === "specialist" ? profile : undefined,
-        }
-      );
+      const signUpResult = await signUp("client", trimmedEmail, state.password, {
+        firstName: derivedFirst,
+        lastName: state.lastName.trim(),
+        clientProfile: profile,
+      });
 
       if (signUpResult.ok === false) {
         setError(signUpResult.message);
@@ -462,7 +370,7 @@ export function CreateAccountWizardClient({
         return;
       }
 
-      if (resolvedAccountType === "client" && signUpResult.ok === true) {
+      if (signUpResult.ok === true) {
         await hydrateClientLocationFromSession(signUpResult.session);
         void sendClientWelcomeEmail({
           to: signUpResult.session.email,
@@ -472,15 +380,10 @@ export function CreateAccountWizardClient({
 
       showToast({
         type: "success",
-        message: quickClient
-          ? "You're in — edit your full profile anytime!"
-          : "Account created — welcome to SMOAC",
+        message: "You're in — edit your full profile anytime!",
       });
 
-      const navRole: PublicAuthRole =
-        signUpResult.session.role === "specialist" ? "specialist" : "client";
-
-      const { path, toast } = resolvePostLoginNavigation(navRole, {
+      const { path, toast } = resolvePostLoginNavigation("client", {
         returnToSaved: wantsReturnToSaved(),
         session: signUpResult.session,
       });
@@ -502,326 +405,71 @@ export function CreateAccountWizardClient({
     }
   }
 
-  const reviewSummary = useMemo(() => {
-    const locationLine = [
-      state.clientZipCode.trim(),
-      state.clientCity.trim(),
-      state.clientNeighborhood.trim(),
-    ]
-      .filter(Boolean)
-      .join(" · ");
-
-    return {
-      locationLine,
-      goalsOrSpecialty: state.clientGoals.join(", "),
-      extraLine: `${state.clientBudget} · ${state.clientTrainingStyle}`,
-    };
-  }, [state]);
-
   function renderStepContent() {
-    switch (step) {
-      case 1:
-        return (
-          <WizardStepPanel key="step-1">
-            <WizardStepHeading
-              title="What best describes you?"
-              subtitle="This helps us personalize your experience."
-            />
-            <div
-              className="wizard-option-list login-role-list"
-              role="radiogroup"
-              aria-label="Account type"
-            >
-              {ACCOUNT_OPTIONS.map((option) => (
-                <AccountTypeCard
-                  key={option.id}
-                  id={option.id}
-                  title={option.title}
-                  description={option.description}
-                  selected={state.accountType === option.id}
-                  onSelect={() => patchState({ accountType: option.id })}
-                />
-              ))}
-            </div>
-          </WizardStepPanel>
-        );
-
-      case 2:
-        return (
-          <WizardStepPanel key="step-2">
-            {isClientQuickSignup ? null : (
-              <WizardStepHeading
-                title="Tell us about yourself"
-                subtitle="We'll use this to set up your account."
+    if (step === 1) {
+      return (
+        <WizardStepPanel key="step-1">
+          <div
+            className="wizard-option-list login-role-list"
+            role="radiogroup"
+            aria-label="Account type"
+          >
+            {ACCOUNT_OPTIONS.map((option) => (
+              <AccountTypeCard
+                key={option.id}
+                id={option.id}
+                title={option.title}
+                description={option.description}
+                selected={state.accountType === option.id}
+                onSelect={() => patchState({ accountType: option.id })}
               />
-            )}
-            <div className="login-fields">
-              {isClientQuickSignup ? null : (
-                <>
-                  <label className="login-field">
-                    <span className="login-field__label">First name</span>
-                    <input
-                      type="text"
-                      name="firstName"
-                      autoComplete="given-name"
-                      value={state.firstName}
-                      onChange={(e) => patchState({ firstName: e.target.value })}
-                      placeholder="First name"
-                      className="login-field__input"
-                    />
-                  </label>
-                  <label className="login-field">
-                    <span className="login-field__label">Last name</span>
-                    <input
-                      type="text"
-                      name="lastName"
-                      autoComplete="family-name"
-                      value={state.lastName}
-                      onChange={(e) => patchState({ lastName: e.target.value })}
-                      placeholder="Last name"
-                      className="login-field__input"
-                    />
-                  </label>
-                </>
-              )}
-              <label className="login-field">
-                <span className="login-field__label">Email</span>
-                <input
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  value={state.email}
-                  onChange={(e) => patchState({ email: e.target.value })}
-                  placeholder="you@example.com"
-                  className="login-field__input"
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">
-                  {isClientQuickSignup ? "Create password" : "Password"}
-                </span>
-                <PasswordInput
-                  name="password"
-                  autoComplete="new-password"
-                  value={state.password}
-                  onChange={(e) => patchState({ password: e.target.value })}
-                  placeholder="At least 6 characters"
-                />
-              </label>
-              {isClientQuickSignup ? (
-                <label className="login-field">
-                  <span className="login-field__label">Confirm password</span>
-                  <PasswordInput
-                    name="confirmPassword"
-                    autoComplete="new-password"
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      setError(null);
-                    }}
-                    placeholder="Re-enter password"
-                  />
-                </label>
-              ) : null}
-            </div>
-          </WizardStepPanel>
-        );
-
-      case 3:
-        return (
-          <WizardStepPanel key="step-3-client">
-              <h2 className="wizard-question">
-                What are you looking for help with?
-              </h2>
-              <p className="wizard-question__hint">Select all that apply</p>
-              <div className="wizard-pill-grid" role="group">
-                {CLIENT_GOAL_OPTIONS.map((goal) => {
-                  const active = state.clientGoals.includes(goal);
-                  return (
-                    <FastActivateButton
-                      key={goal}
-                      aria-pressed={active}
-                      onActivate={() =>
-                        patchState({
-                          clientGoals: toggleInList(state.clientGoals, goal),
-                        })
-                      }
-                      className={cn(
-                        "wizard-pill",
-                        active && "wizard-pill--active"
-                      )}
-                    >
-                      {goal}
-                    </FastActivateButton>
-                  );
-                })}
-              </div>
-            </WizardStepPanel>
-        );
-
-      case 4:
-        return (
-          <WizardStepPanel key="step-4-client">
-              <h2 className="wizard-question">Where are you looking?</h2>
-              <div className="login-fields">
-                <label className="login-field">
-                  <span className="login-field__label">City</span>
-                  <input
-                    type="text"
-                    name="clientCity"
-                    autoComplete="address-level2"
-                    value={state.clientCity}
-                    onChange={(e) =>
-                      patchState({ clientCity: e.target.value })
-                    }
-                    placeholder="e.g. Austin"
-                    className="login-field__input"
-                  />
-                </label>
-                <label className="login-field">
-                  <span className="login-field__label">Neighborhood</span>
-                  <input
-                    type="text"
-                    name="clientNeighborhood"
-                    value={state.clientNeighborhood}
-                    onChange={(e) =>
-                      patchState({ clientNeighborhood: e.target.value })
-                    }
-                    placeholder="Optional"
-                    className="login-field__input"
-                  />
-                </label>
-                <label className="login-field">
-                  <span className="login-field__label">ZIP code</span>
-                  <input
-                    type="text"
-                    name="clientZipCode"
-                    inputMode="numeric"
-                    autoComplete="postal-code"
-                    value={state.clientZipCode}
-                    onChange={(e) =>
-                      patchState({
-                        clientZipCode: e.target.value.replace(/\D/g, "").slice(0, 5),
-                      })
-                    }
-                    placeholder="92126"
-                    maxLength={5}
-                    required
-                    className="login-field__input"
-                  />
-                </label>
-                <label className="login-field">
-                  <span className="login-field__label">Budget range</span>
-                  <select
-                    name="clientBudget"
-                    value={state.clientBudget}
-                    onChange={(e) =>
-                      patchState({ clientBudget: e.target.value })
-                    }
-                    className="login-field__input login-field__select"
-                  >
-                    <option value="">Select a range</option>
-                    {BUDGET_RANGE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="login-field">
-                  <span className="login-field__label">
-                    Preferred training style
-                  </span>
-                  <select
-                    name="clientTrainingStyle"
-                    value={state.clientTrainingStyle}
-                    onChange={(e) =>
-                      patchState({ clientTrainingStyle: e.target.value })
-                    }
-                    className="login-field__input login-field__select"
-                  >
-                    <option value="">Select a style</option>
-                    {TRAINING_STYLE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </WizardStepPanel>
-        );
-
-      case 5:
-        return (
-          <WizardStepPanel key="step-5">
-            <h2 className="wizard-question">Review your account</h2>
-            <div className="wizard-review">
-              <div className="wizard-review__row">
-                <span className="wizard-review__label">Account type</span>
-                <span className="wizard-review__value">
-                  {accountTypeLabel(state.accountType)}
-                </span>
-              </div>
-              <div className="wizard-review__row">
-                <span className="wizard-review__label">Name</span>
-                <span className="wizard-review__value">
-                  {state.firstName.trim()} {state.lastName.trim()}
-                </span>
-              </div>
-              <div className="wizard-review__row">
-                <span className="wizard-review__label">Email</span>
-                <span className="wizard-review__value">{state.email.trim()}</span>
-              </div>
-              <div className="wizard-review__row">
-                <span className="wizard-review__label">Goals</span>
-                <span className="wizard-review__value">
-                  {reviewSummary.goalsOrSpecialty}
-                </span>
-              </div>
-              <div className="wizard-review__row">
-                <span className="wizard-review__label">Location</span>
-                <span className="wizard-review__value">
-                  {reviewSummary.locationLine || "—"}
-                </span>
-              </div>
-              <div className="wizard-review__row">
-                <span className="wizard-review__label">Details</span>
-                <span className="wizard-review__value">
-                  {reviewSummary.extraLine}
-                </span>
-              </div>
-            </div>
-          </WizardStepPanel>
-        );
-
-      default:
-        return null;
+            ))}
+          </div>
+        </WizardStepPanel>
+      );
     }
-  }
 
-  function handleIntroComplete() {
-    completeIntro();
-    if (
-      initialAccountType === "specialist" ||
-      state.accountType === "specialist"
-    ) {
-      setShowSpecialistOnboarding(true);
-    }
-  }
-
-  if (showIntro) {
-    if (!introReady) {
-      return null;
-    }
-    const intro = (
-      <SmoacWelcomeIntro
-        variant="join"
-        onComplete={handleIntroComplete}
-        onVisible={() => setIntroVisible(true)}
-      />
+    return (
+      <WizardStepPanel key="step-2">
+        <div className="login-fields">
+          <label className="login-field">
+            <span className="login-field__label">Email</span>
+            <input
+              type="email"
+              name="email"
+              autoComplete="email"
+              value={state.email}
+              onChange={(e) => patchState({ email: e.target.value })}
+              placeholder="you@example.com"
+              className="login-field__input"
+            />
+          </label>
+          <label className="login-field">
+            <span className="login-field__label">Create password</span>
+            <PasswordInput
+              name="password"
+              autoComplete="new-password"
+              value={state.password}
+              onChange={(e) => patchState({ password: e.target.value })}
+              placeholder="At least 6 characters"
+            />
+          </label>
+          <label className="login-field">
+            <span className="login-field__label">Confirm password</span>
+            <PasswordInput
+              name="confirmPassword"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError(null);
+              }}
+              placeholder="Re-enter password"
+            />
+          </label>
+        </div>
+      </WizardStepPanel>
     );
-    return portalReady ? createPortal(intro, document.body) : intro;
   }
 
   if (showSpecialistOnboarding) {
@@ -832,24 +480,17 @@ export function CreateAccountWizardClient({
     );
   }
 
-  if (
-    isReady &&
-    session?.role === "specialist" &&
-    !applicationsHydrated
-  ) {
-    return (
-      <div className="login-page login-page--wizard" aria-busy="true">
-        <div className="login-page__shell">
-          <PageWaitState label="Opening your application" />
-        </div>
-      </div>
-    );
+  if (isReady && session?.role === "specialist" && !applicationsHydrated) {
+    return <CreateAccountPageSkeleton />;
   }
 
   return (
     <div
-      className="login-page login-page--wizard"
-      data-login-role={state.accountType ?? "client"}
+      className={cn(
+        "login-page login-page--wizard login-page--specialist-onboarding login-page--create-account",
+        step === 1 && "login-page--create-account-entry"
+      )}
+      data-login-role={state.accountType || undefined}
     >
       <div className="login-page__canvas" aria-hidden>
         <div className="wizard-aurora-pool wizard-aurora-pool--primary" />
@@ -867,101 +508,138 @@ export function CreateAccountWizardClient({
         <div className="atmosphere-grain" />
       </div>
 
-      <div className="login-page__shell">
-        <header className="login-page__brand wizard-page-brand">
-          <Logo href="/" size="lg" priority className="wizard-page-brand__logo" />
-        </header>
-
-        <div className="login-card wizard-card">
-          <div className="wizard-progress">
-            <div className="wizard-signup-reassure">
-              {showClientQuickHeader ? (
-                <>
-                  <p className="wizard-signup-reassure__title">Quick sign up</p>
-                  <p className="wizard-signup-reassure__punch">
-                    Email and that&apos;s it!
-                  </p>
-                  <p className="wizard-signup-reassure__sub">
-                    Browse and compare specialists near you instantly.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="wizard-signup-reassure__title">
-                    Quick &amp; easy signup
-                  </p>
-                  <p className="wizard-signup-reassure__sub">
-                    About 5 minutes — short steps, then you&apos;re in.
-                  </p>
-                </>
-              )}
-            </div>
-            {showClientQuickHeader ? null : (
-              <>
-                <div className="wizard-progress__header">
-                  <p className="wizard-progress__step">
-                    Step {step} of {CREATE_ACCOUNT_TOTAL_STEPS}
-                  </p>
-                  <p className="wizard-progress__complete">
-                    {progressPercent}% complete
-                  </p>
-                </div>
-                <div className="wizard-progress__track">
-                  <div
-                    className="wizard-progress__fill"
-                    style={{ width: `${progressPercent}%` }}
-                  />
-                </div>
-              </>
-            )}
+      <div className="login-page__shell interview-shell">
+        <div className="interview-stage">
+          <div className="interview-intro">
+            <h1 className="interview-intro__title">{interviewCopy.introTitle}</h1>
+            <p className="interview-intro__sub">{interviewCopy.introSub}</p>
           </div>
 
-          <div className="login-card__form">{renderStepContent()}</div>
+          <form
+            className="login-card wizard-card interview-card"
+            noValidate
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleContinue();
+            }}
+          >
+            <div className="interview-card__chrome">
+              <div className="interview-card__meta">
+                <span className="interview-card__icon-btn interview-card__icon-btn--spacer" />
+                <span className="interview-card__count">
+                  {createAccountProgressPercent}% COMPLETE
+                </span>
+                {step === 1 ? (
+                  <button
+                    type="button"
+                    className="interview-card__icon-btn"
+                    onClick={() => router.push("/")}
+                    disabled={submitting}
+                    aria-label="Close"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M6 6l12 12M18 6 6 18"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                ) : (
+                  <span className="interview-card__icon-btn interview-card__icon-btn--spacer" />
+                )}
+              </div>
+              <div
+                className="interview-progress"
+                role="img"
+                aria-label={`Step ${step} of ${CREATE_ACCOUNT_STEP_COUNT}`}
+              >
+                {Array.from({ length: CREATE_ACCOUNT_STEP_COUNT }, (_, index) => {
+                  const section = index + 1;
+                  return (
+                    <span
+                      key={section}
+                      className={
+                        section < step
+                          ? "interview-progress__seg interview-progress__seg--done"
+                          : section === step
+                            ? "interview-progress__seg interview-progress__seg--current"
+                            : "interview-progress__seg"
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </div>
 
-          <div className="login-form__section login-form__section--cta">
+            <h2 className="interview-card__title">{interviewCopy.cardTitle}</h2>
+            <p className="interview-card__subtitle">{interviewCopy.cardSubtitle}</p>
+
+            <div className="interview-card__field">{renderStepContent()}</div>
+
             {error ? (
-              <p className="login-card__message" role="alert">
+              <p
+                className="login-card__message login-card__message--error login-card__message--error-visible"
+                role="alert"
+              >
                 {error}
               </p>
             ) : null}
 
-            <div className="wizard-nav">
-              {step > 1 && !(isClientQuickSignup && initialAccountType === "client") ? (
-                <FastActivateButton
-                  className="wizard-nav__back"
-                  onActivate={handleBack}
-                  disabled={submitting}
+            <div className="interview-card__footer">
+              <div className="interview-card__actions">
+                {showBack ? (
+                  <button
+                    type="button"
+                    className="interview-back"
+                    onClick={handleBack}
+                    disabled={submitting}
+                    aria-label="Back"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <path
+                        d="M15 5 8 12l7 7"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                ) : null}
+                <button
+                  type="submit"
+                  className="interview-continue"
+                  disabled={submitting || (step === 1 && state.accountType == null)}
                 >
-                  Back
-                </FastActivateButton>
+                  <span>
+                    {submitting
+                      ? "Creating account…"
+                      : step === 2
+                        ? "Sign up"
+                        : "Continue"}
+                  </span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M5 12h14M13 6l6 6-6 6"
+                      stroke="currentColor"
+                      strokeWidth="1.85"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <p className="interview-signin">
+                <span>Already have an account?</span>
+                <Link href={LOGIN_PATH}>Sign in</Link>
+              </p>
+              {step === 2 ? (
+                <LegalAgreementNotice className="interview-legal" />
               ) : null}
-              <FastActivateButton
-                className="login-submit wizard-nav__continue"
-                onActivate={handleContinue}
-                disabled={
-                  submitting || (step === 1 && state.accountType == null)
-                }
-              >
-                {submitting
-                  ? "Creating account…"
-                  : isClientQuickSignup && step === 2
-                    ? "Sign up"
-                    : step === CREATE_ACCOUNT_TOTAL_STEPS
-                      ? "Create Account"
-                      : "Continue"}
-              </FastActivateButton>
             </div>
-
-            {(isClientQuickSignup && step === 2) ||
-            step === CREATE_ACCOUNT_TOTAL_STEPS ? (
-              <LegalAgreementNotice />
-            ) : null}
-          </div>
-
-          <p className="wizard-footer-link">
-            <span>Already have an account?</span>
-            <HeaderChromeLink href={LOGIN_PATH}>Log in</HeaderChromeLink>
-          </p>
+          </form>
         </div>
       </div>
     </div>

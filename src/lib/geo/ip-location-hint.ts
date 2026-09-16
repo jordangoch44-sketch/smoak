@@ -1,10 +1,16 @@
 /**
  * Coarse IP location for Marketplace rails and Search map fallback.
  * Never written as a ZIP / GPS permission — those stay opt-in.
+ * Coords are ignored unless they land in the live San Diego–area market.
  */
 
 import { USER_LOCATION_CHANGE_EVENT } from "@/lib/user-location-storage";
 import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
+import {
+  DEFAULT_MARKETPLACE_CITY,
+  findNearbyLiveMarketplaceCity,
+  isLiveMarketplaceCity,
+} from "@/lib/marketplace-city-centers";
 
 export const IP_LOCATION_HINT_STORAGE_KEY = "smoac-ip-location-hint";
 
@@ -46,10 +52,47 @@ export function writeIpLocationHint(hint: IpLocationHint): void {
   notifyLocationListeners();
 }
 
+function liveCoordinatesFromHint(hint: IpLocationHint | null): UserGeoPoint | null {
+  if (
+    hint?.latitude == null ||
+    hint?.longitude == null ||
+    !Number.isFinite(hint.latitude) ||
+    !Number.isFinite(hint.longitude)
+  ) {
+    return null;
+  }
+  if (!findNearbyLiveMarketplaceCity(hint.latitude, hint.longitude)) return null;
+  return { latitude: hint.latitude, longitude: hint.longitude };
+}
+
+export function ipHintHasLiveCoordinates(hint: IpLocationHint | null): boolean {
+  return liveCoordinatesFromHint(hint) != null;
+}
+
+/** Cached hint is safe to keep — live coords, or the San Diego city fallback. */
+export function ipHintIsTrusted(hint: IpLocationHint | null): boolean {
+  if (!hint) return false;
+  if (ipHintHasLiveCoordinates(hint)) return true;
+  return (
+    hint.marketplaceCity === DEFAULT_MARKETPLACE_CITY &&
+    hint.latitude == null &&
+    hint.longitude == null
+  );
+}
+
 export function getIpPersonalizationCity(): string | null {
   const hint = readIpLocationHint();
-  const city = hint?.marketplaceCity?.trim() || hint?.city?.trim() || "";
-  return city || null;
+  const labeled = hint?.marketplaceCity?.trim() || hint?.city?.trim() || "";
+  if (isLiveMarketplaceCity(labeled)) return labeled;
+  if (
+    hint?.latitude != null &&
+    hint?.longitude != null &&
+    Number.isFinite(hint.latitude) &&
+    Number.isFinite(hint.longitude)
+  ) {
+    return findNearbyLiveMarketplaceCity(hint.latitude, hint.longitude);
+  }
+  return null;
 }
 
 let cachedIpCoords: UserGeoPoint | null = null;
@@ -57,13 +100,8 @@ let cachedIpLat: number | null = null;
 let cachedIpLng: number | null = null;
 
 export function getIpUserCoordinates(): UserGeoPoint | null {
-  const hint = readIpLocationHint();
-  if (
-    hint?.latitude == null ||
-    hint?.longitude == null ||
-    !Number.isFinite(hint.latitude) ||
-    !Number.isFinite(hint.longitude)
-  ) {
+  const next = liveCoordinatesFromHint(readIpLocationHint());
+  if (!next) {
     cachedIpCoords = null;
     cachedIpLat = null;
     cachedIpLng = null;
@@ -72,17 +110,14 @@ export function getIpUserCoordinates(): UserGeoPoint | null {
 
   if (
     cachedIpCoords &&
-    cachedIpLat === hint.latitude &&
-    cachedIpLng === hint.longitude
+    cachedIpLat === next.latitude &&
+    cachedIpLng === next.longitude
   ) {
     return cachedIpCoords;
   }
 
-  cachedIpLat = hint.latitude;
-  cachedIpLng = hint.longitude;
-  cachedIpCoords = {
-    latitude: hint.latitude,
-    longitude: hint.longitude,
-  };
+  cachedIpLat = next.latitude;
+  cachedIpLng = next.longitude;
+  cachedIpCoords = next;
   return cachedIpCoords;
 }

@@ -40,7 +40,6 @@
 .saved-dropdown__glow,
 .page-transition__layer:not(:last-child),
 .login-page--intro,
-.create-account-intro__glass,
 .smoac-welcome-intro .login-page__canvas {
   pointer-events: none !important;
 }

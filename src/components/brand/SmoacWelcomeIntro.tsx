@@ -6,43 +6,31 @@ import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { cn } from "@/lib/utils";
 import { WelcomeHyperspaceField } from "./WelcomeHyperspaceField";
 
-export type SmoacWelcomeIntroVariant = "site" | "join";
-
-const INTRO_TIMING: Record<
-  SmoacWelcomeIntroVariant,
-  { fadeIn: number; hold: number; fadeOut: number; logoAt?: number }
-> = {
-  /* Warp → logo → drop out of light-speed into homepage */
-  site: { fadeIn: 900, hold: 1800, fadeOut: 1200, logoAt: 900 },
-  join: { fadeIn: 320, hold: 650, fadeOut: 320 },
+const SITE_INTRO_TIMING = {
+  fadeIn: 900,
+  hold: 1800,
+  fadeOut: 1200,
+  logoAt: 900,
 };
 
 type IntroPhase = "enter" | "visible" | "exit";
 
 interface SmoacWelcomeIntroProps {
-  variant?: SmoacWelcomeIntroVariant;
   onComplete: () => void;
-  /** Fired when intro content is on screen — gate uses this before blocking chrome */
-  onVisible?: () => void;
   /** Fired when light-speed begins braking — homepage should become visible underneath */
   onArrive?: () => void;
 }
 
 export function SmoacWelcomeIntro({
-  variant = "join",
   onComplete,
-  onVisible,
   onArrive,
 }: SmoacWelcomeIntroProps) {
   const reducedMotion = usePrefersReducedMotion();
-  const { fadeIn, hold, fadeOut, logoAt = fadeIn } = INTRO_TIMING[variant];
+  const { fadeIn, hold, fadeOut, logoAt } = SITE_INTRO_TIMING;
   const [phase, setPhase] = useState<IntroPhase>("enter");
   const [logoVisible, setLogoVisible] = useState(false);
   const completedRef = useRef(false);
   const arriveFiredRef = useRef(false);
-  const isSite = variant === "site";
-  /* Site welcome always uses the warp field — reduced motion only shortens timing. */
-  const useWarp = isSite;
 
   const finish = useCallback(() => {
     if (completedRef.current) return;
@@ -61,7 +49,6 @@ export function SmoacWelcomeIntro({
   useEffect(() => {
     const enterFrame = requestAnimationFrame(() => {
       setPhase("visible");
-      onVisible?.();
     });
 
     const effectiveHold = reducedMotion ? 280 : hold;
@@ -88,25 +75,15 @@ export function SmoacWelcomeIntro({
       window.clearTimeout(holdTimer);
       window.clearTimeout(doneTimer);
     };
-  }, [
-    fadeIn,
-    hold,
-    fadeOut,
-    logoAt,
-    finish,
-    beginExit,
-    reducedMotion,
-    onVisible,
-  ]);
+  }, [fadeIn, hold, fadeOut, logoAt, finish, beginExit, reducedMotion]);
 
-  const motionMs = reducedMotion ? 220 : isSite ? 900 : fadeIn;
+  const motionMs = reducedMotion ? 220 : 900;
 
   return (
     <div
       className={cn(
-        "login-page login-page--intro smoac-welcome-intro",
-        isSite && "smoac-welcome-intro--site",
-        phase === "exit" && useWarp && "smoac-welcome-intro--arriving"
+        "login-page login-page--intro smoac-welcome-intro smoac-welcome-intro--site",
+        phase === "exit" && "smoac-welcome-intro--arriving"
       )}
       role="dialog"
       aria-modal="true"
@@ -114,49 +91,19 @@ export function SmoacWelcomeIntro({
       aria-busy={phase !== "exit"}
     >
       <div className="login-page__canvas" aria-hidden>
-        {useWarp ? (
-          <>
-            <WelcomeHyperspaceField
-              exiting={phase === "exit"}
-              className="smoac-welcome-intro__hyperspace"
-            />
-            <div className="smoac-welcome-intro__warp-vignette" />
-          </>
-        ) : isSite ? (
-          <>
-            <div className="smoac-welcome-intro__site-glow" />
-            <div className="atmosphere-vignette atmosphere-vignette--soft wizard-vignette" />
-          </>
-        ) : (
-          <>
-            <div className="wizard-aurora-pool wizard-aurora-pool--primary" />
-            <div className="wizard-aurora-pool wizard-aurora-pool--secondary" />
-            <div className="atmosphere-mesh wizard-atmosphere-mesh">
-              <div className="atmosphere-blob atmosphere-blob--indigo" />
-              <div className="atmosphere-blob atmosphere-blob--blue" />
-              <div className="atmosphere-blob atmosphere-blob--violet" />
-              <div className="atmosphere-blob atmosphere-blob--magenta" />
-              <div className="atmosphere-blob atmosphere-blob--core" />
-            </div>
-            <div className="login-page__card-glow wizard-card-glow" />
-            <div className="atmosphere-vignette atmosphere-vignette--soft wizard-vignette" />
-            <div className="atmosphere-grain" />
-          </>
-        )}
+        <WelcomeHyperspaceField
+          exiting={phase === "exit"}
+          className="smoac-welcome-intro__hyperspace"
+        />
+        <div className="smoac-welcome-intro__warp-vignette" />
       </div>
-
-      {useWarp ? null : (
-        <div className="create-account-intro__glass" aria-hidden />
-      )}
 
       <div className="create-account-intro__stage">
         <div
-          data-variant={variant}
+          data-variant="site"
           className={cn(
-            "create-account-intro__content",
-            useWarp && "create-account-intro__content--warp",
-            (useWarp ? logoVisible : phase === "visible") &&
-              "create-account-intro__content--visible",
+            "create-account-intro__content create-account-intro__content--warp",
+            logoVisible && "create-account-intro__content--visible",
             phase === "exit" && "create-account-intro__content--exit",
             reducedMotion && "create-account-intro__content--reduced"
           )}
@@ -167,46 +114,21 @@ export function SmoacWelcomeIntro({
             size="lg"
             priority
             markOnly
-            className={cn(
-              "create-account-intro__logo",
-              useWarp && "create-account-intro__logo--warp"
-            )}
+            className="create-account-intro__logo create-account-intro__logo--warp"
           />
-          {useWarp ? (
-            <>
-              <h1 id="smoac-welcome-title" className="sr-only">
-                Welcome to SMOAC
-              </h1>
-              <p
-                className={cn(
-                  "create-account-intro__warp-slogan",
-                  logoVisible && "create-account-intro__warp-slogan--visible",
-                  phase === "exit" && "create-account-intro__warp-slogan--exit"
-                )}
-                aria-hidden
-              >
-                Find your fitness professional anywhere
-              </p>
-            </>
-          ) : (
-            <>
-              <h1 id="smoac-welcome-title" className="create-account-intro__title">
-                Welcome to SMOAC
-              </h1>
-              <p className="create-account-intro__subtitle">
-                The #1 Fitness Directory
-              </p>
-            </>
-          )}
-          {isSite && !useWarp ? (
-            <button
-              type="button"
-              className="create-account-intro__continue smoac-control"
-              onClick={finish}
-            >
-              Continue
-            </button>
-          ) : null}
+          <h1 id="smoac-welcome-title" className="sr-only">
+            Welcome to SMOAC
+          </h1>
+          <p
+            className={cn(
+              "create-account-intro__warp-slogan",
+              logoVisible && "create-account-intro__warp-slogan--visible",
+              phase === "exit" && "create-account-intro__warp-slogan--exit"
+            )}
+            aria-hidden
+          >
+            Find your fitness professional anywhere
+          </p>
         </div>
       </div>
 

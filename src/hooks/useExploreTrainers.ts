@@ -504,7 +504,7 @@ export function useExploreTrainers({
   );
 
   const [nearbyExpanded, setNearbyExpanded] = useState(false);
-  /** Custom map frame from “Search here”; null = default origin + 12 mi */
+  /** Custom map frame from panning/zooming; null = default origin + 12 mi */
   const [mapSearchArea, setMapSearchArea] = useState<ExploreSearchArea | null>(
     null
   );
@@ -625,7 +625,7 @@ export function useExploreTrainers({
 
   const suggestedTrainers = useMemo(() => {
     if (filtered.length > 0) return [];
-    /* Map “Search here” is intentional — empty area stays empty (no filler rail). */
+    /* Map viewport search is intentional — empty area stays empty (no filler rail). */
     if (mapSearchArea) return [];
     const catalog = getCatalogTrainers();
     return getSuggestedExploreTrainers(catalog, filters, searchOrigin);

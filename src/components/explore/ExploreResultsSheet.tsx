@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { CloseIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 /** Results panel height as % of the map shell */
@@ -23,9 +24,7 @@ interface ExploreResultsSheetProps {
   children: ReactNode;
   resultCount: number;
   className?: string;
-  showSearchHere?: boolean;
-  searchHereLoading?: boolean;
-  onSearchHere?: () => void;
+  searchLoading?: boolean;
 }
 
 function seeResultsLabel(count: number): string {
@@ -36,16 +35,14 @@ function seeResultsLabel(count: number): string {
 
 /**
  * Split Search views: map-first + compact “See results” CTA,
- * then a fly-up list panel. Drag the handle (or Map) returns to the map;
+ * then a fly-up list panel. Drag the handle (or tap X) returns to the map;
  * the list itself only scrolls so card taps are not stolen.
  */
 export function ExploreResultsSheet({
   children,
   resultCount,
   className,
-  showSearchHere = false,
-  searchHereLoading = false,
-  onSearchHere,
+  searchLoading = false,
 }: ExploreResultsSheetProps) {
   const [open, setOpen] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -79,7 +76,7 @@ export function ExploreResultsSheet({
   const beginDrag = useCallback(
     (event: ReactPointerEvent<HTMLElement>) => {
       if (!open || event.button !== 0) return;
-      if ((event.target as HTMLElement).closest(".explore-split__map-btn")) {
+      if ((event.target as HTMLElement).closest(".explore-split__close")) {
         return;
       }
 
@@ -145,27 +142,22 @@ export function ExploreResultsSheet({
     >
       {!open ? (
         <div className="explore-split__cta-dock">
-          {showSearchHere ? (
-            <FastActivateButton
-              className="smoac-control explore-split__search-here"
-              onActivate={() => onSearchHere?.()}
-              disabled={searchHereLoading || !onSearchHere}
-            >
-              <span className="explore-split__search-here__label">
-                {searchHereLoading ? "Searching…" : "Search here"}
-              </span>
-            </FastActivateButton>
-          ) : null}
           <FastActivateButton
-            className="smoac-control explore-split__cta"
+            className={cn(
+              "smoac-control explore-split__cta",
+              searchLoading && "explore-split__cta--searching"
+            )}
             onActivate={openResults}
+            aria-busy={searchLoading}
           >
             <span className="explore-split__cta-label">
-              {seeResultsLabel(resultCount)}
+              {searchLoading ? "Searching…" : seeResultsLabel(resultCount)}
             </span>
-            <span className="explore-split__cta-chevron" aria-hidden>
-              ⌃
-            </span>
+            {searchLoading ? null : (
+              <span className="explore-split__cta-chevron" aria-hidden>
+                ⌃
+              </span>
+            )}
           </FastActivateButton>
         </div>
       ) : null}
@@ -208,10 +200,11 @@ export function ExploreResultsSheet({
               <p className="explore-split__hint">Drag down for map</p>
             </div>
             <FastActivateButton
-              className="smoac-control explore-split__map-btn"
+              className="smoac-control explore-split__close"
               onActivate={closeToMap}
+              aria-label="Close results"
             >
-              Map
+              <CloseIcon className="h-5 w-5" />
             </FastActivateButton>
           </div>
         </div>

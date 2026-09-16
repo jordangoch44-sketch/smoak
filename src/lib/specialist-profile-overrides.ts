@@ -237,6 +237,72 @@ function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
 
+/** Header slideshow URLs for the editor — empty notes stay empty. */
+function resolveFormSlideshowUrls(
+  stored: SpecialistProfileOverrides | null | undefined,
+  trainer: Trainer
+): string[] {
+  if (typeof stored?.photoNotes === "string") {
+    return parseMediaUrlList(stored.photoNotes);
+  }
+
+  const profilePhoto = (
+    stored?.profilePhotoUrl?.trim() ||
+    trainer.image?.trim() ||
+    ""
+  );
+  const gallery = (
+    Array.isArray(trainer.galleryImages) ? trainer.galleryImages : []
+  )
+    .map((url) => url.trim())
+    .filter(Boolean);
+  const extras = profilePhoto
+    ? gallery.filter((url) => url !== profilePhoto)
+    : gallery;
+
+  if (extras.length > 0) return extras;
+  if (gallery.length === 1 && gallery[0] === profilePhoto) return [];
+  return gallery;
+}
+
+/** Empty slideshow → public header uses the profile photo, not old gallery images. */
+function applySlideshowFromPhotoNotes(
+  merged: Trainer,
+  overrides: SpecialistProfileOverrides
+): void {
+  if (overrides.photoNotes === undefined) return;
+
+  const photoUrls = parseLineList(overrides.photoNotes).filter(isUrl);
+  if (photoUrls.length > 0) {
+    const cover =
+      overrides.coverImageUrl?.trim() &&
+      photoUrls.includes(overrides.coverImageUrl.trim())
+        ? overrides.coverImageUrl.trim()
+        : photoUrls[0];
+    const ordered = cover
+      ? [cover, ...photoUrls.filter((url) => url !== cover)]
+      : photoUrls;
+    merged.heroImage = cover || merged.heroImage;
+    merged.gallery = ordered.map((src, index) => ({
+      id: `profile-photo-${index}`,
+      type: "image" as const,
+      src,
+      alt: `${merged.name} gallery photo ${index + 1}`,
+    }));
+    merged.galleryImages = ordered;
+    return;
+  }
+
+  if (overrides.photoNotes.trim()) return;
+
+  const profilePhoto =
+    overrides.profilePhotoUrl?.trim() || merged.image?.trim() || "";
+  const cover = overrides.coverImageUrl?.trim() || profilePhoto;
+  if (cover) merged.heroImage = cover;
+  merged.gallery = merged.gallery.filter((item) => item.type === "video");
+  merged.galleryImages = cover ? [cover] : [];
+}
+
 function isTransformationSrc(value: string): boolean {
   return isUrl(value) || /^data:image\//i.test(value);
 }
@@ -443,26 +509,7 @@ export function applySpecialistProfileOverrides(
     );
   }
 
-  if (overrides.photoNotes?.trim()) {
-    const photoUrls = parseLineList(overrides.photoNotes).filter(isUrl);
-    if (photoUrls.length > 0) {
-      const cover =
-        overrides.coverImageUrl?.trim() && photoUrls.includes(overrides.coverImageUrl.trim())
-          ? overrides.coverImageUrl.trim()
-          : photoUrls[0];
-      const ordered = cover
-        ? [cover, ...photoUrls.filter((url) => url !== cover)]
-        : photoUrls;
-      merged.heroImage = cover || merged.heroImage;
-      merged.gallery = ordered.map((src, index) => ({
-        id: `profile-photo-${index}`,
-        type: "image" as const,
-        src,
-        alt: `${merged.name} gallery photo ${index + 1}`,
-      }));
-      merged.galleryImages = ordered;
-    }
-  }
+  applySlideshowFromPhotoNotes(merged, overrides);
 
   if (isTrainerProPlus(merged) && overrides.videoNotes?.trim()) {
     const videoUrls = parseLineList(overrides.videoNotes).filter(isUrl);
@@ -643,12 +690,9 @@ export function overridesFromTrainer(
       stored?.offersFreeFirstSession ?? trainer.offersFreeFirstSession
     ),
     bio: stored?.bio ?? trainer.bio,
-    photoNotes:
-      stored?.photoNotes?.trim()
-        ? stored.photoNotes
-        : ((Array.isArray(trainer.galleryImages) ? trainer.galleryImages : [])
-            .filter(Boolean)
-            .join("\n") || ""),
+    photoNotes: serializeMediaUrlList(
+      resolveFormSlideshowUrls(stored, trainer)
+    ),
     slideshowFramesJson:
       stored?.slideshowFramesJson?.trim() ??
       serializeSlideshowFrameMap(trainer.gallerySlideshowFrames ?? {}),
@@ -712,16 +756,7 @@ export function overridesFromTrainer(
         ? stored.pinnedPhotos
         : trainer.pinnedPhotos,
       pinAllowList(
-        (
-          stored?.photoNotes?.trim()
-            ? stored.photoNotes
-                .split("\n")
-                .map((line) => line.trim())
-                .filter(Boolean)
-            : Array.isArray(trainer.galleryImages)
-              ? trainer.galleryImages
-              : []
-        ).filter(Boolean),
+        resolveFormSlideshowUrls(stored, trainer),
         (
           stored?.videoNotes?.trim()
             ? stored.videoNotes

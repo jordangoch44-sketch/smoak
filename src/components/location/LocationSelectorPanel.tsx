@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 interface LocationSelectorPanelProps {
   onUpdated: () => void;
-  /** Search-page popup — ZIP / GPS opt-in, skip uses IP. */
+  /** Search-page popup — ZIP / GPS opt-in, skip uses San Diego. */
   mode?: "dropdown" | "gate";
   onSkip?: () => void;
 }

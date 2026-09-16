@@ -43,7 +43,7 @@ export const SMOAC_PROFILE_WELCOME = {
   trialCta: "Keep Pro",
   upgradeBoostHeadline: "Upgrade to PRO+",
   upgradeBoostBody:
-    "Add phone videos, client results, and 20% off Boosts.",
+    "Add up to 5 phone videos, client results, and 20% off Boosts.",
   upgradeCta: "Upgrade to PRO+",
   boostHeadline: "Boost your profile",
   boostBody: "Put your profile in front of more clients near you.",

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Hero, Categories, HomeEssenceSlideshow } from "@/components/home";
 import { HomeDiscoveryClient } from "@/components/home/HomeDiscoveryClient";
@@ -20,12 +21,16 @@ export const metadata: Metadata = {
   },
 };
 
-/**
- * Sync shell — discovery rails hydrate client-side; SSR specialist links aid crawl.
- */
-export default async function HomePage() {
-  const { trainers, mode } = await loadPublicCatalogForServer();
+async function HomeSeoSpecialistIndex() {
+  const { trainers } = await loadPublicCatalogForServer();
+  return <HomeSeoSpecialistLinks trainers={trainers} />;
+}
 
+/**
+ * Sync shell so toolbar tabs don't wait on catalog RSC.
+ * Discovery rails read the session catalog; SEO links stream in separately.
+ */
+export default function HomePage() {
   return (
     <div className="home-page home-page--discovery">
       <HomeScrollReset />
@@ -39,9 +44,11 @@ export default async function HomePage() {
       />
       <div className="home-page__sky" aria-hidden />
       <Hero />
-      <Categories initialCatalog={trainers} catalogMode={mode} />
-      <HomeDiscoveryClient initialCatalog={trainers} catalogMode={mode} />
-      <HomeSeoSpecialistLinks trainers={trainers} />
+      <Categories />
+      <HomeDiscoveryClient />
+      <Suspense fallback={null}>
+        <HomeSeoSpecialistIndex />
+      </Suspense>
       <HomeEssenceSlideshow />
     </div>
   );

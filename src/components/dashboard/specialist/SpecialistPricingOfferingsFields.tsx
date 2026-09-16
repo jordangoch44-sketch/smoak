@@ -8,11 +8,7 @@ import {
   isSpecialistPricingOfferingType,
   pricingOfferingOption,
 } from "@/lib/specialist-pricing";
-import {
-  formatSessionPriceAmount,
-  hasSessionPrice,
-} from "@/lib/session-price";
-import { EyeIcon, InfoIcon, LayoutGridIcon } from "@/components/ui/icons";
+import { EyeIcon, LayoutGridIcon } from "@/components/ui/icons";
 import type { SpecialistPricingOffering } from "@/types/specialist-pricing";
 
 export function SpecialistPricingFields({
@@ -28,13 +24,6 @@ export function SpecialistPricingFields({
   offerings: SpecialistPricingOffering[];
   onOfferingsChange: (next: SpecialistPricingOffering[]) => void;
 }) {
-  const rangePreview = hasSessionPrice({ min: priceMin, max: priceMax })
-    ? formatSessionPriceAmount({ min: priceMin, max: priceMax }).replace(
-        "–",
-        " – "
-      )
-    : "";
-
   return (
     <div className="specialist-pricing-fields">
       <section
@@ -58,9 +47,6 @@ export function SpecialistPricingFields({
             Shown on Marketplace
           </span>
         </header>
-        <p className="specialist-pricing-card__hint">
-          Shown on Marketplace cards as your session range.
-        </p>
         <div className="specialist-pricing-range">
           <MoneyField
             label="From (USD)"
@@ -84,12 +70,6 @@ export function SpecialistPricingFields({
             }}
           />
         </div>
-        <p className="specialist-pricing-note">
-          <InfoIcon className="specialist-pricing-note__icon" />
-          {rangePreview
-            ? `Shows as ${rangePreview} per session on your card.`
-            : "Add a from and to amount for your Marketplace card."}
-        </p>
       </section>
 
       <section
@@ -113,10 +93,6 @@ export function SpecialistPricingFields({
             Shown on Details tab
           </span>
         </header>
-        <p className="specialist-pricing-card__hint">
-          Shown on your public Details tab under Training options. If you skip
-          this, clients see “Inquire for pricing details.”
-        </p>
         <SpecialistPricingOfferingsFields
           value={offerings}
           onChange={onOfferingsChange}

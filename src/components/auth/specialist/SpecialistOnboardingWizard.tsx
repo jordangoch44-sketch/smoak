@@ -1,19 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Logo } from "@/components/ui/Logo";
 import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
 import { useToast } from "@/components/ui/toast";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
-import {
-  SPECIALIST_ONBOARDING_STEP_LABELS,
-  SPECIALIST_ONBOARDING_TOTAL_STEPS,
-} from "@/constants/specialist-onboarding-options";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { SPECIALIST_ONBOARDING_TOTAL_STEPS } from "@/constants/specialist-onboarding-options";
 import { LOGIN_PATH, SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import { ApplicationSubmitError } from "@/lib/specialist-application-validation";
@@ -29,16 +26,24 @@ import {
 import { patchAuthSessionAvatarUrl } from "@/lib/profiles/update-profile-avatar";
 import {
   getSpecialistOnboardingAuthGaps,
-  getSpecialistOnboardingMissingFields,
-  getSpecialistOnboardingResumeStep,
   type SpecialistOnboardingStep,
 } from "@/lib/specialist-onboarding-validation";
-import { isValidEmail } from "@/lib/validation/email";
+import {
+  firstBeatIdForSection,
+  getSpecialistInterviewBeatError,
+  getSpecialistInterviewResumeBeatId,
+  isLastAccountInterviewBeat,
+  isSpecialistInterviewBeatRequired,
+  listSpecialistInterviewBeats,
+  type SpecialistInterviewBeatId,
+} from "@/lib/specialist-onboarding-interview";
 import { scrollDocumentToTop } from "@/lib/scroll-document-top";
+import { cn } from "@/lib/utils";
 import {
   INITIAL_SPECIALIST_ONBOARDING_STATE,
   type SpecialistOnboardingState,
 } from "@/types/specialist-application";
+import { SpecialistInterviewTrailIcon } from "@/components/auth/specialist/SpecialistInterviewTrailIcon";
 import { SpecialistOnboardingSteps } from "@/components/auth/specialist/SpecialistOnboardingSteps";
 import {
   abandonUnconfirmedSpecialistSignupClient,
@@ -52,6 +57,25 @@ import {
 import { saveSpecialistSignupProfile } from "@/lib/profiles/profile-service";
 
 type OnboardingStep = SpecialistOnboardingStep;
+
+const INTERVIEW_KEYBOARD_CLASS = "specialist-interview-keyboard-open";
+const INTERVIEW_KEYBOARD_INSET_PX = 80;
+
+function isInterviewEditableField(target: EventTarget | null): target is HTMLElement {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target instanceof HTMLInputElement) return true;
+  if (target instanceof HTMLTextAreaElement) return true;
+  if (target instanceof HTMLSelectElement) return true;
+  return target.isContentEditable;
+}
+
+function readInterviewKeyboardInset(): number {
+  const viewport = window.visualViewport;
+  const height = viewport?.height ?? window.innerHeight;
+  const top = viewport?.offsetTop ?? 0;
+  const inset = Math.max(0, window.innerHeight - height - top);
+  return inset > INTERVIEW_KEYBOARD_INSET_PX ? inset : 0;
+}
 
 function specialistSessionMatchesEmail(email: string): boolean {
   const session = getAuthSessionSnapshot();
@@ -82,20 +106,18 @@ async function loadRemoteSpecialistOnboardingDraft(userId: string) {
 
 async function persistVerifiedOnboardingProgress(
   state: SpecialistOnboardingState,
-  wizardStep: OnboardingStep
+  wizardStep: OnboardingStep,
+  wizardBeatId: SpecialistInterviewBeatId
 ) {
-  persistSpecialistOnboardingDraft(state, { wizardStep });
+  persistSpecialistOnboardingDraft(state, { wizardStep, wizardBeatId });
   if (!isMarketplaceSupabaseActive()) return;
   const session = getAuthSessionSnapshot();
   const supabase = getMarketplaceAuthClient();
   if (!supabase || !session?.userId) return;
   await saveSpecialistSignupProfile(supabase, session.userId, state, {
     wizardStep,
+    wizardBeatId,
   });
-}
-
-function stepProgressPercent(step: OnboardingStep): number {
-  return Math.round(((step - 1) / SPECIALIST_ONBOARDING_TOTAL_STEPS) * 100);
 }
 
 interface SpecialistOnboardingWizardProps {
@@ -111,7 +133,9 @@ export function SpecialistOnboardingWizard({
   const [state, setState] = useState<SpecialistOnboardingState>(
     INITIAL_SPECIALIST_ONBOARDING_STATE
   );
-  const [step, setStep] = useState<OnboardingStep>(1);
+  const [beatId, setBeatId] = useState<SpecialistInterviewBeatId>(
+    "professional-type"
+  );
   const [draftReady, setDraftReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -126,9 +150,22 @@ export function SpecialistOnboardingWizard({
   const [shakePasswordFields, setShakePasswordFields] = useState(false);
   const [invalidFieldLabels, setInvalidFieldLabels] = useState<string[]>([]);
   const profilePhotoCrop = useProfilePhotoCropSession();
+  const pageRef = useRef<HTMLDivElement>(null);
   const verifiedRef = useRef(false);
   const credentialsRef = useRef({ email: "", password: "" });
   const abandonTimerRef = useRef<number | null>(null);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [stackMotion, setStackMotion] = useState<"forward" | "back">("forward");
+  const [cardPhase, setCardPhase] = useState<"idle" | "exit-left" | "enter-pop" | "from-back">(
+    "idle"
+  );
+  const pendingBeatRef = useRef<{
+    id: SpecialistInterviewBeatId;
+    motion: "forward" | "back";
+  } | null>(null);
+  const cardMotionTimerRef = useRef<number | null>(null);
+  const reducedMotion = usePrefersReducedMotion();
+  const cardBusy = cardPhase === "exit-left";
 
   function flagPasswordFieldsError(message: string) {
     setError(message);
@@ -141,14 +178,41 @@ export function SpecialistOnboardingWizard({
     setError(null);
   }
 
-  const progressPercent = stepProgressPercent(step);
   const accountAlreadyCreated = specialistSessionMatchesEmail(state.email);
+  const interviewContext = useMemo(
+    () => ({
+      skipPassword: accountAlreadyCreated,
+      serviceType: state.serviceType,
+    }),
+    [accountAlreadyCreated, state.serviceType]
+  );
+  const beats = useMemo(
+    () => listSpecialistInterviewBeats(interviewContext),
+    [interviewContext]
+  );
+  const beatIndex = Math.max(
+    0,
+    beats.findIndex((beat) => beat.id === beatId)
+  );
+  const beat = beats[beatIndex] ?? beats[0];
+  const currentBeatId = beat?.id ?? "professional-type";
+  const step: OnboardingStep = beat?.section ?? 1;
+  const upcomingBeats = beats.slice(beatIndex + 1, beatIndex + 9);
+  const progressPercent =
+    beats.length <= 1
+      ? 0
+      : Math.round((beatIndex / (beats.length - 1)) * 100);
   const missingFieldOptions = { skipPassword: accountAlreadyCreated };
   verifiedRef.current = Boolean(verifiedEmail || accountAlreadyCreated);
   credentialsRef.current = {
     email: state.email,
     password: state.password,
   };
+
+  useEffect(() => {
+    if (beats.some((item) => item.id === beatId)) return;
+    setBeatId(beats[0]?.id ?? "professional-type");
+  }, [beats, beatId]);
 
   useEffect(() => {
     try {
@@ -161,9 +225,10 @@ export function SpecialistOnboardingWizard({
         fullName: localState.fullName.trim() || session?.firstName?.trim() || "",
       };
       setState(merged);
-      setStep(
-        getSpecialistOnboardingResumeStep(merged, {
+      setBeatId(
+        getSpecialistInterviewResumeBeatId(merged, {
           skipPassword: specialistSessionMatchesEmail(merged.email),
+          savedBeatId: local?.wizardBeatId ?? null,
           savedStep: local?.wizardStep ?? null,
         })
       );
@@ -207,9 +272,10 @@ export function SpecialistOnboardingWizard({
           localState.fullName,
         password: localState.password || remoteState.password,
       }));
-      setStep(
-        getSpecialistOnboardingResumeStep(remoteState, {
+      setBeatId(
+        getSpecialistInterviewResumeBeatId(remoteState, {
           skipPassword: true,
+          savedBeatId: remote.wizardBeatId,
           savedStep: remote.wizardStep,
         })
       );
@@ -222,16 +288,19 @@ export function SpecialistOnboardingWizard({
 
   useEffect(() => {
     if (!draftReady) return;
-    persistSpecialistOnboardingDraft(state, { wizardStep: step });
-  }, [draftReady, state, step]);
+    persistSpecialistOnboardingDraft(state, {
+      wizardStep: step,
+      wizardBeatId: currentBeatId,
+    });
+  }, [draftReady, state, step, currentBeatId]);
 
   useEffect(() => {
     if (!draftReady || !accountAlreadyCreated) return;
     const handle = window.setTimeout(() => {
-      void persistVerifiedOnboardingProgress(state, step);
+      void persistVerifiedOnboardingProgress(state, step, currentBeatId);
     }, 800);
     return () => window.clearTimeout(handle);
-  }, [draftReady, accountAlreadyCreated, state, step]);
+  }, [draftReady, accountAlreadyCreated, state, step, currentBeatId]);
 
   useEffect(() => {
     if (abandonTimerRef.current) {
@@ -265,9 +334,61 @@ export function SpecialistOnboardingWizard({
     };
   }, []);
 
+  useEffect(() => {
+    const page = pageRef.current;
+
+    function pinScroll() {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      const main = document.querySelector(".app-main");
+      if (main instanceof HTMLElement) main.scrollTop = 0;
+    }
+
+    function syncKeyboard() {
+      const focusedInside =
+        page != null &&
+        isInterviewEditableField(document.activeElement) &&
+        page.contains(document.activeElement);
+      const mobile = window.matchMedia("(max-width: 1023px)").matches;
+      const active =
+        readInterviewKeyboardInset() > 0 || (focusedInside && mobile);
+      document.body.classList.toggle(INTERVIEW_KEYBOARD_CLASS, active);
+      if (active) pinScroll();
+      setKeyboardOpen((prev) => (prev === active ? prev : active));
+    }
+
+    function onFocusIn(event: FocusEvent) {
+      if (!page?.contains(event.target as Node)) return;
+      if (!isInterviewEditableField(event.target)) return;
+      pinScroll();
+      window.setTimeout(syncKeyboard, 60);
+    }
+
+    function onFocusOut() {
+      window.requestAnimationFrame(() => {
+        syncKeyboard();
+      });
+    }
+
+    syncKeyboard();
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", syncKeyboard);
+    viewport?.addEventListener("scroll", pinScroll);
+    window.addEventListener("focusin", onFocusIn);
+    window.addEventListener("focusout", onFocusOut);
+    return () => {
+      viewport?.removeEventListener("resize", syncKeyboard);
+      viewport?.removeEventListener("scroll", pinScroll);
+      window.removeEventListener("focusin", onFocusIn);
+      window.removeEventListener("focusout", onFocusOut);
+      document.body.classList.remove(INTERVIEW_KEYBOARD_CLASS);
+    };
+  }, []);
+
   /* Each Continue / Back question should land at the heading — not the CTA. */
   useLayoutEffect(() => {
-    if (!draftReady) return;
+    if (!draftReady || keyboardOpen) return;
     const run = () => {
       scrollDocumentToTop();
     };
@@ -280,7 +401,7 @@ export function SpecialistOnboardingWizard({
       window.clearTimeout(retrySoon);
       window.clearTimeout(retryAfterPaint);
     };
-  }, [step, draftReady]);
+  }, [currentBeatId, draftReady, keyboardOpen]);
 
   const goToPendingApplicationPortal = useCallback(async () => {
     const priorAvatar = getAuthSessionSnapshot()?.avatarUrl?.trim() || "";
@@ -334,19 +455,75 @@ export function SpecialistOnboardingWizard({
     setInvalidFieldLabels([]);
   }, []);
 
-  function handleBack() {
-    if (submitting) return;
-    if (step === 1) {
-      if (accountAlreadyCreated) {
-        router.push("/");
-        return;
-      }
-      onBackToRole();
-      return;
-    }
-    setStep((prev) => (prev - 1) as OnboardingStep);
+  function clearCardMotionTimer() {
+    if (cardMotionTimerRef.current == null) return;
+    window.clearTimeout(cardMotionTimerRef.current);
+    cardMotionTimerRef.current = null;
+  }
+
+  function commitPendingBeat() {
+    const pending = pendingBeatRef.current;
+    if (!pending) return;
+    pendingBeatRef.current = null;
+    clearCardMotionTimer();
+    setStackMotion(pending.motion);
+    setBeatId(pending.id);
     setError(null);
     setInvalidFieldLabels([]);
+    setCardPhase(pending.motion === "back" ? "from-back" : "enter-pop");
+  }
+
+  useEffect(() => {
+    return () => clearCardMotionTimer();
+  }, []);
+
+  function goToBeat(
+    nextId: SpecialistInterviewBeatId,
+    motion: "forward" | "back" = "forward"
+  ) {
+    if (pendingBeatRef.current) return;
+    if (nextId === beatId) return;
+    setError(null);
+    setInvalidFieldLabels([]);
+    if (motion === "forward" && !reducedMotion) {
+      pendingBeatRef.current = { id: nextId, motion };
+      setCardPhase("exit-left");
+      cardMotionTimerRef.current = window.setTimeout(commitPendingBeat, 340);
+      return;
+    }
+    setStackMotion(motion);
+    setBeatId(nextId);
+    setCardPhase(motion === "back" ? "from-back" : "idle");
+  }
+
+  function goToNextBeat() {
+    const next = beats[beatIndex + 1];
+    if (!next) return;
+    goToBeat(next.id, "forward");
+  }
+
+  function handleExit() {
+    if (accountAlreadyCreated) {
+      router.push("/");
+      return;
+    }
+    onBackToRole();
+  }
+
+  function handleBack() {
+    if (submitting || cardBusy) return;
+    if (beatIndex <= 0) {
+      handleExit();
+      return;
+    }
+    const previous = beats[beatIndex - 1];
+    if (previous) goToBeat(previous.id, "back");
+  }
+
+  function handleSkip() {
+    if (submitting || cardBusy || !beat) return;
+    if (isSpecialistInterviewBeatRequired(beat, state, interviewContext)) return;
+    goToNextBeat();
   }
 
   async function verifyEmailBeforeContinue(): Promise<boolean> {
@@ -405,11 +582,18 @@ export function SpecialistOnboardingWizard({
         setVerifiedEmail(trimmedEmail);
         setAwaitingEmailConfirm(null);
         setEmailOtpCode("");
-        void persistVerifiedOnboardingProgress(state, 3);
+        void persistVerifiedOnboardingProgress(
+          state,
+          3,
+          firstBeatIdForSection(3, interviewContext)
+        );
         return true;
       }
 
-      persistSpecialistOnboardingDraft(state, { wizardStep: step });
+      persistSpecialistOnboardingDraft(state, {
+        wizardStep: step,
+        wizardBeatId: currentBeatId,
+      });
       setAwaitingEmailConfirm(trimmedEmail);
       setEmailOtpCode("");
       showToast({
@@ -423,66 +607,51 @@ export function SpecialistOnboardingWizard({
   }
 
   async function handleContinue() {
-    if (submitting) return;
+    if (submitting || cardBusy || !beat) return;
 
-    if (step >= 1 && step <= 5) {
-      const stepGaps = getSpecialistOnboardingMissingFields(
+    if (beat.id !== "preview") {
+      const beatError = getSpecialistInterviewBeatError(
+        beat,
         state,
-        missingFieldOptions
-      ).filter((field) => field.step === step);
-      if (step === 2 && !accountAlreadyCreated) {
-        if (!isValidEmail(state.email)) {
-          setPasswordFieldsError(false);
-          setError("Enter a valid email — you’ll use it to sign in.");
-          return;
-        }
-        if (state.password.trim().length < 8) {
-          flagPasswordFieldsError("Create a password with at least 8 characters.");
-          return;
-        }
-        if (state.password !== confirmPassword) {
-          flagPasswordFieldsError("Passwords do not match.");
-          return;
-        }
-        setPasswordFieldsError(false);
-      }
-      if (stepGaps.length > 0) {
-        const labels = stepGaps.map((g) => g.label);
-        setInvalidFieldLabels(labels);
-        setError(`Complete required fields: ${labels.join(", ")}`);
-        window.requestAnimationFrame(() => {
-          document
-            .querySelector("[data-wizard-field][data-wizard-invalid]")
-            ?.scrollIntoView({ block: "center", behavior: "smooth" });
-        });
+        interviewContext,
+        confirmPassword
+      );
+      if (beat.id === "password" && beatError) {
+        flagPasswordFieldsError(beatError);
         return;
       }
+      if (beatError) {
+        setPasswordFieldsError(false);
+        setError(beatError);
+        if (beat.id === "service-type" || beat.id === "location") {
+          setInvalidFieldLabels(
+            beat.id === "service-type" ? ["Service type"] : ["Primary ZIP code"]
+          );
+        }
+        return;
+      }
+      setPasswordFieldsError(false);
       setInvalidFieldLabels([]);
     }
 
-    if (step === 2) {
+    if (isLastAccountInterviewBeat(beat.id, interviewContext)) {
       if (accountAlreadyCreated) {
         setVerifiedEmail(state.email.trim().toLowerCase());
-        setStep(3);
-        setError(null);
+        goToNextBeat();
         return;
       }
       const verified = await verifyEmailBeforeContinue();
       if (!verified) return;
-      setStep(3);
-      setError(null);
+      goToBeat(firstBeatIdForSection(3, interviewContext));
       return;
     }
 
-    if (step === 6) {
+    if (beat.id === "preview") {
       void handleSubmitApplication();
       return;
     }
 
-    if (step < SPECIALIST_ONBOARDING_TOTAL_STEPS) {
-      setStep((prev) => (prev + 1) as OnboardingStep);
-      setError(null);
-    }
+    goToNextBeat();
   }
 
   async function handleVerifyEmailCode() {
@@ -525,8 +694,12 @@ export function SpecialistOnboardingWizard({
       setVerifiedEmail(awaitingEmailConfirm.toLowerCase());
       setAwaitingEmailConfirm(null);
       setEmailOtpCode("");
-      setStep(3);
-      void persistVerifiedOnboardingProgress(state, 3);
+      goToBeat(firstBeatIdForSection(3, interviewContext));
+      void persistVerifiedOnboardingProgress(
+        state,
+        3,
+        firstBeatIdForSection(3, interviewContext)
+      );
       showToast({
         type: "success",
         message: "Email verified — continue your application.",
@@ -561,8 +734,12 @@ export function SpecialistOnboardingWizard({
           setVerifiedEmail(awaitingEmailConfirm.toLowerCase());
           setAwaitingEmailConfirm(null);
           setEmailOtpCode("");
-          setStep(3);
-          void persistVerifiedOnboardingProgress(state, 3);
+          goToBeat(firstBeatIdForSection(3, interviewContext));
+          void persistVerifiedOnboardingProgress(
+            state,
+            3,
+            firstBeatIdForSection(3, interviewContext)
+          );
           showToast({
             type: "success",
             message: "Email already verified — continue your application.",
@@ -587,7 +764,13 @@ export function SpecialistOnboardingWizard({
       authGaps.length > 0 ||
       (!accountAlreadyCreated && state.password !== confirmPassword)
     ) {
-      setStep(2);
+      goToBeat(
+        !accountAlreadyCreated &&
+          (state.password !== confirmPassword ||
+            authGaps.some((g) => g.label.startsWith("Password")))
+          ? "password"
+          : "email"
+      );
       if (
         !accountAlreadyCreated &&
         state.password !== confirmPassword &&
@@ -616,7 +799,7 @@ export function SpecialistOnboardingWizard({
         getAuthSessionSnapshot()?.email?.toLowerCase() !== trimmedEmail
       ) {
         setSubmitting(false);
-        setStep(2);
+        goToBeat("email");
         setError("Verify your email with the code we sent before submitting.");
         const gated = await verifyEmailBeforeContinue();
         if (!gated) return;
@@ -696,18 +879,46 @@ export function SpecialistOnboardingWizard({
   }
 
   function continueLabel(): string {
-    if (submitting) return step === 2 ? "Verifying email…" : "Submitting…";
-    if (step === 6) return "Submit Application";
-    if (step === 2 && !accountAlreadyCreated) return "Verify email & continue";
+    if (submitting) {
+      if (beat?.id === "preview") return "Submitting…";
+      if (
+        beat &&
+        isLastAccountInterviewBeat(beat.id, interviewContext) &&
+        !accountAlreadyCreated
+      ) {
+        return "Verifying email…";
+      }
+      return "Continue";
+    }
+    if (beat?.id === "preview") return "Submit Application";
+    if (
+      beat &&
+      isLastAccountInterviewBeat(beat.id, interviewContext) &&
+      !accountAlreadyCreated
+    ) {
+      return "Verify email & continue";
+    }
     return "Continue";
   }
 
-  const stepLabel = SPECIALIST_ONBOARDING_STEP_LABELS[step - 1];
+  const beatRequired = beat
+    ? isSpecialistInterviewBeatRequired(beat, state, interviewContext)
+    : true;
+  const verifyingEmail =
+    submitting &&
+    Boolean(beat) &&
+    beat.id !== "preview" &&
+    isLastAccountInterviewBeat(beat.id, interviewContext) &&
+    !accountAlreadyCreated;
 
   return (
     <>
       <div
-        className="login-page login-page--wizard login-page--specialist-onboarding"
+        ref={pageRef}
+        className={cn(
+          "login-page login-page--wizard login-page--specialist-onboarding",
+          keyboardOpen && "login-page--interview-keyboard"
+        )}
         data-login-role="specialist"
       >
         <div className="login-page__canvas" aria-hidden>
@@ -726,45 +937,86 @@ export function SpecialistOnboardingWizard({
           <div className="atmosphere-grain" />
         </div>
 
-        <div className="login-page__shell">
-          <header className="login-page__brand wizard-page-brand">
-            <Logo href="/" size="lg" priority className="wizard-page-brand__logo" />
-          </header>
+        <div className="login-page__shell interview-shell">
+          <div className="interview-stage">
+          <div className="interview-intro">
+            <h1 className="interview-intro__title">
+              {accountAlreadyCreated
+                ? "Let’s finish your specialist account"
+                : "Let’s create your specialist account"}
+            </h1>
+            <p className="interview-intro__sub">
+              {accountAlreadyCreated
+                ? "Saved on this device — pick up where you left off."
+                : "Just a few quick questions to get started."}
+            </p>
+          </div>
 
-          <div className="login-card wizard-card">
-            <div className="wizard-progress">
-              <div className="wizard-signup-reassure">
-                <p className="wizard-signup-reassure__title">
-                  {accountAlreadyCreated
-                    ? "Pick up where you left off"
-                    : "Quick & easy signup"}
+          <form
+            key={currentBeatId}
+            className={cn(
+              "login-card wizard-card interview-card",
+              cardPhase === "exit-left" && "interview-card--exit-left",
+              cardPhase === "enter-pop" && "interview-card--enter-pop",
+              cardPhase === "from-back" && "interview-card--from-back"
+            )}
+            noValidate
+            onAnimationEnd={(event) => {
+              if (event.target !== event.currentTarget) return;
+              if (cardPhase === "exit-left") {
+                commitPendingBeat();
+                return;
+              }
+              if (cardPhase === "enter-pop" || cardPhase === "from-back") {
+                setCardPhase("idle");
+              }
+            }}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void handleContinue();
+            }}
+          >
+            <div className="interview-card__chrome">
+              <div className="interview-card__meta">
+                <span className="interview-card__icon-btn interview-card__icon-btn--spacer" />
+                <p className="interview-card__count">
+                  {progressPercent}% COMPLETE
                 </p>
-                <p className="wizard-signup-reassure__sub">
-                  {accountAlreadyCreated
-                    ? "Your answers are saved on this device until you submit."
-                    : "About 5 minutes — short steps, then you’re in."}
-                </p>
+                <span className="interview-card__icon-btn interview-card__icon-btn--spacer" />
               </div>
-              <div className="wizard-progress__header">
-                <p className="wizard-progress__step">
-                  Step {step} of {SPECIALIST_ONBOARDING_TOTAL_STEPS}
-                </p>
-                <p className="wizard-progress__complete">
-                  {progressPercent}% complete
-                </p>
-              </div>
-              <p className="wizard-progress__label">{stepLabel}</p>
-              <div className="wizard-progress__track">
-                <div
-                  className="wizard-progress__fill"
-                  style={{ width: `${progressPercent}%` }}
-                />
+              <div
+                className="interview-progress"
+                role="img"
+                aria-label={`Section ${step} of ${SPECIALIST_ONBOARDING_TOTAL_STEPS}`}
+              >
+                {Array.from({ length: SPECIALIST_ONBOARDING_TOTAL_STEPS }, (_, index) => {
+                  const section = index + 1;
+                  return (
+                    <span
+                      key={section}
+                      className={
+                        section < step
+                          ? "interview-progress__seg interview-progress__seg--done"
+                          : section === step
+                            ? "interview-progress__seg interview-progress__seg--current"
+                            : "interview-progress__seg"
+                      }
+                    />
+                  );
+                })}
               </div>
             </div>
 
-            <div className="login-card__form">
+            {beat ? (
+              <>
+                <h2 className="interview-card__title">{beat.title}</h2>
+                <p className="interview-card__subtitle">{beat.subtitle}</p>
+              </>
+            ) : null}
+
+            <div className="interview-card__field">
               <SpecialistOnboardingSteps
-                step={step}
+                beatId={currentBeatId}
                 state={state}
                 onPatch={(partial) => {
                   if (partial.password !== undefined) {
@@ -772,10 +1024,9 @@ export function SpecialistOnboardingWizard({
                   }
                   patchState(partial);
                 }}
-                onEditStep={(editStep) => {
-                  setInvalidFieldLabels([]);
-                  setError(null);
-                  setStep(editStep as OnboardingStep);
+                onEditBeat={(nextBeat) => {
+                  const nextIndex = beats.findIndex((item) => item.id === nextBeat);
+                  goToBeat(nextBeat, nextIndex < beatIndex ? "back" : "forward");
                 }}
                 profilePhotoCrop={profilePhotoCrop}
                 confirmPassword={confirmPassword}
@@ -792,47 +1043,105 @@ export function SpecialistOnboardingWizard({
               />
             </div>
 
-            <div className="login-form__section login-form__section--cta">
-              {error ? (
-                <p
-                  className="login-card__message login-card__message--error login-card__message--error-visible"
-                  role="alert"
-                >
-                  {error}
-                </p>
-              ) : null}
+            {error ? (
+              <p
+                className="login-card__message login-card__message--error login-card__message--error-visible"
+                role="alert"
+              >
+                {error}
+              </p>
+            ) : null}
 
-              <div className="wizard-nav">
+            <div className="interview-card__footer">
+              <div className="interview-card__actions">
                 <button
                   type="button"
-                  className="wizard-nav__back"
+                  className="interview-back"
                   onClick={handleBack}
-                  disabled={submitting}
+                  disabled={submitting || cardBusy}
+                  aria-label={
+                    beatIndex <= 0
+                      ? "Back to account type"
+                      : "Back"
+                  }
                 >
-                  {step === 1
-                    ? accountAlreadyCreated
-                      ? "Exit"
-                      : "Change role"
-                    : "Back"}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M15 5 8 12l7 7"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
                 <button
-                  type="button"
-                  className="login-submit wizard-nav__continue"
-                  onClick={() => void handleContinue()}
-                  disabled={submitting}
+                  type="submit"
+                  className="interview-continue"
+                  disabled={submitting || cardBusy}
                 >
-                  {continueLabel()}
+                  <span>{continueLabel()}</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <path
+                      d="M5 12h14M13 6l6 6-6 6"
+                      stroke="currentColor"
+                      strokeWidth="1.85"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                 </button>
               </div>
-              {accountAlreadyCreated ? null : <LegalAgreementNotice />}
+              {accountAlreadyCreated ? null : (
+                <p className="interview-signin">
+                  <span>Already have an account?</span>
+                  <Link href={LOGIN_PATH}>Sign in</Link>
+                </p>
+              )}
+              {!beatRequired ? (
+                <button
+                  type="button"
+                  className="interview-skip"
+                  onClick={handleSkip}
+                  disabled={submitting || cardBusy}
+                >
+                  Skip
+                </button>
+              ) : null}
+              {accountAlreadyCreated ? null : (
+                <LegalAgreementNotice className="interview-legal" />
+              )}
             </div>
+          </form>
 
-            {accountAlreadyCreated ? null : (
-            <p className="wizard-footer-link">
-              <span>Already have an account?</span>
-              <Link href={LOGIN_PATH}>Log in</Link>
-            </p>
-            )}
+          {upcomingBeats.length > 0 ? (
+            <ol
+              key={`${currentBeatId}-trail`}
+              className={cn(
+                "interview-trail",
+                stackMotion === "back"
+                  ? "interview-trail--from-back"
+                  : "interview-trail--from-ahead"
+              )}
+            >
+              {upcomingBeats.map((item, index) => (
+                <li
+                  key={item.id}
+                  className={`interview-trail__item interview-trail__item--${index + 1}`}
+                >
+                  <span className="interview-trail__icon">
+                    <SpecialistInterviewTrailIcon name={item.trailIcon} />
+                  </span>
+                  <span className="interview-trail__copy">
+                    <span className="interview-trail__title">{item.trailTitle}</span>
+                    <span className="interview-trail__hint">{item.trailHint}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          ) : null}
+
+          <p className="interview-footnote">You can always edit this later.</p>
           </div>
         </div>
 
@@ -844,7 +1153,7 @@ export function SpecialistOnboardingWizard({
                 aria-live="polite"
                 aria-busy="true"
                 aria-label={
-                  step === 2
+                  verifyingEmail
                     ? "Verifying email"
                     : "Submitting profile to SMOAC admin"
                 }
@@ -852,7 +1161,7 @@ export function SpecialistOnboardingWizard({
                 <div className="wizard-submitting-overlay__panel">
                   <SmoacSavingMark
                     label={
-                      step === 2
+                      verifyingEmail
                         ? "Verifying your email"
                         : "Submitting profile to SMOAC admin"
                     }
@@ -937,7 +1246,7 @@ export function SpecialistOnboardingWizard({
                       onClick={() => {
                         setAwaitingEmailConfirm(null);
                         setEmailOtpCode("");
-                        setStep(2);
+                        goToBeat("email");
                         setError(null);
                       }}
                       disabled={submitting}

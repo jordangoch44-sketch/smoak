@@ -1,5 +1,5 @@
 import { LOGIN_PATH } from "@/lib/auth-routes";
-import { JOIN_INTRO_PARAM, JOIN_FLOW_PATH } from "@/lib/join-flow";
+import { JOIN_FLOW_PATH } from "@/lib/join-flow";
 
 export const AUTH_RETURN_TO_PARAM = "returnTo";
 export const AUTH_RETURN_SAVED = "saved";
@@ -26,7 +26,7 @@ export function buildLoginHrefForSaved(): string {
   return `${LOGIN_PATH}?${AUTH_RETURN_TO_PARAM}=${AUTH_RETURN_SAVED}`;
 }
 
-/** Create-account flow from saved panel (includes welcome intro) */
+/** Create-account flow from saved panel */
 export function buildJoinFlowHrefForSaved(): string {
-  return `${JOIN_FLOW_PATH}?${JOIN_INTRO_PARAM}=1&${AUTH_RETURN_TO_PARAM}=${AUTH_RETURN_SAVED}`;
+  return `${JOIN_FLOW_PATH}?${AUTH_RETURN_TO_PARAM}=${AUTH_RETURN_SAVED}`;
 }

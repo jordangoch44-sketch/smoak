@@ -31,12 +31,15 @@ export function TrainerProfileView({
   variant = "public",
   onClaimFreeSession,
   onInquire,
+  onEditProfilePhoto,
 }: {
   trainer: Trainer;
   cityRanking?: TrainerCityRanking | null;
   variant?: "public" | "specialist-live";
   onClaimFreeSession?: () => void;
   onInquire: () => void;
+  /** Live View only — owner can edit their own profile photo. */
+  onEditProfilePhoto?: () => void;
 }) {
   const hydrated = useHydrated();
   const isSpecialistLive = variant === "specialist-live";
@@ -102,6 +105,9 @@ export function TrainerProfileView({
         }
         onClaimFreeSession={
           offersFreeFirstSession ? onClaimFreeSession : undefined
+        }
+        onEditProfilePhoto={
+          isSpecialistLive ? onEditProfilePhoto : undefined
         }
       />
 

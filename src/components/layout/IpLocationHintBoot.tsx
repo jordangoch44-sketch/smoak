@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { getProfileZipFromSession } from "@/lib/client-profile-location";
 import {
+  ipHintIsTrusted,
   readIpLocationHint,
   writeIpLocationHint,
   type IpLocationHint,
@@ -16,6 +17,7 @@ import {
 /**
  * Fetch a coarse IP metro for Marketplace rails when the visitor has not
  * set a ZIP or precise location. Does not fill Search / header ZIP.
+ * LA / OC IP geo is ignored — live market is San Diego.
  */
 export function IpLocationHintBoot() {
   const { session } = useAuthSession();
@@ -24,7 +26,7 @@ export function IpLocationHintBoot() {
     if (getProfileZipFromSession(session)) return;
     if (loadSavedZipCode()) return;
     if (hasSavedGeolocation()) return;
-    if (readIpLocationHint()) return;
+    if (ipHintIsTrusted(readIpLocationHint())) return;
 
     let cancelled = false;
     void (async () => {

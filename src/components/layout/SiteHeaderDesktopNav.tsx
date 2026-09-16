@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
-import { Suspense, useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
@@ -23,16 +23,37 @@ const DESKTOP_NAV_LABELS: Record<MobileBottomNavItemId, string> = {
   profile: "Profile",
 };
 
-function SiteHeaderDesktopNavInner() {
+function SiteHeaderDesktopNavInner({
+  searchParams,
+}: {
+  searchParams: URLSearchParams | null;
+}) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const router = useRouter();
   const { clientReady } = useStableClientState();
   const { session } = useAuthSession();
   const { isReady: savesReady, isSavesReady, savedCount } = useSavedTrainers();
+  const [pendingId, setPendingId] = useState<MobileBottomNavItemId | null>(
+    null
+  );
   const items = useMemo(
     () => getMobileBottomNavItems(session),
     [session]
   );
+
+  useEffect(() => {
+    setPendingId(null);
+  }, [pathname, searchParams]);
+
+  useEffect(() => {
+    for (const item of items) {
+      try {
+        router.prefetch(item.href);
+      } catch {
+        /* best-effort */
+      }
+    }
+  }, [items, router]);
 
   const showSaveBadge =
     clientReady &&
@@ -45,7 +66,10 @@ function SiteHeaderDesktopNavInner() {
     <nav className="site-header-desktop-nav" aria-label="Main">
       <ul className="site-header-desktop-nav__list">
         {items.map((item) => {
-          const active = isActiveNavItem(item.id, pathname, searchParams);
+          const active =
+            pendingId != null
+              ? pendingId === item.id
+              : isActiveNavItem(item.id, pathname, searchParams);
           const label =
             item.id === "saved" && item.label === "Overview"
               ? "Overview"
@@ -60,6 +84,11 @@ function SiteHeaderDesktopNavInner() {
                   active && "site-header-desktop-nav__link--active"
                 )}
                 aria-current={active ? "page" : undefined}
+                onClick={() => {
+                  if (!isActiveNavItem(item.id, pathname, searchParams)) {
+                    setPendingId(item.id);
+                  }
+                }}
               >
                 {label}
                 {item.id === "saved" &&
@@ -78,11 +107,16 @@ function SiteHeaderDesktopNavInner() {
   );
 }
 
+function SiteHeaderDesktopNavFromRoute() {
+  const searchParams = useSearchParams();
+  return <SiteHeaderDesktopNavInner searchParams={searchParams} />;
+}
+
 /** Desktop-only horizontal nav — same routes as mobile bottom bar, different presentation. */
 export function SiteHeaderDesktopNav() {
   return (
-    <Suspense fallback={null}>
-      <SiteHeaderDesktopNavInner />
+    <Suspense fallback={<SiteHeaderDesktopNavInner searchParams={null} />}>
+      <SiteHeaderDesktopNavFromRoute />
     </Suspense>
   );
 }

@@ -16,6 +16,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { PencilIcon } from "@/components/ui/icons";
 import { TrainerThumbnail } from "@/components/ui/TrainerThumbnail";
 import { useFastActivate, useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ interface ProfileImagePreviewModalProps {
   src: string;
   alt: string;
   onClose: () => void;
+  onEdit?: () => void;
 }
 
 export function ProfileImagePreviewModal({
@@ -33,6 +35,7 @@ export function ProfileImagePreviewModal({
   src,
   alt,
   onClose,
+  onEdit,
 }: ProfileImagePreviewModalProps) {
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -93,7 +96,7 @@ export function ProfileImagePreviewModal({
             <span aria-hidden>×</span>
           </FastActivateButton>
           <motion.div
-            className="profile-image-preview__frame"
+            className="profile-image-preview__stage"
             initial={reduceMotion ? false : { opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={reduceMotion ? undefined : { opacity: 0, scale: 0.94 }}
@@ -105,14 +108,27 @@ export function ProfileImagePreviewModal({
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => event.stopPropagation()}
           >
-            <Image
-              src={src}
-              alt={alt}
-              fill
-              sizes="min(86vw, 28rem)"
-              className="profile-image-preview__img object-cover object-[50%_20%]"
-              priority
-            />
+            <div className="profile-image-preview__frame">
+              <Image
+                src={src}
+                alt={alt}
+                fill
+                sizes="min(86vw, 28rem)"
+                className="profile-image-preview__img object-cover object-[50%_20%]"
+                priority
+              />
+            </div>
+            {onEdit ? (
+              <FastActivateButton
+                className="smoac-control profile-image-preview__edit"
+                aria-label="Edit profile photo"
+                data-live-edit-ignore
+                stopPropagation
+                onActivate={onEdit}
+              >
+                <PencilIcon className="profile-image-preview__edit-icon" />
+              </FastActivateButton>
+            ) : null}
           </motion.div>
         </motion.div>
       ) : null}
@@ -174,6 +190,10 @@ export function ProfileHeroAvatar({
   }, [animate, canExpand, imageSrc, previewOpen, reduceMotion, scope]);
 
   const closePreview = useCallback(() => setPreviewOpen(false), []);
+  const handlePreviewEdit = useCallback(() => {
+    setPreviewOpen(false);
+    onEdit?.();
+  }, [onEdit]);
   const avatarActivate = useFastActivate(() => {
     void handleActivate();
   });
@@ -243,6 +263,7 @@ export function ProfileHeroAvatar({
           src={imageSrc}
           alt={`${name} profile photo`}
           onClose={closePreview}
+          onEdit={onEdit ? handlePreviewEdit : undefined}
         />
       ) : null}
     </>

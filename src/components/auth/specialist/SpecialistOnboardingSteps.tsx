@@ -14,54 +14,14 @@ import { SpecialistApplicationPreview } from "@/components/auth/specialist/Speci
 import { MarketplaceSpecialtyPicker } from "@/components/auth/specialist/MarketplaceSpecialtyPicker";
 import { SpecialistServiceAreaFields } from "@/components/auth/specialist/SpecialistServiceAreaFields";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
+import type { SpecialistInterviewBeatId } from "@/lib/specialist-onboarding-interview";
 import type { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
 
-function RequiredMark() {
-  return (
-    <span className="login-field__label-required" aria-hidden="true">
-      *
-    </span>
-  );
-}
-
-function WizardStepPanel({
-  children,
-  className,
-  stepKey,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  stepKey: string;
-}) {
-  return (
-    <div key={stepKey} className={cn("wizard-step", className)}>
-      {children}
-    </div>
-  );
-}
-
-function WizardStepHeading({
-  title,
-  subtitle,
-}: {
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="wizard-step-heading">
-      <h2 className="wizard-question">{title}</h2>
-      {subtitle ? (
-        <p className="wizard-question__subtitle">{subtitle}</p>
-      ) : null}
-    </div>
-  );
-}
-
 export interface SpecialistOnboardingStepsProps {
-  step: number;
+  beatId: SpecialistInterviewBeatId;
   state: SpecialistOnboardingState;
   onPatch: (partial: Partial<SpecialistOnboardingState>) => void;
-  onEditStep: (step: number) => void;
+  onEditBeat: (beatId: SpecialistInterviewBeatId) => void;
   profilePhotoCrop: ReturnType<typeof useProfilePhotoCropSession>;
   confirmPassword: string;
   onConfirmPasswordChange: (value: string) => void;
@@ -74,10 +34,10 @@ export interface SpecialistOnboardingStepsProps {
 }
 
 export function SpecialistOnboardingSteps({
-  step,
+  beatId,
   state,
   onPatch,
-  onEditStep,
+  onEditBeat,
   profilePhotoCrop,
   confirmPassword,
   onConfirmPasswordChange,
@@ -134,484 +94,461 @@ export function SpecialistOnboardingSteps({
     });
   }
 
-  switch (step) {
-    case 1:
+  switch (beatId) {
+    case "professional-type":
       return (
-        <WizardStepPanel stepKey="sp-1">
-          <WizardStepHeading
-            title="What type of professional are you?"
-            subtitle="Choose the role that best describes your practice."
-          />
-          <p className="login-field__label">
-            Professional type
-            <RequiredMark />
-          </p>
-          <div
-            className="wizard-scroll-options"
-            role="radiogroup"
-            aria-label="Professional type"
-            aria-required="true"
-          >
-            {PROFESSIONAL_TYPE_OPTIONS.map((type) => {
-              const active = state.professionalType === type;
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => onPatch({ professionalType: type })}
-                  className={cn(
-                    "wizard-option-card",
-                    active && "wizard-option-card--active"
-                  )}
-                >
-                  <span className="wizard-option-card__indicator" aria-hidden>
-                    <span className="wizard-option-card__indicator-dot" />
-                  </span>
-                  <span className="wizard-option-card__copy">
-                    <span className="wizard-option-card__title">{type}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </WizardStepPanel>
+        <div
+          className="wizard-scroll-options"
+          role="radiogroup"
+          aria-label="Professional type"
+          aria-required="true"
+        >
+          {PROFESSIONAL_TYPE_OPTIONS.map((type) => {
+            const active = state.professionalType === type;
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => onPatch({ professionalType: type })}
+                className={cn(
+                  "wizard-option-card",
+                  active && "wizard-option-card--active"
+                )}
+              >
+                <span className="wizard-option-card__indicator" aria-hidden>
+                  <span className="wizard-option-card__indicator-dot" />
+                </span>
+                <span className="wizard-option-card__copy">
+                  <span className="wizard-option-card__title">{type}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
       );
 
-    case 2:
+    case "full-name":
       return (
-        <WizardStepPanel stepKey="sp-2">
-          <WizardStepHeading
-            title={
-              hidePasswordFields
-                ? "Confirm your specialist account"
-                : "Create your specialist account"
-            }
-            subtitle={
-              hidePasswordFields
-                ? "You’re signed in — finish your profile so we can review your application."
-                : "You’ll use this email to sign in — including while your application is under review."
-            }
+        <label className="login-field">
+          <span className="sr-only">Full name</span>
+          <input
+            className="login-field__input"
+            value={state.fullName}
+            onChange={(e) => onPatch({ fullName: e.target.value })}
+            autoComplete="name"
+            placeholder="Jane Doe"
+            aria-required="true"
           />
-          <div className="login-fields">
-            <label className="login-field">
-              <span className="login-field__label">
-                Full name
-                <RequiredMark />
-              </span>
-              <input
-                className="login-field__input"
-                value={state.fullName}
-                onChange={(e) => onPatch({ fullName: e.target.value })}
-                autoComplete="name"
-                required
-                aria-required="true"
-              />
-            </label>
-            <div className="login-field">
-              <span className="login-field__label">
-                Gender
-                <RequiredMark />
-              </span>
-              <div
-                className="wizard-gender-options"
-                role="radiogroup"
-                aria-label="Gender"
-                aria-required="true"
+        </label>
+      );
+
+    case "gender":
+      return (
+        <div
+          className="wizard-gender-options"
+          role="radiogroup"
+          aria-label="Gender"
+          aria-required="true"
+        >
+          {GENDER_OPTIONS.map((option) => {
+            const active = state.gender === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => onPatch({ gender: option.value })}
+                className={cn(
+                  "wizard-option-card wizard-gender-option",
+                  active && "wizard-option-card--active"
+                )}
               >
-                {GENDER_OPTIONS.map((option) => {
-                  const active = state.gender === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => onPatch({ gender: option.value })}
-                      className={cn(
-                        "wizard-option-card wizard-gender-option",
-                        active && "wizard-option-card--active"
-                      )}
-                    >
-                      <span className="wizard-option-card__indicator" aria-hidden>
-                        <span className="wizard-option-card__indicator-dot" />
-                      </span>
-                      <span className="wizard-option-card__copy">
-                        <span className="wizard-option-card__title">
-                          {option.label}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+                <span className="wizard-option-card__indicator" aria-hidden>
+                  <span className="wizard-option-card__indicator-dot" />
+                </span>
+                <span className="wizard-option-card__copy">
+                  <span className="wizard-option-card__title">
+                    {option.label}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      );
+
+    case "business-name":
+      return (
+        <label className="login-field">
+          <span className="sr-only">Business name</span>
+          <input
+            className="login-field__input"
+            value={state.displayName}
+            onChange={(e) => onPatch({ displayName: e.target.value })}
+            placeholder="How clients will see you"
+            aria-required="true"
+          />
+        </label>
+      );
+
+    case "professional-title":
+      return (
+        <label className="login-field">
+          <span className="sr-only">Professional title</span>
+          <input
+            className="login-field__input"
+            value={state.headline}
+            onChange={(e) => onPatch({ headline: e.target.value })}
+            placeholder="e.g. Strength coach, Mobility and recovery"
+            aria-required="true"
+          />
+        </label>
+      );
+
+    case "email":
+      return (
+        <label className="login-field">
+          <span className="sr-only">Email</span>
+          <input
+            type="email"
+            className="login-field__input"
+            value={state.email}
+            onChange={(e) => onPatch({ email: e.target.value })}
+            autoComplete="email"
+            placeholder="you@studio.com"
+            readOnly={emailLocked}
+            aria-readonly={emailLocked}
+          />
+        </label>
+      );
+
+    case "password":
+      if (hidePasswordFields) return null;
+      return (
+        <div
+          className={cn(
+            "login-fields wizard-password-fields",
+            passwordFieldsError && "login-fields--error",
+            shakePasswordFields && "login-fields--shake"
+          )}
+          onAnimationEnd={onPasswordShakeEnd}
+        >
+          <label className="login-field">
+            <span className="sr-only">Create a password</span>
+            <PasswordInput
+              value={state.password}
+              onChange={(e) => onPatch({ password: e.target.value })}
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              aria-required="true"
+              aria-invalid={passwordFieldsError}
+            />
+          </label>
+          <label className="login-field">
+            <span className="sr-only">Confirm password</span>
+            <PasswordInput
+              value={confirmPassword}
+              onChange={(e) => onConfirmPasswordChange(e.target.value)}
+              autoComplete="new-password"
+              placeholder="Re-enter your password"
+              aria-required="true"
+              aria-invalid={passwordFieldsError}
+            />
+          </label>
+          {passwordFieldsError ? (
+            <p className="wizard-field-error" role="alert">
+              {state.password.trim().length < 8
+                ? "Use at least 8 characters."
+                : "Passwords do not match."}
+            </p>
+          ) : null}
+        </div>
+      );
+
+    case "phone":
+      return (
+        <label className="login-field">
+          <span className="sr-only">Phone number</span>
+          <input
+            type="tel"
+            className="login-field__input"
+            value={state.phone}
+            onChange={(e) => onPatch({ phone: e.target.value })}
+            autoComplete="tel"
+            placeholder="(555) 555-5555"
+            aria-required="true"
+          />
+        </label>
+      );
+
+    case "photo":
+      return (
+        <label className="login-field">
+          <span className="sr-only">Profile photo</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="login-field__input wizard-file-input"
+            aria-required="true"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleProfilePhotoFile(file);
+              e.target.value = "";
+            }}
+          />
+          {state.media.profilePhotoUrl ? (
+            <div className="wizard-profile-photo-preview">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={state.media.profilePhotoUrl}
+                alt="Profile preview"
+                className="wizard-profile-photo-preview__img"
+              />
+              <button
+                type="button"
+                className="wizard-edit-crop-link"
+                onClick={handleEditProfilePhotoCrop}
+              >
+                Edit crop
+              </button>
             </div>
-            <label className="login-field">
-              <span className="login-field__label">
-                Business name
-                <RequiredMark />
+          ) : (
+            <p className="wizard-field-hint">
+              Add a clear face or brand photo — clients see this on your card.
+            </p>
+          )}
+        </label>
+      );
+
+    case "service-type":
+      return (
+        <SpecialistServiceAreaFields
+          state={state}
+          onPatch={onPatch}
+          invalidFieldLabels={invalidFieldLabels}
+          focus="service-type"
+        />
+      );
+
+    case "location":
+      return (
+        <SpecialistServiceAreaFields
+          state={state}
+          onPatch={onPatch}
+          invalidFieldLabels={invalidFieldLabels}
+          focus="location"
+        />
+      );
+
+    case "street":
+      return (
+        <SpecialistServiceAreaFields
+          state={state}
+          onPatch={onPatch}
+          invalidFieldLabels={invalidFieldLabels}
+          focus="street"
+        />
+      );
+
+    case "service-area":
+      return (
+        <SpecialistServiceAreaFields
+          state={state}
+          onPatch={onPatch}
+          invalidFieldLabels={invalidFieldLabels}
+          focus="description"
+        />
+      );
+
+    case "specialties":
+      return (
+        <MarketplaceSpecialtyPicker
+          variant="wizard"
+          required
+          selected={state.specialties}
+          homepageSpecialties={state.homepageSpecialties}
+          onChange={({ specialty, homepageSpecialties }) =>
+            onPatch({
+              specialties: specialty,
+              homepageSpecialties,
+            })
+          }
+        />
+      );
+
+    case "certifications":
+      return (
+        <div className="login-fields">
+          {certRows.map((cert, index) => (
+            <div key={`cert-${index}`} className="login-field">
+              <span className="sr-only">
+                {certRows.length > 1
+                  ? `Certification ${index + 1}`
+                  : "Certification"}
               </span>
               <input
                 className="login-field__input"
-                value={state.displayName}
-                onChange={(e) => onPatch({ displayName: e.target.value })}
-                placeholder="How clients will see you"
-                required
-                aria-required="true"
+                value={cert.name}
+                onChange={(e) =>
+                  setCertifications(
+                    certRows.map((row, i) =>
+                      i === index
+                        ? {
+                            ...row,
+                            name: e.target.value,
+                            issuer: "",
+                            year: row.year || new Date().getFullYear(),
+                          }
+                        : row
+                    )
+                  )
+                }
+                placeholder="e.g. NASM-CPT"
               />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">
-                Professional title
-                <RequiredMark />
-              </span>
-              <input
-                className="login-field__input"
-                value={state.headline}
-                onChange={(e) => onPatch({ headline: e.target.value })}
-                placeholder="e.g. Strength coach, Mobility and recovery, Hyrox Coach, Boxing coach"
-                required
-                aria-required="true"
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">
-                Email
-                <RequiredMark />
-              </span>
-              <input
-                type="email"
-                className="login-field__input"
-                value={state.email}
-                onChange={(e) => onPatch({ email: e.target.value })}
-                autoComplete="email"
-                required
-                readOnly={emailLocked}
-                aria-readonly={emailLocked}
-              />
-            </label>
-            {hidePasswordFields ? null : (
-            <div
-              className={cn(
-                "wizard-password-fields",
-                passwordFieldsError && "login-fields--error",
-                shakePasswordFields && "login-fields--shake"
-              )}
-              onAnimationEnd={onPasswordShakeEnd}
-            >
-              <label className="login-field">
-                <span className="login-field__label">
-                  Create a password
-                  <RequiredMark />
-                </span>
-                <PasswordInput
-                  value={state.password}
-                  onChange={(e) => onPatch({ password: e.target.value })}
-                  autoComplete="new-password"
-                  placeholder="At least 8 characters"
-                  required
-                  aria-required="true"
-                  aria-invalid={passwordFieldsError}
-                />
-              </label>
-              <label className="login-field">
-                <span className="login-field__label">
-                  Confirm password
-                  <RequiredMark />
-                </span>
-                <PasswordInput
-                  value={confirmPassword}
-                  onChange={(e) => onConfirmPasswordChange(e.target.value)}
-                  autoComplete="new-password"
-                  placeholder="Re-enter your password"
-                  required
-                  aria-required="true"
-                  aria-invalid={passwordFieldsError}
-                />
-              </label>
-              {passwordFieldsError ? (
-                <p className="wizard-field-error" role="alert">
-                  {state.password.trim().length < 8
-                    ? "Use at least 8 characters."
-                    : "Passwords do not match."}
-                </p>
+              {certRows.length > 1 ? (
+                <button
+                  type="button"
+                  className="wizard-cert-block__remove"
+                  onClick={() =>
+                    setCertifications(certRows.filter((_, i) => i !== index))
+                  }
+                >
+                  Remove
+                </button>
               ) : null}
             </div>
-            )}
-            <label className="login-field">
-              <span className="login-field__label">
-                Phone number
-                <RequiredMark />
-              </span>
-              <input
-                type="tel"
-                className="login-field__input"
-                value={state.phone}
-                onChange={(e) => onPatch({ phone: e.target.value })}
-                autoComplete="tel"
-                required
-                aria-required="true"
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">
-                Profile photo
-                <RequiredMark />
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="login-field__input wizard-file-input"
-                aria-required="true"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleProfilePhotoFile(file);
-                  e.target.value = "";
-                }}
-              />
-              {state.media.profilePhotoUrl ? (
-                <div className="wizard-profile-photo-preview">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={state.media.profilePhotoUrl}
-                    alt="Profile preview"
-                    className="wizard-profile-photo-preview__img"
-                  />
-                  <button
-                    type="button"
-                    className="wizard-edit-crop-link"
-                    onClick={handleEditProfilePhotoCrop}
-                  >
-                    Edit crop
-                  </button>
-                </div>
-              ) : (
-                <p className="wizard-field-hint">
-                  Add a clear face or brand photo — clients see this on your card.
-                </p>
-              )}
-            </label>
-          </div>
-        </WizardStepPanel>
-      );
-
-    case 3:
-      return (
-        <WizardStepPanel stepKey="sp-3">
-          <WizardStepHeading
-            title="Where do you work with clients?"
-            subtitle="Enter your ZIP so clients can find you. Street address is optional."
-          />
-          <SpecialistServiceAreaFields
-            state={state}
-            onPatch={onPatch}
-            invalidFieldLabels={invalidFieldLabels}
-          />
-        </WizardStepPanel>
-      );
-
-    case 4:
-      return (
-        <WizardStepPanel stepKey="sp-4">
-          <WizardStepHeading
-            title="Your specialties"
-            subtitle="Select the areas you coach. You can refine these anytime from your dashboard."
-          />
-          <p className="login-field__label">
-            Specialties
-            <RequiredMark />
-          </p>
-          <MarketplaceSpecialtyPicker
-            variant="wizard"
-            required
-            selected={state.specialties}
-            homepageSpecialties={state.homepageSpecialties}
-            onChange={({ specialty, homepageSpecialties }) =>
-              onPatch({
-                specialties: specialty,
-                homepageSpecialties,
-              })
+          ))}
+          <button
+            type="button"
+            className="smoac-control wizard-add-row-btn"
+            onClick={() =>
+              setCertifications([...certRows, { ...EMPTY_CERTIFICATION }])
             }
-          />
-          <div className="login-fields" style={{ marginTop: "1.25rem" }}>
-            <p className="wizard-step-subsection-title">Certifications</p>
-            {certRows.map((cert, index) => (
-              <div key={`cert-${index}`} className="login-field">
-                <span className="login-field__label">
-                  {certRows.length > 1
-                    ? `Certification ${index + 1}`
-                    : "Certification"}
-                </span>
-                <input
-                  className="login-field__input"
-                  value={cert.name}
-                  onChange={(e) =>
-                    setCertifications(
-                      certRows.map((row, i) =>
-                        i === index
-                          ? {
-                              ...row,
-                              name: e.target.value,
-                              issuer: "",
-                              year: row.year || new Date().getFullYear(),
-                            }
-                          : row
-                      )
-                    )
-                  }
-                  placeholder="e.g. NASM-CPT"
-                />
-                {certRows.length > 1 ? (
-                  <button
-                    type="button"
-                    className="wizard-cert-block__remove"
-                    onClick={() =>
-                      setCertifications(certRows.filter((_, i) => i !== index))
-                    }
-                  >
-                    Remove
-                  </button>
-                ) : null}
-              </div>
-            ))}
-            <button
-              type="button"
-              className="smoac-control wizard-add-row-btn"
-              onClick={() =>
-                setCertifications([...certRows, { ...EMPTY_CERTIFICATION }])
-              }
-            >
-              Add another certification
-            </button>
-            <p className="wizard-field-hint">
-              You can add or edit these anytime from your profile after approval.
-            </p>
-          </div>
-        </WizardStepPanel>
+          >
+            Add another certification
+          </button>
+        </div>
       );
 
-    case 5:
+    case "bio":
       return (
-        <WizardStepPanel stepKey="sp-5">
-          <WizardStepHeading
-            title="Intro & session rate"
-            subtitle="A short bio and your typical 1:1 rate — enough for clients once you’re approved and live."
-          />
-          <div className="login-fields">
-            <label className="login-field">
-              <span className="login-field__label">
-                Short bio
-                <RequiredMark />
-              </span>
-              <textarea
-                className="login-field__input wizard-textarea"
-                value={state.bio}
-                onChange={(e) => onPatch({ bio: e.target.value })}
-                rows={5}
-                placeholder="Who you help, what you specialize in, and what clients can expect."
-                required
-                aria-required="true"
-              />
-            </label>
-            <p className="wizard-field-hint">
-              About 40+ characters · {state.bio.trim().length} entered
-            </p>
-            <SpecialistTrainingOptionsFields
-              value={state.trainingOptions}
-              onChange={(trainingOptions) => onPatch({ trainingOptions })}
+        <div className="login-fields">
+          <label className="login-field">
+            <span className="sr-only">Short bio</span>
+            <textarea
+              className="login-field__input wizard-textarea"
+              value={state.bio}
+              onChange={(e) => onPatch({ bio: e.target.value })}
+              rows={5}
+              placeholder="Who you help, what you specialize in, and what clients can expect."
+              aria-required="true"
             />
-            <div className="session-price-range-fields">
-              <p className="login-field__label session-price-range-fields__legend">
-                1:1 session price
-                <RequiredMark />
-              </p>
-              <label className="login-field">
-                <span className="login-field__label">From</span>
-                <input
-                  className="login-field__input"
-                  inputMode="decimal"
-                  value={state.pricing.oneOnOnePriceMin}
-                  onChange={(e) =>
-                    onPatch({
-                      pricing: applicationPricingFromRange(
-                        e.target.value,
-                        state.pricing.oneOnOnePriceMax,
-                        state.pricing
-                      ),
-                    })
-                  }
-                  placeholder="$80"
-                  required
-                  aria-required="true"
-                  aria-label="Session price from"
-                />
-              </label>
-              <span className="session-price-range-fields__dash" aria-hidden="true">
-                –
-              </span>
-              <label className="login-field">
-                <span className="login-field__label">To</span>
-                <input
-                  className="login-field__input"
-                  inputMode="decimal"
-                  value={state.pricing.oneOnOnePriceMax}
-                  onChange={(e) =>
-                    onPatch({
-                      pricing: applicationPricingFromRange(
-                        state.pricing.oneOnOnePriceMin,
-                        e.target.value,
-                        state.pricing
-                      ),
-                    })
-                  }
-                  placeholder="$120"
-                  required
-                  aria-required="true"
-                  aria-label="Session price to"
-                />
-              </label>
-            </div>
-            <p className="wizard-field-hint">
-              Shown as a range on your Marketplace card after approval, e.g.
-              $80–$120 / session. You can update it anytime from Edit profile.
-            </p>
-            <label className="login-field">
-              <span className="login-field__label">Instagram</span>
-              <input
-                className="login-field__input"
-                value={state.social.instagram ?? ""}
-                onChange={(e) =>
-                  onPatch({ social: { ...state.social, instagram: e.target.value } })
-                }
-                placeholder="@yourhandle"
-              />
-            </label>
-            <label className="login-field">
-              <span className="login-field__label">Website</span>
-              <input
-                className="login-field__input"
-                value={state.social.website ?? ""}
-                onChange={(e) =>
-                  onPatch({ social: { ...state.social, website: e.target.value } })
-                }
-                placeholder="https://"
-              />
-            </label>
-            <p className="wizard-field-hint">
-              Availability, extra media, and coaching style can be deepened
-              anytime after you’re live. Google Reviews connect is available later
-              on SMOAC Pro from your dashboard.
-            </p>
-          </div>
-        </WizardStepPanel>
+          </label>
+          <p className="wizard-field-hint">
+            About 40+ characters · {state.bio.trim().length} entered
+          </p>
+        </div>
       );
 
-    case 6:
+    case "training-options":
       return (
-        <WizardStepPanel stepKey="sp-6">
-          <WizardStepHeading
-            title="Preview & submit"
-            subtitle="We’ll review this application. When approved, your profile goes live on Marketplace."
+        <SpecialistTrainingOptionsFields
+          value={state.trainingOptions}
+          onChange={(trainingOptions) => onPatch({ trainingOptions })}
+          hideLabel
+        />
+      );
+
+    case "pricing":
+      return (
+        <div className="login-fields">
+          <div className="session-price-range-fields">
+            <p className="sr-only">1:1 session price</p>
+            <label className="login-field">
+              <span className="login-field__label">From</span>
+              <input
+                className="login-field__input"
+                inputMode="decimal"
+                value={state.pricing.oneOnOnePriceMin}
+                onChange={(e) =>
+                  onPatch({
+                    pricing: applicationPricingFromRange(
+                      e.target.value,
+                      state.pricing.oneOnOnePriceMax,
+                      state.pricing
+                    ),
+                  })
+                }
+                placeholder="$80"
+                aria-required="true"
+                aria-label="Session price from"
+              />
+            </label>
+            <span className="session-price-range-fields__dash" aria-hidden="true">
+              –
+            </span>
+            <label className="login-field">
+              <span className="login-field__label">To</span>
+              <input
+                className="login-field__input"
+                inputMode="decimal"
+                value={state.pricing.oneOnOnePriceMax}
+                onChange={(e) =>
+                  onPatch({
+                    pricing: applicationPricingFromRange(
+                      state.pricing.oneOnOnePriceMin,
+                      e.target.value,
+                      state.pricing
+                    ),
+                  })
+                }
+                placeholder="$120"
+                aria-required="true"
+                aria-label="Session price to"
+              />
+            </label>
+          </div>
+          <p className="wizard-field-hint">
+            Shown as a range on your Marketplace card after approval, e.g.
+            $80–$120 / session.
+          </p>
+        </div>
+      );
+
+    case "instagram":
+      return (
+        <label className="login-field">
+          <span className="sr-only">Instagram</span>
+          <input
+            className="login-field__input"
+            value={state.social.instagram ?? ""}
+            onChange={(e) =>
+              onPatch({ social: { ...state.social, instagram: e.target.value } })
+            }
+            placeholder="@yourhandle"
           />
+        </label>
+      );
+
+    case "website":
+      return (
+        <label className="login-field">
+          <span className="sr-only">Website</span>
+          <input
+            className="login-field__input"
+            value={state.social.website ?? ""}
+            onChange={(e) =>
+              onPatch({ social: { ...state.social, website: e.target.value } })
+            }
+            placeholder="https://"
+          />
+        </label>
+      );
+
+    case "preview":
+      return (
+        <>
           <SpecialistApplicationPreview
             state={state}
             onEditCrop={
@@ -621,20 +558,16 @@ export function SpecialistOnboardingSteps({
                 : undefined
             }
           />
-          <p className="wizard-field-hint" style={{ marginTop: "1rem" }}>
-            After approval you&apos;re discoverable — deepen availability,
-            photos, and credentials anytime from Edit profile.
-          </p>
           <div className="wizard-preview-actions">
             <button
               type="button"
               className="wizard-nav__back wizard-preview-actions__edit"
-              onClick={() => onEditStep(2)}
+              onClick={() => onEditBeat("full-name")}
             >
               Edit account details
             </button>
           </div>
-        </WizardStepPanel>
+        </>
       );
 
     default:

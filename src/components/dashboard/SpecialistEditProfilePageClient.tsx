@@ -1343,7 +1343,6 @@ export function SpecialistEditProfilePageClient({
                   value={form.profilePhotoUrl}
                   specialistId={trainerId}
                   onChange={(value) => updateField("profilePhotoUrl", value)}
-                  onClear={() => updateField("profilePhotoUrl", "")}
                 />
                 <SpecialistProfileMediaEditor
                   coverImageUrl={form.coverImageUrl}

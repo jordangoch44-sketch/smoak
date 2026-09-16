@@ -18,8 +18,9 @@ type HeaderChromeLinkProps = Omit<ComponentProps<typeof Link>, "href"> & {
 };
 
 /**
- * Header logo / Sign up — touch navigates on pointerup; mouse keeps click.
- * Same-path taps only run onActivate (no wasted route load).
+ * Header logo / nav / Sign up — touch navigates on pointerup; mouse uses
+ * native Link so toolbar clicks reuse the prefetch cache instead of a
+ * fresh router.push.
  */
 export function HeaderChromeLink({
   href,
@@ -43,25 +44,6 @@ export function HeaderChromeLink({
     return pathname === destinationPath();
   }
 
-  function navigate(
-    event: MouseEvent<HTMLAnchorElement> | PointerEvent<HTMLAnchorElement>
-  ): boolean {
-    if (isModifiedNavActivation(event)) return false;
-    event.preventDefault();
-    if (isSameDestination()) {
-      onActivate?.();
-      return true;
-    }
-    try {
-      router.push(href);
-    } catch {
-      /* navigation is best-effort */
-    }
-    /* Defer overlay close so unmounting this link cannot cancel the push. */
-    queueMicrotask(() => onActivate?.());
-    return true;
-  }
-
   function handlePointerDown(event: PointerEvent<HTMLAnchorElement>) {
     onPointerDown?.(event);
     if (event.defaultPrevented || event.button !== 0) return;
@@ -75,9 +57,20 @@ export function HeaderChromeLink({
   function handlePointerUp(event: PointerEvent<HTMLAnchorElement>) {
     onPointerUp?.(event);
     if (event.pointerType === "mouse") return;
-    if (navigate(event)) {
+    if (isModifiedNavActivation(event)) return;
+    event.preventDefault();
+    if (isSameDestination()) {
+      onActivate?.();
       openedByPointerRef.current = true;
+      return;
     }
+    try {
+      router.push(href);
+    } catch {
+      /* navigation is best-effort */
+    }
+    queueMicrotask(() => onActivate?.());
+    openedByPointerRef.current = true;
   }
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
@@ -88,12 +81,19 @@ export function HeaderChromeLink({
       openedByPointerRef.current = false;
       return;
     }
-    navigate(event);
+    if (isModifiedNavActivation(event)) return;
+    if (isSameDestination()) {
+      event.preventDefault();
+      onActivate?.();
+      return;
+    }
+    queueMicrotask(() => onActivate?.());
   }
 
   return (
     <Link
       href={href}
+      prefetch
       className={cn("smoac-control", className)}
       {...props}
       onPointerDown={handlePointerDown}

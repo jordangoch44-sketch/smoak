@@ -48,7 +48,7 @@ const PERK_ICONS: Record<string, ComponentType<{ className?: string }>> = {
   "Free 1st session marketplace placement": CalendarIcon,
   "Growth insights on your live profile": EyeIcon,
   "Everything in Pro": CheckCircleIcon,
-  "Phone videos up to 45 seconds": CameraIcon,
+  "Up to 5 phone videos, 45 seconds each": CameraIcon,
   "Client results under Specialties": PhotosStackIcon,
   "20% off Boost campaigns": PercentIcon,
 };

@@ -251,12 +251,12 @@ export function MobileBottomNavTransitionProvider({
   useEffect(() => clearTimers, [clearTimers]);
 
   useEffect(() => {
-    if (!isTabletViewport || didPrefetchRef.current) return;
+    if (didPrefetchRef.current) return;
     didPrefetchRef.current = true;
 
     const runPrefetch = () => prefetchBottomNavRoutes(router.prefetch);
 
-    /* Prefetch sooner so the first tab tap isn’t cold */
+    /* Prefetch on every viewport so the first toolbar click isn’t a cold RSC. */
     const scheduleIdle = window.requestIdleCallback;
     if (typeof scheduleIdle === "function") {
       const id = scheduleIdle(runPrefetch, { timeout: 250 });
@@ -265,7 +265,7 @@ export function MobileBottomNavTransitionProvider({
 
     const id = window.setTimeout(runPrefetch, 80);
     return () => window.clearTimeout(id);
-  }, [isTabletViewport, router]);
+  }, [router]);
 
   const actions = useMemo<BottomNavTransitionActions>(
     () => ({

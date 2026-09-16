@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { Cormorant_Garamond, Inter, Outfit, Syne } from "next/font/google";
 import "@/styles/globals.css";
 import "@/styles/site-shell.css";
@@ -74,9 +73,7 @@ export default function SiteLayout({
           {/* Soft-nav profile intercept — previous page stays mounted in AppMain */}
           {modal}
           <Footer />
-          <Suspense fallback={null}>
-            <MobileBottomNav />
-          </Suspense>
+          <MobileBottomNav />
         </AppProviders>
       </ToastProvider>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ChangeEvent } from "react";
+import { useId, useRef, useState, type ChangeEvent } from "react";
 import { ProfilePhotoCropper } from "@/components/media/ProfilePhotoCropper";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
@@ -12,6 +12,7 @@ import {
   SPECIALIST_STORAGE_LIMITS,
 } from "@/lib/supabase/constants";
 import { SpecialistStorageValidationError } from "@/lib/supabase/errors";
+import { CameraIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 interface ProfileMediaUploadFieldProps {
@@ -21,7 +22,6 @@ interface ProfileMediaUploadFieldProps {
   onChange: (value: string) => void;
   accept?: string;
   specialistId?: string | null;
-  onClear?: () => void;
 }
 
 export function ProfileMediaUploadField({
@@ -31,9 +31,9 @@ export function ProfileMediaUploadField({
   onChange,
   accept = SPECIALIST_STORAGE_ACCEPT.profile,
   specialistId,
-  onClear,
 }: ProfileMediaUploadFieldProps) {
   const inputId = useId();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [pendingCropSrc, setPendingCropSrc] = useState<string | null>(null);
@@ -133,10 +133,20 @@ export function ProfileMediaUploadField({
           </>
         )}
         <span className="dashboard-upload-zone__overlay">
-          {uploading ? "Uploading…" : value ? "Replace" : "Upload"}
+          {uploading ? (
+            "Uploading…"
+          ) : value ? (
+            <>
+              <CameraIcon className="dashboard-upload-zone__overlay-icon" />
+              Replace photo
+            </>
+          ) : (
+            "Upload photo"
+          )}
         </span>
         <input
           id={inputId}
+          ref={fileInputRef}
           type="file"
           accept={`${accept},.jpg,.jpeg,.png,.webp`}
           className="dashboard-upload-zone__input"
@@ -146,34 +156,24 @@ export function ProfileMediaUploadField({
       </label>
 
       {value ? (
-        <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.375rem" }}>
+        <div className="dashboard-upload-actions">
           <button
             type="button"
-            className="smoac-control"
-            style={{
-              padding: "0.25rem 0.65rem",
-              fontSize: "0.75rem",
-              borderRadius: "6px",
-              background: "rgba(255, 255, 255, 0.07)",
-              border: "1px solid rgba(255, 255, 255, 0.12)",
-              color: "rgba(255, 255, 255, 0.85)",
-              cursor: "pointer",
-            }}
+            className="dashboard-upload-action dashboard-upload-action--primary smoac-control"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <CameraIcon className="dashboard-upload-action__icon" />
+            Replace photo
+          </button>
+          <button
+            type="button"
+            className="dashboard-upload-action smoac-control"
             onClick={() => setPendingCropSrc(value)}
             disabled={uploading}
           >
             Adjust crop
           </button>
-          {onClear ? (
-            <button
-              type="button"
-              className="dashboard-upload-clear"
-              onClick={onClear}
-              disabled={uploading}
-            >
-              Remove
-            </button>
-          ) : null}
         </div>
       ) : null}
 

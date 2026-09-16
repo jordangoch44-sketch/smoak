@@ -41,7 +41,7 @@ function readNeedsLocationGate(): boolean {
 
 /**
  * Optional Search-page location popup (ZIP + precise GPS).
- * Marketplace is never gated. Dismiss → IP frames the map.
+ * Marketplace is never gated. Dismiss → San Diego frames the map.
  */
 export function SiteLocationGate() {
   const pathname = usePathname();

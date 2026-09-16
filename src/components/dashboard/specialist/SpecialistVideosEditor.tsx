@@ -23,6 +23,7 @@ import {
   PINNED_PHOTOS_MAX,
   parseMediaUrlList,
   serializeMediaUrlList,
+  SPECIALIST_MEDIA_LIMITS,
   specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
 import {
@@ -64,7 +65,9 @@ export function SpecialistVideosEditor({
 }: SpecialistVideosEditorProps) {
   const inputId = useId();
   const limits = specialistMediaLimitsForPlan(isPremium, isProPlus);
-  const videoCap = isProPlus ? limits.videos : 2;
+  const videoCap = isProPlus
+    ? limits.videos
+    : SPECIALIST_MEDIA_LIMITS.proPlus.videos;
   const urls = parseMediaUrlList(videoNotes);
   const posters = parseVideoPosterMap(videoPostersJson);
   const atLimit = urls.length >= videoCap;
@@ -208,8 +211,8 @@ export function SpecialistVideosEditor({
         ) : null}
       </div>
       <p className="specialist-media-editor__hint">
-        Add a clip from your phone, up to 45 seconds. Pick the thumbnail still,
-        then pin it under your bio if you want.
+        Add up to {videoCap} clips from your phone, 45 seconds each. Pick the
+        thumbnail still, then pin it under your bio if you want.
       </p>
       <div className="specialist-media-editor__pin-row" aria-label="Profile videos">
         {urls.map((url, index) => {

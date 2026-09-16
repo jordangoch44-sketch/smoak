@@ -18,6 +18,7 @@ import {
 } from "@/lib/explore";
 import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import {
+  DEFAULT_MARKETPLACE_CITY,
   MARKETPLACE_CITY_CENTERS,
   marketplaceMetroRadiusMiles,
 } from "@/lib/marketplace-city-centers";
@@ -167,7 +168,8 @@ function metroSearchAreaForCity(city: MarketplaceCity): ExploreSearchArea {
 
 /**
  * Default Explore map frame: typed neighborhood/city win over header ZIP.
- * ZIP / GPS stay local (~12 mi); marketplace city searches use a metro radius.
+ * ZIP / GPS stay local (~7 mi); marketplace city searches use a metro radius.
+ * No ZIP / GPS → live San Diego metro (not a far-away IP).
  */
 export function resolveDefaultExploreSearchArea(
   filters: TrainerFilters,
@@ -224,7 +226,8 @@ export function resolveDefaultExploreSearchArea(
     };
   }
 
-  return null;
+  /* No ZIP / GPS — live market is San Diego. Do not follow a far-away IP. */
+  return metroSearchAreaForCity(DEFAULT_MARKETPLACE_CITY);
 }
 
 /**

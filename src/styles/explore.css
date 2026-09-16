@@ -368,6 +368,13 @@ body:has(.explore-page) .site-footer__glow {
   margin-bottom: 0.875rem;
 }
 
+.explore-results-heading__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
 .explore-results-heading__title {
   margin: 0;
   font-size: 1.125rem;
@@ -396,6 +403,14 @@ body:has(.explore-page) .site-footer__glow {
   font-size: 0.75rem;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.48);
+}
+
+.explore-results-heading__searching {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .explore-results-empty-stack {
@@ -561,23 +576,6 @@ body:has(.explore-page) .site-footer__glow {
   z-index: 450;
 }
 
-.explore-map__search-here {
-  position: absolute;
-  z-index: 450;
-  left: 50%;
-  bottom: 0.75rem;
-  /* Column map stage is a flex container; stretch would make this full-width. */
-  align-self: center;
-  width: max-content;
-  max-width: calc(100% - 5.5rem);
-  transform: translateX(-50%);
-  pointer-events: auto;
-}
-
-.explore-map__search-here:active:not(:disabled) {
-  transform: translateX(-50%) scale(0.98);
-}
-
 .explore-map__canvas {
   position: relative;
   width: 100%;
@@ -740,27 +738,30 @@ body.explore-hub-open .explore-split__cta-dock {
   transform: translateY(20px);
 }
 
-.explore-split__search-here {
+.explore-split__cta {
   position: relative;
   isolation: isolate;
   overflow: hidden;
   pointer-events: auto;
   display: inline-flex;
-  align-items: stretch;
+  min-height: 3.15rem;
+  max-width: 22rem;
+  width: 100%;
+  align-items: center;
   justify-content: center;
-  padding: 2px;
+  gap: 0.55rem;
+  padding: 3px;
   border: none;
   border-radius: 9999px;
+  appearance: none;
+  -webkit-appearance: none;
   background: transparent;
-  color: #f5f5f7;
+  color: #fff;
   cursor: pointer;
   touch-action: manipulation;
-  box-shadow:
-    var(--smoac-color-glow-strong),
-    0 14px 36px rgba(0, 0, 0, 0.48);
 }
 
-.explore-split__search-here::before {
+.explore-split__cta::before {
   content: "";
   position: absolute;
   inset: -120%;
@@ -776,59 +777,98 @@ body.explore-hub-open .explore-split__cta-dock {
     rgba(var(--smoac-color-cool-rgb), 0.78) 350deg,
     transparent 360deg
   );
-  animation: explore-search-here-orbit 2.4s linear infinite;
+  animation: explore-cta-orbit 2.4s linear infinite;
   pointer-events: none;
 }
 
-.explore-split__search-here::after {
+.explore-split__cta::after {
   content: "";
   position: absolute;
-  inset: 2px;
+  inset: 3px;
   z-index: 0;
   border-radius: inherit;
   background:
     linear-gradient(
       165deg,
-      rgba(28, 26, 36, 0.98) 0%,
-      rgba(12, 10, 18, 0.99) 55%,
-      rgba(8, 7, 12, 1) 100%
+      rgba(28, 26, 36, 0.94) 0%,
+      rgba(12, 10, 18, 0.96) 55%,
+      rgba(8, 7, 12, 0.98) 100%
     );
   pointer-events: none;
 }
 
-.explore-split__search-here__label {
-  position: relative;
-  z-index: 1;
-  display: inline-flex;
-  min-height: 2.65rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0.55rem 1.2rem;
-  font-size: 0.8125rem;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
-.explore-split__search-here:disabled {
-  opacity: 0.72;
-  cursor: wait;
-}
-
-.explore-split__search-here:active:not(:disabled) {
+.explore-split__cta:active {
   transform: scale(0.98);
 }
 
-@keyframes explore-search-here-orbit {
+.explore-split__cta-label,
+.explore-split__cta-chevron {
+  position: relative;
+  z-index: 1;
+}
+
+.explore-split__cta-label {
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  padding: 0.72rem 0.35rem 0.72rem 1.15rem;
+}
+
+.explore-split__cta-chevron {
+  font-size: 0.75rem;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.55);
+  transform: translateY(1px);
+  padding-right: 1.05rem;
+}
+
+.explore-split__cta--searching .explore-split__cta-label {
+  letter-spacing: 0.01em;
+  padding-inline: 1.15rem;
+}
+
+.explore-split__cta--searching::before {
+  inset: auto 16% 0.7rem;
+  height: 2.5px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(var(--smoac-color-warm-rgb), 0.25) 18%,
+    rgba(var(--smoac-color-rose-rgb), 0.95) 42%,
+    rgba(var(--smoac-color-violet-rgb), 1) 58%,
+    rgba(var(--smoac-color-cool-rgb), 0.85) 78%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: explore-cta-search-bar 1.15s ease-in-out infinite;
+}
+
+@keyframes explore-cta-orbit {
   to {
     transform: rotate(360deg);
   }
 }
 
+@keyframes explore-cta-search-bar {
+  0% {
+    background-position: 80% 0;
+    opacity: 0.55;
+  }
+  50% {
+    background-position: 0% 0;
+    opacity: 1;
+  }
+  100% {
+    background-position: -80% 0;
+    opacity: 0.55;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .explore-split__search-here::before {
+  .explore-split__cta::before {
     animation: none;
+    inset: 0;
     background: conic-gradient(
       from 90deg,
       transparent 0deg,
@@ -837,47 +877,25 @@ body.explore-hub-open .explore-split__cta-dock {
       rgba(var(--smoac-color-cool-rgb), 0.65) 220deg,
       transparent 300deg
     );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    padding: 2px;
   }
-}
 
-.explore-split__cta {
-  pointer-events: auto;
-  display: inline-flex;
-  min-height: 3.15rem;
-  max-width: 22rem;
-  width: 100%;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 9999px;
-  background: rgba(14, 12, 22, 0.88);
-  padding: 0.75rem 1.25rem;
-  color: #fff;
-  backdrop-filter: blur(18px) saturate(1.15);
-  -webkit-backdrop-filter: blur(18px) saturate(1.15);
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.explore-split__cta:active {
-  transform: scale(0.98);
-}
-
-.explore-split__cta-label {
-  font-size: 0.9375rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-}
-
-.explore-split__cta-chevron {
-  font-size: 0.75rem;
-  line-height: 1;
-  color: rgba(255, 255, 255, 0.55);
-  transform: translateY(1px);
+  .explore-split__cta--searching::before {
+    inset: auto 16% 0.7rem;
+    height: 2.5px;
+    padding: 0;
+    -webkit-mask: none;
+    mask: none;
+    opacity: 0.85;
+  }
 }
 
 .explore-split__panel {
@@ -1006,23 +1024,26 @@ body.explore-hub-open .explore-split__cta-dock {
   color: rgba(255, 255, 255, 0.42);
 }
 
-.explore-split__map-btn {
-  min-height: 2.15rem;
+.explore-split__close {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 0.35rem 0.9rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.78);
   cursor: pointer;
   touch-action: manipulation;
   position: relative;
   z-index: 1;
 }
 
-.explore-split__map-btn:active {
-  background: rgba(255, 255, 255, 0.14);
+.explore-split__close:active {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
 }
 
 .explore-split__body {
@@ -1094,13 +1115,11 @@ body.profile-sheet-open .explore-bottom-card-dock,
 body.profile-sheet-open .explore-split__cta-dock,
 body.profile-sheet-open .explore-map-hero__controls,
 body.profile-sheet-open .explore-map__recenter,
-body.profile-sheet-open .explore-map__search-here,
 body.profile-sheet-open .explore-page--map-shell .leaflet-top,
 body.profile-sheet-dismissing .explore-bottom-card-dock,
 body.profile-sheet-dismissing .explore-split__cta-dock,
 body.profile-sheet-dismissing .explore-map-hero__controls,
 body.profile-sheet-dismissing .explore-map__recenter,
-body.profile-sheet-dismissing .explore-map__search-here,
 body.profile-sheet-dismissing .explore-page--map-shell .leaflet-top {
   display: none !important;
   pointer-events: none !important;
@@ -1744,8 +1763,6 @@ body.profile-sheet-dismissing .explore-page--map-shell .leaflet-top {
 .explore-page--map-shell:has(.explore-split--results-open) .explore-map__recenter,
 body.explore-hub-open .explore-map__recenter,
 body.explore-hub-open .explore-map__recenter--hero,
-body.explore-hub-open .explore-map__search-here,
-body.explore-search-open .explore-map__search-here,
 body.explore-search-open .explore-map__recenter,
 body.explore-search-open .explore-map__recenter--hero,
 body.drawer-open .explore-map__recenter--hero,

@@ -1,0 +1,1000 @@
+/* Specialist onboarding — one-question interview (TurboTax-style) */
+
+html:has(.login-page--specialist-onboarding),
+html:has(.login-page--specialist-onboarding) body {
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+}
+
+body:has(.login-page--specialist-onboarding) .site-footer {
+  display: none;
+}
+
+body:has(.login-page--specialist-onboarding) #root.app-shell,
+body:has(.login-page--specialist-onboarding) .app-shell {
+  height: 100dvh;
+  min-height: 100dvh;
+  max-height: 100dvh;
+}
+
+body:has(.login-page--specialist-onboarding) .app-main {
+  overflow: hidden;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 1023px) {
+  body:has(.login-page--specialist-onboarding) #root.app-shell,
+  body:has(.login-page--specialist-onboarding) .app-shell {
+    padding-bottom: 0;
+  }
+}
+
+body:has(.login-page--specialist-onboarding) .page-transition,
+body:has(.login-page--specialist-onboarding) .page-transition__layer,
+body:has(.login-page--specialist-onboarding) .page-transition__content {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+body:has(.login-page--specialist-onboarding) .page-transition {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+body:has(.login-page--specialist-onboarding) .page-transition__layer,
+body:has(.login-page--specialist-onboarding) .page-transition__content {
+  display: flex;
+  flex-direction: column;
+}
+
+body.specialist-interview-keyboard-open .mobile-bottom-nav {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.login-page--wizard.login-page--specialist-onboarding {
+  --login-glow-a: var(--smoac-color-indigo-rgb);
+  --login-glow-b: var(--smoac-color-violet-rgb);
+  --login-glow-c: 139, 92, 246;
+  --login-glow-d: var(--smoac-color-rose-rgb);
+  --accent-glow: #c4b5fd;
+  --accent-glow-rgb: 196, 181, 253;
+  --accent-glow-soft-rgb: 167, 139, 250;
+  --interview-accent: #b9a4f8;
+  --interview-accent-strong: #a78bfa;
+  --interview-accent-rgb: 167, 139, 250;
+  --interview-accent-bright-rgb: 196, 181, 253;
+  --interview-continue-bg: #b39af8;
+  --interview-continue-hover: #c4b5fd;
+  --interview-continue-fg: #1c1430;
+  --interview-count-fill: var(--smoac-color);
+  --interview-progress-current: var(--interview-accent-strong);
+  --login-max-w: min(92vw, 26.5rem);
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: calc(100dvh - var(--site-header-total-height));
+  width: 100%;
+  flex-direction: column;
+  padding: 0.35rem var(--login-pad-x) 0.45rem;
+  overflow: visible;
+  align-items: stretch;
+}
+
+.login-page--wizard.login-page--specialist-onboarding[data-login-role="client"] {
+  --login-glow-a: var(--smoac-color-warm-rgb);
+  --login-glow-b: var(--smoac-color-rose-rgb);
+  --login-glow-c: var(--smoac-color-violet-rgb);
+  --login-glow-d: var(--smoac-color-cool-rgb);
+  --accent-glow: var(--smoac-color-violet);
+  --accent-glow-rgb: var(--smoac-color-violet-rgb);
+  --accent-glow-soft-rgb: var(--smoac-color-indigo-rgb);
+  --accent-glow-bright: var(--smoac-color-indigo);
+  --interview-accent: var(--smoac-color-violet);
+  --interview-accent-strong: var(--smoac-color-indigo);
+  --interview-accent-rgb: var(--smoac-color-violet-rgb);
+  --interview-accent-bright-rgb: var(--smoac-color-indigo-rgb);
+  --interview-continue-bg: var(--smoac-color);
+  --interview-continue-hover: var(--smoac-color-bright);
+  --interview-continue-fg: #1a1028;
+  --interview-count-fill: var(--smoac-color);
+  --interview-progress-current: var(--smoac-color);
+}
+
+.login-page--wizard.login-page--specialist-onboarding[data-login-role="specialist"] {
+  --login-glow-a: 56, 189, 248;
+  --login-glow-b: 14, 165, 233;
+  --login-glow-c: 37, 99, 235;
+  --login-glow-d: 2, 132, 199;
+  --accent-glow: #38bdf8;
+  --accent-glow-rgb: 56, 189, 248;
+  --accent-glow-soft-rgb: 14, 165, 233;
+  --accent-glow-bright: #7dd3fc;
+  --interview-accent: #38bdf8;
+  --interview-accent-strong: #7dd3fc;
+  --interview-accent-rgb: 56, 189, 248;
+  --interview-accent-bright-rgb: 125, 211, 252;
+  --interview-continue-bg: #38bdf8;
+  --interview-continue-hover: #7dd3fc;
+  --interview-continue-fg: #0b1220;
+  --interview-count-fill: #38bdf8;
+  --interview-progress-current: #38bdf8;
+}
+
+.login-page--wizard.login-page--specialist-onboarding .login-page__canvas {
+  background:
+    radial-gradient(
+      ellipse 90% 55% at 18% 8%,
+      rgba(var(--login-glow-a), 0.1) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 100% 60% at 72% 0%,
+      rgba(var(--login-glow-c), 0.1) 0%,
+      transparent 58%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 50% 100%,
+      rgba(var(--login-glow-d), 0.06) 0%,
+      transparent 50%
+    ),
+    #020203;
+}
+
+@media (max-width: 1023px), (max-height: 760px) {
+  .login-page--specialist-onboarding .interview-footnote {
+    display: none;
+  }
+}
+
+.login-page--interview-keyboard .interview-legal,
+.login-page--interview-keyboard .interview-skip,
+.login-page--interview-keyboard .interview-signin,
+.login-page--interview-keyboard .interview-intro {
+  display: none;
+}
+
+.login-page--interview-keyboard .interview-stage {
+  justify-content: flex-start;
+  gap: 0.35rem;
+}
+
+@media (max-width: 1023px) {
+  .login-page--wizard.login-page--specialist-onboarding .interview-stage {
+    padding-bottom: var(--mobile-bottom-nav-offset);
+  }
+
+  .login-page--interview-keyboard .interview-stage {
+    padding-bottom: 0;
+  }
+}
+
+.login-page--wizard.login-page--specialist-onboarding .interview-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: min(100%, var(--login-max-w));
+  height: 100%;
+  min-height: 0;
+  overflow: visible;
+  margin: 0 auto;
+  gap: 0.4rem;
+  animation: none;
+  transform: none;
+}
+
+.login-page--specialist-onboarding .interview-stage {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  min-height: 0;
+  overflow: visible;
+}
+
+.login-page--specialist-onboarding .interview-progress {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0;
+}
+
+.login-page--specialist-onboarding .interview-progress__seg {
+  display: block;
+  height: 0.22rem;
+  width: 1.35rem;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.login-page--specialist-onboarding .interview-progress__seg--current {
+  width: 2.35rem;
+  background: var(--interview-progress-current);
+  box-shadow: 0 0 16px rgba(var(--interview-accent-rgb), 0.45);
+}
+
+.login-page--specialist-onboarding .interview-progress__seg--done {
+  background: rgba(var(--interview-accent-rgb), 0.55);
+}
+
+.login-page--specialist-onboarding .interview-intro {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  padding: 0.35rem 0.5rem 0.15rem;
+  margin-bottom: 0.45rem;
+}
+
+.login-page--specialist-onboarding .interview-intro__title {
+  margin: 0;
+  max-width: 22rem;
+  font-size: clamp(1.28rem, 4.8vw, 1.7rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.login-page--specialist-onboarding .interview-intro__sub {
+  margin: 0;
+  max-width: 22rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.login-page--wizard.login-page--specialist-onboarding .interview-card {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: min-content;
+  max-height: 100%;
+  margin: 0;
+  overflow: hidden;
+  padding: 0.95rem 1rem 1.15rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(var(--interview-accent-bright-rgb), 0.18);
+  background:
+    linear-gradient(
+      180deg,
+      rgba(36, 28, 58, 0.88) 0%,
+      rgba(18, 14, 32, 0.82) 100%
+    );
+  box-shadow:
+    0 0 0 1px rgba(var(--interview-accent-rgb), 0.12),
+    0 18px 50px rgba(0, 0, 0, 0.42),
+    0 0 80px rgba(var(--interview-accent-rgb), 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 1023px) {
+  .login-page--specialist-onboarding .interview-intro__title {
+    font-size: 1.2rem;
+    max-width: 20rem;
+  }
+
+  .login-page--specialist-onboarding .interview-intro__sub {
+    font-size: 0.8125rem;
+  }
+
+  .login-page--specialist-onboarding .interview-legal {
+    display: none;
+  }
+
+  .login-page--wizard.login-page--specialist-onboarding .interview-card {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: min-content;
+    max-height: none;
+    padding-bottom: 1.35rem;
+  }
+
+  .login-page--wizard.login-page--specialist-onboarding
+    .interview-card:has(.wizard-scroll-options) {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+.login-page--specialist-onboarding .interview-card__chrome {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+.login-page--specialist-onboarding .interview-card__meta {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: 2rem 1fr 2rem;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.login-page--specialist-onboarding .interview-card__count {
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: var(--interview-count-fill);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-page--specialist-onboarding .interview-card__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  cursor: pointer;
+}
+
+.login-page--specialist-onboarding .interview-card__icon-btn--spacer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.login-page--specialist-onboarding .interview-card__title {
+  margin: 0;
+  flex-shrink: 0;
+  font-size: 1.2rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  color: #fff;
+  text-align: left;
+}
+
+.login-page--specialist-onboarding .interview-card__subtitle {
+  margin: -0.35rem 0 0;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.login-page--specialist-onboarding .interview-card__field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.login-page--specialist-onboarding .interview-card__field:not(:has(.wizard-scroll-options)) {
+  flex: 0 1 auto;
+  min-height: 3.25rem;
+  overflow: visible;
+}
+
+.login-page--specialist-onboarding .interview-card .login-field__input,
+.login-page--specialist-onboarding .interview-card .password-input__field {
+  min-height: 3rem;
+  border-radius: 1rem;
+  border-color: rgba(var(--interview-accent-rgb), 0.38);
+  background: rgba(8, 6, 16, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(var(--interview-accent-rgb), 0.08);
+}
+
+.login-page--specialist-onboarding .interview-card .login-field__input:focus,
+.login-page--specialist-onboarding .interview-card .password-input__field:focus {
+  border-color: rgba(var(--interview-accent-bright-rgb), 0.72);
+  box-shadow:
+    0 0 0 3px rgba(var(--interview-accent-rgb), 0.18),
+    inset 0 0 0 1px rgba(var(--interview-accent-bright-rgb), 0.16);
+}
+
+.login-page--specialist-onboarding .interview-card__footer {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.login-page--specialist-onboarding .interview-card__actions {
+  display: flex;
+  align-items: stretch;
+  gap: 0.55rem;
+  width: 100%;
+}
+
+.login-page--specialist-onboarding .interview-back {
+  display: inline-flex;
+  flex: 0 0 3rem;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  min-height: 3rem;
+  border: 1px solid rgba(var(--interview-accent-rgb), 0.38);
+  border-radius: 9999px;
+  background: rgba(8, 6, 16, 0.55);
+  color: rgba(255, 255, 255, 0.88);
+  cursor: pointer;
+}
+
+.login-page--specialist-onboarding .interview-back:disabled {
+  opacity: 0.62;
+  cursor: wait;
+}
+
+.login-page--specialist-onboarding .interview-continue {
+  display: inline-flex;
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: auto;
+  min-width: 0;
+  min-height: 3rem;
+  margin-top: 0;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--interview-continue-bg);
+  color: var(--interview-continue-fg);
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 10px 28px rgba(var(--interview-accent-rgb), 0.38);
+}
+
+.login-page--specialist-onboarding .interview-continue:disabled {
+  opacity: 0.62;
+  cursor: wait;
+}
+
+.login-page--specialist-onboarding
+  .interview-card:has(.wizard-scroll-options)
+  .interview-card__footer {
+  margin-top: auto;
+}
+
+.login-page--specialist-onboarding .interview-signin {
+  margin: 0;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-self: center;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.login-page--specialist-onboarding .interview-signin a {
+  color: var(--interview-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.login-page--specialist-onboarding .interview-skip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-self: center;
+  margin: -0.1rem 0 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.login-page--specialist-onboarding .interview-legal {
+  flex-shrink: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.login-page--specialist-onboarding .interview-trail {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 0;
+  margin: 0.45rem 0 0;
+  padding: 0.2rem 0.65rem 0;
+  overflow: visible;
+  list-style: none;
+  pointer-events: none;
+}
+
+@media (max-width: 1023px) {
+  .login-page--wizard.login-page--specialist-onboarding .interview-trail {
+    margin-top: 0.55rem;
+  }
+
+  .login-page--wizard.login-page--specialist-onboarding
+    .interview-stage:has(.wizard-scroll-options)
+    .interview-trail {
+    flex: 0 0 0;
+  }
+}
+
+.login-page--specialist-onboarding .interview-trail__item {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.login-page--specialist-onboarding .interview-trail__item--1 {
+  opacity: 0.62;
+}
+
+.login-page--specialist-onboarding .interview-trail__item--2 {
+  opacity: 0.48;
+}
+
+.login-page--specialist-onboarding .interview-trail__item--3 {
+  opacity: 0.36;
+}
+
+.login-page--specialist-onboarding .interview-trail__item--4 {
+  opacity: 0.26;
+}
+
+.login-page--specialist-onboarding .interview-trail__item--5 {
+  opacity: 0.18;
+}
+
+.login-page--specialist-onboarding .interview-trail__item--6,
+.login-page--specialist-onboarding .interview-trail__item--7,
+.login-page--specialist-onboarding .interview-trail__item--8 {
+  opacity: 0.12;
+}
+
+.login-page--specialist-onboarding .interview-trail__icon {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.login-page--specialist-onboarding .interview-trail__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.login-page--specialist-onboarding .interview-trail__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.login-page--specialist-onboarding .interview-trail__hint {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.login-page--specialist-onboarding .interview-footnote {
+  flex-shrink: 0;
+  margin: 0;
+  text-align: center;
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.login-page--specialist-onboarding .interview-card .wizard-option-card {
+  min-height: 2.55rem;
+  padding: 0.62rem 0.9rem;
+}
+
+.login-page--specialist-onboarding .interview-card .wizard-option-card--active {
+  border-color: rgba(var(--interview-accent-rgb), 0.55);
+  background: rgba(var(--interview-accent-rgb), 0.12);
+  box-shadow:
+    inset 0 0 18px rgba(var(--interview-accent-rgb), 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.login-page--specialist-onboarding .interview-card .wizard-scroll-options {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0.15rem 0.35rem 0;
+  gap: 0.4rem;
+}
+
+@media (hover: hover) {
+  .login-page--specialist-onboarding .interview-signin a:hover {
+    color: var(--interview-accent-strong);
+  }
+
+  .login-page--specialist-onboarding .interview-card__icon-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+
+  .login-page--specialist-onboarding .interview-back:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+
+  .login-page--specialist-onboarding .interview-continue:not(:disabled):hover {
+    transform: translateY(-1px);
+    background: var(--interview-continue-hover);
+  }
+
+  .login-page--specialist-onboarding .interview-skip:hover {
+    color: rgba(255, 255, 255, 0.72);
+  }
+}
+
+@media (min-width: 1024px) {
+  .login-page--specialist-onboarding .interview-stage {
+    justify-content: center;
+    justify-content: safe center;
+  }
+
+  .login-page--specialist-onboarding .interview-trail {
+    padding-bottom: 0.5rem;
+  }
+}
+
+@keyframes interview-rise {
+  from {
+    transform: translateY(1.65rem);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes interview-rise-card {
+  from {
+    transform: translateY(1.65rem);
+    opacity: 0.55;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes interview-drop {
+  from {
+    transform: translateY(-1.15rem);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes interview-drop-card {
+  from {
+    transform: translateY(-1.15rem);
+    opacity: 0.55;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes interview-exit-left {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-72%);
+    opacity: 0;
+  }
+}
+
+@keyframes interview-enter-pop {
+  from {
+    transform: translateY(0.55rem) scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.login-page--specialist-onboarding .interview-card--from-ahead {
+  animation: interview-rise-card 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.login-page--specialist-onboarding .interview-card--from-back {
+  animation: interview-drop-card 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.login-page--specialist-onboarding .interview-card--exit-left {
+  animation: interview-exit-left 0.34s cubic-bezier(0.4, 0, 1, 1) forwards;
+  pointer-events: none;
+}
+
+.login-page--specialist-onboarding .interview-card--enter-pop {
+  transform-origin: 50% 12%;
+  animation: interview-enter-pop 0.46s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item {
+  animation: interview-rise 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item {
+  animation: interview-drop 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--1,
+.login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--1 {
+  animation-delay: 0.04s;
+}
+
+.login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--2,
+.login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--2 {
+  animation-delay: 0.08s;
+}
+
+.login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--3,
+.login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--3 {
+  animation-delay: 0.12s;
+}
+
+.login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--4,
+.login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--4 {
+  animation-delay: 0.16s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page--specialist-onboarding .interview-continue {
+    transition: none;
+  }
+
+  .login-page--specialist-onboarding .interview-card--from-ahead,
+  .login-page--specialist-onboarding .interview-card--from-back,
+  .login-page--specialist-onboarding .interview-card--exit-left,
+  .login-page--specialist-onboarding .interview-card--enter-pop,
+  .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item,
+  .login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item {
+    animation: none;
+  }
+}
+
+.login-page--create-account .interview-card .wizard-step {
+  gap: 0.45rem;
+}
+
+.login-page--create-account .wizard-account-card {
+  min-height: 4.25rem;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(8, 6, 16, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* First signup screen only — later interview steps keep their own align/expand. */
+.login-page--wizard.login-page--create-account-entry {
+  padding-top: 0.85rem;
+  padding-bottom: 0.85rem;
+}
+
+.login-page--create-account-entry .interview-stage {
+  justify-content: center;
+  justify-content: safe center;
+  gap: 0.7rem;
+}
+
+.login-page--create-account-entry .interview-intro {
+  padding: 0.2rem 0.65rem 0.2rem;
+  margin-bottom: 0.15rem;
+  gap: 0.45rem;
+}
+
+.login-page--create-account-entry .interview-intro__title {
+  max-width: 18.5rem;
+  font-size: clamp(1.48rem, 5.6vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.12;
+  color: transparent;
+  background-image: linear-gradient(
+    to right,
+    #fff 0%,
+    #fff 14%,
+    var(--smoac-color-warm) 19%,
+    var(--smoac-color-rose) 22%,
+    var(--smoac-color-violet) 25%,
+    var(--smoac-color-indigo) 28%,
+    var(--smoac-color-cool) 31%,
+    #fff 36%,
+    #fff 50%,
+    #fff 64%,
+    var(--smoac-color-warm) 69%,
+    var(--smoac-color-rose) 72%,
+    var(--smoac-color-violet) 75%,
+    var(--smoac-color-indigo) 78%,
+    var(--smoac-color-cool) 81%,
+    #fff 86%,
+    #fff 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: repeat-x;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: create-account-entry-title-smoke 4s linear infinite;
+}
+
+.login-page--create-account-entry .interview-intro__sub {
+  max-width: 17.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.login-page--wizard.login-page--create-account-entry .interview-card {
+  padding: 1.15rem 1rem 1.4rem;
+}
+
+.login-page--create-account-entry .interview-card__title {
+  font-size: 1.28rem;
+  letter-spacing: -0.032em;
+}
+
+.login-page--create-account-entry .interview-card__subtitle {
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.login-page--create-account-entry .wizard-account-card {
+  min-height: 4.6rem;
+}
+
+@media (max-width: 1023px) {
+  .login-page--create-account-entry .interview-intro__title {
+    font-size: clamp(1.38rem, 6.2vw, 1.8rem);
+    max-width: 16.5rem;
+  }
+
+  .login-page--create-account-entry .interview-intro__sub {
+    font-size: 0.875rem;
+  }
+}
+
+@keyframes create-account-entry-title-smoke {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0% 50%;
+  }
+}
+
+.login-page--specialist-onboarding .interview-sweep {
+  display: block;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: linear-gradient(
+    110deg,
+    rgba(226, 220, 245, 0.06) 0%,
+    rgba(226, 220, 245, 0.16) 45%,
+    rgba(226, 220, 245, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: interview-sweep 1.35s ease-in-out infinite;
+}
+
+.login-page--specialist-onboarding .interview-sweep--count {
+  justify-self: center;
+  width: 6.5rem;
+  height: 0.7rem;
+}
+
+.login-page--specialist-onboarding .interview-sweep--progress {
+  width: 5.5rem;
+  height: 0.22rem;
+  margin: 0.15rem auto 0;
+}
+
+.login-page--specialist-onboarding .interview-sweep--title {
+  width: 68%;
+  height: 1.15rem;
+  border-radius: 0.45rem;
+}
+
+.login-page--specialist-onboarding .interview-sweep--sub {
+  width: 86%;
+  height: 0.7rem;
+  margin-top: -0.2rem;
+  border-radius: 0.4rem;
+}
+
+.login-page--specialist-onboarding .interview-sweep--option {
+  width: 100%;
+  height: 4.25rem;
+  border-radius: 1.125rem;
+  animation-delay: 0.12s;
+}
+
+.login-page--specialist-onboarding
+  .interview-sweep--option
+  + .interview-sweep--option {
+  animation-delay: 0.22s;
+}
+
+.login-page--specialist-onboarding .interview-sweep--continue {
+  width: 100%;
+  height: 3rem;
+  animation-delay: 0.3s;
+}
+
+.login-page--specialist-onboarding .interview-sweep--signin {
+  align-self: center;
+  width: 7.5rem;
+  height: 0.65rem;
+  animation-delay: 0.38s;
+}
+
+@keyframes interview-sweep {
+  0% {
+    background-position: 100% 0;
+    opacity: 0.68;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    background-position: -100% 0;
+    opacity: 0.68;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-page--specialist-onboarding .interview-sweep {
+    animation: none;
+    opacity: 0.85;
+  }
+
+  .login-page--create-account-entry .interview-intro__title {
+    animation: none;
+    background-image: none;
+    background-clip: border-box;
+    -webkit-background-clip: border-box;
+    color: rgba(255, 255, 255, 0.96);
+    -webkit-text-fill-color: rgba(255, 255, 255, 0.96);
+  }
+}

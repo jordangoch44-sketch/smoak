@@ -24,7 +24,7 @@ interface ExploreResultsProps {
   hasSearch: boolean;
   /** Primary list is empty because nothing is inside the ZIP radius */
   areaEmpty?: boolean;
-  /** Map “Search here” returned no specialists in the visible area */
+  /** Map viewport search returned no specialists in the visible area */
   mapSearchEmpty?: boolean;
   /** User expanded beyond the default ZIP radius */
   nearbyExpanded?: boolean;
@@ -145,7 +145,7 @@ export const ExploreResults = memo(function ExploreResults({
           </p>
           <p className="explore-empty__text">
             {mapSearchEmpty
-              ? "No specialists match this part of the map. Pan or zoom to another area and tap Search here, or Recenter to your default search area."
+              ? "No specialists match this part of the map. Pan or zoom to another area, or Recenter to your default search area."
               : areaEmpty
                 ? `Nothing matched within about ${radiusLabel} miles of your search location. Broaden to find nearby specialists, or browse suggestions below.`
                 : isUnfilteredEmpty

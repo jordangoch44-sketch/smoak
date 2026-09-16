@@ -2,6 +2,33 @@ import type { MarketplaceCity } from "@/data/locations";
 import { MARKETPLACE_CITIES } from "@/data/locations";
 import { haversineKm } from "@/lib/geo/haversine";
 
+/** Live market until other metros have inventory. Search defaults here with no ZIP/GPS. */
+export const DEFAULT_MARKETPLACE_CITY: MarketplaceCity = "San Diego";
+
+/**
+ * Cities IP geo may frame. SoCal ISP IPs often mis-resolve to LA / OC / Riverside —
+ * those are listed in MARKETPLACE_CITIES for filters, not as an IP origin.
+ */
+export const LIVE_MARKETPLACE_CITIES = [
+  "San Diego",
+  "Chula Vista",
+  "Oceanside",
+  "Carlsbad",
+  "Encinitas",
+  "Escondido",
+  "Temecula",
+] as const satisfies readonly MarketplaceCity[];
+
+export type LiveMarketplaceCity = (typeof LIVE_MARKETPLACE_CITIES)[number];
+
+const LIVE_MARKETPLACE_CITY_SET = new Set<string>(LIVE_MARKETPLACE_CITIES);
+
+export function isLiveMarketplaceCity(
+  city: string | null | undefined
+): city is LiveMarketplaceCity {
+  return Boolean(city && LIVE_MARKETPLACE_CITY_SET.has(city));
+}
+
 /** Approximate city centers for nearest-market resolution (demo until provider geocoding ships). */
 export const MARKETPLACE_CITY_CENTERS: Record<
   MarketplaceCity,
@@ -85,6 +112,24 @@ export function findNearbyMarketplaceCity(
   );
   if (distance > maxKm) return null;
   return nearest;
+}
+
+/** IP / camera origin only when the point is in a live San Diego–area metro. */
+export function findNearbyLiveMarketplaceCity(
+  latitude: number,
+  longitude: number,
+  maxKm = 160
+): LiveMarketplaceCity | null {
+  const nearby = findNearbyMarketplaceCity(latitude, longitude, maxKm);
+  return isLiveMarketplaceCity(nearby) ? nearby : null;
+}
+
+export function defaultMarketplaceCenter(): {
+  latitude: number;
+  longitude: number;
+} {
+  const center = MARKETPLACE_CITY_CENTERS[DEFAULT_MARKETPLACE_CITY];
+  return { latitude: center.lat, longitude: center.lng };
 }
 
 export function marketplaceCityToSlug(city: string): string {

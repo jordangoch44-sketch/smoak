@@ -61,7 +61,7 @@ export const SMOAC_PRO_PLUS_BENEFITS: readonly MembershipBenefit[] = [
     detail: "Analytics, ranking intelligence, and growth tools",
   },
   {
-    title: "Phone videos up to 45 seconds",
+    title: "Up to 5 phone videos, 45 seconds each",
     detail: "Upload clips straight from your phone",
   },
   {
@@ -327,7 +327,7 @@ export function resolveMembershipUpgradeOffer(
       eyebrow: "SMOAC PRO+",
       title: "Upgrade to PRO+",
       description:
-        "You're on Pro. PRO+ adds phone videos, client results under Specialties, and 20% off Boosts.",
+        "You're on Pro. PRO+ adds up to 5 phone videos, client results under Specialties, and 20% off Boosts.",
       price: SMOAC_PRO_PLUS_PRICE_LABEL,
       note: "Billed monthly. Cancel anytime.",
       cta: `Upgrade to PRO+ · ${SMOAC_PRO_PLUS_PRICE_LABEL}`,

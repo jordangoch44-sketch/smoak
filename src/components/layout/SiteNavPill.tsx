@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   memo,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -348,9 +349,15 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   );
 });
 
-function SiteNavPillShell({ className }: { className?: string }) {
+function SiteNavPillShell({
+  className,
+  searchParams,
+}: {
+  className?: string;
+  searchParams: URLSearchParams | null;
+}) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const routeSearch = searchParams ?? new URLSearchParams();
   const router = useRouter();
   const beginBottomNavTransition = useBeginBottomNavTransition();
   const { clientReady } = useStableClientState();
@@ -390,7 +397,7 @@ function SiteNavPillShell({ className }: { className?: string }) {
   useEffect(() => {
     setPendingId(null);
     startedByPointerRef.current = null;
-  }, [pathname, searchParams]);
+  }, [pathname, routeSearch]);
 
   const activeById = useMemo(() => {
     const map = {} as Record<MobileBottomNavItemId, boolean>;
@@ -398,10 +405,10 @@ function SiteNavPillShell({ className }: { className?: string }) {
       map[item.id] =
         pendingId != null
           ? pendingId === item.id
-          : isActiveNavItem(item.id, pathname, searchParams);
+          : isActiveNavItem(item.id, pathname, routeSearch);
     }
     return map;
-  }, [items, pathname, pendingId, searchParams]);
+  }, [items, pathname, pendingId, routeSearch]);
 
   const prefetchHref = useCallback(
     (href: string) => {
@@ -425,7 +432,7 @@ function SiteNavPillShell({ className }: { className?: string }) {
         getBottomNavTransitionKind(
           item.id,
           pathname,
-          searchParams,
+          routeSearch,
           item.href
         ) === "none"
       ) {
@@ -435,14 +442,14 @@ function SiteNavPillShell({ className }: { className?: string }) {
       }
 
       const fromId =
-        getActiveMobileBottomNavItemId(pathname, searchParams) ?? item.id;
+        getActiveMobileBottomNavItemId(pathname, routeSearch) ?? item.id;
 
       event.preventDefault();
       setPendingId(item.id);
       beginBottomNavTransition(item.href, { fromId, toId: item.id });
       return true;
     },
-    [beginBottomNavTransition, pathname, searchParams]
+    [beginBottomNavTransition, pathname, routeSearch]
   );
 
   const handlePointerDown = useCallback(
@@ -512,4 +519,17 @@ function SiteNavPillShell({ className }: { className?: string }) {
   );
 }
 
-export const SiteNavPill = memo(SiteNavPillShell);
+function SiteNavPillFromRoute({ className }: { className?: string }) {
+  const searchParams = useSearchParams();
+  return <SiteNavPillShell className={className} searchParams={searchParams} />;
+}
+
+function SiteNavPillGate({ className }: { className?: string }) {
+  return (
+    <Suspense fallback={<SiteNavPillShell className={className} searchParams={null} />}>
+      <SiteNavPillFromRoute className={className} />
+    </Suspense>
+  );
+}
+
+export const SiteNavPill = memo(SiteNavPillGate);

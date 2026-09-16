@@ -816,6 +816,8 @@ export function SpecialistDashboardPageClient() {
                     <ReviewsCard
                       trainer={trainer}
                       isPremium={isPremium}
+                      smoacRating={rankingRating.rating}
+                      smoacReviewCount={rankingRating.reviewCount}
                     />
                     <GoogleReviewsCard
                       trainer={trainer}

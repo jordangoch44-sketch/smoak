@@ -79,6 +79,7 @@ import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
 import { getApprovedSpecialistProfileById } from "@/lib/approved-specialist-profiles-store";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
+import { trainerMatchesPublicKey } from "@/lib/trainer-profile-path";
 import { updatePassword } from "@/lib/auth/marketplace-auth";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
@@ -600,6 +601,11 @@ export function SpecialistDashboardProfilePreview({
   );
   const [portalReady, setPortalReady] = useState(false);
   const canEdit = editable && Boolean(formDefaults && trainerId);
+  const canEditOwnPhoto = Boolean(
+    canEdit &&
+      trainerId &&
+      trainerMatchesPublicKey(liveTrainer, trainerId)
+  );
   const showInquiries =
     canEdit && Boolean(inquirySenderUserId) && !isPendingListing;
   const showLiveChrome = canEdit || isPendingListing;
@@ -837,7 +843,6 @@ export function SpecialistDashboardProfilePreview({
               value={form.profilePhotoUrl}
               specialistId={trainerId ?? application?.id ?? trainer.id}
               onChange={(value) => patch("profilePhotoUrl", value)}
-              onClear={() => patch("profilePhotoUrl", "")}
             />
           </div>
         ) : null}
@@ -1471,6 +1476,7 @@ export function SpecialistDashboardProfilePreview({
   };
 
   return (
+    <>
     <div
       id={LIVE_PROFILE_ANCHOR_ID}
       className={cn(
@@ -1500,6 +1506,9 @@ export function SpecialistDashboardProfilePreview({
               variant="specialist-live"
               onClaimFreeSession={selfPreviewNote}
               onInquire={selfPreviewNote}
+              onEditProfilePhoto={
+                canEditOwnPhoto ? () => startEdit("avatar") : undefined
+              }
             />
           </div>
         </>
@@ -1510,8 +1519,13 @@ export function SpecialistDashboardProfilePreview({
           variant="specialist-live"
           onClaimFreeSession={selfPreviewNote}
           onInquire={selfPreviewNote}
+          onEditProfilePhoto={
+            canEditOwnPhoto ? () => startEdit("avatar") : undefined
+          }
         />
       )}
     </div>
+    {editSheet}
+  </>
   );
 }

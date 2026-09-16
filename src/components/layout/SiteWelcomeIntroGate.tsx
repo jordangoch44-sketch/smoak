@@ -103,7 +103,6 @@ export function SiteWelcomeIntroGate() {
 
   return createPortal(
     <SmoacWelcomeIntro
-      variant="site"
       onComplete={handleComplete}
       onArrive={handleArrive}
     />,

@@ -12,16 +12,25 @@ import type { SpecialistOnboardingState } from "@/types/specialist-application";
 import type { SpecialistServiceType } from "@/types/specialist-service-area";
 import { cn } from "@/lib/utils";
 
+export type SpecialistServiceAreaFocus =
+  | "full"
+  | "service-type"
+  | "location"
+  | "street"
+  | "description";
+
 interface SpecialistServiceAreaFieldsProps {
   state: SpecialistOnboardingState;
   onPatch: (partial: Partial<SpecialistOnboardingState>) => void;
   invalidFieldLabels?: string[];
+  focus?: SpecialistServiceAreaFocus;
 }
 
 export function SpecialistServiceAreaFields({
   state,
   onPatch,
   invalidFieldLabels = [],
+  focus = "full",
 }: SpecialistServiceAreaFieldsProps) {
   const [zipLookupBusy, setZipLookupBusy] = useState(false);
   const [zipLookupError, setZipLookupError] = useState<string | null>(null);
@@ -123,143 +132,145 @@ export function SpecialistServiceAreaFields({
     });
   }
 
+  const showServiceType = focus === "full" || focus === "service-type";
+  const showStreet = focus === "full" || focus === "street";
+  const showZip = focus === "full" || focus === "location";
+  const showDescription = focus === "full" || focus === "description";
+
   return (
     <div className="login-fields specialist-service-area-fields">
-      <fieldset
-        className={cn(
-          "login-field specialist-service-area-fields__section",
-          serviceTypeInvalid && "specialist-service-area-fields__section--error"
-        )}
-        data-wizard-field="service-type"
-        data-wizard-invalid={serviceTypeInvalid ? "true" : undefined}
-      >
-        <legend className="login-field__label">
-          Service type
-          <span className="login-field__label-required" aria-hidden="true">
-            *
-          </span>
-        </legend>
-        <div
+      {showServiceType ? (
+        <fieldset
           className={cn(
-            "wizard-pill-grid wizard-pill-grid--wide",
-            serviceTypeInvalid && "wizard-pill-grid--error"
+            "login-field specialist-service-area-fields__section",
+            serviceTypeInvalid && "specialist-service-area-fields__section--error"
           )}
-          role="radiogroup"
-          aria-label="Service type"
-          aria-required="true"
-          aria-invalid={serviceTypeInvalid}
+          data-wizard-field="service-type"
+          data-wizard-invalid={serviceTypeInvalid ? "true" : undefined}
         >
-          {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => {
-            const active = state.serviceType === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => selectServiceType(option.value)}
-                className={cn(
-                  "wizard-pill wizard-pill--touch",
-                  active && "wizard-pill--active"
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
-        </div>
-        {serviceTypeInvalid ? (
-          <p className="wizard-field-error" role="alert">
-            Select in-person, virtual, or both.
-          </p>
-        ) : null}
-      </fieldset>
-
-      {wantsPreciseLocation ? (
-        <SpecialistPreciseLocationField
-          workAddress={state.facilityAddress}
-          locationPrecision={state.locationPrecision === "address" ? "address" : "zip"}
-          onDraftChange={(workAddress) => onPatch({ facilityAddress: workAddress })}
-          onResolved={(value) =>
-            onPatch({
-              facilityAddress: value.workAddress,
-              locationPrecision: "address",
-              latitude: value.latitude,
-              longitude: value.longitude,
-              ...(value.zipCode ? { zipCode: value.zipCode } : {}),
-              ...(value.city ? { city: value.city } : {}),
-              ...(value.state ? { state: value.state } : {}),
-            })
-          }
-          onCleared={() => {
-            void clearPreciseLocation();
-          }}
-        />
-      ) : state.serviceType === "virtual" ? (
-        <p className="wizard-field-hint">
-          Virtual coaches don&apos;t need a street address.
-        </p>
+          <legend className="sr-only">Service type</legend>
+          <div
+            className={cn(
+              "wizard-pill-grid wizard-pill-grid--wide",
+              serviceTypeInvalid && "wizard-pill-grid--error"
+            )}
+            role="radiogroup"
+            aria-label="Service type"
+            aria-required="true"
+            aria-invalid={serviceTypeInvalid}
+          >
+            {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => {
+              const active = state.serviceType === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => selectServiceType(option.value)}
+                  className={cn(
+                    "wizard-pill wizard-pill--touch",
+                    active && "wizard-pill--active"
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+          {serviceTypeInvalid ? (
+            <p className="wizard-field-error" role="alert">
+              Select in-person, virtual, or both.
+            </p>
+          ) : null}
+        </fieldset>
       ) : null}
 
-      <fieldset
-        className={cn(
-          "login-field specialist-service-area-fields__section",
-          zipInvalid &&
-            "specialist-service-area-fields__section--error login-fields--error"
-        )}
-        data-wizard-field="zip"
-        data-wizard-invalid={zipInvalid ? "true" : undefined}
-      >
-        <legend className="login-field__label">
-          Primary ZIP code
-          {state.serviceType !== "virtual" ? (
-            <span className="login-field__label-required" aria-hidden="true">
-              *
-            </span>
-          ) : null}
-        </legend>
-        <input
-          className="login-field__input"
-          value={state.zipCode}
-          onChange={(e) => handleZipChange(e.target.value)}
-          inputMode="numeric"
-          pattern="[0-9]*"
-          autoComplete="postal-code"
-          placeholder="92129"
-          maxLength={5}
-          aria-invalid={zipInvalid || (state.zipCode.length === 5 && !zipValid)}
-          aria-describedby="specialist-zip-hint"
-          aria-required={state.serviceType !== "virtual"}
-          required={state.serviceType !== "virtual"}
-        />
-        <p id="specialist-zip-hint" className="wizard-field-hint">
-          {zipLookupBusy
-            ? "Looking up your city…"
-            : zipValid && state.city
-              ? `Detected: ${state.city}, ${state.state}`
-              : "5-digit US ZIP — we'll detect city and state."}
-        </p>
-        {zipLookupError ? (
-          <p className="wizard-field-error" role="alert">
-            {zipLookupError}
+      {showStreet ? (
+        wantsPreciseLocation ? (
+          <SpecialistPreciseLocationField
+            workAddress={state.facilityAddress}
+            locationPrecision={
+              state.locationPrecision === "address" ? "address" : "zip"
+            }
+            onDraftChange={(workAddress) => onPatch({ facilityAddress: workAddress })}
+            onResolved={(value) =>
+              onPatch({
+                facilityAddress: value.workAddress,
+                locationPrecision: "address",
+                latitude: value.latitude,
+                longitude: value.longitude,
+                ...(value.zipCode ? { zipCode: value.zipCode } : {}),
+                ...(value.city ? { city: value.city } : {}),
+                ...(value.state ? { state: value.state } : {}),
+              })
+            }
+            onCleared={() => {
+              void clearPreciseLocation();
+            }}
+          />
+        ) : state.serviceType === "virtual" ? (
+          <p className="wizard-field-hint">
+            Virtual coaches don&apos;t need a street address.
           </p>
-        ) : zipInvalid ? (
-          <p className="wizard-field-error" role="alert">
-            Enter a valid 5-digit ZIP code.
-          </p>
-        ) : null}
-      </fieldset>
+        ) : null
+      ) : null}
 
-      <label className="login-field">
-        <span className="login-field__label">Service area description</span>
-        <textarea
-          className="login-field__input login-field__textarea"
-          rows={3}
-          value={state.serviceAreaDescription}
-          onChange={(e) => onPatch({ serviceAreaDescription: e.target.value })}
-          placeholder="I primarily serve San Diego, La Jolla, Del Mar, Carmel Valley, and Mira Mesa."
-        />
-      </label>
+      {showZip ? (
+        <fieldset
+          className={cn(
+            "login-field specialist-service-area-fields__section",
+            zipInvalid &&
+              "specialist-service-area-fields__section--error login-fields--error"
+          )}
+          data-wizard-field="zip"
+          data-wizard-invalid={zipInvalid ? "true" : undefined}
+        >
+          <legend className="sr-only">Primary ZIP code</legend>
+          <input
+            className="login-field__input"
+            value={state.zipCode}
+            onChange={(e) => handleZipChange(e.target.value)}
+            inputMode="numeric"
+            pattern="[0-9]*"
+            autoComplete="postal-code"
+            placeholder="92129"
+            maxLength={5}
+            aria-invalid={zipInvalid || (state.zipCode.length === 5 && !zipValid)}
+            aria-describedby="specialist-zip-hint"
+            aria-required={state.serviceType !== "virtual"}
+          />
+          <p id="specialist-zip-hint" className="wizard-field-hint">
+            {zipLookupBusy
+              ? "Looking up your city…"
+              : zipValid && state.city
+                ? `Detected: ${state.city}, ${state.state}`
+                : "5-digit US ZIP — we'll detect city and state."}
+          </p>
+          {zipLookupError ? (
+            <p className="wizard-field-error" role="alert">
+              {zipLookupError}
+            </p>
+          ) : zipInvalid ? (
+            <p className="wizard-field-error" role="alert">
+              Enter a valid 5-digit ZIP code.
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
+
+      {showDescription ? (
+        <label className="login-field">
+          <span className="sr-only">Service area description</span>
+          <textarea
+            className="login-field__input login-field__textarea"
+            rows={3}
+            value={state.serviceAreaDescription}
+            onChange={(e) => onPatch({ serviceAreaDescription: e.target.value })}
+            placeholder="I primarily serve San Diego, La Jolla, Del Mar, Carmel Valley, and Mira Mesa."
+          />
+        </label>
+      ) : null}
     </div>
   );
 }

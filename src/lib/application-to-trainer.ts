@@ -339,7 +339,9 @@ export function applicationToProfileOverrides(
     trainingStyle,
     servicesOffered: app.bestClientTypes?.trim() ?? "",
     transformationNotes: app.media?.transformationPhotoUrls?.trim() ?? "",
-    photoNotes: app.media?.trainingVideoUrls?.trim() ?? "",
+    ...(app.media?.trainingVideoUrls?.trim()
+      ? { photoNotes: app.media.trainingVideoUrls.trim() }
+      : {}),
     slideshowFramesJson: app.media?.slideshowFramesJson?.trim() ?? "",
     bookingAvailability: buildSessionExperience(app).join(", "),
     profileStyle: app.profileStyle

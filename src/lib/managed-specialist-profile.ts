@@ -137,17 +137,25 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
     if (!approved) return fromApp;
 
     /* Approved catalog holds durable gallery / pins / cover after publish.
-     * Application media alone drops pins and can stale the header slideshow. */
+     * Application media alone drops pins and can stale the header slideshow.
+     * An explicit empty slideshow save must not restore old catalog photos. */
     const appHasHeaderMedia = Boolean(
       (application.media?.trainingVideoUrls ?? "").trim()
     );
-    const galleryImages = appHasHeaderMedia
-      ? fromApp.galleryImages?.length
-        ? fromApp.galleryImages
-        : approved.galleryImages
-      : approved.galleryImages?.length
-        ? approved.galleryImages
-        : fromApp.galleryImages;
+    const storedOverrides = loadSpecialistOverridesForId(trainerId);
+    const slideshowCleared =
+      !appHasHeaderMedia &&
+      typeof storedOverrides?.photoNotes === "string" &&
+      !storedOverrides.photoNotes.trim();
+    const galleryImages = slideshowCleared
+      ? fromApp.galleryImages
+      : appHasHeaderMedia
+        ? fromApp.galleryImages?.length
+          ? fromApp.galleryImages
+          : approved.galleryImages
+        : approved.galleryImages?.length
+          ? approved.galleryImages
+          : fromApp.galleryImages;
     const appSlideshowFrames = parseSlideshowFrameMap(
       application.media?.slideshowFramesJson ?? ""
     );
@@ -164,20 +172,24 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
       ...fromApp,
       image: fromApp.image || approved.image,
       galleryImages,
-      gallery: appHasHeaderMedia
-        ? fromApp.gallery?.length
-          ? fromApp.gallery
-          : approved.gallery
-        : approved.gallery?.length
-          ? approved.gallery
-          : fromApp.gallery,
-      heroImage: appHasHeaderMedia
-        ? fromApp.galleryImages?.[0] ||
-          fromApp.heroImage ||
-          approved.heroImage
-        : approved.heroImage ||
-          fromApp.galleryImages?.[0] ||
-          fromApp.heroImage,
+      gallery: slideshowCleared
+        ? fromApp.gallery
+        : appHasHeaderMedia
+          ? fromApp.gallery?.length
+            ? fromApp.gallery
+            : approved.gallery
+          : approved.gallery?.length
+            ? approved.gallery
+            : fromApp.gallery,
+      heroImage: slideshowCleared
+        ? fromApp.heroImage || fromApp.image || approved.heroImage
+        : appHasHeaderMedia
+          ? fromApp.galleryImages?.[0] ||
+            fromApp.heroImage ||
+            approved.heroImage
+          : approved.heroImage ||
+            fromApp.galleryImages?.[0] ||
+            fromApp.heroImage,
       pinnedPhotos: approved.pinnedPhotos?.length
         ? approved.pinnedPhotos
         : fromApp.pinnedPhotos,

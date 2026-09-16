@@ -1,4 +1,4 @@
-/* Create account welcome intro — one-time luxury splash before questionnaire */
+/* Homepage welcome intro — one-time warp splash */
 
 :root {
   /* Above site header (10000) and bottom nav (8200) */
@@ -42,39 +42,7 @@
 }
 
 .login-page--intro .login-page__canvas {
-  background:
-    radial-gradient(
-      ellipse 70% 50% at 20% 30%,
-      rgba(var(--smoac-color-warm-rgb), 0.1) 0%,
-      transparent 58%
-    ),
-    radial-gradient(
-      ellipse 90% 55% at 70% 35%,
-      rgba(var(--smoac-color-violet-rgb), 0.12) 0%,
-      transparent 60%
-    ),
-    radial-gradient(
-      ellipse 60% 45% at 50% 80%,
-      rgba(var(--smoac-color-cool-rgb), 0.08) 0%,
-      transparent 55%
-    ),
-    #020203;
-}
-
-.create-account-intro__glass {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    transparent 28%,
-    transparent 72%,
-    rgba(0, 0, 0, 0.35) 100%
-  );
-  backdrop-filter: blur(1px);
-  -webkit-backdrop-filter: blur(1px);
+  background: #020203;
 }
 
 .create-account-intro__stage {
@@ -151,53 +119,12 @@
   margin-bottom: 1.75rem;
 }
 
-.create-account-intro__title {
-  margin: 0;
-  font-size: clamp(1.625rem, 5vw, 2rem);
-  font-weight: 500;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-  color: #fff;
-  text-wrap: balance;
-}
-
-.create-account-intro__subtitle {
-  margin: 0.75rem 0 0;
-  max-width: 18rem;
-  font-size: clamp(0.9375rem, 2.8vw, 1.0625rem);
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.58);
-  text-wrap: balance;
-}
-
 .create-account-intro__skip {
   pointer-events: auto !important;
 }
 
 .smoac-welcome-intro--site .login-page__canvas {
   background: #020203;
-}
-
-.smoac-welcome-intro__site-glow {
-  position: absolute;
-  inset: -20% -10%;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 55% 45% at 30% 40%,
-      rgba(var(--smoac-color-warm-rgb), 0.12) 0%,
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 60% 48% at 65% 42%,
-      rgba(var(--smoac-color-violet-rgb), 0.14) 0%,
-      transparent 68%
-    ),
-    radial-gradient(
-      ellipse 50% 40% at 50% 70%,
-      rgba(var(--smoac-color-cool-rgb), 0.1) 0%,
-      transparent 65%
-    );
 }
 
 .smoac-welcome-intro__hyperspace {
@@ -289,57 +216,6 @@
   transition-duration: 500ms;
 }
 
-.create-account-intro__continue {
-  margin-top: 1.5rem;
-  min-height: 2.75rem;
-  padding: 0.625rem 1.5rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  pointer-events: auto !important;
-  touch-action: manipulation;
-  transition:
-    transform 120ms ease,
-    background-color 120ms ease,
-    opacity 120ms ease;
-}
-
-.create-account-intro__continue:active {
-  transform: scale(0.98);
-  opacity: 0.9;
-}
-
-/* Join flow intro — hide chrome under the overlay */
-html.join-intro-open,
-body.join-intro-open {
-  overflow: hidden;
-  overscroll-behavior: none;
-}
-
-body.join-intro-open #root {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-body.join-intro-open #root.app-shell {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-body.join-intro-open #site-header,
-body.join-intro-open footer,
-body.join-intro-open .mobile-bottom-nav {
-  visibility: hidden !important;
-  pointer-events: none !important;
-  opacity: 0 !important;
-}
-
 /* Pre-paint cover — html.site-intro-pending (see SiteIntroBoot). Keep #root hidden
    until the warp portal mounts so the homepage never flashes underneath. */
 html.site-intro-pending #root.app-shell {
@@ -422,9 +298,5 @@ body.site-intro-arriving .mobile-bottom-nav {
     filter: none !important;
     transform: none !important;
     transition: opacity 600ms ease;
-  }
-
-  .wizard-aurora-pool {
-    animation: none !important;
   }
 }

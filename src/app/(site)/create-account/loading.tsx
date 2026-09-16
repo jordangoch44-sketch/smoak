@@ -1,5 +1,5 @@
-import { AuthPageWait } from "@/components/auth/AuthPageWait";
+import { CreateAccountPageSkeleton } from "@/components/auth/CreateAccountPageSkeleton";
 
 export default function CreateAccountLoading() {
-  return <AuthPageWait label="Opening join" />;
+  return <CreateAccountPageSkeleton />;
 }

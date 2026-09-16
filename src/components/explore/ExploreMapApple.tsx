@@ -10,6 +10,7 @@ import {
 import { useExploreMapLayoutEpoch } from "@/hooks/useExploreMapLayoutEpoch";
 import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
+import { defaultMarketplaceCenter } from "@/lib/marketplace-city-centers";
 import {
   exploreSearchAreasDiffer,
   searchAreaFromMapViewport,
@@ -40,10 +41,7 @@ import type { ExploreMapArea, ExploreMapProps } from "./ExploreMapLeaflet";
 type MapKitAnnotation = InstanceType<AppleMapKit["Annotation"]>;
 type MapKitMap = InstanceType<AppleMapKit["Map"]>;
 
-const FALLBACK_CENTER: ExploreMapArea = {
-  latitude: 32.7157,
-  longitude: -117.1611,
-};
+const FALLBACK_CENTER: ExploreMapArea = defaultMarketplaceCenter();
 
 function clustersFrameKey(clusters: ExploreMapCluster[]): string {
   if (clusters.length === 0) return "clusters:empty";
@@ -223,10 +221,8 @@ export function ExploreMapApple({
   userLocationDot = null,
   activeSearchArea = null,
   onPendingSearchAreaChange,
+  onMapSearchStart,
   onRecenterSearch,
-  showSearchHere = false,
-  searchHereLoading = false,
-  onSearchHere,
   locked = true,
   variant = "panel",
   showNotes = true,
@@ -258,6 +254,8 @@ export function ExploreMapApple({
   activeSearchAreaRef.current = activeSearchArea;
   const onPendingRef = useRef(onPendingSearchAreaChange);
   onPendingRef.current = onPendingSearchAreaChange;
+  const onMapSearchStartRef = useRef(onMapSearchStart);
+  onMapSearchStartRef.current = onMapSearchStart;
   const suppressUntilRef = useRef(0);
   const [mapEpoch, setMapEpoch] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -427,7 +425,7 @@ export function ExploreMapApple({
       pinPressRef.current = null;
       if (
         target.closest(
-          ".explore-map__recenter, .explore-map__search-here, .smoac-control"
+          ".explore-map__recenter, .smoac-control"
         )
       ) {
         return;
@@ -568,6 +566,7 @@ export function ExploreMapApple({
         const onRegionChangeStart = () => {
           if (Date.now() < suppressUntilRef.current) return;
           clearSelection();
+          onMapSearchStartRef.current?.();
         };
         const onRegionChangeEnd = () => {
           if (!mapRef.current) return;
@@ -801,12 +800,6 @@ export function ExploreMapApple({
     onRecenterSearch?.();
   }, [onRecenterSearch, mapPaused, applyLiveCamera, suppressMoves]);
 
-  const handleSearchHereActivate = useCallback(() => {
-    if (!onSearchHere) return;
-    suppressMoves(1200);
-    onSearchHere();
-  }, [onSearchHere, suppressMoves]);
-
   const totalMappedTrainers = clusters.reduce((acc, c) => acc + c.count, 0);
   const missing = trainers.length - totalMappedTrainers;
   const showChrome = !locked && !mapPaused;
@@ -845,29 +838,16 @@ export function ExploreMapApple({
           </p>
         ) : null}
         {showChrome ? (
-          <>
-            <FastActivateButton
-              className={cn(
-                "smoac-control explore-map__recenter",
-                variant === "hero" && "explore-map__recenter--hero"
-              )}
-              onActivate={handleRecenter}
-              aria-label="Recenter map to your 12-mile search area"
-            >
-              <FoldedMapIcon className="explore-map__recenter-icon" />
-            </FastActivateButton>
-            {showSearchHere ? (
-              <FastActivateButton
-                className="smoac-control explore-split__search-here explore-map__search-here"
-                disabled={searchHereLoading || !onSearchHere}
-                onActivate={handleSearchHereActivate}
-              >
-                <span className="explore-split__search-here__label">
-                  {searchHereLoading ? "Searching…" : "Search here"}
-                </span>
-              </FastActivateButton>
-            ) : null}
-          </>
+          <FastActivateButton
+            className={cn(
+              "smoac-control explore-map__recenter",
+              variant === "hero" && "explore-map__recenter--hero"
+            )}
+            onActivate={handleRecenter}
+            aria-label="Recenter map to your 12-mile search area"
+          >
+            <FoldedMapIcon className="explore-map__recenter-icon" />
+          </FastActivateButton>
         ) : null}
       </div>
       {showNotes ? (

@@ -91,7 +91,7 @@ function publicAvatarUrl(value: string | undefined): string {
  */
 function specialistOnboardingForStorage(
   state: SpecialistOnboardingState,
-  extra?: { wizardStep?: number }
+  extra?: { wizardStep?: number; wizardBeatId?: string }
 ): Record<string, unknown> {
   const media = { ...state.media };
   if (isInlineDataUrl(media.profilePhotoUrl ?? "")) {
@@ -106,6 +106,7 @@ function specialistOnboardingForStorage(
     media,
     savedAt: new Date().toISOString(),
     ...(extra?.wizardStep != null ? { wizardStep: extra.wizardStep } : {}),
+    ...(extra?.wizardBeatId ? { wizardBeatId: extra.wizardBeatId } : {}),
   };
 }
 
@@ -439,7 +440,7 @@ export async function saveSpecialistSignupProfile(
   supabase: SupabaseClient,
   userId: string,
   state: SpecialistOnboardingState,
-  options?: { wizardStep?: number }
+  options?: { wizardStep?: number; wizardBeatId?: string }
 ): Promise<ProfileUpsertResult> {
   const roleResult = await upsertUserRole(supabase, userId, "specialist");
   if (!roleResult.ok) return roleResult;
@@ -478,6 +479,7 @@ export async function saveSpecialistSignupProfile(
     })(),
     onboarding_data: specialistOnboardingForStorage(state, {
       wizardStep: options?.wizardStep,
+      wizardBeatId: options?.wizardBeatId,
     }),
   });
 }

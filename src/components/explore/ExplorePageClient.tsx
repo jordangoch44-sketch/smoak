@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
@@ -30,8 +30,8 @@ export function ExplorePageClient() {
   const isDesktopSplit = !isMobile && !isCompactLayout;
   const preciseUserLocation = usePreciseUserCoordinates();
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
+  const searchIdleTimerRef = useRef<number | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
-  const [showSearchHere, setShowSearchHere] = useState(false);
   const [mapSearchLoading, setMapSearchLoading] = useState(false);
 
   const {
@@ -72,31 +72,48 @@ export function ExplorePageClient() {
     router.push(href, { scroll: false });
   }, [router]);
 
+  const clearSearchIdleTimer = useCallback(() => {
+    if (searchIdleTimerRef.current == null) return;
+    window.clearTimeout(searchIdleTimerRef.current);
+    searchIdleTimerRef.current = null;
+  }, []);
+
+  useEffect(() => () => clearSearchIdleTimer(), [clearSearchIdleTimer]);
+
+  const handleMapSearchStart = useCallback(() => {
+    setMapSearchLoading(true);
+  }, []);
+
   const handlePendingSearchAreaChange = useCallback(
     (area: ExploreSearchArea | null) => {
       pendingMapAreaRef.current = area;
-      const next = Boolean(area);
-      setShowSearchHere((prev) => (prev === next ? prev : next));
+      clearSearchIdleTimer();
+      if (!area) {
+        setMapSearchLoading(false);
+        return;
+      }
+      setMapSearchLoading(true);
+      searchIdleTimerRef.current = window.setTimeout(() => {
+        searchIdleTimerRef.current = null;
+        const next = pendingMapAreaRef.current;
+        if (!next) {
+          setMapSearchLoading(false);
+          return;
+        }
+        applyMapSearchArea(next);
+        pendingMapAreaRef.current = null;
+        setMapSearchLoading(false);
+      }, 520);
     },
-    []
+    [applyMapSearchArea, clearSearchIdleTimer]
   );
-
-  const handleSearchHere = useCallback(() => {
-    const area = pendingMapAreaRef.current;
-    if (!area) return;
-    setMapSearchLoading(true);
-    applyMapSearchArea(area);
-    pendingMapAreaRef.current = null;
-    setShowSearchHere(false);
-    window.setTimeout(() => setMapSearchLoading(false), 280);
-  }, [applyMapSearchArea]);
 
   const handleRecenterSearch = useCallback(() => {
     pendingMapAreaRef.current = null;
-    setShowSearchHere(false);
+    clearSearchIdleTimer();
     setMapSearchLoading(false);
     resetMapSearchArea();
-  }, [resetMapSearchArea]);
+  }, [clearSearchIdleTimer, resetMapSearchArea]);
 
   const handleCategorySelect = useCallback(
     (category: ExploreBrowseCategory) => {
@@ -131,7 +148,14 @@ export function ExplorePageClient() {
     <main className="explore-page__results" id="explore-results">
       <HomeBoostRibbon className="home-boost-card--explore" />
       <div className="explore-results-heading">
-        <h2 className="explore-results-heading__title">Top experts near you</h2>
+        <div className="explore-results-heading__copy">
+          <h2 className="explore-results-heading__title">Top experts near you</h2>
+          {mapSearchLoading && isDesktopSplit ? (
+            <p className="explore-results-heading__searching" aria-live="polite">
+              Searching this area…
+            </p>
+          ) : null}
+        </div>
         <FastActivateButton
           className="smoac-control explore-results-heading__view-all"
           onActivate={handleViewAll}
@@ -194,6 +218,7 @@ export function ExplorePageClient() {
               areaCenter={searchOrigin}
               userLocationDot={preciseUserLocation}
               activeSearchArea={activeSearchArea}
+              onMapSearchStart={handleMapSearchStart}
               onPendingSearchAreaChange={handlePendingSearchAreaChange}
               onRecenterSearch={handleRecenterSearch}
               locked={false}
@@ -211,9 +236,7 @@ export function ExplorePageClient() {
         {isMobile ? (
           <ExploreResultsSheet
             resultCount={filtered.length}
-            showSearchHere={showSearchHere}
-            searchHereLoading={mapSearchLoading}
-            onSearchHere={handleSearchHere}
+            searchLoading={mapSearchLoading}
           >
             {resultsMain}
           </ExploreResultsSheet>
@@ -226,11 +249,9 @@ export function ExplorePageClient() {
                   areaCenter={searchOrigin}
                   userLocationDot={preciseUserLocation}
                   activeSearchArea={activeSearchArea}
+                  onMapSearchStart={handleMapSearchStart}
                   onPendingSearchAreaChange={handlePendingSearchAreaChange}
                   onRecenterSearch={handleRecenterSearch}
-                  showSearchHere={showSearchHere}
-                  searchHereLoading={mapSearchLoading}
-                  onSearchHere={handleSearchHere}
                   locked={false}
                   variant="column"
                   showNotes={false}

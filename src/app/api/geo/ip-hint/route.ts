@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { MARKETPLACE_CITIES } from "@/data/locations";
-import { findNearbyMarketplaceCity } from "@/lib/marketplace-city-centers";
+import {
+  DEFAULT_MARKETPLACE_CITY,
+  findNearbyLiveMarketplaceCity,
+  isLiveMarketplaceCity,
+} from "@/lib/marketplace-city-centers";
 
 export const runtime = "edge";
 
@@ -29,7 +33,7 @@ function matchMarketplaceCityName(city: string | null): string | null {
   );
 }
 
-/** GET — coarse IP city/coords from the edge (Marketplace rails only). */
+/** GET — coarse IP city/coords from the edge (Marketplace rails + Search fallback). */
 export async function GET(request: Request) {
   const { headers } = request;
   const country = headerText(headers, "x-vercel-ip-country");
@@ -37,18 +41,20 @@ export async function GET(request: Request) {
   const latitude = headerNumber(headers, "x-vercel-ip-latitude");
   const longitude = headerNumber(headers, "x-vercel-ip-longitude");
 
-  const nearbyMarket =
+  const nearbyLive =
     country === "US" && latitude != null && longitude != null
-      ? findNearbyMarketplaceCity(latitude, longitude)
+      ? findNearbyLiveMarketplaceCity(latitude, longitude)
       : null;
-
+  const named = matchMarketplaceCityName(city);
+  const liveNamed = isLiveMarketplaceCity(named) ? named : null;
   const marketplaceCity =
-    nearbyMarket ?? matchMarketplaceCityName(city);
+    nearbyLive ?? liveNamed ?? DEFAULT_MARKETPLACE_CITY;
+  const useRealCoords = nearbyLive != null;
 
   return NextResponse.json({
-    city: marketplaceCity || city,
+    city: marketplaceCity,
     marketplaceCity,
-    latitude: country === "US" ? latitude : null,
-    longitude: country === "US" ? longitude : null,
+    latitude: useRealCoords ? latitude : null,
+    longitude: useRealCoords ? longitude : null,
   });
 }

@@ -307,6 +307,12 @@ export function SpecialistProfileMediaEditor({
           </p>
         </div>
 
+        {headerImages.length === 0 ? (
+          <p className="specialist-media-editor__hint">
+            No slideshow photos. Clients see your profile photo in the header.
+          </p>
+        ) : null}
+
         <div className="specialist-media-editor__thumbs">
           {headerImages.map((url, index) => {
             const isCover = url === cover;

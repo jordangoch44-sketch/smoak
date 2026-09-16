@@ -6,7 +6,6 @@ import {
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
 } from "@/lib/auth-routes";
-import { JOIN_FLOW_PATH } from "@/lib/join-flow";
 import { SITE_ROUTES } from "@/lib/navigation";
 import type { AuthSession } from "@/types/auth";
 import { getUserRole, isLoggedIn } from "@/lib/specialist-saves";
@@ -33,7 +32,6 @@ const PROFILE_NAV_PATHS = [
   SITE_ROUTES.profile,
   LOGIN_PATH,
   "/signin",
-  JOIN_FLOW_PATH,
   CLIENT_DASHBOARD_PATH,
 ] as const;
 

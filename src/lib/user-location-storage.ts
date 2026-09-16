@@ -106,7 +106,7 @@ export function shouldShowLocationPrompt(): boolean {
 
 /**
  * Search-page location popup. Marketplace stays ungated.
- * Skippable — IP still frames Search when ZIP / GPS are declined.
+ * Skippable — San Diego frames Search when ZIP / GPS are declined.
  */
 export function needsSiteLocationGate(): boolean {
   return shouldShowLocationPrompt();

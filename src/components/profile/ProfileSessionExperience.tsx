@@ -1,8 +1,8 @@
 import type { Trainer } from "@/types";
 import { trainingOptionCardsFromTrainer } from "@/lib/profile-details-visual";
-import { ProfileTrainingKindIcon } from "./ProfileDetailsIcons";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
+import { ProfileTrainingOptionRow } from "./ProfileTrainingOptionRow";
 
 interface ProfileSessionExperienceProps {
   trainer: Trainer;
@@ -19,15 +19,7 @@ export function ProfileSessionExperience({
       <ProfileSectionHeader title="Training options" />
       <ul className="profile-section-body profile-train-tiles">
         {cards.map((card) => (
-          <li key={card.id} className="profile-train-tile">
-            <span className="profile-train-tile__icon" aria-hidden>
-              <ProfileTrainingKindIcon
-                kind={card.kind}
-                className="profile-train-tile__glyph"
-              />
-            </span>
-            <span className="profile-train-tile__label">{card.title}</span>
-          </li>
+          <ProfileTrainingOptionRow key={card.id} card={card} />
         ))}
       </ul>
     </ProfileSection>

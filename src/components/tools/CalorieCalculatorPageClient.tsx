@@ -146,7 +146,7 @@ export function CalorieCalculatorPageClient({
   }
 
   function handleContinueToExplore(event: MouseEvent<HTMLAnchorElement>) {
-    /* Avoid Search location gate from this acquisition funnel — map still works via IP. */
+    /* Avoid Search location gate from this acquisition funnel — map still defaults to San Diego. */
     event.preventDefault();
     skipLocationPrompt();
     window.location.assign(SITE_ROUTES.explore);

@@ -17,6 +17,12 @@ import {
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
 import {
+  isExploreNavPath,
+  isHomeNavPath,
+  isProfileNavPath,
+  isSpecialistDashboardPath,
+} from "@/lib/mobile-bottom-nav";
+import {
   desktopPageTransition,
   isSavedPath,
   isTrainerProfilePath,
@@ -121,8 +127,15 @@ export function PageTransition({ children }: PageTransitionProps) {
     );
   }
 
-  /* Phone/tablet: skip competing page layers (profile sheet owns its motion) */
-  if (isTabletViewport) {
+  const toolbarTab =
+    isHomeNavPath(pathname) ||
+    isExploreNavPath(pathname) ||
+    isSavedPath(pathname) ||
+    isProfileNavPath(pathname) ||
+    isSpecialistDashboardPath(pathname);
+
+  /* Phone/tablet, and desktop toolbar tabs: no exit layer — tab clicks must be instant. */
+  if (isTabletViewport || toolbarTab) {
     return (
       <div className="page-transition">
         <div className="page-transition__content">{children}</div>

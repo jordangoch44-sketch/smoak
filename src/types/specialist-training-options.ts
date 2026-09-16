@@ -19,27 +19,27 @@ export const SPECIALIST_TRAINING_OPTIONS: readonly {
   {
     id: "one-on-one",
     label: "One-on-one",
-    description: "Private sessions focused entirely on you.",
+    description: "In-person solo session.",
   },
   {
     id: "semi-private",
     label: "Semi-private",
-    description: "Small groups with more personal attention.",
+    description: "Small-group session with a few clients.",
   },
   {
     id: "class",
     label: "Class",
-    description: "Scheduled group sessions with a full class.",
+    description: "Scheduled group class.",
   },
   {
     id: "online",
     label: "Online",
-    description: "Virtual sessions you can take from anywhere.",
+    description: "Virtual session from anywhere.",
   },
   {
     id: "hybrid",
     label: "Hybrid",
-    description: "In-person and online combined.",
+    description: "Mix of in-person and online.",
   },
 ] as const;
 

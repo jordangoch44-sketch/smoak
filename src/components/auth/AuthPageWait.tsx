@@ -1,6 +1,6 @@
 import { PageWaitState } from "@/components/brand/PageWaitState";
 
-/** Login-shell wait for /login, /create-account, and /complete-account. */
+/** Login-shell wait for /login and /complete-account. */
 export function AuthPageWait({ label }: { label: string }) {
   return (
     <div className="login-page" aria-busy="true">

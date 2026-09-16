@@ -248,11 +248,13 @@ export function getSpecialistApplicationsHydratedServerSnapshot(): boolean {
 type SpecialistOnboardingDraftRecord = SpecialistOnboardingState & {
   savedAt?: string;
   wizardStep?: number;
+  wizardBeatId?: string;
 };
 
 export interface LoadedSpecialistOnboardingDraft {
   state: SpecialistOnboardingState;
   wizardStep: number | null;
+  wizardBeatId: string | null;
 }
 
 export function parseSpecialistOnboardingDraftRecord(
@@ -264,9 +266,14 @@ export function parseSpecialistOnboardingDraftRecord(
     typeof record.wizardStep === "number" && Number.isFinite(record.wizardStep)
       ? record.wizardStep
       : null;
+  const wizardBeatId =
+    typeof record.wizardBeatId === "string" && record.wizardBeatId.trim()
+      ? record.wizardBeatId.trim()
+      : null;
   return {
     state: normalizeOnboardingDraftState(record),
     wizardStep,
+    wizardBeatId,
   };
 }
 
@@ -304,7 +311,7 @@ function normalizeOnboardingDraftState(
 /** DEV ONLY — autosave draft between onboarding steps (stays local until submit) */
 export function persistSpecialistOnboardingDraft(
   state: SpecialistOnboardingState,
-  options?: { wizardStep?: number }
+  options?: { wizardStep?: number; wizardBeatId?: string }
 ): void {
   if (typeof window === "undefined") return;
   try {
@@ -314,6 +321,9 @@ export function persistSpecialistOnboardingDraft(
     };
     if (options?.wizardStep != null) {
       payload.wizardStep = options.wizardStep;
+    }
+    if (options?.wizardBeatId) {
+      payload.wizardBeatId = options.wizardBeatId;
     }
     window.localStorage.setItem(
       DEV_SPECIALIST_ONBOARDING_DRAFT_KEY,

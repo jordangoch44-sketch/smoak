@@ -691,6 +691,7 @@ body:has(.login-page--wizard) main {
   border-radius: 1.125rem;
   border: 1px solid rgba(255, 255, 255, 0.09);
   background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   text-align: left;
@@ -710,17 +711,16 @@ body:has(.login-page--wizard) main {
   .login-page--wizard .login-card .wizard-option-card:hover {
     border-color: rgba(255, 255, 255, 0.16);
     background: rgba(255, 255, 255, 0.045);
-    box-shadow: 0 0 24px rgba(var(--accent-glow-rgb), 0.1);
     transform: translateY(-1px);
   }
 }
 
 .login-page--wizard .login-card .wizard-option-card--active {
-  border-color: rgba(var(--accent-glow-rgb), 0.42);
-  background: rgba(var(--accent-glow-rgb), 0.09);
+  border-color: rgba(var(--accent-glow-rgb), 0.5);
+  background: rgba(var(--accent-glow-rgb), 0.12);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 0 28px rgba(var(--accent-glow-rgb), 0.14);
+    inset 0 0 22px rgba(var(--accent-glow-rgb), 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .wizard-option-card__indicator {
@@ -825,36 +825,6 @@ body:has(.login-page--wizard) main {
 
 .login-page--wizard .login-fields {
   gap: var(--wizard-space-md);
-}
-
-.wizard-review {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.125rem 1.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.wizard-review__row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1.25rem;
-  font-size: 0.8125rem;
-  line-height: 1.5;
-}
-
-.wizard-review__label {
-  flex-shrink: 0;
-  color: rgba(255, 255, 255, 0.38);
-}
-
-.wizard-review__value {
-  min-width: 0;
-  text-align: right;
-  color: rgba(255, 255, 255, 0.88);
 }
 
 /* ── Navigation & CTA ── */
@@ -1009,25 +979,7 @@ body:has(.login-page--wizard) main {
   }
 }
 
-/* ── Specialist onboarding — page scroll, no nested panes ── */
-.login-page--specialist-onboarding .login-card__form {
-  max-height: none;
-  overflow: visible;
-  padding-right: 0;
-}
-
-.login-page--specialist-onboarding {
-  padding-bottom: max(6.5rem, calc(env(safe-area-inset-bottom, 0px) + 7.5rem));
-}
-
-.wizard-progress__label {
-  margin: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.34);
-}
+/* ── Shared wizard pieces used by client + specialist ── */
 
 .wizard-scroll-options {
   display: flex;
@@ -1365,20 +1317,6 @@ body:has(.login-page--wizard) main {
   box-shadow:
     0 0 0 1px rgba(210, 90, 105, 0.18),
     0 0 18px rgba(180, 70, 95, 0.14);
-}
-
-.login-page--specialist-onboarding .wizard-step {
-  gap: 1.625rem;
-}
-
-.login-page--specialist-onboarding .wizard-step-heading {
-  gap: 0.5rem;
-  padding-bottom: 0.125rem;
-}
-
-.login-page--specialist-onboarding .wizard-question__subtitle {
-  max-width: 18rem;
-  line-height: 1.45;
 }
 
 .login-page--specialist-onboarding .specialist-service-area-fields .wizard-field-hint {
