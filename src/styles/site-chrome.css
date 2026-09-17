@@ -307,7 +307,10 @@
 .ig-profile-edit__avatar-btn,
 .ig-profile-edit__photo-chip,
 .inquiry-thread-overlay .inquiry-thread__back,
-.inquiry-thread-overlay .inquiry-thread__send {
+.inquiry-thread-overlay .inquiry-thread__send,
+.interview-card__actions,
+.interview-continue,
+.interview-back {
   pointer-events: auto !important;
   touch-action: manipulation;
 }

@@ -203,6 +203,12 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   overflow: hidden;
 }
 
+.login-page--specialist-onboarding
+  .interview-stage:has(.interview-card--preview)
+  .interview-footnote {
+  display: none;
+}
+
 .login-page--wizard.login-page--specialist-onboarding:has(.interview-card--preview)
   .interview-shell {
   overflow: hidden;
@@ -267,6 +273,8 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
 
 .login-page--wizard.login-page--specialist-onboarding .interview-card {
   display: flex;
+  position: relative;
+  z-index: 2;
   flex: 0 0 auto;
   flex-direction: column;
   gap: 0.75rem;
@@ -302,7 +310,9 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
 
 .login-page--specialist-onboarding
   .interview-card--preview
-  .interview-card__field {
+  .interview-card__field,
+.login-page--specialist-onboarding
+  .interview-card__field:has(.wizard-preview-scroll) {
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
@@ -337,7 +347,7 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   .login-page--wizard.login-page--specialist-onboarding .interview-card--preview {
     flex: 1 1 auto;
     min-height: 0;
-    max-height: none;
+    max-height: 100%;
     height: auto;
   }
 }
@@ -416,7 +426,7 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   overflow: hidden;
 }
 
-.login-page--specialist-onboarding .interview-card__field:not(:has(.wizard-scroll-options)):not(:has(.specialty-picker)) {
+.login-page--specialist-onboarding .interview-card__field:not(:has(.wizard-scroll-options)):not(:has(.specialty-picker)):not(:has(.wizard-preview-scroll)) {
   flex: 0 1 auto;
   min-height: 3.25rem;
   overflow: visible;
@@ -454,6 +464,8 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   flex-shrink: 0;
   flex-direction: column;
   gap: 0.4rem;
+  position: relative;
+  z-index: 2;
 }
 
 .login-page--specialist-onboarding .interview-card__actions {
@@ -461,6 +473,8 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   align-items: stretch;
   gap: 0.55rem;
   width: 100%;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .login-page--specialist-onboarding .interview-back {
@@ -475,6 +489,9 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   background: rgba(8, 6, 16, 0.55);
   color: rgba(255, 255, 255, 0.88);
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .login-page--specialist-onboarding .interview-back:disabled {
@@ -502,6 +519,9 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   font-weight: 650;
   letter-spacing: -0.01em;
   cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.35),
     0 10px 28px rgba(var(--interview-accent-rgb), 0.38);
@@ -578,8 +598,15 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
 
   .login-page--wizard.login-page--specialist-onboarding
     .interview-stage:has(.wizard-scroll-options)
+    .interview-trail,
+  .login-page--wizard.login-page--specialist-onboarding
+    .interview-stage:has(.specialty-picker)
+    .interview-trail,
+  .login-page--wizard.login-page--specialist-onboarding
+    .interview-stage:has(.interview-card--preview)
     .interview-trail {
     flex: 0 0 0;
+    overflow: hidden;
   }
 }
 
@@ -678,6 +705,13 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
 }
 
 .login-page--specialist-onboarding .interview-card .wizard-preview-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding-right: 0.1rem;
   gap: 0.55rem;
   touch-action: pan-y;

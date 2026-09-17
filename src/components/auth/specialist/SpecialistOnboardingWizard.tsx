@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useToast } from "@/components/ui/toast";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -476,6 +477,20 @@ export function SpecialistOnboardingWizard({
   useEffect(() => {
     return () => clearCardMotionTimer();
   }, []);
+
+  useEffect(() => {
+    if (cardPhase !== "enter-pop" && cardPhase !== "from-back") return;
+    const timeoutId = window.setTimeout(() => setCardPhase("idle"), 500);
+    return () => window.clearTimeout(timeoutId);
+  }, [cardPhase]);
+
+  function blurInterviewField() {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement)) return;
+    if (!pageRef.current?.contains(active)) return;
+    if (!isInterviewEditableField(active)) return;
+    active.blur();
+  }
 
   function goToBeat(
     nextId: SpecialistInterviewBeatId,
@@ -1055,11 +1070,11 @@ export function SpecialistOnboardingWizard({
 
             <div className="interview-card__footer">
               <div className="interview-card__actions">
-                <button
+                <FastActivateButton
                   type="button"
-                  className="interview-back"
-                  onClick={handleBack}
-                  disabled={submitting || cardBusy}
+                  className="interview-back smoac-control"
+                  onActivate={handleBack}
+                  disabled={submitting}
                   aria-label={
                     beatIndex <= 0
                       ? "Back to account type"
@@ -1075,11 +1090,13 @@ export function SpecialistOnboardingWizard({
                       strokeLinejoin="round"
                     />
                   </svg>
-                </button>
-                <button
-                  type="submit"
-                  className="interview-continue"
-                  disabled={submitting || cardBusy}
+                </FastActivateButton>
+                <FastActivateButton
+                  type="button"
+                  className="interview-continue smoac-control"
+                  disabled={submitting}
+                  onPointerDown={blurInterviewField}
+                  onActivate={() => void handleContinue()}
                 >
                   <span>{continueLabel()}</span>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -1091,7 +1108,7 @@ export function SpecialistOnboardingWizard({
                       strokeLinejoin="round"
                     />
                   </svg>
-                </button>
+                </FastActivateButton>
               </div>
               {accountAlreadyCreated ? null : (
                 <p className="interview-signin">
@@ -1104,7 +1121,7 @@ export function SpecialistOnboardingWizard({
                   type="button"
                   className="interview-skip"
                   onClick={handleSkip}
-                  disabled={submitting || cardBusy}
+                  disabled={submitting}
                 >
                   Skip
                 </button>

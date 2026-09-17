@@ -548,7 +548,7 @@ export function SpecialistOnboardingSteps({
 
     case "preview":
       return (
-        <div className="wizard-scroll-options wizard-preview-scroll">
+        <div className="wizard-preview-scroll">
           <SpecialistApplicationPreview
             state={state}
             onEditCrop={
