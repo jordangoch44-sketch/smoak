@@ -956,6 +956,7 @@ export function SpecialistOnboardingWizard({
             key={currentBeatId}
             className={cn(
               "login-card wizard-card interview-card",
+              currentBeatId === "preview" && "interview-card--preview",
               cardPhase === "exit-left" && "interview-card--exit-left",
               cardPhase === "enter-pop" && "interview-card--enter-pop",
               cardPhase === "from-back" && "interview-card--from-back"

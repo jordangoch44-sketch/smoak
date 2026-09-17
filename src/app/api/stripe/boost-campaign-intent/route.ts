@@ -64,6 +64,22 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: listing } = await supabase
+    .from("specialist_profiles")
+    .select("status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (listing?.status !== "approved") {
+    return NextResponse.json(
+      {
+        error:
+          "Your profile must be approved before you can boost visibility.",
+      },
+      { status: 403 }
+    );
+  }
+
   const customer = await ensureSpecialistStripeCustomer({ user });
   if (!customer.ok) {
     return NextResponse.json(

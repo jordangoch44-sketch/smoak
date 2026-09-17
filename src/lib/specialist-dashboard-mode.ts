@@ -50,6 +50,20 @@ export function showsPremiumDashboard(mode: SpecialistDashboardMode): boolean {
   return mode === "approved-premium" || mode === "demo-premium";
 }
 
+/**
+ * Boost / growth house ads (marketplace ribbon, site promos).
+ * Onboarding, pending review, and rejected specialists stay off these.
+ */
+export function canShowSpecialistGrowthAds(
+  mode: SpecialistDashboardMode
+): boolean {
+  return (
+    mode === "approved-free" ||
+    mode === "approved-premium" ||
+    mode === "demo-premium"
+  );
+}
+
 export function showsProfileFirstDashboard(mode: SpecialistDashboardMode): boolean {
   return (
     mode === "pending" ||

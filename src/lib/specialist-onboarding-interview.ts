@@ -203,7 +203,8 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
     section: 4,
     required: true,
     title: "What are your specialties?",
-    subtitle: "Select the areas you coach. You can refine these anytime from your dashboard.",
+    subtitle:
+      "Pick the closest matches — you can change these anytime.",
     trailTitle: "Specialties",
     trailHint: "How clients will filter to you",
     trailIcon: "star",

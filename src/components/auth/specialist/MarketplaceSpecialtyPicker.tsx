@@ -29,32 +29,27 @@ export function MarketplaceSpecialtyPicker({
   const specialty = sanitizeMarketplaceSpecialties(selected);
   const featured = sanitizeHomepageSpecialties(specialty, homepageSpecialties);
   const featuredSet = new Set(featured);
-  const pillClass = variant === "wizard" ? "wizard-pill" : "dashboard-edit-chip";
-  const activeClass =
-    variant === "wizard"
-      ? "wizard-pill--active"
-      : "dashboard-edit-chip--active";
-  const featuredClass =
-    variant === "wizard"
-      ? "wizard-pill--card-featured"
-      : "dashboard-edit-chip--card-featured";
+  const isWizard = variant === "wizard";
+  const pillClass = isWizard ? "wizard-pill" : "dashboard-edit-chip";
+  const activeClass = isWizard
+    ? "wizard-pill--active"
+    : "dashboard-edit-chip--active";
+  const featuredClass = isWizard
+    ? "wizard-pill--card-featured"
+    : "dashboard-edit-chip--card-featured";
 
   return (
-    <>
-      <p
-        className={
-          variant === "wizard" ? "wizard-field-hint" : "dashboard-edit-hint"
-        }
-      >
-        Tap to add a specialty. Double-tap to make it one of your top{" "}
-        {HOMEPAGE_FEATURED_SPECIALTY_LIMIT} displayed on the marketplace card.
-        Tap a third time to remove it.
+    <div className="specialty-picker">
+      <p className={isWizard ? "wizard-field-hint" : "dashboard-edit-hint"}>
+        {isWizard
+          ? "Select 1 or more specialties."
+          : "Select 1 or more. Tap a selected specialty again to pin it as a Top specialty on your marketplace card."}
       </p>
       <div
         className={
-          variant === "wizard"
-            ? "wizard-pill-grid wizard-pill-grid--wide"
-            : "dashboard-edit-chip-grid"
+          isWizard
+            ? "wizard-pill-grid wizard-pill-grid--wide specialty-picker__grid"
+            : "dashboard-edit-chip-grid specialty-picker__grid"
         }
         role="group"
         aria-label="Specialties"
@@ -68,38 +63,62 @@ export function MarketplaceSpecialtyPicker({
         ).map((option) => {
           const active = specialty.includes(option);
           const onCard = featuredSet.has(option);
+          const hint = onCard
+            ? "Top specialty"
+            : active
+              ? "Tap again to pin"
+              : null;
           return (
-            <button
+            <div
               key={option}
-              type="button"
-              aria-pressed={active}
-              aria-label={
-                onCard
-                  ? `${option} (on your marketplace card)`
-                  : active
-                    ? option
-                    : `Add ${option}`
-              }
-              onClick={() =>
-                onChange(
-                  toggleMarketplaceSpecialty(
-                    option,
-                    specialty,
-                    homepageSpecialties
-                  )
-                )
-              }
               className={cn(
-                pillClass,
-                active && activeClass,
-                onCard && featuredClass
+                "specialty-picker-option",
+                active && "specialty-picker-option--selected",
+                onCard && "specialty-picker-option--pinned"
               )}
             >
-              {option}
-            </button>
+              <button
+                type="button"
+                aria-pressed={active}
+                aria-label={
+                  onCard
+                    ? `${option}, Top specialty. Tap to remove.`
+                    : active
+                      ? `${option}. Tap again to pin as a Top specialty.`
+                      : `Add ${option}`
+                }
+                onClick={() =>
+                  onChange(
+                    toggleMarketplaceSpecialty(
+                      option,
+                      specialty,
+                      homepageSpecialties
+                    )
+                  )
+                }
+                className={cn(
+                  pillClass,
+                  active && activeClass,
+                  onCard && featuredClass
+                )}
+              >
+                {option}
+              </button>
+              {hint ? (
+                <span
+                  className={cn(
+                    "specialty-picker-option__hint",
+                    onCard && "specialty-picker-option__hint--pinned"
+                  )}
+                  aria-hidden
+                >
+                  {hint}
+                </span>
+              ) : null}
+            </div>
           );
         })}
       </div>
-    </>
+    </div>
   );
 }

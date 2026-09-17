@@ -3,8 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { HomeBoostCard } from "@/components/home/HomeBoostCard";
-import { useAuthSession } from "@/hooks/useAuthSession";
-import { useHydrated } from "@/hooks/useHydrated";
+import { useSpecialistGrowthAdsAllowed } from "@/hooks/useSpecialistGrowthAdsAllowed";
 
 const BoostVisibilityModal = dynamic(
   () =>
@@ -19,16 +18,14 @@ interface HomeBoostRibbonProps {
 }
 
 /**
- * Specialist-only boost card. Hidden for guests and clients.
+ * Specialist-only boost card. Hidden for guests, clients, and specialists
+ * who are not yet admin-approved (onboarding, pending review, rejected).
  */
 export function HomeBoostRibbon({ className }: HomeBoostRibbonProps = {}) {
-  const hydrated = useHydrated();
-  const { session, isReady } = useAuthSession();
+  const { ready, allowed } = useSpecialistGrowthAdsAllowed();
   const [boostOpen, setBoostOpen] = useState(false);
 
-  const show = hydrated && isReady && session?.role === "specialist";
-
-  if (!show) return null;
+  if (!ready || !allowed) return null;
 
   return (
     <>

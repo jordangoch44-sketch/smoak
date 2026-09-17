@@ -199,6 +199,15 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   overflow: visible;
 }
 
+.login-page--specialist-onboarding .interview-stage:has(.interview-card--preview) {
+  overflow: hidden;
+}
+
+.login-page--wizard.login-page--specialist-onboarding:has(.interview-card--preview)
+  .interview-shell {
+  overflow: hidden;
+}
+
 .login-page--specialist-onboarding .interview-progress {
   display: flex;
   flex-shrink: 0;
@@ -281,6 +290,24 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
+.login-page--wizard.login-page--specialist-onboarding
+  .interview-card:has(.wizard-scroll-options),
+.login-page--wizard.login-page--specialist-onboarding
+  .interview-card:has(.specialty-picker),
+.login-page--wizard.login-page--specialist-onboarding .interview-card--preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.login-page--specialist-onboarding
+  .interview-card--preview
+  .interview-card__field {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
 @media (max-width: 1023px) {
   .login-page--specialist-onboarding .interview-intro__title {
     font-size: 1.2rem;
@@ -304,9 +331,14 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   }
 
   .login-page--wizard.login-page--specialist-onboarding
-    .interview-card:has(.wizard-scroll-options) {
+    .interview-card:has(.wizard-scroll-options),
+  .login-page--wizard.login-page--specialist-onboarding
+    .interview-card:has(.specialty-picker),
+  .login-page--wizard.login-page--specialist-onboarding .interview-card--preview {
     flex: 1 1 auto;
     min-height: 0;
+    max-height: none;
+    height: auto;
   }
 }
 
@@ -384,10 +416,20 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   overflow: hidden;
 }
 
-.login-page--specialist-onboarding .interview-card__field:not(:has(.wizard-scroll-options)) {
+.login-page--specialist-onboarding .interview-card__field:not(:has(.wizard-scroll-options)):not(:has(.specialty-picker)) {
   flex: 0 1 auto;
   min-height: 3.25rem;
   overflow: visible;
+}
+
+.login-page--specialist-onboarding .interview-card__field:has(.specialty-picker) {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.login-page--specialist-onboarding .specialty-picker .wizard-field-hint {
+  margin: 0;
 }
 
 .login-page--specialist-onboarding .interview-card .login-field__input,
@@ -633,6 +675,12 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   -webkit-overflow-scrolling: touch;
   padding: 0 0.15rem 0.35rem 0;
   gap: 0.4rem;
+}
+
+.login-page--specialist-onboarding .interview-card .wizard-preview-scroll {
+  padding-right: 0.1rem;
+  gap: 0.55rem;
+  touch-action: pan-y;
 }
 
 @media (hover: hover) {

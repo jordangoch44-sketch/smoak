@@ -39,6 +39,7 @@ import {
 } from "@/lib/auth-routes";
 import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import {
+  canShowSpecialistGrowthAds,
   showsPremiumDashboard,
   showsProfileFirstDashboard,
 } from "@/lib/specialist-dashboard-mode";
@@ -250,10 +251,10 @@ export function SpecialistDashboardPageClient() {
     if (promo === "pro") {
       setUpgradeOpen(true);
     }
-    if (promo === "boost") {
+    if (promo === "boost" && canShowSpecialistGrowthAds(dashboardMode)) {
       setBoostOpen(true);
     }
-  }, [searchParams]);
+  }, [searchParams, dashboardMode]);
 
   useEffect(() => {
     setFreeTab(parseFreeTab(tabParam, openInquiries));

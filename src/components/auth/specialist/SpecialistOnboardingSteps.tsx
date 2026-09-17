@@ -548,7 +548,7 @@ export function SpecialistOnboardingSteps({
 
     case "preview":
       return (
-        <>
+        <div className="wizard-scroll-options wizard-preview-scroll">
           <SpecialistApplicationPreview
             state={state}
             onEditCrop={
@@ -567,7 +567,7 @@ export function SpecialistOnboardingSteps({
               Edit account details
             </button>
           </div>
-        </>
+        </div>
       );
 
     default:

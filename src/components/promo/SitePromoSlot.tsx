@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CloseIcon } from "@/components/ui/icons";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
+import { useSpecialistGrowthAdsAllowed } from "@/hooks/useSpecialistGrowthAdsAllowed";
 import {
   dismissPromo,
   promoSignInToken,
@@ -40,6 +41,8 @@ export function SitePromoSlot({
 }: SitePromoSlotProps) {
   const hydrated = useHydrated();
   const { session, isSignedIn } = useAuthSession();
+  const { ready: growthAdsReady, allowed: growthAdsAllowed } =
+    useSpecialistGrowthAdsAllowed();
   const router = useRouter();
   const [dismissedLocal, setDismissedLocal] = useState(false);
   const [boosting, setBoosting] = useState<boolean | null>(null);
@@ -57,8 +60,11 @@ export function SitePromoSlot({
     signedInAt: session?.signedInAt,
   });
 
+  const specialistAdsBlocked =
+    session?.role === "specialist" && !(growthAdsReady && growthAdsAllowed);
+
   const campaign =
-    hydrated && !dismissedLocal
+    hydrated && !dismissedLocal && !specialistAdsBlocked
       ? resolveSitePromoForSlot(slotId, { audience, signInToken })
       : null;
 

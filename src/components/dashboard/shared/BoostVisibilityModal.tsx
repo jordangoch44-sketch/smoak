@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
+import {
+  canShowSpecialistGrowthAds,
+  resolveSpecialistDashboardMode,
+} from "@/lib/specialist-dashboard-mode";
+import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-subscription";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon, InfoIcon } from "@/components/ui/icons";
 import { getInitials } from "@/lib/utils";
@@ -59,7 +64,16 @@ export function BoostVisibilityModal({
   onClose,
 }: BoostVisibilityModalProps) {
   const { session } = useAuthSession();
-  const { trainer, formDefaults, application } = useManagedSpecialistProfile();
+  const { trainerId, trainer, formDefaults, application } =
+    useManagedSpecialistProfile();
+  const canBoost = canShowSpecialistGrowthAds(
+    resolveSpecialistDashboardMode({
+      sessionEmail: session?.email,
+      trainerId,
+      application,
+      subscription: getSpecialistSubscriptionForSession(session),
+    })
+  );
   const isProPlus = isProPlusPlan(session?.membershipPlan);
   const [step, setStep] = useState<Step>("place");
   const [days, setDays] = useState(BOOST_CAMPAIGN_DEFAULT_DAYS);
@@ -157,6 +171,10 @@ export function BoostVisibilityModal({
   }
 
   async function startCheckout() {
+    if (!canBoost) {
+      setError("Your profile must be approved before you can boost visibility.");
+      return;
+    }
     setBusy(true);
     setError(null);
     setCheckout(null);
