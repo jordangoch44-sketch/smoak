@@ -21,9 +21,7 @@ export function resolveSpecialistDashboardMode(input: {
     input.trainerId,
     input.sessionEmail
   );
-  const isPremium =
-    isSpecialistPremium(input.subscription) ||
-    input.application?.membershipTier === "premium";
+  const isPremium = isSpecialistPremium(input.subscription);
 
   if (isDemo && isPremium) {
     return "demo-premium";

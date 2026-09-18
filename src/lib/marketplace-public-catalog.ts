@@ -24,6 +24,7 @@ import {
 } from "@/lib/trainer-profile-path";
 import { isTrainerSponsored } from "@/lib/trainer-sponsorship";
 import { isTrainerFreeFirstSessionEligible } from "@/lib/free-first-session";
+import { applyPublicMembershipVisibility } from "@/lib/specialist-public-listing";
 import type { ProfileStatus } from "@/types/specialist-application";
 import type { Trainer } from "@/types/trainer";
 
@@ -164,12 +165,14 @@ export function getPublicMarketplaceTrainerBaseById(
 
   const approvedMap = resolveApprovedMap(options);
   const fromMap = findApprovedInMap(approvedMap, trainerId);
-  if (fromMap) return fromMap;
+  if (fromMap) return applyPublicMembershipVisibility(fromMap);
 
   const approved = getApprovedSpecialistProfileById(
     decodePublicTrainerKey(trainerId)
   );
-  if (approved && trainerMatchesPublicKey(approved, trainerId)) return approved;
+  if (approved && trainerMatchesPublicKey(approved, trainerId)) {
+    return applyPublicMembershipVisibility(approved);
+  }
 
   if (usesLiveCatalog(options)) {
     return undefined;
@@ -178,11 +181,11 @@ export function getPublicMarketplaceTrainerBaseById(
   const seed =
     findTrainerByPublicKey(seedTrainers, trainerId) ??
     getSeedTrainerById(decodePublicTrainerKey(trainerId));
-  if (seed) return seed;
+  if (seed) return applyPublicMembershipVisibility(seed);
 
   const app = findApplicationByPublicKey(trainerId);
   if (app && PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus)) {
-    return applicationToTrainer(app);
+    return applyPublicMembershipVisibility(applicationToTrainer(app));
   }
 
   return undefined;
@@ -219,7 +222,7 @@ export function listPublicMarketplaceTrainers(
     for (const trainer of Object.values(approvedMap)) {
       if (seen.has(trainer.id)) continue;
       seen.add(trainer.id);
-      result.push(trainer);
+      result.push(applyPublicMembershipVisibility(trainer));
     }
 
     return hydrateTrainerPublicSlugs(result);
@@ -227,7 +230,9 @@ export function listPublicMarketplaceTrainers(
 
   /* Seed mode (Supabase not configured) — local demo only */
   if (!includeBrowserState) {
-    return hydrateTrainerPublicSlugs(seedTrainers.slice());
+    return hydrateTrainerPublicSlugs(
+      seedTrainers.map(applyPublicMembershipVisibility)
+    );
   }
 
   const seen = new Set<string>();
@@ -238,7 +243,7 @@ export function listPublicMarketplaceTrainers(
     if (isTrainerHidden(seed.id, hiddenSet)) continue;
     if (applicationBlocksPublicSeed(seed.id)) continue;
     seen.add(seed.id);
-    result.push(seed);
+    result.push(applyPublicMembershipVisibility(seed));
   }
 
   if (typeof window !== "undefined") {
@@ -247,7 +252,7 @@ export function listPublicMarketplaceTrainers(
       if (!PUBLIC_SPECIALIST_STATUSES.includes(app.profileStatus)) continue;
       if (isTrainerHidden(app.id, hiddenSet)) continue;
       seen.add(app.id);
-      result.push(applicationToTrainer(app));
+      result.push(applyPublicMembershipVisibility(applicationToTrainer(app)));
     }
   }
 

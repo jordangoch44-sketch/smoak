@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties } from "react";
-import type { Trainer } from "@/types";
+import type { Trainer, TrainerIntroVideo } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSpecialistReviews } from "@/hooks/useSpecialistReviews";
@@ -23,23 +23,32 @@ import { SmoacReviewsSection } from "./SmoacReviewsSection";
 
 /**
  * Marketplace specialist profile body — Live dashboard and /trainers/[id]
- * render this same tree so an edit updates both views.
+ * render this same tree so an edit updates both views. Owner Live may pass
+ * locked pin teasers; Marketplace never does.
  */
 export function TrainerProfileView({
   trainer,
   cityRanking = null,
   variant = "public",
+  lockedPreviewPins,
+  lockedPreviewIntro,
   onClaimFreeSession,
   onInquire,
   onEditProfilePhoto,
+  onUpgrade,
 }: {
   trainer: Trainer;
   cityRanking?: TrainerCityRanking | null;
   variant?: "public" | "specialist-live";
+  /** Owner Live only — Free pin teaser; never passed on Marketplace. */
+  lockedPreviewPins?: string[];
+  /** Owner Live only — Free intro-video teaser; never passed on Marketplace. */
+  lockedPreviewIntro?: TrainerIntroVideo;
   onClaimFreeSession?: () => void;
   onInquire: () => void;
   /** Live View only — owner can edit their own profile photo. */
   onEditProfilePhoto?: () => void;
+  onUpgrade?: () => void;
 }) {
   const hydrated = useHydrated();
   const isSpecialistLive = variant === "specialist-live";
@@ -91,6 +100,8 @@ export function TrainerProfileView({
       <ProfileHero
         trainer={trainer}
         variant={variant}
+        lockedPreviewPins={isSpecialistLive ? lockedPreviewPins : undefined}
+        lockedPreviewIntro={isSpecialistLive ? lockedPreviewIntro : undefined}
         smoacAggregate={aggregate}
         cityRanking={cityRanking}
         canLeaveReview={isSpecialistLive ? false : canLeaveReview}
@@ -109,6 +120,7 @@ export function TrainerProfileView({
         onEditProfilePhoto={
           isSpecialistLive ? onEditProfilePhoto : undefined
         }
+        onUpgrade={isSpecialistLive ? onUpgrade : undefined}
       />
 
       <div className="mx-auto max-w-7xl px-4 pb-16 pt-3 sm:px-6 sm:pb-20 sm:pt-5 lg:py-12">

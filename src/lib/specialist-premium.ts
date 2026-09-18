@@ -53,6 +53,10 @@ export const SMOAC_PRO_BENEFITS: readonly MembershipBenefit[] = [
     title: "Growth insights on your live profile",
     detail: "Personalized tips to level up",
   },
+  {
+    title: "Intro video above your bio",
+    detail: "A Meet clip clients can play on your profile",
+  },
 ];
 
 export const SMOAC_PRO_PLUS_BENEFITS: readonly MembershipBenefit[] = [
@@ -93,10 +97,10 @@ export const SMOAC_PRO_TRIAL_ENDED_MODAL = {
   eyebrow: "Trial ended",
   title: "Your free Pro month is over",
   description:
-    "You've been moved to the Free plan. Continue Pro to keep full analytics and growth insights.",
+    "You're on Free now. Extra photos, pins, intro video, and Free first session stay saved — clients just can't see them until you restore Pro.",
   price: SMOAC_PRO_PRICE_LABEL,
-  note: "Or stay on Free — you can upgrade anytime.",
-  primaryCta: `Continue Pro · ${SMOAC_PRO_PRICE_LABEL}`,
+  note: "Upgrade to put those Pro extras back on Marketplace.",
+  primaryCta: `Restore Pro · ${SMOAC_PRO_PRICE_LABEL}`,
   secondaryCta: "Stay on Free",
 } as const;
 
@@ -311,7 +315,7 @@ export function resolveMembershipUpgradeOffer(
       cta: SMOAC_PRO_TRIAL_ENDED_MODAL.primaryCta,
       secondaryCta: SMOAC_PRO_TRIAL_ENDED_MODAL.secondaryCta,
       badgeLabel: "PRO",
-      badgeCaption: "Keep your momentum",
+      badgeCaption: "Restore what clients saw",
       benefits: SMOAC_PRO_BENEFITS,
     };
   }

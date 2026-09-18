@@ -20,6 +20,7 @@ import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
 import { SpecialistVideosEditor } from "@/components/dashboard/specialist/SpecialistVideosEditor";
+import { SpecialistIntroVideoEditor } from "@/components/dashboard/specialist/SpecialistIntroVideoEditor";
 import { TrainerProfileView } from "@/components/profile/TrainerProfileView";
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import { MarketplaceSpecialtyPicker } from "@/components/auth/specialist/MarketplaceSpecialtyPicker";
@@ -77,6 +78,11 @@ import type { TrainerCityRanking } from "@/data/city-rankings";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
+import {
+  applyPublicMembershipVisibility,
+  resolveOwnerLiveLockedIntro,
+  resolveOwnerLiveLockedPins,
+} from "@/lib/specialist-public-listing";
 import { getApprovedSpecialistProfileById } from "@/lib/approved-specialist-profiles-store";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
 import { trainerMatchesPublicKey } from "@/lib/trainer-profile-path";
@@ -101,6 +107,7 @@ function previewModeFromSearch(
 
 type SectionId =
   | "hero"
+  | "intro-video"
   | "videos"
   | "avatar"
   | "name"
@@ -123,6 +130,7 @@ type SectionId =
 
 const SECTION_TITLES: Record<SectionId, string> = {
   hero: "Pictures / slideshow",
+  "intro-video": "Intro video",
   videos: "Videos",
   avatar: "Profile photo",
   name: "Business name",
@@ -180,6 +188,10 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
     case "slideshow":
     case "pictures":
       return "hero";
+    case "intro-video":
+    case "intro":
+    case "meet":
+      return "intro-video";
     case "videos":
     case "video":
       return "videos";
@@ -552,12 +564,13 @@ export function SpecialistDashboardProfilePreview({
     : isPremium
       ? "premium"
       : "free";
+  /* Session entitlement wins. Stale catalog Pro must not keep a Free account live. */
   const membershipPlan =
-    sessionPlan === "platinum" || listingPlan === "platinum"
-      ? "platinum"
-      : sessionPlan === "premium" || listingPlan === "premium"
-        ? "premium"
-        : "free";
+    sessionPlan === "free"
+      ? "free"
+      : sessionPlan === "platinum" || listingPlan === "platinum"
+        ? "platinum"
+        : "premium";
   const approvedListing = getApprovedSpecialistProfileById(
     trainerId ?? listing.id
   );
@@ -580,9 +593,24 @@ export function SpecialistDashboardProfilePreview({
     reviewCount: listing.reviewCount || approvedListing?.reviewCount || 0,
     reviewSources: listing.reviewSources ?? approvedListing?.reviewSources,
   } as Trainer;
-  /* Live === Marketplace: same public catalog row clients see. */
-  const liveTrainer = (marketplaceTrainer ??
-    (isLiveListing && approvedListing ? approvedListing : listing)) as Trainer;
+  /* Live matches Marketplace for clients, plus locked pin teasers for Free owners. */
+  const liveSource = {
+    ...((marketplaceTrainer ??
+      (isLiveListing && approvedListing ? approvedListing : listing)) as Trainer),
+    isPremium: membershipPlan !== "free",
+    membershipPlan,
+  } as Trainer;
+  const liveTrainer = isLiveListing
+    ? applyPublicMembershipVisibility(liveSource)
+    : liveSource;
+  const lockedPreviewPins =
+    membershipPlan === "free"
+      ? resolveOwnerLiveLockedPins(listing)
+      : undefined;
+  const lockedPreviewIntro =
+    membershipPlan === "free"
+      ? resolveOwnerLiveLockedIntro(listing)
+      : undefined;
 
   const [editing, setEditing] = useState<SectionId | null>(null);
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
@@ -715,6 +743,10 @@ export function SpecialistDashboardProfilePreview({
       onUpgrade?.();
       return;
     }
+    if (section === "intro-video" && !isPremium) {
+      onUpgrade?.();
+      return;
+    }
     if (
       (section === "transformations" || section === "videos") &&
       !isProPlus
@@ -829,7 +861,10 @@ export function SpecialistDashboardProfilePreview({
             : undefined
         }
         variant={
-          editing === "hero" || editing === "videos" || editing === "avatar"
+          editing === "hero" ||
+          editing === "intro-video" ||
+          editing === "videos" ||
+          editing === "avatar"
             ? "photos"
             : editing === "pricing"
               ? "pricing"
@@ -865,6 +900,21 @@ export function SpecialistDashboardProfilePreview({
               }}
             />
           </div>
+        ) : null}
+
+        {editing === "intro-video" ? (
+          <SpecialistIntroVideoEditor
+            introVideoUrl={form.introVideoUrl}
+            introVideoPosterJson={form.introVideoPosterJson}
+            isPremium={isPremium}
+            specialistId={trainerId ?? application?.id ?? trainer.id}
+            specialistName={form.name || trainer.name}
+            specialistFirstName={trainer.specialistFirstName}
+            onUpgrade={onUpgrade}
+            onChange={(next) => {
+              setDraft((prev) => (prev ? { ...prev, ...next } : prev));
+            }}
+          />
         ) : null}
 
         {editing === "videos" ? (
@@ -1504,11 +1554,14 @@ export function SpecialistDashboardProfilePreview({
               trainer={liveTrainer}
               cityRanking={cityRanking}
               variant="specialist-live"
+              lockedPreviewPins={lockedPreviewPins}
+              lockedPreviewIntro={lockedPreviewIntro}
               onClaimFreeSession={selfPreviewNote}
               onInquire={selfPreviewNote}
               onEditProfilePhoto={
                 canEditOwnPhoto ? () => startEdit("avatar") : undefined
               }
+              onUpgrade={onUpgrade}
             />
           </div>
         </>
@@ -1517,11 +1570,14 @@ export function SpecialistDashboardProfilePreview({
           trainer={liveTrainer}
           cityRanking={cityRanking}
           variant="specialist-live"
+          lockedPreviewPins={lockedPreviewPins}
+          lockedPreviewIntro={lockedPreviewIntro}
           onClaimFreeSession={selfPreviewNote}
           onInquire={selfPreviewNote}
           onEditProfilePhoto={
             canEditOwnPhoto ? () => startEdit("avatar") : undefined
           }
+          onUpgrade={onUpgrade}
         />
       )}
     </div>

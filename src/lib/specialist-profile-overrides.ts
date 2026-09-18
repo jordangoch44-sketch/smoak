@@ -33,6 +33,10 @@ import { parseTravelToClients } from "@/types/specialist-service-area";
 import { parseTrainingOptions } from "@/types/specialist-training-options";
 import { normalizeProfileStyle } from "@/lib/specialist-profile-style";
 import { isTrainerProPlus } from "@/lib/specialist-premium";
+import {
+  introVideoToFormFields,
+  parseIntroVideoFromFields,
+} from "@/lib/specialist-intro-video";
 import { computeTrainerReviewCount } from "@/lib/trainer-reviews";
 import {
   hasSessionPrice,
@@ -93,6 +97,7 @@ const PROFILE_SECTION_FIELDS: Record<
     "pinnedPhotos",
   ],
   avatar: ["profilePhotoUrl"],
+  "intro-video": ["introVideoUrl", "introVideoPosterJson"],
   videos: ["videoNotes", "videoPostersJson", "pinnedPhotos"],
   transformations: ["transformationNotes"],
   name: ["name"],
@@ -160,6 +165,8 @@ const PROFILE_SECTION_FIELDS: Record<
     "slideshowFramesJson",
     "videoNotes",
     "videoPostersJson",
+    "introVideoUrl",
+    "introVideoPosterJson",
     "pinnedPhotos",
     "transformationNotes",
     "instagram",
@@ -533,6 +540,15 @@ export function applySpecialistProfileOverrides(
     merged.gallery = merged.gallery.filter((item) => item.type !== "video");
   }
 
+  if (overrides.introVideoUrl !== undefined) {
+    const intro = parseIntroVideoFromFields(
+      overrides.introVideoUrl,
+      overrides.introVideoPosterJson
+    );
+    if (intro) merged.introVideo = intro;
+    else delete merged.introVideo;
+  }
+
   merged.galleryImages = buildTrainerGalleryImages(
     merged.gallery,
     merged.heroImage,
@@ -725,6 +741,15 @@ export function overridesFromTrainer(
             ])
         )
       ),
+    ...(() => {
+      if (stored?.introVideoUrl !== undefined) {
+        return {
+          introVideoUrl: stored.introVideoUrl.trim(),
+          introVideoPosterJson: stored.introVideoPosterJson?.trim() ?? "",
+        };
+      }
+      return introVideoToFormFields(trainer.introVideo);
+    })(),
     transformationNotes: stored?.transformationNotes?.trim()
       ? stored.transformationNotes
       : serializeMediaUrlList(
@@ -854,6 +879,13 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
       pruneVideoPosterMap(
         parseVideoPosterMap(form.videoPostersJson ?? ""),
         parseMediaUrlList(form.videoNotes)
+      )
+    ),
+    introVideoUrl: form.introVideoUrl.trim(),
+    introVideoPosterJson: serializeVideoPosterMap(
+      pruneVideoPosterMap(
+        parseVideoPosterMap(form.introVideoPosterJson ?? ""),
+        form.introVideoUrl.trim() ? [form.introVideoUrl.trim()] : []
       )
     ),
     transformationNotes: form.transformationNotes.trim(),

@@ -14,8 +14,14 @@ import { formatClipSecondsLabel } from "@/lib/media/video-file";
 import {
   normalizePinnedPhotos,
   pinAllowList,
+  specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
+import {
+  isTrainerIntroVideoUnlocked,
+  meetCtaLabel,
+} from "@/lib/specialist-intro-video";
 import { isTrainerProPlus } from "@/lib/specialist-premium";
+import type { TrainerIntroVideo } from "@/types/trainer";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
@@ -29,12 +35,13 @@ import {
 } from "@/lib/free-first-session";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
-import { PhotosStackIcon } from "@/components/ui/icons";
+import { LockIcon, PhotosStackIcon } from "@/components/ui/icons";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { MEDIA_TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
 import { ProfileHeroBio } from "./ProfileHeroBio";
+import { ProfileHeroMeetCta } from "./ProfileHeroMeetCta";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
@@ -51,10 +58,15 @@ interface ProfileHeroProps {
   onLeaveReview?: () => void;
   /** Dashboard Live tab — same client hero, minus sheet toolbar (close/save would leave the dashboard) */
   variant?: "public" | "specialist-live";
+  /** Owner Live — Free pin teaser with lock overlays. Never used on Marketplace. */
+  lockedPreviewPins?: string[];
+  /** Owner Live — Free intro-video teaser. Never used on Marketplace. */
+  lockedPreviewIntro?: TrainerIntroVideo;
   /** Live tab — Edit chip on the circular profile photo */
   onEditProfilePhoto?: () => void;
   /** Public profile — claim CTA opens inquire */
   onClaimFreeSession?: () => void;
+  onUpgrade?: () => void;
 }
 
 export function ProfileHero({
@@ -65,32 +77,58 @@ export function ProfileHero({
   hasOwnReview,
   onLeaveReview,
   variant = "public",
+  lockedPreviewPins,
+  lockedPreviewIntro,
   onEditProfilePhoto,
   onClaimFreeSession,
+  onUpgrade,
 }: ProfileHeroProps) {
   const isSpecialistLive = variant === "specialist-live";
   const ranking = cityRanking;
+  const isProPlus = isTrainerProPlus(trainer);
+  const mediaLimits = specialistMediaLimitsForPlan(
+    trainer.isPremium === true || isProPlus,
+    isProPlus
+  );
   const coverImages = buildTrainerGalleryImages(
     trainer.gallery,
     trainer.heroImage,
     trainer.galleryImages
-  );
-  const galleryMedia = getProfileGalleryMedia(
+  ).slice(0, mediaLimits.images);
+  const rawGalleryMedia = getProfileGalleryMedia(
     trainer.gallery,
     trainer.galleryImages,
     trainer.heroImage
   );
+  let liveImages = 0;
+  let liveVideos = 0;
+  const galleryMedia = rawGalleryMedia.filter((item) => {
+    if (item.type === "video") {
+      if (!isProPlus || liveVideos >= mediaLimits.videos) return false;
+      liveVideos += 1;
+      return true;
+    }
+    if (liveImages >= mediaLimits.images) return false;
+    liveImages += 1;
+    return true;
+  });
   const canShowPins =
     trainer.isPremium === true || isTrainerProPlus(trainer);
   const pinVideos = galleryMedia
     .filter((item) => item.type === "video")
     .map((item) => item.url);
-  const pinnedPhotos = canShowPins
+  const livePins = canShowPins
     ? normalizePinnedPhotos(
         trainer.pinnedPhotos,
         pinAllowList(coverImages, pinVideos)
       )
     : [];
+  const lockedPins =
+    isSpecialistLive && !canShowPins
+      ? normalizePinnedPhotos(lockedPreviewPins)
+      : [];
+  const pinsLocked = lockedPins.length > 0;
+  const pinnedPhotos = canShowPins ? livePins : lockedPins;
   const pinnedPhotoSet = new Set(pinnedPhotos);
   const remainingGalleryPhotos = galleryMedia.filter(
     (item) => item.type === "image" && !pinnedPhotoSet.has(item.url)
@@ -101,7 +139,20 @@ export function ProfileHero({
     remainingPhotoCount > 0 && pinnedPhotos.length === 0;
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [introOpen, setIntroOpen] = useState(false);
   const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
+  const introUnlocked = isTrainerIntroVideoUnlocked(trainer);
+  const liveIntro = introUnlocked ? trainer.introVideo : undefined;
+  const lockedIntro =
+    isSpecialistLive && !introUnlocked ? lockedPreviewIntro : undefined;
+  const introVideo =
+    liveIntro?.src?.trim()
+      ? liveIntro
+      : lockedIntro?.src?.trim()
+        ? lockedIntro
+        : undefined;
+  const introLocked = Boolean(introVideo && lockedIntro && !liveIntro);
+  const meetLabel = meetCtaLabel(trainer);
 
   const openGallery = useCallback(
     (startUrl?: string) => {
@@ -207,9 +258,23 @@ export function ProfileHero({
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
-            {bio ? (
+            {introVideo || bio ? (
               <div className="profile-hero__intro">
-                <ProfileHeroBio bio={bio} />
+                {introVideo ? (
+                  <ProfileHeroMeetCta
+                    label={meetLabel}
+                    video={introVideo}
+                    locked={introLocked}
+                    onPlay={() => {
+                      if (introLocked) {
+                        onUpgrade?.();
+                        return;
+                      }
+                      setIntroOpen(true);
+                    }}
+                  />
+                ) : null}
+                {bio ? <ProfileHeroBio bio={bio} /> : null}
               </div>
             ) : null}
 
@@ -266,7 +331,11 @@ export function ProfileHero({
                   "profile-hero__pinned",
                   remainingPhotoCount > 0 && "profile-hero__pinned--with-more"
                 )}
-                aria-label="Pinned photos and videos"
+                aria-label={
+                  pinsLocked
+                    ? "Pinned photos locked on Free"
+                    : "Pinned photos and videos"
+                }
               >
                 {pinnedPhotos.map((url, index) => {
                   const item = resolveGalleryItemForUrl(galleryMedia, url);
@@ -275,22 +344,38 @@ export function ProfileHero({
                   return (
                     <FastActivateButton
                       key={url}
-                      className="profile-hero__pinned-tile"
+                      className={cn(
+                        "profile-hero__pinned-tile",
+                        pinsLocked && "profile-hero__pinned-tile--locked"
+                      )}
                       aria-label={
-                        isVideo
-                          ? `Play pinned video ${index + 1}`
-                          : `Open pinned photo ${index + 1}`
+                        pinsLocked
+                          ? `Pinned photo ${index + 1}, locked on Free. Upgrade to show on Marketplace.`
+                          : isVideo
+                            ? `Play pinned video ${index + 1}`
+                            : `Open pinned photo ${index + 1}`
                       }
                       slopPx={MEDIA_TAP_SLOP_PX}
-                      onActivate={() => openGallery(url)}
+                      onActivate={() => {
+                        if (pinsLocked) {
+                          onUpgrade?.();
+                          return;
+                        }
+                        openGallery(url);
+                      }}
                     >
                       {preview ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={preview} alt="" />
                       ) : null}
-                      {isVideo ? (
+                      {isVideo && !pinsLocked ? (
                         <span className="profile-hero__pinned-seconds">
                           {formatClipSecondsLabel(item.duration ?? 0)}
+                        </span>
+                      ) : null}
+                      {pinsLocked ? (
+                        <span className="profile-hero__pinned-lock">
+                          <LockIcon className="profile-hero__pinned-lock-icon" />
                         </span>
                       ) : null}
                     </FastActivateButton>
@@ -323,6 +408,26 @@ export function ProfileHero({
         initialIndex={galleryIndex}
         trainerName={trainer.name}
         onClose={closeGallery}
+      />
+
+      <ProfileGalleryModal
+        open={introOpen}
+        media={
+          introVideo
+            ? [
+                {
+                  id: "intro-video",
+                  type: "video",
+                  url: introVideo.src,
+                  thumbnail: introVideo.poster,
+                  duration: introVideo.duration,
+                  alt: meetLabel,
+                },
+              ]
+            : []
+        }
+        trainerName={trainer.name}
+        onClose={() => setIntroOpen(false)}
       />
 
       {isSpecialistLive ? null : (

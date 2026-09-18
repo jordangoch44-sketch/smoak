@@ -37,6 +37,10 @@ export const SMOAC_PROFILE_WELCOME = {
   joinBody:
     "Unlock analytics, ranking insights, and more inquiries with SMOAC Pro.",
   joinCta: "Upgrade to Pro",
+  restoreHeadline: "Restore your Pro features",
+  restoreBody:
+    "Extra photos, pins, intro video, and Free first session are still saved. Clients can't see them until you upgrade.",
+  restoreCta: "Restore Pro",
   trialFallbackHeadline: "Your Pro trial is running out",
   trialBody:
     "Keep Pro before your trial ends — analytics, ranking insights, and growth tools stay unlocked.",
@@ -81,6 +85,7 @@ export type SpecialistProfileWelcomeSession = {
   premiumTrialActive?: boolean;
   premiumTrialDaysRemaining?: number | null;
   premiumTrialJustEnded?: boolean;
+  premiumTrialUsed?: boolean;
 };
 
 /** Incomplete profile rows — same warning-icon sections as the live editor. */
@@ -242,6 +247,15 @@ export function resolveProfileWelcomeMembership(
       body: SMOAC_PROFILE_WELCOME.upgradeBoostBody,
       primaryCta: SMOAC_PROFILE_WELCOME.upgradeCta,
       secondaryCta: SMOAC_PROFILE_WELCOME.boostCta,
+    };
+  }
+
+  if (session.premiumTrialUsed || session.premiumTrialJustEnded) {
+    return {
+      kind: "join",
+      headline: SMOAC_PROFILE_WELCOME.restoreHeadline,
+      body: SMOAC_PROFILE_WELCOME.restoreBody,
+      primaryCta: SMOAC_PROFILE_WELCOME.restoreCta,
     };
   }
 

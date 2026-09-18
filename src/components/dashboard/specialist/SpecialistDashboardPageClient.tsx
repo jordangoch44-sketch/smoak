@@ -25,7 +25,7 @@ import { InquiryNotificationBanner } from "@/components/dashboard/specialist/Inq
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
-import { SpecialistProGhostPreview } from "@/components/dashboard/specialist/SpecialistProGhostPreview";
+import { SpecialistLockedOverview } from "@/components/dashboard/specialist/SpecialistLockedOverview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
@@ -43,17 +43,14 @@ import {
   showsPremiumDashboard,
   showsProfileFirstDashboard,
 } from "@/lib/specialist-dashboard-mode";
-import { getSpecialistProPreviewAnalytics } from "@/lib/specialist-dashboard-analytics";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
   SMOAC_FREE_PLAN_LABEL,
+  formatMembershipShortLabel,
   formatProTrialBadgeLabel,
   isProPlusPlan,
-  isTrainerProPlus,
   membershipBadgeToneForSession,
   showProTrialLastChance,
-  showSpecialistFreeTrialPromo,
-  showSpecialistPaidUpgradePromo,
 } from "@/lib/specialist-premium";
 import { membershipPlanLabel } from "@/lib/stripe/products";
 import { cn } from "@/lib/utils";
@@ -64,7 +61,7 @@ import {
   PROFILE_WELCOME_PHOTOS_TASK_ID,
 } from "@/lib/specialist-profile-welcome";
 
-type FreeDashboardTab = "plan" | "profile";
+type FreeDashboardTab = "overview" | "profile";
 type PremiumDashboardTab = "overview" | "profile";
 
 /** Survives Strict Mode remounts; cleared on full reload so login can show it again. */
@@ -72,7 +69,7 @@ const welcomeOpenedThisRuntime = new Set<string>();
 const welcomeDismissedThisRuntime = new Set<string>();
 
 const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
-  { id: "plan", label: "Plan & upgrade" },
+  { id: "overview", label: "Overview" },
   { id: "profile", label: "Profile" },
 ];
 
@@ -81,7 +78,7 @@ const PREMIUM_TABS: ReadonlyArray<{ id: PremiumDashboardTab; label: string }> = 
   { id: "profile", label: "Profile" },
 ];
 
-type SpecialistDashHeaderSurface = "overview" | "profile" | "plan" | "status";
+type SpecialistDashHeaderSurface = "overview" | "profile" | "status";
 
 function dashboardSubtitle(
   mode: ReturnType<typeof useSpecialistDashboard>["dashboardMode"]
@@ -106,7 +103,7 @@ function parseFreeTab(
   openInquiries: boolean
 ): FreeDashboardTab {
   if (openInquiries) return "profile";
-  return value === "plan" ? "plan" : "profile";
+  return value === "overview" || value === "plan" ? "overview" : "profile";
 }
 
 function parsePremiumTab(
@@ -120,9 +117,6 @@ function parsePremiumTab(
 function hrefForDashboardTab(tab: FreeDashboardTab | PremiumDashboardTab): string {
   if (tab === "profile") {
     return SPECIALIST_DASHBOARD_PROFILE_TAB_HREF;
-  }
-  if (tab === "plan") {
-    return `${SPECIALIST_DASHBOARD_PATH}?tab=plan`;
   }
   return SPECIALIST_DASHBOARD_OVERVIEW_HREF;
 }
@@ -146,6 +140,7 @@ export function SpecialistDashboardPageClient() {
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeSkipPick, setUpgradeSkipPick] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const [focusSection, setFocusSection] = useState<string | null>(() => {
@@ -249,7 +244,7 @@ export function SpecialistDashboardPageClient() {
   useEffect(() => {
     const promo = searchParams.get("promo");
     if (promo === "pro") {
-      setUpgradeOpen(true);
+      openUpgrade();
     }
     if (promo === "boost" && canShowSpecialistGrowthAds(dashboardMode)) {
       setBoostOpen(true);
@@ -346,11 +341,11 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "pending" && hasProfilePreview;
   const isFreeLive = dashboardMode === "approved-free";
   const onProTrial = Boolean(session.premiumTrialActive);
-  const isProPlus =
-    isProPlusPlan(session.membershipPlan) ||
-    isTrainerProPlus(trainer ?? {});
+  const hadProTrial = Boolean(session.premiumTrialUsed);
+  const isProPlus = isProPlusPlan(session.membershipPlan);
   const showLastChance = showProTrialLastChance(session);
 
+  const freeOverview = isFreeLive && freeTab === "overview";
   const headerSurface: SpecialistDashHeaderSurface = showPendingLiveView
     ? "profile"
     : isPendingGate
@@ -362,7 +357,7 @@ export function SpecialistDashboardPageClient() {
         : isFreeLive
           ? freeTab === "profile"
             ? "profile"
-            : "plan"
+            : "overview"
           : "status";
 
   function openProfileInquiries() {
@@ -429,13 +424,23 @@ export function SpecialistDashboardPageClient() {
     );
   }
 
+  function openUpgrade(options?: { skipPick?: boolean }) {
+    setUpgradeSkipPick(Boolean(options?.skipPick));
+    setUpgradeOpen(true);
+  }
+
+  function closeUpgrade() {
+    setUpgradeOpen(false);
+    setUpgradeSkipPick(false);
+  }
+
   function openWelcomeMembership(action: "join" | "upgrade" | "boost") {
     dismissProfileWelcome();
     if (action === "boost") {
       setBoostOpen(true);
       return;
     }
-    setUpgradeOpen(true);
+    openUpgrade();
   }
 
   function startWelcomeWithSection(sectionId?: string) {
@@ -455,7 +460,7 @@ export function SpecialistDashboardPageClient() {
   }
 
   const liveDot =
-    isLivePublished && headerSurface !== "plan" ? (
+    isLivePublished ? (
       <span
         className="dashboard-live-indicator"
         title="Live on Marketplace"
@@ -481,24 +486,11 @@ export function SpecialistDashboardPageClient() {
   const roleLabel =
     headerSurface === "profile"
       ? profilePlanLabel
-      : headerSurface === "plan"
-        ? SMOAC_FREE_PLAN_LABEL
-        : headerSurface === "overview"
-          ? onProTrial
-            ? formatProTrialBadgeLabel(session.premiumTrialDaysRemaining)
-            : isProPlus
-              ? membershipPlanLabel("platinum")
-              : isPremium
-                ? membershipPlanLabel("premium")
-                : undefined
-          : undefined;
+      : headerSurface === "overview"
+        ? formatMembershipShortLabel(session)
+        : undefined;
 
-  const roleLabelTone =
-    headerSurface === "plan"
-      ? "free"
-      : roleLabel
-        ? planBadgeTone
-        : "default";
+  const roleLabelTone = roleLabel ? planBadgeTone : "default";
 
   const headerCopy =
     headerSurface === "overview"
@@ -525,23 +517,54 @@ export function SpecialistDashboardPageClient() {
             subtitle:
               "Tap a row to update. Saves go live on Marketplace — your public layout stays the same for clients.",
           }
-        : headerSurface === "plan"
-          ? {
-              eyebrow: "Your plan",
-              title: <>Grow with SMOAC Pro</>,
-              subtitle:
-                "See what Pro unlocks for leads, insights, and marketplace reach.",
-            }
-          : {
-              eyebrow: "Specialist dashboard",
-              title: (
-                <>
-                  Good to see you, {firstName}
-                  {liveDot}
-                </>
-              ),
-              subtitle: dashboardSubtitle(dashboardMode),
-            };
+        : {
+            eyebrow: "Specialist dashboard",
+            title: (
+              <>
+                Good to see you, {firstName}
+                {liveDot}
+              </>
+            ),
+            subtitle: dashboardSubtitle(dashboardMode),
+          };
+
+  const overviewAccordions = (premium: boolean, teaseOpen = false) => (
+    <div className="dashboard-overview-accordions">
+      <AnalyticsCard
+        analytics={analytics}
+        isPremium={premium}
+        defaultOpen={teaseOpen}
+      />
+      <ProfileCompletionCard
+        profileCompletion={profileCompletion}
+        trainer={trainer}
+        checklist={completionChecklist}
+        onEditProfile={handleNavigateToProfile}
+      />
+      <VisibilityRankingCard
+        ranking={data.ranking ?? null}
+        isPremium={premium}
+        defaultOpen={teaseOpen}
+        smoacRating={rankingRating.rating}
+        smoacReviewCount={rankingRating.reviewCount}
+        categoryLabel={
+          trainer ? resolveTrainerProfessionCategory(trainer) : undefined
+        }
+        onOpenBoost={() => setBoostOpen(true)}
+      />
+      <ReviewsCard
+        trainer={trainer}
+        isPremium={premium}
+        smoacRating={rankingRating.rating}
+        smoacReviewCount={rankingRating.reviewCount}
+      />
+      <GoogleReviewsCard
+        trainer={trainer}
+        isPremium={premium}
+        onUpgrade={() => setUpgradeOpen(true)}
+      />
+    </div>
+  );
 
   return (
     <>
@@ -553,13 +576,13 @@ export function SpecialistDashboardPageClient() {
       roleLabel={roleLabel}
       roleLabelTone={roleLabelTone}
       headerClassName={`dashboard-page__header--${headerSurface}`}
-      hideHeader={headerSurface === "profile"}
+      hideHeader={headerSurface === "profile" || freeOverview}
       statusLabel={
-        profileFirst || isLivePublished ? null : profileStatusLabel
+        profileFirst || isLivePublished || freeOverview ? null : profileStatusLabel
       }
       statusTone={statusTone}
       utilityBar={
-        headerSurface === "profile" ? undefined : (
+        headerSurface === "profile" || freeOverview ? undefined : (
           <SpecialistDashboardAccountMenu
             onSignOut={() => setSignOutConfirmOpen(true)}
           />
@@ -567,14 +590,14 @@ export function SpecialistDashboardPageClient() {
       }
     >
       <div className="specialist-dash-layout">
-        {showLastChance && headerSurface !== "profile" ? (
+        {showLastChance && headerSurface !== "profile" && !freeOverview ? (
           <ProTrialLastChanceBanner
             daysRemaining={session.premiumTrialDaysRemaining}
             onUpgrade={() => setUpgradeOpen(true)}
           />
         ) : null}
 
-        {showsInquiries && headerSurface !== "profile" ? (
+        {showsInquiries && headerSurface !== "profile" && !freeOverview ? (
           <InquiryNotificationBanner
             unreadCount={inquiryUnreadCount}
             latestSummary={latestInquirySummary}
@@ -613,22 +636,22 @@ export function SpecialistDashboardPageClient() {
             ) : null}
 
             <div className="specialist-dash-panels">
-              {freeTab === "plan" ? (
+              {freeTab === "overview" ? (
                 <div
-                  id="specialist-dash-panel-plan"
+                  id="specialist-dash-panel-overview"
                   role="tabpanel"
-                  aria-labelledby="specialist-dash-tab-plan"
+                  aria-labelledby="specialist-dash-tab-overview"
                   className="specialist-dash-panel"
                 >
-                  <SpecialistProGhostPreview
-                    firstName={firstName}
-                    analytics={getSpecialistProPreviewAnalytics({
-                      profileCompletionPercent: profileCompletion,
-                      rankingPosition: data.ranking?.rank ?? null,
-                    })}
-                    showTrialPromo={showSpecialistFreeTrialPromo(session)}
-                    showUpgradePromo={showSpecialistPaidUpgradePromo(session)}
-                  />
+                  <SpecialistLockedOverview
+                    restoreTrial={hadProTrial}
+                    onUnlock={() => {
+                      setTrialEndedOpen(false);
+                      openUpgrade({ skipPick: true });
+                    }}
+                  >
+                    {overviewAccordions(true)}
+                  </SpecialistLockedOverview>
                 </div>
               ) : null}
 
@@ -791,41 +814,7 @@ export function SpecialistDashboardPageClient() {
                   aria-labelledby="specialist-dash-tab-premium-overview"
                   className="specialist-dash-panel"
                 >
-                  <div className="dashboard-overview-accordions">
-                    <AnalyticsCard
-                      analytics={analytics}
-                      isPremium={isPremium}
-                    />
-                    <ProfileCompletionCard
-                      profileCompletion={profileCompletion}
-                      trainer={trainer}
-                      checklist={completionChecklist}
-                      onEditProfile={handleNavigateToProfile}
-                    />
-                    <VisibilityRankingCard
-                      ranking={data.ranking ?? null}
-                      isPremium={isPremium}
-                      smoacRating={rankingRating.rating}
-                      smoacReviewCount={rankingRating.reviewCount}
-                      categoryLabel={
-                        trainer
-                          ? resolveTrainerProfessionCategory(trainer)
-                          : undefined
-                      }
-                      onOpenBoost={() => setBoostOpen(true)}
-                    />
-                    <ReviewsCard
-                      trainer={trainer}
-                      isPremium={isPremium}
-                      smoacRating={rankingRating.rating}
-                      smoacReviewCount={rankingRating.reviewCount}
-                    />
-                    <GoogleReviewsCard
-                      trainer={trainer}
-                      isPremium={isPremium}
-                      onUpgrade={() => setUpgradeOpen(true)}
-                    />
-                  </div>
+                  {overviewAccordions(isPremium)}
                 </div>
               ) : null}
 
@@ -896,7 +885,8 @@ export function SpecialistDashboardPageClient() {
     />
     <SmoacProUpgradeModal
       open={upgradeOpen}
-      onClose={() => setUpgradeOpen(false)}
+      skipPick={upgradeSkipPick}
+      onClose={closeUpgrade}
     />
     <BoostVisibilityModal
       open={boostOpen}

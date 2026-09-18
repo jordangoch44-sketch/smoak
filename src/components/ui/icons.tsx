@@ -841,6 +841,20 @@ export function AlertTriangleIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+/** Filled play triangle for intro / gallery video CTAs */
+export function PlayIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M8.25 5.75v12.5L19 12 8.25 5.75z" />
+    </svg>
+  );
+}
+
 /** Small padlock for plan-gated profile fields */
 export function LockIcon({ className = "h-4 w-4" }: IconProps) {
   return (

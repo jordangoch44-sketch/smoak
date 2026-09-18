@@ -31,6 +31,16 @@ export type SpecialistInterviewBeatId =
   | "website"
   | "preview";
 
+/** Older drafts stored these as their own screens — resume onto the current path. */
+const FOLDED_INTERVIEW_BEAT_IDS: Record<string, SpecialistInterviewBeatId> = {
+  gender: "full-name",
+  "professional-title": "business-name",
+  password: "email",
+  website: "preview",
+  instagram: "preview",
+  certifications: "bio",
+};
+
 export type SpecialistInterviewTrailIcon =
   | "person"
   | "briefcase"
@@ -82,61 +92,31 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
     id: "full-name",
     section: 2,
     required: true,
-    title: "What’s your full name?",
-    subtitle: "This will be visible on your profile.",
-    trailTitle: "Full name",
-    trailHint: "Visible on your profile",
-    trailIcon: "person",
-  },
-  {
-    id: "gender",
-    section: 2,
-    required: true,
-    title: "How should we list your gender?",
-    subtitle: "Shown on your public profile.",
-    trailTitle: "Gender",
-    trailHint: "Shown on your profile",
+    title: "Who are you?",
+    subtitle: "Your name and how we should list your gender on your profile.",
+    trailTitle: "You",
+    trailHint: "Name and gender",
     trailIcon: "person",
   },
   {
     id: "business-name",
     section: 2,
     required: true,
-    title: "What’s your business name?",
-    subtitle: "How clients will find you.",
-    trailTitle: "Business name",
-    trailHint: "How clients will find you",
+    title: "How should clients find you?",
+    subtitle: "Business name and the title on your marketplace card.",
+    trailTitle: "Your practice",
+    trailHint: "Business name and title",
     trailIcon: "briefcase",
-  },
-  {
-    id: "professional-title",
-    section: 2,
-    required: true,
-    title: "What’s your professional title?",
-    subtitle: "e.g. Strength Coach, Mobility Specialist",
-    trailTitle: "Professional title",
-    trailHint: "e.g. Strength Coach, Mobility Specialist",
-    trailIcon: "spark",
   },
   {
     id: "email",
     section: 2,
     required: true,
-    title: "What’s your email?",
-    subtitle: "You’ll use this to sign in — including while your application is under review.",
-    trailTitle: "Email",
-    trailHint: "Used to sign in",
+    title: "Create your sign-in",
+    subtitle: "Email and password for signing in — including while you’re under review.",
+    trailTitle: "Sign-in",
+    trailHint: "Email and password",
     trailIcon: "mail",
-  },
-  {
-    id: "password",
-    section: 2,
-    required: true,
-    title: "Create a password",
-    subtitle: "At least 8 characters. You’ll use this to sign in.",
-    trailTitle: "Password",
-    trailHint: "At least 8 characters",
-    trailIcon: "lock",
   },
   {
     id: "phone",
@@ -182,10 +162,11 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
     id: "street",
     section: 3,
     required: false,
-    title: "Add a facility address?",
-    subtitle: "Optional. Street text stays private — marketplace uses the pin only.",
-    trailTitle: "Facility address",
-    trailHint: "Optional — helps clients find you",
+    title: "Where’s your facility?",
+    subtitle:
+      "The pin is how nearby clients discover you. Street text stays private.",
+    trailTitle: "Facility",
+    trailHint: "Pin for marketplace discovery",
     trailIcon: "home",
   },
   {
@@ -208,16 +189,6 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
     trailTitle: "Specialties",
     trailHint: "How clients will filter to you",
     trailIcon: "star",
-  },
-  {
-    id: "certifications",
-    section: 4,
-    required: false,
-    title: "Any certifications to add?",
-    subtitle: "Optional. You can add or edit these anytime after approval.",
-    trailTitle: "Certifications",
-    trailHint: "Optional credentials",
-    trailIcon: "badge",
   },
   {
     id: "bio",
@@ -250,26 +221,6 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
     trailIcon: "price",
   },
   {
-    id: "instagram",
-    section: 5,
-    required: false,
-    title: "Add your Instagram?",
-    subtitle: "Optional. You can add this later from your profile.",
-    trailTitle: "Instagram",
-    trailHint: "Optional handle",
-    trailIcon: "social",
-  },
-  {
-    id: "website",
-    section: 5,
-    required: false,
-    title: "Add a website?",
-    subtitle: "Optional. You can add this later from your profile.",
-    trailTitle: "Website",
-    trailHint: "Optional link",
-    trailIcon: "globe",
-  },
-  {
     id: "preview",
     section: 6,
     required: true,
@@ -281,15 +232,25 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
   },
 ] as const;
 
-function isInterviewBeatId(value: string): value is SpecialistInterviewBeatId {
+function isCanonicalInterviewBeatId(
+  value: string
+): value is SpecialistInterviewBeatId {
   return ALL_BEATS.some((beat) => beat.id === value);
+}
+
+export function resolveSpecialistInterviewBeatId(
+  value: string | null | undefined
+): SpecialistInterviewBeatId | null {
+  const raw = value?.trim() ?? "";
+  if (!raw) return null;
+  const mapped = FOLDED_INTERVIEW_BEAT_IDS[raw] ?? raw;
+  return isCanonicalInterviewBeatId(mapped) ? mapped : null;
 }
 
 function beatIsVisible(
   beat: SpecialistInterviewBeat,
   context: SpecialistInterviewContext
 ): boolean {
-  if (beat.id === "password") return !context.skipPassword;
   if (beat.id === "street") {
     return context.serviceType === "in-person" || context.serviceType === "both";
   }
@@ -313,9 +274,6 @@ export function isSpecialistInterviewBeatRequired(
   if (beat.id === "location") {
     return state.serviceType !== "virtual";
   }
-  if (beat.id === "password") {
-    return !context.skipPassword;
-  }
   return beat.required;
 }
 
@@ -331,18 +289,19 @@ export function getSpecialistInterviewBeatError(
     case "professional-type":
       return state.professionalType.length ? null : "Select your professional type.";
     case "full-name":
-      return state.fullName.trim() ? null : "Enter your full name.";
     case "gender":
+      if (!state.fullName.trim()) return "Enter your full name.";
       return isListedGender(state.gender) ? null : "Select your gender.";
     case "business-name":
-      return state.displayName.trim() ? null : "Enter your business name.";
     case "professional-title":
+      if (!state.displayName.trim()) return "Enter your business name.";
       return state.headline.trim() ? null : "Enter your professional title.";
     case "email":
-      return isValidEmail(state.email)
-        ? null
-        : "Enter a valid email — you’ll use it to sign in.";
     case "password":
+      if (!isValidEmail(state.email)) {
+        return "Enter a valid email — you’ll use it to sign in.";
+      }
+      if (context.skipPassword) return null;
       if (state.password.trim().length < 8) {
         return "Create a password with at least 8 characters.";
       }
@@ -415,8 +374,8 @@ export function getSpecialistInterviewResumeBeatId(
     ) ?? beats[beats.length - 1];
   const inferred = firstIncomplete.id;
 
-  const savedId = options?.savedBeatId?.trim() ?? "";
-  if (savedId && isInterviewBeatId(savedId)) {
+  const savedId = resolveSpecialistInterviewBeatId(options?.savedBeatId);
+  if (savedId) {
     const savedIndex = beats.findIndex((beat) => beat.id === savedId);
     const inferredIndex = beats.findIndex((beat) => beat.id === inferred);
     if (savedIndex >= 0 && savedIndex <= inferredIndex) return savedId;

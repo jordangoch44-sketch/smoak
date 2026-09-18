@@ -56,6 +56,13 @@ export interface ClientTransformationPhoto {
   alt: string;
 }
 
+/** Pro / PRO+ intro clip — “Meet X” play control above the public bio. */
+export interface TrainerIntroVideo {
+  src: string;
+  poster?: string;
+  duration?: number;
+}
+
 /** Per-platform review counts — `reviewCount` is derived from these when present */
 export interface TrainerReviewSources {
   smoac?: number;
@@ -182,6 +189,11 @@ export interface Trainer {
   pinnedPhotos?: string[];
   image: string;
   heroImage: string;
+  /**
+   * Pro / PRO+ intro clip. Marketplace hides it on Free; stored value stays
+   * in specialist_profiles until the specialist restores a paid plan.
+   */
+  introVideo?: TrainerIntroVideo;
   bio: string;
   /** “Are we the right fit?” copy — one paragraph, or legacy client-type pills */
   bestFor: string[];

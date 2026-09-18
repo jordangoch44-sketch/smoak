@@ -9,6 +9,7 @@ export type {
   Certification,
   SocialLinks,
   TrainerMediaItem,
+  TrainerIntroVideo,
   ClientTransformationPhoto,
   Trainer,
 } from "./trainer";

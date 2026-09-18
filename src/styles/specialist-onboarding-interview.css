@@ -2,9 +2,10 @@
 
 html:has(.login-page--specialist-onboarding),
 html:has(.login-page--specialist-onboarding) body {
-  height: 100dvh;
-  min-height: 100dvh;
-  max-height: 100dvh;
+  height: 100svh;
+  min-height: 100svh;
+  max-height: 100svh;
+  overflow: hidden;
 }
 
 body:has(.login-page--specialist-onboarding) .site-footer {
@@ -13,9 +14,9 @@ body:has(.login-page--specialist-onboarding) .site-footer {
 
 body:has(.login-page--specialist-onboarding) #root.app-shell,
 body:has(.login-page--specialist-onboarding) .app-shell {
-  height: 100dvh;
-  min-height: 100dvh;
-  max-height: 100dvh;
+  height: 100svh;
+  min-height: 100svh;
+  max-height: 100svh;
 }
 
 body:has(.login-page--specialist-onboarding) .app-main {
@@ -51,9 +52,16 @@ body:has(.login-page--specialist-onboarding) .page-transition__content {
   flex-direction: column;
 }
 
-body.specialist-interview-keyboard-open .mobile-bottom-nav {
+body.specialist-interview-keyboard-open .mobile-bottom-nav,
+body:has(.login-page--interview-flow) .mobile-bottom-nav {
   visibility: hidden;
   pointer-events: none;
+}
+
+@media (max-width: 1023px) {
+  body:has(.login-page--interview-flow) .mobile-bottom-nav {
+    display: none;
+  }
 }
 
 .login-page--wizard.login-page--specialist-onboarding {
@@ -77,7 +85,7 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   flex: 1;
   min-height: 0;
   height: 100%;
-  max-height: calc(100dvh - var(--site-header-total-height));
+  max-height: calc(100svh - var(--site-header-total-height));
   width: 100%;
   flex-direction: column;
   padding: 0.35rem var(--login-pad-x) 0.45rem;
@@ -152,8 +160,6 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
 }
 
 .login-page--interview-keyboard .interview-legal,
-.login-page--interview-keyboard .interview-skip,
-.login-page--interview-keyboard .interview-signin,
 .login-page--interview-keyboard .interview-intro {
   display: none;
 }
@@ -168,8 +174,9 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
     padding-bottom: var(--mobile-bottom-nav-offset);
   }
 
+  .login-page--interview-flow .interview-stage,
   .login-page--interview-keyboard .interview-stage {
-    padding-bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 }
 
@@ -430,6 +437,28 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
   flex: 0 1 auto;
   min-height: 3.25rem;
   overflow: visible;
+}
+
+.login-page--specialist-onboarding .interview-combined-fields {
+  width: 100%;
+  gap: 0.7rem;
+}
+
+.login-page--specialist-onboarding .interview-combined-fields .login-field__label {
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.login-page--specialist-onboarding .interview-combined-fields .wizard-gender-options {
+  margin-top: 0.1rem;
+}
+
+.login-page--specialist-onboarding
+  .interview-combined-fields
+  .wizard-gender-option {
+  min-height: 2.85rem;
 }
 
 .login-page--specialist-onboarding .interview-card__field:has(.specialty-picker) {
@@ -826,11 +855,13 @@ body.specialist-interview-keyboard-open .mobile-bottom-nav {
 .login-page--specialist-onboarding .interview-card--exit-left {
   animation: interview-exit-left 0.34s cubic-bezier(0.4, 0, 1, 1) forwards;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .login-page--specialist-onboarding .interview-card--enter-pop {
   transform-origin: 50% 12%;
   animation: interview-enter-pop 0.46s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
 }
 
 .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item {

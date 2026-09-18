@@ -97,6 +97,8 @@ export function SpecialistProfileMediaEditor({
   const [cropQueue, setCropQueue] = useState<CropQueueState | null>(null);
 
   const atImageLimit = headerImages.length >= limits.images;
+  const extraPhotoCount = Math.max(0, headerImages.length - limits.images);
+  const livePhotoCount = Math.min(headerImages.length, limits.images);
   const atPinLimit = pins.length >= PINNED_PHOTOS_MAX;
 
   function markHeaderBroken(url: string) {
@@ -302,8 +304,11 @@ export function SpecialistProfileMediaEditor({
         <div className="specialist-media-editor__header-top">
           <p className="login-field__label">Header slideshow</p>
           <p className="specialist-media-editor__limit">
-            {headerImages.length}/{limits.images}
-            {!isPremium ? " · Free" : ""}
+            {livePhotoCount}/{limits.images}
+            {!isPremium ? " · Free live" : ""}
+            {extraPhotoCount > 0
+              ? ` · ${extraPhotoCount} saved, not on Marketplace`
+              : ""}
           </p>
         </div>
 
@@ -318,6 +323,7 @@ export function SpecialistProfileMediaEditor({
             const isCover = url === cover;
             const isPinned = pins.includes(url);
             const isBroken = brokenHeaderUrls.includes(url);
+            const notLive = !isPremium && index >= limits.images;
             return (
               <div
                 key={`${url}-${index}`}
@@ -325,7 +331,8 @@ export function SpecialistProfileMediaEditor({
                   "specialist-media-editor__thumb",
                   isCover && "specialist-media-editor__thumb--cover",
                   isPinned && "specialist-media-editor__thumb--pinned",
-                  isBroken && "specialist-media-editor__thumb--broken"
+                  isBroken && "specialist-media-editor__thumb--broken",
+                  notLive && "specialist-media-editor__thumb--not-live"
                 )}
               >
                 {isBroken ? (
@@ -345,6 +352,16 @@ export function SpecialistProfileMediaEditor({
                       className="specialist-media-editor__thumb-img"
                       onError={() => markHeaderBroken(url)}
                     />
+                    {notLive ? (
+                      <button
+                        type="button"
+                        className="specialist-media-editor__not-live"
+                        onClick={() => onUpgrade?.()}
+                      >
+                        <LockIcon className="specialist-media-editor__not-live-lock" />
+                        Not live
+                      </button>
+                    ) : null}
                     <div className="specialist-media-editor__thumb-actions">
                       <button
                         type="button"
@@ -482,6 +499,11 @@ export function SpecialistProfileMediaEditor({
             Pin up to 3 photos or videos under your bio.
           </p>
         )}
+        {!isPremium && pins.length > 0 ? (
+          <p className="specialist-media-editor__hint">
+            Saved from Pro. Clients cannot see pins until you restore Pro.
+          </p>
+        ) : null}
         {!isPremium ? (
           <button
             type="button"
@@ -489,7 +511,9 @@ export function SpecialistProfileMediaEditor({
             onClick={() => onUpgrade?.()}
           >
             <LockIcon className="specialist-media-editor__lock-cta-icon" />
-            Unlock with Pro
+            {extraPhotoCount > 0 || pins.length > 0
+              ? "Restore with Pro"
+              : "Unlock with Pro"}
           </button>
         ) : null}
       </div>

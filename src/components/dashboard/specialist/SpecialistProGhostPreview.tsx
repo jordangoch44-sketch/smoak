@@ -20,6 +20,8 @@ interface SpecialistProGhostPreviewProps {
   showTrialPromo?: boolean;
   /** Purple paid Upgrade to Pro bubble */
   showUpgradePromo?: boolean;
+  /** Complimentary trial already used — show their paused Pro dashboard. */
+  restoreTrial?: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ export function SpecialistProGhostPreview({
   analytics,
   showTrialPromo = true,
   showUpgradePromo = true,
+  restoreTrial = false,
 }: SpecialistProGhostPreviewProps) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [trialConfirmOpen, setTrialConfirmOpen] = useState(false);
@@ -62,7 +65,9 @@ export function SpecialistProGhostPreview({
         aria-labelledby="specialist-pro-ghost-title"
       >
         <header className="specialist-pro-ghost__intro">
-          <p className="specialist-pro-ghost__eyebrow">Example Pro dashboard</p>
+          <p className="specialist-pro-ghost__eyebrow">
+            {restoreTrial ? "Your Pro dashboard · paused" : "Example Pro dashboard"}
+          </p>
           <h2
             id="specialist-pro-ghost-title"
             className="specialist-pro-ghost__title"
@@ -70,8 +75,9 @@ export function SpecialistProGhostPreview({
             {name === "Your" ? "Your Pro analytics" : `${name}'s Pro analytics`}
           </h2>
           <p className="specialist-pro-ghost__lede">
-            Sample of the headline metrics Pro unlocks — deeper insights stay
-            locked until you start your free month.
+            {restoreTrial
+              ? "These Pro insights are saved from your trial. Upgrade to restore them — and put extra photos, pins, intro video, and Free first session back on Marketplace."
+              : "Sample of the headline metrics Pro unlocks — deeper insights stay locked until you start your free month."}
           </p>
         </header>
 
@@ -124,7 +130,7 @@ export function SpecialistProGhostPreview({
               </div>
               <div className="specialist-pro-ghost__deeper-veil" aria-hidden />
               <p className="specialist-pro-ghost__deeper-label">
-                More Pro insights
+                {restoreTrial ? "Restore Pro to reopen" : "More Pro insights"}
               </p>
             </div>
           </div>

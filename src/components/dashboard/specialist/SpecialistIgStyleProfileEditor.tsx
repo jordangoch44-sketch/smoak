@@ -15,7 +15,7 @@ import {
 import { AlertTriangleIcon, CheckIcon, LockIcon } from "@/components/ui/icons";
 import { SpecialistLinkInBioCard } from "./SpecialistLinkInBioCard";
 import { cn } from "@/lib/utils";
-import { parseMediaUrlList } from "@/lib/specialist-media-limits";
+import { parseMediaUrlList, SPECIALIST_MEDIA_LIMITS } from "@/lib/specialist-media-limits";
 import {
   formatSessionPriceRange,
   hasSessionPrice,
@@ -27,6 +27,7 @@ import { formatTrainingOptionsLabel } from "@/types/specialist-training-options"
 
 export type IgEditRowId =
   | "hero"
+  | "intro-video"
   | "videos"
   | "avatar"
   | "name"
@@ -184,17 +185,29 @@ export function SpecialistIgStyleProfileEditor({
   const slideshowCount = parseMediaUrlList(formDefaults.photoNotes).length;
   const hasSlideshow = slideshowCount > 0;
   const picturesPreview = hasSlideshow
-    ? slideshowCount === 1
-      ? "1 photo"
-      : `${slideshowCount} photos`
+    ? !isPremium && slideshowCount > SPECIALIST_MEDIA_LIMITS.free.images
+      ? `${slideshowCount} photos · ${SPECIALIST_MEDIA_LIMITS.free.images} live`
+      : slideshowCount === 1
+        ? "1 photo"
+        : `${slideshowCount} photos`
     : "Add";
   const videoCount = parseMediaUrlList(formDefaults.videoNotes).length;
+  const hasIntroVideo = Boolean(formDefaults.introVideoUrl.trim());
+  const introPreview = hasIntroVideo
+    ? !isPremium
+      ? "Saved · not live"
+      : "Added"
+    : "Add";
   const videosPreview =
     videoCount === 0
       ? "Add"
-      : videoCount === 1
-        ? "1 video"
-        : `${videoCount} videos`;
+      : !isProPlus
+        ? videoCount === 1
+          ? "1 video · not live"
+          : `${videoCount} videos · not live`
+        : videoCount === 1
+          ? "1 video"
+          : `${videoCount} videos`;
   const photo = formDefaults.profilePhotoUrl.trim() || trainer.image;
   const profession =
     resolveTrainerProfessionCategory({
@@ -257,6 +270,8 @@ export function SpecialistIgStyleProfileEditor({
     highlightedSection === key ||
     (key === "avatar" &&
       (highlightedSection === "photo" || highlightedSection === "picture")) ||
+    (key === "intro-video" &&
+      (highlightedSection === "intro" || highlightedSection === "meet")) ||
     (key === "videos" && highlightedSection === "video") ||
     (key === "pricing" && highlightedSection === "price") ||
     (key === "service-area" && highlightedSection === "location") ||
@@ -339,6 +354,25 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("hero")}
         />
         <IgEditRow
+          id="ig-edit-row-intro-video"
+          sectionKey="intro-video"
+          label="Intro video"
+          value={introPreview}
+          incomplete={isPremium && !hasIntroVideo}
+          highlighted={isHighlighted("intro-video")}
+          locked={!isPremium}
+          lockPlan="Pro"
+          onClick={() => {
+            if (!isPremium) {
+              if (onUpgrade) {
+                onUpgrade();
+                return;
+              }
+            }
+            onEditSection("intro-video");
+          }}
+        />
+        <IgEditRow
           id="ig-edit-row-videos"
           sectionKey="videos"
           label="Videos"
@@ -363,7 +397,9 @@ export function SpecialistIgStyleProfileEditor({
           label="Client Results"
           value={
             formDefaults.transformationNotes.trim()
-              ? "Photos added"
+              ? isProPlus
+                ? "Photos added"
+                : "Saved · not live"
               : "Add"
           }
           incomplete={isProPlus && !formDefaults.transformationNotes.trim()}
@@ -420,7 +456,13 @@ export function SpecialistIgStyleProfileEditor({
           id="ig-edit-row-free-first-session"
           sectionKey="free-first-session"
           label={FREE_FIRST_SESSION_LABEL}
-          value={trainerOffersFreeFirstSession(formDefaults) ? "On" : "Off"}
+          value={
+            trainerOffersFreeFirstSession(formDefaults)
+              ? isPremium
+                ? "On"
+                : "On · not live"
+              : "Off"
+          }
           highlighted={isHighlighted("free-first-session")}
           locked={!isPremium}
           lockPlan="Pro"

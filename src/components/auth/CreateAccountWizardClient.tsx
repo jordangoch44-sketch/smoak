@@ -488,7 +488,7 @@ export function CreateAccountWizardClient({
     <div
       className={cn(
         "login-page login-page--wizard login-page--specialist-onboarding login-page--create-account",
-        step === 1 && "login-page--create-account-entry"
+        step === 1 ? "login-page--create-account-entry" : "login-page--interview-flow"
       )}
       data-login-role={state.accountType || undefined}
     >

@@ -9,7 +9,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: "#020203",
-  interactiveWidget: "resizes-visual",
+  /* Overlay the keyboard instead of resizing the visual viewport — otherwise
+     Done/autofill collapse the interview card, then Continue animates a jump. */
+  interactiveWidget: "overlays-content",
 };
 
 export default function CreateAccountLayout({

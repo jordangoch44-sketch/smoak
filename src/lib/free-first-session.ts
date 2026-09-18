@@ -53,11 +53,13 @@ export function isTrainerProOrProPlus(
 
 /**
  * Marketplace Free 1st session rail + public profile chip.
- * Legacy listings stay On when the flag was never set. New specialists
- * start Off and can opt in from edit profile (Pro / PRO+).
+ * The stored opt-in flag stays on the listing after a trial ends; clients
+ * only see it while the specialist is on Pro / PRO+ / an active trial.
  */
 export function isTrainerFreeFirstSessionEligible(
-  trainer: Pick<Trainer, "offersFreeFirstSession">
+  trainer: Pick<Trainer, "offersFreeFirstSession" | "isPremium" | "membershipPlan">
 ): boolean {
-  return trainerOffersFreeFirstSession(trainer);
+  return (
+    isTrainerProOrProPlus(trainer) && trainerOffersFreeFirstSession(trainer)
+  );
 }

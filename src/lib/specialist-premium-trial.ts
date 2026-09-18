@@ -388,29 +388,36 @@ export async function resolveAndSyncSpecialistPremiumAccess(
     };
   }
 
-  const { data: profile } = await supabase
-    .from("specialist_profiles")
-    .select("is_premium, profile_data")
-    .eq("user_id", userId)
-    .maybeSingle();
-  const durablePlan = listingMembershipFromRow(profile ?? {}).plan;
-  if (durablePlan !== "free") {
-    if (!role.is_premium) {
-      await supabase
-        .from("user_roles")
-        .update({ is_premium: true, updated_at: new Date().toISOString() })
-        .eq("user_id", userId);
+  /* Listing membership is a mirror of access — not an entitlement. An expired
+   * complimentary trial wrote Pro onto the listing; that leftover must not
+   * keep the specialist on Pro. Preserve listing Pro only when there was
+   * never a complimentary trial window (admin / legacy grant). */
+  const hadExpiredComplimentaryTrial = Boolean(trialEndsAt) && !trialActive;
+  if (!hadExpiredComplimentaryTrial) {
+    const { data: profile } = await supabase
+      .from("specialist_profiles")
+      .select("is_premium, profile_data")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const durablePlan = listingMembershipFromRow(profile ?? {}).plan;
+    if (durablePlan !== "free") {
+      if (!role.is_premium) {
+        await supabase
+          .from("user_roles")
+          .update({ is_premium: true, updated_at: new Date().toISOString() })
+          .eq("user_id", userId);
+      }
+      await syncListingMembership(supabase, durablePlan, { userId });
+      return {
+        isPremium: true,
+        isPaid,
+        isTrialing: false,
+        trialEndsAt,
+        trialStartedAt,
+        trialJustEnded: false,
+        daysRemaining: trialActive ? daysUntil(trialEndsAt as string, now) : null,
+      };
     }
-    await syncListingMembership(supabase, durablePlan, { userId });
-    return {
-      isPremium: true,
-      isPaid,
-      isTrialing: false,
-      trialEndsAt,
-      trialStartedAt,
-      trialJustEnded: false,
-      daysRemaining: trialActive ? daysUntil(trialEndsAt as string, now) : null,
-    };
   }
 
   /* Trial ended (or never started) and not paid */
@@ -455,7 +462,6 @@ export async function expireDuePremiumTrials(): Promise<number> {
     .from("user_roles")
     .select("user_id")
     .eq("role", "specialist")
-    .eq("is_premium", true)
     .not("premium_trial_ends_at", "is", null)
     .lte("premium_trial_ends_at", nowIso);
 

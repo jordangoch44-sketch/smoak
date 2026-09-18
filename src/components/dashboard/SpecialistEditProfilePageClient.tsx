@@ -21,6 +21,7 @@ import {
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { SpecialistTransformationsEditor } from "@/components/dashboard/specialist/SpecialistTransformationsEditor";
 import { SpecialistVideosEditor } from "@/components/dashboard/specialist/SpecialistVideosEditor";
+import { SpecialistIntroVideoEditor } from "@/components/dashboard/specialist/SpecialistIntroVideoEditor";
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistWorkSpotFields } from "@/components/dashboard/specialist/SpecialistWorkSpotFields";
@@ -1301,6 +1302,17 @@ export function SpecialistEditProfilePageClient({
                   emptyLabel="Add header photos"
                 />
                 <ProfileEditViewField
+                  label="Intro video"
+                  value={
+                    savedForm.introVideoUrl.trim()
+                      ? isPremium
+                        ? "Added"
+                        : "Saved · not live"
+                      : ""
+                  }
+                  emptyLabel="Add intro video"
+                />
+                <ProfileEditViewField
                   label="Pinned"
                   value={
                     savedForm.pinnedPhotos.length
@@ -1354,6 +1366,20 @@ export function SpecialistEditProfilePageClient({
                   isPremium={isPremium}
                   isProPlus={isProPlus}
                   specialistId={trainerId}
+                  onUpgrade={() => setUpgradeOpen(true)}
+                  onChange={(next) => {
+                    setSectionDraft((prev) =>
+                      prev ? { ...prev, ...next } : prev
+                    );
+                  }}
+                />
+                <SpecialistIntroVideoEditor
+                  introVideoUrl={form.introVideoUrl}
+                  introVideoPosterJson={form.introVideoPosterJson}
+                  isPremium={isPremium}
+                  specialistId={trainerId}
+                  specialistName={form.name || trainer?.name}
+                  specialistFirstName={trainer?.specialistFirstName}
                   onUpgrade={() => setUpgradeOpen(true)}
                   onChange={(next) => {
                     setSectionDraft((prev) =>

@@ -211,8 +211,11 @@ export function SpecialistVideosEditor({
         ) : null}
       </div>
       <p className="specialist-media-editor__hint">
-        Add up to {videoCap} clips from your phone, 45 seconds each. Pick the
-        thumbnail still, then pin it under your bio if you want.
+        {isProPlus
+          ? `Add up to ${videoCap} clips from your phone, 45 seconds each. Pick the thumbnail still, then pin it under your bio if you want.`
+          : urls.length > 0
+            ? "Your videos are saved. They stay off Marketplace until you restore PRO+."
+            : `Add up to ${videoCap} clips from your phone, 45 seconds each. Pick the thumbnail still, then pin it under your bio if you want.`}
       </p>
       <div className="specialist-media-editor__pin-row" aria-label="Profile videos">
         {urls.map((url, index) => {

@@ -5,9 +5,7 @@ import {
   GENDER_OPTIONS,
   PROFESSIONAL_TYPE_OPTIONS,
 } from "@/constants/specialist-onboarding-options";
-import { EMPTY_CERTIFICATION } from "@/lib/specialist-profile-overrides";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
-import type { Certification } from "@/types/trainer";
 import { cn } from "@/lib/utils";
 import { applicationPricingFromRange } from "@/lib/session-price";
 import { SpecialistApplicationPreview } from "@/components/auth/specialist/SpecialistApplicationPreview";
@@ -82,18 +80,6 @@ export function SpecialistOnboardingSteps({
     );
   }
 
-  const certRows: Certification[] =
-    state.certifications.length > 0
-      ? state.certifications
-      : [{ ...EMPTY_CERTIFICATION }];
-
-  function setCertifications(next: Certification[]) {
-    onPatch({
-      certifications:
-        next.length > 0 ? next : [{ ...EMPTY_CERTIFICATION }],
-    });
-  }
-
   switch (beatId) {
     case "professional-type":
       return (
@@ -128,141 +114,142 @@ export function SpecialistOnboardingSteps({
       );
 
     case "full-name":
-      return (
-        <label className="login-field">
-          <span className="sr-only">Full name</span>
-          <input
-            className="login-field__input"
-            value={state.fullName}
-            onChange={(e) => onPatch({ fullName: e.target.value })}
-            autoComplete="name"
-            placeholder="Jane Doe"
-            aria-required="true"
-          />
-        </label>
-      );
-
     case "gender":
       return (
-        <div
-          className="wizard-gender-options"
-          role="radiogroup"
-          aria-label="Gender"
-          aria-required="true"
-        >
-          {GENDER_OPTIONS.map((option) => {
-            const active = state.gender === option.value;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => onPatch({ gender: option.value })}
-                className={cn(
-                  "wizard-option-card wizard-gender-option",
-                  active && "wizard-option-card--active"
-                )}
-              >
-                <span className="wizard-option-card__indicator" aria-hidden>
-                  <span className="wizard-option-card__indicator-dot" />
-                </span>
-                <span className="wizard-option-card__copy">
-                  <span className="wizard-option-card__title">
-                    {option.label}
+        <div className="login-fields interview-combined-fields">
+          <label className="login-field">
+            <span className="login-field__label">Full name</span>
+            <input
+              className="login-field__input"
+              value={state.fullName}
+              onChange={(e) => onPatch({ fullName: e.target.value })}
+              autoComplete="name"
+              placeholder="Jane Doe"
+              aria-required="true"
+              autoFocus
+            />
+          </label>
+          <div
+            className="wizard-gender-options"
+            role="radiogroup"
+            aria-label="Gender"
+            aria-required="true"
+          >
+            {GENDER_OPTIONS.map((option) => {
+              const active = state.gender === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => onPatch({ gender: option.value })}
+                  className={cn(
+                    "wizard-option-card wizard-gender-option",
+                    active && "wizard-option-card--active"
+                  )}
+                >
+                  <span className="wizard-option-card__indicator" aria-hidden>
+                    <span className="wizard-option-card__indicator-dot" />
                   </span>
-                </span>
-              </button>
-            );
-          })}
+                  <span className="wizard-option-card__copy">
+                    <span className="wizard-option-card__title">
+                      {option.label}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       );
 
     case "business-name":
-      return (
-        <label className="login-field">
-          <span className="sr-only">Business name</span>
-          <input
-            className="login-field__input"
-            value={state.displayName}
-            onChange={(e) => onPatch({ displayName: e.target.value })}
-            placeholder="How clients will see you"
-            aria-required="true"
-          />
-        </label>
-      );
-
     case "professional-title":
       return (
-        <label className="login-field">
-          <span className="sr-only">Professional title</span>
-          <input
-            className="login-field__input"
-            value={state.headline}
-            onChange={(e) => onPatch({ headline: e.target.value })}
-            placeholder="e.g. Strength coach, Mobility and recovery"
-            aria-required="true"
-          />
-        </label>
+        <div className="login-fields interview-combined-fields">
+          <label className="login-field">
+            <span className="login-field__label">Business name</span>
+            <input
+              className="login-field__input"
+              value={state.displayName}
+              onChange={(e) => onPatch({ displayName: e.target.value })}
+              placeholder="How clients will see you"
+              aria-required="true"
+              autoFocus
+            />
+          </label>
+          <label className="login-field">
+            <span className="login-field__label">Professional title</span>
+            <input
+              className="login-field__input"
+              value={state.headline}
+              onChange={(e) => onPatch({ headline: e.target.value })}
+              placeholder="e.g. Strength coach, Mobility and recovery"
+              aria-required="true"
+            />
+          </label>
+        </div>
       );
 
     case "email":
-      return (
-        <label className="login-field">
-          <span className="sr-only">Email</span>
-          <input
-            type="email"
-            className="login-field__input"
-            value={state.email}
-            onChange={(e) => onPatch({ email: e.target.value })}
-            autoComplete="email"
-            placeholder="you@studio.com"
-            readOnly={emailLocked}
-            aria-readonly={emailLocked}
-          />
-        </label>
-      );
-
     case "password":
-      if (hidePasswordFields) return null;
       return (
-        <div
-          className={cn(
-            "login-fields wizard-password-fields",
-            passwordFieldsError && "login-fields--error",
-            shakePasswordFields && "login-fields--shake"
+        <div className="login-fields interview-combined-fields">
+          <label className="login-field">
+            <span className="login-field__label">Email</span>
+            <input
+              type="email"
+              className="login-field__input"
+              value={state.email}
+              onChange={(e) => onPatch({ email: e.target.value })}
+              autoComplete="email"
+              placeholder="you@studio.com"
+              readOnly={emailLocked}
+              aria-readonly={emailLocked}
+              autoFocus={!emailLocked}
+            />
+          </label>
+          {hidePasswordFields ? null : (
+            <div
+              className={cn(
+                "wizard-password-fields",
+                passwordFieldsError && "login-fields--error",
+                shakePasswordFields && "login-fields--shake"
+              )}
+              onAnimationEnd={onPasswordShakeEnd}
+            >
+              <label className="login-field">
+                <span className="login-field__label">Create password</span>
+                <PasswordInput
+                  value={state.password}
+                  onChange={(e) => onPatch({ password: e.target.value })}
+                  autoComplete="new-password"
+                  placeholder="At least 8 characters"
+                  aria-required="true"
+                  aria-invalid={passwordFieldsError}
+                />
+              </label>
+              <label className="login-field">
+                <span className="login-field__label">Confirm password</span>
+                <PasswordInput
+                  value={confirmPassword}
+                  onChange={(e) => onConfirmPasswordChange(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Re-enter your password"
+                  aria-required="true"
+                  aria-invalid={passwordFieldsError}
+                />
+              </label>
+              {passwordFieldsError ? (
+                <p className="wizard-field-error" role="alert">
+                  {state.password.trim().length < 8
+                    ? "Use at least 8 characters."
+                    : "Passwords do not match."}
+                </p>
+              ) : null}
+            </div>
           )}
-          onAnimationEnd={onPasswordShakeEnd}
-        >
-          <label className="login-field">
-            <span className="sr-only">Create a password</span>
-            <PasswordInput
-              value={state.password}
-              onChange={(e) => onPatch({ password: e.target.value })}
-              autoComplete="new-password"
-              placeholder="At least 8 characters"
-              aria-required="true"
-              aria-invalid={passwordFieldsError}
-            />
-          </label>
-          <label className="login-field">
-            <span className="sr-only">Confirm password</span>
-            <PasswordInput
-              value={confirmPassword}
-              onChange={(e) => onConfirmPasswordChange(e.target.value)}
-              autoComplete="new-password"
-              placeholder="Re-enter your password"
-              aria-required="true"
-              aria-invalid={passwordFieldsError}
-            />
-          </label>
-          {passwordFieldsError ? (
-            <p className="wizard-field-error" role="alert">
-              {state.password.trim().length < 8
-                ? "Use at least 8 characters."
-                : "Passwords do not match."}
-            </p>
-          ) : null}
         </div>
       );
 
@@ -278,6 +265,7 @@ export function SpecialistOnboardingSteps({
             autoComplete="tel"
             placeholder="(555) 555-5555"
             aria-required="true"
+            autoFocus
           />
         </label>
       );
@@ -377,60 +365,6 @@ export function SpecialistOnboardingSteps({
         />
       );
 
-    case "certifications":
-      return (
-        <div className="login-fields">
-          {certRows.map((cert, index) => (
-            <div key={`cert-${index}`} className="login-field">
-              <span className="sr-only">
-                {certRows.length > 1
-                  ? `Certification ${index + 1}`
-                  : "Certification"}
-              </span>
-              <input
-                className="login-field__input"
-                value={cert.name}
-                onChange={(e) =>
-                  setCertifications(
-                    certRows.map((row, i) =>
-                      i === index
-                        ? {
-                            ...row,
-                            name: e.target.value,
-                            issuer: "",
-                            year: row.year || new Date().getFullYear(),
-                          }
-                        : row
-                    )
-                  )
-                }
-                placeholder="e.g. NASM-CPT"
-              />
-              {certRows.length > 1 ? (
-                <button
-                  type="button"
-                  className="wizard-cert-block__remove"
-                  onClick={() =>
-                    setCertifications(certRows.filter((_, i) => i !== index))
-                  }
-                >
-                  Remove
-                </button>
-              ) : null}
-            </div>
-          ))}
-          <button
-            type="button"
-            className="smoac-control wizard-add-row-btn"
-            onClick={() =>
-              setCertifications([...certRows, { ...EMPTY_CERTIFICATION }])
-            }
-          >
-            Add another certification
-          </button>
-        </div>
-      );
-
     case "bio":
       return (
         <div className="login-fields">
@@ -514,36 +448,6 @@ export function SpecialistOnboardingSteps({
             $80–$120 / session.
           </p>
         </div>
-      );
-
-    case "instagram":
-      return (
-        <label className="login-field">
-          <span className="sr-only">Instagram</span>
-          <input
-            className="login-field__input"
-            value={state.social.instagram ?? ""}
-            onChange={(e) =>
-              onPatch({ social: { ...state.social, instagram: e.target.value } })
-            }
-            placeholder="@yourhandle"
-          />
-        </label>
-      );
-
-    case "website":
-      return (
-        <label className="login-field">
-          <span className="sr-only">Website</span>
-          <input
-            className="login-field__input"
-            value={state.social.website ?? ""}
-            onChange={(e) =>
-              onPatch({ social: { ...state.social, website: e.target.value } })
-            }
-            placeholder="https://"
-          />
-        </label>
       );
 
     case "preview":

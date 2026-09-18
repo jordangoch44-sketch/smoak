@@ -10,6 +10,7 @@ import {
   isSupabaseConfigured,
 } from "@/lib/supabase/config";
 import { findTrainerByPublicKey, hydrateTrainerPublicSlugs } from "@/lib/trainer-profile-path";
+import { applyPublicMembershipVisibility } from "@/lib/specialist-public-listing";
 import type { Trainer } from "@/types/trainer";
 
 /**
@@ -46,7 +47,7 @@ async function fetchApprovedCatalogUncached(): Promise<Trainer[]> {
  */
 const loadApprovedCatalogCached = unstable_cache(
   fetchApprovedCatalogUncached,
-  ["approved-specialist-catalog-v10"],
+  ["approved-specialist-catalog-v11"],
   { revalidate: 45, tags: ["public-catalog"] }
 );
 
@@ -70,11 +71,21 @@ export const loadPublicCatalogForServer = cache(
   }> => {
     if (!isSupabaseConfigured()) {
       const { trainers } = await import("@/data/trainers");
-      return { trainers: hydrateTrainerPublicSlugs(trainers.slice()), mode: "seed" };
+      return {
+        trainers: hydrateTrainerPublicSlugs(
+          trainers.map(applyPublicMembershipVisibility)
+        ),
+        mode: "seed",
+      };
     }
 
     const approved = await loadApprovedCatalogForServer();
-    return { trainers: hydrateTrainerPublicSlugs(approved), mode: "live" };
+    return {
+      trainers: hydrateTrainerPublicSlugs(
+        approved.map(applyPublicMembershipVisibility)
+      ),
+      mode: "live",
+    };
   }
 );
 
@@ -86,7 +97,7 @@ export async function loadPublicTrainerByIdForServer(
     const supabase = getCatalogSupabaseClient();
     if (supabase) {
       const fresh = await fetchApprovedSpecialistByPublicKey(supabase, id);
-      if (fresh) return fresh;
+      if (fresh) return applyPublicMembershipVisibility(fresh);
     }
     const { trainers } = await loadPublicCatalogForServer();
     return findTrainerByPublicKey(trainers, id) ?? null;
@@ -94,6 +105,11 @@ export async function loadPublicTrainerByIdForServer(
 
   const { trainers: seedTrainers } = await import("@/data/trainers");
   return (
-    findTrainerByPublicKey(hydrateTrainerPublicSlugs(seedTrainers), id) ?? null
+    findTrainerByPublicKey(
+      hydrateTrainerPublicSlugs(
+        seedTrainers.map(applyPublicMembershipVisibility)
+      ),
+      id
+    ) ?? null
   );
 }

@@ -212,14 +212,11 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
         (approved.profileStyle
           ? normalizeProfileStyle(approved.profileStyle)
           : undefined),
-      isPremium: Boolean(approved.isPremium) || Boolean(fromApp.isPremium),
-      membershipPlan: parseMembershipPlan(
-        approved.membershipPlan ?? fromApp.membershipPlan
-      ),
+      isPremium: Boolean(approved.isPremium),
+      membershipPlan: parseMembershipPlan(approved.membershipPlan),
       verified:
         Boolean(approved.isPremium) ||
-        parseMembershipPlan(approved.membershipPlan) !== "free" ||
-        Boolean(fromApp.verified),
+        parseMembershipPlan(approved.membershipPlan) !== "free",
     };
   }
 
@@ -245,6 +242,9 @@ export function syncProfileOverridesFromApplication(
     videoNotes: existing?.videoNotes ?? generated.videoNotes,
     videoPostersJson:
       existing?.videoPostersJson ?? generated.videoPostersJson,
+    introVideoUrl: existing?.introVideoUrl ?? generated.introVideoUrl,
+    introVideoPosterJson:
+      existing?.introVideoPosterJson ?? generated.introVideoPosterJson,
     slideshowFramesJson:
       generated.slideshowFramesJson?.trim() ||
       existing?.slideshowFramesJson?.trim() ||

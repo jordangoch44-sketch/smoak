@@ -106,8 +106,11 @@ export function SpecialistTransformationsEditor({
         ) : null}
       </div>
       <p className="specialist-media-editor__hint">
-        Multi-select photos. They appear as a slider under Specialties on your
-        public profile.
+        {isProPlus
+          ? "Multi-select photos. They appear as a slider under Specialties on your public profile."
+          : urls.length > 0
+            ? "Saved from PRO+. Clients cannot see these until you restore PRO+."
+            : "Multi-select photos. They appear as a slider under Specialties on your public profile."}
       </p>
       <div
         className="specialist-media-editor__pin-row"

@@ -36,6 +36,7 @@ import {
   isLastAccountInterviewBeat,
   isSpecialistInterviewBeatRequired,
   listSpecialistInterviewBeats,
+  resolveSpecialistInterviewBeatId,
   type SpecialistInterviewBeatId,
 } from "@/lib/specialist-onboarding-interview";
 import { scrollDocumentToTop } from "@/lib/scroll-document-top";
@@ -143,6 +144,7 @@ export function SpecialistOnboardingWizard({
   const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState<string | null>(
     null
   );
+  const awaitingEmailConfirmRef = useRef(false);
   const [emailOtpCode, setEmailOtpCode] = useState("");
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   const [resendingConfirm, setResendingConfirm] = useState(false);
@@ -165,8 +167,15 @@ export function SpecialistOnboardingWizard({
     motion: "forward" | "back";
   } | null>(null);
   const cardMotionTimerRef = useRef<number | null>(null);
+  const holdCompactRef = useRef(false);
+  const keyboardOpenRef = useRef(false);
+  const cardPhaseRef = useRef(cardPhase);
+  const compactReleaseTimerRef = useRef<number | null>(null);
+  const scheduleCompactReleaseRef = useRef<() => void>(() => {});
   const reducedMotion = usePrefersReducedMotion();
   const cardBusy = cardPhase === "exit-left";
+  cardPhaseRef.current = cardPhase;
+  awaitingEmailConfirmRef.current = Boolean(awaitingEmailConfirm);
 
   function flagPasswordFieldsError(message: string) {
     setError(message);
@@ -212,6 +221,11 @@ export function SpecialistOnboardingWizard({
 
   useEffect(() => {
     if (beats.some((item) => item.id === beatId)) return;
+    const resolved = resolveSpecialistInterviewBeatId(beatId);
+    if (resolved && beats.some((item) => item.id === resolved)) {
+      setBeatId(resolved);
+      return;
+    }
     setBeatId(beats[0]?.id ?? "professional-type");
   }, [beats, beatId]);
 
@@ -311,19 +325,16 @@ export function SpecialistOnboardingWizard({
 
     function abandonUnverifiedProgress() {
       if (verifiedRef.current) return;
+      /* Checking Mail for the 6-digit code must not delete the Auth user. */
+      if (awaitingEmailConfirmRef.current) return;
       clearSpecialistOnboardingDraft();
       const { email, password } = credentialsRef.current;
       void abandonUnconfirmedSpecialistSignupClient({ email, password });
     }
 
-    function onPageHide() {
-      abandonUnverifiedProgress();
-    }
-
-    window.addEventListener("pagehide", onPageHide);
     return () => {
-      window.removeEventListener("pagehide", onPageHide);
       if (verifiedRef.current) return;
+      if (awaitingEmailConfirmRef.current) return;
       abandonTimerRef.current = window.setTimeout(() => {
         if (window.location.pathname.startsWith("/create-account")) {
           abandonTimerRef.current = null;
@@ -346,17 +357,48 @@ export function SpecialistOnboardingWizard({
       if (main instanceof HTMLElement) main.scrollTop = 0;
     }
 
-    function syncKeyboard() {
+    function setKeyboardCompact(active: boolean) {
+      document.body.classList.toggle(INTERVIEW_KEYBOARD_CLASS, active);
+      keyboardOpenRef.current = active;
+      setKeyboardOpen((prev) => (prev === active ? prev : active));
+    }
+
+    function keyboardIsOpen() {
       const focusedInside =
         page != null &&
         isInterviewEditableField(document.activeElement) &&
         page.contains(document.activeElement);
       const mobile = window.matchMedia("(max-width: 1023px)").matches;
-      const active =
-        readInterviewKeyboardInset() > 0 || (focusedInside && mobile);
-      document.body.classList.toggle(INTERVIEW_KEYBOARD_CLASS, active);
-      if (active) pinScroll();
-      setKeyboardOpen((prev) => (prev === active ? prev : active));
+      return readInterviewKeyboardInset() > 0 || (focusedInside && mobile);
+    }
+
+    function scheduleCompactRelease() {
+      if (holdCompactRef.current || cardPhaseRef.current !== "idle") return;
+      if (compactReleaseTimerRef.current != null) return;
+      compactReleaseTimerRef.current = window.setTimeout(() => {
+        compactReleaseTimerRef.current = null;
+        if (holdCompactRef.current || cardPhaseRef.current !== "idle") return;
+        if (keyboardIsOpen()) {
+          setKeyboardCompact(true);
+          return;
+        }
+        setKeyboardCompact(false);
+      }, 400);
+    }
+    scheduleCompactReleaseRef.current = scheduleCompactRelease;
+
+    function syncKeyboard() {
+      const active = keyboardIsOpen();
+      if (active) {
+        if (compactReleaseTimerRef.current != null) {
+          window.clearTimeout(compactReleaseTimerRef.current);
+          compactReleaseTimerRef.current = null;
+        }
+        pinScroll();
+        setKeyboardCompact(true);
+        return;
+      }
+      scheduleCompactRelease();
     }
 
     function onFocusIn(event: FocusEvent) {
@@ -375,21 +417,41 @@ export function SpecialistOnboardingWizard({
     syncKeyboard();
     const viewport = window.visualViewport;
     viewport?.addEventListener("resize", syncKeyboard);
-    viewport?.addEventListener("scroll", pinScroll);
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
     return () => {
       viewport?.removeEventListener("resize", syncKeyboard);
-      viewport?.removeEventListener("scroll", pinScroll);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
+      if (compactReleaseTimerRef.current != null) {
+        window.clearTimeout(compactReleaseTimerRef.current);
+        compactReleaseTimerRef.current = null;
+      }
       document.body.classList.remove(INTERVIEW_KEYBOARD_CLASS);
     };
   }, []);
 
+  useEffect(() => {
+    const root = pageRef.current;
+    if (!root) return;
+    const fields = [
+      ...root.querySelectorAll(
+        "input:not([type=hidden]):not([type=file]):not([type=checkbox]):not([type=radio]), textarea"
+      ),
+    ];
+    fields.forEach((el, index) => {
+      if (el instanceof HTMLTextAreaElement) {
+        el.enterKeyHint = "enter";
+        return;
+      }
+      if (!(el instanceof HTMLInputElement)) return;
+      el.enterKeyHint = index === fields.length - 1 ? "go" : "next";
+    });
+  }, [currentBeatId]);
+
   /* Each Continue / Back question should land at the heading — not the CTA. */
   useLayoutEffect(() => {
-    if (!draftReady || keyboardOpen) return;
+    if (!draftReady || keyboardOpenRef.current) return;
     const run = () => {
       scrollDocumentToTop();
     };
@@ -402,7 +464,7 @@ export function SpecialistOnboardingWizard({
       window.clearTimeout(retrySoon);
       window.clearTimeout(retryAfterPaint);
     };
-  }, [currentBeatId, draftReady, keyboardOpen]);
+  }, [currentBeatId, draftReady]);
 
   const goToPendingApplicationPortal = useCallback(async () => {
     const priorAvatar = getAuthSessionSnapshot()?.avatarUrl?.trim() || "";
@@ -480,35 +542,48 @@ export function SpecialistOnboardingWizard({
 
   useEffect(() => {
     if (cardPhase !== "enter-pop" && cardPhase !== "from-back") return;
-    const timeoutId = window.setTimeout(() => setCardPhase("idle"), 500);
+    const timeoutId = window.setTimeout(() => {
+      cardPhaseRef.current = "idle";
+      setCardPhase("idle");
+      holdCompactRef.current = false;
+      scheduleCompactReleaseRef.current();
+    }, 500);
     return () => window.clearTimeout(timeoutId);
   }, [cardPhase]);
 
-  function blurInterviewField() {
-    const active = document.activeElement;
-    if (!(active instanceof HTMLElement)) return;
-    if (!pageRef.current?.contains(active)) return;
-    if (!isInterviewEditableField(active)) return;
-    active.blur();
+  function holdCompactThroughAdvance() {
+    if (!keyboardOpenRef.current) return;
+    holdCompactRef.current = true;
+    if (compactReleaseTimerRef.current != null) {
+      window.clearTimeout(compactReleaseTimerRef.current);
+      compactReleaseTimerRef.current = null;
+    }
   }
 
   function goToBeat(
     nextId: SpecialistInterviewBeatId,
     motion: "forward" | "back" = "forward"
   ) {
+    const resolved = resolveSpecialistInterviewBeatId(nextId) ?? nextId;
+    holdCompactThroughAdvance();
     if (pendingBeatRef.current) return;
-    if (nextId === beatId) return;
+    if (resolved === beatId) return;
     setError(null);
     setInvalidFieldLabels([]);
     if (motion === "forward" && !reducedMotion) {
-      pendingBeatRef.current = { id: nextId, motion };
+      pendingBeatRef.current = { id: resolved, motion };
       setCardPhase("exit-left");
       cardMotionTimerRef.current = window.setTimeout(commitPendingBeat, 340);
       return;
     }
     setStackMotion(motion);
-    setBeatId(nextId);
+    setBeatId(resolved);
     setCardPhase(motion === "back" ? "from-back" : "idle");
+    if (motion !== "back") {
+      cardPhaseRef.current = "idle";
+      holdCompactRef.current = false;
+      scheduleCompactReleaseRef.current();
+    }
   }
 
   function goToNextBeat() {
@@ -527,6 +602,7 @@ export function SpecialistOnboardingWizard({
 
   function handleBack() {
     if (submitting || cardBusy) return;
+    holdCompactThroughAdvance();
     if (beatIndex <= 0) {
       handleExit();
       return;
@@ -623,6 +699,7 @@ export function SpecialistOnboardingWizard({
 
   async function handleContinue() {
     if (submitting || cardBusy || !beat) return;
+    holdCompactThroughAdvance();
 
     if (beat.id !== "preview") {
       const beatError = getSpecialistInterviewBeatError(
@@ -631,11 +708,14 @@ export function SpecialistOnboardingWizard({
         interviewContext,
         confirmPassword
       );
-      if (beat.id === "password" && beatError) {
-        flagPasswordFieldsError(beatError);
-        return;
-      }
       if (beatError) {
+        if (
+          (beat.id === "email" || beat.id === "password") &&
+          /password|match/i.test(beatError)
+        ) {
+          flagPasswordFieldsError(beatError);
+          return;
+        }
         setPasswordFieldsError(false);
         setError(beatError);
         if (beat.id === "service-type" || beat.id === "location") {
@@ -669,9 +749,9 @@ export function SpecialistOnboardingWizard({
     goToNextBeat();
   }
 
-  async function handleVerifyEmailCode() {
+  async function handleVerifyEmailCode(rawCode?: string) {
     if (!awaitingEmailConfirm) return;
-    const code = emailOtpCode.replace(/\s+/g, "").trim();
+    const code = (rawCode ?? emailOtpCode).replace(/\s+/g, "").trim();
     if (!/^\d{6}$/.test(code)) {
       setError("Enter the 6-digit code from your email.");
       return;
@@ -779,13 +859,7 @@ export function SpecialistOnboardingWizard({
       authGaps.length > 0 ||
       (!accountAlreadyCreated && state.password !== confirmPassword)
     ) {
-      goToBeat(
-        !accountAlreadyCreated &&
-          (state.password !== confirmPassword ||
-            authGaps.some((g) => g.label.startsWith("Password")))
-          ? "password"
-          : "email"
-      );
+      goToBeat("email");
       if (
         !accountAlreadyCreated &&
         state.password !== confirmPassword &&
@@ -931,7 +1005,7 @@ export function SpecialistOnboardingWizard({
       <div
         ref={pageRef}
         className={cn(
-          "login-page login-page--wizard login-page--specialist-onboarding",
+          "login-page login-page--wizard login-page--specialist-onboarding login-page--interview-flow",
           keyboardOpen && "login-page--interview-keyboard"
         )}
         data-login-role="specialist"
@@ -984,7 +1058,10 @@ export function SpecialistOnboardingWizard({
                 return;
               }
               if (cardPhase === "enter-pop" || cardPhase === "from-back") {
+                cardPhaseRef.current = "idle";
                 setCardPhase("idle");
+                holdCompactRef.current = false;
+                scheduleCompactReleaseRef.current();
               }
             }}
             onSubmit={(event) => {
@@ -1025,8 +1102,16 @@ export function SpecialistOnboardingWizard({
 
             {beat ? (
               <>
-                <h2 className="interview-card__title">{beat.title}</h2>
-                <p className="interview-card__subtitle">{beat.subtitle}</p>
+                <h2 className="interview-card__title">
+                  {currentBeatId === "email" && accountAlreadyCreated
+                    ? "Your sign-in email"
+                    : beat.title}
+                </h2>
+                <p className="interview-card__subtitle">
+                  {currentBeatId === "email" && accountAlreadyCreated
+                    ? "This email is verified. Continue to finish your application."
+                    : beat.subtitle}
+                </p>
               </>
             ) : null}
 
@@ -1095,7 +1180,7 @@ export function SpecialistOnboardingWizard({
                   type="button"
                   className="interview-continue smoac-control"
                   disabled={submitting}
-                  onPointerDown={blurInterviewField}
+                  onPointerDown={holdCompactThroughAdvance}
                   onActivate={() => void handleContinue()}
                 >
                   <span>{continueLabel()}</span>
@@ -1222,10 +1307,12 @@ export function SpecialistOnboardingWizard({
                     aria-label="6-digit verification code"
                     value={emailOtpCode}
                     onChange={(e) => {
-                      setEmailOtpCode(
-                        e.target.value.replace(/[^\d]/g, "").slice(0, 6)
-                      );
+                      const next = e.target.value.replace(/[^\d]/g, "").slice(0, 6);
+                      setEmailOtpCode(next);
                       setError(null);
+                      if (next.length === 6) {
+                        void handleVerifyEmailCode(next);
+                      }
                     }}
                     placeholder="000000"
                     maxLength={6}

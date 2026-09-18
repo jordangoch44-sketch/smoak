@@ -17,6 +17,7 @@ import {
 } from "@/lib/specialist-display-name";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { parseGallerySlideshowFrames } from "@/lib/media/slideshow-frame";
+import { asTrainerIntroVideo } from "@/lib/specialist-intro-video";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
 import { normalizeOffersFreeFirstSession } from "@/lib/free-first-session";
 import { applySpecialistProfileOverrides } from "@/lib/specialist-profile-overrides";
@@ -347,6 +348,7 @@ function trainerFromProfileData(
     pinnedPhotos: asStringArray(profileData.pinnedPhotos),
     image,
     heroImage,
+    introVideo: asTrainerIntroVideo(profileData.introVideo),
     bio: asString(profileData.bio),
     bestFor: asStringArray(profileData.bestFor),
     coachingStyle: asStringArray(profileData.coachingStyle),
