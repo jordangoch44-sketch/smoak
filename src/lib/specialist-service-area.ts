@@ -217,10 +217,44 @@ export function formatTravelRadiusLabel(travelRadius: string | undefined): strin
   return miles > 0 ? `${miles} miles` : null;
 }
 
+/** Street pins belong in the location line; travel origin should stay a name or ZIP. */
+function isStreetLikeAddress(value: string): boolean {
+  const v = value.trim();
+  if (!v) return false;
+  if (/^\d/.test(v)) return true;
+  return (
+    /\d/.test(v) &&
+    /\b(st|street|ave|avenue|blvd|boulevard|rd|road|dr|drive|ln|lane|way|ct|court|hwy|highway|pkwy|parkway|ste|suite|#)\b/i.test(
+      v
+    )
+  );
+}
+
+/** Facility name when they listed one; otherwise the ZIP they used. */
+export function travelRadiusOriginLabel(trainer: Trainer): string | null {
+  const workAddress = trainer.workAddress?.trim() ?? "";
+  const zip = trainer.zipCode?.trim() ?? "";
+  if (workAddress && !isStreetLikeAddress(workAddress)) return workAddress;
+  return zip || null;
+}
+
+/** Italic travel aside: "(up to 15 miles from 92108)". */
+export function formatTravelRadiusParenthetical(
+  travelRadius: string | undefined,
+  origin: string | null
+): string | null {
+  const radiusLabel = formatTravelRadiusLabel(travelRadius);
+  if (!radiusLabel) return null;
+  const milesText = radiusLabel.toLowerCase();
+  const range = milesText.includes("50+") ? milesText : `up to ${milesText}`;
+  return origin ? `(${range} from ${origin})` : `(${range})`;
+}
+
 export interface LocationTravelFact {
   label: string;
   value: string;
   hint?: string;
+  parenthetical?: string;
   icon: "place" | "travel" | "radius";
 }
 
@@ -232,7 +266,6 @@ export interface LocationTravelMap {
 
 export interface LocationTravelDisplay {
   facts: LocationTravelFact[];
-  description: string | null;
   map: LocationTravelMap | null;
 }
 
@@ -338,20 +371,13 @@ export function buildLocationTravelDisplay(
   if (travelToClients === "yes") {
     facts.push({
       label: "Travel",
-      value: "Travels to clients",
-      hint: "Home, facility, or outdoors.",
+      value: "Will travel to clients",
+      parenthetical: formatTravelRadiusParenthetical(
+        trainer.travelRadius,
+        travelRadiusOriginLabel(trainer)
+      ) ?? undefined,
       icon: "travel",
     });
-    if (radiusLabel) {
-      facts.push({
-        label: "Service area",
-        value: `Up to ${radiusLabel.toLowerCase()}`,
-        hint: trainer.city.trim()
-          ? `Around ${trainer.city.trim()}.`
-          : undefined,
-        icon: "radius",
-      });
-    }
   } else if (travelToClients === "no") {
     facts.push({
       label: "Travel",
@@ -360,12 +386,6 @@ export function buildLocationTravelDisplay(
       icon: "travel",
     });
   }
-
-  const description =
-    trainer.serviceAreaDescription?.trim() ||
-    (Array.isArray(trainer.serviceArea) && trainer.serviceArea.length > 0
-      ? trainer.serviceArea.filter(Boolean).join(", ")
-      : null);
 
   const lat = trainer.latitude;
   const lng = trainer.longitude;
@@ -382,10 +402,9 @@ export function buildLocationTravelDisplay(
         null
       : null;
 
-  if (facts.length === 0 && !description) return null;
+  if (facts.length === 0) return null;
   return {
     facts,
-    description,
     map: hasCoords
       ? {
           latitude: lat,

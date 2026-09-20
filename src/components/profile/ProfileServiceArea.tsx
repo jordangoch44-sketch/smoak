@@ -44,6 +44,11 @@ export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
                       </span>
                     ))}
                   </p>
+                  {fact.parenthetical ? (
+                    <p className="profile-service-area__parenthetical">
+                      {fact.parenthetical}
+                    </p>
+                  ) : null}
                   {fact.hint ? (
                     <p className="profile-service-area__hint">{fact.hint}</p>
                   ) : null}
@@ -54,10 +59,6 @@ export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
         ) : null}
 
         {display.map ? <ProfileDetailsRadiusMap map={display.map} /> : null}
-
-        {display.description ? (
-          <p className="profile-service-area__description">{display.description}</p>
-        ) : null}
       </div>
     </ProfileSection>
   );
