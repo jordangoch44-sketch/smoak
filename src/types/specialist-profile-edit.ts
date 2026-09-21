@@ -58,7 +58,7 @@ export interface SpecialistProfileOverrides {
   videoNotes?: string;
   /** JSON map of video URL → { posterUrl, duration, time } for pin thumbnails */
   videoPostersJson?: string;
-  /** Pro / PRO+ intro clip URL — “Meet X” above the public bio */
+  /** Pro / PRO+ intro clip URL — “Hi, I'm X” above the public bio */
   introVideoUrl?: string;
   /** JSON map of intro video URL → { posterUrl, duration, time } */
   introVideoPosterJson?: string;

@@ -55,7 +55,7 @@ export const SMOAC_PRO_BENEFITS: readonly MembershipBenefit[] = [
   },
   {
     title: "Intro video above your bio",
-    detail: "A Meet clip clients can play on your profile",
+    detail: "A “Hi, I’m …” clip clients can play on your profile",
   },
 ];
 

@@ -56,7 +56,7 @@ export interface ClientTransformationPhoto {
   alt: string;
 }
 
-/** Pro / PRO+ intro clip — “Meet X” play control above the public bio. */
+/** Pro / PRO+ intro clip — “Hi, I'm X” play control above the public bio. */
 export interface TrainerIntroVideo {
   src: string;
   poster?: string;

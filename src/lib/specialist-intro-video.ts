@@ -90,12 +90,13 @@ export function meetNameForTrainer(trainer: {
   if (personal && !isBusinessDerivedFirstName(personal, business)) {
     return personal;
   }
-  return firstNameFromPersonName(business) || "me";
+  return firstNameFromPersonName(business);
 }
 
 export function meetCtaLabel(trainer: {
   name?: string;
   specialistFirstName?: string;
 }): string {
-  return `Meet ${meetNameForTrainer(trainer)}`;
+  const name = meetNameForTrainer(trainer);
+  return name ? `Hi, I'm ${name}` : "Watch intro";
 }
