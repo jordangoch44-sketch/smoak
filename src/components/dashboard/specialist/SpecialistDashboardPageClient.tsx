@@ -32,6 +32,7 @@ import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
+  SPECIALIST_DASHBOARD_EDIT_HREF,
   SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
@@ -101,17 +102,19 @@ function dashboardSubtitle(
 
 function parseFreeTab(
   value: string | null,
-  openInquiries: boolean
+  openInquiries: boolean,
+  openEdit = false
 ): FreeDashboardTab {
-  if (openInquiries) return "profile";
+  if (openInquiries || openEdit) return "profile";
   return value === "overview" || value === "plan" ? "overview" : "profile";
 }
 
 function parsePremiumTab(
   value: string | null,
-  openInquiries: boolean
+  openInquiries: boolean,
+  openEdit = false
 ): PremiumDashboardTab {
-  if (openInquiries) return "profile";
+  if (openInquiries || openEdit) return "profile";
   return value === "overview" ? "overview" : "profile";
 }
 
@@ -132,12 +135,8 @@ export function SpecialistDashboardPageClient() {
   const editView = searchParams.get("view") === "edit";
   const openInquiries = Boolean(conversationParam) || inquiriesView;
   const welcomeParam = searchParams.get("welcome") === "1";
-  const [freeTab, setFreeTab] = useState<FreeDashboardTab>(() =>
-    parseFreeTab(tabParam, openInquiries)
-  );
-  const [premiumTab, setPremiumTab] = useState<PremiumDashboardTab>(() =>
-    parsePremiumTab(tabParam, openInquiries)
-  );
+  const freeTab = parseFreeTab(tabParam, openInquiries, editView);
+  const premiumTab = parsePremiumTab(tabParam, openInquiries, editView);
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
@@ -251,11 +250,6 @@ export function SpecialistDashboardPageClient() {
       setBoostOpen(true);
     }
   }, [searchParams, dashboardMode]);
-
-  useEffect(() => {
-    setFreeTab(parseFreeTab(tabParam, openInquiries));
-    setPremiumTab(parsePremiumTab(tabParam, openInquiries));
-  }, [tabParam, openInquiries]);
 
   useEffect(() => {
     if (!isReady || !session || !isHydrated) return;
@@ -402,15 +396,16 @@ export function SpecialistDashboardPageClient() {
     if (sectionId) {
       setFocusSection(sectionId);
     }
-    const next = new URLSearchParams(searchParams.toString());
+    const next = new URLSearchParams();
     next.set("tab", "profile");
     next.set("view", "edit");
     if (sectionId) next.set("focus", sectionId);
-    else next.delete("focus");
-    next.delete("c");
-    router.replace(`${SPECIALIST_DASHBOARD_PATH}?${next.toString()}`, {
-      scroll: false,
-    });
+    router.push(
+      sectionId
+        ? `${SPECIALIST_DASHBOARD_PATH}?${next.toString()}`
+        : SPECIALIST_DASHBOARD_EDIT_HREF,
+      { scroll: false }
+    );
   }
 
   function dismissProfileWelcome() {

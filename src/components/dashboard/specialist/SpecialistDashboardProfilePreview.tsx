@@ -77,7 +77,12 @@ import { FREE_FIRST_SESSION_LABEL, trainerOffersFreeFirstSession } from "@/lib/f
 import type { Trainer } from "@/types/trainer";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
-import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import {
+  SPECIALIST_DASHBOARD_EDIT_HREF,
+  SPECIALIST_DASHBOARD_INQUIRIES_HREF,
+  SPECIALIST_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
+} from "@/lib/auth-routes";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
 import {
   applyPublicMembershipVisibility,
@@ -689,22 +694,15 @@ export function SpecialistDashboardProfilePreview({
   function replacePreviewMode(next: ProfilePreviewMode) {
     if (isPendingListing && next !== "live") return;
     setPreviewMode(next);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", "profile");
     if (next === "inquiries") {
-      params.set("view", "inquiries");
-    } else if (next === "edit") {
-      params.set("view", "edit");
-      params.delete("c");
-    } else {
-      params.delete("view");
-      params.delete("c");
+      router.push(SPECIALIST_DASHBOARD_INQUIRIES_HREF, { scroll: false });
+      return;
     }
-    const qs = params.toString();
-    router.replace(
-      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
-      { scroll: false }
-    );
+    if (next === "edit") {
+      router.push(SPECIALIST_DASHBOARD_EDIT_HREF, { scroll: false });
+      return;
+    }
+    router.push(SPECIALIST_DASHBOARD_PROFILE_TAB_HREF, { scroll: false });
   }
 
   useEffect(() => {
