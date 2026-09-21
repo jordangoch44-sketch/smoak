@@ -8,7 +8,10 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from "react";
-import { isModifiedNavActivation } from "@/lib/mobile-bottom-nav-transition";
+import {
+  isModifiedNavActivation,
+  isSameBottomNavDestination,
+} from "@/lib/mobile-bottom-nav-transition";
 import { cn } from "@/lib/utils";
 
 type HeaderChromeLinkProps = Omit<ComponentProps<typeof Link>, "href"> & {
@@ -36,12 +39,12 @@ export function HeaderChromeLink({
   const pathname = usePathname();
   const openedByPointerRef = useRef(false);
 
-  function destinationPath(): string {
-    return href.split("?")[0] || href;
-  }
-
   function isSameDestination(): boolean {
-    return pathname === destinationPath();
+    return isSameBottomNavDestination(
+      pathname,
+      new URLSearchParams(window.location.search),
+      href
+    );
   }
 
   function handlePointerDown(event: PointerEvent<HTMLAnchorElement>) {
@@ -86,6 +89,15 @@ export function HeaderChromeLink({
       event.preventDefault();
       onActivate?.();
       return;
+    }
+    const destPath = href.split("?")[0] || href;
+    if (pathname === destPath) {
+      event.preventDefault();
+      try {
+        router.push(href);
+      } catch {
+        /* navigation is best-effort */
+      }
     }
     queueMicrotask(() => onActivate?.());
   }

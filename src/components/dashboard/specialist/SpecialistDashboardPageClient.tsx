@@ -337,8 +337,10 @@ export function SpecialistDashboardPageClient() {
     dashboardMode === "demo-premium";
   const isPendingGate =
     dashboardMode === "pending" || dashboardMode === "rejected";
+  const pendingOverview =
+    dashboardMode === "pending" && freeTab === "overview";
   const showPendingLiveView =
-    dashboardMode === "pending" && hasProfilePreview;
+    dashboardMode === "pending" && hasProfilePreview && !pendingOverview;
   const isFreeLive = dashboardMode === "approved-free";
   const onProTrial = Boolean(session.premiumTrialActive);
   const hadProTrial = Boolean(session.premiumTrialUsed);
@@ -348,17 +350,19 @@ export function SpecialistDashboardPageClient() {
   const freeOverview = isFreeLive && freeTab === "overview";
   const headerSurface: SpecialistDashHeaderSurface = showPendingLiveView
     ? "profile"
-    : isPendingGate
-      ? "status"
-      : premiumDashboard
-        ? premiumTab === "profile"
-          ? "profile"
-          : "overview"
-        : isFreeLive
-          ? freeTab === "profile"
+    : pendingOverview
+      ? "overview"
+      : isPendingGate
+        ? "status"
+        : premiumDashboard
+          ? premiumTab === "profile"
             ? "profile"
             : "overview"
-          : "status";
+          : isFreeLive
+            ? freeTab === "profile"
+              ? "profile"
+              : "overview"
+            : "status";
 
   function openProfileInquiries() {
     const latest = data.newLeads.find((lead) => lead.unread);
@@ -576,13 +580,17 @@ export function SpecialistDashboardPageClient() {
       roleLabel={roleLabel}
       roleLabelTone={roleLabelTone}
       headerClassName={`dashboard-page__header--${headerSurface}`}
-      hideHeader={headerSurface === "profile" || freeOverview}
+      hideHeader={
+        headerSurface === "profile" || freeOverview || pendingOverview
+      }
       statusLabel={
-        profileFirst || isLivePublished || freeOverview ? null : profileStatusLabel
+        profileFirst || isLivePublished || freeOverview || pendingOverview
+          ? null
+          : profileStatusLabel
       }
       statusTone={statusTone}
       utilityBar={
-        headerSurface === "profile" || freeOverview ? undefined : (
+        headerSurface === "profile" || freeOverview || pendingOverview ? undefined : (
           <SpecialistDashboardAccountMenu
             onSignOut={() => setSignOutConfirmOpen(true)}
           />
@@ -590,14 +598,20 @@ export function SpecialistDashboardPageClient() {
       }
     >
       <div className="specialist-dash-layout">
-        {showLastChance && headerSurface !== "profile" && !freeOverview ? (
+        {showLastChance &&
+        headerSurface !== "profile" &&
+        !freeOverview &&
+        !pendingOverview ? (
           <ProTrialLastChanceBanner
             daysRemaining={session.premiumTrialDaysRemaining}
             onUpgrade={() => setUpgradeOpen(true)}
           />
         ) : null}
 
-        {showsInquiries && headerSurface !== "profile" && !freeOverview ? (
+        {showsInquiries &&
+        headerSurface !== "profile" &&
+        !freeOverview &&
+        !pendingOverview ? (
           <InquiryNotificationBanner
             unreadCount={inquiryUnreadCount}
             latestSummary={latestInquirySummary}
@@ -645,6 +659,7 @@ export function SpecialistDashboardPageClient() {
                 >
                   <SpecialistLockedOverview
                     restoreTrial={hadProTrial}
+                    holdUnlock={upgradeOpen}
                     onUnlock={() => {
                       setTrialEndedOpen(false);
                       openUpgrade({ skipPick: true });
@@ -694,7 +709,11 @@ export function SpecialistDashboardPageClient() {
 
         {profileFirst && !isFreeLive ? (
           <>
-            {showPendingLiveView ? (
+            {pendingOverview ? (
+              <SpecialistLockedOverview pending>
+                {overviewAccordions(false)}
+              </SpecialistLockedOverview>
+            ) : showPendingLiveView ? (
               <SpecialistDashboardProfilePreview
                 trainer={trainer!}
                 editable={false}
@@ -703,6 +722,7 @@ export function SpecialistDashboardPageClient() {
                 isLivePublished={false}
                 chromeStatus="pending"
                 cityRanking={cityRanking}
+                onSignOut={() => setSignOutConfirmOpen(true)}
               />
             ) : (
               <>

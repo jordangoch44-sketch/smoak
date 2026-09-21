@@ -45,6 +45,7 @@ export type IgEditRowId =
   | "pricing"
   | "free-first-session"
   | "contact"
+  | "plan"
   | "billing"
   | "gender"
   | "profile-style";
@@ -597,10 +598,19 @@ export function SpecialistIgStyleProfileEditor({
           onClick={() => onEditSection("contact")}
         />
         <IgEditRow
+          id="ig-edit-row-plan"
+          sectionKey="plan"
+          label="Plan"
+          value={resolvedPlanLabel}
+          settings
+          highlighted={isHighlighted("plan")}
+          onClick={() => onEditSection("plan")}
+        />
+        <IgEditRow
           id="ig-edit-row-billing"
           sectionKey="billing"
           label="Billing"
-          value={resolvedPlanLabel}
+          value="Payment & invoices"
           settings
           highlighted={isHighlighted("billing")}
           onClick={() => onEditSection("billing")}

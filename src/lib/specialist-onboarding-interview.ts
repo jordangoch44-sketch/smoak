@@ -406,5 +406,6 @@ export function isLastAccountInterviewBeat(
   const beats = listSpecialistInterviewBeats(context);
   const index = beats.findIndex((beat) => beat.id === beatId);
   if (index < 0) return false;
+  if (beats[index]?.section !== 2) return false;
   return !beats.slice(index + 1).some((beat) => beat.section === 2);
 }

@@ -15,6 +15,7 @@ import {
   type IgEditRowId,
 } from "@/components/dashboard/specialist/SpecialistIgStyleProfileEditor";
 import { SpecialistIgBillingSheet } from "@/components/dashboard/specialist/SpecialistIgBillingSheet";
+import { SpecialistIgPlanSheet } from "@/components/dashboard/specialist/SpecialistIgPlanSheet";
 import { SpecialistInquiriesInbox } from "@/components/dashboard/specialist/SpecialistInquiriesInbox";
 import { SpecialistProfileMediaEditor } from "@/components/dashboard/specialist/SpecialistProfileMediaEditor";
 import { ProfileMediaUploadField } from "@/components/dashboard/specialist/ProfileMediaUploadField";
@@ -427,12 +428,14 @@ function LiveProfileChrome({
   inquiryUnreadCount,
   onOpenInquiries,
   onOpenEdit,
+  onSignOut,
 }: {
   status?: "live" | "pending";
   showInquiries: boolean;
   inquiryUnreadCount: number;
   onOpenInquiries: () => void;
   onOpenEdit: () => void;
+  onSignOut?: () => void;
 }) {
   const isPending = status === "pending";
   return (
@@ -478,7 +481,16 @@ function LiveProfileChrome({
         {isPending ? "Pending" : "Live view"}
       </h1>
       {isPending ? (
-        <span className="specialist-live-chrome__spacer" aria-hidden />
+        onSignOut ? (
+          <FastActivateButton
+            className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--signout"
+            onActivate={onSignOut}
+          >
+            Sign out
+          </FastActivateButton>
+        ) : (
+          <span className="specialist-live-chrome__spacer" aria-hidden />
+        )
       ) : (
         <FastActivateButton
           className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--edit"
@@ -622,6 +634,7 @@ export function SpecialistDashboardProfilePreview({
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [billingOpen, setBillingOpen] = useState(false);
+  const [planOpen, setPlanOpen] = useState(false);
   const conversationParam = searchParams.get("c")?.trim() || "";
   const viewParam = searchParams.get("view")?.trim() || "";
   const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
@@ -647,7 +660,10 @@ export function SpecialistDashboardProfilePreview({
   }, [conversationParam, viewParam]);
 
   useEffect(() => {
-    if (previewMode !== "edit") setBillingOpen(false);
+    if (previewMode !== "edit") {
+      setBillingOpen(false);
+      setPlanOpen(false);
+    }
   }, [previewMode]);
 
   useEffect(() => {
@@ -730,6 +746,10 @@ export function SpecialistDashboardProfilePreview({
   }, [focusSection, searchParams, onClearFocus, viewParam, router]);
 
   function openEditSection(id: IgEditRowId) {
+    if (id === "plan") {
+      setPlanOpen(true);
+      return;
+    }
     if (id === "billing") {
       setBillingOpen(true);
       return;
@@ -1489,6 +1509,10 @@ export function SpecialistDashboardProfilePreview({
       <>
         {portalReady ? createPortal(page, document.body) : page}
         {editSheet}
+        <SpecialistIgPlanSheet
+          open={planOpen}
+          onClose={() => setPlanOpen(false)}
+        />
         <SpecialistIgBillingSheet
           open={billingOpen}
           onClose={() => setBillingOpen(false)}
@@ -1542,6 +1566,7 @@ export function SpecialistDashboardProfilePreview({
             inquiryUnreadCount={inquiryUnreadCount}
             onOpenInquiries={() => replacePreviewMode("inquiries")}
             onOpenEdit={() => replacePreviewMode("edit")}
+            onSignOut={onSignOut}
           />
           <div className="specialist-live-page__body">
             {isPendingListing ? (

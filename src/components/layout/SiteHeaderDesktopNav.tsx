@@ -11,6 +11,7 @@ import {
   isActiveNavItem,
   type MobileBottomNavItemId,
 } from "@/lib/mobile-bottom-nav";
+import { isSameBottomNavDestination } from "@/lib/mobile-bottom-nav-transition";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { formatSavedCountBadge } from "@/lib/saved-ui";
 import { canSaveSpecialists } from "@/lib/specialist-saves";
@@ -84,10 +85,18 @@ function SiteHeaderDesktopNavInner({
                   active && "site-header-desktop-nav__link--active"
                 )}
                 aria-current={active ? "page" : undefined}
-                onClick={() => {
+                onClick={(event) => {
                   if (!isActiveNavItem(item.id, pathname, searchParams)) {
                     setPendingId(item.id);
                   }
+                  const params = searchParams ?? new URLSearchParams();
+                  if (isSameBottomNavDestination(pathname, params, item.href)) {
+                    return;
+                  }
+                  const destPath = item.href.split("?")[0] || item.href;
+                  if (pathname !== destPath) return;
+                  event.preventDefault();
+                  router.push(item.href);
                 }}
               >
                 {label}

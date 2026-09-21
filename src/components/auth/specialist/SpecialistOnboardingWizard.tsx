@@ -729,6 +729,11 @@ export function SpecialistOnboardingWizard({
       setInvalidFieldLabels([]);
     }
 
+    if (beat.id === "preview") {
+      void handleSubmitApplication();
+      return;
+    }
+
     if (isLastAccountInterviewBeat(beat.id, interviewContext)) {
       if (accountAlreadyCreated) {
         setVerifiedEmail(state.email.trim().toLowerCase());
@@ -738,11 +743,6 @@ export function SpecialistOnboardingWizard({
       const verified = await verifyEmailBeforeContinue();
       if (!verified) return;
       goToBeat(firstBeatIdForSection(3, interviewContext));
-      return;
-    }
-
-    if (beat.id === "preview") {
-      void handleSubmitApplication();
       return;
     }
 

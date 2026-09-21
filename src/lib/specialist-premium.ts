@@ -78,6 +78,64 @@ export const SMOAC_PRO_PLUS_BENEFITS: readonly MembershipBenefit[] = [
   },
 ];
 
+export const SMOAC_FREE_BENEFITS: readonly MembershipBenefit[] = [
+  {
+    title: "Marketplace listing",
+    detail: "Show up in Explore for clients nearby",
+  },
+  {
+    title: "Client inquiries",
+    detail: "Receive messages from people who find you",
+  },
+  {
+    title: "Public profile",
+    detail: "Photos, bio, specialties, and pricing",
+  },
+];
+
+export type MembershipPlanPickerTier = {
+  id: "free" | "premium" | "platinum";
+  product: "premium" | "platinum" | null;
+  shortLabel: string;
+  label: string;
+  priceLabel: string;
+  description: string;
+  benefits: readonly MembershipBenefit[];
+};
+
+export const MEMBERSHIP_PLAN_PICKER_TIERS: readonly MembershipPlanPickerTier[] =
+  [
+    {
+      id: "free",
+      product: null,
+      shortLabel: "Free",
+      label: "Free",
+      priceLabel: "Free",
+      description: "List on the marketplace and receive client inquiries.",
+      benefits: SMOAC_FREE_BENEFITS,
+    },
+    {
+      id: "premium",
+      product: "premium",
+      shortLabel: "Pro",
+      label: "SMOAC Pro",
+      priceLabel: SMOAC_PRO_PRICE_LABEL,
+      description:
+        "Unlock full analytics, ranking intelligence, and growth insights.",
+      benefits: SMOAC_PRO_BENEFITS,
+    },
+    {
+      id: "platinum",
+      product: "platinum",
+      shortLabel: "PRO+",
+      label: "SMOAC PRO+",
+      priceLabel: SMOAC_PRO_PLUS_PRICE_LABEL,
+      description:
+        "PRO+ includes Pro, plus phone videos, client results, and 20% off Boosts.",
+      benefits: SMOAC_PRO_PLUS_BENEFITS,
+    },
+  ];
+
 export const SMOAC_UPGRADE_FOOTER = "Invest in your growth";
 
 /** Confirm before starting the one-time complimentary Pro trial */
@@ -117,6 +175,12 @@ export function parseMembershipPlan(
 ): SpecialistMembershipPlan {
   if (value === "premium" || value === "platinum") return value;
   return "free";
+}
+
+export function membershipPlanRank(plan: SpecialistMembershipPlan): number {
+  if (plan === "platinum") return 2;
+  if (plan === "premium") return 1;
+  return 0;
 }
 
 export function isProPlusPlan(
@@ -294,14 +358,52 @@ function trialKeepTitle(daysRemaining: number | null | undefined): string {
   return `${daysRemaining} days left — keep Pro`;
 }
 
+export function currentMembershipPlanFromSession(
+  session: MembershipGrowthSession | null | undefined
+): SpecialistMembershipPlan {
+  if (isProPlusPlan(session?.membershipPlan)) return "platinum";
+  if (session?.isPremium || session?.premiumTrialActive) return "premium";
+  return "free";
+}
+
+/** Whether checkout can move this account onto the selected membership. */
+export function canSubscribeToMembershipPlan(
+  session: MembershipGrowthSession | null | undefined,
+  target: SpecialistMembershipPlan
+): boolean {
+  if (target === "free") return false;
+  if (isProPlusPlan(session?.membershipPlan)) return false;
+  if (target === "platinum") return true;
+  return !isSpecialistPayingPro(session ?? {});
+}
+
 /**
- * Copy + Stripe product for upgrade popups.
- * Free / Pro trial → Pro. Paid Pro → PRO+. PRO+ → Boost (handled by caller).
+ * Copy + Stripe product for a specific membership checkout.
+ * Used by Edit Profile → Plan so Free can pick Pro or PRO+.
  */
-export function resolveMembershipUpgradeOffer(
+export function membershipUpgradeOfferForProduct(
+  product: "premium" | "platinum",
   session: MembershipGrowthSession | null | undefined,
   options?: { trialEnded?: boolean }
-): MembershipGrowthOffer {
+): MembershipUpgradeOffer {
+  if (product === "platinum") {
+    return {
+      intent: "pro-plus",
+      product: "platinum",
+      tone: "pro-plus",
+      eyebrow: "SMOAC PRO+",
+      title: "Upgrade to PRO+",
+      description:
+        "PRO+ includes everything in Pro, plus up to 5 phone videos, client results under Specialties, and 20% off Boosts.",
+      price: SMOAC_PRO_PLUS_PRICE_LABEL,
+      note: "Billed monthly. Cancel anytime.",
+      cta: `Upgrade to PRO+ · ${SMOAC_PRO_PLUS_PRICE_LABEL}`,
+      badgeLabel: "PRO+",
+      badgeCaption: "Go further",
+      benefits: SMOAC_PRO_PLUS_BENEFITS,
+    };
+  }
+
   if (options?.trialEnded) {
     return {
       intent: "pro",
@@ -317,27 +419,6 @@ export function resolveMembershipUpgradeOffer(
       badgeLabel: "PRO",
       badgeCaption: "Restore what clients saw",
       benefits: SMOAC_PRO_BENEFITS,
-    };
-  }
-
-  const intent = resolveMembershipGrowthIntent(session);
-  if (intent === "boost") return { intent: "boost" };
-
-  if (intent === "pro-plus") {
-    return {
-      intent: "pro-plus",
-      product: "platinum",
-      tone: "pro-plus",
-      eyebrow: "SMOAC PRO+",
-      title: "Upgrade to PRO+",
-      description:
-        "You're on Pro. PRO+ adds up to 5 phone videos, client results under Specialties, and 20% off Boosts.",
-      price: SMOAC_PRO_PLUS_PRICE_LABEL,
-      note: "Billed monthly. Cancel anytime.",
-      cta: `Upgrade to PRO+ · ${SMOAC_PRO_PLUS_PRICE_LABEL}`,
-      badgeLabel: "PRO+",
-      badgeCaption: "Go further",
-      benefits: SMOAC_PRO_PLUS_BENEFITS,
     };
   }
 
@@ -373,6 +454,26 @@ export function resolveMembershipUpgradeOffer(
     badgeCaption: "Unlock your growth",
     benefits: SMOAC_PRO_BENEFITS,
   };
+}
+
+/**
+ * Copy + Stripe product for upgrade popups.
+ * Free / Pro trial → Pro. Paid Pro → PRO+. PRO+ → Boost (handled by caller).
+ */
+export function resolveMembershipUpgradeOffer(
+  session: MembershipGrowthSession | null | undefined,
+  options?: { trialEnded?: boolean }
+): MembershipGrowthOffer {
+  if (options?.trialEnded) {
+    return membershipUpgradeOfferForProduct("premium", session, options);
+  }
+
+  const intent = resolveMembershipGrowthIntent(session);
+  if (intent === "boost") return { intent: "boost" };
+  if (intent === "pro-plus") {
+    return membershipUpgradeOfferForProduct("platinum", session);
+  }
+  return membershipUpgradeOfferForProduct("premium", session);
 }
 
 export function isMembershipUpgradeOffer(

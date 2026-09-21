@@ -73,12 +73,9 @@ export function isSameBottomNavDestination(
     const targetTab =
       new URLSearchParams(target.search.slice(1)).get("tab") ?? "";
     const currentTab = searchParams.get("tab") ?? "";
-    const targetIsOverview =
-      targetTab === "" || targetTab === "overview" || targetTab === "plan";
-    const currentIsOverview =
-      currentTab === "" || currentTab === "overview" || currentTab === "plan";
-    if (targetIsOverview && currentIsOverview) return true;
-    return targetTab === currentTab;
+    const normalizeDashTab = (tab: string) =>
+      tab === "overview" || tab === "plan" ? "overview" : "profile";
+    return normalizeDashTab(targetTab) === normalizeDashTab(currentTab);
   }
 
   if (target.search) {
