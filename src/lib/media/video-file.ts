@@ -118,8 +118,8 @@ export async function readVideoDurationSeconds(file: File): Promise<number> {
 }
 
 /**
- * Type, 45s cap, then file size. Duration is checked first so a long iPhone
- * clip does not surface as a megabyte error.
+ * Type, then 45s (the product cap), then a hard storage ceiling.
+ * 4K and 1080p are both allowed if the clip is 45 seconds or less.
  */
 export async function inspectPhoneVideoFile(
   file: File

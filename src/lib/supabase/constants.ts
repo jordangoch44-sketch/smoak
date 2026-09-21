@@ -13,8 +13,11 @@ export const SPECIALIST_STORAGE_LIMITS = {
   profile: 5 * 1024 * 1024,
   cover: 8 * 1024 * 1024,
   galleryImage: 8 * 1024 * 1024,
-  /** Must match specialist-media bucket file_size_limit (100MB). */
-  galleryVideo: 100 * 1024 * 1024,
+  /**
+   * Must match specialist-media bucket file_size_limit (1GB).
+   * 45s is the product cap — 4K 60fps phone clips need this headroom.
+   */
+  galleryVideo: 1024 * 1024 * 1024,
   galleryVideoPoster: 3 * 1024 * 1024,
 } as const;
 
