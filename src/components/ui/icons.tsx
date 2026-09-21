@@ -855,6 +855,42 @@ export function PlayIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+export function SpeakerIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M11 5L6 9H3v6h3l5 4V5z" />
+      <path d="M15.5 8.5a5 5 0 010 7" />
+    </svg>
+  );
+}
+
+export function SpeakerOffIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M11 5L6 9H3v6h3l5 4V5z" />
+      <path d="M22 9l-6 6M16 9l6 6" />
+    </svg>
+  );
+}
+
 /** Bookmark for saved-profile metrics */
 export function BookmarkIcon({ className = "h-5 w-5" }: IconProps) {
   return (

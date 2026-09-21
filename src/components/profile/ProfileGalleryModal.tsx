@@ -9,11 +9,15 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { PlayIcon, SpeakerIcon, SpeakerOffIcon } from "@/components/ui/icons";
 import { MEDIA_TAP_SLOP_PX, TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { useCarousel } from "@/hooks/useCarousel";
 import { useHorizontalSwipe } from "@/hooks/useHorizontalSwipe";
 import type { ProfileGalleryMedia } from "@/types/profile-gallery";
-import { formatClipSecondsLabel } from "@/lib/media/video-file";
+import {
+  formatClipSecondsLabel,
+  formatPlayerClock,
+} from "@/lib/media/video-file";
 import { cn } from "@/lib/utils";
 
 const CLOSE_MS = 300;
@@ -38,6 +42,9 @@ export function ProfileGalleryModal({
 }: ProfileGalleryModalProps) {
   const { index, goTo, count } = useCarousel(media.length);
   const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoMuted, setVideoMuted] = useState(true);
+  const [videoTime, setVideoTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -54,13 +61,16 @@ export function ProfileGalleryModal({
     fromProtected: boolean;
   } | null>(null);
 
-  const pauseVideo = useCallback(() => {
+  const pauseVideo = useCallback((reset = true) => {
     setVideoPlaying(false);
     const video = videoRef.current;
     if (!video) return;
     try {
       video.pause();
-      video.currentTime = 0;
+      if (reset) {
+        video.currentTime = 0;
+        setVideoTime(0);
+      }
     } catch {
       // Playback may already be stopped or unsupported
     }
@@ -180,12 +190,19 @@ export function ProfileGalleryModal({
       setMounted(true);
       setIsClosing(false);
       setMediaReady(false);
+      setVideoMuted(true);
+      setVideoTime(0);
+      setVideoDuration(0);
       goTo(initialIndex);
     });
   }, [open, initialIndex, goTo]);
 
   useEffect(() => {
-    queueMicrotask(() => setMediaReady(false));
+    queueMicrotask(() => {
+      setMediaReady(false);
+      setVideoTime(0);
+      setVideoDuration(0);
+    });
   }, [index]);
 
   useEffect(() => {
@@ -264,13 +281,40 @@ export function ProfileGalleryModal({
     if (!video) return;
 
     try {
+      video.muted = videoMuted;
       await video.play();
       setVideoPlaying(true);
     } catch (error) {
       console.warn("Gallery video playback failed:", error);
       setVideoPlaying(false);
     }
-  }, [index, media]);
+  }, [index, media, videoMuted]);
+
+  const handleTogglePlayback = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      void handlePlayVideo();
+      return;
+    }
+    pauseVideo(false);
+  }, [handlePlayVideo, pauseVideo]);
+
+  const handleSeek = useCallback((nextTime: number) => {
+    const video = videoRef.current;
+    if (!video) return;
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const clamped = Math.min(Math.max(0, nextTime), Math.max(0, duration));
+    video.currentTime = clamped;
+    setVideoTime(clamped);
+  }, []);
+
+  const handleToggleMute = useCallback(() => {
+    const video = videoRef.current;
+    const next = !videoMuted;
+    setVideoMuted(next);
+    if (video) video.muted = next;
+  }, [videoMuted]);
 
   const handleMediaReady = useCallback(() => {
     setMediaReady(true);
@@ -361,45 +405,112 @@ export function ProfileGalleryModal({
                         }
                       />
                     ) : slideIndex === index ? (
-                      <>
+                      <div className="profile-gallery-modal__video-shell">
                         <video
                           ref={videoRef}
                           className="profile-gallery-modal__video"
                           src={item.url}
                           poster={item.thumbnail}
                           playsInline
-                          muted
+                          muted={videoMuted}
                           autoPlay
-                          controls={videoPlaying}
                           preload="auto"
+                          disablePictureInPicture
+                          controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
                           onLoadedData={() => {
+                            const video = videoRef.current;
+                            if (video && Number.isFinite(video.duration)) {
+                              setVideoDuration(video.duration);
+                            }
                             handleMediaReady();
                             void handlePlayVideo();
                           }}
+                          onTimeUpdate={(event) => {
+                            const video = event.currentTarget;
+                            setVideoTime(video.currentTime);
+                            if (Number.isFinite(video.duration)) {
+                              setVideoDuration(video.duration);
+                            }
+                          }}
                           onPlay={() => setVideoPlaying(true)}
-                          onEnded={() => setVideoPlaying(false)}
+                          onEnded={() => {
+                            setVideoPlaying(false);
+                            setVideoTime(0);
+                            const video = videoRef.current;
+                            if (video) video.currentTime = 0;
+                          }}
                           onPause={(event) => {
                             if (!event.currentTarget.isConnected) return;
                             if (event.currentTarget.seeking) return;
                             setVideoPlaying(false);
                           }}
                         />
-                        {!videoPlaying ? (
-                          <FastActivateButton
-                            className="profile-gallery-modal__play"
-                            data-gallery-protected
-                            onActivate={handlePlayVideo}
-                            aria-label={`Play ${item.alt ?? "video"}`}
-                          >
+                        <FastActivateButton
+                          className={cn(
+                            "profile-gallery-modal__play",
+                            videoPlaying &&
+                              "profile-gallery-modal__play--playing"
+                          )}
+                          data-gallery-protected
+                          onActivate={handleTogglePlayback}
+                          aria-label={
+                            videoPlaying
+                              ? `Pause ${item.alt ?? "video"}`
+                              : `Play ${item.alt ?? "video"}`
+                          }
+                        >
+                          {videoPlaying ? null : (
                             <span
                               className="profile-gallery-modal__play-icon"
                               aria-hidden
                             >
-                              ▶
+                              <PlayIcon className="profile-gallery-modal__play-glyph" />
                             </span>
+                          )}
+                        </FastActivateButton>
+                        <div
+                          className="profile-gallery-modal__video-ui"
+                          data-gallery-protected
+                        >
+                          <FastActivateButton
+                            className="profile-gallery-modal__mute"
+                            data-gallery-protected
+                            onActivate={handleToggleMute}
+                            aria-label={
+                              videoMuted ? "Unmute video" : "Mute video"
+                            }
+                          >
+                            {videoMuted ? (
+                              <SpeakerOffIcon className="profile-gallery-modal__mute-icon" />
+                            ) : (
+                              <SpeakerIcon className="profile-gallery-modal__mute-icon" />
+                            )}
                           </FastActivateButton>
-                        ) : null}
-                      </>
+                          <div className="profile-gallery-modal__scrub">
+                            <input
+                              type="range"
+                              min={0}
+                              max={Math.max(videoDuration, 0.01)}
+                              step={0.05}
+                              value={Math.min(videoTime, videoDuration || 0)}
+                              aria-label="Playback position"
+                              onChange={(event) => {
+                                handleSeek(
+                                  Number.parseFloat(event.target.value)
+                                );
+                              }}
+                              className="profile-gallery-modal__scrub-input"
+                            />
+                            <span className="profile-gallery-modal__time">
+                              {formatPlayerClock(videoTime)}
+                              <span aria-hidden> · </span>
+                              {formatPlayerClock(
+                                videoDuration || item.duration || 0
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     ) : null}
                   </div>
                 ))}
