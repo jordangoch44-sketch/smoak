@@ -5,14 +5,11 @@ import {
   MembershipUnlockPitch,
   UNLOCK_COLLAPSE_MS,
 } from "@/components/dashboard/shared/MembershipUnlockPitch";
-import { cn } from "@/lib/utils";
 
 interface SpecialistLockedOverviewProps {
   restoreTrial?: boolean;
   /** Keep the collapsed spiral while the checkout overlay is covering this card. */
   holdUnlock?: boolean;
-  /** Pending application — greyed analytics, no Pro unlock. */
-  pending?: boolean;
   onUnlock?: () => void;
   children: ReactNode;
 }
@@ -24,7 +21,6 @@ interface SpecialistLockedOverviewProps {
 export function SpecialistLockedOverview({
   restoreTrial = false,
   holdUnlock = false,
-  pending = false,
   onUnlock,
   children,
 }: SpecialistLockedOverviewProps) {
@@ -57,47 +53,27 @@ export function SpecialistLockedOverview({
   }
 
   return (
-    <div
-      className={cn(
-        "specialist-overview-gate",
-        pending && "specialist-overview-gate--pending"
-      )}
-    >
+    <div className="specialist-overview-gate">
       <div className="specialist-overview-gate__stage" aria-hidden>
         {children}
       </div>
       <div className="specialist-overview-gate__overlay">
-        {pending ? (
+        <div
+          className="specialist-overview-gate__card smoac-unlock-pitch"
+          role="dialog"
+          aria-labelledby="membership-unlock-title"
+          aria-describedby="membership-unlock-desc"
+        >
           <div
-            className="specialist-overview-gate__card specialist-overview-pending"
-            role="status"
-            aria-labelledby="specialist-overview-pending-title"
-          >
-            <h2
-              id="specialist-overview-pending-title"
-              className="specialist-overview-pending__title"
-            >
-              No information available until approval
-            </h2>
-          </div>
-        ) : (
-          <div
-            className="specialist-overview-gate__card smoac-unlock-pitch"
-            role="dialog"
-            aria-labelledby="membership-unlock-title"
-            aria-describedby="membership-unlock-desc"
-          >
-            <div
-              className="dashboard-modal__glow dashboard-upgrade__glow dashboard-upgrade__glow--pro"
-              aria-hidden
-            />
-            <MembershipUnlockPitch
-              kind={restoreTrial ? "restore" : "pro"}
-              busy={unlocking}
-              onUnlock={handleUnlock}
-            />
-          </div>
-        )}
+            className="dashboard-modal__glow dashboard-upgrade__glow dashboard-upgrade__glow--pro"
+            aria-hidden
+          />
+          <MembershipUnlockPitch
+            kind={restoreTrial ? "restore" : "pro"}
+            busy={unlocking}
+            onUnlock={handleUnlock}
+          />
+        </div>
       </div>
     </div>
   );

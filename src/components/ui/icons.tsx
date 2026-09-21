@@ -855,6 +855,24 @@ export function PlayIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+/** Bookmark for saved-profile metrics */
+export function BookmarkIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
+    </svg>
+  );
+}
+
 /** Small padlock for plan-gated profile fields */
 export function LockIcon({ className = "h-4 w-4" }: IconProps) {
   return (

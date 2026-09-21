@@ -27,6 +27,7 @@ import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialis
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistLockedOverview } from "@/components/dashboard/specialist/SpecialistLockedOverview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
+import { SpecialistPendingOverview } from "@/components/dashboard/specialist/SpecialistPendingOverview";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
@@ -710,9 +711,9 @@ export function SpecialistDashboardPageClient() {
         {profileFirst && !isFreeLive ? (
           <>
             {pendingOverview ? (
-              <SpecialistLockedOverview pending>
-                {overviewAccordions(false)}
-              </SpecialistLockedOverview>
+              <SpecialistPendingOverview
+                submittedAt={application?.submittedAt}
+              />
             ) : showPendingLiveView ? (
               <SpecialistDashboardProfilePreview
                 trainer={trainer!}
