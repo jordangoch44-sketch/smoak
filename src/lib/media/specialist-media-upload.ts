@@ -1,7 +1,11 @@
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { specialistVideoTooLongMessage } from "@/lib/specialist-media-limits";
 import { SPECIALIST_MEDIA_BUCKET } from "@/lib/supabase/constants";
-import { resolveVideoContentType } from "@/lib/media/video-file";
+import {
+  inspectPhoneVideoFile,
+  resolveVideoContentType,
+} from "@/lib/media/video-file";
 
 /** Storage object prefix for `/api/media/specialist-application` SAFE_PATH. */
 function specialistMediaPathId(specialistId: string): string {
@@ -51,12 +55,12 @@ export async function postSpecialistApplicationMedia(
     | null;
   if (!response.ok || !payload?.ok || !payload.publicUrl) {
     throw new Error(
-      payload?.message ??
-        (response.status === 413
-          ? "Photo is too large to upload."
-          : response.status === 401
+      isObjectTooLargeMessage(payload?.message) || response.status === 413
+        ? "Photo is too large to upload."
+        : (payload?.message ??
+          (response.status === 401
             ? "Sign in again to upload photos."
-            : "Could not upload image.")
+            : "Could not upload image."))
     );
   }
   return payload.publicUrl.includes("?")
@@ -86,6 +90,24 @@ function cacheBustUrl(url: string): string {
   return url.includes("?") ? `${url}&v=${stamp}` : `${url}?v=${stamp}`;
 }
 
+function isObjectTooLargeMessage(message: string | undefined): boolean {
+  const lower = (message ?? "").toLowerCase();
+  return (
+    lower.includes("exceeded the maximum allowed size") ||
+    lower.includes("payload too large") ||
+    lower.includes("entity too large") ||
+    lower.includes("maximum allowed size")
+  );
+}
+
+function videoUploadErrorMessage(message: string | undefined): string {
+  if (isObjectTooLargeMessage(message)) {
+    return specialistVideoTooLongMessage();
+  }
+  const trimmed = message?.trim() ?? "";
+  return trimmed || "Could not upload video.";
+}
+
 /**
  * Upload a phone video via signed URL (not a data URL — clips are too large).
  */
@@ -104,6 +126,8 @@ export async function uploadSpecialistDashboardVideo(
       "Video upload needs a live connection. Try again in a moment."
     );
   }
+
+  await inspectPhoneVideoFile(file);
 
   const contentType = resolveVideoContentType(file);
   if (!contentType) {
@@ -129,10 +153,12 @@ export async function uploadSpecialistDashboardVideo(
     | null;
   if (!response.ok || !payload?.ok || !payload.path || !payload.publicUrl) {
     throw new Error(
-      payload?.message ??
-        (response.status === 401
-          ? "Sign in again to upload videos."
-          : "Could not start video upload.")
+      videoUploadErrorMessage(
+        payload?.message ??
+          (response.status === 401
+            ? "Sign in again to upload videos."
+            : "Could not start video upload.")
+      )
     );
   }
 
@@ -144,7 +170,7 @@ export async function uploadSpecialistDashboardVideo(
         contentType,
       });
     if (error) {
-      throw new Error(error.message || "Could not upload video.");
+      throw new Error(videoUploadErrorMessage(error.message));
     }
   } else if (payload.signedUrl) {
     const put = await fetch(payload.signedUrl, {
@@ -153,7 +179,12 @@ export async function uploadSpecialistDashboardVideo(
       body: file,
     });
     if (!put.ok) {
-      throw new Error("Could not upload video.");
+      const putPayload = (await put.json().catch(() => null)) as
+        | { message?: string; error?: string }
+        | null;
+      throw new Error(
+        videoUploadErrorMessage(putPayload?.message ?? putPayload?.error)
+      );
     }
   } else {
     throw new Error("Could not start video upload.");

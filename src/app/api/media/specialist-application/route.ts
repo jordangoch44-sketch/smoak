@@ -128,9 +128,19 @@ export async function POST(request: Request) {
     });
 
   if (error) {
+    const message = error.message.toLowerCase();
+    const tooLarge =
+      message.includes("exceeded the maximum allowed size") ||
+      message.includes("payload too large") ||
+      message.includes("maximum allowed size");
     return NextResponse.json(
-      { ok: false, message: error.message },
-      { status: 502 }
+      {
+        ok: false,
+        message: tooLarge
+          ? "Photo is too large to upload."
+          : error.message,
+      },
+      { status: tooLarge ? 413 : 502 }
     );
   }
 

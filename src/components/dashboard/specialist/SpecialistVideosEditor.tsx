@@ -15,9 +15,7 @@ import {
 } from "@/lib/media/video-poster";
 import {
   formatClipSecondsLabel,
-  readVideoDurationSeconds,
-  rejectUnsupportedPhoneVideo,
-  rejectVideoOverDuration,
+  inspectPhoneVideoFile,
 } from "@/lib/media/video-file";
 import {
   PINNED_PHOTOS_MAX,
@@ -26,10 +24,7 @@ import {
   SPECIALIST_MEDIA_LIMITS,
   specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
-import {
-  SPECIALIST_STORAGE_ACCEPT,
-  SPECIALIST_STORAGE_LIMITS,
-} from "@/lib/supabase/constants";
+import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
 import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
@@ -123,22 +118,14 @@ export function SpecialistVideosEditor({
     try {
       const valid: FrameQueueItem[] = [];
       for (const file of files) {
-        const typeReject = rejectUnsupportedPhoneVideo(file);
-        if (typeReject) {
-          setError(typeReject);
-          continue;
+        try {
+          const { duration } = await inspectPhoneVideoFile(file);
+          valid.push({ file, duration });
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : "Could not add video."
+          );
         }
-        if (file.size > SPECIALIST_STORAGE_LIMITS.galleryVideo) {
-          setError("Video must be under 100MB.");
-          continue;
-        }
-        const duration = await readVideoDurationSeconds(file);
-        const durationReject = rejectVideoOverDuration(duration);
-        if (durationReject) {
-          setError(durationReject);
-          continue;
-        }
-        valid.push({ file, duration });
       }
       if (valid.length === 0) return;
       if (selected.length > remaining) {

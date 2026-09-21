@@ -15,15 +15,10 @@ import {
 } from "@/lib/media/video-poster";
 import {
   formatClipSecondsLabel,
-  readVideoDurationSeconds,
-  rejectUnsupportedPhoneVideo,
-  rejectVideoOverDuration,
+  inspectPhoneVideoFile,
 } from "@/lib/media/video-file";
 import { meetCtaLabel } from "@/lib/specialist-intro-video";
-import {
-  SPECIALIST_STORAGE_ACCEPT,
-  SPECIALIST_STORAGE_LIMITS,
-} from "@/lib/supabase/constants";
+import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
 import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
@@ -86,21 +81,7 @@ export function SpecialistIntroVideoEditor({
     setError(null);
     setProgress(null);
     try {
-      const typeReject = rejectUnsupportedPhoneVideo(file);
-      if (typeReject) {
-        setError(typeReject);
-        return;
-      }
-      if (file.size > SPECIALIST_STORAGE_LIMITS.galleryVideo) {
-        setError("Video must be under 100MB.");
-        return;
-      }
-      const duration = await readVideoDurationSeconds(file);
-      const durationReject = rejectVideoOverDuration(duration);
-      if (durationReject) {
-        setError(durationReject);
-        return;
-      }
+      const { duration } = await inspectPhoneVideoFile(file);
       setPendingFile({ file, duration });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add video.");

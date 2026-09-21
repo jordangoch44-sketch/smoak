@@ -13,6 +13,7 @@ export const SPECIALIST_STORAGE_LIMITS = {
   profile: 5 * 1024 * 1024,
   cover: 8 * 1024 * 1024,
   galleryImage: 8 * 1024 * 1024,
+  /** Must match specialist-media bucket file_size_limit (100MB). */
   galleryVideo: 100 * 1024 * 1024,
   galleryVideoPoster: 3 * 1024 * 1024,
 } as const;

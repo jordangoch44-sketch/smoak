@@ -1,4 +1,8 @@
-import { SPECIALIST_VIDEO_MAX_SECONDS } from "@/lib/specialist-media-limits";
+import {
+  SPECIALIST_VIDEO_MAX_SECONDS,
+  specialistVideoTooLongMessage,
+} from "@/lib/specialist-media-limits";
+import { SPECIALIST_STORAGE_LIMITS } from "@/lib/supabase/constants";
 
 const ALLOWED_VIDEO_MIME = new Set([
   "video/mp4",
@@ -35,12 +39,16 @@ export function rejectVideoOverDuration(durationSeconds: number): string | null 
     return "Could not read this video. Try another clip.";
   }
   if (durationSeconds > SPECIALIST_VIDEO_MAX_SECONDS + 0.05) {
-    return "Keep clips to 45 seconds or less.";
+    return specialistVideoTooLongMessage();
   }
   return null;
 }
 
-/** Browser-only. iOS sometimes reports Infinity until we seek. */
+function hasUsableDuration(duration: number): boolean {
+  return Number.isFinite(duration) && duration > 0 && duration !== Infinity;
+}
+
+/** Browser-only. iOS sometimes reports Infinity / 0 until we seek. */
 export async function readVideoDurationSeconds(file: File): Promise<number> {
   if (typeof window === "undefined" || typeof document === "undefined") {
     throw new Error("Could not read this video. Try another clip.");
@@ -60,33 +68,64 @@ export async function readVideoDurationSeconds(file: File): Promise<number> {
 
       function finish(duration: number) {
         window.clearTimeout(timeout);
-        if (!Number.isFinite(duration) || duration <= 0) {
+        video.removeEventListener("timeupdate", onProbe);
+        video.removeEventListener("seeked", onProbe);
+        if (!hasUsableDuration(duration)) {
           reject(new Error("Could not read this video. Try another clip."));
           return;
         }
         resolve(duration);
       }
 
-      video.onloadedmetadata = () => {
-        if (video.duration === Infinity) {
-          video.currentTime = 1e101;
-          video.ontimeupdate = () => {
-            video.ontimeupdate = null;
-            finish(video.duration);
-          };
+      function onProbe() {
+        if (!hasUsableDuration(video.duration)) return;
+        video.currentTime = 0;
+        finish(video.duration);
+      }
+
+      function probeDuration() {
+        if (hasUsableDuration(video.duration)) {
+          finish(video.duration);
           return;
         }
-        finish(video.duration);
-      };
+        video.addEventListener("timeupdate", onProbe);
+        video.addEventListener("seeked", onProbe);
+        video.currentTime = 1e101;
+      }
+
+      video.onloadedmetadata = () => probeDuration();
       video.onerror = () => {
         window.clearTimeout(timeout);
         reject(new Error("Could not read this video. Try another clip."));
       };
       video.src = objectUrl;
+      video.load();
     });
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
+}
+
+/**
+ * Type, 45s cap, then file size. Duration is checked first so a long iPhone
+ * clip does not surface as a megabyte error.
+ */
+export async function inspectPhoneVideoFile(
+  file: File
+): Promise<{ duration: number }> {
+  const typeReject = rejectUnsupportedPhoneVideo(file);
+  if (typeReject) {
+    throw new Error(typeReject);
+  }
+  const duration = await readVideoDurationSeconds(file);
+  const durationReject = rejectVideoOverDuration(duration);
+  if (durationReject) {
+    throw new Error(durationReject);
+  }
+  if (file.size > SPECIALIST_STORAGE_LIMITS.galleryVideo) {
+    throw new Error(specialistVideoTooLongMessage());
+  }
+  return { duration };
 }
 
 export function formatClipSecondsLabel(duration: number): string {
@@ -99,6 +138,22 @@ export function isLikelyVideoUrl(url: string): boolean {
   return /\.(mp4|mov|webm|m4v)$/.test(path);
 }
 
+/** Keep base64 JSON under typical serverless body limits (~4.5MB). */
+const POSTER_MAX_DATA_URL_CHARS = 3_800_000;
+
+function encodePosterDataUrl(
+  canvas: HTMLCanvasElement,
+  quality: number
+): string {
+  let outQuality = quality;
+  let dataUrl = canvas.toDataURL("image/jpeg", outQuality);
+  while (dataUrl.length > POSTER_MAX_DATA_URL_CHARS && outQuality > 0.45) {
+    outQuality -= 0.08;
+    dataUrl = canvas.toDataURL("image/jpeg", outQuality);
+  }
+  return dataUrl;
+}
+
 export async function captureVideoFrameDataUrl(
   video: HTMLVideoElement,
   maxEdge = 1080
@@ -108,22 +163,28 @@ export async function captureVideoFrameDataUrl(
   if (!width || !height) {
     throw new Error("Could not capture that frame.");
   }
-  let outWidth = width;
-  let outHeight = height;
-  if (Math.max(outWidth, outHeight) > maxEdge) {
-    const scale = maxEdge / Math.max(outWidth, outHeight);
-    outWidth = Math.max(1, Math.round(outWidth * scale));
-    outHeight = Math.max(1, Math.round(outHeight * scale));
+
+  let edge = Math.min(maxEdge, Math.max(width, height));
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const scale = edge / Math.max(width, height);
+    const outWidth = Math.max(1, Math.round(width * scale));
+    const outHeight = Math.max(1, Math.round(height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = outWidth;
+    canvas.height = outHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Could not capture that frame.");
+    }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(video, 0, 0, outWidth, outHeight);
+    const dataUrl = encodePosterDataUrl(canvas, 0.82);
+    if (dataUrl.length <= POSTER_MAX_DATA_URL_CHARS) {
+      return dataUrl;
+    }
+    edge = Math.max(480, Math.round(edge * 0.75));
   }
-  const canvas = document.createElement("canvas");
-  canvas.width = outWidth;
-  canvas.height = outHeight;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new Error("Could not capture that frame.");
-  }
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.drawImage(video, 0, 0, outWidth, outHeight);
-  return canvas.toDataURL("image/jpeg", 0.86);
+
+  throw new Error("Could not capture that frame.");
 }

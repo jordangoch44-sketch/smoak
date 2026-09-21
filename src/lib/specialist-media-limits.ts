@@ -13,6 +13,10 @@ export const SPECIALIST_MEDIA_LIMITS = {
 /** Max length for a PRO+ profile video. */
 export const SPECIALIST_VIDEO_MAX_SECONDS = 45;
 
+export function specialistVideoTooLongMessage(): string {
+  return `Clips must be ${SPECIALIST_VIDEO_MAX_SECONDS} seconds or less.`;
+}
+
 export type SpecialistMediaPlan = keyof typeof SPECIALIST_MEDIA_LIMITS;
 
 export function specialistMediaLimitsForPlan(
