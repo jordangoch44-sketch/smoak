@@ -17,6 +17,11 @@ export function specialistVideoTooLongMessage(): string {
   return `Clips must be ${SPECIALIST_VIDEO_MAX_SECONDS} seconds or less.`;
 }
 
+/** File/storage size — not duration. iPhone 4K can be huge in under 45s. */
+export function specialistVideoTooLargeMessage(): string {
+  return "This clip is too large. Try 1080p.";
+}
+
 export type SpecialistMediaPlan = keyof typeof SPECIALIST_MEDIA_LIMITS;
 
 export function specialistMediaLimitsForPlan(

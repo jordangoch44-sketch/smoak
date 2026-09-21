@@ -1,5 +1,6 @@
 import {
   SPECIALIST_VIDEO_MAX_SECONDS,
+  specialistVideoTooLargeMessage,
   specialistVideoTooLongMessage,
 } from "@/lib/specialist-media-limits";
 import { SPECIALIST_STORAGE_LIMITS } from "@/lib/supabase/constants";
@@ -34,18 +35,28 @@ export function rejectUnsupportedPhoneVideo(file: File): string | null {
   return null;
 }
 
+/**
+ * iOS Safari can report Infinity, 0, or a leftover from seeking to 1e101.
+ * Ten minutes is well above the 45s product cap and far below those bogus values.
+ */
+const MAX_PLAUSIBLE_PHONE_CLIP_SECONDS = 600;
+
+function hasUsableDuration(duration: number): boolean {
+  return (
+    Number.isFinite(duration) &&
+    duration > 0 &&
+    duration < MAX_PLAUSIBLE_PHONE_CLIP_SECONDS
+  );
+}
+
 export function rejectVideoOverDuration(durationSeconds: number): string | null {
-  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+  if (!hasUsableDuration(durationSeconds)) {
     return "Could not read this video. Try another clip.";
   }
   if (durationSeconds > SPECIALIST_VIDEO_MAX_SECONDS + 0.05) {
     return specialistVideoTooLongMessage();
   }
   return null;
-}
-
-function hasUsableDuration(duration: number): boolean {
-  return Number.isFinite(duration) && duration > 0 && duration !== Infinity;
 }
 
 /** Browser-only. iOS sometimes reports Infinity / 0 until we seek. */
@@ -123,7 +134,7 @@ export async function inspectPhoneVideoFile(
     throw new Error(durationReject);
   }
   if (file.size > SPECIALIST_STORAGE_LIMITS.galleryVideo) {
-    throw new Error(specialistVideoTooLongMessage());
+    throw new Error(specialistVideoTooLargeMessage());
   }
   return { duration };
 }

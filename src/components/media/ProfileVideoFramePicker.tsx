@@ -7,7 +7,6 @@ import { useBlockingModalOpen } from "@/hooks/useBlockingModalOpen";
 import {
   captureVideoFrameDataUrl,
   formatClipSecondsLabel,
-  rejectVideoOverDuration,
 } from "@/lib/media/video-file";
 import { cn } from "@/lib/utils";
 import "@/styles/profile-photo-cropper.css";
@@ -63,15 +62,6 @@ export function ProfileVideoFramePicker({
     setSaving(true);
     setError(null);
     try {
-      const liveDuration = video.duration;
-      const checkedDuration =
-        Number.isFinite(liveDuration) && liveDuration > 0
-          ? liveDuration
-          : duration;
-      const durationReject = rejectVideoOverDuration(checkedDuration);
-      if (durationReject) {
-        throw new Error(durationReject);
-      }
       await seekTo(time);
       const posterDataUrl = await captureVideoFrameDataUrl(video);
       await onSave(posterDataUrl, time);
@@ -129,14 +119,6 @@ export function ProfileVideoFramePicker({
           playsInline
           preload="metadata"
           onLoadedMetadata={() => {
-            const live = videoRef.current?.duration ?? 0;
-            if (Number.isFinite(live) && live > 0) {
-              const durationReject = rejectVideoOverDuration(live);
-              if (durationReject) {
-                setError(durationReject);
-                return;
-              }
-            }
             void seekTo(0);
           }}
         />

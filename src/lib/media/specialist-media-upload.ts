@@ -1,9 +1,12 @@
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { specialistVideoTooLongMessage } from "@/lib/specialist-media-limits";
-import { SPECIALIST_MEDIA_BUCKET } from "@/lib/supabase/constants";
+import { specialistVideoTooLargeMessage } from "@/lib/specialist-media-limits";
 import {
-  inspectPhoneVideoFile,
+  SPECIALIST_MEDIA_BUCKET,
+  SPECIALIST_STORAGE_LIMITS,
+} from "@/lib/supabase/constants";
+import {
+  rejectUnsupportedPhoneVideo,
   resolveVideoContentType,
 } from "@/lib/media/video-file";
 
@@ -102,7 +105,7 @@ function isObjectTooLargeMessage(message: string | undefined): boolean {
 
 function videoUploadErrorMessage(message: string | undefined): string {
   if (isObjectTooLargeMessage(message)) {
-    return specialistVideoTooLongMessage();
+    return specialistVideoTooLargeMessage();
   }
   const trimmed = message?.trim() ?? "";
   return trimmed || "Could not upload video.";
@@ -127,7 +130,13 @@ export async function uploadSpecialistDashboardVideo(
     );
   }
 
-  await inspectPhoneVideoFile(file);
+  const typeReject = rejectUnsupportedPhoneVideo(file);
+  if (typeReject) {
+    throw new Error(typeReject);
+  }
+  if (file.size > SPECIALIST_STORAGE_LIMITS.galleryVideo) {
+    throw new Error(specialistVideoTooLargeMessage());
+  }
 
   const contentType = resolveVideoContentType(file);
   if (!contentType) {
@@ -155,9 +164,11 @@ export async function uploadSpecialistDashboardVideo(
     throw new Error(
       videoUploadErrorMessage(
         payload?.message ??
-          (response.status === 401
-            ? "Sign in again to upload videos."
-            : "Could not start video upload.")
+          (response.status === 413
+            ? specialistVideoTooLargeMessage()
+            : response.status === 401
+              ? "Sign in again to upload videos."
+              : "Could not start video upload.")
       )
     );
   }
@@ -183,7 +194,11 @@ export async function uploadSpecialistDashboardVideo(
         | { message?: string; error?: string }
         | null;
       throw new Error(
-        videoUploadErrorMessage(putPayload?.message ?? putPayload?.error)
+        videoUploadErrorMessage(
+          putPayload?.message ??
+            putPayload?.error ??
+            (put.status === 413 ? specialistVideoTooLargeMessage() : undefined)
+        )
       );
     }
   } else {
