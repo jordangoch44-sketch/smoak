@@ -590,10 +590,10 @@ export function CreateAccountWizardClient({
             <div className="interview-card__footer">
               <div className="interview-card__actions">
                 {showBack ? (
-                  <button
+                  <FastActivateButton
                     type="button"
                     className="interview-back"
-                    onClick={handleBack}
+                    onActivate={handleBack}
                     disabled={submitting}
                     aria-label="Back"
                   >
@@ -606,12 +606,13 @@ export function CreateAccountWizardClient({
                         strokeLinejoin="round"
                       />
                     </svg>
-                  </button>
+                  </FastActivateButton>
                 ) : null}
-                <button
-                  type="submit"
+                <FastActivateButton
+                  type="button"
                   className="interview-continue"
                   disabled={submitting || (step === 1 && state.accountType == null)}
+                  onActivate={handleContinue}
                 >
                   <span>
                     {submitting
@@ -629,7 +630,7 @@ export function CreateAccountWizardClient({
                       strokeLinejoin="round"
                     />
                   </svg>
-                </button>
+                </FastActivateButton>
               </div>
               <p className="interview-signin">
                 <span>Already have an account?</span>

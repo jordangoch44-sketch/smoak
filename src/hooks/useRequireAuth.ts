@@ -44,7 +44,7 @@ export function useRequireAuth(requiredRole: PublicAuthRole): {
     void (async () => {
       const supabase = getMarketplaceAuthClient();
       if (supabase) {
-        for (let attempt = 0; attempt < 6; attempt += 1) {
+        for (let attempt = 0; attempt < 4; attempt += 1) {
           if (cancelled) return;
 
           const { data } = await supabase.auth.getSession();
@@ -58,7 +58,7 @@ export function useRequireAuth(requiredRole: PublicAuthRole): {
           if (cancelled) return;
           if (getAuthSessionSnapshot()) return;
 
-          await delay(250 * (attempt + 1));
+          await delay(100 * (attempt + 1));
         }
 
         if (cancelled) return;

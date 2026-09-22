@@ -1,7 +1,7 @@
 import { LegalDocumentPage } from "@/components/legal/LegalDocumentPage";
 import { LEGAL_EFFECTIVE_DATE, SUPPORT_SECTIONS } from "@/lib/legal-content";
 import { SITE_ROUTES } from "@/lib/navigation";
-import { SUPPORT_EMAIL, accountDeletionMailto } from "@/lib/site-contact";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 export const metadata = {
   title: "Help Center",
@@ -21,8 +21,8 @@ export default function SupportPage() {
         { label: "FAQ", href: SITE_ROUTES.faq },
       ]}
     >
-      <a href={accountDeletionMailto()} className="legal-page__cta">
-        Email {SUPPORT_EMAIL} to delete your account
+      <a href={supportMailto({ subject: "SMOAC help" })} className="legal-page__cta">
+        Email {SUPPORT_EMAIL}
       </a>
     </LegalDocumentPage>
   );

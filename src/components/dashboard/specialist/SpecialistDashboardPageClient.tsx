@@ -16,14 +16,12 @@ import {
   AnalyticsCard,
   BoostProfileCard,
   GoogleReviewsCard,
-  ProfileCompletionCard,
   ReviewsCard,
   SubscriptionCard,
   VisibilityRankingCard,
 } from "@/components/dashboard/specialist/cards";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
-import { SpecialistDashboardAccountMenu } from "@/components/dashboard/specialist/SpecialistDashboardAccountMenu";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistLockedOverview } from "@/components/dashboard/specialist/SpecialistLockedOverview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
@@ -32,7 +30,6 @@ import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
-  SPECIALIST_DASHBOARD_EDIT_HREF,
   SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
@@ -157,8 +154,6 @@ export function SpecialistDashboardPageClient() {
     data,
     trainer,
     application,
-    profileCompletion,
-    completionChecklist,
     welcomeTasks,
     welcomeAvatarUrl,
     welcomeDisplayName,
@@ -392,22 +387,6 @@ export function SpecialistDashboardPageClient() {
       }
     : {};
 
-  function handleNavigateToProfile(sectionId?: string) {
-    if (sectionId) {
-      setFocusSection(sectionId);
-    }
-    const next = new URLSearchParams();
-    next.set("tab", "profile");
-    next.set("view", "edit");
-    if (sectionId) next.set("focus", sectionId);
-    router.push(
-      sectionId
-        ? `${SPECIALIST_DASHBOARD_PATH}?${next.toString()}`
-        : SPECIALIST_DASHBOARD_EDIT_HREF,
-      { scroll: false }
-    );
-  }
-
   function dismissProfileWelcome() {
     const userId = session?.userId;
     if (userId) {
@@ -535,12 +514,6 @@ export function SpecialistDashboardPageClient() {
         isPremium={premium}
         defaultOpen={teaseOpen}
       />
-      <ProfileCompletionCard
-        profileCompletion={profileCompletion}
-        trainer={trainer}
-        checklist={completionChecklist}
-        onEditProfile={handleNavigateToProfile}
-      />
       <VisibilityRankingCard
         ranking={data.ranking ?? null}
         isPremium={premium}
@@ -585,13 +558,6 @@ export function SpecialistDashboardPageClient() {
           : profileStatusLabel
       }
       statusTone={statusTone}
-      utilityBar={
-        headerSurface === "profile" || freeOverview || pendingOverview ? undefined : (
-          <SpecialistDashboardAccountMenu
-            onSignOut={() => setSignOutConfirmOpen(true)}
-          />
-        )
-      }
     >
       <div className="specialist-dash-layout">
         {showLastChance &&

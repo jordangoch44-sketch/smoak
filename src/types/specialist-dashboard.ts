@@ -40,12 +40,6 @@ export interface SpecialistDashboardData {
   subscription: SpecialistSubscription;
 }
 
-export interface ProfileCompletionChecklistItem {
-  id: string;
-  label: string;
-  done: boolean;
-}
-
 /** Reserved slot IDs for upcoming specialist dashboard modules */
 export const SPECIALIST_DASHBOARD_SLOTS = {
   premiumMemberships: "premium-memberships",

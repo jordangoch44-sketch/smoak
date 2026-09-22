@@ -3094,7 +3094,8 @@ body.review-modal-open .specialist-live-chrome {
 }
 
 .profile-hero__meet-icon,
-.profile-hero__meet-lock {
+.profile-hero__meet-lock,
+.profile-hero__meet-plus {
   position: relative;
   z-index: 1;
   width: 0.85rem;

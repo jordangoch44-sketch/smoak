@@ -1,5 +1,6 @@
 /**
- * Central support contact for public pages (Contact Us, Report a Concern, Help).
+ * Public inbox for customer questions (Contact, Help, Report, legal, Reply-To).
+ * App mail still sends From `EMAIL_FROM` (`noreply@smoac.com`).
  * Update here if the inbox changes — do not scatter hardcoded addresses.
  */
 export const SUPPORT_EMAIL = "support@smoac.com";

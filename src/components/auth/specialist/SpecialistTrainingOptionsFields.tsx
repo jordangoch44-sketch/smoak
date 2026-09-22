@@ -1,5 +1,6 @@
 "use client";
 
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   SPECIALIST_TRAINING_OPTIONS,
   toggleTrainingOption,
@@ -44,18 +45,18 @@ export function SpecialistTrainingOptionsFields({
         {SPECIALIST_TRAINING_OPTIONS.map((option) => {
           const active = selected.includes(option.id);
           return (
-            <button
+            <FastActivateButton
               key={option.id}
               type="button"
               aria-pressed={active}
-              onClick={() => onChange(toggleTrainingOption(selected, option.id))}
+              onActivate={() => onChange(toggleTrainingOption(selected, option.id))}
               className={cn(
                 "smoac-control wizard-pill wizard-pill--touch dashboard-edit-chip",
                 active && "wizard-pill--active dashboard-edit-chip--active"
               )}
             >
               {option.label}
-            </button>
+            </FastActivateButton>
           );
         })}
       </div>

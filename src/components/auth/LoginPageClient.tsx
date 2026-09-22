@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useReducedMotion } from "framer-motion";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
@@ -21,9 +21,13 @@ import type { AuthRole } from "@/types/auth";
 import { getUserRole } from "@/lib/specialist-saves";
 import { isAuthReturnToSaved } from "@/lib/auth-return";
 import { resolvePostLoginNavigation, navigateAfterAuth } from "@/lib/post-login-flow";
+import {
+  CLIENT_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_WELCOME_HREF,
+} from "@/lib/auth-routes";
 import { cn } from "@/lib/utils";
 
-const LOGIN_FAILURE_DELAY_MS = 300;
 const ERROR_FADE_MS = 220;
 
 interface RoleMismatchState {
@@ -49,13 +53,8 @@ const PUBLIC_LOGIN_ROLES: {
   },
 ];
 
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
-}
-
 export function LoginPageClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const returnToSaved = isAuthReturnToSaved(searchParams);
   const reducedMotion = useReducedMotion();
@@ -107,6 +106,15 @@ export function LoginPageClient() {
     setRole(targetRole);
     clearRoleMismatchModal();
   }
+
+  useEffect(() => {
+    router.prefetch(
+      role === "specialist" ? SPECIALIST_DASHBOARD_PATH : CLIENT_DASHBOARD_PATH
+    );
+    if (role === "specialist") {
+      router.prefetch(SPECIALIST_DASHBOARD_WELCOME_HREF);
+    }
+  }, [role, router]);
 
   useEffect(() => {
     return () => {
@@ -203,8 +211,6 @@ export function LoginPageClient() {
 
     setSubmitPressed(true);
     setSubmitting(true);
-
-    await delay(LOGIN_FAILURE_DELAY_MS);
 
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();

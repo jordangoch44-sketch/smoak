@@ -5,6 +5,7 @@ import {
   LEGAL_EFFECTIVE_DATE,
 } from "@/lib/legal-content";
 import { SITE_ROUTES } from "@/lib/navigation";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 export const metadata = {
   title: "Cookie Policy",
@@ -24,6 +25,10 @@ export default function CookiesPage() {
         { label: "Terms of Service", href: SITE_ROUTES.terms },
         { label: "Contact Us", href: SITE_ROUTES.contact },
       ]}
-    />
+    >
+      <a href={supportMailto({ subject: "SMOAC cookies" })} className="legal-page__cta">
+        Email {SUPPORT_EMAIL}
+      </a>
+    </LegalDocumentPage>
   );
 }

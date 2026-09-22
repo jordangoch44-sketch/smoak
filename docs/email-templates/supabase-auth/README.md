@@ -32,4 +32,5 @@ node scripts/generate-supabase-auth-emails.mjs
 - CTAs use `{{ .ConfirmationURL }}` (Supabase-hosted verify → redirect to your app).
 - OTP fallback uses `{{ .Token }}` for clients that prefetch links.
 - Logo: `{{ .SiteURL }}/smoac-mark.png` — ensure the mark is publicly reachable.
+- Footer links `support@smoac.com` for questions. Auth still sends From `noreply@smoac.com` when using Resend SMTP.
 

@@ -6,6 +6,7 @@ import type {
 import { composeInquiryThreadBody } from "@/lib/inquiry/inquiry-message-body";
 import { validateInquiryDraft } from "@/lib/pending-inquiry-storage";
 import { LOCAL_INQUIRIES_STORAGE_KEY } from "@/lib/dev-storage-keys";
+import { SUPPORT_EMAIL } from "@/lib/site-contact";
 
 export interface LocalInquiryRecord {
   conversation: InquiryConversationRow;
@@ -239,7 +240,7 @@ export function saveLocalSmoacWelcomeInquiry(input: {
       inquiry_topics: [],
       source: LOCAL_SMOAC_WELCOME_SOURCE,
       client_first_name: "SMOAC Team",
-      client_email: "support@smoac.com",
+      client_email: SUPPORT_EMAIL,
       client_avatar_url: input.avatarUrl,
       last_message_at: now,
       created_at: now,

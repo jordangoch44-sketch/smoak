@@ -10,6 +10,7 @@ import {
   buildSmoacWelcomeInquiryBody,
 } from "@/lib/inquiry/specialist-welcome-inquiry";
 
+/* Internal Auth identity for the SMOAC Team welcome thread. Public address is SUPPORT_EMAIL. */
 const TEAM_AUTH_EMAIL =
   process.env.SMOAC_TEAM_EMAIL?.trim().toLowerCase() || "team@smoac.com";
 

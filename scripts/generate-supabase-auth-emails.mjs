@@ -64,7 +64,11 @@ function wrap({ eyebrow, title, paragraphs, ctaLabel, extrasHtml = "" }) {
           <tr>
             <td align="center" style="padding:22px 12px 0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
               <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:${COLORS.muted};">Luxury wellness marketplace · Find specialists near you.</p>
-              <p style="margin:0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
+              <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
+                Questions?
+                <a href="mailto:support@smoac.com" style="color:${COLORS.accentSoft};text-decoration:underline;">support@smoac.com</a>
+              </p>
+              <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
                 <a href="{{ .SiteURL }}" style="color:${COLORS.accentSoft};text-decoration:none;">SMOAC</a>
                 · If you didn’t request this, you can ignore this email.
               </p>
@@ -203,6 +207,7 @@ indexLines.push(
   "- CTAs use `{{ .ConfirmationURL }}` (Supabase-hosted verify → redirect to your app).",
   "- OTP fallback uses `{{ .Token }}` for clients that prefetch links.",
   "- Logo: `{{ .SiteURL }}/smoac-mark.png` — ensure the mark is publicly reachable.",
+  "- Footer links `support@smoac.com` for questions. Auth still sends From `noreply@smoac.com` when using Resend SMTP.",
   ""
 );
 

@@ -1,4 +1,5 @@
 import type { GeoCoordinates } from "@/lib/geo/zip-centroids";
+import { lookupLocalZipCoordinates } from "@/lib/geo/zip-centroids";
 import { lookupLocalZipPlace } from "@/lib/geo/zip-place-names";
 import {
   cacheGeocodedZip,
@@ -19,6 +20,9 @@ export async function geocodeUsZipFallback(
 
   const cached = getCachedGeocodedZipPlace(normalized);
   if (cached) return cached.coordinates;
+
+  const localCoords = lookupLocalZipCoordinates(normalized);
+  if (localCoords) return localCoords;
 
   const localPlace = lookupLocalZipPlace(normalized);
 

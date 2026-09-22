@@ -19,7 +19,6 @@ import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import {
-  buildProfileCompletionChecklist,
   isDemoSpecialistDashboard,
   profileStatusToLabel,
 } from "@/lib/managed-specialist-profile";
@@ -284,10 +283,6 @@ export function useSpecialistDashboard() {
     "Specialist";
 
   const profileStatusLabel = profileStatusToLabel(application?.profileStatus);
-  const completionChecklist =
-    formDefaults != null
-      ? buildProfileCompletionChecklist(formDefaults, trainer)
-      : [];
   const welcomeTasks = buildProfileWelcomeTasks(formDefaults);
   const welcomeAvatarUrl =
     formDefaults?.profilePhotoUrl?.trim() ||
@@ -390,8 +385,6 @@ export function useSpecialistDashboard() {
     trainer,
     trainerId,
     application,
-    profileCompletion,
-    completionChecklist,
     welcomeTasks,
     welcomeAvatarUrl,
     welcomeDisplayName,

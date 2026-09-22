@@ -784,7 +784,7 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
 
 @keyframes interview-rise {
   from {
-    transform: translateY(1.65rem);
+    transform: translateY(0.55rem);
   }
   to {
     transform: translateY(0);
@@ -793,8 +793,8 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
 
 @keyframes interview-rise-card {
   from {
-    transform: translateY(1.65rem);
-    opacity: 0.55;
+    transform: translateY(0.45rem);
+    opacity: 0.72;
   }
   to {
     transform: translateY(0);
@@ -804,7 +804,7 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
 
 @keyframes interview-drop {
   from {
-    transform: translateY(-1.15rem);
+    transform: translateY(-0.4rem);
   }
   to {
     transform: translateY(0);
@@ -813,8 +813,8 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
 
 @keyframes interview-drop-card {
   from {
-    transform: translateY(-1.15rem);
-    opacity: 0.55;
+    transform: translateY(-0.4rem);
+    opacity: 0.72;
   }
   to {
     transform: translateY(0);
@@ -822,21 +822,10 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
   }
 }
 
-@keyframes interview-exit-left {
-  from {
-    transform: translateX(0);
-    opacity: 1;
-  }
-  to {
-    transform: translateX(-72%);
-    opacity: 0;
-  }
-}
-
 @keyframes interview-enter-pop {
   from {
-    transform: translateY(0.55rem) scale(0.94);
-    opacity: 0;
+    transform: translateY(0.28rem) scale(0.985);
+    opacity: 0.55;
   }
   to {
     transform: translateY(0) scale(1);
@@ -845,51 +834,44 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
 }
 
 .login-page--specialist-onboarding .interview-card--from-ahead {
-  animation: interview-rise-card 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: interview-rise-card 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .login-page--specialist-onboarding .interview-card--from-back {
-  animation: interview-drop-card 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.login-page--specialist-onboarding .interview-card--exit-left {
-  animation: interview-exit-left 0.34s cubic-bezier(0.4, 0, 1, 1) forwards;
-  pointer-events: none;
-  will-change: transform, opacity;
+  animation: interview-drop-card 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .login-page--specialist-onboarding .interview-card--enter-pop {
   transform-origin: 50% 12%;
-  animation: interview-enter-pop 0.46s cubic-bezier(0.22, 1, 0.36, 1);
-  will-change: transform, opacity;
+  animation: interview-enter-pop 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item {
-  animation: interview-rise 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: interview-rise 0.2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item {
-  animation: interview-drop 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: interview-drop 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--1,
 .login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--1 {
-  animation-delay: 0.04s;
+  animation-delay: 0.02s;
 }
 
 .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--2,
 .login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--2 {
-  animation-delay: 0.08s;
+  animation-delay: 0.04s;
 }
 
 .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--3,
 .login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--3 {
-  animation-delay: 0.12s;
+  animation-delay: 0.06s;
 }
 
 .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item--4,
 .login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item--4 {
-  animation-delay: 0.16s;
+  animation-delay: 0.08s;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -899,7 +881,6 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
 
   .login-page--specialist-onboarding .interview-card--from-ahead,
   .login-page--specialist-onboarding .interview-card--from-back,
-  .login-page--specialist-onboarding .interview-card--exit-left,
   .login-page--specialist-onboarding .interview-card--enter-pop,
   .login-page--specialist-onboarding .interview-trail--from-ahead .interview-trail__item,
   .login-page--specialist-onboarding .interview-trail--from-back .interview-trail__item {

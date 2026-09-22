@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   SPECIALIST_SERVICE_TYPE_OPTIONS,
 } from "@/types/specialist-service-area";
 import { SpecialistPreciseLocationField } from "@/components/auth/specialist/SpecialistPreciseLocationField";
 import { lookupZipPlace } from "@/lib/geo/zip-place-lookup";
+import { previewLocalZipPlace } from "@/lib/geo/resolve-zip-place";
 import { serviceTypeToDeliveryFlags } from "@/lib/specialist-service-area";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
 import type { SpecialistOnboardingState } from "@/types/specialist-application";
@@ -58,9 +60,6 @@ export function SpecialistServiceAreaFields({
       if (cancelled) return;
       setZipLookupBusy(false);
       if (!result) {
-        setZipLookupError(
-          "We couldn't detect city for this ZIP. Double-check the code or try a nearby ZIP."
-        );
         return;
       }
       lastResolvedZip.current = normalizedZip;
@@ -89,7 +88,29 @@ export function SpecialistServiceAreaFields({
     setZipLookupError(null);
     if (digits.length < 5) {
       lastResolvedZip.current = "";
+      onPatch({ zipCode: digits });
+      return;
     }
+
+    const preview = previewLocalZipPlace(digits);
+    if (preview?.placeName) {
+      lastResolvedZip.current = digits;
+      setZipLookupBusy(false);
+      onPatch({
+        zipCode: digits,
+        city: preview.placeName,
+        state: preview.state,
+        ...(pinnedAddress
+          ? {}
+          : {
+              latitude: preview.coordinates?.latitude ?? null,
+              longitude: preview.coordinates?.longitude ?? null,
+              locationPrecision: "zip" as const,
+            }),
+      });
+      return;
+    }
+
     onPatch({ zipCode: digits });
   }
 
@@ -162,19 +183,19 @@ export function SpecialistServiceAreaFields({
             {SPECIALIST_SERVICE_TYPE_OPTIONS.map((option) => {
               const active = state.serviceType === option.value;
               return (
-                <button
+                <FastActivateButton
                   key={option.value}
                   type="button"
                   role="radio"
                   aria-checked={active}
-                  onClick={() => selectServiceType(option.value)}
+                  onActivate={() => selectServiceType(option.value)}
                   className={cn(
                     "wizard-pill wizard-pill--touch",
                     active && "wizard-pill--active"
                   )}
                 >
                   {option.label}
-                </button>
+                </FastActivateButton>
               );
             })}
           </div>

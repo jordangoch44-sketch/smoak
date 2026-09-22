@@ -61,7 +61,8 @@ function buildSmokeHtml() {
           </tr>
           <tr>
             <td align="center" style="padding:22px 12px 0;font-size:12px;line-height:1.5;color:#8e8e93;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-              Luxury wellness marketplace · ${site.replace(/^https?:\/\//, "")}
+              Questions? <a href="mailto:support@smoac.com" style="color:#c4b5fd;text-decoration:underline;">support@smoac.com</a>
+              · ${site.replace(/^https?:\/\//, "")}
             </td>
           </tr>
         </table>
@@ -96,6 +97,7 @@ async function main() {
       from,
       to: [to.toLowerCase()],
       subject: "SMOAC email test",
+      reply_to: process.env.EMAIL_REPLY_TO?.trim() || "support@smoac.com",
       text,
       html: buildSmokeHtml(),
     }),

@@ -128,7 +128,10 @@ export async function buildAuthSessionFromSupabaseUser(
   supabase: SupabaseClient,
   user: User
 ): Promise<AuthSession | null> {
-  const roleRow = await fetchUserRoleRow(supabase, user.id);
+  const [roleRow, profile] = await Promise.all([
+    fetchUserRoleRow(supabase, user.id),
+    fetchProfileRow(supabase, user.id),
+  ]);
   if (!roleRow) return null;
 
   const authRole = appRoleToAuthRole(roleRow.role);
@@ -141,15 +144,16 @@ export async function buildAuthSessionFromSupabaseUser(
   let premiumTrialActive = false;
   let premiumTrialDaysRemaining: number | undefined;
   let premiumTrialJustEnded = false;
+  let membershipPlan: AuthSession["membershipPlan"];
 
   if (authRole === "specialist") {
     const { resolveAndSyncSpecialistPremiumAccess } = await import(
       "@/lib/specialist-premium-trial"
     );
-    const access = await resolveAndSyncSpecialistPremiumAccess(
-      supabase,
-      user.id
-    );
+    const [access, plan] = await Promise.all([
+      resolveAndSyncSpecialistPremiumAccess(supabase, user.id),
+      resolveSpecialistMembershipPlan(supabase, user.id, roleRow.is_premium),
+    ]);
     isPremium = access.isPremium;
     premiumIsPaid = access.isPaid;
     premiumTrialUsed = Boolean(access.trialStartedAt);
@@ -157,9 +161,8 @@ export async function buildAuthSessionFromSupabaseUser(
     premiumTrialActive = access.isTrialing;
     premiumTrialDaysRemaining = access.daysRemaining ?? undefined;
     premiumTrialJustEnded = access.trialJustEnded;
+    membershipPlan = plan === "free" && access.isPremium ? "premium" : plan;
   }
-
-  const profile = await fetchProfileRow(supabase, user.id);
   const email = (user.email ?? profile?.email ?? "").trim().toLowerCase();
   /* Prefer stable timestamps — never Date.now() (churns session signature). */
   const signedInAt =
@@ -185,10 +188,7 @@ export async function buildAuthSessionFromSupabaseUser(
     passwordSetupStatus:
       profile?.password_setup_status?.trim() || undefined,
     isPremium,
-    membershipPlan:
-      authRole === "specialist"
-        ? await resolveSpecialistMembershipPlan(supabase, user.id, isPremium)
-        : undefined,
+    membershipPlan,
     premiumIsPaid,
     premiumTrialUsed,
     premiumTrialEndsAt,

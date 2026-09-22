@@ -1,6 +1,7 @@
 "use client";
 
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   GENDER_OPTIONS,
   PROFESSIONAL_TYPE_OPTIONS,
@@ -92,10 +93,10 @@ export function SpecialistOnboardingSteps({
           {PROFESSIONAL_TYPE_OPTIONS.map((type) => {
             const active = state.professionalType === type;
             return (
-              <button
+              <FastActivateButton
                 key={type}
                 type="button"
-                onClick={() => onPatch({ professionalType: type })}
+                onActivate={() => onPatch({ professionalType: type })}
                 className={cn(
                   "wizard-option-card",
                   active && "wizard-option-card--active"
@@ -107,7 +108,7 @@ export function SpecialistOnboardingSteps({
                 <span className="wizard-option-card__copy">
                   <span className="wizard-option-card__title">{type}</span>
                 </span>
-              </button>
+              </FastActivateButton>
             );
           })}
         </div>
@@ -138,12 +139,12 @@ export function SpecialistOnboardingSteps({
             {GENDER_OPTIONS.map((option) => {
               const active = state.gender === option.value;
               return (
-                <button
+                <FastActivateButton
                   key={option.value}
                   type="button"
                   role="radio"
                   aria-checked={active}
-                  onClick={() => onPatch({ gender: option.value })}
+                  onActivate={() => onPatch({ gender: option.value })}
                   className={cn(
                     "wizard-option-card wizard-gender-option",
                     active && "wizard-option-card--active"
@@ -157,7 +158,7 @@ export function SpecialistOnboardingSteps({
                       {option.label}
                     </span>
                   </span>
-                </button>
+                </FastActivateButton>
               );
             })}
           </div>

@@ -225,7 +225,7 @@ export const SUPPORT_SECTIONS: LegalSection[] = [
   {
     title: "Contact",
     paragraphs: [
-      `Email support: ${SUPPORT_EMAIL} (monitored for early MVP users).`,
+      `Email support: ${SUPPORT_EMAIL}.`,
       "If you need to report abuse or an urgent safety concern, include “Urgent” in the subject line, or use Report a Concern in the footer.",
     ],
   },
@@ -353,7 +353,7 @@ export const SAFETY_SECTIONS: LegalSection[] = [
   {
     title: "Report a concern",
     paragraphs: [
-      "If something feels unsafe or violates our Community Guidelines, use Report a Concern or contact support promptly.",
+      "If something feels unsafe or violates our Community Guidelines, use Report a Concern or email ${SUPPORT_EMAIL} promptly.",
     ],
   },
 ];

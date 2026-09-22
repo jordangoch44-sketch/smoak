@@ -4,6 +4,7 @@ import {
   SAFETY_SECTIONS,
 } from "@/lib/legal-content";
 import { SITE_ROUTES } from "@/lib/navigation";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 export const metadata = {
   title: "Safety & Trust",
@@ -22,6 +23,10 @@ export default function SafetyPage() {
         { label: "Report a Concern", href: SITE_ROUTES.report },
         { label: "Terms of Service", href: SITE_ROUTES.terms },
       ]}
-    />
+    >
+      <a href={supportMailto({ subject: "SMOAC safety" })} className="legal-page__cta">
+        Email {SUPPORT_EMAIL}
+      </a>
+    </LegalDocumentPage>
   );
 }

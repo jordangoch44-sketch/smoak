@@ -4,7 +4,6 @@ export type DashboardSectionIconId =
   | "inquiries"
   | "analytics"
   | "growth"
-  | "completion"
   | "rankings";
 
 interface DashboardSectionIconProps {
@@ -49,13 +48,6 @@ export function DashboardSectionIcon({
         <svg {...props}>
           <path d="M4 17 10 11l4 4 6-7" />
           <path d="M15 8h5v5" />
-        </svg>
-      );
-    case "completion":
-      return (
-        <svg {...props}>
-          <circle cx="12" cy="12" r="8.5" />
-          <path d="m8.5 12.2 2.4 2.4 4.6-5.2" />
         </svg>
       );
     case "rankings":

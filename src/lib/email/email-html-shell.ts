@@ -3,6 +3,7 @@
  * SMOAC Color spectrum accents. Table-based for email client compatibility.
  */
 import { BRAND_NAME, SMOAC_COLOR } from "@/lib/brand";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 const COLORS = {
   page: "#050506",
@@ -403,7 +404,11 @@ export function wrapTransactionalEmailHtml(
             <td align="center" style="padding:22px 12px 0;font-family:${FONT_SANS};">
               <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:${COLORS.muted};">${footerNote}</p>
               ${unsubscribeHtml}
-              <p style="margin:0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
+              <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
+                Questions?
+                <a href="${escapeEmailHtml(supportMailto())}" style="color:${COLORS.accentSoft};text-decoration:underline;">${escapeEmailHtml(SUPPORT_EMAIL)}</a>
+              </p>
+              <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
                 <a href="${escapeEmailHtml(origin)}" style="color:${COLORS.accentSoft};text-decoration:none;">${escapeEmailHtml(origin.replace(/^https?:\/\//, ""))}</a>
                 · © ${year} ${BRAND_NAME}
               </p>

@@ -35,6 +35,7 @@ export function TrainerProfileView({
   onClaimFreeSession,
   onInquire,
   onEditProfilePhoto,
+  onAddIntroVideo,
   onUpgrade,
 }: {
   trainer: Trainer;
@@ -48,6 +49,8 @@ export function TrainerProfileView({
   onInquire: () => void;
   /** Live View only — owner can edit their own profile photo. */
   onEditProfilePhoto?: () => void;
+  /** Live View only — Pro / trial empty intro chip. Never Marketplace. */
+  onAddIntroVideo?: () => void;
   onUpgrade?: () => void;
 }) {
   const hydrated = useHydrated();
@@ -120,6 +123,7 @@ export function TrainerProfileView({
         onEditProfilePhoto={
           isSpecialistLive ? onEditProfilePhoto : undefined
         }
+        onAddIntroVideo={isSpecialistLive ? onAddIntroVideo : undefined}
         onUpgrade={isSpecialistLive ? onUpgrade : undefined}
       />
 

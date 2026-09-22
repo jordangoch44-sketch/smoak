@@ -4,6 +4,7 @@ import {
   LEGAL_EFFECTIVE_DATE,
 } from "@/lib/legal-content";
 import { SITE_ROUTES } from "@/lib/navigation";
+import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 export const metadata = {
   title: "Community Guidelines",
@@ -22,6 +23,10 @@ export default function CommunityGuidelinesPage() {
         { label: "Report a Concern", href: SITE_ROUTES.report },
         { label: "Terms of Service", href: SITE_ROUTES.terms },
       ]}
-    />
+    >
+      <a href={supportMailto({ subject: "SMOAC guidelines" })} className="legal-page__cta">
+        Email {SUPPORT_EMAIL}
+      </a>
+    </LegalDocumentPage>
   );
 }

@@ -85,12 +85,19 @@ export function specialistApplicationToRow(
 }
 
 export async function fetchSpecialistApplications(
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  options?: { userId?: string }
 ): Promise<SpecialistApplicationsFetchResult> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("specialist_applications")
     .select("*")
     .order("updated_at", { ascending: false });
+  const userId = options?.userId?.trim();
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return { ok: false, message: error.message };

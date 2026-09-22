@@ -44,13 +44,7 @@ import {
   parseSlideshowFrameMap,
   pruneSlideshowFrameMap,
 } from "@/lib/media/slideshow-frame";
-import {
-  applicationPricingFromRange,
-  formatSessionPriceRange,
-  hasSessionPrice,
-  resolveTrainerSessionPriceRange,
-} from "@/lib/session-price";
-import type { ProfileCompletionChecklistItem } from "@/types/specialist-dashboard";
+import { applicationPricingFromRange } from "@/lib/session-price";
 import type {
   ProfileStatus,
   SpecialistApplication,
@@ -466,66 +460,6 @@ export async function saveManagedSpecialistProfileEdits(
     console.error("[SMOAC PROFILE SAVE]", error);
     return { ok: false, error: "Unable to save changes" };
   }
-}
-
-/** Launch-critical profile depth — clients need these to inquire with confidence. */
-export function buildProfileCompletionChecklist(
-  form: SpecialistProfileEditForm,
-  _trainer?: Trainer
-): ProfileCompletionChecklistItem[] {
-  void _trainer;
-  return [
-    {
-      id: "photo",
-      label: form.profilePhotoUrl.trim() ? "Professional photo" : "Add profile photo",
-      done: Boolean(form.profilePhotoUrl.trim()),
-    },
-    {
-      id: "price",
-      label: (() => {
-        const range = resolveTrainerSessionPriceRange({
-          pricePerSession: form.pricePerSession,
-          pricePerSessionMin: form.pricePerSessionMin,
-          pricePerSessionMax: form.pricePerSessionMax,
-        });
-        return hasSessionPrice(range)
-          ? `General pricing · ${formatSessionPriceRange(range)}`
-          : "Add general pricing";
-      })(),
-      done: hasSessionPrice(
-        resolveTrainerSessionPriceRange({
-          pricePerSession: form.pricePerSession,
-          pricePerSessionMin: form.pricePerSessionMin,
-          pricePerSessionMax: form.pricePerSessionMax,
-        })
-      ),
-    },
-    {
-      id: "bio",
-      label: form.bio.trim().length >= 40 ? "Bio" : "Add bio (40+ characters)",
-      done: form.bio.trim().length >= 40,
-    },
-    {
-      id: "booking",
-      label: form.bookingAvailability.trim()
-        ? "How to book / availability"
-        : "Add how clients book with you",
-      done: Boolean(form.bookingAvailability.trim()),
-    },
-    {
-      id: "specialties",
-      label: form.specialty.length > 0 ? "Specialties" : "Add specialties",
-      done: form.specialty.length > 0,
-    },
-    {
-      id: "location",
-      label:
-        form.zipCode.trim() || form.city.trim()
-          ? "Service area"
-          : "Add ZIP or city",
-      done: Boolean(form.zipCode.trim() || form.city.trim()),
-    },
-  ];
 }
 
 /**

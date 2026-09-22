@@ -3,6 +3,7 @@ import {
   renderEmailParagraphs,
   wrapTransactionalEmailHtml,
 } from "@/lib/email/email-html-shell";
+import { SUPPORT_EMAIL } from "@/lib/site-contact";
 import type {
   AdminEmailAnalyticsRange,
   AdminEmailAnalyticsSnapshot,
@@ -340,7 +341,8 @@ export function buildAdminEmailText(
     email.includeUnsubscribe && options?.unsubscribeUrl
       ? `\nUnsubscribe: ${options.unsubscribeUrl}`
       : "";
-  return [title, body, cta, unsub].filter(Boolean).join("\n\n");
+  const support = `Questions? Email ${SUPPORT_EMAIL}`;
+  return [title, body, cta, support, unsub].filter(Boolean).join("\n\n");
 }
 
 export function emptyEmailAnalytics(

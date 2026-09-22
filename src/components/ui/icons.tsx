@@ -855,6 +855,23 @@ export function PlayIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+/** Plus mark for Live “Add a video” intro chip */
+export function PlusIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2.25}
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
 export function SpeakerIcon({ className = "h-4 w-4" }: IconProps) {
   return (
     <svg

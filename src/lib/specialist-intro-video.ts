@@ -100,3 +100,6 @@ export function meetCtaLabel(trainer: {
   const name = meetNameForTrainer(trainer);
   return name ? `Hi, I'm ${name}` : "Watch intro";
 }
+
+/** Owner Live only — empty intro chip for Pro / trial / PRO+. */
+export const ADD_INTRO_VIDEO_CTA_LABEL = "Add a video";

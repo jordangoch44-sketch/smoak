@@ -1,6 +1,6 @@
 # SMOAC transactional email (Resend)
 
-Inquiry + application emails go through `src/lib/email/email-transport.ts` and share a branded HTML shell in `src/lib/email/email-html-shell.ts` (dark graphite, SMOAC Color spectrum rim, wordmark, spectrum CTA). Plain-text fallback is always included. Inquiry emails are notifications only — they link into the SMOAC thread and do not set `reply_to` to the other person.
+Inquiry + application emails go through `src/lib/email/email-transport.ts` and share a branded HTML shell in `src/lib/email/email-html-shell.ts` (dark graphite, SMOAC Color spectrum rim, wordmark, spectrum CTA). Plain-text fallback is always included. Inquiry emails are notifications only — they link into the SMOAC thread and do not set `reply_to` (replies stay in SMOAC). Other informational mail sends **From** `noreply@smoac.com` with **Reply-To** `support@smoac.com`, and the HTML footer includes that inbox.
 
 - **With `RESEND_API_KEY`:** real sends via Resend (HTML + text)
 - **Without:** payloads log to the server console (safe for local UI work)
@@ -19,6 +19,7 @@ Inquiry + application emails go through `src/lib/email/email-transport.ts` and s
 ```bash
 RESEND_API_KEY=re_xxxxxxxx
 EMAIL_FROM=SMOAC <onboarding@resend.dev>
+EMAIL_REPLY_TO=support@smoac.com
 NEXT_PUBLIC_SITE_URL=https://smoac.com
 ```
 
@@ -38,6 +39,7 @@ Before public launch, verify your domain in Resend and switch:
 
 ```bash
 EMAIL_FROM=SMOAC <noreply@smoac.com>
+EMAIL_REPLY_TO=support@smoac.com
 ```
 
 (Prod Vercel already uses verified `SMOAC <noreply@smoac.com>` per `CURRENT_STATUS.md`.)

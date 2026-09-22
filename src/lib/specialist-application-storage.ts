@@ -163,7 +163,16 @@ async function runApplicationsHydrate(): Promise<void> {
       return;
     }
 
-    const result = await fetchSpecialistApplications(supabase);
+    const sessionUserId = getAuthSessionSnapshot()?.userId?.trim();
+    let userId = sessionUserId;
+    if (!userId) {
+      const { data } = await supabase.auth.getSession();
+      userId = data.session?.user?.id?.trim() || undefined;
+    }
+    if (!userId) {
+      return;
+    }
+    const result = await fetchSpecialistApplications(supabase, { userId });
 
     if (generation !== loadGeneration) return;
 
@@ -190,8 +199,6 @@ async function runApplicationsHydrate(): Promise<void> {
 
 function ensureHydrated(): void {
   if (hydrated || hydrating || hydratePromise) return;
-  /* Wait for an app session so this fetch does not race / timeout login. */
-  if (isMarketplaceSupabaseActive() && !getAuthSessionSnapshot()) return;
   void hydrateFromSupabase();
 }
 
@@ -308,6 +315,10 @@ function normalizeOnboardingDraftState(
   };
 }
 
+function isInlineDraftImage(value: string | undefined): boolean {
+  return Boolean(value?.trim().toLowerCase().startsWith("data:"));
+}
+
 /** DEV ONLY — autosave draft between onboarding steps (stays local until submit) */
 export function persistSpecialistOnboardingDraft(
   state: SpecialistOnboardingState,
@@ -317,6 +328,16 @@ export function persistSpecialistOnboardingDraft(
   try {
     const payload: SpecialistOnboardingDraftRecord = {
       ...state,
+      password: state.password,
+      media: {
+        ...state.media,
+        /* Original crop source can be a multi-MB data URL — keep the cropped still. */
+        profilePhotoOriginalUrl: isInlineDraftImage(
+          state.media.profilePhotoOriginalUrl
+        )
+          ? ""
+          : state.media.profilePhotoOriginalUrl,
+      },
       savedAt: new Date().toISOString(),
     };
     if (options?.wizardStep != null) {
@@ -366,6 +387,7 @@ function cacheApplication(app: SpecialistApplication): void {
   ];
   applyCache(next);
   writeLocalApplications(next);
+  markHydratedAndNotify();
 }
 
 export function saveSpecialistApplication(

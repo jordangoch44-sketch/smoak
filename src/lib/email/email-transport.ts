@@ -2,6 +2,13 @@ import {
   emailBrandInlineAttachments,
   rewriteEmailBrandImagesToCid,
 } from "@/lib/email/email-inline-images";
+import { SUPPORT_EMAIL } from "@/lib/site-contact";
+
+/** Inquiry notices stay in-app — do not route Hit Reply to support. */
+const NO_DEFAULT_REPLY_TO_KINDS = new Set([
+  "inquiry_client",
+  "inquiry_specialist",
+]);
 
 export interface OutboundEmail {
   to: string;
@@ -9,10 +16,24 @@ export interface OutboundEmail {
   text: string;
   /** Branded HTML multipart body — always prefer sending with text fallback */
   html?: string;
-  /** Optional Resend reply_to — unused for inquiry notifications */
+  /**
+   * Resend reply_to. Informational mail defaults to `support@smoac.com`.
+   * Inquiry notifications omit it so people reply in SMOAC, not email.
+   */
   replyTo?: string;
   kind: string;
   tags?: Array<{ name: string; value: string }>;
+}
+
+/** Reply-To for transactional mail. From-address stays EMAIL_FROM (noreply). */
+export function resolveTransactionalReplyTo(
+  kind: string,
+  explicit?: string
+): string | undefined {
+  const override = explicit?.trim().toLowerCase();
+  if (override) return override;
+  if (NO_DEFAULT_REPLY_TO_KINDS.has(kind)) return undefined;
+  return process.env.EMAIL_REPLY_TO?.trim().toLowerCase() || SUPPORT_EMAIL;
 }
 
 export interface EmailSendResult {
@@ -53,7 +74,7 @@ export async function sendOutboundEmail(
     html && /cid:smoac-(?:mark|wordmark)/i.test(html)
       ? emailBrandInlineAttachments()
       : [];
-  const replyTo = payload.replyTo?.trim().toLowerCase() || undefined;
+  const replyTo = resolveTransactionalReplyTo(payload.kind, payload.replyTo);
 
   if (apiKey) {
     try {
@@ -100,6 +121,7 @@ export async function sendOutboundEmail(
         to,
         subject: payload.subject,
         html: Boolean(html),
+        replyTo: replyTo ?? null,
         providerId,
       });
       return { success: true, mode, providerId };
@@ -118,6 +140,7 @@ export async function sendOutboundEmail(
     to,
     subject: payload.subject,
     html: Boolean(html),
+    replyTo: replyTo ?? null,
     bodyPreview: payload.text.split("\n").slice(0, 6).join(" "),
     fullText: payload.text,
   });

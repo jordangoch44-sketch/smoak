@@ -17,6 +17,7 @@ import {
   specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
 import {
+  ADD_INTRO_VIDEO_CTA_LABEL,
   isTrainerIntroVideoUnlocked,
   meetCtaLabel,
 } from "@/lib/specialist-intro-video";
@@ -64,6 +65,8 @@ interface ProfileHeroProps {
   lockedPreviewIntro?: TrainerIntroVideo;
   /** Live tab — Edit chip on the circular profile photo */
   onEditProfilePhoto?: () => void;
+  /** Owner Live — empty intro chip opens the intro-video editor. Never Marketplace. */
+  onAddIntroVideo?: () => void;
   /** Public profile — claim CTA opens inquire */
   onClaimFreeSession?: () => void;
   onUpgrade?: () => void;
@@ -80,6 +83,7 @@ export function ProfileHero({
   lockedPreviewPins,
   lockedPreviewIntro,
   onEditProfilePhoto,
+  onAddIntroVideo,
   onClaimFreeSession,
   onUpgrade,
 }: ProfileHeroProps) {
@@ -152,7 +156,14 @@ export function ProfileHero({
         ? lockedIntro
         : undefined;
   const introLocked = Boolean(introVideo && lockedIntro && !liveIntro);
-  const meetLabel = meetCtaLabel(trainer);
+  const canAddIntro =
+    isSpecialistLive &&
+    introUnlocked &&
+    !introVideo &&
+    Boolean(onAddIntroVideo);
+  const meetLabel = canAddIntro
+    ? ADD_INTRO_VIDEO_CTA_LABEL
+    : meetCtaLabel(trainer);
 
   const openGallery = useCallback(
     (startUrl?: string) => {
@@ -258,7 +269,7 @@ export function ProfileHero({
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
-            {introVideo || bio ? (
+            {introVideo || canAddIntro || bio ? (
               <div className="profile-hero__intro">
                 {introVideo ? (
                   <ProfileHeroMeetCta
@@ -272,6 +283,12 @@ export function ProfileHero({
                       }
                       setIntroOpen(true);
                     }}
+                  />
+                ) : canAddIntro && onAddIntroVideo ? (
+                  <ProfileHeroMeetCta
+                    label={meetLabel}
+                    add
+                    onPlay={onAddIntroVideo}
                   />
                 ) : null}
                 {bio ? <ProfileHeroBio bio={bio} /> : null}

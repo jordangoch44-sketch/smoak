@@ -159,23 +159,22 @@ export function SpecialistOnboardingWizard({
   const abandonTimerRef = useRef<number | null>(null);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [stackMotion, setStackMotion] = useState<"forward" | "back">("forward");
-  const [cardPhase, setCardPhase] = useState<"idle" | "exit-left" | "enter-pop" | "from-back">(
+  const [cardPhase, setCardPhase] = useState<"idle" | "enter-pop" | "from-back">(
     "idle"
   );
-  const pendingBeatRef = useRef<{
-    id: SpecialistInterviewBeatId;
-    motion: "forward" | "back";
-  } | null>(null);
-  const cardMotionTimerRef = useRef<number | null>(null);
+  const lastAdvanceAtRef = useRef(0);
+  const stateRef = useRef(state);
+  const remoteSyncInFlightRef = useRef(false);
+  const remoteSyncQueuedRef = useRef(false);
   const holdCompactRef = useRef(false);
   const keyboardOpenRef = useRef(false);
   const cardPhaseRef = useRef(cardPhase);
   const compactReleaseTimerRef = useRef<number | null>(null);
   const scheduleCompactReleaseRef = useRef<() => void>(() => {});
   const reducedMotion = usePrefersReducedMotion();
-  const cardBusy = cardPhase === "exit-left";
   cardPhaseRef.current = cardPhase;
   awaitingEmailConfirmRef.current = Boolean(awaitingEmailConfirm);
+  stateRef.current = state;
 
   function flagPasswordFieldsError(message: string) {
     setError(message);
@@ -303,19 +302,64 @@ export function SpecialistOnboardingWizard({
 
   useEffect(() => {
     if (!draftReady) return;
-    persistSpecialistOnboardingDraft(state, {
+    persistSpecialistOnboardingDraft(stateRef.current, {
       wizardStep: step,
       wizardBeatId: currentBeatId,
     });
+  }, [draftReady, currentBeatId, step]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    const handle = window.setTimeout(() => {
+      persistSpecialistOnboardingDraft(state, {
+        wizardStep: step,
+        wizardBeatId: currentBeatId,
+      });
+    }, 400);
+    return () => window.clearTimeout(handle);
   }, [draftReady, state, step, currentBeatId]);
 
   useEffect(() => {
+    function flushDraft() {
+      if (!draftReady) return;
+      persistSpecialistOnboardingDraft(stateRef.current, {
+        wizardStep: step,
+        wizardBeatId: currentBeatId,
+      });
+    }
+    window.addEventListener("pagehide", flushDraft);
+    document.addEventListener("visibilitychange", flushDraft);
+    return () => {
+      window.removeEventListener("pagehide", flushDraft);
+      document.removeEventListener("visibilitychange", flushDraft);
+    };
+  }, [draftReady, step, currentBeatId]);
+
+  const flushRemoteProgressSync = useCallback(async () => {
+    if (remoteSyncInFlightRef.current) return;
+    if (!remoteSyncQueuedRef.current) return;
+    if (!specialistSessionMatchesEmail(stateRef.current.email)) return;
+    remoteSyncQueuedRef.current = false;
+    remoteSyncInFlightRef.current = true;
+    try {
+      await persistVerifiedOnboardingProgress(
+        stateRef.current,
+        step,
+        currentBeatId
+      );
+    } finally {
+      remoteSyncInFlightRef.current = false;
+      if (remoteSyncQueuedRef.current) {
+        void flushRemoteProgressSync();
+      }
+    }
+  }, [step, currentBeatId]);
+
+  useEffect(() => {
     if (!draftReady || !accountAlreadyCreated) return;
-    const handle = window.setTimeout(() => {
-      void persistVerifiedOnboardingProgress(state, step, currentBeatId);
-    }, 800);
-    return () => window.clearTimeout(handle);
-  }, [draftReady, accountAlreadyCreated, state, step, currentBeatId]);
+    remoteSyncQueuedRef.current = true;
+    void flushRemoteProgressSync();
+  }, [draftReady, accountAlreadyCreated, currentBeatId, step, flushRemoteProgressSync]);
 
   useEffect(() => {
     if (abandonTimerRef.current) {
@@ -518,28 +562,6 @@ export function SpecialistOnboardingWizard({
     setInvalidFieldLabels([]);
   }, []);
 
-  function clearCardMotionTimer() {
-    if (cardMotionTimerRef.current == null) return;
-    window.clearTimeout(cardMotionTimerRef.current);
-    cardMotionTimerRef.current = null;
-  }
-
-  function commitPendingBeat() {
-    const pending = pendingBeatRef.current;
-    if (!pending) return;
-    pendingBeatRef.current = null;
-    clearCardMotionTimer();
-    setStackMotion(pending.motion);
-    setBeatId(pending.id);
-    setError(null);
-    setInvalidFieldLabels([]);
-    setCardPhase(pending.motion === "back" ? "from-back" : "enter-pop");
-  }
-
-  useEffect(() => {
-    return () => clearCardMotionTimer();
-  }, []);
-
   useEffect(() => {
     if (cardPhase !== "enter-pop" && cardPhase !== "from-back") return;
     const timeoutId = window.setTimeout(() => {
@@ -547,7 +569,7 @@ export function SpecialistOnboardingWizard({
       setCardPhase("idle");
       holdCompactRef.current = false;
       scheduleCompactReleaseRef.current();
-    }, 500);
+    }, 240);
     return () => window.clearTimeout(timeoutId);
   }, [cardPhase]);
 
@@ -566,24 +588,24 @@ export function SpecialistOnboardingWizard({
   ) {
     const resolved = resolveSpecialistInterviewBeatId(nextId) ?? nextId;
     holdCompactThroughAdvance();
-    if (pendingBeatRef.current) return;
     if (resolved === beatId) return;
+    lastAdvanceAtRef.current = performance.now();
     setError(null);
     setInvalidFieldLabels([]);
-    if (motion === "forward" && !reducedMotion) {
-      pendingBeatRef.current = { id: resolved, motion };
-      setCardPhase("exit-left");
-      cardMotionTimerRef.current = window.setTimeout(commitPendingBeat, 340);
-      return;
-    }
     setStackMotion(motion);
     setBeatId(resolved);
-    setCardPhase(motion === "back" ? "from-back" : "idle");
-    if (motion !== "back") {
+    if (reducedMotion) {
+      setCardPhase("idle");
       cardPhaseRef.current = "idle";
       holdCompactRef.current = false;
       scheduleCompactReleaseRef.current();
+      return;
     }
+    setCardPhase(motion === "back" ? "from-back" : "enter-pop");
+  }
+
+  function isAdvanceLocked(): boolean {
+    return performance.now() - lastAdvanceAtRef.current < 90;
   }
 
   function goToNextBeat() {
@@ -601,7 +623,7 @@ export function SpecialistOnboardingWizard({
   }
 
   function handleBack() {
-    if (submitting || cardBusy) return;
+    if (submitting || isAdvanceLocked()) return;
     holdCompactThroughAdvance();
     if (beatIndex <= 0) {
       handleExit();
@@ -612,7 +634,7 @@ export function SpecialistOnboardingWizard({
   }
 
   function handleSkip() {
-    if (submitting || cardBusy || !beat) return;
+    if (submitting || isAdvanceLocked() || !beat) return;
     if (isSpecialistInterviewBeatRequired(beat, state, interviewContext)) return;
     goToNextBeat();
   }
@@ -698,7 +720,7 @@ export function SpecialistOnboardingWizard({
   }
 
   async function handleContinue() {
-    if (submitting || cardBusy || !beat) return;
+    if (submitting || isAdvanceLocked() || !beat) return;
     holdCompactThroughAdvance();
 
     if (beat.id !== "preview") {
@@ -1046,17 +1068,12 @@ export function SpecialistOnboardingWizard({
             className={cn(
               "login-card wizard-card interview-card",
               currentBeatId === "preview" && "interview-card--preview",
-              cardPhase === "exit-left" && "interview-card--exit-left",
               cardPhase === "enter-pop" && "interview-card--enter-pop",
               cardPhase === "from-back" && "interview-card--from-back"
             )}
             noValidate
             onAnimationEnd={(event) => {
               if (event.target !== event.currentTarget) return;
-              if (cardPhase === "exit-left") {
-                commitPendingBeat();
-                return;
-              }
               if (cardPhase === "enter-pop" || cardPhase === "from-back") {
                 cardPhaseRef.current = "idle";
                 setCardPhase("idle");
@@ -1202,14 +1219,14 @@ export function SpecialistOnboardingWizard({
                 </p>
               )}
               {!beatRequired ? (
-                <button
+                <FastActivateButton
                   type="button"
                   className="interview-skip"
-                  onClick={handleSkip}
+                  onActivate={handleSkip}
                   disabled={submitting}
                 >
                   Skip
-                </button>
+                </FastActivateButton>
               ) : null}
               {accountAlreadyCreated ? null : (
                 <LegalAgreementNotice className="interview-legal" />
@@ -1327,28 +1344,28 @@ export function SpecialistOnboardingWizard({
                       {error}
                     </p>
                   ) : null}
-                  <button
+                  <FastActivateButton
                     type="button"
                     className="login-submit wizard-email-otp-panel__verify"
-                    onClick={() => void handleVerifyEmailCode()}
+                    onActivate={() => void handleVerifyEmailCode()}
                     disabled={
                       submitting || emailOtpCode.replace(/\s+/g, "").length !== 6
                     }
                   >
                     {submitting ? "Verifying…" : "Verify"}
-                  </button>
+                  </FastActivateButton>
                   <p className="wizard-email-otp-panel__links">
-                    <button
+                    <FastActivateButton
                       type="button"
-                      onClick={() => void handleResendConfirmEmail()}
+                      onActivate={() => void handleResendConfirmEmail()}
                       disabled={resendingConfirm || submitting}
                     >
                       {resendingConfirm ? "Sending…" : "Resend code"}
-                    </button>
+                    </FastActivateButton>
                     <span aria-hidden>·</span>
-                    <button
+                    <FastActivateButton
                       type="button"
-                      onClick={() => {
+                      onActivate={() => {
                         setAwaitingEmailConfirm(null);
                         setEmailOtpCode("");
                         goToBeat("email");
@@ -1357,7 +1374,7 @@ export function SpecialistOnboardingWizard({
                       disabled={submitting}
                     >
                       Change email
-                    </button>
+                    </FastActivateButton>
                   </p>
                 </div>
               </div>,

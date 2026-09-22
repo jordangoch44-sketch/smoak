@@ -647,7 +647,7 @@ export function SpecialistDashboardProfilePreview({
   );
   const [portalReady, setPortalReady] = useState(false);
   const canEdit = editable && Boolean(formDefaults && trainerId);
-  const canEditOwnPhoto = Boolean(
+  const canEditLiveListing = Boolean(
     canEdit &&
       trainerId &&
       trainerMatchesPublicKey(liveTrainer, trainerId)
@@ -1578,7 +1578,10 @@ export function SpecialistDashboardProfilePreview({
               onClaimFreeSession={selfPreviewNote}
               onInquire={selfPreviewNote}
               onEditProfilePhoto={
-                canEditOwnPhoto ? () => startEdit("avatar") : undefined
+                canEditLiveListing ? () => startEdit("avatar") : undefined
+              }
+              onAddIntroVideo={
+                canEditLiveListing ? () => startEdit("intro-video") : undefined
               }
               onUpgrade={onUpgrade}
             />
@@ -1594,7 +1597,10 @@ export function SpecialistDashboardProfilePreview({
           onClaimFreeSession={selfPreviewNote}
           onInquire={selfPreviewNote}
           onEditProfilePhoto={
-            canEditOwnPhoto ? () => startEdit("avatar") : undefined
+            canEditLiveListing ? () => startEdit("avatar") : undefined
+          }
+          onAddIntroVideo={
+            canEditLiveListing ? () => startEdit("intro-video") : undefined
           }
           onUpgrade={onUpgrade}
         />

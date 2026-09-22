@@ -157,6 +157,11 @@ export function AuthSessionProvider({
     let cancelled = false;
 
     async function hydrateAuth() {
+      const { ensureSpecialistApplicationsHydrated } = await import(
+        "@/lib/specialist-application-storage"
+      );
+      ensureSpecialistApplicationsHydrated();
+
       for (let attempt = 0; attempt < AUTH_HYDRATE_ATTEMPTS; attempt += 1) {
         if (cancelled || signingOutRef.current) return;
 
@@ -166,10 +171,15 @@ export function AuthSessionProvider({
         const status = applyMarketplaceLookup(result);
         if (status === "ok" || status === "signed_out") {
           setSupabaseHydrated(true);
+          /* Session may have landed after the first applications fetch
+           * returned with no userId — retry so dashboard isn't stuck. */
+          if (status === "ok") {
+            ensureSpecialistApplicationsHydrated();
+          }
           return;
         }
 
-        await delay(400 * (attempt + 1));
+        await delay(120 * (attempt + 1));
       }
 
       /* Transient errors: still mark ready so the UI can retry without a

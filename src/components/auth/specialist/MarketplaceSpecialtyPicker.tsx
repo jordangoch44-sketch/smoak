@@ -1,6 +1,7 @@
 "use client";
 
 import { marketplaceSpecialtyOptions } from "@/data/marketplace-specialties";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   HOMEPAGE_FEATURED_SPECIALTY_LIMIT,
   orderSpecialtyPickerOptions,
@@ -77,7 +78,7 @@ export function MarketplaceSpecialtyPicker({
                 onCard && "specialty-picker-option--pinned"
               )}
             >
-              <button
+              <FastActivateButton
                 type="button"
                 aria-pressed={active}
                 aria-label={
@@ -87,7 +88,7 @@ export function MarketplaceSpecialtyPicker({
                       ? `${option}. Tap again to pin as a Top specialty.`
                       : `Add ${option}`
                 }
-                onClick={() =>
+                onActivate={() =>
                   onChange(
                     toggleMarketplaceSpecialty(
                       option,
@@ -103,7 +104,7 @@ export function MarketplaceSpecialtyPicker({
                 )}
               >
                 {option}
-              </button>
+              </FastActivateButton>
               {hint ? (
                 <span
                   className={cn(

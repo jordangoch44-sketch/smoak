@@ -1,6 +1,6 @@
 import type { GeoCoordinates } from "@/lib/geo/zip-centroids";
 
-const REQUEST_TIMEOUT_MS = 8_000;
+const REQUEST_TIMEOUT_MS = 2_800;
 
 interface ZippopotamPlace {
   "place name": string;
