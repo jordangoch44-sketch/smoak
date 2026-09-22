@@ -10730,15 +10730,33 @@ body.specialist-edit-profile-open .dashboard-page__header-glow {
  */
 body.specialist-edit-profile-open .site-footer,
 body.inquiry-inbox-open .site-footer,
+body.client-workouts-open .site-footer,
 body.specialist-live-profile-open .site-footer,
 body:has(.specialist-edit-profile-page) .site-footer,
-body:has(.inquiry-inbox-page) .site-footer,
+body:has(.inquiry-inbox-page:not(.inquiry-inbox-page--embedded)) .site-footer,
 body:has(.specialist-live-page) .site-footer,
 body.specialist-edit-profile-open .mobile-bottom-nav,
 body.inquiry-inbox-open .mobile-bottom-nav,
+body.client-workouts-open .mobile-bottom-nav,
 body:has(.specialist-edit-profile-page) .mobile-bottom-nav,
-body:has(.inquiry-inbox-page) .mobile-bottom-nav {
+body:has(.inquiry-inbox-page:not(.inquiry-inbox-page--embedded)) .mobile-bottom-nav {
   display: none !important;
+}
+
+/*
+ * Overlay is portaled outside `.app-main`. Disable the page tree so iOS
+ * cannot pan the profile underneath (site-chrome forces controls to auto).
+ */
+body.inquiry-inbox-open .app-main,
+body.inquiry-inbox-open .app-main *,
+body.client-workouts-open .app-main,
+body.client-workouts-open .app-main * {
+  pointer-events: none !important;
+}
+
+body.inquiry-inbox-open .app-main,
+body.client-workouts-open .app-main {
+  visibility: hidden;
 }
 
 @keyframes specialist-edit-profile-page-in {

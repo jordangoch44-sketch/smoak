@@ -3,11 +3,13 @@ import {
   cloneWorkoutExercises,
   emptyClientWorkoutLog,
   sanitizeClientWorkoutLog,
+  sanitizeWorkoutCardio,
   sanitizeWorkoutExercises,
   sanitizeWorkoutTitle,
   clampGoalDaysPerWeek,
 } from "@/lib/workouts/client-workout";
 import type {
+  ClientWorkoutCardio,
   ClientWorkoutExercise,
   ClientWorkoutLog,
 } from "@/types/client-workout";
@@ -83,11 +85,13 @@ export function saveClientWorkoutDay(
   userId: string,
   dateKey: string,
   exercises: readonly ClientWorkoutExercise[],
-  title = ""
+  title = "",
+  cardio?: ClientWorkoutCardio | null
 ): boolean {
   const nextExercises = sanitizeWorkoutExercises(exercises);
   const nextTitle = sanitizeWorkoutTitle(title);
-  if (nextExercises.length === 0 && !nextTitle) return false;
+  const nextCardio = sanitizeWorkoutCardio(cardio);
+  if (nextExercises.length === 0 && !nextTitle && !nextCardio) return false;
   const current = getClientWorkoutLog(userId);
   persistLog(userId, {
     ...current,
@@ -97,6 +101,7 @@ export function saveClientWorkoutDay(
         date: dateKey,
         title: nextTitle,
         exercises: nextExercises,
+        ...(nextCardio ? { cardio: nextCardio } : {}),
       },
     },
   });
@@ -122,12 +127,18 @@ export function copyClientWorkoutDay(
   if (!source) return false;
   const exercises = cloneWorkoutExercises(source.exercises);
   const title = sanitizeWorkoutTitle(source.title);
-  if (exercises.length === 0 && !title) return false;
+  const cardio = sanitizeWorkoutCardio(source.cardio);
+  if (exercises.length === 0 && !title && !cardio) return false;
   persistLog(userId, {
     ...current,
     days: {
       ...current.days,
-      [toDateKey]: { date: toDateKey, title, exercises },
+      [toDateKey]: {
+        date: toDateKey,
+        title,
+        exercises,
+        ...(cardio ? { cardio } : {}),
+      },
     },
   });
   return true;

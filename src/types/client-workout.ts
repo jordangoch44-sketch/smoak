@@ -7,10 +7,16 @@ export interface ClientWorkoutExercise {
   reps: string;
 }
 
+export interface ClientWorkoutCardio {
+  type: string;
+  duration: string;
+}
+
 export interface ClientWorkoutDay {
   date: string;
   title: string;
   exercises: ClientWorkoutExercise[];
+  cardio?: ClientWorkoutCardio;
 }
 
 export interface ClientWorkoutLog {

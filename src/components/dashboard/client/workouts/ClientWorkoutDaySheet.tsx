@@ -7,28 +7,34 @@ import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useToast } from "@/components/ui/toast";
 import {
   blankWorkoutExercise,
+  emptyWorkoutCardio,
+  formatCardioLine,
   formatExerciseRange,
   formatWorkoutDayHeading,
   formatWorkoutShareText,
   shareOrCopyWorkoutText,
+  sanitizeWorkoutCardio,
   sanitizeWorkoutTitle,
-  WORKOUT_TITLE_PRESETS,
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
-import type { ClientWorkoutDay, ClientWorkoutExercise } from "@/types/client-workout";
+import type {
+  ClientWorkoutCardio,
+  ClientWorkoutDay,
+  ClientWorkoutExercise,
+} from "@/types/client-workout";
 
 const KEYBOARD_INSET_PX = 80;
 
-function readKeyboardViewport(): { inset: number; top: number; height: number } {
+function readKeyboardViewport(): {
+  inset: number;
+  top: number;
+  height: number;
+} {
   const viewport = window.visualViewport;
   const height = viewport?.height ?? window.innerHeight;
   const top = viewport?.offsetTop ?? 0;
   const inset = Math.max(0, window.innerHeight - height - top);
-  return {
-    inset: inset > KEYBOARD_INSET_PX ? inset : 0,
-    top,
-    height,
-  };
+  return { inset, top, height };
 }
 
 function isWorkoutField(target: EventTarget | null): target is HTMLInputElement {
@@ -36,6 +42,19 @@ function isWorkoutField(target: EventTarget | null): target is HTMLInputElement 
 }
 
 const KEYBOARD_SLIDE_MS = 480;
+const DISMISS_TAP_GUARD_MS = 400;
+
+/** Close unmounts the sheet; iOS then fires the leftover click on the day under the X. */
+function swallowTrailingDismissTap() {
+  const block = (event: Event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  document.addEventListener("click", block, { capture: true, once: true });
+  window.setTimeout(() => {
+    document.removeEventListener("click", block, true);
+  }, DISMISS_TAP_GUARD_MS);
+}
 
 function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
   const body = sheet.querySelector(".client-workouts-day__body");
@@ -50,12 +69,18 @@ function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
   }
 }
 
+type DaySheetStep = "pick" | "cardio" | "workout";
+
 interface ClientWorkoutDaySheetProps {
   dateKey: string;
   workout: ClientWorkoutDay | undefined;
   weekLabel: string;
   onClose: () => void;
-  onSave: (exercises: ClientWorkoutExercise[], title: string) => boolean;
+  onSave: (
+    exercises: ClientWorkoutExercise[],
+    title: string,
+    cardio?: ClientWorkoutCardio
+  ) => boolean;
   onRemove: () => void;
   onCopy: () => void;
 }
@@ -78,21 +103,54 @@ export function ClientWorkoutDaySheet({
   );
   const [draft, setDraft] = useState<ClientWorkoutExercise>(blankWorkoutExercise);
   const [title, setTitle] = useState(() => workout?.title.trim() ?? "");
+  const [cardio, setCardio] = useState<ClientWorkoutCardio>(
+    () => workout?.cardio ?? emptyWorkoutCardio()
+  );
+  const [wantCardio, setWantCardio] = useState(false);
+  const [wantWorkout, setWantWorkout] = useState(false);
+  const [step, setStep] = useState<DaySheetStep>(() =>
+    workout &&
+    (workout.exercises.length > 0 ||
+      Boolean(workout.title.trim()) ||
+      Boolean(workout.cardio))
+      ? "workout"
+      : "pick"
+  );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(!saved);
   const [error, setError] = useState<string | null>(null);
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const tintDismiss = useOwnPointerDismiss(onClose);
   const [keyboard, setKeyboard] = useState({ inset: 0, top: 0, height: 0 });
-  const keyboardOpen = keyboard.inset > 0;
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const keyboardOpen = keyboard.inset > KEYBOARD_INSET_PX;
+
+  function closeDay() {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && sheetRef.current?.contains(active)) {
+      active.blur();
+    }
+    swallowTrailingDismissTap();
+    onClose();
+  }
+
+  const tintDismiss = useOwnPointerDismiss(closeDay);
 
   useEffect(() => {
     const existing = workout?.exercises ?? [];
     setExercises(existing.map((exercise) => ({ ...exercise })));
     setTitle(workout?.title.trim() ?? "");
+    setCardio(workout?.cardio ?? emptyWorkoutCardio());
+    setWantCardio(false);
+    setWantWorkout(false);
     setDraft(blankWorkoutExercise());
     setEditingId(null);
     setComposerOpen(existing.length === 0);
+    setStep(
+      existing.length > 0 ||
+        Boolean(workout?.title.trim()) ||
+        Boolean(workout?.cardio)
+        ? "workout"
+        : "pick"
+    );
     setError(null);
     // Only reset when the selected day changes — not after each save.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -134,11 +192,16 @@ export function ClientWorkoutDaySheet({
     };
   }, [dateKey]);
 
-  function persist(next: ClientWorkoutExercise[], nextTitle = title) {
+  function persist(
+    next: ClientWorkoutExercise[],
+    nextTitle = title,
+    nextCardio = cardio
+  ) {
     const named = next.filter((exercise) => exercise.name.trim());
     const cleanedTitle = sanitizeWorkoutTitle(nextTitle);
-    if (named.length === 0 && !cleanedTitle) return false;
-    return onSave(named, cleanedTitle);
+    const cleanedCardio = sanitizeWorkoutCardio(nextCardio);
+    if (named.length === 0 && !cleanedTitle && !cleanedCardio) return false;
+    return onSave(named, cleanedTitle, cleanedCardio);
   }
 
   function applyTitle(next: string) {
@@ -203,11 +266,51 @@ export function ClientWorkoutDaySheet({
       setEditingId(null);
     }
     if (!persist(next)) {
-      setError("Add an exercise or name this workout.");
+      setError("Add cardio, an exercise, or name this workout.");
       return;
     }
-    setComposerOpen(false);
-    setEditingId(null);
+    closeDay();
+  }
+
+  function handlePickContinue() {
+    if (!wantCardio && !wantWorkout) {
+      setError("Choose cardio, workout, or both.");
+      return;
+    }
+    setError(null);
+    if (wantCardio) {
+      setStep("cardio");
+      return;
+    }
+    setStep("workout");
+  }
+
+  function handleCardioContinue() {
+    if (!cardio.type.trim() && !cardio.duration.trim()) {
+      setError("Add a cardio type or duration.");
+      return;
+    }
+    persist(exercises);
+    setError(null);
+    setStep("workout");
+  }
+
+  function handleRemoveCardio() {
+    const cleared = emptyWorkoutCardio();
+    setCardio(cleared);
+    setError(null);
+    const named = exercises.filter((exercise) => exercise.name.trim());
+    const cleanedTitle = sanitizeWorkoutTitle(title);
+    if (named.length === 0 && !cleanedTitle) {
+      if (workout) {
+        onRemove();
+        return;
+      }
+      setStep("pick");
+      return;
+    }
+    persist(exercises, title, cleared);
+    setStep("workout");
   }
 
   function updateExercise(
@@ -246,10 +349,12 @@ export function ClientWorkoutDaySheet({
     }
   }
 
+  const hasCardio = Boolean(sanitizeWorkoutCardio(cardio));
   const heading = formatWorkoutDayHeading(dateKey);
   const hasBubbles = exercises.length > 0;
-  const hasLoggedDay = hasBubbles || Boolean(title.trim());
-  const showSavedActions = hasLoggedDay && !composerOpen && !editingId;
+  const hasLoggedDay = hasBubbles || Boolean(title.trim()) || hasCardio;
+  const showSavedActions =
+    hasLoggedDay && step === "workout" && !composerOpen && !editingId;
 
   return (
     <div
@@ -299,107 +404,223 @@ export function ClientWorkoutDaySheet({
               {title.trim() ? (
                 <span className="client-workouts-day__title-chip">{title.trim()}</span>
               ) : null}
+              {hasCardio ? (
+                <span className="client-workouts-day__title-chip client-workouts-day__title-chip--cardio">
+                  {formatCardioLine(cardio)}
+                </span>
+              ) : null}
             </h3>
             <p className="client-workouts-day__sub">{weekLabel}</p>
           </div>
           <FastActivateButton
             className="client-workouts-dialog__close"
             aria-label="Close day"
-            onActivate={onClose}
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onActivate={closeDay}
           >
             <CloseIcon className="h-4 w-4" />
           </FastActivateButton>
         </div>
 
         <div className="client-workouts-day__body">
-          <div className="client-workouts-titles" role="group" aria-label="Workout name">
-            {WORKOUT_TITLE_PRESETS.map((preset) => (
-              <FastActivateButton
-                key={preset}
-                className={cn(
-                  "client-workouts-titles__chip",
-                  title === preset && "client-workouts-titles__chip--on"
-                )}
-                onActivate={() => applyTitle(title === preset ? "" : preset)}
-              >
-                {preset}
-              </FastActivateButton>
-            ))}
-          </div>
-          <input
-            className="client-workouts-titles__custom"
-            value={
-              (WORKOUT_TITLE_PRESETS as readonly string[]).includes(title)
-                ? ""
-                : title
-            }
-            autoComplete="off"
-            autoCorrect="off"
-            maxLength={24}
-            placeholder="Or name it…"
-            aria-label="Custom workout name"
-            onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
-            onBlur={() => applyTitle(title)}
-          />
-
-          {exercises.map((exercise) =>
-            editingId === exercise.id ? (
-              <ExerciseFields
-                key={exercise.id}
-                exercise={exercise}
-                editing
-                onChange={(patch) => updateExercise(exercise.id, patch)}
-                onDone={() => finishEditing(exercise.id)}
-                onRemove={() => {
-                  const next = exercises.filter((item) => item.id !== exercise.id);
-                  setExercises(next);
-                  setEditingId(null);
-                  if (next.length === 0 && !title.trim()) {
-                    setComposerOpen(true);
-                    onRemove();
-                    return;
-                  }
-                  persist(next);
-                }}
-              />
-            ) : (
-              <article key={exercise.id} className="client-workouts-bubble">
+          {step === "pick" ? (
+            <>
+              <p className="client-workouts-pick__hint">
+                Cardio, workout, or both.
+              </p>
+              <div className="client-workouts-pick" role="group" aria-label="Session type">
                 <FastActivateButton
-                  className="client-workouts-bubble__edit"
+                  className={cn(
+                    "client-workouts-pick__choice client-workouts-pick__choice--cardio",
+                    wantCardio && "client-workouts-pick__choice--on"
+                  )}
                   onActivate={() => {
-                    setEditingId(exercise.id);
-                    setComposerOpen(false);
+                    setWantCardio((value) => !value);
                     setError(null);
                   }}
                 >
-                  Edit
+                  Cardio
                 </FastActivateButton>
-                <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
-                {formatExerciseRange(exercise) ? (
-                  <p className="client-workouts-bubble__range">
-                    {formatExerciseRange(exercise)}
-                  </p>
-                ) : null}
-              </article>
-            )
-          )}
+                <FastActivateButton
+                  className={cn(
+                    "client-workouts-pick__choice",
+                    wantWorkout && "client-workouts-pick__choice--on"
+                  )}
+                  onActivate={() => {
+                    setWantWorkout((value) => !value);
+                    setError(null);
+                  }}
+                >
+                  Workout
+                </FastActivateButton>
+              </div>
+            </>
+          ) : null}
 
-          {composerOpen && !editingId ? (
-            <ExerciseFields
-              exercise={draft}
-              onChange={(patch) => {
-                setDraft((current) => ({ ...current, ...patch }));
-                setError(null);
-              }}
-            />
+          {step === "cardio" ? (
+            <div className="client-workouts-ex">
+              <input
+                className="client-workouts-ex__name"
+                value={cardio.type}
+                autoComplete="off"
+                autoCorrect="off"
+                maxLength={32}
+                placeholder="Type (run, bike, walk…)"
+                aria-label="Cardio type"
+                onChange={(event) => {
+                  setCardio((current) => ({
+                    ...current,
+                    type: event.target.value.slice(0, 32),
+                  }));
+                  setError(null);
+                }}
+              />
+              <input
+                className="client-workouts-ex__name"
+                value={cardio.duration}
+                autoComplete="off"
+                autoCorrect="off"
+                maxLength={16}
+                placeholder="Duration (30 min)"
+                aria-label="Cardio duration"
+                onChange={(event) => {
+                  setCardio((current) => ({
+                    ...current,
+                    duration: event.target.value.slice(0, 16),
+                  }));
+                  setError(null);
+                }}
+              />
+            </div>
+          ) : null}
+
+          {step === "workout" ? (
+            <>
+              {hasCardio ? (
+                <article className="client-workouts-bubble client-workouts-bubble--cardio">
+                  <FastActivateButton
+                    className="client-workouts-bubble__edit"
+                    onActivate={() => {
+                      setStep("cardio");
+                      setError(null);
+                    }}
+                  >
+                    Edit
+                  </FastActivateButton>
+                  <p className="client-workouts-bubble__name">Cardio</p>
+                  <p className="client-workouts-bubble__range">
+                    {formatCardioLine(cardio)}
+                  </p>
+                </article>
+              ) : null}
+
+              <input
+                className="client-workouts-titles__custom"
+                value={title}
+                autoComplete="off"
+                autoCorrect="off"
+                maxLength={24}
+                placeholder="Name this workout…"
+                aria-label="Workout name"
+                onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
+                onBlur={() => applyTitle(title)}
+              />
+
+              {exercises.map((exercise) =>
+                editingId === exercise.id ? (
+                  <ExerciseFields
+                    key={exercise.id}
+                    exercise={exercise}
+                    editing
+                    onChange={(patch) => updateExercise(exercise.id, patch)}
+                    onDone={() => finishEditing(exercise.id)}
+                    onRemove={() => {
+                      const next = exercises.filter((item) => item.id !== exercise.id);
+                      setExercises(next);
+                      setEditingId(null);
+                      if (next.length === 0 && !title.trim() && !sanitizeWorkoutCardio(cardio)) {
+                        setComposerOpen(true);
+                        onRemove();
+                        return;
+                      }
+                      persist(next);
+                    }}
+                  />
+                ) : (
+                  <article key={exercise.id} className="client-workouts-bubble">
+                    <FastActivateButton
+                      className="client-workouts-bubble__edit"
+                      onActivate={() => {
+                        setEditingId(exercise.id);
+                        setComposerOpen(false);
+                        setError(null);
+                      }}
+                    >
+                      Edit
+                    </FastActivateButton>
+                    <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
+                    {formatExerciseRange(exercise) ? (
+                      <p className="client-workouts-bubble__range">
+                        {formatExerciseRange(exercise)}
+                      </p>
+                    ) : null}
+                  </article>
+                )
+              )}
+
+              {composerOpen && !editingId ? (
+                <ExerciseFields
+                  exercise={draft}
+                  onChange={(patch) => {
+                    setDraft((current) => ({ ...current, ...patch }));
+                    setError(null);
+                  }}
+                />
+              ) : null}
+            </>
           ) : null}
 
           {error ? <p className="client-workouts-error">{error}</p> : null}
         </div>
 
         <div className="client-workouts-day__footer">
-          {showSavedActions ? (
+          {step === "pick" ? (
+            <FastActivateButton
+              className="client-workouts-btn client-workouts-btn--primary"
+              onActivate={handlePickContinue}
+            >
+              Continue
+            </FastActivateButton>
+          ) : step === "cardio" ? (
             <>
+              <FastActivateButton
+                className="client-workouts-btn client-workouts-btn--primary"
+                onActivate={handleCardioContinue}
+              >
+                Continue to workout
+              </FastActivateButton>
+              <FastActivateButton
+                className="client-workouts-btn client-workouts-btn--ghost"
+                onActivate={handleRemoveCardio}
+              >
+                Remove cardio
+              </FastActivateButton>
+            </>
+          ) : showSavedActions ? (
+            <>
+              {!hasCardio ? (
+                <FastActivateButton
+                  className="client-workouts-btn"
+                  onActivate={() => {
+                    setStep("cardio");
+                    setError(null);
+                  }}
+                >
+                  Add cardio
+                </FastActivateButton>
+              ) : null}
               <FastActivateButton
                 className="client-workouts-btn"
                 onActivate={() => {
@@ -443,6 +664,14 @@ export function ClientWorkoutDaySheet({
               >
                 Save workout
               </FastActivateButton>
+              {hasLoggedDay ? (
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--ghost"
+                  onActivate={onRemove}
+                >
+                  Remove workout
+                </FastActivateButton>
+              ) : null}
             </>
           )}
         </div>

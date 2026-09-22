@@ -285,6 +285,28 @@ html.review-modal-open,
   }
 }
 
+/*
+ * Inquiries / saved overlay: cover the page behind the frosted header and
+ * freeze document scroll. iOS still pans html when overflow is only hidden
+ * on `.app-main` (that node is not the scrollport).
+ */
+html.inquiry-inbox-open,
+html.client-workouts-open {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body.inquiry-inbox-open,
+body.client-workouts-open {
+  position: fixed !important;
+  top: var(--overlay-lock-top, 0px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
 ::selection {
   background: rgba(var(--accent-glow-rgb), 0.28);
   color: #ffffff;

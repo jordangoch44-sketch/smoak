@@ -456,24 +456,43 @@ export async function markAllSpecialistInquiriesRead(
   );
 }
 
+function decorateClientInquiryItems(
+  clientUserId: string,
+  items: ClientInquiryListItem[]
+): ClientInquiryListItem[] {
+  const hidden = new Set(listHiddenInquiryIds(clientUserId));
+  return items
+    .filter((item) => !hidden.has(item.id))
+    .map((item) => ({
+      ...item,
+      unread: applySpecialistUnreadFlags(clientUserId, item.unread, item.id),
+    }));
+}
+
 export async function loadClientInquiryMessages(
   clientUserId: string | null | undefined
 ): Promise<ClientInquiryListItem[]> {
   if (!clientUserId) return [];
 
   if (!isMarketplaceSupabaseActive()) {
-    return listLocalInquiriesForClient(clientUserId).map((record) => {
-      const latest = [...record.messages].reverse()[0];
-      return conversationToClientItem(record.conversation, {
-        unread: record.messages.some(
-          (m) => m.sender_role === "specialist" && !m.is_read
-        ),
-        latestBody: latest?.body,
-      });
-    });
+    return decorateClientInquiryItems(
+      clientUserId,
+      listLocalInquiriesForClient(clientUserId).map((record) => {
+        const latest = [...record.messages].reverse()[0];
+        return conversationToClientItem(record.conversation, {
+          unread: record.messages.some(
+            (m) => m.sender_role === "specialist" && !m.is_read
+          ),
+          latestBody: latest?.body,
+        });
+      })
+    );
   }
 
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return [];
-  return fetchClientConversations(supabase, clientUserId);
+  return decorateClientInquiryItems(
+    clientUserId,
+    await fetchClientConversations(supabase, clientUserId)
+  );
 }

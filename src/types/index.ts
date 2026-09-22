@@ -33,6 +33,7 @@ export type {
 
 export type {
   ClientWorkoutExercise,
+  ClientWorkoutCardio,
   ClientWorkoutDay,
   ClientWorkoutLog,
 } from "./client-workout";

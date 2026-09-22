@@ -35,7 +35,7 @@ export interface SpecialistProfileOverrides {
   locationPrecision?: "zip" | "address";
   latitude?: number;
   longitude?: number;
-  /** Optional second facility — public profile only; not used for maps/search */
+  /** Optional secondary facility — public profile only; not used for maps/search */
   workAddress2?: string;
   locationPrecision2?: "zip" | "address";
   city2?: string;

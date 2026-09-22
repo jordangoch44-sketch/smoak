@@ -879,7 +879,7 @@ export function SpecialistEditProfilePageClient({
                 />
                 {hasWorkSpotContent(secondaryWorkSpotFromForm(savedForm)) ? (
                   <ProfileEditViewField
-                    label="Second facility (profile only)"
+                    label="Secondary facility (profile only)"
                     value={
                       formatWorkSpotPlaceLine(
                         secondaryWorkSpotFromForm(savedForm)
@@ -944,12 +944,13 @@ export function SpecialistEditProfilePageClient({
                           )
                         }
                         showAddress={showAddress}
-                        heading={showSecond ? "Primary facility" : undefined}
+                        heading="Primary facility"
                         headingHint={
                           showSecond
                             ? "Maps and search use this pin only"
                             : undefined
                         }
+                        addressLabel="Exact primary facility address"
                         virtualHint="Virtual coaches use specialty matching — no street address needed. Existing profiles keep ZIP-based distance until updated."
                       />
                       {showSecond ? (
@@ -962,11 +963,11 @@ export function SpecialistEditProfilePageClient({
                             )
                           }
                           showAddress={showAddress}
-                          heading="Second facility"
+                          heading="Secondary facility"
                           headingHint="Shows on your profile — not a second map pin"
-                          addressLabel="Second facility address"
-                          addressHint="Clients see this on your profile. Explore still uses your primary location."
-                          virtualHint="Virtual coaches don’t need a second street address."
+                          addressLabel="Exact secondary facility address"
+                          addressHint="Clients see this on your profile. Explore still uses your primary facility."
+                          virtualHint="Virtual coaches don’t need a secondary facility address."
                           onRemove={() => {
                             setSecondLocationOpen(false);
                             setSectionDraft((prev) =>
@@ -981,11 +982,11 @@ export function SpecialistEditProfilePageClient({
                             className="smoac-control specialist-service-area-add"
                             onClick={() => setSecondLocationOpen(true)}
                           >
-                            + Add a second facility
+                            + Add a secondary facility
                           </button>
                           <p className="specialist-service-area-add__hint">
                             Profile only — maps and search stay on your primary
-                            location.
+                            facility.
                           </p>
                         </div>
                       ) : null}

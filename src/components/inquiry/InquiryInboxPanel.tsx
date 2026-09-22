@@ -16,6 +16,7 @@ import {
 } from "@/lib/inquiry/inquiry-client-preview";
 import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
 import { submitInquiryReply } from "@/lib/inquiry/inquiry-submit";
+import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
 import { PageWaitState } from "@/components/brand/PageWaitState";
 import { DashboardEmptyState } from "@/components/dashboard/shared";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
@@ -52,8 +53,11 @@ interface InquiryInboxPanelProps {
   onMarkConversationsUnread?: (ids: string[]) => void | Promise<void>;
   /** Leave the full-page inquiries overlay (back to live profile). */
   onExitPage?: () => void;
-  /** Full-page iMessage layout (specialist profile Inquiries tab). */
-  variant?: "card" | "page";
+  /**
+   * `page` — full-viewport overlay (specialist profile Inquiries).
+   * `embedded` — same chrome/list/thread, inline under client dashboard tabs.
+   */
+  variant?: "card" | "page" | "embedded";
   listTitle?: string;
 }
 
@@ -78,6 +82,8 @@ export function InquiryInboxPanel({
 }: InquiryInboxPanelProps) {
   const titleId = useId();
   const isPage = variant === "page";
+  const isEmbedded = variant === "embedded";
+  const usesPageChrome = isPage || isEmbedded;
   const [mounted, setMounted] = useState(false);
   const [openId, setOpenId] = useState<string | null>(
     initialConversationId?.trim() || null
@@ -99,11 +105,9 @@ export function InquiryInboxPanel({
 
   const swipeActions =
     viewer === "specialist" && Boolean(onHideConversation) && !selecting;
-  const canSelect =
-    viewer === "specialist" &&
-    Boolean(
-      onHideConversation || onMarkConversationsRead || onMarkConversationsUnread
-    );
+  const canSelect = Boolean(
+    onHideConversation || onMarkConversationsRead || onMarkConversationsUnread
+  );
 
   const leadFor = useCallback(
     (id: string) => previewLeads.find((lead) => lead.id === id),
@@ -161,7 +165,9 @@ export function InquiryInboxPanel({
     if (!isPage) return;
     document.body.classList.add(PAGE_LOCK_CLASS);
     document.documentElement.classList.add(PAGE_LOCK_CLASS);
+    const unlock = lockOverlayDocumentScroll();
     return () => {
+      unlock();
       document.body.classList.remove(PAGE_LOCK_CLASS);
       document.documentElement.classList.remove(PAGE_LOCK_CLASS);
     };
@@ -219,7 +225,7 @@ export function InquiryInboxPanel({
   }, [rows]);
 
   useEffect(() => {
-    if (!isPage) return;
+    if (!usesPageChrome) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
@@ -231,12 +237,12 @@ export function InquiryInboxPanel({
         exitSelectMode();
         return;
       }
-      handleExitPage();
+      if (isPage) handleExitPage();
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isPage, openId, selecting]);
+  }, [usesPageChrome, isPage, openId, selecting]);
 
   async function handleViewProfile(id: string) {
     const lead = leadFor(id);
@@ -341,9 +347,12 @@ export function InquiryInboxPanel({
         open={pendingDeleteIds.length > 0}
         name={
           pendingDeleteIds.length === 1
-            ? leadFor(pendingDeleteIds[0])?.name ?? "this client"
+            ? rows.find((row) => row.id === pendingDeleteIds[0])?.name ??
+              leadFor(pendingDeleteIds[0])?.name ??
+              (viewer === "client" ? "this specialist" : "this client")
             : ""
         }
+        counterpart={viewer === "client" ? "specialist" : "client"}
         count={pendingDeleteIds.length}
         busy={deleteBusy}
         onCancel={() => {
@@ -398,22 +407,32 @@ export function InquiryInboxPanel({
     </div>
   ) : null;
 
-  if (isPage) {
+  if (usesPageChrome) {
     const page = (
       <div
-        className="inquiry-inbox-page"
-        role="dialog"
-        aria-modal="true"
+        className={
+          isEmbedded
+            ? "inquiry-inbox-page inquiry-inbox-page--embedded"
+            : "inquiry-inbox-page"
+        }
+        role={isPage ? "dialog" : "region"}
+        aria-modal={isPage ? true : undefined}
         aria-labelledby={titleId}
       >
         <header className="inquiry-inbox-page__chrome">
-          <FastActivateButton
-            className="smoac-control inquiry-inbox-page__back"
-            aria-label="Back to live profile"
-            onActivate={handleExitPage}
-          >
-            <ChevronLeftIcon className="inquiry-inbox-page__back-icon" />
-          </FastActivateButton>
+          {onExitPage ? (
+            <FastActivateButton
+              className="smoac-control inquiry-inbox-page__back"
+              aria-label={
+                viewer === "specialist" ? "Back to live profile" : "Back to profile"
+              }
+              onActivate={handleExitPage}
+            >
+              <ChevronLeftIcon className="inquiry-inbox-page__back-icon" />
+            </FastActivateButton>
+          ) : (
+            <span className="inquiry-inbox-page__select-spacer" aria-hidden />
+          )}
           <h1 id={titleId} className="inquiry-inbox-page__title">
             {listTitle || "Inquiries"}
           </h1>
@@ -506,6 +525,7 @@ export function InquiryInboxPanel({
       </div>
     );
 
+    if (isEmbedded) return page;
     if (!mounted || typeof document === "undefined") return null;
     return createPortal(page, document.body);
   }

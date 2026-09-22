@@ -181,6 +181,7 @@ interface InquiryDeleteConfirmModalProps {
   name: string;
   count?: number;
   busy?: boolean;
+  counterpart?: "client" | "specialist";
   onCancel: () => void;
   onConfirm: () => void;
 }
@@ -190,6 +191,7 @@ export function InquiryDeleteConfirmModal({
   name,
   count = 1,
   busy = false,
+  counterpart = "client",
   onCancel,
   onConfirm,
 }: InquiryDeleteConfirmModalProps) {
@@ -224,8 +226,8 @@ export function InquiryDeleteConfirmModal({
           </h2>
           <p id="inquiry-delete-desc" className="dashboard-modal__body">
             {count > 1
-              ? `${count} conversations will be removed from your Inquiries. Those clients can still message you later.`
-              : `${name.trim() || "This client"} will be removed from your Inquiries. They can still message you later.`}
+              ? `${count} conversations will be removed from your Inquiries. Those ${counterpart}s can still message you later.`
+              : `${name.trim() || (counterpart === "specialist" ? "This specialist" : "This client")} will be removed from your Inquiries. They can still message you later.`}
           </p>
           <div className="dashboard-modal__actions">
             <button

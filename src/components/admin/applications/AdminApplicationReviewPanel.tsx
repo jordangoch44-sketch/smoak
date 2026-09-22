@@ -634,7 +634,7 @@ export function AdminApplicationReviewPanel({
                   </div>
                   {draft.gymName && (
                     <div className="admin-review-kv admin-review-kv--full">
-                      <span className="admin-review-kv__label">Facility</span>
+                      <span className="admin-review-kv__label">Primary facility</span>
                       <span className="admin-review-kv__value">
                         {draft.gymName}
                         {draft.facilityAddress ? ` · ${draft.facilityAddress}` : ""}
@@ -1207,7 +1207,7 @@ export function AdminApplicationReviewPanel({
                   </label>
                   <div className="admin-review-grid admin-review-grid--2col">
                     <label className="admin-field-label">
-                      Facility Name
+                      Primary facility name
                       <input
                         className="admin-field"
                         value={draft.gymName}
@@ -1215,7 +1215,7 @@ export function AdminApplicationReviewPanel({
                       />
                     </label>
                     <label className="admin-field-label">
-                      Facility Address (Internal Ops)
+                      Primary facility address (Internal Ops)
                       <input
                         className="admin-field"
                         value={draft.facilityAddress}

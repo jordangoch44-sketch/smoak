@@ -1060,17 +1060,13 @@ export function SpecialistDashboardProfilePreview({
                       )
                     }
                     showAddress={showAddress}
-                    heading={showSecond ? "Primary facility" : undefined}
+                    heading="Primary facility"
                     headingHint={
                       showSecond
                         ? "Maps and search use this pin only"
                         : undefined
                     }
-                    addressLabel={
-                      showSecond
-                        ? "Exact facility address"
-                        : undefined
-                    }
+                    addressLabel="Exact primary facility address"
                   />
                   {showSecond ? (
                     <SpecialistWorkSpotFields
@@ -1082,11 +1078,11 @@ export function SpecialistDashboardProfilePreview({
                         )
                       }
                       showAddress={showAddress}
-                      heading="Second facility"
+                      heading="Secondary facility"
                       headingHint="Shows on your profile — not a second map pin"
-                      addressLabel="Second facility address"
-                      addressHint="Clients see this on your profile. Explore still uses your primary location."
-                      virtualHint="Virtual coaches don’t need a second street address."
+                      addressLabel="Exact secondary facility address"
+                      addressHint="Clients see this on your profile. Explore still uses your primary facility."
+                      virtualHint="Virtual coaches don’t need a secondary facility address."
                       onRemove={() => {
                         setSecondLocationOpen(false);
                         setDraft((prev) =>
@@ -1101,11 +1097,11 @@ export function SpecialistDashboardProfilePreview({
                         className="smoac-control specialist-service-area-add"
                         onClick={() => setSecondLocationOpen(true)}
                       >
-                        + Add a second facility
+                        + Add a secondary facility
                       </button>
                       <p className="specialist-service-area-add__hint">
                         Profile only — maps and search stay on your primary
-                        location.
+                        facility.
                       </p>
                     </div>
                   ) : null}

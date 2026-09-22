@@ -1,4 +1,5 @@
 import type {
+  ClientWorkoutCardio,
   ClientWorkoutDay,
   ClientWorkoutExercise,
   ClientWorkoutLog,
@@ -6,10 +7,11 @@ import type {
 
 export const DEFAULT_GOAL_DAYS_PER_WEEK = 4;
 export const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
-export const WORKOUT_TITLE_PRESETS = ["Push", "Pull", "Legs", "Rest"] as const;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_STREAK_WEEKS = 520;
 const MAX_TITLE_LENGTH = 24;
+const MAX_CARDIO_TYPE_LENGTH = 32;
+const MAX_CARDIO_DURATION_LENGTH = 16;
 
 export function emptyClientWorkoutLog(): ClientWorkoutLog {
   return { goalDaysPerWeek: DEFAULT_GOAL_DAYS_PER_WEEK, days: {} };
@@ -67,6 +69,39 @@ export function sanitizeWorkoutTitle(value: unknown): string {
   return value.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE_LENGTH);
 }
 
+export function emptyWorkoutCardio(): ClientWorkoutCardio {
+  return { type: "", duration: "" };
+}
+
+export function sanitizeCardioField(
+  value: unknown,
+  maxLength: number
+): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+export function sanitizeWorkoutCardio(
+  value: unknown
+): ClientWorkoutCardio | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const raw = value as Partial<ClientWorkoutCardio>;
+  const type = sanitizeCardioField(raw.type, MAX_CARDIO_TYPE_LENGTH);
+  const duration = sanitizeCardioField(
+    raw.duration,
+    MAX_CARDIO_DURATION_LENGTH
+  );
+  if (!type && !duration) return undefined;
+  return { type, duration };
+}
+
+export function formatCardioLine(cardio: ClientWorkoutCardio): string {
+  const type = cardio.type.trim();
+  const duration = cardio.duration.trim();
+  if (type && duration) return `${type} · ${duration}`;
+  return type || duration;
+}
+
 export function hasExercisesOnDay(
   log: ClientWorkoutLog,
   dateKey: string
@@ -74,13 +109,28 @@ export function hasExercisesOnDay(
   return (log.days[dateKey]?.exercises.length ?? 0) > 0;
 }
 
-export function hasWorkoutOnDay(
+export function hasCardioOnDay(
+  log: ClientWorkoutLog,
+  dateKey: string
+): boolean {
+  const day = log.days[dateKey];
+  return Boolean(day?.cardio?.type.trim() || day?.cardio?.duration.trim());
+}
+
+export function hasStrengthOnDay(
   log: ClientWorkoutLog,
   dateKey: string
 ): boolean {
   const day = log.days[dateKey];
   if (!day) return false;
   return day.exercises.length > 0 || Boolean(day.title.trim());
+}
+
+export function hasWorkoutOnDay(
+  log: ClientWorkoutLog,
+  dateKey: string
+): boolean {
+  return hasStrengthOnDay(log, dateKey) || hasCardioOnDay(log, dateKey);
 }
 
 export function workoutTitleOnDay(
@@ -128,11 +178,16 @@ export function sanitizeClientWorkoutLog(value: unknown): ClientWorkoutLog {
       const exercises = sanitizeWorkoutExercises(
         Array.isArray(day.exercises) ? day.exercises : []
       );
-      if (exercises.length === 0 && !sanitizeWorkoutTitle(day.title)) continue;
+      const title = sanitizeWorkoutTitle(day.title);
+      const cardio = sanitizeWorkoutCardio(
+        "cardio" in day ? day.cardio : undefined
+      );
+      if (exercises.length === 0 && !title && !cardio) continue;
       days[dateKey] = {
         date: dateKey,
-        title: sanitizeWorkoutTitle(day.title),
+        title,
         exercises,
+        ...(cardio ? { cardio } : {}),
       };
     }
   }
@@ -174,7 +229,7 @@ export function trainedDateKeysInWeek(
   const keys: string[] = [];
   for (let index = 0; index < 7; index += 1) {
     const dateKey = toLocalDateKey(addDays(weekStart, index));
-    if (hasExercisesOnDay(log, dateKey)) keys.push(dateKey);
+    if (hasWorkoutOnDay(log, dateKey)) keys.push(dateKey);
   }
   return keys;
 }
@@ -214,7 +269,7 @@ export function currentWeekDayStatuses(
       label,
       weekday: date.toLocaleDateString("en-US", { weekday: "long" }),
       isToday: dateKey === todayKey,
-      completed: hasExercisesOnDay(log, dateKey),
+      completed: hasWorkoutOnDay(log, dateKey),
       isFuture: dateKey > todayKey,
     };
   });
@@ -290,10 +345,17 @@ export function formatExerciseLine(exercise: ClientWorkoutExercise): string {
 export function formatWorkoutShareText(day: ClientWorkoutDay): string {
   const heading = formatWorkoutDayHeading(day.date);
   const title = day.title.trim();
+  const cardio = day.cardio ? formatCardioLine(day.cardio) : "";
   const lines = day.exercises
     .filter((exercise) => exercise.name.trim())
     .map(formatExerciseLine);
-  return [title ? `${heading} — ${title}` : heading, ...lines].join("\n");
+  return [
+    title ? `${heading} — ${title}` : heading,
+    cardio ? `Cardio: ${cardio}` : "",
+    ...lines,
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 export async function shareOrCopyWorkoutText(

@@ -9,9 +9,16 @@ import { afterLogoutNavigation } from "@/lib/logout-with-toast";
 import { markSavedTrainersLoadTimedOut } from "@/lib/saved-trainers-store";
 import {
   loadClientInquiryMessages,
+  markInquiryThreadRead,
   type ClientInquiryListItem,
 } from "@/lib/inquiry/inquiry-inbox";
 import { trackInquiryEvent } from "@/lib/inquiry/inquiry-analytics";
+import { hideInquiryId } from "@/lib/inquiry/inquiry-hidden-store";
+import {
+  flagInquiryUnreadIds,
+  unflagInquiryUnread,
+  unflagInquiryUnreadIds,
+} from "@/lib/inquiry/inquiry-unread-flag-store";
 import {
   getClientProfileCompletionPercent,
   isClientProfileMinimumComplete,
@@ -30,19 +37,19 @@ import { TrainerList } from "@/components/trainers";
 import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiriesList";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
 import { ClientWorkoutsEntry } from "@/components/dashboard/client/workouts/ClientWorkoutsEntry";
+import { ClientDashboardOverlay } from "@/components/dashboard/client/ClientDashboardOverlay";
 import { PageWaitState } from "@/components/brand/PageWaitState";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { CheckIcon } from "@/components/ui/icons";
-import { cn, getInitials } from "@/lib/utils";
+import {
+  CheckIcon,
+  ChevronRightIcon,
+  HeartIcon,
+  MessageBubbleIcon,
+} from "@/components/ui/icons";
+import { getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 
-type ClientDashboardTab = "profile" | "saved" | "messages";
-
-const TABS: ReadonlyArray<{ id: ClientDashboardTab; label: string }> = [
-  { id: "profile", label: "My Profile" },
-  { id: "saved", label: "Saved Specialists" },
-  { id: "messages", label: "Inquiries" },
-];
+type ClientDashboardOverlayId = "saved" | "messages";
 
 function formatRadiusLabel(miles: number | null): string {
   const match = CLIENT_SEARCH_RADIUS_OPTIONS.find(
@@ -82,7 +89,7 @@ export function ClientDashboardPageClient() {
   const saved = useMemo(() => getSavedTrainers(), [getSavedTrainers]);
   const [messages, setMessages] = useState<ClientInquiryListItem[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<ClientDashboardTab>("profile");
+  const [overlay, setOverlay] = useState<ClientDashboardOverlayId | null>(null);
   const [openConversationId, setOpenConversationId] = useState<string | null>(
     null
   );
@@ -115,21 +122,22 @@ export function ClientDashboardPageClient() {
     if (!isReady || !session) return;
     if (searchParams.get("editProfile") === "1") {
       setProfileOpen(true);
-      setActiveTab("profile");
+      setOverlay(null);
       router.replace("/client-dashboard", { scroll: false });
       return;
     }
     const tab = searchParams.get("tab");
     const conversationId = searchParams.get("c")?.trim() || "";
-    if (conversationId) {
-      setActiveTab("messages");
-      setOpenConversationId(conversationId);
+    if (conversationId || tab === "messages") {
+      setOverlay("messages");
+      setOpenConversationId(conversationId || null);
       return;
     }
-    if (tab === "messages" || tab === "saved" || tab === "profile") {
-      setActiveTab(tab);
-      router.replace("/client-dashboard", { scroll: false });
+    if (tab === "saved") {
+      setOverlay("saved");
+      return;
     }
+    setOverlay(null);
   }, [isReady, session, searchParams, router]);
 
   useEffect(() => {
@@ -220,6 +228,66 @@ export function ClientDashboardPageClient() {
     }
   }
 
+  function handleHideClientInquiry(id: string) {
+    if (!session?.userId || !id) return;
+    hideInquiryId(session.userId, id);
+    unflagInquiryUnread(session.userId, id);
+    setMessages((prev) => prev.filter((item) => item.id !== id));
+    if (openConversationId === id) setOpenConversationId(null);
+  }
+
+  async function handleMarkClientInquiriesRead(ids: string[]) {
+    if (!session?.userId) return;
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length === 0) return;
+    unflagInquiryUnreadIds(session.userId, unique);
+    await Promise.all(
+      unique.map((id) => markInquiryThreadRead(id, "client"))
+    );
+    setMessages((prev) =>
+      prev.map((item) =>
+        unique.includes(item.id) ? { ...item, unread: false } : item
+      )
+    );
+  }
+
+  function handleMarkClientInquiriesUnread(ids: string[]) {
+    if (!session?.userId) return;
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length === 0) return;
+    flagInquiryUnreadIds(session.userId, unique);
+    setMessages((prev) =>
+      prev.map((item) =>
+        unique.includes(item.id) ? { ...item, unread: true } : item
+      )
+    );
+  }
+
+  function openOverlay(next: ClientDashboardOverlayId) {
+    setOverlay(next);
+    const qs = new URLSearchParams();
+    qs.set("tab", next);
+    router.replace(`/client-dashboard?${qs.toString()}`, { scroll: false });
+  }
+
+  function closeOverlay() {
+    setOverlay(null);
+    setOpenConversationId(null);
+    router.replace("/client-dashboard", { scroll: false });
+  }
+
+  const unreadCount = messages.filter((item) => item.unread).length;
+  const savedSubtitle =
+    savedCount > 0
+      ? `${savedCount} specialist${savedCount === 1 ? "" : "s"}`
+      : "Save specialists from Search";
+  const inquiriesSubtitle =
+    unreadCount > 0
+      ? `${unreadCount} unread`
+      : messages.length > 0
+        ? `${messages.length} conversation${messages.length === 1 ? "" : "s"}`
+        : "Message your specialists";
+
   return (
     <>
       <DashboardPageShell
@@ -268,173 +336,173 @@ export function ClientDashboardPageClient() {
           </FastActivateButton>
         ) : null}
 
-        <div
-          className="client-dash-tabs"
-          role="tablist"
-          aria-label="Client dashboard sections"
-        >
-          {TABS.map((tab) => (
-            <FastActivateButton
-              key={tab.id}
-              role="tab"
-              id={`client-dash-tab-${tab.id}`}
-              aria-selected={activeTab === tab.id}
-              aria-controls={`client-dash-panel-${tab.id}`}
-              className={cn(
-                "client-dash-tabs__btn",
-                activeTab === tab.id && "client-dash-tabs__btn--active"
-              )}
-              onActivate={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-              {tab.id === "saved" && savedCount > 0 ? (
-                <span className="client-dash-tabs__count">{savedCount}</span>
-              ) : null}
-              {tab.id === "messages" && messages.some((m) => m.unread) ? (
-                <span className="client-dash-tabs__dot" aria-hidden />
-              ) : null}
-            </FastActivateButton>
-          ))}
-        </div>
-
-        <div className="client-dash-panels">
-          {activeTab === "profile" ? (
-            <section
-              id="client-dash-panel-profile"
-              role="tabpanel"
-              aria-labelledby="client-dash-tab-profile"
-              className="client-dash-panel client-dash-panel--profile"
-            >
-              <div className="client-dash-summary">
-                <div className="client-dash-summary__identity">
-                  <div className="client-dash-summary__avatar-wrap">
-                    <div className="client-dash-summary__avatar">
-                      {avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element -- auth avatar URLs
-                        <img src={avatarUrl} alt="" />
-                      ) : (
-                        <span aria-hidden>{initials}</span>
-                      )}
-                    </div>
-                    {profileComplete ? (
-                      <span
-                        className="client-dash-summary__avatar-badge"
-                        title="Profile complete"
-                        aria-label="Profile complete"
-                      >
-                        <CheckIcon className="client-dash-summary__avatar-badge-icon" />
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="client-dash-summary__copy">
-                    <h2 className="client-dash-summary__name">{displayName}</h2>
-                    <p className="client-dash-summary__location">
-                      <span className="client-dash-summary__location-chip">
-                        <span>{form ? formatLocation(form) : "—"}</span>
-                      </span>
-                    </p>
-                  </div>
+        <section className="client-dash-panel client-dash-panel--profile">
+          <div className="client-dash-summary">
+            <div className="client-dash-summary__identity">
+              <div className="client-dash-summary__avatar-wrap">
+                <div className="client-dash-summary__avatar">
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- auth avatar URLs
+                    <img src={avatarUrl} alt="" />
+                  ) : (
+                    <span aria-hidden>{initials}</span>
+                  )}
                 </div>
-
-                <dl className="client-dash-summary__meta">
-                  <div>
-                    <dt>Goals</dt>
-                    <dd>
-                      {form?.goals.length
-                        ? form.goals.slice(0, 4).join(" · ")
-                        : "Not set yet"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Travel distance</dt>
-                    <dd>
-                      {form
-                        ? formatRadiusLabel(form.preferredRadiusMiles)
-                        : "Automatic"}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Budget</dt>
-                    <dd>{form ? formatBudgetLabel(form) : "No preference"}</dd>
-                  </div>
-                </dl>
-
-                <FastActivateButton
-                  className="client-dash-summary__edit"
-                  onActivate={openProfileEditor}
-                >
-                  Edit profile
-                </FastActivateButton>
+                {profileComplete ? (
+                  <span
+                    className="client-dash-summary__avatar-badge"
+                    title="Profile complete"
+                    aria-label="Profile complete"
+                  >
+                    <CheckIcon className="client-dash-summary__avatar-badge-icon" />
+                  </span>
+                ) : null}
               </div>
+              <div className="client-dash-summary__copy">
+                <h2 className="client-dash-summary__name">{displayName}</h2>
+                <p className="client-dash-summary__location">
+                  <span className="client-dash-summary__location-chip">
+                    <span>{form ? formatLocation(form) : "—"}</span>
+                  </span>
+                </p>
+              </div>
+            </div>
 
-              <ClientWorkoutsEntry userId={session.userId} />
-            </section>
-          ) : null}
+            <dl className="client-dash-summary__meta">
+              <div>
+                <dt>Goals</dt>
+                <dd>
+                  {form?.goals.length
+                    ? form.goals.slice(0, 4).join(" · ")
+                    : "Not set yet"}
+                </dd>
+              </div>
+              <div>
+                <dt>Travel distance</dt>
+                <dd>
+                  {form
+                    ? formatRadiusLabel(form.preferredRadiusMiles)
+                    : "Automatic"}
+                </dd>
+              </div>
+              <div>
+                <dt>Budget</dt>
+                <dd>{form ? formatBudgetLabel(form) : "No preference"}</dd>
+              </div>
+            </dl>
 
-          {activeTab === "saved" ? (
-            <section
-              id="client-dash-panel-saved"
-              role="tabpanel"
-              aria-labelledby="client-dash-tab-saved"
-              className="client-dash-panel"
+            <FastActivateButton
+              className="client-dash-summary__edit"
+              onActivate={openProfileEditor}
             >
-              {!isSavesReady && !loadTimedOut ? (
-                <PageWaitState
-                  label="Loading your saved specialists"
-                  compact
-                />
-              ) : saved.length >= 2 ? (
-                <SavedSpecialistsOrganizer
-                  trainers={saved}
-                  impressionSurface="client_dashboard"
-                />
-              ) : saved.length > 0 ? (
-                <TrainerList
-                  trainers={saved}
-                  variant="explore"
-                  priorityCount={4}
-                  impressionSurface="client_dashboard"
-                />
-              ) : (
-                <DashboardEmptyState
-                  message={
-                    savesError || loadTimedOut
-                      ? savesError ||
-                        "Saved specialists took too long to load. Try refreshing."
-                      : "Save specialists from Search to build your shortlist."
-                  }
-                  actionHref="/explore"
-                  actionLabel="Browse specialists"
-                />
-              )}
-            </section>
-          ) : null}
+              Edit profile
+            </FastActivateButton>
+          </div>
 
-          {activeTab === "messages" ? (
-            <section
-              id="client-dash-panel-messages"
-              role="tabpanel"
-              aria-labelledby="client-dash-tab-messages"
-              className="client-dash-panel"
+          <div className="client-dash-links">
+            <FastActivateButton
+              className="smoac-control client-dash-nav-row"
+              onActivate={() => openOverlay("messages")}
             >
-              <ClientInquiriesList
-                inquiries={messages}
-                userId={session.userId}
-                initialConversationId={openConversationId}
-                onConversationOpened={(id) => {
-                  setOpenConversationId(id);
-                  setMessages((prev) =>
-                    prev.map((item) =>
-                      item.id === id ? { ...item, unread: false } : item
-                    )
-                  );
-                }}
-                onCloseThread={() => setOpenConversationId(null)}
-              />
-            </section>
-          ) : null}
-        </div>
+              <span className="client-dash-nav-row__icon" aria-hidden>
+                <MessageBubbleIcon className="h-5 w-5" />
+              </span>
+              <span className="client-dash-nav-row__copy">
+                <span className="client-dash-nav-row__title">Inquiries</span>
+                <span className="client-dash-nav-row__meta">
+                  {inquiriesSubtitle}
+                </span>
+              </span>
+              {unreadCount > 0 ? (
+                <span className="client-dash-nav-row__count">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              ) : null}
+              <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />
+            </FastActivateButton>
+
+            <FastActivateButton
+              className="smoac-control client-dash-nav-row"
+              onActivate={() => openOverlay("saved")}
+            >
+              <span className="client-dash-nav-row__icon" aria-hidden>
+                <HeartIcon className="h-5 w-5" filled={savedCount > 0} />
+              </span>
+              <span className="client-dash-nav-row__copy">
+                <span className="client-dash-nav-row__title">
+                  Saved Specialists
+                </span>
+                <span className="client-dash-nav-row__meta">{savedSubtitle}</span>
+              </span>
+              {savedCount > 0 ? (
+                <span className="client-dash-nav-row__count">{savedCount}</span>
+              ) : null}
+              <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />
+            </FastActivateButton>
+          </div>
+
+          <ClientWorkoutsEntry userId={session.userId} />
+        </section>
       </DashboardPageShell>
+
+      {overlay === "saved" ? (
+        <ClientDashboardOverlay
+          title="Saved Specialists"
+          padded
+          onBack={closeOverlay}
+        >
+          {!isSavesReady && !loadTimedOut ? (
+            <PageWaitState label="Loading your saved specialists" compact />
+          ) : saved.length >= 2 ? (
+            <SavedSpecialistsOrganizer
+              trainers={saved}
+              impressionSurface="client_dashboard"
+            />
+          ) : saved.length > 0 ? (
+            <TrainerList
+              trainers={saved}
+              variant="explore"
+              priorityCount={4}
+              impressionSurface="client_dashboard"
+            />
+          ) : (
+            <DashboardEmptyState
+              message={
+                savesError || loadTimedOut
+                  ? savesError ||
+                    "Saved specialists took too long to load. Try refreshing."
+                  : "Save specialists from Search to build your shortlist."
+              }
+              actionHref="/explore"
+              actionLabel="Browse specialists"
+            />
+          )}
+        </ClientDashboardOverlay>
+      ) : null}
+
+      {overlay === "messages" ? (
+        <ClientInquiriesList
+          inquiries={messages}
+          userId={session.userId}
+          initialConversationId={openConversationId}
+          onBack={closeOverlay}
+          onConversationOpened={(id) => {
+            setOpenConversationId(id);
+            unflagInquiryUnread(session.userId, id);
+            setMessages((prev) =>
+              prev.map((item) =>
+                item.id === id ? { ...item, unread: false } : item
+              )
+            );
+          }}
+          onCloseThread={() => setOpenConversationId(null)}
+          onHideConversation={handleHideClientInquiry}
+          onMarkRead={(ids) => {
+            void handleMarkClientInquiriesRead(ids);
+          }}
+          onMarkUnread={handleMarkClientInquiriesUnread}
+        />
+      ) : null}
 
       <ClientProfileEditModal
         open={profileOpen}

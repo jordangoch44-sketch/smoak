@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
+import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
 import { cn } from "@/lib/utils";
 import {
   addMonths,
@@ -20,7 +21,8 @@ import {
   formatMonthTitle,
   formatWorkoutDayAriaLabel,
   formatWorkoutDayHeading,
-  hasWorkoutOnDay,
+  hasCardioOnDay,
+  hasStrengthOnDay,
   isWorkoutDateKey,
   parseLocalDateKey,
   startOfMonth,
@@ -28,7 +30,7 @@ import {
   workoutTitleOnDay,
   WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
-import type { ClientWorkoutExercise } from "@/types/client-workout";
+import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
 import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
 import "@/styles/client-workouts.css";
 
@@ -53,6 +55,7 @@ export function ClientWorkoutsModal({
   const [pasteSourceKey, setPasteSourceKey] = useState<string | null>(null);
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
+  const ignoreDayTapUntilRef = useRef(0);
   const { log, setGoalDaysPerWeek, saveDay, removeDay, copyDayTo } =
     useClientWorkouts(userId);
   const backdropDismiss = useOwnPointerDismiss(onClose);
@@ -82,7 +85,9 @@ export function ClientWorkoutsModal({
     if (!open) return;
     document.body.classList.add(LOCK_CLASS);
     document.documentElement.classList.add(LOCK_CLASS);
+    const unlock = lockOverlayDocumentScroll();
     return () => {
+      unlock();
       document.body.classList.remove(LOCK_CLASS);
       document.documentElement.classList.remove(LOCK_CLASS);
     };
@@ -119,7 +124,13 @@ export function ClientWorkoutsModal({
     streak > 0 ? ` · ${streak}-week streak` : ""
   }`;
 
+  function closeSelectedDay() {
+    ignoreDayTapUntilRef.current = Date.now() + 400;
+    setSelectedDateKey(null);
+  }
+
   function handleDayActivate(dateKey: string) {
+    if (Date.now() < ignoreDayTapUntilRef.current) return;
     if (pasteSourceKey) {
       const pasted = copyDayTo(pasteSourceKey, dateKey);
       if (!pasted) return;
@@ -132,9 +143,9 @@ export function ClientWorkoutsModal({
     setSelectedDateKey(dateKey);
   }
 
-  function handleSave(exercises: ClientWorkoutExercise[], title: string) {
+  function handleSave(exercises: ClientWorkoutExercise[], title: string, cardio?: ClientWorkoutCardio) {
     if (!selectedDateKey) return false;
-    return saveDay(selectedDateKey, exercises, title);
+    return saveDay(selectedDateKey, exercises, title, cardio);
   }
 
   if (!mounted || !open || typeof document === "undefined") return null;
@@ -169,6 +180,9 @@ export function ClientWorkoutsModal({
             <FastActivateButton
               className="client-workouts-dialog__close"
               aria-label="Close"
+              onPointerDown={(event) => {
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
               onActivate={onClose}
             >
               <CloseIcon className="h-4 w-4" />
@@ -245,10 +259,21 @@ export function ClientWorkoutsModal({
 
           <div className="client-workouts-cal" role="grid" aria-label="Workout calendar">
             {cells.map((cell) => {
-              const trained = hasWorkoutOnDay(log, cell.dateKey);
+              const cardio = hasCardioOnDay(log, cell.dateKey);
+              const strength = hasStrengthOnDay(log, cell.dateKey);
+              const trained = cardio || strength;
               const dayTitle = workoutTitleOnDay(log, cell.dateKey);
               const selected = selectedDateKey === cell.dateKey;
               const label = formatWorkoutDayAriaLabel(cell.dateKey);
+              const loggedLabel = cardio && strength
+                ? `${label}, cardio and workout logged`
+                : cardio
+                  ? `${label}, cardio logged`
+                  : strength
+                    ? dayTitle
+                      ? `${label}, ${dayTitle}`
+                      : `${label}, workout logged`
+                    : label;
               return (
                 <FastActivateButton
                   key={cell.dateKey}
@@ -262,29 +287,27 @@ export function ClientWorkoutsModal({
                   aria-label={
                     pasteSourceKey
                       ? `Paste workout onto ${label}`
-                      : trained
-                        ? dayTitle
-                          ? `${label}, ${dayTitle}`
-                          : `${label}, workout logged`
-                        : label
+                      : loggedLabel
                   }
                   aria-current={cell.isToday ? "date" : undefined}
                   onActivate={() => handleDayActivate(cell.dateKey)}
                 >
                   <span className="client-workouts-cal__num">{cell.day}</span>
                   {trained ? (
-                    <span
-                      className={cn(
-                        "client-workouts-cal__mark",
-                        dayTitle && "client-workouts-cal__mark--named"
-                      )}
-                      aria-hidden
-                    >
-                      <span className="client-workouts-cal__check">
-                        <CheckIcon />
-                      </span>
-                      {dayTitle ? (
-                        <span className="client-workouts-cal__label">{dayTitle}</span>
+                    <span className="client-workouts-cal__marks" aria-hidden>
+                      {cardio ? (
+                        <span className="client-workouts-cal__mark client-workouts-cal__mark--cardio">
+                          <span className="client-workouts-cal__check">
+                            <CheckIcon />
+                          </span>
+                        </span>
+                      ) : null}
+                      {strength ? (
+                        <span className="client-workouts-cal__mark">
+                          <span className="client-workouts-cal__check">
+                            <CheckIcon />
+                          </span>
+                        </span>
                       ) : null}
                     </span>
                   ) : (
@@ -301,11 +324,11 @@ export function ClientWorkoutsModal({
             dateKey={selectedDateKey}
             workout={log.days[selectedDateKey]}
             weekLabel={weekLabel}
-            onClose={() => setSelectedDateKey(null)}
+            onClose={closeSelectedDay}
             onSave={handleSave}
             onRemove={() => {
               removeDay(selectedDateKey);
-              setSelectedDateKey(null);
+              closeSelectedDay();
             }}
             onCopy={() => {
               setPasteSourceKey(selectedDateKey);

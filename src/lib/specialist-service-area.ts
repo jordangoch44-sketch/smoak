@@ -313,7 +313,7 @@ export function buildLocationTravelDisplay(
   let placeLabel = "Area";
 
   if (showPreciseAddress) {
-    placeLabel = "Facility";
+    placeLabel = "Primary facility";
     placeValue = cityZip && !workAddress.includes(cityZip.split(" · ")[0] ?? "")
       ? `${workAddress}\n${cityZip}`
       : workAddress;
@@ -336,8 +336,8 @@ export function buildLocationTravelDisplay(
     facts.push({
       label: placeLabel,
       value: placeValue,
-      hint: placeLabel === "Facility"
-        ? "Sessions at this facility."
+      hint: placeLabel === "Primary facility"
+        ? "Sessions at this primary facility."
         : isVirtualOnly
           ? "Online sessions from this area."
           : trainer.city.trim()
@@ -356,13 +356,13 @@ export function buildLocationTravelDisplay(
       : secondaryCityZip;
     if (secondaryValue) {
       facts.push({
-        label: "Second facility",
+        label: "Secondary facility",
         value: secondaryValue,
         hint: trainer.neighborhood2?.trim()
           ? `${trainer.neighborhood2.trim()}${
               trainer.city2?.trim() ? `, ${trainer.city2.trim()}` : ""
             }.`
-          : "Second facility.",
+          : "Sessions at this secondary facility.",
         icon: "place",
       });
     }

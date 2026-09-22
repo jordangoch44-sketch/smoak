@@ -10,7 +10,7 @@ import {
   setClientWorkoutGoalDays,
   subscribeClientWorkouts,
 } from "@/lib/workouts/client-workout-store";
-import type { ClientWorkoutExercise } from "@/types/client-workout";
+import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
 
 export function useClientWorkouts(userId: string | null) {
   const log = useSyncExternalStore(
@@ -31,10 +31,11 @@ export function useClientWorkouts(userId: string | null) {
     (
       dateKey: string,
       exercises: readonly ClientWorkoutExercise[],
-      title = ""
+      title = "",
+      cardio?: ClientWorkoutCardio | null
     ) => {
       if (!userId) return false;
-      return saveClientWorkoutDay(userId, dateKey, exercises, title);
+      return saveClientWorkoutDay(userId, dateKey, exercises, title, cardio);
     },
     [userId]
   );

@@ -37,7 +37,7 @@ export function SpecialistPreciseLocationField({
   locationPrecision,
   disabled = false,
   className,
-  label = "Exact facility address",
+  label = "Exact primary facility address",
   hint = "Best for helping clients discover you",
   onResolved,
   onCleared,

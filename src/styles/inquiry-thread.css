@@ -703,19 +703,19 @@
   cursor: default;
 }
 
-/* Full-page inquiries overlay — flush under the site header */
+/* Full-page inquiries overlay — cover behind the site header, content below */
 .inquiry-inbox-page {
   position: fixed;
-  top: var(--site-header-total-height);
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   z-index: calc(var(--z-site-header) - 5);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
+  padding-top: var(--site-header-total-height);
   background: #080b10;
   pointer-events: auto;
+  overscroll-behavior: none;
   animation: inquiry-inbox-page-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -800,7 +800,7 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -922,7 +922,10 @@
 
 .inquiry-thread-overlay {
   position: absolute;
-  inset: 0;
+  top: var(--site-header-total-height);
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 3;
   display: flex;
   flex-direction: column;
@@ -971,4 +974,26 @@
   .inquiry-thread-overlay {
     animation: none;
   }
+}
+
+/* Client dashboard — same inbox chrome as specialist, inline under tabs */
+.inquiry-inbox-page--embedded {
+  position: relative;
+  inset: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  padding-top: 0;
+  overflow: hidden;
+  animation: none;
+  background: #080b10;
+}
+
+.inquiry-inbox-page--embedded .inquiry-thread-overlay {
+  top: 0;
 }

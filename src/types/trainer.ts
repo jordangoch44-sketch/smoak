@@ -117,7 +117,7 @@ export interface Trainer {
   workAddress?: string;
   /** zip = ZIP centroid (default for existing profiles); address = pinned street */
   locationPrecision?: "zip" | "address";
-  /** Optional second facility — shown on the public profile only.
+  /** Optional secondary facility — shown on the public profile only.
    * Maps, Explore distance, and search stay on the primary pin. */
   workAddress2?: string;
   locationPrecision2?: "zip" | "address";

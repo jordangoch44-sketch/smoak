@@ -162,10 +162,10 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
     id: "street",
     section: 3,
     required: false,
-    title: "Where’s your facility?",
+    title: "Where’s your primary facility?",
     subtitle:
       "The pin is how nearby clients discover you. Street text stays private.",
-    trailTitle: "Facility",
+    trailTitle: "Primary facility",
     trailHint: "Pin for marketplace discovery",
     trailIcon: "home",
   },
