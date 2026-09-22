@@ -270,15 +270,17 @@ function LiveEditSheet({
   variant = "default",
   isLiveListing = false,
   subtitle,
+  saveLabel,
 }: {
   title: string;
   saving: boolean;
   onClose: () => void;
   onSave: () => void;
   children: ReactNode;
-  variant?: "default" | "photos" | "pricing";
+  variant?: "default" | "photos" | "pricing" | "intro";
   isLiveListing?: boolean;
   subtitle?: string;
+  saveLabel?: string;
 }) {
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
@@ -325,7 +327,13 @@ function LiveEditSheet({
   if (!mounted) return null;
 
   return createPortal(
-    <div className="specialist-live-sheet" role="presentation">
+    <div
+      className={cn(
+        "specialist-live-sheet",
+        variant === "intro" && "specialist-live-sheet--intro"
+      )}
+      role="presentation"
+    >
       <button
         type="button"
         className="specialist-live-sheet__backdrop"
@@ -344,7 +352,8 @@ function LiveEditSheet({
       <div
         className={cn(
           "specialist-live-sheet__dialog",
-          variant === "pricing" && "specialist-live-sheet__dialog--pricing"
+          variant === "pricing" && "specialist-live-sheet__dialog--pricing",
+          variant === "intro" && "specialist-live-sheet__dialog--intro"
         )}
         role="dialog"
         aria-modal="true"
@@ -380,10 +389,14 @@ function LiveEditSheet({
             onClick={onSave}
           >
             {saving
-              ? "Publishing…"
-              : variant === "photos"
-                ? "Save"
-                : "Save changes — goes live"}
+              ? variant === "intro"
+                ? "Saving…"
+                : "Publishing…"
+              : saveLabel
+                ? saveLabel
+                : variant === "photos"
+                  ? "Save"
+                  : "Save changes — goes live"}
           </button>
           <button
             type="button"
@@ -402,21 +415,25 @@ function LiveEditSheet({
           aria-live="polite"
           aria-busy="true"
           aria-label={
-            variant === "photos"
-              ? "Saving photos"
-              : isLiveListing
-                ? "Posting live"
-                : "Saving your profile"
+            variant === "intro"
+              ? "Saving intro video"
+              : variant === "photos"
+                ? "Saving photos"
+                : isLiveListing
+                  ? "Posting live"
+                  : "Saving your profile"
           }
         >
           <div className="specialist-publishing-overlay__panel">
             <SmoacSavingMark
               label={
-                variant === "photos"
-                  ? "Saving photos"
-                  : isLiveListing
-                    ? "Posting live"
-                    : "Saving your profile"
+                variant === "intro"
+                  ? "Saving intro video"
+                  : variant === "photos"
+                    ? "Saving photos"
+                    : isLiveListing
+                      ? "Posting live"
+                      : "Saving your profile"
               }
             />
           </div>
@@ -874,19 +891,23 @@ export function SpecialistDashboardProfilePreview({
         onClose={cancelEdit}
         onSave={() => void publish()}
         subtitle={
-          editing === "contact"
-            ? "Phone and email can appear on your profile. Password is only for signing in."
-            : undefined
+          editing === "intro-video"
+            ? "Show clients who you are."
+            : editing === "contact"
+              ? "Phone and email can appear on your profile. Password is only for signing in."
+              : undefined
         }
+        saveLabel={editing === "intro-video" ? "Save intro video" : undefined}
         variant={
-          editing === "hero" ||
-          editing === "intro-video" ||
-          editing === "videos" ||
-          editing === "avatar"
-            ? "photos"
-            : editing === "pricing"
-              ? "pricing"
-              : "default"
+          editing === "intro-video"
+            ? "intro"
+            : editing === "hero" ||
+                editing === "videos" ||
+                editing === "avatar"
+              ? "photos"
+              : editing === "pricing"
+                ? "pricing"
+                : "default"
         }
       >
         {editing === "avatar" ? (
@@ -926,8 +947,7 @@ export function SpecialistDashboardProfilePreview({
             introVideoPosterJson={form.introVideoPosterJson}
             isPremium={isPremium}
             specialistId={trainerId ?? application?.id ?? trainer.id}
-            specialistName={form.name || trainer.name}
-            specialistFirstName={trainer.specialistFirstName}
+            showHeading={false}
             onUpgrade={onUpgrade}
             onChange={(next) => {
               setDraft((prev) => (prev ? { ...prev, ...next } : prev));

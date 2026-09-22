@@ -2,6 +2,7 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { ProfileVideoFramePicker } from "@/components/media/ProfileVideoFramePicker";
+import { LockIcon, PlayIcon, PlusIcon } from "@/components/ui/icons";
 import {
   uploadSpecialistDashboardMedia,
   uploadSpecialistDashboardVideo,
@@ -17,18 +18,24 @@ import {
   formatClipSecondsLabel,
   inspectPhoneVideoFile,
 } from "@/lib/media/video-file";
-import { meetCtaLabel } from "@/lib/specialist-intro-video";
+import { SPECIALIST_VIDEO_MAX_SECONDS } from "@/lib/specialist-media-limits";
 import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
-import { LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+
+const INTRO_PROMPTS = [
+  { title: "Who you are", detail: "Name · specialty · location" },
+  { title: "Who you help", detail: "Your ideal clients" },
+  { title: "Your style", detail: "What training with you feels like" },
+  { title: "Say hello", detail: "Invite them to connect" },
+] as const;
 
 interface SpecialistIntroVideoEditorProps {
   introVideoUrl: string;
   introVideoPosterJson: string;
   isPremium: boolean;
   specialistId?: string | null;
-  specialistName?: string;
-  specialistFirstName?: string;
+  /** Sheet already shows the title. Edit-profile embeds its own heading. */
+  showHeading?: boolean;
   onUpgrade?: () => void;
   onChange: (patch: {
     introVideoUrl?: string;
@@ -41,19 +48,15 @@ export function SpecialistIntroVideoEditor({
   introVideoPosterJson,
   isPremium,
   specialistId,
-  specialistName = "",
-  specialistFirstName,
+  showHeading = true,
   onUpgrade,
   onChange,
 }: SpecialistIntroVideoEditorProps) {
   const inputId = useId();
+  const replaceId = useId();
   const url = introVideoUrl.trim();
   const posters = parseVideoPosterMap(introVideoPosterJson);
   const poster = url ? resolveVideoPoster(posters, url) : undefined;
-  const meetLabel = meetCtaLabel({
-    name: specialistName,
-    specialistFirstName,
-  });
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -122,127 +125,193 @@ export function SpecialistIntroVideoEditor({
     }
   }
 
+  const fileAccept = `video/*,${SPECIALIST_STORAGE_ACCEPT.galleryVideo}`;
+  const addLabel = busy ? progress ?? "Reading…" : "Add video";
+
   return (
-    <div
-      className={cn(
-        "specialist-media-editor__videos",
-        !isPremium && "specialist-media-editor__feature--locked"
-      )}
-    >
-      <div className="specialist-media-editor__label-row">
-        <p className="login-field__label">Intro video</p>
-        {!isPremium ? (
-          <LockIcon className="specialist-media-editor__label-lock" />
-        ) : null}
+    <div className="intro-video-guide">
+      {showHeading ? (
+        <div className="intro-video-guide__intro">
+          <h3 className="intro-video-guide__title">Intro video</h3>
+          <p className="intro-video-guide__lead">Show clients who you are.</p>
+        </div>
+      ) : null}
+
+      <div className="intro-video-guide__badges">
+        <span className="intro-video-guide__badge">
+          {SPECIALIST_VIDEO_MAX_SECONDS} sec max
+        </span>
+        <span className="intro-video-guide__badge intro-video-guide__badge--pro">
+          Pro feature
+        </span>
       </div>
-      <p className="specialist-media-editor__hint">
-        {isPremium
-          ? `One clip from your phone, 45 seconds max. Clients see a play button — “${meetLabel}” — above your bio.`
-          : url
-            ? `Your intro is saved. “${meetLabel}” stays off Marketplace until you restore Pro.`
-            : `One clip from your phone, 45 seconds max. Clients see a play button — “${meetLabel}” — above your bio.`}
-      </p>
-      <div
-        className="specialist-media-editor__pin-row"
-        aria-label="Intro video"
-      >
-        {url ? (
-          <div className="specialist-media-editor__video-tile">
-            <div className="specialist-media-editor__pin-tile specialist-media-editor__pin-tile--video">
-              {poster?.posterUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={poster.posterUrl} alt="" />
-              ) : (
-                <video
-                  src={url}
-                  muted
-                  playsInline
-                  preload="metadata"
-                  className="specialist-media-editor__pin-video"
-                />
-              )}
-              <span className="specialist-media-editor__clip-seconds">
-                {formatClipSecondsLabel(poster?.duration ?? 0)}
+
+      {url ? (
+        <div className="intro-video-guide__stage">
+          <div className="intro-video-guide__preview">
+            {poster?.posterUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={poster.posterUrl} alt="" />
+            ) : (
+              <video
+                src={url}
+                muted
+                playsInline
+                preload="metadata"
+                className="intro-video-guide__preview-video"
+              />
+            )}
+            <span className="intro-video-guide__play" aria-hidden>
+              <span className="intro-video-guide__play-badge">
+                <PlayIcon className="intro-video-guide__play-icon" />
               </span>
-            </div>
-            <div className="specialist-media-editor__video-tile-actions">
-              {isPremium ? (
-                <label
-                  className={cn(
-                    "smoac-control specialist-media-editor__thumb-btn",
-                    busy && "specialist-media-editor__thumb-btn--busy"
-                  )}
-                >
-                  {busy ? progress ?? "Reading…" : "Replace"}
-                  <input
-                    id={inputId}
-                    type="file"
-                    accept={`video/*,${SPECIALIST_STORAGE_ACCEPT.galleryVideo}`}
-                    className="specialist-media-editor__pin-file"
-                    onChange={(event) => void handleAdd(event)}
-                    disabled={busy || Boolean(pendingFile)}
-                  />
-                </label>
-              ) : (
-                <button
-                  type="button"
-                  className="smoac-control specialist-media-editor__thumb-btn specialist-media-editor__thumb-btn--locked"
-                  onClick={() => onUpgrade?.()}
-                >
-                  Replace
-                  <LockIcon className="specialist-media-editor__btn-lock" />
-                </button>
-              )}
+            </span>
+            <span className="intro-video-guide__duration">
+              {formatClipSecondsLabel(poster?.duration ?? 0)}
+            </span>
+          </div>
+          <div className="intro-video-guide__preview-actions">
+            {isPremium ? (
+              <label
+                className={cn(
+                  "smoac-control intro-video-guide__add-btn",
+                  busy && "intro-video-guide__add-btn--busy"
+                )}
+              >
+                {busy ? progress ?? "Reading…" : "Replace video"}
+                <input
+                  id={replaceId}
+                  type="file"
+                  accept={fileAccept}
+                  className="intro-video-guide__file"
+                  onChange={(event) => void handleAdd(event)}
+                  disabled={busy || Boolean(pendingFile)}
+                />
+              </label>
+            ) : (
               <button
                 type="button"
-                className="smoac-control specialist-media-editor__thumb-btn specialist-media-editor__thumb-btn--danger"
-                onClick={() => {
-                  if (!isPremium) {
-                    onUpgrade?.();
-                    return;
-                  }
-                  commit("", posters);
-                }}
+                className="smoac-control intro-video-guide__add-btn"
+                onClick={() => onUpgrade?.()}
               >
-                Remove
+                Replace video
+                <LockIcon className="intro-video-guide__btn-lock" />
               </button>
-            </div>
+            )}
+            <button
+              type="button"
+              className="smoac-control intro-video-guide__remove"
+              onClick={() => {
+                if (!isPremium) {
+                  onUpgrade?.();
+                  return;
+                }
+                commit("", posters);
+              }}
+            >
+              Remove
+            </button>
           </div>
-        ) : isPremium ? (
+          {!isPremium ? (
+            <p className="intro-video-guide__saved-note">
+              Saved on your profile. Clients see it again when you restore Pro.
+            </p>
+          ) : null}
+        </div>
+      ) : isPremium ? (
+        <div className="intro-video-guide__drop">
+          <span className="intro-video-guide__cam" aria-hidden>
+            <VideoCamIcon />
+          </span>
+          <p className="intro-video-guide__drop-title">Add your intro video</p>
+          <p className="intro-video-guide__drop-sub">
+            Choose a video from your phone
+          </p>
           <label
             className={cn(
-              "smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add",
-              busy && "specialist-media-editor__pin-tile--busy"
+              "smoac-control intro-video-guide__add-btn",
+              busy && "intro-video-guide__add-btn--busy"
             )}
           >
-            <span aria-hidden>+</span>
-            <span>{busy ? progress ?? "Reading…" : "Add"}</span>
+            {busy ? null : <PlusIcon className="intro-video-guide__plus" />}
+            {addLabel}
             <input
               id={inputId}
               type="file"
-              accept={`video/*,${SPECIALIST_STORAGE_ACCEPT.galleryVideo}`}
-              className="specialist-media-editor__pin-file"
+              accept={fileAccept}
+              className="intro-video-guide__file"
               onChange={(event) => void handleAdd(event)}
               disabled={busy || Boolean(pendingFile)}
             />
           </label>
-        ) : (
+        </div>
+      ) : (
+        <div className="intro-video-guide__drop">
+          <span className="intro-video-guide__cam" aria-hidden>
+            <LockIcon className="intro-video-guide__cam-lock" />
+          </span>
+          <p className="intro-video-guide__drop-title">Add your intro video</p>
+          <p className="intro-video-guide__drop-sub">
+            A Pro feature — one clip, {SPECIALIST_VIDEO_MAX_SECONDS} seconds
+            max
+          </p>
           <button
             type="button"
-            className="smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add specialist-media-editor__pin-tile--locked"
+            className="smoac-control intro-video-guide__add-btn"
             onClick={() => onUpgrade?.()}
-            aria-label="Unlock intro video with Pro"
           >
-            <LockIcon className="specialist-media-editor__add-lock" />
-            <span>Add</span>
+            Unlock with Pro
           </button>
-        )}
-      </div>
+        </div>
+      )}
+
       {error ? (
         <p className="dashboard-upload-error" role="alert">
           {error}
         </p>
       ) : null}
+
+      <section className="intro-video-guide__script" aria-label="What to say">
+        <h3 className="intro-video-guide__script-title">
+          Not sure what to say?
+        </h3>
+        <p className="intro-video-guide__script-lead">
+          Keep it simple. Be yourself.
+        </p>
+        <ol className="intro-video-guide__prompts">
+          {INTRO_PROMPTS.map((prompt, index) => (
+            <li key={prompt.title} className="intro-video-guide__prompt">
+              <span className="intro-video-guide__num" aria-hidden>
+                {index + 1}
+              </span>
+              <span className="intro-video-guide__prompt-copy">
+                <span className="intro-video-guide__prompt-title">
+                  {prompt.title}
+                </span>
+                <span className="intro-video-guide__prompt-detail">
+                  {prompt.detail}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="intro-video-guide__tip">
+          <span className="intro-video-guide__tip-icon" aria-hidden>
+            <BulbIcon />
+          </span>
+          <span>
+            Good lighting
+            <span className="intro-video-guide__dot" aria-hidden>
+              ·
+            </span>
+            Quiet space
+            <span className="intro-video-guide__dot" aria-hidden>
+              ·
+            </span>
+            {SPECIALIST_VIDEO_MAX_SECONDS} sec max
+          </span>
+        </p>
+      </section>
 
       {pendingFile ? (
         <ProfileVideoFramePicker
@@ -253,5 +322,40 @@ export function SpecialistIntroVideoEditor({
         />
       ) : null}
     </div>
+  );
+}
+
+function VideoCamIcon() {
+  return (
+    <svg
+      className="intro-video-guide__cam-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M15.5 10.5 19 8.2a1 1 0 0 1 1.5.86v5.88a1 1 0 0 1-1.5.86l-3.5-2.3" />
+      <rect x="3.25" y="7" width="12.25" height="10" rx="2.25" />
+    </svg>
+  );
+}
+
+function BulbIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 18h6M10 21h4" />
+      <path d="M8.2 14.2A6 6 0 1 1 15.8 14.2c-.7.7-1.1 1.4-1.3 2.3H9.5c-.2-.9-.6-1.6-1.3-2.3Z" />
+    </svg>
   );
 }

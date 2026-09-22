@@ -51,11 +51,25 @@ export async function GET(request: Request) {
         } = await supabase.auth.getUser();
 
         if (user) {
+          const { data: priorProfile } = await supabase
+            .from("profiles")
+            .select("user_id")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
           /* Non-blocking: password form must not wait on profiles/user_roles. */
           await withBudget(
             ensureClientProfileForAuthUser(supabase, user),
             PROFILE_ENSURE_BUDGET_MS
           );
+
+          const metaRole = String(user.user_metadata?.role ?? "").trim();
+          if (!priorProfile && metaRole !== "specialist" && metaRole !== "admin") {
+            const { notifyOpsClientSignup } = await import(
+              "@/lib/email/ops-alert"
+            );
+            await notifyOpsClientSignup(user);
+          }
 
           const { data: profile } = await supabase
             .from("profiles")

@@ -221,6 +221,7 @@ export function ExplorePageClient() {
               onMapSearchStart={handleMapSearchStart}
               onPendingSearchAreaChange={handlePendingSearchAreaChange}
               onRecenterSearch={handleRecenterSearch}
+              searchLoading={mapSearchLoading}
               locked={false}
               variant="hero"
               showNotes={false}
@@ -252,6 +253,7 @@ export function ExplorePageClient() {
                   onMapSearchStart={handleMapSearchStart}
                   onPendingSearchAreaChange={handlePendingSearchAreaChange}
                   onRecenterSearch={handleRecenterSearch}
+                  searchLoading={mapSearchLoading}
                   locked={false}
                   variant="column"
                   showNotes={false}

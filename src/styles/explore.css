@@ -576,6 +576,49 @@ body:has(.explore-page) .site-footer__glow {
   z-index: 450;
 }
 
+/* Map search — smoke ring centered on the map while specialists reload */
+.explore-map-search-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 8;
+  width: 3.75rem;
+  height: 3.75rem;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: explore-map-search-ring-in 160ms ease-out both;
+}
+
+.explore-map-search-ring__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  animation: explore-map-search-ring-spin 0.9s linear infinite;
+  filter:
+    drop-shadow(0 0 6px rgba(var(--smoac-color-violet-rgb), 0.5))
+    drop-shadow(0 0 14px rgba(var(--smoac-color-rose-rgb), 0.28));
+}
+
+.explore-map-search-ring__track {
+  opacity: 0.28;
+}
+
+@keyframes explore-map-search-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes explore-map-search-ring-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .explore-map__canvas {
   position: relative;
   width: 100%;
@@ -866,6 +909,19 @@ body.explore-hub-open .explore-split__cta-dock {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .explore-map-search-ring,
+  .explore-map-search-ring__svg {
+    animation: none;
+  }
+
+  .explore-map-search-ring__arc {
+    display: none;
+  }
+
+  .explore-map-search-ring__track {
+    opacity: 0.92;
+  }
+
   .explore-split__cta::before {
     animation: none;
     inset: 0;

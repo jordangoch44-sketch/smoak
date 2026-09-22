@@ -36,6 +36,7 @@ import {
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
 import { ExploreMapBottomCard } from "./ExploreMapBottomCard";
+import { ExploreMapSearchRing } from "./ExploreMapSearchRing";
 import type { ExploreMapArea, ExploreMapProps } from "./ExploreMapLeaflet";
 
 type MapKitAnnotation = InstanceType<AppleMapKit["Annotation"]>;
@@ -222,6 +223,7 @@ export function ExploreMapApple({
   activeSearchArea = null,
   onPendingSearchAreaChange,
   onMapSearchStart,
+  searchLoading = false,
   onRecenterSearch,
   locked = true,
   variant = "panel",
@@ -831,6 +833,7 @@ export function ExploreMapApple({
           cluster={selectedCluster}
           onClose={clearSelection}
         />
+        {searchLoading ? <ExploreMapSearchRing /> : null}
         {loadError ? (
           <p className="explore-map__load-error" role="alert">
             Apple Maps failed to load. Check your Maps token and allowed

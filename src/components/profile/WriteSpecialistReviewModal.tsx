@@ -8,14 +8,16 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { ReviewAccountGate } from "@/components/profile/ReviewAccountGate";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
-import { useToast } from "@/components/ui/toast";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useHydrated } from "@/hooks/useHydrated";
-import { LOGIN_PATH } from "@/lib/auth-routes";
+import { CLIENT_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
+import { sendClientWelcomeEmail } from "@/lib/email/confirmation-email-service";
 import { submitSpecialistReview } from "@/lib/reviews/specialist-reviews-client";
 import {
   REVIEW_TEXT_MAX,
@@ -26,12 +28,21 @@ import {
 } from "@/lib/reviews/specialist-review-types";
 import { cn } from "@/lib/utils";
 
+const FINISH_ACCOUNT_SETUP_HREF = `${CLIENT_DASHBOARD_PATH}?editProfile=1`;
+
 interface WriteSpecialistReviewModalProps {
   open: boolean;
   onClose: () => void;
   specialistId: string;
   specialistName: string;
   onSubmitted: (review: SpecialistReview) => void;
+}
+
+function dismissReviewKeyboard() {
+  const field = document.getElementById("smoac-review-text");
+  if (field instanceof HTMLElement) field.blur();
+  const active = document.activeElement;
+  if (active instanceof HTMLElement) active.blur();
 }
 
 function ReviewModalForm({
@@ -41,14 +52,20 @@ function ReviewModalForm({
   onSubmitted,
 }: Omit<WriteSpecialistReviewModalProps, "open">) {
   const titleId = useId();
-  const { refreshSession } = useAuthSession();
-  const { showToast } = useToast();
+  const { session, isReady, refreshSession } = useAuthSession();
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   const [text, setText] = useState("");
   const [submitError, setSubmitError] =
     useState<SubmitSpecialistReviewErrorCode | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [awaitingAccount, setAwaitingAccount] = useState(false);
+  const [accountGate, setAccountGate] = useState<null | "signup" | "signin">(
+    null
+  );
+  const [submitted, setSubmitted] = useState(false);
+  const [offerSetup, setOfferSetup] = useState(false);
+  const [welcomeSent, setWelcomeSent] = useState(false);
   const submittingRef = useRef(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const backdropDismiss = useOwnPointerDismiss(() => {
@@ -100,13 +117,17 @@ function ReviewModalForm({
     trimmedLength <= REVIEW_TEXT_MAX &&
     !submitting;
 
-  const handleSubmit = useCallback(async () => {
-    if (submittingRef.current || !canSubmit) return;
+  const openAccountGate = useCallback((mode: "signup" | "signin") => {
+    dismissReviewKeyboard();
+    setAwaitingAccount(true);
+    setAccountGate(mode);
+  }, []);
+
+  const publishReview = useCallback(async () => {
+    if (submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
-
-    await refreshSession();
 
     const result = await submitSpecialistReview({
       specialistId,
@@ -115,33 +136,82 @@ function ReviewModalForm({
       reviewText: text,
     });
 
+    submittingRef.current = false;
+    setSubmitting(false);
+
     if (!result.ok) {
+      if (
+        result.error === "not_authenticated" ||
+        result.error === "not_client"
+      ) {
+        openAccountGate("signup");
+        return;
+      }
       setSubmitError(result.error);
-      submittingRef.current = false;
-      setSubmitting(false);
       return;
     }
 
     onSubmitted(result.review);
-    showToast({
-      message: "Your review has been submitted.",
-      type: "success",
-    });
-    onClose();
-    submittingRef.current = false;
-    setSubmitting(false);
+    setSubmitted(true);
   }, [
-    canSubmit,
-    onClose,
     onSubmitted,
+    openAccountGate,
     rating,
-    refreshSession,
-    showToast,
     specialistId,
-    text,
     specialistName,
+    text,
   ]);
 
+  const handleSubmit = useCallback(async () => {
+    if (submittingRef.current || !canSubmit || submitted) return;
+    setSubmitError(null);
+
+    if (isReady && session?.role !== "client") {
+      openAccountGate("signup");
+      return;
+    }
+
+    await refreshSession();
+    const current = getAuthSessionSnapshot();
+    if (!current || current.role !== "client") {
+      openAccountGate("signup");
+      return;
+    }
+
+    await publishReview();
+  }, [
+    canSubmit,
+    isReady,
+    openAccountGate,
+    publishReview,
+    refreshSession,
+    session?.role,
+    submitted,
+  ]);
+
+  const handleAuthenticated = useCallback(
+    async (result: {
+      created: boolean;
+      email: string;
+      firstName?: string;
+    }) => {
+      setAccountGate(null);
+      setAwaitingAccount(false);
+      setSubmitError(null);
+      setOfferSetup(true);
+      if (result.created) {
+        setWelcomeSent(true);
+        void sendClientWelcomeEmail({
+          to: result.email,
+          firstName: result.firstName,
+        });
+      }
+      await publishReview();
+    },
+    [publishReview]
+  );
+
+  const promptAccount = awaitingAccount && session?.role !== "client";
   const displayStars = hovered || rating;
   const submitHint =
     rating < 1
@@ -181,7 +251,7 @@ function ReviewModalForm({
       >
         <header className="review-modal__header">
           <h2 id={titleId} className="review-modal__title">
-            Leave a review for {specialistName}
+            {submitted ? "Review submitted" : `Leave a review for ${specialistName}`}
           </h2>
           <FastActivateButton
             className="smoac-control review-modal__close"
@@ -194,6 +264,16 @@ function ReviewModalForm({
         </header>
 
         <div className="review-modal__body">
+          {submitted ? (
+            <p className="review-modal__success">
+              {offerSetup
+                ? welcomeSent
+                  ? "You’re signed in to your SMOAC account. A welcome email is on its way. Finish setting up your profile whenever you’re ready."
+                  : "You’re signed in to your SMOAC account. Finish setting up your profile whenever you’re ready."
+                : "Your review is on this specialist’s profile."}
+            </p>
+          ) : (
+            <>
           <div
             className="review-modal__stars"
             role="radiogroup"
@@ -262,30 +342,57 @@ function ReviewModalForm({
           {submitError ? (
             <p className="review-modal__error" role="alert">
               {submitReviewErrorMessage({ ok: false, error: submitError })}
-              {submitError === "not_authenticated" ? (
-                <>
-                  {" "}
-                  <HeaderChromeLink
-                    href={LOGIN_PATH}
-                    className="review-modal__error-link"
-                    onActivate={onClose}
-                  >
-                    Log in
-                  </HeaderChromeLink>
-                </>
-              ) : null}
             </p>
           ) : null}
+            </>
+          )}
         </div>
 
         <footer className="review-modal__footer">
-          <FastActivateButton
-            className="smoac-control review-modal__submit"
-            disabled={!canSubmit}
-            onActivate={() => void handleSubmit()}
-          >
-            {submitting ? "Submitting…" : "Submit Review"}
-          </FastActivateButton>
+          {submitted ? (
+            <>
+              <FastActivateButton
+                className="smoac-control review-modal__submit"
+                onActivate={onClose}
+              >
+                Review submitted
+              </FastActivateButton>
+              {offerSetup ? (
+                <HeaderChromeLink
+                  href={FINISH_ACCOUNT_SETUP_HREF}
+                  className="smoac-control review-modal__cancel"
+                  onActivate={onClose}
+                >
+                  Finish setting up
+                </HeaderChromeLink>
+              ) : null}
+            </>
+          ) : promptAccount ? (
+            <>
+              <FastActivateButton
+                className="smoac-control review-modal__submit"
+                disabled={submitting}
+                onActivate={() => openAccountGate("signup")}
+              >
+                Create an account
+              </FastActivateButton>
+              <FastActivateButton
+                className="smoac-control review-modal__or-login"
+                disabled={submitting}
+                onActivate={() => openAccountGate("signin")}
+              >
+                or log in
+              </FastActivateButton>
+            </>
+          ) : (
+            <FastActivateButton
+              className="smoac-control review-modal__submit"
+              disabled={!canSubmit}
+              onActivate={() => void handleSubmit()}
+            >
+              {submitting ? "Submitting…" : "Submit Review"}
+            </FastActivateButton>
+          )}
           <FastActivateButton
             className="smoac-control review-modal__cancel"
             disabled={submitting}
@@ -295,6 +402,13 @@ function ReviewModalForm({
           </FastActivateButton>
         </footer>
       </div>
+      {accountGate ? (
+        <ReviewAccountGate
+          initialMode={accountGate}
+          onClose={() => setAccountGate(null)}
+          onAuthenticated={(result) => void handleAuthenticated(result)}
+        />
+      ) : null}
     </div>
   );
 }

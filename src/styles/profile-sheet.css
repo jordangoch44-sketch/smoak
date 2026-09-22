@@ -287,7 +287,7 @@ body.profile-sheet-open #site-header {
   pointer-events: none;
 }
 
-body.profile-sheet-open footer {
+body.profile-sheet-open .site-footer {
   visibility: hidden;
   pointer-events: none;
 }

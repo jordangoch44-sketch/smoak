@@ -262,9 +262,15 @@
   padding: 0.75rem 1.125rem max(0.875rem, env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(var(--aurora-lavender-rgb), 0.14);
   background: rgb(10, 9, 16);
+  /* Profile sheet hides the site footer; keep this action row painted. */
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .review-modal__cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   width: 100%;
   min-height: 2.75rem;
@@ -274,6 +280,7 @@
   color: rgba(255, 255, 255, 0.88);
   font-size: 0.9rem;
   font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -309,12 +316,177 @@
   filter: none;
 }
 
+.review-modal__success {
+  margin: 0.15rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}
+
 .review-modal__submit-hint {
   margin: 0.65rem 0 0;
   font-size: 0.75rem;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.45);
   text-align: center;
+}
+
+.review-modal__or-login {
+  align-self: center;
+  min-height: 2.25rem;
+  margin: 0.15rem 0 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+  cursor: pointer;
+}
+
+.review-account-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+}
+
+.review-modal-root:has(.review-account-gate) .review-modal__backdrop {
+  background: rgba(4, 4, 10, 0.28);
+  backdrop-filter: blur(4px) saturate(1.05);
+  -webkit-backdrop-filter: blur(4px) saturate(1.05);
+}
+
+.review-account-gate__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(4, 4, 10, 0.32);
+  cursor: pointer;
+}
+
+.review-account-gate__card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(100%, 28rem);
+  max-height: min(92dvh, 36rem);
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.28);
+  border-radius: 1.15rem;
+  background:
+    linear-gradient(
+      165deg,
+      rgba(var(--aurora-lavender-rgb), 0.1) 0%,
+      transparent 34%
+    ),
+    linear-gradient(
+      165deg,
+      rgb(26, 23, 38) 0%,
+      rgb(14, 12, 22) 46%,
+      rgb(10, 9, 16) 100%
+    );
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.55),
+    0 0 40px rgba(var(--aurora-lavender-rgb), 0.18);
+}
+
+.review-account-gate__header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem 0.35rem;
+}
+
+.review-account-gate__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.review-account-gate__body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.35rem 1.125rem 1.125rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.review-account-gate__support {
+  margin: 0 0 0.9rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.review-account-gate__field {
+  position: relative;
+  margin-bottom: 0.75rem;
+}
+
+.review-account-gate__field-icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  width: 1.05rem;
+  height: 1.05rem;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, 0.38);
+  pointer-events: none;
+}
+
+.review-account-gate__input {
+  width: 100%;
+  min-height: 2.85rem;
+  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.22);
+  border-radius: 0.9rem;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 0.65rem 0.9rem 0.65rem 2.5rem;
+  font-size: 1rem;
+  color: #fff;
+  outline: none;
+}
+
+.review-account-gate__input::placeholder {
+  color: rgba(255, 255, 255, 0.38);
+}
+
+.review-account-gate__input:focus {
+  border-color: rgba(var(--aurora-lavender-rgb), 0.55);
+  box-shadow: 0 0 0 1px rgba(var(--aurora-lavender-rgb), 0.25);
+}
+
+.review-account-gate__submit {
+  margin-top: 0.35rem;
+}
+
+.review-account-gate .review-modal__or-login {
+  margin-top: 0.35rem;
+}
+
+@media (min-width: 640px) {
+  .review-account-gate {
+    align-items: center;
+    padding: 1.5rem;
+  }
 }
 
 body.review-modal-open .profile-sheet,

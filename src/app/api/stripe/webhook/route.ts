@@ -95,6 +95,17 @@ export async function POST(request: Request) {
           customerId,
           subscription,
         });
+        if (session.payment_status === "paid" || session.payment_status === "no_payment_required") {
+          const { notifyOpsSubscriptionPayment } = await import(
+            "@/lib/email/ops-alert"
+          );
+          await notifyOpsSubscriptionPayment({
+            eventType: event.type,
+            subscription,
+            userId,
+            amountCents: session.amount_total,
+          });
+        }
         break;
       }
       case "customer.subscription.updated":
@@ -111,6 +122,18 @@ export async function POST(request: Request) {
           specialistProfileId: resolved.profileId,
           customerId,
           subscription,
+        });
+        const previous = event.data.previous_attributes as
+          | { status?: string }
+          | undefined;
+        const { notifyOpsSubscriptionPayment } = await import(
+          "@/lib/email/ops-alert"
+        );
+        await notifyOpsSubscriptionPayment({
+          eventType: event.type,
+          subscription,
+          userId: resolved.userId,
+          previousStatus: previous?.status ?? null,
         });
         break;
       }
@@ -153,6 +176,8 @@ export async function POST(request: Request) {
           paymentIntentId: paymentIntent.id,
           endsAt,
         });
+        const { notifyOpsBoostPayment } = await import("@/lib/email/ops-alert");
+        await notifyOpsBoostPayment(paymentIntent);
         break;
       }
       default:

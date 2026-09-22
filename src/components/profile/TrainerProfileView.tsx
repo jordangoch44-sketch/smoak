@@ -77,21 +77,36 @@ export function TrainerProfileView({
   const offersFreeFirstSession = isTrainerFreeFirstSessionEligible(trainer);
 
   useEffect(() => {
-    if (!hydrated || isSpecialistLive || !canLeaveReview) return;
+    if (!hydrated || isSpecialistLive) return;
+    let params: URLSearchParams;
     try {
-      const params = new URLSearchParams(window.location.search);
-      if (!isLeaveReviewQuery(params.get("review"))) return;
-      setSheetTab("reviews");
-      setReviewModalOpen(true);
-      params.delete("review");
-      const next = `${window.location.pathname}${
-        params.toString() ? `?${params.toString()}` : ""
-      }${window.location.hash}`;
-      window.history.replaceState({}, "", next);
+      params = new URLSearchParams(window.location.search);
     } catch {
-      /* ignore malformed URL */
+      return;
     }
-  }, [hydrated, canLeaveReview, isSpecialistLive, trainer.id]);
+    if (!isLeaveReviewQuery(params.get("review"))) return;
+
+    setSheetTab("reviews");
+    setReviewModalOpen(true);
+
+    /* Strip after this effect commits. Clearing in the effect itself drops
+     * the query during React strict remount, so the popup never stays open. */
+    const timeout = window.setTimeout(() => {
+      try {
+        const nextParams = new URLSearchParams(window.location.search);
+        if (!isLeaveReviewQuery(nextParams.get("review"))) return;
+        nextParams.delete("review");
+        const next = `${window.location.pathname}${
+          nextParams.toString() ? `?${nextParams.toString()}` : ""
+        }${window.location.hash}`;
+        window.history.replaceState({}, "", next);
+      } catch {
+        /* ignore malformed URL */
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, [hydrated, isSpecialistLive, trainer.id]);
 
   return (
     <div

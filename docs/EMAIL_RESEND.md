@@ -52,10 +52,16 @@ EMAIL_REPLY_TO=support@smoac.com
 | Specialist reply | Client | `inquiry_client` | `POST /api/inquiry/reply` |
 | Client Join Now / complete-account | Client | `confirmation_client` | `sendClientWelcomeEmail` (deduped per browser) |
 | Specialist application submitted | Specialist | `confirmation_specialist` | Onboarding submit |
+| New client account | `support@smoac.com` | `ops_alert` | First client profile (or auth callback) |
+| New specialist application | `support@smoac.com` | `ops_alert` | First application submit |
+| Pro / PRO+ payment | `support@smoac.com` | `ops_alert` | Stripe subscription becomes active |
+| Boost payment | `support@smoac.com` | `ops_alert` | Stripe `payment_intent.succeeded` |
 | Specialist approved | Specialist | `approval_specialist` | Admin approve |
 | Specialist rejected | Specialist | `rejection_specialist` | Admin reject |
 | Specialist onboarding OTP | Specialist | `specialist_email_otp` | Server (not via `/api/email`) |
 | Pro trial reminders | Specialist | `premium_trial_*` | Cron (server) |
+
+Support alerts are one email per account or charge. Apply `supabase/migrations/20260922120000_ops_alert_log.sql` so a Stripe retry does not send the same payment twice. Until that table exists, the alert still sends.
 
 API: `POST /api/email` (browser-safe; key stays on server). Optional `html` field is accepted with `text`.
 

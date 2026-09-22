@@ -1,4 +1,5 @@
 import { sendSpecialistApplicationConfirmationEmail } from "@/lib/email/confirmation-email-service";
+import { requestOpsSignupAlert } from "@/lib/email/ops-signup-alert-client";
 import { clearPendingMarketplaceSignup } from "@/lib/auth/pending-marketplace-signup";
 import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
 import {
@@ -219,6 +220,15 @@ async function submitSpecialistApplicationOnce(
     console.warn(
       "[SMOAC EMAIL] Specialist confirmation email did not send successfully"
     );
+  }
+
+  const prior = existingByUser ?? existingByEmail;
+  const firstSubmit =
+    !prior ||
+    prior.profileStatus === "DRAFT" ||
+    prior.profileStatus === "REJECTED";
+  if (firstSubmit) {
+    requestOpsSignupAlert("specialist");
   }
 
   return {

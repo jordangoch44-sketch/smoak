@@ -8,6 +8,8 @@ import { SUPPORT_EMAIL } from "@/lib/site-contact";
 const NO_DEFAULT_REPLY_TO_KINDS = new Set([
   "inquiry_client",
   "inquiry_specialist",
+  /* Recipient is already support — reply goes to the person who signed up or paid. */
+  "ops_alert",
 ]);
 
 export interface OutboundEmail {

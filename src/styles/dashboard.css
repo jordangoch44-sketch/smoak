@@ -11485,6 +11485,466 @@ body.specialist-live-edit-open .mobile-bottom-nav {
   }
 }
 
+/* Intro video — full page under the site header, matching the add-video guide. */
+.specialist-live-sheet--intro {
+  top: var(--site-header-total-height);
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+}
+
+.specialist-live-sheet__dialog--intro {
+  width: 100%;
+  max-width: 32rem;
+  height: 100%;
+  max-height: none;
+  margin: 0 auto;
+  border: 0;
+  border-radius: 0;
+  background: #07080d;
+  box-shadow: none;
+}
+
+.specialist-live-sheet__dialog--intro .specialist-live-sheet__head {
+  padding: 1.35rem 1.25rem 0;
+  border-bottom: 0;
+}
+
+.specialist-live-sheet__dialog--intro .specialist-live-sheet__title {
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+}
+
+.specialist-live-sheet__dialog--intro .specialist-live-sheet__sub {
+  margin-top: 0.3rem;
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.specialist-live-sheet__dialog--intro .specialist-live-sheet__body {
+  padding: 0.95rem 1.25rem 1.15rem;
+}
+
+.specialist-live-sheet__dialog--intro .specialist-live-sheet__actions {
+  gap: 0.55rem;
+  padding: 0.35rem 1.25rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  border-top: 0;
+  background: #07080d;
+}
+
+.specialist-live-sheet__dialog--intro .specialist-live-sheet__save {
+  min-height: 3.2rem;
+  border: 0;
+  border-radius: 0.9rem;
+  background: linear-gradient(180deg, #b06bff 0%, #7c3aed 100%);
+  box-shadow: 0 10px 24px rgba(124, 58, 237, 0.38);
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.specialist-live-sheet__dialog--intro .specialist-live-sheet__cancel {
+  min-height: 3.05rem;
+  border: 0;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.86);
+}
+
+@media (hover: hover) {
+  .specialist-live-sheet__dialog--intro .specialist-live-sheet__save:hover:not(:disabled) {
+    background: linear-gradient(180deg, #c084fc 0%, #6d28d9 100%);
+  }
+
+  .specialist-live-sheet__dialog--intro .specialist-live-sheet__cancel:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.11);
+  }
+}
+
+@media (min-width: 640px) {
+  .specialist-live-sheet--intro {
+    align-items: stretch;
+    padding: 0;
+  }
+
+  .specialist-live-sheet--intro .specialist-live-sheet__dialog {
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .specialist-live-sheet--intro .specialist-live-sheet__actions {
+    flex-direction: column;
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .specialist-live-sheet--intro .specialist-live-sheet__cancel,
+  .specialist-live-sheet--intro .specialist-live-sheet__save {
+    flex: none;
+    width: 100%;
+  }
+
+  .specialist-live-sheet--intro .specialist-live-sheet__save {
+    order: 1;
+  }
+
+  .specialist-live-sheet--intro .specialist-live-sheet__cancel {
+    order: 2;
+  }
+}
+
+.intro-video-guide {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.intro-video-guide__intro {
+  margin-bottom: 0.85rem;
+}
+
+.intro-video-guide__title {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  color: #fff;
+}
+
+.intro-video-guide__lead {
+  margin: 0.3rem 0 0;
+  font-size: 0.98rem;
+  color: rgba(255, 255, 255, 0.52);
+}
+
+.intro-video-guide__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.95rem;
+}
+
+.intro-video-guide__badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.55rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.intro-video-guide__badge--pro {
+  border-color: rgba(192, 132, 252, 0.7);
+  background: rgba(124, 58, 237, 0.16);
+  color: #e9d5ff;
+}
+
+.intro-video-guide__drop,
+.intro-video-guide__preview {
+  border-radius: 1.15rem;
+}
+
+.intro-video-guide__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 13.75rem;
+  padding: 1.6rem 1.15rem 1.45rem;
+  border: 1.5px dashed rgba(167, 139, 250, 0.72);
+  background:
+    radial-gradient(ellipse at 50% 38%, rgba(124, 58, 237, 0.22), transparent 68%),
+    rgba(18, 12, 32, 0.55);
+  text-align: center;
+}
+
+.intro-video-guide__cam {
+  display: grid;
+  place-items: center;
+  width: 3.35rem;
+  height: 3.35rem;
+  margin-bottom: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(196, 181, 253, 0.45);
+  background: radial-gradient(circle at 50% 40%, rgba(168, 85, 247, 0.45), rgba(76, 29, 149, 0.35));
+  color: #f3e8ff;
+  box-shadow: 0 0 28px rgba(168, 85, 247, 0.35);
+}
+
+.intro-video-guide__cam-icon,
+.intro-video-guide__cam-lock {
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.intro-video-guide__drop-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.intro-video-guide__drop-sub {
+  margin: 0;
+  font-size: 0.84rem;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.intro-video-guide__add-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.7rem;
+  margin-top: 0.7rem;
+  padding: 0 1.2rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #c084fc 0%, #7c3aed 100%);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.38);
+  cursor: pointer;
+}
+
+.intro-video-guide__add-btn--busy {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.intro-video-guide__plus {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.intro-video-guide__btn-lock {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.intro-video-guide__file {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+
+.intro-video-guide__stage {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.intro-video-guide__preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid rgba(167, 139, 250, 0.55);
+  background: #050308;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.12), 0 16px 36px rgba(0, 0, 0, 0.35);
+}
+
+.intro-video-guide__preview img,
+.intro-video-guide__preview-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.intro-video-guide__play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.intro-video-guide__play-badge {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  background: rgba(8, 6, 14, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px);
+}
+
+.intro-video-guide__play-icon {
+  width: 1rem;
+  height: 1rem;
+  margin-left: 0.12rem;
+  color: #fff;
+}
+
+.intro-video-guide__duration {
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.6rem;
+  padding: 0.18rem 0.45rem;
+  border-radius: 0.4rem;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.intro-video-guide__preview-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  margin-top: 0.15rem;
+}
+
+.intro-video-guide__remove {
+  min-height: 2.25rem;
+  padding: 0.2rem 0.75rem;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.intro-video-guide__saved-note {
+  margin: 0.15rem 0 0;
+  text-align: center;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.intro-video-guide__script {
+  margin-top: 1.35rem;
+}
+
+.intro-video-guide__script-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.intro-video-guide__script-lead {
+  margin: 0.25rem 0 0.8rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.intro-video-guide__prompts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.intro-video-guide__prompt {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 3.55rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.intro-video-guide__num {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(192, 132, 252, 0.9);
+  color: #e9d5ff;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.intro-video-guide__prompt-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.intro-video-guide__prompt-title {
+  font-size: 0.94rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: #fff;
+}
+
+.intro-video-guide__prompt-detail {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.intro-video-guide__tip {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.55rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.95rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.intro-video-guide__tip-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.28);
+  color: #e9d5ff;
+}
+
+.intro-video-guide__tip-icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.intro-video-guide__dot {
+  margin: 0 0.35rem;
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.intro-video-guide .dashboard-upload-error {
+  margin-top: 0.75rem;
+}
+
 /* Instagram-style Edit profile list (dashboard only — public profile unchanged) */
 .ig-profile-edit-wrap {
   margin-top: 0;

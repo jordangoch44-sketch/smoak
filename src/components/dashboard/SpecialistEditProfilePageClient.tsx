@@ -1379,8 +1379,6 @@ export function SpecialistEditProfilePageClient({
                   introVideoPosterJson={form.introVideoPosterJson}
                   isPremium={isPremium}
                   specialistId={trainerId}
-                  specialistName={form.name || trainer?.name}
-                  specialistFirstName={trainer?.specialistFirstName}
                   onUpgrade={() => setUpgradeOpen(true)}
                   onChange={(next) => {
                     setSectionDraft((prev) =>

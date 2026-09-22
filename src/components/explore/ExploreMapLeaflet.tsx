@@ -34,6 +34,7 @@ import {
 } from "@/lib/explore-map-clusters";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ExploreMapBottomCard } from "./ExploreMapBottomCard";
+import { ExploreMapSearchRing } from "./ExploreMapSearchRing";
 import { cn } from "@/lib/utils";
 
 export type ExploreMapArea = {
@@ -54,6 +55,8 @@ export interface ExploreMapProps {
   activeSearchArea?: ExploreSearchArea | null;
   /** User started panning/zooming — show searching state */
   onMapSearchStart?: () => void;
+  /** Map area search is in flight — center smoke ring until pins settle */
+  searchLoading?: boolean;
   /** User finished moving the map — pending viewport for auto-search */
   onPendingSearchAreaChange?: (area: ExploreSearchArea | null) => void;
   /** Recenter camera + reset results to default 12-mile frame */
@@ -178,6 +181,7 @@ export function ExploreMapLeaflet({
   activeSearchArea = null,
   onPendingSearchAreaChange,
   onMapSearchStart,
+  searchLoading = false,
   onRecenterSearch,
   locked = true,
   variant = "panel",
@@ -684,6 +688,7 @@ export function ExploreMapLeaflet({
           cluster={selectedCluster}
           onClose={clearSelection}
         />
+        {searchLoading ? <ExploreMapSearchRing /> : null}
         {showChrome ? (
           <FastActivateButton
             className={cn(

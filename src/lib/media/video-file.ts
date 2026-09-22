@@ -173,6 +173,125 @@ function encodePosterDataUrl(
   return dataUrl;
 }
 
+const HAVE_CURRENT_DATA = 2;
+
+function clampMediaTime(video: HTMLVideoElement, time: number): number {
+  const safe = Number.isFinite(time) ? Math.max(0, time) : 0;
+  const duration = video.duration;
+  if (!Number.isFinite(duration) || duration <= 0) return safe;
+  return Math.min(Math.max(0, duration - 0.001), safe);
+}
+
+function waitForPresentedFrame(video: HTMLVideoElement): Promise<void> {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    const requestFrame = video.requestVideoFrameCallback?.bind(video);
+    if (requestFrame) {
+      requestFrame(() => finish());
+    } else {
+      requestAnimationFrame(() => requestAnimationFrame(finish));
+    }
+    window.setTimeout(finish, 400);
+  });
+}
+
+/**
+ * Seek and resolve even when the element is already on that timestamp.
+ * Chrome and WebKit skip the `seeked` event when `currentTime` does not change,
+ * which left the thumbnail confirm control spinning forever.
+ */
+export function seekVideoToTime(
+  video: HTMLVideoElement,
+  time: number
+): Promise<void> {
+  const target = clampMediaTime(video, time);
+  const alreadyThere =
+    video.readyState >= HAVE_CURRENT_DATA &&
+    Math.abs(video.currentTime - target) < 0.04;
+
+  if (alreadyThere) return waitForPresentedFrame(video);
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      video.removeEventListener("seeked", onSeeked);
+      window.clearTimeout(timer);
+      void waitForPresentedFrame(video).then(resolve);
+    };
+    const onSeeked = () => finish();
+    const timer = window.setTimeout(finish, 2000);
+    video.addEventListener("seeked", onSeeked);
+    try {
+      video.currentTime = target;
+    } catch {
+      finish();
+    }
+  });
+}
+
+function waitForVideoEvent(
+  video: HTMLVideoElement,
+  eventName: "loadedmetadata" | "loadeddata",
+  timeoutMs: number
+): Promise<void> {
+  if (
+    eventName === "loadedmetadata"
+      ? video.readyState >= 1
+      : video.readyState >= HAVE_CURRENT_DATA
+  ) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const finish = () => {
+      video.removeEventListener(eventName, finish);
+      video.removeEventListener("error", finish);
+      window.clearTimeout(timer);
+      resolve();
+    };
+    video.addEventListener(eventName, finish);
+    video.addEventListener("error", finish);
+    const timer = window.setTimeout(finish, timeoutMs);
+  });
+}
+
+/**
+ * Decode a visible still. Time 0 is often blank, and `preload="metadata"`
+ * never paints a frame until something actually seeks or plays.
+ */
+export async function primeVideoPreviewFrame(
+  video: HTMLVideoElement
+): Promise<number> {
+  video.muted = true;
+  video.playsInline = true;
+  await waitForVideoEvent(video, "loadedmetadata", 8000);
+  if (video.error) {
+    throw new Error("Could not play this video. Try another clip.");
+  }
+
+  const duration = Number.isFinite(video.duration) ? video.duration : 0;
+  const start = duration > 0.3 ? Math.min(0.12, duration * 0.03) : 0.001;
+
+  try {
+    await video.play();
+    video.pause();
+  } catch {
+    // Autoplay can be blocked. A real seek still decodes a frame.
+  }
+
+  await seekVideoToTime(video, start);
+  if (!video.videoWidth || video.error) {
+    throw new Error("Could not play this video. Try another clip.");
+  }
+  return start;
+}
+
 export async function captureVideoFrameDataUrl(
   video: HTMLVideoElement,
   maxEdge = 1080

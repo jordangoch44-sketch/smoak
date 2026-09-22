@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { requestOpsSignupAlert } from "@/lib/email/ops-signup-alert-client";
 import { logAuth } from "@/lib/auth/auth-logger";
 import { lookupLocalZipPlace } from "@/lib/geo/zip-place-names";
 import type { AppRole, PublicAuthRole } from "@/types/auth-roles";
@@ -327,7 +328,7 @@ export async function saveMinimalSignupProfile(
   if (!roleResult.ok) return roleResult;
 
   const zip = params.zipCode?.trim() ?? "";
-  return upsertProfileRow(supabase, {
+  const saved = await upsertProfileRow(supabase, {
     user_id: userId,
     email: params.email.trim().toLowerCase(),
     first_name: params.firstName.trim(),
@@ -336,6 +337,10 @@ export async function saveMinimalSignupProfile(
     client_zip_code: zip,
     password_setup_status: "complete",
   });
+  if (saved.ok && params.role === "client") {
+    requestOpsSignupAlert("client");
+  }
+  return saved;
 }
 
 /**
@@ -397,7 +402,7 @@ export async function saveInquiryClientProfile(
     return { ok: true };
   }
 
-  return upsertProfileRow(supabase, {
+  const saved = await upsertProfileRow(supabase, {
     user_id: userId,
     email,
     first_name: firstName,
@@ -407,6 +412,8 @@ export async function saveInquiryClientProfile(
     password_setup_status: passwordSetupStatus,
     account_source: params.accountSource ?? "specialist_inquiry",
   });
+  if (saved.ok) requestOpsSignupAlert("client");
+  return saved;
 }
 
 export async function saveClientSignupProfile(
@@ -421,7 +428,7 @@ export async function saveClientSignupProfile(
   const localPlace = zip ? lookupLocalZipPlace(zip) : null;
   const neighborhood =
     profile.clientNeighborhood?.trim() || localPlace?.placeName || "";
-  return upsertProfileRow(supabase, {
+  const saved = await upsertProfileRow(supabase, {
     user_id: userId,
     email: profile.email.trim().toLowerCase(),
     first_name: profile.firstName.trim(),
@@ -434,6 +441,8 @@ export async function saveClientSignupProfile(
     client_budget: profile.clientBudget?.trim() ?? "",
     client_training_style: profile.clientTrainingStyle?.trim() ?? "",
   });
+  if (saved.ok) requestOpsSignupAlert("client");
+  return saved;
 }
 
 export async function saveSpecialistSignupProfile(

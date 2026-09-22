@@ -300,6 +300,35 @@
   box-shadow: none;
 }
 
+/*
+ * WebKit paints <video> as a black box when any ancestor has backdrop-filter.
+ * The photo cropper needs the blur; this picker uses a solid ground instead.
+ */
+.profile-video-frame-picker {
+  background: #07070c;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  isolation: auto;
+}
+
+.profile-video-frame-picker__loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.8125rem;
+  pointer-events: none;
+}
+
+.profile-video-frame-picker .profile-photo-cropper__controls,
+.profile-video-frame-picker .profile-photo-cropper__zoom-input {
+  touch-action: auto;
+}
+
 .profile-photo-cropper__saving {
   position: absolute;
   inset: 0;
