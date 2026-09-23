@@ -8,6 +8,7 @@ import {
   AdminEmailEditor,
   type AdminEmailEditorAction,
 } from "@/components/admin/email/AdminEmailEditor";
+import { AdminOutreachComposer } from "@/components/admin/email/AdminOutreachComposer";
 import { useAdminEmailCatalog } from "@/hooks/useAdminEmailCatalog";
 import { useBlockingModalOpen } from "@/hooks/useBlockingModalOpen";
 import {
@@ -236,6 +237,8 @@ export function AdminEmailPanel() {
       </header>
 
       {notice ? <p className="admin-email-banner">{notice}</p> : null}
+
+      {view === "list" ? <AdminOutreachComposer /> : null}
 
       {view === "choose" ? (
         <section className="admin-email-choose" aria-label="Create new email">

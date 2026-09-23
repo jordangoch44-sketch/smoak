@@ -23,6 +23,8 @@ export interface OutboundEmail {
    * Inquiry notifications omit it so people reply in SMOAC, not email.
    */
   replyTo?: string;
+  /** Overrides EMAIL_FROM for this send only. */
+  from?: string;
   kind: string;
   tags?: Array<{ name: string; value: string }>;
 }
@@ -69,7 +71,9 @@ export async function sendOutboundEmail(
 
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from =
-    process.env.EMAIL_FROM?.trim() || "SMOAC <onboarding@resend.dev>";
+    payload.from?.trim() ||
+    process.env.EMAIL_FROM?.trim() ||
+    "SMOAC <onboarding@resend.dev>";
   const rawHtml = payload.html?.trim() || undefined;
   const html = rawHtml ? rewriteEmailBrandImagesToCid(rawHtml) : undefined;
   const brandAttachments =
