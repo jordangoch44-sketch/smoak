@@ -330,12 +330,11 @@
 .client-workouts-dialog__goal {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   margin-left: auto;
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
+  font-size: 0.8125rem;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .client-workouts-dialog__goal select {
@@ -701,6 +700,18 @@
   box-shadow: 0 0 16px rgba(34, 197, 94, 0.35);
 }
 
+.client-workouts-day__step {
+  margin: 0.4rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--smoac-color);
+}
+
+.client-workouts-day__step--cardio {
+  color: #4ade80;
+}
+
 .client-workouts-day__sub {
   margin: 0.25rem 0 0;
   font-size: 0.75rem;
@@ -769,11 +780,38 @@
   outline: none;
 }
 
+.client-workouts-titles__custom::placeholder {
+  font-size: 0.8125rem;
+}
+
 .client-workouts-titles__custom:focus,
 .client-workouts-ex__name:focus,
 .client-workouts-ex__sets:focus,
 .client-workouts-ex__reps:focus {
   scroll-margin-bottom: 1.25rem;
+}
+
+.client-workouts-ex-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.75rem;
+}
+
+.client-workouts-ex-row__index {
+  flex: 0 0 1.15rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-align: right;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.client-workouts-ex-row .client-workouts-bubble,
+.client-workouts-ex-row .client-workouts-ex {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
 }
 
 .client-workouts-bubble {
@@ -854,6 +892,24 @@
   color: #fff;
 }
 
+.client-workouts-bubble__complete {
+  align-self: center;
+  margin: 0.2rem 0 0.05rem;
+  border: none;
+  background: transparent;
+  padding: 0.1rem 0.35rem;
+  transform: translateX(1.5rem);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: #4ade80;
+  cursor: pointer;
+}
+
+.client-workouts-bubble__complete--done {
+  color: #86efac;
+}
+
 .client-workouts-bubble__range {
   margin: 0;
   font-size: 0.8125rem;
@@ -864,6 +920,19 @@
   display: grid;
   gap: 0.35rem 0.55rem;
   margin-bottom: 0.85rem;
+}
+
+.client-workouts-ex--section {
+  position: relative;
+  gap: 0.55rem;
+  padding: 0.85rem;
+  border-radius: 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.client-workouts-ex--editing {
+  padding: 0.85rem 4.25rem 0.85rem 0.85rem;
 }
 
 .client-workouts-ex__name,

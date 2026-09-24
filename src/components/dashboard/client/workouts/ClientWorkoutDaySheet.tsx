@@ -313,6 +313,22 @@ export function ClientWorkoutDaySheet({
     setStep("workout");
   }
 
+  function toggleCardioComplete() {
+    const next = { ...cardio, completed: !cardio.completed };
+    setCardio(next);
+    persist(exercises, title, next);
+  }
+
+  function toggleExerciseComplete(id: string) {
+    const next = exercises.map((exercise) =>
+      exercise.id === id
+        ? { ...exercise, completed: !exercise.completed }
+        : exercise
+    );
+    setExercises(next);
+    persist(next);
+  }
+
   function updateExercise(
     id: string,
     patch: Partial<Pick<ClientWorkoutExercise, "name" | "sets" | "reps">>
@@ -410,6 +426,16 @@ export function ClientWorkoutDaySheet({
                 </span>
               ) : null}
             </h3>
+            {step === "cardio" || step === "workout" ? (
+              <p
+                className={cn(
+                  "client-workouts-day__step",
+                  step === "cardio" && "client-workouts-day__step--cardio"
+                )}
+              >
+                {step === "cardio" ? "Cardio" : "Workout"}
+              </p>
+            ) : null}
             <p className="client-workouts-day__sub">{weekLabel}</p>
           </div>
           <FastActivateButton
@@ -510,6 +536,21 @@ export function ClientWorkoutDaySheet({
                     Edit
                   </FastActivateButton>
                   <p className="client-workouts-bubble__name">Cardio</p>
+                  <FastActivateButton
+                    className={cn(
+                      "client-workouts-bubble__complete",
+                      cardio.completed && "client-workouts-bubble__complete--done"
+                    )}
+                    aria-pressed={Boolean(cardio.completed)}
+                    aria-label={
+                      cardio.completed
+                        ? "Cardio complete. Tap to undo."
+                        : "Mark cardio complete"
+                    }
+                    onActivate={toggleCardioComplete}
+                  >
+                    {cardio.completed ? "✓ Complete" : "Complete"}
+                  </FastActivateButton>
                   <p className="client-workouts-bubble__range">
                     {formatCardioLine(cardio)}
                   </p>
@@ -522,62 +563,87 @@ export function ClientWorkoutDaySheet({
                 autoComplete="off"
                 autoCorrect="off"
                 maxLength={24}
-                placeholder="Name this workout…"
+                placeholder="Name this workout… (Push, pull, legs, etc.)"
                 aria-label="Workout name"
                 onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
                 onBlur={() => applyTitle(title)}
               />
 
-              {exercises.map((exercise) =>
-                editingId === exercise.id ? (
-                  <ExerciseFields
-                    key={exercise.id}
-                    exercise={exercise}
-                    editing
-                    onChange={(patch) => updateExercise(exercise.id, patch)}
-                    onDone={() => finishEditing(exercise.id)}
-                    onRemove={() => {
-                      const next = exercises.filter((item) => item.id !== exercise.id);
-                      setExercises(next);
-                      setEditingId(null);
-                      if (next.length === 0 && !title.trim() && !sanitizeWorkoutCardio(cardio)) {
-                        setComposerOpen(true);
-                        onRemove();
-                        return;
-                      }
-                      persist(next);
-                    }}
-                  />
-                ) : (
-                  <article key={exercise.id} className="client-workouts-bubble">
-                    <FastActivateButton
-                      className="client-workouts-bubble__edit"
-                      onActivate={() => {
-                        setEditingId(exercise.id);
-                        setComposerOpen(false);
-                        setError(null);
+              {exercises.map((exercise, index) => (
+                <div key={exercise.id} className="client-workouts-ex-row">
+                  <span className="client-workouts-ex-row__index">
+                    {index + 1}
+                  </span>
+                  {editingId === exercise.id ? (
+                    <ExerciseFields
+                      exercise={exercise}
+                      editing
+                      onChange={(patch) => updateExercise(exercise.id, patch)}
+                      onDone={() => finishEditing(exercise.id)}
+                      onRemove={() => {
+                        const next = exercises.filter((item) => item.id !== exercise.id);
+                        setExercises(next);
+                        setEditingId(null);
+                        if (next.length === 0 && !title.trim() && !sanitizeWorkoutCardio(cardio)) {
+                          setComposerOpen(true);
+                          onRemove();
+                          return;
+                        }
+                        persist(next);
                       }}
-                    >
-                      Edit
-                    </FastActivateButton>
-                    <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
-                    {formatExerciseRange(exercise) ? (
-                      <p className="client-workouts-bubble__range">
-                        {formatExerciseRange(exercise)}
-                      </p>
-                    ) : null}
-                  </article>
-                )
-              )}
+                    />
+                  ) : (
+                    <article className="client-workouts-bubble">
+                      <FastActivateButton
+                        className="client-workouts-bubble__edit"
+                        onActivate={() => {
+                          setEditingId(exercise.id);
+                          setComposerOpen(false);
+                          setError(null);
+                        }}
+                      >
+                        Edit
+                      </FastActivateButton>
+                      <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
+                      <FastActivateButton
+                        className={cn(
+                          "client-workouts-bubble__complete",
+                          exercise.completed &&
+                            "client-workouts-bubble__complete--done"
+                        )}
+                        aria-pressed={Boolean(exercise.completed)}
+                        aria-label={
+                          exercise.completed
+                            ? `${exercise.name.trim()} complete. Tap to undo.`
+                            : `Mark ${exercise.name.trim()} complete`
+                        }
+                        onActivate={() => toggleExerciseComplete(exercise.id)}
+                      >
+                        {exercise.completed ? "✓ Complete" : "Complete"}
+                      </FastActivateButton>
+                      {formatExerciseRange(exercise) ? (
+                        <p className="client-workouts-bubble__range">
+                          {formatExerciseRange(exercise)}
+                        </p>
+                      ) : null}
+                    </article>
+                  )}
+                </div>
+              ))}
 
               {composerOpen && !editingId ? (
-                <ExerciseFields
-                  exercise={draft}
-                  onChange={(patch) => {
-                    setDraft((current) => ({ ...current, ...patch }));
-                    setError(null);
-                  }}
-                />
+                <div className="client-workouts-ex-row">
+                  <span className="client-workouts-ex-row__index">
+                    {exercises.length + 1}
+                  </span>
+                  <ExerciseFields
+                    exercise={draft}
+                    onChange={(patch) => {
+                      setDraft((current) => ({ ...current, ...patch }));
+                      setError(null);
+                    }}
+                  />
+                </div>
               ) : null}
             </>
           ) : null}
@@ -708,7 +774,13 @@ function ExerciseFields({
   }
 
   return (
-    <div className={editing ? "client-workouts-bubble client-workouts-bubble--edit" : "client-workouts-ex"}>
+    <div
+      className={
+        editing
+          ? "client-workouts-ex client-workouts-ex--section client-workouts-ex--editing"
+          : "client-workouts-ex client-workouts-ex--section"
+      }
+    >
       {editing ? (
         <FastActivateButton
           className="client-workouts-bubble__edit"

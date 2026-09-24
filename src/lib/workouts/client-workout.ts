@@ -92,7 +92,11 @@ export function sanitizeWorkoutCardio(
     MAX_CARDIO_DURATION_LENGTH
   );
   if (!type && !duration) return undefined;
-  return { type, duration };
+  return {
+    type,
+    duration,
+    ...(raw.completed === true ? { completed: true } : {}),
+  };
 }
 
 export function formatCardioLine(cardio: ClientWorkoutCardio): string {
@@ -162,6 +166,7 @@ export function sanitizeWorkoutExercises(
       name: exercise.name.trim(),
       sets: exercise.sets.trim(),
       reps: exercise.reps.trim(),
+      ...(exercise.completed === true ? { completed: true } : {}),
     }))
     .filter((exercise) => exercise.name.length > 0);
 }
@@ -282,7 +287,7 @@ export function formatWeekGoalCopy(
   const { trained, goal } = currentWeekProgress(log, today);
   const complete = trained >= goal;
   return {
-    goal: `Goal ${goal} ${goal === 1 ? "day" : "days"} / week`,
+    goal: `Workout goal ${goal} ${goal === 1 ? "day" : "days"} a week`,
     status: complete
       ? "Week complete"
       : `${trained} of ${goal} done this week`,

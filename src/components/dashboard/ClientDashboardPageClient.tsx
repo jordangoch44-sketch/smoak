@@ -22,10 +22,8 @@ import {
 import {
   getClientProfileCompletionPercent,
   isClientProfileMinimumComplete,
-  priceBoundsForPreset,
 } from "@/lib/profiles/client-profile-form";
 import { loadClientProfileFormState } from "@/lib/profiles/client-profile-service";
-import { CLIENT_SEARCH_RADIUS_OPTIONS } from "@/constants/client-profile-options";
 import type { ClientProfileFormState } from "@/types/client-profile";
 import {
   DashboardEmptyState,
@@ -45,27 +43,12 @@ import {
   ChevronRightIcon,
   HeartIcon,
   MessageBubbleIcon,
+  UserIcon,
 } from "@/components/ui/icons";
 import { getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 
 type ClientDashboardOverlayId = "saved" | "messages";
-
-function formatRadiusLabel(miles: number | null): string {
-  const match = CLIENT_SEARCH_RADIUS_OPTIONS.find(
-    (option) => option.value === miles
-  );
-  return match?.label ?? "Automatic";
-}
-
-function formatBudgetLabel(form: ClientProfileFormState): string {
-  const bounds = priceBoundsForPreset(
-    form.pricePreset,
-    form.customPriceMin,
-    form.customPriceMax
-  );
-  return bounds.label || "No preference";
-}
 
 function formatLocation(form: ClientProfileFormState): string {
   const parts = [form.city, form.state, form.postalCode]
@@ -367,39 +350,27 @@ export function ClientDashboardPageClient() {
                 </p>
               </div>
             </div>
-
-            <dl className="client-dash-summary__meta">
-              <div>
-                <dt>Goals</dt>
-                <dd>
-                  {form?.goals.length
-                    ? form.goals.slice(0, 4).join(" · ")
-                    : "Not set yet"}
-                </dd>
-              </div>
-              <div>
-                <dt>Travel distance</dt>
-                <dd>
-                  {form
-                    ? formatRadiusLabel(form.preferredRadiusMiles)
-                    : "Automatic"}
-                </dd>
-              </div>
-              <div>
-                <dt>Budget</dt>
-                <dd>{form ? formatBudgetLabel(form) : "No preference"}</dd>
-              </div>
-            </dl>
-
-            <FastActivateButton
-              className="client-dash-summary__edit"
-              onActivate={openProfileEditor}
-            >
-              Edit profile
-            </FastActivateButton>
           </div>
 
           <div className="client-dash-links">
+            <ClientWorkoutsEntry userId={session.userId} />
+
+            <FastActivateButton
+              className="smoac-control client-dash-nav-row"
+              onActivate={openProfileEditor}
+            >
+              <span className="client-dash-nav-row__icon" aria-hidden>
+                <UserIcon className="h-5 w-5" />
+              </span>
+              <span className="client-dash-nav-row__copy">
+                <span className="client-dash-nav-row__title">Edit profile</span>
+                <span className="client-dash-nav-row__meta">
+                  Goals, travel distance, and budget
+                </span>
+              </span>
+              <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />
+            </FastActivateButton>
+
             <FastActivateButton
               className="smoac-control client-dash-nav-row"
               onActivate={() => openOverlay("messages")}
@@ -440,8 +411,6 @@ export function ClientDashboardPageClient() {
               <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />
             </FastActivateButton>
           </div>
-
-          <ClientWorkoutsEntry userId={session.userId} />
         </section>
       </DashboardPageShell>
 

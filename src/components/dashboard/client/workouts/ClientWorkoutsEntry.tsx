@@ -58,7 +58,7 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
           <span className="client-workouts-entry__copy">
             <span className="client-workouts-entry__title">Workouts</span>
             <span className="client-workouts-entry__goal">
-              {week?.copy.goal ?? "Goal 4 days / week"}
+              {week?.copy.goal ?? "Workout goal 4 days a week"}
             </span>
             <span
               className={cn(

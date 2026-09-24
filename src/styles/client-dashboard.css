@@ -324,77 +324,6 @@
   color: transparent;
 }
 
-.client-dash-summary__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin: 0;
-  overflow: hidden;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: var(--client-frost-bg);
-  backdrop-filter: blur(18px) saturate(1.2);
-  -webkit-backdrop-filter: blur(18px) saturate(1.2);
-  box-shadow: var(--client-frost-shadow);
-}
-
-.client-dash-summary__meta > div {
-  display: grid;
-  grid-template-columns: minmax(8.5rem, 12.5rem) minmax(0, 1fr);
-  align-items: center;
-  gap: 0.75rem;
-  min-height: 3.25rem;
-  padding: 0.75rem 0.875rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.client-dash-summary__meta > div:first-child {
-  border-top: none;
-}
-
-.client-dash-summary__meta dt {
-  font-size: 0.875rem;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  text-transform: none;
-  color: rgba(255, 255, 255, 0.88);
-  background: none;
-}
-
-.client-dash-summary__meta dd {
-  margin: 0;
-  min-width: 0;
-  font-size: 0.875rem;
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.52);
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.client-dash-summary__edit {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.65rem;
-  width: 100%;
-  margin-top: 0.05rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 0.7rem;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%);
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
-
-.client-dash-summary__edit:active {
-  transform: scale(0.985);
-}
-
 .dashboard-page--client .dashboard-page__subtitle {
   max-width: 22rem;
 }
@@ -403,11 +332,6 @@
   .client-dash-summary__avatar {
     width: 6.25rem;
     height: 6.25rem;
-  }
-
-  .client-dash-summary__meta > div {
-    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
-    padding-inline: 1.125rem;
   }
 }
 

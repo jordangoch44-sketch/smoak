@@ -624,6 +624,123 @@ export function ClientProfileEditModal({
               </section>
 
               <section className="client-profile-section">
+                <h3 className="client-profile-section__title">Goals</h3>
+                <div className="client-profile-chips">
+                  {CLIENT_PROFILE_GOAL_OPTIONS.map((goal) => {
+                    const active = form.goals.includes(goal);
+                    return (
+                      <button
+                        key={goal}
+                        type="button"
+                        className={cn(
+                          "client-profile-chip",
+                          active && "client-profile-chip--active"
+                        )}
+                        aria-pressed={active}
+                        onClick={() =>
+                          patchForm({
+                            goals: toggleStringInList(form.goals, goal),
+                          })
+                        }
+                      >
+                        {goal}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="client-profile-section">
+                <h3 className="client-profile-section__title">Travel distance</h3>
+                <p className="client-profile-section__hint">
+                  We’ll prioritize specialists within this distance from your
+                  selected location.
+                </p>
+                <div className="client-profile-chips">
+                  {CLIENT_SEARCH_RADIUS_OPTIONS.map((option) => {
+                    const active = form.preferredRadiusMiles === option.value;
+                    return (
+                      <button
+                        key={option.label}
+                        type="button"
+                        className={cn(
+                          "client-profile-chip",
+                          active && "client-profile-chip--active"
+                        )}
+                        aria-pressed={active}
+                        onClick={() =>
+                          patchForm({ preferredRadiusMiles: option.value })
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section className="client-profile-section">
+                <h3 className="client-profile-section__title">Budget</h3>
+                <p className="client-profile-section__hint">
+                  Optional. Used as a recommendation default — not a hard filter
+                  unless you apply it later in Search.
+                </p>
+                <div className="client-profile-chips">
+                  {CLIENT_PRICE_PRESET_OPTIONS.map((option) => {
+                    const active = form.pricePreset === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        className={cn(
+                          "client-profile-chip",
+                          active && "client-profile-chip--active"
+                        )}
+                        aria-pressed={active}
+                        onClick={() =>
+                          patchForm({
+                            pricePreset: option.id as ClientPricePresetId,
+                          })
+                        }
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.pricePreset === "custom" ? (
+                  <div className="client-profile-fields client-profile-fields--2">
+                    <label className="client-profile-field">
+                      <span className="client-profile-field__label">
+                        Minimum ($)
+                      </span>
+                      <input
+                        className="client-profile-field__input"
+                        inputMode="decimal"
+                        value={form.customPriceMin}
+                        onChange={(e) =>
+                          patchForm({ customPriceMin: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="client-profile-field">
+                      <span className="client-profile-field__label">
+                        Maximum ($)
+                      </span>
+                      <input
+                        className="client-profile-field__input"
+                        inputMode="decimal"
+                        value={form.customPriceMax}
+                        onChange={(e) =>
+                          patchForm({ customPriceMax: e.target.value })
+                        }
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="client-profile-section">
                 <h3 className="client-profile-section__title">Email address</h3>
                 <p className="client-profile-section__hint">
                   Sign-in email is managed by Supabase Auth and cannot be removed.
@@ -742,125 +859,6 @@ export function ClientProfileEditModal({
                 <p className="client-profile-section__hint">
                   We’ll email you to confirm, then remove this account from SMOAC.
                 </p>
-              </section>
-
-              <section className="client-profile-section">
-                <h3 className="client-profile-section__title">Fitness goals</h3>
-                <div className="client-profile-chips">
-                  {CLIENT_PROFILE_GOAL_OPTIONS.map((goal) => {
-                    const active = form.goals.includes(goal);
-                    return (
-                      <button
-                        key={goal}
-                        type="button"
-                        className={cn(
-                          "client-profile-chip",
-                          active && "client-profile-chip--active"
-                        )}
-                        aria-pressed={active}
-                        onClick={() =>
-                          patchForm({
-                            goals: toggleStringInList(form.goals, goal),
-                          })
-                        }
-                      >
-                        {goal}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className="client-profile-section">
-                <h3 className="client-profile-section__title">
-                  Preferred search distance
-                </h3>
-                <p className="client-profile-section__hint">
-                  We’ll prioritize specialists within this distance from your
-                  selected location.
-                </p>
-                <div className="client-profile-chips">
-                  {CLIENT_SEARCH_RADIUS_OPTIONS.map((option) => {
-                    const active = form.preferredRadiusMiles === option.value;
-                    return (
-                      <button
-                        key={option.label}
-                        type="button"
-                        className={cn(
-                          "client-profile-chip",
-                          active && "client-profile-chip--active"
-                        )}
-                        aria-pressed={active}
-                        onClick={() =>
-                          patchForm({ preferredRadiusMiles: option.value })
-                        }
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className="client-profile-section">
-                <h3 className="client-profile-section__title">Pricing</h3>
-                <p className="client-profile-section__hint">
-                  Optional. Used as a recommendation default — not a hard filter
-                  unless you apply it later in Search.
-                </p>
-                <div className="client-profile-chips">
-                  {CLIENT_PRICE_PRESET_OPTIONS.map((option) => {
-                    const active = form.pricePreset === option.id;
-                    return (
-                      <button
-                        key={option.id}
-                        type="button"
-                        className={cn(
-                          "client-profile-chip",
-                          active && "client-profile-chip--active"
-                        )}
-                        aria-pressed={active}
-                        onClick={() =>
-                          patchForm({
-                            pricePreset: option.id as ClientPricePresetId,
-                          })
-                        }
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                {form.pricePreset === "custom" ? (
-                  <div className="client-profile-fields client-profile-fields--2">
-                    <label className="client-profile-field">
-                      <span className="client-profile-field__label">
-                        Minimum ($)
-                      </span>
-                      <input
-                        className="client-profile-field__input"
-                        inputMode="decimal"
-                        value={form.customPriceMin}
-                        onChange={(e) =>
-                          patchForm({ customPriceMin: e.target.value })
-                        }
-                      />
-                    </label>
-                    <label className="client-profile-field">
-                      <span className="client-profile-field__label">
-                        Maximum ($)
-                      </span>
-                      <input
-                        className="client-profile-field__input"
-                        inputMode="decimal"
-                        value={form.customPriceMax}
-                        onChange={(e) =>
-                          patchForm({ customPriceMax: e.target.value })
-                        }
-                      />
-                    </label>
-                  </div>
-                ) : null}
               </section>
 
               <section className="client-profile-section">

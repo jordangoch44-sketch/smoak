@@ -5,11 +5,15 @@ export interface ClientWorkoutExercise {
   name: string;
   sets: string;
   reps: string;
+  /** Checked off while the client is doing the workout. */
+  completed?: boolean;
 }
 
 export interface ClientWorkoutCardio {
   type: string;
   duration: string;
+  /** Checked off while the client is doing the workout. */
+  completed?: boolean;
 }
 
 export interface ClientWorkoutDay {

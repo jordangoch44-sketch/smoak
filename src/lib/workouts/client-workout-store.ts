@@ -252,7 +252,10 @@ export function copyClientWorkoutDay(
   if (!source) return false;
   const exercises = cloneWorkoutExercises(source.exercises);
   const title = sanitizeWorkoutTitle(source.title);
-  const cardio = sanitizeWorkoutCardio(source.cardio);
+  const copiedCardio = sanitizeWorkoutCardio(source.cardio);
+  const cardio = copiedCardio
+    ? { type: copiedCardio.type, duration: copiedCardio.duration }
+    : undefined;
   if (exercises.length === 0 && !title && !cardio) return false;
   persistLog(userId, {
     ...current,

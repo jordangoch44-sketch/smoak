@@ -198,8 +198,9 @@ export function ClientWorkoutsModal({
               </p>
             ) : null}
             <label className="client-workouts-dialog__goal">
-              Goal
+              Workout goal
               <select
+                aria-label="Workout goal days per week"
                 value={log.goalDaysPerWeek}
                 onChange={(event) =>
                   setGoalDaysPerWeek(Number(event.target.value))
@@ -208,7 +209,7 @@ export function ClientWorkoutsModal({
                 {Array.from({ length: 7 }, (_, index) => index + 1).map(
                   (days) => (
                     <option key={days} value={days}>
-                      {days} {days === 1 ? "day" : "days"}
+                      {days} {days === 1 ? "day" : "days"} a week
                     </option>
                   )
                 )}
