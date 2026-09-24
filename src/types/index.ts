@@ -32,6 +32,7 @@ export type {
 } from "./admin-conversion-funnel";
 
 export type {
+  ClientWorkoutSetLog,
   ClientWorkoutExercise,
   ClientWorkoutCardio,
   ClientWorkoutDay,

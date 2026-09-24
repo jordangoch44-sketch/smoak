@@ -1,19 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useToast } from "@/components/ui/toast";
 import {
+  ExerciseSlide,
+  type ExerciseSlideHandle,
+} from "@/components/dashboard/client/workouts/ExerciseSlide";
+import {
   blankWorkoutExercise,
   emptyWorkoutCardio,
   formatCardioLine,
-  formatExerciseRange,
+  formatExerciseDetailLines,
   formatWorkoutDayHeading,
   formatWorkoutShareText,
   shareOrCopyWorkoutText,
   sanitizeWorkoutCardio,
+  sanitizeWorkoutExercise,
   sanitizeWorkoutTitle,
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
@@ -118,9 +123,11 @@ export function ClientWorkoutDaySheet({
   );
   const [editingId, setEditingId] = useState<string | null>(null);
   const [composerOpen, setComposerOpen] = useState(!saved);
+  const [focusComposer, setFocusComposer] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [keyboard, setKeyboard] = useState({ inset: 0, top: 0, height: 0 });
   const sheetRef = useRef<HTMLDivElement>(null);
+  const slideRef = useRef<ExerciseSlideHandle>(null);
   const keyboardOpen = keyboard.inset > KEYBOARD_INSET_PX;
 
   function closeDay() {
@@ -143,6 +150,7 @@ export function ClientWorkoutDaySheet({
     setWantWorkout(false);
     setDraft(blankWorkoutExercise());
     setEditingId(null);
+    setFocusComposer(false);
     setComposerOpen(existing.length === 0);
     setStep(
       existing.length > 0 ||
@@ -211,59 +219,70 @@ export function ClientWorkoutDaySheet({
     setError(null);
   }
 
-  function commitDraft(): ClientWorkoutExercise[] | null {
-    const name = draft.name.trim();
-    if (!name) {
+  function commitExercise(exercise: ClientWorkoutExercise): ClientWorkoutExercise[] | null {
+    const cleaned = sanitizeWorkoutExercise(exercise);
+    if (!cleaned) {
       setError("Add an exercise name to save it.");
       return null;
     }
-    const next = [
-      ...exercises,
-      {
-        ...draft,
-        name,
-        sets: draft.sets.trim(),
-        reps: draft.reps.trim(),
-      },
-    ];
+    const next = [...exercises, cleaned];
     setExercises(next);
     setDraft(blankWorkoutExercise());
+    setComposerOpen(true);
+    setFocusComposer(true);
     setError(null);
     persist(next);
     return next;
   }
 
+  function applyLiveEdit(id: string): ClientWorkoutExercise[] | null {
+    const live = slideRef.current?.snapshot();
+    const current = live && live.id === id ? live : exercises.find((exercise) => exercise.id === id);
+    if (!current?.name.trim()) {
+      setError("Add an exercise name to save it.");
+      return null;
+    }
+    const next = exercises.map((exercise) => (exercise.id === id ? current : exercise));
+    setExercises(next);
+    return next;
+  }
+
   function handleAddExercise() {
     if (editingId) {
-      const current = exercises.find((exercise) => exercise.id === editingId);
-      if (current && !current.name.trim()) {
-        setError("Add an exercise name to save it.");
-        return;
-      }
+      const next = applyLiveEdit(editingId);
+      if (!next) return;
       setEditingId(null);
-      persist(exercises);
+      persist(next);
       setComposerOpen(true);
+      setFocusComposer(true);
       setDraft(blankWorkoutExercise());
       setError(null);
       return;
     }
-    if (!commitDraft()) return;
-    setComposerOpen(true);
+    const live = slideRef.current?.snapshot() ?? draft;
+    if (!live.name.trim()) return;
+    commitExercise(live);
   }
 
   function handleSaveWorkout() {
     let next = exercises;
-    if (composerOpen && draft.name.trim()) {
-      const committed = commitDraft();
-      if (!committed) return;
-      next = committed;
-    } else if (editingId) {
-      const current = exercises.find((exercise) => exercise.id === editingId);
-      if (current && !current.name.trim()) {
-        setError("Add an exercise name to save it.");
-        return;
-      }
+    if (editingId) {
+      const edited = applyLiveEdit(editingId);
+      if (!edited) return;
+      next = edited;
       setEditingId(null);
+    } else if (composerOpen) {
+      const live = slideRef.current?.snapshot() ?? draft;
+      if (live.name.trim()) {
+        const cleaned = sanitizeWorkoutExercise(live);
+        if (!cleaned) {
+          setError("Add an exercise name to save it.");
+          return;
+        }
+        next = [...exercises, cleaned];
+        setExercises(next);
+        setDraft(blankWorkoutExercise());
+      }
     }
     if (!persist(next)) {
       setError("Add cardio, an exercise, or name this workout.");
@@ -331,7 +350,7 @@ export function ClientWorkoutDaySheet({
 
   function updateExercise(
     id: string,
-    patch: Partial<Pick<ClientWorkoutExercise, "name" | "sets" | "reps">>
+    patch: Partial<Pick<ClientWorkoutExercise, "name" | "sets" | "reps" | "setLogs">>
   ) {
     setExercises((current) =>
       current.map((exercise) =>
@@ -342,13 +361,10 @@ export function ClientWorkoutDaySheet({
   }
 
   function finishEditing(id: string) {
-    const current = exercises.find((exercise) => exercise.id === id);
-    if (current && !current.name.trim()) {
-      setError("Add an exercise name to save it.");
-      return;
-    }
+    const next = applyLiveEdit(id);
+    if (!next) return;
     setEditingId(null);
-    persist(exercises);
+    persist(next);
     setError(null);
   }
 
@@ -575,7 +591,8 @@ export function ClientWorkoutDaySheet({
                     {index + 1}
                   </span>
                   {editingId === exercise.id ? (
-                    <ExerciseFields
+                    <ExerciseSlide
+                      ref={slideRef}
                       exercise={exercise}
                       editing
                       onChange={(patch) => updateExercise(exercise.id, patch)}
@@ -585,6 +602,7 @@ export function ClientWorkoutDaySheet({
                         setExercises(next);
                         setEditingId(null);
                         if (next.length === 0 && !title.trim() && !sanitizeWorkoutCardio(cardio)) {
+                          setDraft(blankWorkoutExercise());
                           setComposerOpen(true);
                           onRemove();
                           return;
@@ -605,6 +623,14 @@ export function ClientWorkoutDaySheet({
                         Edit
                       </FastActivateButton>
                       <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
+                      {formatExerciseDetailLines(exercise).map((line, lineIndex) => (
+                        <p
+                          key={`${exercise.id}-line-${lineIndex}`}
+                          className="client-workouts-bubble__range"
+                        >
+                          {line}
+                        </p>
+                      ))}
                       <FastActivateButton
                         className={cn(
                           "client-workouts-bubble__complete",
@@ -621,11 +647,6 @@ export function ClientWorkoutDaySheet({
                       >
                         {exercise.completed ? "✓ Complete" : "Complete"}
                       </FastActivateButton>
-                      {formatExerciseRange(exercise) ? (
-                        <p className="client-workouts-bubble__range">
-                          {formatExerciseRange(exercise)}
-                        </p>
-                      ) : null}
                     </article>
                   )}
                 </div>
@@ -636,11 +657,17 @@ export function ClientWorkoutDaySheet({
                   <span className="client-workouts-ex-row__index">
                     {exercises.length + 1}
                   </span>
-                  <ExerciseFields
+                  <ExerciseSlide
+                    key={draft.id}
+                    ref={slideRef}
                     exercise={draft}
+                    autoFocus={focusComposer}
                     onChange={(patch) => {
                       setDraft((current) => ({ ...current, ...patch }));
                       setError(null);
+                    }}
+                    onFinished={(exercise) => {
+                      commitExercise(exercise);
                     }}
                   />
                 </div>
@@ -691,6 +718,7 @@ export function ClientWorkoutDaySheet({
                 className="client-workouts-btn"
                 onActivate={() => {
                   setComposerOpen(true);
+                  setFocusComposer(true);
                   setDraft(blankWorkoutExercise());
                   setError(null);
                 }}
@@ -741,104 +769,6 @@ export function ClientWorkoutDaySheet({
             </>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ExerciseFields({
-  exercise,
-  editing = false,
-  onChange,
-  onDone,
-  onRemove,
-}: {
-  exercise: ClientWorkoutExercise;
-  editing?: boolean;
-  onChange: (
-    patch: Partial<Pick<ClientWorkoutExercise, "name" | "sets" | "reps">>
-  ) => void;
-  onDone?: () => void;
-  onRemove?: () => void;
-}) {
-  const setsRef = useRef<HTMLInputElement>(null);
-  const repsRef = useRef<HTMLInputElement>(null);
-
-  function goNext(
-    event: KeyboardEvent<HTMLInputElement>,
-    next: HTMLInputElement | null
-  ) {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    next?.focus({ preventScroll: true });
-  }
-
-  return (
-    <div
-      className={
-        editing
-          ? "client-workouts-ex client-workouts-ex--section client-workouts-ex--editing"
-          : "client-workouts-ex client-workouts-ex--section"
-      }
-    >
-      {editing ? (
-        <FastActivateButton
-          className="client-workouts-bubble__edit"
-          onActivate={() => onDone?.()}
-        >
-          Done
-        </FastActivateButton>
-      ) : null}
-      <input
-        className="client-workouts-ex__name"
-        value={exercise.name}
-        autoComplete="off"
-        autoCorrect="off"
-        enterKeyHint="next"
-        placeholder="Exercise"
-        aria-label="Exercise"
-        onKeyDown={(event) => goNext(event, setsRef.current)}
-        onChange={(event) => onChange({ name: event.target.value })}
-      />
-      <div className="client-workouts-ex__range">
-        <input
-          ref={setsRef}
-          className="client-workouts-ex__sets"
-          value={exercise.sets}
-          autoComplete="off"
-          enterKeyHint="next"
-          placeholder="Sets"
-          aria-label="Sets"
-          onKeyDown={(event) => goNext(event, repsRef.current)}
-          onChange={(event) => onChange({ sets: event.target.value })}
-        />
-        <span className="client-workouts-ex__times" aria-hidden>
-          ×
-        </span>
-        <input
-          ref={repsRef}
-          className="client-workouts-ex__reps"
-          value={exercise.reps}
-          autoComplete="off"
-          enterKeyHint="done"
-          placeholder="8–10"
-          aria-label="Reps"
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            (event.target as HTMLInputElement).blur();
-          }}
-          onChange={(event) => onChange({ reps: event.target.value })}
-        />
-        {editing && onRemove ? (
-          <FastActivateButton
-            className="client-workouts-ex__remove"
-            aria-label="Remove exercise"
-            onActivate={onRemove}
-          >
-            <CloseIcon className="h-3.5 w-3.5" />
-          </FastActivateButton>
-        ) : null}
       </div>
     </div>
   );

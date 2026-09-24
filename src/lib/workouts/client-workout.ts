@@ -3,6 +3,7 @@ import type {
   ClientWorkoutDay,
   ClientWorkoutExercise,
   ClientWorkoutLog,
+  ClientWorkoutSetLog,
 } from "@/types/client-workout";
 
 export const DEFAULT_GOAL_DAYS_PER_WEEK = 4;
@@ -12,6 +13,7 @@ const MAX_STREAK_WEEKS = 520;
 const MAX_TITLE_LENGTH = 24;
 const MAX_CARDIO_TYPE_LENGTH = 32;
 const MAX_CARDIO_DURATION_LENGTH = 16;
+export const MAX_WORKOUT_SETS = 10;
 
 export function emptyClientWorkoutLog(): ClientWorkoutLog {
   return { goalDaysPerWeek: DEFAULT_GOAL_DAYS_PER_WEEK, days: {} };
@@ -23,6 +25,65 @@ export function createWorkoutExerciseId(): string {
 
 export function blankWorkoutExercise(): ClientWorkoutExercise {
   return { id: createWorkoutExerciseId(), name: "", sets: "", reps: "" };
+}
+
+export function sanitizeWorkoutCount(value: unknown, maxLength: number): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/\D/g, "").slice(0, maxLength);
+}
+
+export function sanitizeWorkoutWeight(value: unknown): string {
+  if (typeof value !== "string") return "";
+  const cleaned = value.replace(/[^\d.]/g, "");
+  const [whole, ...rest] = cleaned.split(".");
+  const fraction = rest.join("").replace(/\D/g, "").slice(0, 1);
+  const digits = (whole ?? "").replace(/\D/g, "");
+  const body = fraction ? `${digits}.${fraction}` : digits;
+  return body.slice(0, 6);
+}
+
+/** Positive set count, capped so the phone flow stays short. */
+export function parseWorkoutSetCount(value: string): number | null {
+  const digits = sanitizeWorkoutCount(value, 2);
+  if (!digits) return null;
+  const count = Number(digits);
+  if (!Number.isInteger(count) || count < 1) return null;
+  return Math.min(MAX_WORKOUT_SETS, count);
+}
+
+export function sanitizeWorkoutSetLogs(
+  value: unknown
+): ClientWorkoutSetLog[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) return undefined;
+  const logs = value.slice(0, MAX_WORKOUT_SETS).map((item) => {
+    if (!item || typeof item !== "object") return { reps: "", weight: "" };
+    const raw = item as Partial<ClientWorkoutSetLog>;
+    return {
+      reps: sanitizeWorkoutCount(raw.reps, 4),
+      weight: sanitizeWorkoutWeight(raw.weight),
+    };
+  });
+  if (!logs.some((log) => log.reps || log.weight)) return undefined;
+  return logs;
+}
+
+export function sanitizeWorkoutExercise(
+  exercise: ClientWorkoutExercise
+): ClientWorkoutExercise | null {
+  const name = exercise.name.trim();
+  if (!name) return null;
+  const setLogs = sanitizeWorkoutSetLogs(exercise.setLogs);
+  const sets = setLogs
+    ? String(setLogs.length)
+    : exercise.sets.replace(/\s+/g, " ").trim().slice(0, 8);
+  return {
+    id: exercise.id.trim() || createWorkoutExerciseId(),
+    name,
+    sets,
+    reps: setLogs ? "" : exercise.reps.replace(/\s+/g, " ").trim().slice(0, 16),
+    ...(setLogs ? { setLogs } : {}),
+    ...(exercise.completed === true ? { completed: true } : {}),
+  };
 }
 
 export function isWorkoutDateKey(value: string): boolean {
@@ -147,28 +208,20 @@ export function workoutTitleOnDay(
 export function cloneWorkoutExercises(
   exercises: readonly ClientWorkoutExercise[]
 ): ClientWorkoutExercise[] {
-  return exercises
-    .map((exercise) => ({
-      id: createWorkoutExerciseId(),
-      name: exercise.name.trim(),
-      sets: exercise.sets.trim(),
-      reps: exercise.reps.trim(),
-    }))
-    .filter((exercise) => exercise.name.length > 0);
+  return exercises.flatMap((exercise) => {
+    const cleaned = sanitizeWorkoutExercise({ ...exercise, completed: undefined });
+    if (!cleaned) return [];
+    return [{ ...cleaned, id: createWorkoutExerciseId() }];
+  });
 }
 
 export function sanitizeWorkoutExercises(
   exercises: readonly ClientWorkoutExercise[]
 ): ClientWorkoutExercise[] {
-  return exercises
-    .map((exercise) => ({
-      id: exercise.id.trim() || createWorkoutExerciseId(),
-      name: exercise.name.trim(),
-      sets: exercise.sets.trim(),
-      reps: exercise.reps.trim(),
-      ...(exercise.completed === true ? { completed: true } : {}),
-    }))
-    .filter((exercise) => exercise.name.length > 0);
+  return exercises.flatMap((exercise) => {
+    const cleaned = sanitizeWorkoutExercise(exercise);
+    return cleaned ? [cleaned] : [];
+  });
 }
 
 export function sanitizeClientWorkoutLog(value: unknown): ClientWorkoutLog {
@@ -334,17 +387,67 @@ export function formatWorkoutDayAriaLabel(dateKey: string): string {
   });
 }
 
-export function formatExerciseRange(exercise: ClientWorkoutExercise): string {
+export function formatSetCount(count: number): string {
+  return count === 1 ? "1 set" : `${count} sets`;
+}
+
+export function formatSetLogLine(index: number, log: ClientWorkoutSetLog): string {
+  const reps = log.reps.trim();
+  const weight = log.weight.trim();
+  if (reps && weight) return `${index} · ${reps} × ${weight} lb`;
+  if (reps) return `${index} · ${reps} reps`;
+  return `${index} · ${weight} lb`;
+}
+
+function formatUniformSets(count: number, log: ClientWorkoutSetLog): string {
+  const reps = log.reps.trim();
+  const weight = log.weight.trim();
+  if (reps && weight) return `${count} × ${reps} × ${weight} lb`;
+  if (reps) return `${count} × ${reps}`;
+  return `${count} × ${weight} lb`;
+}
+
+/** Lines under an exercise name. One compact line when every set matches. */
+export function formatExerciseDetailLines(exercise: ClientWorkoutExercise): string[] {
+  const logs = exercise.setLogs?.map((log) => ({
+    reps: log.reps.trim(),
+    weight: log.weight.trim(),
+  }));
   const sets = exercise.sets.trim();
   const reps = exercise.reps.trim();
-  if (sets && reps) return `${sets} × ${reps}`;
-  return sets || reps;
+
+  if (logs && logs.length > 0) {
+    const filled = logs.filter((log) => log.reps || log.weight);
+    if (filled.length === 0) return [formatSetCount(logs.length)];
+    const first = filled[0]!;
+    const uniform =
+      filled.length === logs.length &&
+      filled.every((log) => log.reps === first.reps && log.weight === first.weight);
+    if (uniform) return [formatUniformSets(logs.length, first)];
+    const lines = [formatSetCount(logs.length)];
+    logs.forEach((log, index) => {
+      if (!log.reps && !log.weight) return;
+      lines.push(formatSetLogLine(index + 1, log));
+    });
+    return lines;
+  }
+
+  if (sets && reps) return [`${sets} × ${reps}`];
+  if (/^\d+$/.test(sets)) return [formatSetCount(Number(sets))];
+  if (sets || reps) return [sets || reps];
+  return [];
+}
+
+export function formatExerciseRange(exercise: ClientWorkoutExercise): string {
+  return formatExerciseDetailLines(exercise).join(", ");
 }
 
 export function formatExerciseLine(exercise: ClientWorkoutExercise): string {
   const name = exercise.name.trim();
-  const range = formatExerciseRange(exercise);
-  return range ? `${name} — ${range}` : name;
+  const lines = formatExerciseDetailLines(exercise);
+  if (lines.length === 0) return name;
+  if (lines.length === 1) return `${name} — ${lines[0]}`;
+  return [name, ...lines].join("\n");
 }
 
 export function formatWorkoutShareText(day: ClientWorkoutDay): string {
