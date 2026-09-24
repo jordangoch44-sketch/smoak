@@ -63,6 +63,12 @@ export interface SavedTrainerRow {
   created_at: string;
 }
 
+export interface ClientWorkoutLogRow {
+  user_id: string;
+  log: unknown;
+  updated_at: string;
+}
+
 export interface ClientApplicationRow {
   id: string;
   user_id: string | null;

@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import {
   copyClientWorkoutDay,
+  ensureClientWorkoutsHydrated,
   getClientWorkoutLog,
   getClientWorkoutLogServerSnapshot,
   removeClientWorkoutDay,
@@ -13,6 +14,10 @@ import {
 import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
 
 export function useClientWorkouts(userId: string | null) {
+  useEffect(() => {
+    if (userId) ensureClientWorkoutsHydrated(userId);
+  }, [userId]);
+
   const log = useSyncExternalStore(
     subscribeClientWorkouts,
     () => getClientWorkoutLog(userId),

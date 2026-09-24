@@ -38,9 +38,7 @@
 .rankings-hero__skyline *,
 .rankings-hero__fade,
 .saved-dropdown__glow,
-.page-transition__layer:not(:last-child),
-.login-page--intro,
-.smoac-welcome-intro .login-page__canvas {
+.page-transition__layer:not(:last-child) {
   pointer-events: none !important;
 }
 

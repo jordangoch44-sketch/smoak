@@ -32,7 +32,7 @@ src/
 │   ├── auth/                   # Login, create-account, onboarding
 │   ├── dashboard/              # Client + specialist dashboards
 │   ├── admin/                  # Owner/Staff admin UI only
-│   ├── brand/                  # SmoacWelcomeIntro, wordmark
+│   ├── brand/                  # Wordmark, saving mark
 │   ├── rankings/
 │   └── dev/                    # Dev-only utilities (SW cleanup)
 ├── contexts/                   # Auth, saved trainers, save toast
@@ -173,17 +173,6 @@ Search entry on mobile is bottom-nav Search → `/explore?focus=search`.
 
 `/rankings` — `RankingsHero` (navy fade into the selected metro skyline; default **San Diego** when no ZIP/geo) + SMOAC review board. Skyline map: `lib/ranking-hero.ts`.
 
-### Welcome intro
-
-```
-SiteIntroBoot (root layout, pre-paint) → SiteWelcomeIntroGate → SmoacWelcomeIntro + WelcomeHyperspaceField
-```
-
-- First visit only (`localStorage` `smoac_site_intro_seen`). Replay: `/?replay-intro=1`.
-- Boot script covers `/` before paint so the homepage never peeks under the warp.
-- Cover z-index sits below `--z-welcome-intro` (10050) so the hyperspace layer is visible.
-- Do not lock document scroll for the site intro; do not add full-screen `pointer-events: none` on `.app-main`.
-
 ## Mobile vs desktop patterns
 
 | Area | Mobile | Desktop |
@@ -204,7 +193,6 @@ Use these instead of magic numbers:
 - `--z-profile-sheet` (header + 40)
 - `--z-profile-gallery` (header + 200) — above sheet + toolbar
 - `--z-modal` (1000000) — login gate, inquiry, review modal
-- `--z-welcome-intro` (10050) — homepage light-speed splash (above header)
 
 ## Imports
 

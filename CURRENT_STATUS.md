@@ -36,12 +36,11 @@ Live on `smoac.com` / branch `supabase-storage-setup`:
 |------|--------|
 | Document scroll (no nested page-transition scrollport) | ✅ |
 | Mobile header stays solid while scrolling | ✅ |
-| Light-speed welcome (first visit + `/?replay-intro=1`) | ✅ |
-| No homepage peek before warp (SiteIntroBoot) | ✅ |
+| Homepage loads directly (no first-visit warp) | ✅ |
 | Dead location-modal gate/CSS removed | ✅ |
 | Ops: `scripts/wipe-marketplace-users.mjs` | ✅ |
 
-**Do not regress:** `overflow-x: clip` (not `hidden`) on `.app-main` / `.page-transition*`; welcome cover z-index below `--z-welcome-intro`.
+**Do not regress:** `overflow-x: clip` (not `hidden`) on `.app-main` / `.page-transition*`. Do not reintroduce a first-visit warp or pre-paint homepage cover.
 
 ---
 

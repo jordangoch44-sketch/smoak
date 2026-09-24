@@ -7,7 +7,6 @@ import { Footer } from "@/components/layout/Footer";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { SiteRouteScrollHygiene } from "@/components/layout/SiteRouteScrollHygiene";
 import { SiteVisitTracker } from "@/components/layout/SiteVisitTracker";
-import { SiteWelcomeIntroGate } from "@/components/layout/SiteWelcomeIntroGate";
 import { SiteLocationGate } from "@/components/layout/SiteLocationGate";
 import { IpLocationHintBoot } from "@/components/layout/IpLocationHintBoot";
 import { AppProviders } from "@/components/providers/AppProviders";
@@ -65,7 +64,6 @@ export default function SiteLayout({
         <AppProviders supabaseConfigured={isSupabaseConfigured()}>
           <SiteVisitTracker />
           <SiteRouteScrollHygiene />
-          <SiteWelcomeIntroGate />
           <IpLocationHintBoot />
           <SiteLocationGate />
           <SiteHeader />

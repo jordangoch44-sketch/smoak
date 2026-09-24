@@ -44,7 +44,7 @@ AuthSessionProvider
 
 ## Interaction rules (do not regress)
 
-1. **No new full-screen `pointer-events: none` on `.app-main`** — use a portaled overlay with `pointer-events: auto` instead (`login-gate`, welcome intro pattern).
+1. **No new full-screen `pointer-events: none` on `.app-main`** — use a portaled overlay with `pointer-events: auto` instead (`login-gate`).
 2. **iOS Safari scroll lock**: use body classes + `.app-main { overflow: hidden }` under `@supports (-webkit-touch-callout: none)` in `globals.css` — never `touch-action: none` on `body`, avoid inline `body.style.overflow` in modals.
 3. **Mobile page transitions**: `PageTransition` skips `AnimatePresence` on mobile — do not reintroduce exit layers that steal taps.
 4. **Save control**: real `<button>`, heart **outside** card `<Link>`, `data-save-control` on slot — use `onClick` + `stopPropagation`, not pointer-up/click dedupe hacks.
@@ -56,7 +56,7 @@ AuthSessionProvider
 | File | Scope |
 |------|--------|
 | `globals.css` | Tokens, Tailwind, scroll-lock, imports `site-chrome`, `login-gate`, `mobile-safari` |
-| `site-shell.css` | Homepage + header panels (`home`, `saved-panel`, `create-account-intro`) |
+| `site-shell.css` | Homepage + header panels (`home`, `saved-panel`) |
 | `site-chrome.css` | Header, z-index tokens, tap allowlist for controls |
 | Feature CSS | `explore.css`, `profile.css`, `specialist-reviews.css`, `footer.css`, `dashboard.css`, etc. |
 

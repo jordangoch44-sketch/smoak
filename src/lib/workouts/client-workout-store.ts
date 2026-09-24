@@ -1,6 +1,11 @@
+import {
+  getMarketplaceAuthClient,
+  isMarketplaceSupabaseActive,
+} from "@/lib/auth/marketplace-auth";
 import { CLIENT_WORKOUTS_STORAGE_PREFIX } from "@/lib/dev-storage-keys";
 import {
   cloneWorkoutExercises,
+  DEFAULT_GOAL_DAYS_PER_WEEK,
   emptyClientWorkoutLog,
   sanitizeClientWorkoutLog,
   sanitizeWorkoutCardio,
@@ -8,6 +13,10 @@ import {
   sanitizeWorkoutTitle,
   clampGoalDaysPerWeek,
 } from "@/lib/workouts/client-workout";
+import {
+  fetchClientWorkoutLog,
+  upsertClientWorkoutLog,
+} from "@/lib/workouts/client-workout-service";
 import type {
   ClientWorkoutCardio,
   ClientWorkoutExercise,
@@ -19,6 +28,9 @@ const listeners = new Set<() => void>();
 
 let cachedUserId: string | null = null;
 let cachedLog: ClientWorkoutLog = EMPTY_LOG;
+let writeSeq = 0;
+let hydratedUserId: string | null = null;
+let hydrateInFlightUserId: string | null = null;
 
 function storageKey(userId: string): string {
   return `${CLIENT_WORKOUTS_STORAGE_PREFIX}${userId}`;
@@ -39,7 +51,7 @@ function readLog(userId: string): ClientWorkoutLog {
   }
 }
 
-function persistLog(userId: string, log: ClientWorkoutLog): void {
+function writeLocal(userId: string, log: ClientWorkoutLog): void {
   cachedUserId = userId;
   cachedLog = log;
   if (typeof window !== "undefined") {
@@ -50,6 +62,119 @@ function persistLog(userId: string, log: ClientWorkoutLog): void {
     }
   }
   emitChange();
+}
+
+function logHasAccountContent(log: ClientWorkoutLog): boolean {
+  return (
+    log.goalDaysPerWeek !== DEFAULT_GOAL_DAYS_PER_WEEK ||
+    Object.keys(log.days).length > 0
+  );
+}
+
+function logsEqual(left: ClientWorkoutLog, right: ClientWorkoutLog): boolean {
+  if (left.goalDaysPerWeek !== right.goalDaysPerWeek) return false;
+  const leftKeys = Object.keys(left.days).sort();
+  const rightKeys = Object.keys(right.days).sort();
+  if (leftKeys.length !== rightKeys.length) return false;
+  for (let index = 0; index < leftKeys.length; index += 1) {
+    const key = leftKeys[index]!;
+    if (key !== rightKeys[index]) return false;
+    if (JSON.stringify(left.days[key]) !== JSON.stringify(right.days[key])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/** Account row wins on the same day. Days that exist only on this device are kept. */
+function mergeLogs(
+  local: ClientWorkoutLog,
+  remote: ClientWorkoutLog
+): ClientWorkoutLog {
+  return sanitizeClientWorkoutLog({
+    goalDaysPerWeek: remote.goalDaysPerWeek,
+    days: { ...local.days, ...remote.days },
+  });
+}
+
+function persistLog(userId: string, log: ClientWorkoutLog): void {
+  writeLocal(userId, log);
+  const seq = ++writeSeq;
+  void syncLog(userId, log, seq);
+}
+
+async function syncLog(
+  userId: string,
+  log: ClientWorkoutLog,
+  seq: number
+): Promise<boolean> {
+  if (seq !== writeSeq) return true;
+  if (!isMarketplaceSupabaseActive()) return true;
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return true;
+  const result = await upsertClientWorkoutLog(supabase, userId, log);
+  if (!result.ok) {
+    if (seq === writeSeq) {
+      console.warn(
+        "[client-workouts] save did not reach the account",
+        result.message
+      );
+    }
+    return false;
+  }
+  if (seq !== writeSeq && cachedUserId === userId) {
+    return syncLog(userId, cachedLog, writeSeq);
+  }
+  return true;
+}
+
+/**
+ * Pull the account log and fold in any days that only exist on this device.
+ * Edits made while the pull is in flight stay on screen and are saved after.
+ */
+export function ensureClientWorkoutsHydrated(userId: string): void {
+  const id = userId.trim();
+  if (!id || hydratedUserId === id || hydrateInFlightUserId === id) return;
+  if (!isMarketplaceSupabaseActive()) {
+    hydratedUserId = id;
+    return;
+  }
+  hydrateInFlightUserId = id;
+  void hydrateFromAccount(id).finally(() => {
+    if (hydrateInFlightUserId === id) hydrateInFlightUserId = null;
+  });
+}
+
+async function hydrateFromAccount(userId: string): Promise<void> {
+  const supabase = getMarketplaceAuthClient();
+  if (!supabase) return;
+  const seqAtStart = writeSeq;
+  const local = getClientWorkoutLog(userId);
+  const result = await fetchClientWorkoutLog(supabase, userId);
+  if (cachedUserId !== userId || writeSeq !== seqAtStart) return;
+  if (!result.ok) {
+    console.warn("[client-workouts] account load failed", result.message);
+    return;
+  }
+
+  if (!result.log) {
+    if (logHasAccountContent(local)) {
+      const pushed = await syncLog(userId, local, seqAtStart);
+      if (!pushed) return;
+    }
+    hydratedUserId = userId;
+    return;
+  }
+
+  const merged = mergeLogs(local, result.log);
+  if (!logsEqual(merged, local)) {
+    writeLocal(userId, merged);
+  }
+  if (!logsEqual(merged, result.log)) {
+    const pushed = await syncLog(userId, merged, writeSeq);
+    if (!pushed) return;
+  }
+  hydratedUserId = userId;
 }
 
 export function subscribeClientWorkouts(listener: () => void): () => void {
