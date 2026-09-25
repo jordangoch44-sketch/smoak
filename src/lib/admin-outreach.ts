@@ -3,6 +3,12 @@ import {
   wrapTransactionalEmailHtml,
 } from "@/lib/email/email-html-shell";
 import { sendOutboundEmail } from "@/lib/email/email-transport";
+import {
+  isTrainerDiscoveryOutreach,
+  renderTrainerDiscoveryOutreachHtml,
+  renderTrainerDiscoveryOutreachText,
+  trainerOutreachSignupUrl,
+} from "@/lib/email/trainer-outreach-email";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 const NAME_MAX = 80;
@@ -22,6 +28,7 @@ export interface AdminOutreachTemplate {
   subject: string;
   body: string;
   updatedAt: string | null;
+  archivedAt: string | null;
 }
 
 export interface AdminOutreachSend {
@@ -47,7 +54,7 @@ export interface AdminOutreachDraft {
 }
 
 function missingTable(message: string): boolean {
-  return /relation .* does not exist|Could not find the table|schema cache/i.test(
+  return /relation .* does not exist|Could not find the table|schema cache|column .* does not exist/i.test(
     message
   );
 }
@@ -85,10 +92,29 @@ function mapTemplate(row: Record<string, unknown>): AdminOutreachTemplate {
     subject: asString(row.subject),
     body: asString(row.body),
     updatedAt: asString(row.updated_at) || null,
+    archivedAt: asString(row.archived_at) || null,
   };
 }
 
-function outreachHtml(subject: string, body: string): string {
+interface OutreachRenderOptions {
+  greetingName?: string | null;
+  unsubscribeUrl?: string | null;
+}
+
+function outreachHtml(
+  subject: string,
+  body: string,
+  options?: OutreachRenderOptions
+): string {
+  if (isTrainerDiscoveryOutreach(subject, body)) {
+    return renderTrainerDiscoveryOutreachHtml({
+      signupUrl: trainerOutreachSignupUrl(body),
+      footerNote: OPT_OUT,
+      greetingName: options?.greetingName,
+      unsubscribeHref: options?.unsubscribeUrl,
+    });
+  }
+
   const paragraphs = body
     .split(/\n{2,}/)
     .map((part) => part.trim())
@@ -101,16 +127,48 @@ function outreachHtml(subject: string, body: string): string {
       paragraphs.length > 0 ? paragraphs : [body]
     ),
     footerNote: OPT_OUT,
+    unsubscribeHref: options?.unsubscribeUrl ?? undefined,
   });
 }
 
-function outreachText(body: string): string {
-  return [body.trim(), OPT_OUT, `Questions? Email ${OUTREACH_REPLY_TO}`]
+function outreachText(
+  subject: string,
+  body: string,
+  options?: OutreachRenderOptions
+): string {
+  const message = isTrainerDiscoveryOutreach(subject, body)
+    ? renderTrainerDiscoveryOutreachText(
+        trainerOutreachSignupUrl(body),
+        options?.greetingName
+      )
+    : body.trim();
+  return [
+    message,
+    OPT_OUT,
+    `Questions? Email ${OUTREACH_REPLY_TO}`,
+    options?.unsubscribeUrl ? `Unsubscribe: ${options.unsubscribeUrl}` : "",
+  ]
     .filter(Boolean)
     .join("\n\n");
 }
 
-export async function readAdminOutreach(): Promise<
+/** Personalized campaign render. One-off sends keep the plain template. */
+export function renderAdminOutreachEmail(input: {
+  subject: string;
+  body: string;
+  greetingName?: string | null;
+  unsubscribeUrl?: string | null;
+}): { subject: string; text: string; html: string } {
+  return {
+    subject: input.subject,
+    text: outreachText(input.subject, input.body, input),
+    html: outreachHtml(input.subject, input.body, input),
+  };
+}
+
+export async function readAdminOutreach(options?: {
+  includeArchived?: boolean;
+}): Promise<
   { ok: true; snapshot: AdminOutreachSnapshot } | { ok: false; message: string }
 > {
   const service = createSupabaseServiceClient();
@@ -118,17 +176,25 @@ export async function readAdminOutreach(): Promise<
     return { ok: false, message: "Email storage is not connected." };
   }
 
-  const { data, error } = await service
+  const withArchive = await service
     .from("admin_outreach_templates")
-    .select("id, name, subject, body, updated_at")
+    .select("id, name, subject, body, updated_at, archived_at")
     .order("created_at", { ascending: true });
+
+  const { data, error } =
+    withArchive.error && /archived_at/i.test(withArchive.error.message)
+      ? await service
+          .from("admin_outreach_templates")
+          .select("id, name, subject, body, updated_at")
+          .order("created_at", { ascending: true })
+      : withArchive;
 
   if (error) {
     return {
       ok: false,
       message: missingTable(error.message)
         ? "Apply the admin outreach tables, then reload this page."
-        : "Could not load fixed emails.",
+        : "Could not load templates.",
     };
   }
 
@@ -160,10 +226,14 @@ export async function readAdminOutreach(): Promise<
     createdAt: asString(row.created_at),
   }));
 
+  const templates = (data ?? [])
+    .map((row) => mapTemplate(row))
+    .filter((template) => options?.includeArchived || !template.archivedAt);
+
   return {
     ok: true,
     snapshot: {
-      templates: (data ?? []).map((row) => mapTemplate(row)),
+      templates,
       sends,
     },
   };
@@ -196,7 +266,7 @@ export async function createAdminOutreachTemplate(
       ok: false,
       message: error && missingTable(error.message)
         ? "Apply the admin outreach tables, then try again."
-        : "Could not save that fixed email.",
+        : "Could not save that template.",
     };
   }
   return { ok: true, template: mapTemplate(data) };
@@ -211,7 +281,7 @@ export async function updateAdminOutreachTemplate(
 > {
   const service = createSupabaseServiceClient();
   if (!service) return { ok: false, message: "Email storage is not connected." };
-  if (!id) return { ok: false, message: "Missing fixed email." };
+  if (!id) return { ok: false, message: "Missing template." };
 
   const now = new Date().toISOString();
   const { data, error } = await service
@@ -232,11 +302,57 @@ export async function updateAdminOutreachTemplate(
       ok: false,
       message: missingTable(error.message)
         ? "Apply the admin outreach tables, then try again."
-        : "Could not save that fixed email.",
+        : "Could not save that template.",
     };
   }
-  if (!data) return { ok: false, message: "That fixed email is gone." };
+  if (!data) return { ok: false, message: "That template is gone." };
   return { ok: true, template: mapTemplate(data) };
+}
+
+export async function setAdminOutreachTemplateArchived(
+  id: string,
+  archived: boolean
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const service = createSupabaseServiceClient();
+  if (!service) return { ok: false, message: "Email storage is not connected." };
+  if (!id) return { ok: false, message: "Missing template." };
+  const { error } = await service
+    .from("admin_outreach_templates")
+    .update({
+      archived_at: archived ? new Date().toISOString() : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) {
+    return {
+      ok: false,
+      message: missingTable(error.message)
+        ? "Apply the outreach CRM migration, then try again."
+        : "Could not update that template.",
+    };
+  }
+  return { ok: true };
+}
+
+export async function duplicateAdminOutreachTemplate(
+  id: string,
+  userId: string
+): Promise<
+  { ok: true; template: AdminOutreachTemplate } | { ok: false; message: string }
+> {
+  const service = createSupabaseServiceClient();
+  if (!service) return { ok: false, message: "Email storage is not connected." };
+  const loaded = await readAdminOutreach({ includeArchived: true });
+  if (!loaded.ok) return loaded;
+  const source = loaded.snapshot.templates.find((template) => template.id === id);
+  if (!source) return { ok: false, message: "That template is gone." };
+  const draft = normalizeOutreachDraft({
+    name: `${source.name} copy`.slice(0, NAME_MAX),
+    subject: source.subject,
+    body: source.body,
+  });
+  if ("error" in draft) return { ok: false, message: draft.error };
+  return createAdminOutreachTemplate(draft, userId);
 }
 
 export async function deleteAdminOutreachTemplate(
@@ -244,7 +360,7 @@ export async function deleteAdminOutreachTemplate(
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const service = createSupabaseServiceClient();
   if (!service) return { ok: false, message: "Email storage is not connected." };
-  if (!id) return { ok: false, message: "Missing fixed email." };
+  if (!id) return { ok: false, message: "Missing template." };
 
   const { error } = await service
     .from("admin_outreach_templates")
@@ -256,7 +372,7 @@ export async function deleteAdminOutreachTemplate(
       ok: false,
       message: missingTable(error.message)
         ? "Apply the admin outreach tables, then try again."
-        : "Could not delete that fixed email.",
+        : "Could not delete that template.",
     };
   }
   return { ok: true };
@@ -319,7 +435,7 @@ export async function sendAdminOutreach(input: {
     return { ok: false, message: "Enter a valid email address." };
   }
   if (!input.templateId) {
-    return { ok: false, message: "Choose a fixed email first." };
+    return { ok: false, message: "Choose a template first." };
   }
 
   const service = createSupabaseServiceClient();
@@ -336,10 +452,10 @@ export async function sendAdminOutreach(input: {
       ok: false,
       message: missingTable(error.message)
         ? "Apply the admin outreach tables, then try again."
-        : "Could not load that fixed email.",
+        : "Could not load that template.",
     };
   }
-  if (!data) return { ok: false, message: "That fixed email is gone." };
+  if (!data) return { ok: false, message: "That template is gone." };
 
   const template = mapTemplate(data);
   const draft = normalizeOutreachDraft(template);
@@ -359,7 +475,7 @@ export async function sendAdminOutreach(input: {
   const result = await sendOutboundEmail({
     to: toEmail,
     subject: draft.subject,
-    text: outreachText(draft.body),
+    text: outreachText(draft.subject, draft.body),
     html: outreachHtml(draft.subject, draft.body),
     from: OUTREACH_FROM,
     replyTo: OUTREACH_REPLY_TO,

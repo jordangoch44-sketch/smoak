@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { CloseIcon } from "@/components/ui/icons";
-import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
+import { ChevronLeftIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import {
   ExerciseSlide,
@@ -28,25 +27,10 @@ import type {
   ClientWorkoutExercise,
 } from "@/types/client-workout";
 
-const KEYBOARD_INSET_PX = 80;
-
-function readKeyboardViewport(): {
-  inset: number;
-  top: number;
-  height: number;
-} {
-  const viewport = window.visualViewport;
-  const height = viewport?.height ?? window.innerHeight;
-  const top = viewport?.offsetTop ?? 0;
-  const inset = Math.max(0, window.innerHeight - height - top);
-  return { inset, top, height };
-}
-
 function isWorkoutField(target: EventTarget | null): target is HTMLInputElement {
   return target instanceof HTMLInputElement;
 }
 
-const KEYBOARD_SLIDE_MS = 480;
 const DISMISS_TAP_GUARD_MS = 400;
 
 /** Close unmounts the sheet; iOS then fires the leftover click on the day under the X. */
@@ -66,12 +50,19 @@ function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
   if (!(body instanceof HTMLElement)) return;
   const fieldRect = field.getBoundingClientRect();
   const bodyRect = body.getBoundingClientRect();
-  const pad = 20;
+  const pad = 28;
+  let delta = 0;
   if (fieldRect.bottom > bodyRect.bottom - pad) {
-    body.scrollTop += fieldRect.bottom - bodyRect.bottom + pad;
+    delta = fieldRect.bottom - bodyRect.bottom + pad;
   } else if (fieldRect.top < bodyRect.top + pad) {
-    body.scrollTop -= bodyRect.top + pad - fieldRect.top;
+    delta = fieldRect.top - bodyRect.top - pad;
   }
+  if (Math.abs(delta) < 2) return;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  body.scrollTo({
+    top: body.scrollTop + delta,
+    behavior: reduce ? "auto" : "smooth",
+  });
 }
 
 type DaySheetStep = "pick" | "cardio" | "workout";
@@ -125,21 +116,34 @@ export function ClientWorkoutDaySheet({
   const [composerOpen, setComposerOpen] = useState(!saved);
   const [focusComposer, setFocusComposer] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [keyboard, setKeyboard] = useState({ inset: 0, top: 0, height: 0 });
+  const [closing, setClosing] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const slideRef = useRef<ExerciseSlideHandle>(null);
-  const keyboardOpen = keyboard.inset > KEYBOARD_INSET_PX;
 
-  function closeDay() {
+  function requestClose() {
+    if (closing) return;
     const active = document.activeElement;
     if (active instanceof HTMLElement && sheetRef.current?.contains(active)) {
       active.blur();
     }
     swallowTrailingDismissTap();
-    onClose();
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      onClose();
+      return;
+    }
+    setClosing(true);
   }
 
-  const tintDismiss = useOwnPointerDismiss(closeDay);
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      requestClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [closing]);
 
   useEffect(() => {
     const existing = workout?.exercises ?? [];
@@ -165,34 +169,98 @@ export function ClientWorkoutDaySheet({
   }, [dateKey]);
 
   useEffect(() => {
-    let slideTimer = 0;
-    const insetOpen = { current: false };
+    const rootNode = rootRef.current;
+    const sheetNode = sheetRef.current;
+    if (!rootNode || !sheetNode) return;
+    const root: HTMLDivElement = rootNode;
+    const sheet: HTMLDivElement = sheetNode;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let displayed = 0;
+    let target = 0;
+    let raf = 0;
+
+    function apply(px: number) {
+      root.style.setProperty("--workout-keyboard-inset", `${Math.max(0, px).toFixed(1)}px`);
+    }
+
+    function readInset() {
+      const viewport = window.visualViewport;
+      if (!viewport) return 0;
+      const rect = root.getBoundingClientRect();
+      const fromRect = rect.bottom - viewport.height;
+      const fromLayout = window.innerHeight - viewport.offsetTop - viewport.height;
+      return Math.max(0, fromRect, fromLayout);
+    }
+
+    function stopEase() {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    }
+
+    function easeFrame() {
+      const delta = target - displayed;
+      if (Math.abs(delta) < 0.6) {
+        displayed = target;
+        apply(displayed);
+        raf = 0;
+        return;
+      }
+      displayed += delta * 0.2;
+      apply(displayed);
+      raf = requestAnimationFrame(easeFrame);
+    }
+
+    function follow(next: number) {
+      target = next;
+      if (!raf) raf = requestAnimationFrame(easeFrame);
+    }
 
     function syncKeyboard() {
-      const next = readKeyboardViewport();
-      insetOpen.current = next.inset > 0;
-      setKeyboard(next);
+      const next = readInset();
+      if (reduceMotion) {
+        stopEase();
+        displayed = next;
+        target = next;
+        apply(displayed);
+        return;
+      }
+      if (Math.abs(displayed - next) > 36) {
+        follow(next);
+        return;
+      }
+      stopEase();
+      displayed = next;
+      target = next;
+      apply(displayed);
     }
 
+    let scrollTimer = 0;
     function onFocusIn(event: FocusEvent) {
       if (!isWorkoutField(event.target)) return;
-      const sheet = sheetRef.current;
-      if (!sheet?.contains(event.target)) return;
+      if (!sheet.contains(event.target)) return;
       const field = event.target;
-      window.clearTimeout(slideTimer);
-      const delay = insetOpen.current ? 40 : KEYBOARD_SLIDE_MS;
-      slideTimer = window.setTimeout(() => {
+      const body = sheet.querySelector(".client-workouts-day__body");
+      const lockedTop = body instanceof HTMLElement ? body.scrollTop : 0;
+      window.clearTimeout(scrollTimer);
+      requestAnimationFrame(() => {
+        if (body instanceof HTMLElement) body.scrollTop = lockedTop;
+      });
+      scrollTimer = window.setTimeout(() => {
         scrollFieldInSheet(field, sheet);
-      }, delay);
+      }, 380);
     }
 
-    syncKeyboard();
+    displayed = readInset();
+    target = displayed;
+    apply(displayed);
     window.visualViewport?.addEventListener("resize", syncKeyboard);
     window.visualViewport?.addEventListener("scroll", syncKeyboard);
     window.addEventListener("resize", syncKeyboard);
     document.addEventListener("focusin", onFocusIn);
     return () => {
-      window.clearTimeout(slideTimer);
+      stopEase();
+      window.clearTimeout(scrollTimer);
       window.visualViewport?.removeEventListener("resize", syncKeyboard);
       window.visualViewport?.removeEventListener("scroll", syncKeyboard);
       window.removeEventListener("resize", syncKeyboard);
@@ -288,7 +356,7 @@ export function ClientWorkoutDaySheet({
       setError("Add cardio, an exercise, or name this workout.");
       return;
     }
-    closeDay();
+    requestClose();
   }
 
   function handlePickContinue() {
@@ -390,42 +458,36 @@ export function ClientWorkoutDaySheet({
 
   return (
     <div
+      ref={rootRef}
       className={cn(
         "client-workouts-day-root",
-        keyboardOpen && "client-workouts-day-root--keyboard"
+        closing && "client-workouts-day-root--closing"
       )}
-      style={
-        {
-          "--workout-keyboard-inset": `${keyboard.inset}px`,
-        } as CSSProperties
-      }
     >
-      <button
-        type="button"
-        className="client-workouts-day-root__tint"
-        aria-label="Close day"
-        onPointerDown={tintDismiss.onPointerDown}
-        onPointerUp={tintDismiss.onPointerUp}
-        onClick={tintDismiss.onClick}
-      />
-      <div
-        className="client-workouts-day-root__veil"
-        style={{ height: keyboard.inset }}
-        aria-hidden
-      />
       <div
         ref={sheetRef}
-        className="client-workouts-day"
-        style={
-          {
-            transform: `translate3d(0, ${-keyboard.inset}px, 0)`,
-          } as CSSProperties
-        }
+        className={cn("client-workouts-day", closing && "client-workouts-day--closing")}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`client-workout-day-${dateKey}`}
+        onAnimationEnd={(event) => {
+          if (event.target !== event.currentTarget) return;
+          if (!closing) return;
+          if (event.animationName !== "client-workouts-day-down") return;
+          onClose();
+        }}
       >
         <div className="client-workouts-day__top">
+          <FastActivateButton
+            className="client-workouts-day__back"
+            aria-label="Back to calendar"
+            onPointerDown={(event) => {
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onActivate={requestClose}
+          >
+            <ChevronLeftIcon className="h-5 w-5" />
+          </FastActivateButton>
           <div>
             <h3
               id={`client-workout-day-${dateKey}`}
@@ -454,16 +516,6 @@ export function ClientWorkoutDaySheet({
             ) : null}
             <p className="client-workouts-day__sub">{weekLabel}</p>
           </div>
-          <FastActivateButton
-            className="client-workouts-dialog__close"
-            aria-label="Close day"
-            onPointerDown={(event) => {
-              event.currentTarget.setPointerCapture(event.pointerId);
-            }}
-            onActivate={closeDay}
-          >
-            <CloseIcon className="h-4 w-4" />
-          </FastActivateButton>
         </div>
 
         <div className="client-workouts-day__body">

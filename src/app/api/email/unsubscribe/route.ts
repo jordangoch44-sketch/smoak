@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseUnsubscribeToken } from "@/lib/admin-email-unsubscribe";
 import { refreshAdminEmailCounts } from "@/lib/admin-email-db";
+import { markOutreachUnsubscribed } from "@/lib/outreach/prospects";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
@@ -19,6 +20,8 @@ async function applyUnsubscribe(token: string | null) {
     email: parsed.email,
     source_email_id: parsed.emailId,
   });
+
+  await markOutreachUnsubscribed(parsed.email);
 
   if (parsed.emailId) {
     await service

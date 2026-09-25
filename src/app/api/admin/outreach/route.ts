@@ -7,10 +7,11 @@ import {
   readAdminOutreach,
   updateAdminOutreachTemplate,
 } from "@/lib/admin-outreach";
+import { outreachLiveSendsEnabled } from "@/lib/outreach/live";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(request: Request) {
   const caller = await requireAdminApiUser();
   if (!caller) {
     return NextResponse.json(
@@ -19,14 +20,20 @@ export async function GET() {
     );
   }
 
-  const loaded = await readAdminOutreach();
+  const includeArchived =
+    new URL(request.url).searchParams.get("includeArchived") === "1";
+  const loaded = await readAdminOutreach({ includeArchived });
   if (!loaded.ok) {
     return NextResponse.json(
       { ok: false, message: loaded.message },
       { status: 503 }
     );
   }
-  return NextResponse.json({ ok: true, ...loaded.snapshot });
+  return NextResponse.json({
+    ok: true,
+    ...loaded.snapshot,
+    liveSends: outreachLiveSendsEnabled(),
+  });
 }
 
 export async function POST(request: Request) {
@@ -65,7 +72,7 @@ export async function PUT(request: Request) {
   }
   if (!parsed.id) {
     return NextResponse.json(
-      { ok: false, message: "Missing fixed email." },
+      { ok: false, message: "Missing template." },
       { status: 400 }
     );
   }
@@ -93,7 +100,7 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id")?.trim() ?? "";
   if (!id) {
     return NextResponse.json(
-      { ok: false, message: "Missing fixed email." },
+      { ok: false, message: "Missing template." },
       { status: 400 }
     );
   }

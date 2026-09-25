@@ -349,6 +349,32 @@
   );
 }
 
+.dashboard-page__admin-wash--outreach .dashboard-page__admin-nebula--a {
+  background: radial-gradient(
+    circle at 40% 40%,
+    rgba(139, 92, 246, 0.7) 0%,
+    rgba(99, 102, 241, 0.28) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--outreach .dashboard-page__admin-nebula--b {
+  background: radial-gradient(
+    circle at 55% 48%,
+    rgba(45, 212, 191, 0.38) 0%,
+    rgba(124, 58, 237, 0.16) 42%,
+    transparent 72%
+  );
+}
+
+.dashboard-page__admin-wash--outreach .dashboard-page__admin-nebula--c {
+  background: radial-gradient(
+    circle at 48% 52%,
+    rgba(167, 139, 250, 0.32) 0%,
+    transparent 74%
+  );
+}
+
 /* Static ambient header glow */
 .dashboard-page--admin .dashboard-page__header-glow {
   height: 28rem;
@@ -6547,6 +6573,14 @@ button.admin-email-tool:disabled {
   flex: 1 1 16rem;
 }
 
+.admin-outreach__hint {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #a1a1aa;
+}
+
 .admin-outreach__log {
   display: flex;
   flex-direction: column;
@@ -6569,6 +6603,468 @@ button.admin-email-tool:disabled {
 
 .admin-outreach__log li span:last-child {
   color: #a1a1aa;
+}
+
+/* ——— Outreach CRM ——— */
+.admin-outreach-crm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.admin-outreach-crm__head h2 {
+  margin: 0.2rem 0 0.35rem;
+  font-size: 1.35rem;
+  letter-spacing: -0.03em;
+}
+
+.admin-outreach-crm__head p:last-child,
+.admin-outreach-crm__muted {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.admin-outreach-crm__banner {
+  margin: 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.admin-outreach-crm__banner--safe {
+  color: #fde68a;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+}
+
+.admin-outreach-crm__banner--live {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.admin-outreach-crm__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-outreach-crm__tab {
+  min-height: 2.5rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-outreach-crm__tab--active {
+  color: #fff;
+  border-color: rgba(192, 132, 252, 0.55);
+  background: rgba(124, 58, 237, 0.35);
+}
+
+.admin-outreach-crm__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.admin-outreach-crm__toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.admin-outreach-crm__toolbar h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.admin-outreach-crm__toolbar p {
+  margin: 0.25rem 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.8125rem;
+}
+
+.admin-outreach-crm__filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.6fr) repeat(4, minmax(8.5rem, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.admin-outreach-crm__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.admin-outreach-crm__chip {
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-outreach-crm__chip--active {
+  color: #fff;
+  border-color: rgba(192, 132, 252, 0.55);
+  background: rgba(124, 58, 237, 0.35);
+}
+
+.admin-outreach-crm__ig {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  min-width: 12.5rem;
+}
+
+.admin-outreach-crm__ig-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-outreach-crm__ig-actions .admin-btn {
+  flex: 0 0 auto;
+}
+
+.admin-outreach-ig--open {
+  color: #f9a8d4;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(244, 114, 182, 0.28);
+}
+
+.admin-outreach-ig--messaged {
+  color: #fde68a;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+}
+
+.admin-outreach-ig--responded {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.16);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.admin-outreach-crm__filters .admin-field--select,
+.admin-outreach-crm__bulk .admin-field--select,
+.admin-outreach-crm__form .admin-field--select {
+  max-width: none;
+}
+
+.admin-outreach-crm__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-outreach-crm__bulk {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.8rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-outreach-crm__bulk-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-outreach-crm__bulk .admin-field,
+.admin-outreach-crm__bulk .admin-field--select {
+  width: 11.5rem;
+  max-width: 11.5rem;
+  flex: 0 0 auto;
+}
+
+.admin-outreach-crm__error,
+.admin-outreach-crm__notice {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.75rem;
+  font-size: 0.8125rem;
+}
+
+.admin-outreach-crm__error {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+}
+
+.admin-outreach-crm__notice {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.admin-outreach-crm__table {
+  min-width: 78rem;
+}
+
+.admin-outreach-crm__table td {
+  vertical-align: top;
+}
+
+.admin-outreach-crm__table a {
+  color: #d8b4fe;
+}
+
+.admin-outreach-crm__notes {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-outreach-crm__cards {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-outreach-crm__pager {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.admin-outreach-crm__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-outreach-crm__history {
+  margin: 0.35rem 0 0;
+  padding-left: 1rem;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8125rem;
+}
+
+.admin-outreach-crm__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 0.75rem 0 0;
+}
+
+.admin-outreach-crm__stats div {
+  padding: 0.65rem 0.7rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-outreach-crm__stats dt {
+  margin: 0;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.admin-outreach-crm__stats dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+
+.admin-outreach-crm__campaigns {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-outreach-crm__picker {
+  max-height: 16rem;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+}
+
+.admin-outreach-crm__picker li {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-outreach-crm__picker li:first-child {
+  border-top: 0;
+}
+
+.admin-outreach-crm__picker label {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  padding: 0.55rem 0.7rem;
+}
+
+.admin-outreach-crm__picker small {
+  display: block;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.admin-outreach-crm__frame {
+  width: 100%;
+  height: 28rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #0c0c10;
+}
+
+.admin-outreach-crm__test {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-outreach-crm__test .admin-field {
+  flex: 1 1 12rem;
+}
+
+.admin-outreach-crm__confirm {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.admin-outreach-status--not_contacted,
+.admin-outreach-status--follow_up {
+  color: #fde68a;
+  background: rgba(234, 179, 8, 0.12);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+}
+
+.admin-outreach-status--email_sent,
+.admin-outreach-status--interested,
+.admin-outreach-status--signed_up {
+  color: #86efac;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.28);
+}
+
+.admin-outreach-status--replied {
+  color: #c4b5fd;
+  background: rgba(139, 92, 246, 0.16);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.admin-outreach-status--not_interested,
+.admin-outreach-status--bounced,
+.admin-outreach-status--unsubscribed {
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.28);
+}
+
+.admin-outreach-status--instagram_only {
+  color: #f9a8d4;
+  background: rgba(236, 72, 153, 0.12);
+  border: 1px solid rgba(244, 114, 182, 0.28);
+}
+
+.admin-outreach-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+  pointer-events: auto;
+}
+
+.admin-outreach-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(5, 5, 8, 0.72);
+  cursor: pointer;
+}
+
+.admin-outreach-dialog__panel {
+  position: relative;
+  z-index: 1;
+  width: min(32rem, 100%);
+  max-height: min(44rem, calc(100dvh - 1.5rem));
+  overflow: auto;
+  padding: 1rem 1rem 1.15rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #121218;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.admin-outreach-dialog__panel--wide {
+  width: min(44rem, 100%);
+}
+
+.admin-outreach-dialog__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.9rem;
+}
+
+.admin-outreach-dialog__header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.admin-outreach-dialog__header p {
+  margin: 0.3rem 0 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+@media (min-width: 768px) {
+  .admin-outreach-dialog {
+    align-items: center;
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 1100px) {
+  .admin-outreach-crm__filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-outreach-crm__filters {
+    grid-template-columns: 1fr;
+  }
 }
 
 

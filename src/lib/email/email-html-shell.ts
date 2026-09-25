@@ -320,7 +320,14 @@ export interface WrapTransactionalEmailOptions {
   preheader?: string;
   eyebrow?: string;
   title: string;
+  /**
+   * Trusted heading markup. When set, replaces the escaped `title` heading.
+   * Do not pass user-authored HTML.
+   */
+  titleHtml?: string;
   bodyHtml: string;
+  /** Inner column width in pixels. Defaults to 560. */
+  maxWidth?: number;
   cta?: EmailCta;
   secondaryLink?: EmailCta;
   footerNote?: string;
@@ -346,6 +353,14 @@ export function wrapTransactionalEmailHtml(
       "Luxury wellness marketplace · Find specialists near you."
   );
   const year = new Date().getFullYear();
+  const maxWidth =
+    options.maxWidth && options.maxWidth >= 480 && options.maxWidth <= 640
+      ? Math.round(options.maxWidth)
+      : 560;
+
+  const heading = options.titleHtml
+    ? options.titleHtml
+    : `<h1 style="margin:0 0 18px;font-family:${FONT_SANS};font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.02em;color:${COLORS.title};">${title}</h1>`;
 
   const ctaHtml = options.cta ? renderEmailCta(options.cta) : "";
   const secondaryHtml = options.secondaryLink
@@ -374,7 +389,7 @@ export function wrapTransactionalEmailHtml(
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.page};border-collapse:collapse;">
     <tr>
       <td align="center" style="padding:32px 16px;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;border-collapse:collapse;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:${maxWidth}px;border-collapse:collapse;">
           <tr>
             <td align="center" style="padding:0 0 24px;">
               <a href="${escapeEmailHtml(origin)}" style="text-decoration:none;">
@@ -389,7 +404,7 @@ export function wrapTransactionalEmailHtml(
                 <tr>
                   <td style="padding:28px 28px 24px;border-radius:16px;background:${COLORS.card};">
                     <p style="margin:0 0 10px;font-family:${FONT_SANS};font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.accentSoft};">${eyebrow}</p>
-                    <h1 style="margin:0 0 18px;font-family:${FONT_SANS};font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.02em;color:${COLORS.title};">${title}</h1>
+                    ${heading}
                     <div style="font-family:${FONT_SANS};">
                       ${options.bodyHtml}
                       ${ctaHtml}

@@ -16,6 +16,7 @@ import { AdminSettingsPanel } from "@/components/admin/panels/AdminSettingsPanel
 import { AdminSpecialistsPanel } from "@/components/admin/panels/AdminSpecialistsPanel";
 import { AdminTeamPanel } from "@/components/admin/panels/AdminTeamPanel";
 import { AdminEmailPanel } from "@/components/admin/email/AdminEmailPanel";
+import { AdminOutreachPanel } from "@/components/admin/outreach/AdminOutreachPanel";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { useAdminPermissions } from "@/hooks/useAdminPermissions";
 import {
@@ -435,6 +436,10 @@ export function AdminDashboardPageClient() {
 
             {resolvedSection === "email" && permissions.canManageEmails ? (
               <AdminEmailPanel />
+            ) : null}
+
+            {resolvedSection === "outreach" && permissions.canManageEmails ? (
+              <AdminOutreachPanel />
             ) : null}
 
             {resolvedSection === "revenue" && permissions.canViewRevenue ? (

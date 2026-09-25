@@ -1,5 +1,5 @@
 import {
-  emailBrandInlineAttachments,
+  emailInlineAttachmentsForHtml,
   rewriteEmailBrandImagesToCid,
 } from "@/lib/email/email-inline-images";
 import { SUPPORT_EMAIL } from "@/lib/site-contact";
@@ -76,10 +76,7 @@ export async function sendOutboundEmail(
     "SMOAC <onboarding@resend.dev>";
   const rawHtml = payload.html?.trim() || undefined;
   const html = rawHtml ? rewriteEmailBrandImagesToCid(rawHtml) : undefined;
-  const brandAttachments =
-    html && /cid:smoac-(?:mark|wordmark)/i.test(html)
-      ? emailBrandInlineAttachments()
-      : [];
+  const brandAttachments = html ? emailInlineAttachmentsForHtml(html) : [];
   const replyTo = resolveTransactionalReplyTo(payload.kind, payload.replyTo);
 
   if (apiKey) {

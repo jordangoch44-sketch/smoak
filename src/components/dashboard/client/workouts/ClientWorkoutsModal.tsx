@@ -98,10 +98,7 @@ export function ClientWorkoutsModal({
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      if (selectedDateKeyRef.current) {
-        setSelectedDateKey(null);
-        return;
-      }
+      if (selectedDateKeyRef.current) return;
       if (pasteSourceKeyRef.current) {
         setPasteSourceKey(null);
         return;
@@ -320,24 +317,24 @@ export function ClientWorkoutsModal({
           </div>
         </div>
 
-        {selectedDateKey && !pasteSourceKey ? (
-          <ClientWorkoutDaySheet
-            dateKey={selectedDateKey}
-            workout={log.days[selectedDateKey]}
-            weekLabel={weekLabel}
-            onClose={closeSelectedDay}
-            onSave={handleSave}
-            onRemove={() => {
-              removeDay(selectedDateKey);
-              closeSelectedDay();
-            }}
-            onCopy={() => {
-              setPasteSourceKey(selectedDateKey);
-              setSelectedDateKey(null);
-            }}
-          />
-        ) : null}
       </div>
+      {selectedDateKey && !pasteSourceKey ? (
+        <ClientWorkoutDaySheet
+          dateKey={selectedDateKey}
+          workout={log.days[selectedDateKey]}
+          weekLabel={weekLabel}
+          onClose={closeSelectedDay}
+          onSave={handleSave}
+          onRemove={() => {
+            removeDay(selectedDateKey);
+            closeSelectedDay();
+          }}
+          onCopy={() => {
+            setPasteSourceKey(selectedDateKey);
+            setSelectedDateKey(null);
+          }}
+        />
+      ) : null}
     </div>,
     document.body
   );

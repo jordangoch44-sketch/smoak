@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { runAdminEmailMaintenance } from "@/lib/admin-email-send";
 import { processDueOutreachCampaigns } from "@/lib/outreach/campaigns";
 
 export const runtime = "nodejs";
@@ -11,7 +10,6 @@ export async function GET(request: Request) {
   if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const result = await runAdminEmailMaintenance();
-  const outreach = await processDueOutreachCampaigns().catch(() => ({ processed: 0 }));
-  return NextResponse.json({ ok: true, ...result, outreach });
+  const result = await processDueOutreachCampaigns();
+  return NextResponse.json({ ok: true, ...result });
 }

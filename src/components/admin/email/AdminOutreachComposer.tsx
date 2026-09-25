@@ -5,6 +5,7 @@ import type {
   AdminOutreachSend,
   AdminOutreachTemplate,
 } from "@/lib/admin-outreach";
+import { isTrainerDiscoveryOutreach } from "@/lib/email/trainer-outreach-email";
 
 type EditorState =
   | { mode: "closed" }
@@ -47,7 +48,7 @@ export function AdminOutreachComposer() {
       sends?: AdminOutreachSend[];
     } | null;
     if (!res.ok || !data?.ok) {
-      setLoadError(data?.message || "Could not load fixed emails.");
+      setLoadError(data?.message || "Could not load templates.");
       setLoading(false);
       return;
     }
@@ -115,7 +116,7 @@ export function AdminOutreachComposer() {
       setError(data?.message || "Could not save.");
       return;
     }
-    setNotice(creating ? "Fixed email added." : "Fixed email saved.");
+    setNotice(creating ? "Template added." : "Template saved.");
     setEditor({ mode: "closed" });
     setSelectedId(data.template.id);
     await load();
@@ -139,7 +140,7 @@ export function AdminOutreachComposer() {
     }
     if (selectedId === template.id) setSelectedId(null);
     setEditor({ mode: "closed" });
-    setNotice("Fixed email deleted.");
+    setNotice("Template deleted.");
     await load();
   }
 
@@ -197,11 +198,11 @@ export function AdminOutreachComposer() {
   const selected = templates.find((template) => template.id === selectedId) ?? null;
 
   return (
-    <section className="admin-outreach" aria-label="Fixed outreach emails">
+    <section className="admin-outreach" aria-label="Templates">
       <div className="admin-outreach__head">
         <div>
           <p className="admin-email-hero__eyebrow">Cold outreach</p>
-          <h2>Fixed emails</h2>
+          <h2>Templates</h2>
           <p>
             Save a message for independent trainers, gyms, or anyone else.
             Click it, type an address, and send.
@@ -212,7 +213,7 @@ export function AdminOutreachComposer() {
           className="admin-btn admin-btn--primary"
           onClick={openNew}
         >
-          + New fixed email
+          + New template
         </button>
       </div>
 
@@ -264,7 +265,7 @@ export function AdminOutreachComposer() {
               className="admin-btn admin-btn--primary"
               disabled={saving}
             >
-              {saving ? "Saving…" : "Save fixed email"}
+              {saving ? "Saving…" : "Save template"}
             </button>
             <button
               type="button"
@@ -279,10 +280,10 @@ export function AdminOutreachComposer() {
       ) : null}
 
       {loading ? (
-        <p className="admin-empty">Loading fixed emails…</p>
+        <p className="admin-empty">Loading templates…</p>
       ) : loadError ? null : templates.length === 0 ? (
         <p className="admin-empty">
-          No fixed emails yet. Add one for independent trainers, gyms, or
+          No templates yet. Add one for independent trainers, gyms, or
           another group.
         </p>
       ) : (
@@ -353,6 +354,12 @@ export function AdminOutreachComposer() {
           >
             {sending ? "Sending…" : "Send"}
           </button>
+          {isTrainerDiscoveryOutreach(selected.subject, selected.body) ? (
+            <p className="admin-outreach__hint">
+              This one sends as the designed layout: headline, map on an iPhone,
+              and a signup button. The link in the saved message is the button.
+            </p>
+          ) : null}
         </form>
       ) : null}
 
@@ -361,7 +368,7 @@ export function AdminOutreachComposer() {
           {sends.map((row) => (
             <li key={row.id}>
               <span>
-                {row.templateName || "Fixed email"} → {row.toEmail}
+                {row.templateName || "Template"} → {row.toEmail}
               </span>
               <span>
                 {row.status === "sent" ? "Sent" : "Failed"}

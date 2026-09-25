@@ -69,6 +69,7 @@ export function canAccessAdminSection(
     case "clients":
       return permissions.canViewClients;
     case "email":
+    case "outreach":
       return permissions.canManageEmails;
     case "revenue":
       return permissions.canViewRevenue;
@@ -90,6 +91,7 @@ export function getDefaultAdminSection(
     "specialists",
     "clients",
     "email",
+    "outreach",
     "revenue",
     "team",
     "settings",
