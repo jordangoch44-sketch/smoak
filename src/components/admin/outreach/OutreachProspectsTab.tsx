@@ -54,7 +54,7 @@ function InstagramLog({
   onLog,
 }: {
   row: OutreachProspect;
-  onLog: (ids: string[], action: "messaged" | "responded") => void;
+  onLog: (ids: string[], action: "messaged" | "responded" | "undo") => void;
 }) {
   if (!row.instagram) return null;
   const tone = row.instagramRepliedAt
@@ -62,6 +62,7 @@ function InstagramLog({
     : row.instagramTouches > 0
       ? "messaged"
       : "open";
+  const canUndo = row.instagramTouches > 0 || Boolean(row.instagramRepliedAt);
   return (
     <div className="admin-outreach-crm__ig">
       <span className={`admin-badge admin-outreach-ig admin-outreach-ig--${tone}`}>
@@ -83,6 +84,16 @@ function InstagramLog({
         >
           Responded
         </button>
+        {canUndo ? (
+          <button
+            type="button"
+            className="admin-btn admin-btn--compact"
+            title="Take back the last Instagram mark"
+            onClick={() => onLog([row.id], "undo")}
+          >
+            Undo
+          </button>
+        ) : null}
       </span>
     </div>
   );
@@ -279,7 +290,10 @@ export function OutreachProspectsTab({
     await load();
   }
 
-  async function logInstagram(ids: string[], action: "messaged" | "responded") {
+  async function logInstagram(
+    ids: string[],
+    action: "messaged" | "responded" | "undo"
+  ) {
     if (ids.length === 0) return;
     setError(null);
     const res = await fetch("/api/admin/outreach/prospects/bulk", {
@@ -288,7 +302,12 @@ export function OutreachProspectsTab({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ids,
-        action: action === "messaged" ? "instagram_messaged" : "instagram_responded",
+        action:
+          action === "messaged"
+            ? "instagram_messaged"
+            : action === "responded"
+              ? "instagram_responded"
+              : "instagram_undo",
       }),
     });
     const data = await readJson(res);
@@ -298,9 +317,11 @@ export function OutreachProspectsTab({
     }
     const count = typeof data.count === "number" ? data.count : ids.length;
     setNotice(
-      action === "messaged"
-        ? `Logged ${count} Instagram message${count === 1 ? "" : "s"}.`
-        : `Marked ${count} Instagram repl${count === 1 ? "y" : "ies"}.`
+      action === "undo"
+        ? `Undid the last Instagram mark on ${count} contact${count === 1 ? "" : "s"}.`
+        : action === "messaged"
+          ? `Logged ${count} Instagram message${count === 1 ? "" : "s"}.`
+          : `Marked ${count} Instagram repl${count === 1 ? "y" : "ies"}.`
     );
     await load();
   }
@@ -594,6 +615,13 @@ export function OutreachProspectsTab({
               onClick={() => void logInstagram([...selected], "responded")}
             >
               Responded
+            </button>
+            <button
+              type="button"
+              className="admin-btn admin-btn--compact"
+              onClick={() => void logInstagram([...selected], "undo")}
+            >
+              Undo
             </button>
           </div>
           <div className="admin-outreach-crm__bulk-row">

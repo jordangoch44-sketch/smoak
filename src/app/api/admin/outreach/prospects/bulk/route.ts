@@ -5,6 +5,7 @@ import {
   deleteOutreachProspects,
   logOutreachInstagram,
   setOutreachProspectStatus,
+  undoOutreachInstagram,
   setOutreachProspectsArchived,
 } from "@/lib/outreach/prospects";
 
@@ -42,7 +43,9 @@ export async function POST(request: Request) {
               ? await logOutreachInstagram(ids, "messaged")
               : action === "instagram_responded"
                 ? await logOutreachInstagram(ids, "responded")
-                : { ok: false as const, message: "Choose a bulk action." };
+                : action === "instagram_undo"
+                  ? await undoOutreachInstagram(ids)
+                  : { ok: false as const, message: "Choose a bulk action." };
 
   if (!result.ok) {
     return NextResponse.json({ ok: false, message: result.message }, { status: 400 });

@@ -895,6 +895,103 @@ export async function logOutreachInstagram(
   return { ok: true, count: touchedIds.length };
 }
 
+/** Drop the newest Instagram mark so an accidental Messaged or Responded click can be taken back. */
+export async function undoOutreachInstagram(
+  ids: string[]
+): Promise<{ ok: true; count: number } | { ok: false; message: string }> {
+  const clean = [...new Set(ids.map((id) => id.trim()).filter(Boolean))].slice(0, 500);
+  if (clean.length === 0) return { ok: false, message: "Select at least one contact." };
+  const service = outreachService();
+  if (!service) return { ok: false, message: "Outreach storage is not connected." };
+
+  const loaded = await service
+    .from("outreach_prospects")
+    .select("id, instagram")
+    .in("id", clean);
+  if (loaded.error) {
+    return {
+      ok: false,
+      message: outreachStorageError(loaded.error.message, "Could not update those contacts."),
+    };
+  }
+
+  const targetIds = (loaded.data ?? [])
+    .filter((row) => asText(row.instagram))
+    .map((row) => asText(row.id))
+    .filter(Boolean);
+  if (targetIds.length === 0) {
+    return { ok: false, message: "Those contacts do not have an Instagram handle." };
+  }
+
+  const latest: Array<{ id: string; prospectId: string }> = [];
+  try {
+    for (let index = 0; index < targetIds.length; index += 25) {
+      const chunk = targetIds.slice(index, index + 25);
+      const found = await Promise.all(
+        chunk.map(async (prospectId) => {
+          const { data, error } = await service
+            .from("outreach_events")
+            .select("id")
+            .eq("prospect_id", prospectId)
+            .in("event_type", ["instagram_messaged", "instagram_replied"])
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (error) throw new Error(error.message);
+          const eventId = asText(data?.id);
+          return eventId ? { id: eventId, prospectId } : null;
+        })
+      );
+      for (const row of found) {
+        if (row) latest.push(row);
+      }
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    return {
+      ok: false,
+      message: outreachStorageError(message, "Could not read the Instagram log."),
+    };
+  }
+
+  if (latest.length === 0) {
+    return { ok: false, message: "Those contacts have no Instagram mark to undo." };
+  }
+
+  const removed = await service
+    .from("outreach_events")
+    .delete()
+    .in(
+      "id",
+      latest.map((row) => row.id)
+    );
+  if (removed.error) {
+    return {
+      ok: false,
+      message: outreachStorageError(removed.error.message, "Could not undo that Instagram mark."),
+    };
+  }
+
+  await Promise.all(
+    latest.map(async ({ prospectId }) => {
+      const { data } = await service
+        .from("outreach_events")
+        .select("created_at")
+        .eq("prospect_id", prospectId)
+        .in("event_type", ["instagram_messaged", "instagram_replied", "email_sent"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      await service
+        .from("outreach_prospects")
+        .update({ last_contacted_at: asText(data?.created_at) || null })
+        .eq("id", prospectId);
+    })
+  );
+
+  return { ok: true, count: latest.length };
+}
+
 export async function readOutreachProspectHistory(id: string): Promise<
   | { ok: true; prospect: OutreachProspect; events: OutreachProspectEvent[] }
   | { ok: false; message: string }
