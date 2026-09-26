@@ -65,8 +65,24 @@ function InstagramLog({
   const canUndo = row.instagramTouches > 0 || Boolean(row.instagramRepliedAt);
   return (
     <div className="admin-outreach-crm__ig">
-      <span className={`admin-badge admin-outreach-ig admin-outreach-ig--${tone}`}>
-        {instagramProgressLabel(row)}
+      <span className="admin-outreach-crm__ig-status">
+        <span className={`admin-badge admin-outreach-ig admin-outreach-ig--${tone}`}>
+          {instagramProgressLabel(row)}
+        </span>
+        {canUndo ? (
+          <button
+            type="button"
+            className="admin-outreach-ig-undo"
+            title="Take back the last Instagram mark"
+            onClick={() => onLog([row.id], "undo")}
+          >
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M6.2 4.2 3.4 7l2.8 2.8" />
+              <path d="M3.8 7h5.1a3.6 3.6 0 1 1 0 7.2H7" />
+            </svg>
+            Undo
+          </button>
+        ) : null}
       </span>
       <span className="admin-outreach-crm__ig-actions">
         <button
@@ -84,16 +100,6 @@ function InstagramLog({
         >
           Responded
         </button>
-        {canUndo ? (
-          <button
-            type="button"
-            className="admin-btn admin-btn--compact"
-            title="Take back the last Instagram mark"
-            onClick={() => onLog([row.id], "undo")}
-          >
-            Undo
-          </button>
-        ) : null}
       </span>
     </div>
   );

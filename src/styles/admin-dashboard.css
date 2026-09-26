@@ -6735,6 +6735,42 @@ button.admin-email-tool:disabled {
   min-width: 12.5rem;
 }
 
+.admin-outreach-crm__ig-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-outreach-ig-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+}
+
+.admin-outreach-ig-undo svg {
+  width: 0.72rem;
+  height: 0.72rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-outreach-ig-undo:hover {
+  color: rgba(255, 255, 255, 0.88);
+}
+
 .admin-outreach-crm__ig-actions {
   display: flex;
   flex-wrap: wrap;
