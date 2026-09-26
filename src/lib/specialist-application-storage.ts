@@ -9,6 +9,7 @@ import {
   isMarketplaceSupabaseActive,
 } from "@/lib/auth/marketplace-auth";
 import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
+import { getInternalAuthSessionSnapshot } from "@/lib/internal-auth-session-store";
 import {
   DEV_SPECIALIST_APPLICATIONS_KEY,
   DEV_SPECIALIST_ONBOARDING_DRAFT_KEY,
@@ -37,6 +38,16 @@ let hydrated = false;
 let hydrating = false;
 let loadGeneration = 0;
 let hydratePromise: Promise<void> | null = null;
+/** Scope of the in-flight hydrate. A review-queue fetch must not join an own-row fetch. */
+let activeHydrateScope: "own" | "queue" | null = null;
+
+/**
+ * Control (admin) needs every specialist application.
+ * A specialist's own dashboard must stay limited to their user id.
+ */
+function viewerNeedsApplicationQueue(): boolean {
+  return getInternalAuthSessionSnapshot() != null;
+}
 
 function applicationsSignature(apps: readonly SpecialistApplication[]): string {
   if (apps.length === 0) return "";
@@ -129,16 +140,29 @@ function markHydratedAndNotify(): void {
   }
 }
 
-async function hydrateFromSupabase(): Promise<void> {
+async function hydrateFromSupabase(
+  scope: "own" | "queue" = "own"
+): Promise<void> {
   if (typeof window === "undefined") return;
-  if (hydratePromise) return hydratePromise;
-  hydratePromise = runApplicationsHydrate().finally(() => {
-    hydratePromise = null;
+  const resolved: "own" | "queue" =
+    scope === "queue" || viewerNeedsApplicationQueue() ? "queue" : "own";
+  if (hydratePromise && (resolved === "own" || activeHydrateScope === "queue")) {
+    return hydratePromise;
+  }
+  activeHydrateScope = resolved;
+  const run = runApplicationsHydrate(resolved).finally(() => {
+    if (hydratePromise === run) {
+      hydratePromise = null;
+      activeHydrateScope = null;
+    }
   });
-  return hydratePromise;
+  hydratePromise = run;
+  return run;
 }
 
-async function runApplicationsHydrate(): Promise<void> {
+async function runApplicationsHydrate(
+  scope: "own" | "queue" = "own"
+): Promise<void> {
   if (!isMarketplaceSupabaseActive()) {
     applyCache(readLocalApplications());
     markHydratedAndNotify();
@@ -169,10 +193,16 @@ async function runApplicationsHydrate(): Promise<void> {
       const { data } = await supabase.auth.getSession();
       userId = data.session?.user?.id?.trim() || undefined;
     }
+    /* Queue reads still need a signed-in session so admin RLS applies.
+     * They must not filter to that user's own row — the pending applicant
+     * is a different account, which is why Control showed Pending 1 and an empty queue. */
     if (!userId) {
       return;
     }
-    const result = await fetchSpecialistApplications(supabase, { userId });
+    const result = await fetchSpecialistApplications(
+      supabase,
+      scope === "queue" ? undefined : { userId }
+    );
 
     if (generation !== loadGeneration) return;
 
@@ -661,5 +691,5 @@ export async function deleteSiblingSpecialistApplicationsAsync(
 }
 
 export function refreshSpecialistApplicationsFromRemote(): void {
-  void hydrateFromSupabase();
+  void hydrateFromSupabase(viewerNeedsApplicationQueue() ? "queue" : "own");
 }

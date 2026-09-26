@@ -74,14 +74,14 @@ function withSessionUserId(application: ClientApplication): ClientApplication {
   return { ...application, userId: session.userId };
 }
 
-async function hydrateFromSupabase(): Promise<void> {
+async function hydrateFromSupabase(force = false): Promise<void> {
   if (typeof window === "undefined") return;
   if (!isMarketplaceSupabaseActive()) {
     applyCache(readLocalApplications());
     hydrated = true;
     return;
   }
-  if (hydrating) return;
+  if (hydrating && !force) return;
 
   const generation = ++loadGeneration;
   hydrating = true;
@@ -223,5 +223,5 @@ export function getClientApplicationById(
 /** Force re-fetch from Supabase (e.g. after admin login). */
 export function refreshClientApplicationsFromRemote(): void {
   hydrated = false;
-  void hydrateFromSupabase();
+  void hydrateFromSupabase(true);
 }
