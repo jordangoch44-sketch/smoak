@@ -364,7 +364,9 @@ export function AdminOutreachComposer() {
       ) : null}
 
       {sends.length > 0 ? (
-        <ul className="admin-outreach__log" aria-label="Sent emails">
+        <div className="admin-outreach__recent">
+          <p className="admin-outreach__recent-label">Recent</p>
+          <ul className="admin-outreach__log" aria-label="Recent sends">
           {sends.map((row) => (
             <li key={row.id}>
               <span>
@@ -376,7 +378,8 @@ export function AdminOutreachComposer() {
               </span>
             </li>
           ))}
-        </ul>
+          </ul>
+        </div>
       ) : null}
     </section>
   );

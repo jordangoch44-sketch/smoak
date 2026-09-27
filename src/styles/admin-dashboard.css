@@ -6581,6 +6581,15 @@ button.admin-email-tool:disabled {
   color: #a1a1aa;
 }
 
+.admin-outreach__recent-label {
+  margin: 0 0 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a1a1aa;
+}
+
 .admin-outreach__log {
   display: block;
   flex: 0 1 auto;
