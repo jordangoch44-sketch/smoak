@@ -183,15 +183,30 @@ function launchCard(): string {
   </table>`;
 }
 
-function signupButton(href: string): string {
+function signupButton(href: string, origin: string): string {
   const safeHref = escapeEmailHtml(href);
   const label = `${escapeEmailHtml(CTA_LABEL)} &rarr;`;
+  const siteHref = escapeEmailHtml(origin);
+  const siteLabel = escapeEmailHtml("Check out smoac.com");
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
     <tr>
       <td align="center" bgcolor="${SMOAC_COLOR.violet}" style="border-radius:14px;background-color:${SMOAC_COLOR.violet};background-image:${CTA_SPECTRUM};">
         <a href="${safeHref}" style="display:block;padding:17px 18px;font-family:${FONT};font-size:17px;line-height:1.2;font-weight:700;letter-spacing:-0.01em;color:#ffffff;text-decoration:none;text-align:center;border-radius:14px;">
           <span style="color:#ffffff;">${label}</span>
         </a>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding-top:10px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+          <tr>
+            <td align="center" bgcolor="#16161a" style="border-radius:10px;border:1px solid #3f3f46;background-color:#16161a;">
+              <a href="${siteHref}" style="display:inline-block;padding:9px 16px;font-family:${FONT};font-size:13px;line-height:1.2;font-weight:600;color:#d4d4d8;text-decoration:none;border-radius:10px;">
+                <span style="color:#d4d4d8;">${siteLabel}</span>
+              </a>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>`;
@@ -300,7 +315,7 @@ export function renderTrainerDiscoveryOutreachHtml(options: {
                       </tr>
                       <tr>
                         <td style="padding:0 0 28px;">
-                          ${signupButton(signupUrl)}
+                          ${signupButton(signupUrl, origin)}
                         </td>
                       </tr>
                       <tr>
@@ -350,6 +365,7 @@ export function renderTrainerDiscoveryOutreachText(
     LAUNCH_TITLE,
     LAUNCH_BODY,
     `${CTA_LABEL}: ${href}`,
+    `Check out smoac.com: ${emailSiteOrigin()}`,
     CLOSE,
     "Best,\nThe Smoac Team",
   ]
