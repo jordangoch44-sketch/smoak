@@ -6815,19 +6815,13 @@ button.admin-email-tool:disabled {
 
 .admin-outreach-crm__bulk {
   display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  padding: 0.8rem;
-  border-radius: 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.admin-outreach-crm__bulk-row {
-  display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.65rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .admin-outreach-crm__bulk .admin-field,

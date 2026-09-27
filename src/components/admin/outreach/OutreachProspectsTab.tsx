@@ -6,6 +6,7 @@ import {
   OUTREACH_STATUSES,
   formatOutreachDate,
   instagramProgressLabel,
+  isOutreachStatus,
   outreachStatusLabel,
   type OutreachStatus,
 } from "@/lib/outreach/catalog";
@@ -134,7 +135,7 @@ export function OutreachProspectsTab({
   const [sort, setSort] = useState<SortKey>("name");
   const [dir, setDir] = useState<"asc" | "desc">("asc");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState<OutreachStatus>("follow_up");
+  const [bulkAction, setBulkAction] = useState("");
   const [form, setForm] = useState<typeof EMPTY_FORM | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [history, setHistory] = useState<string[]>([]);
@@ -267,7 +268,10 @@ export function OutreachProspectsTab({
     await load();
   }
 
-  async function runBulk(action: "archive" | "restore" | "delete" | "status") {
+  async function runBulk(
+    action: "archive" | "restore" | "delete" | "status",
+    status?: OutreachStatus
+  ) {
     const ids = [...selected];
     if (ids.length === 0) return;
     if (action === "delete") {
@@ -283,7 +287,7 @@ export function OutreachProspectsTab({
       body: JSON.stringify({
         ids,
         action,
-        status: action === "status" ? bulkStatus : undefined,
+        status: action === "status" ? status : undefined,
       }),
     });
     const data = await readJson(res);
@@ -599,82 +603,52 @@ export function OutreachProspectsTab({
 
       {selected.size > 0 ? (
         <div className="admin-outreach-crm__bulk">
-          <div className="admin-outreach-crm__bulk-row">
-            <span>{selected.size} selected</span>
-            <button
-              type="button"
-              className="admin-btn admin-btn--compact admin-btn--primary"
-              onClick={() => onStartCampaign([...selected])}
-            >
-              New campaign
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn--compact"
-              onClick={() => void logInstagram([...selected], "messaged")}
-            >
-              Messaged
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn--compact"
-              onClick={() => void logInstagram([...selected], "responded")}
-            >
-              Responded
-            </button>
-            <button
-              type="button"
-              className="admin-btn admin-btn--compact"
-              onClick={() => void logInstagram([...selected], "undo")}
-            >
-              Undo
-            </button>
-          </div>
-          <div className="admin-outreach-crm__bulk-row">
-            <select
-              className="admin-field admin-field--select"
-              value={bulkStatus}
-              onChange={(event) => setBulkStatus(event.target.value as OutreachStatus)}
-              aria-label="Bulk status"
-            >
+          <span>{selected.size} selected</span>
+          <select
+            className="admin-field admin-field--select"
+            value={bulkAction}
+            aria-label="Actions for selected contacts"
+            onChange={(event) => {
+              const value = event.target.value;
+              setBulkAction("");
+              if (!value) return;
+              if (value === "campaign") {
+                onStartCampaign([...selected]);
+                return;
+              }
+              if (value === "messaged" || value === "responded" || value === "undo") {
+                void logInstagram([...selected], value);
+                return;
+              }
+              if (value === "archive" || value === "restore" || value === "delete") {
+                void runBulk(value);
+                return;
+              }
+              if (value.startsWith("status:")) {
+                const status = value.slice("status:".length);
+                if (isOutreachStatus(status)) void runBulk("status", status);
+              }
+            }}
+          >
+            <option value="">Actions</option>
+            <option value="campaign">New campaign</option>
+            <option value="messaged">Messaged</option>
+            <option value="responded">Responded</option>
+            <option value="undo">Undo</option>
+            <optgroup label="Set status">
               {OUTREACH_STATUSES.map((item) => (
-                <option key={item} value={item}>
+                <option key={item} value={`status:${item}`}>
                   {outreachStatusLabel(item)}
                 </option>
               ))}
-            </select>
-            <button
-              type="button"
-              className="admin-btn admin-btn--compact"
-              onClick={() => void runBulk("status")}
-            >
-              Set status
-            </button>
+            </optgroup>
             {archived ? (
-              <button
-                type="button"
-                className="admin-btn admin-btn--compact"
-                onClick={() => void runBulk("restore")}
-              >
-                Restore
-              </button>
+              <option value="restore">Restore</option>
             ) : (
-              <button
-                type="button"
-                className="admin-btn admin-btn--compact"
-                onClick={() => void runBulk("archive")}
-              >
-                Archive
-              </button>
+              <option value="archive">Archive</option>
             )}
-            <button
-              type="button"
-              className="admin-btn admin-btn--compact admin-btn--danger"
-              onClick={() => void runBulk("delete")}
-            >
-              Delete
-            </button>
-          </div>
+            <option value="delete">Delete</option>
+          </select>
         </div>
       ) : null}
 

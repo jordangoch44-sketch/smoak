@@ -2,13 +2,21 @@ import {
   EMAIL_MARK_PNG_BASE64,
   EMAIL_WORDMARK_PNG_BASE64,
 } from "@/lib/email/email-brand-inline-data";
-import { TRAINER_MAP_PHONE_JPEG_BASE64 } from "@/lib/email/trainer-map-phone-inline";
+import { TRAINER_MAP_PHONE_PNG_BASE64 } from "@/lib/email/trainer-map-phone-inline";
+import {
+  OUTREACH_ICON_DOLLAR_PNG_BASE64,
+  OUTREACH_ICON_PEOPLE_PNG_BASE64,
+  OUTREACH_ICON_PIN_PNG_BASE64,
+} from "@/lib/email/trainer-outreach-icons";
 
 /** Content-IDs referenced after `rewriteEmailBrandImagesToCid`. */
 export const EMAIL_BRAND_CID = {
   mark: "smoac-mark",
   wordmark: "smoac-wordmark",
   trainerMapPhone: "smoac-trainer-map",
+  outreachPin: "smoac-outreach-pin",
+  outreachPeople: "smoac-outreach-people",
+  outreachDollar: "smoac-outreach-dollar",
 } as const;
 
 export interface ResendInlineImage {
@@ -37,22 +45,42 @@ const INLINE_ASSETS: Array<{
     content: EMAIL_WORDMARK_PNG_BASE64,
   },
   {
-    filename: "trainer-map-phone.jpg",
+    filename: "trainer-map-phone.png",
     contentId: EMAIL_BRAND_CID.trainerMapPhone,
-    contentType: "image/jpeg",
-    content: TRAINER_MAP_PHONE_JPEG_BASE64,
+    contentType: "image/png",
+    content: TRAINER_MAP_PHONE_PNG_BASE64,
+  },
+  {
+    filename: "outreach-icon-pin.png",
+    contentId: EMAIL_BRAND_CID.outreachPin,
+    contentType: "image/png",
+    content: OUTREACH_ICON_PIN_PNG_BASE64,
+  },
+  {
+    filename: "outreach-icon-people.png",
+    contentId: EMAIL_BRAND_CID.outreachPeople,
+    contentType: "image/png",
+    content: OUTREACH_ICON_PEOPLE_PNG_BASE64,
+  },
+  {
+    filename: "outreach-icon-dollar.png",
+    contentId: EMAIL_BRAND_CID.outreachDollar,
+    contentType: "image/png",
+    content: OUTREACH_ICON_DOLLAR_PNG_BASE64,
   },
 ];
 
 export function emailBrandInlineAttachments(): ResendInlineImage[] {
-  return INLINE_ASSETS.filter((asset) => asset.contentType === "image/png").map(
-    (asset) => ({
-      filename: asset.filename,
-      content_id: asset.contentId,
-      content_type: asset.contentType,
-      content: asset.content,
-    })
-  );
+  return INLINE_ASSETS.filter(
+    (asset) =>
+      asset.contentId === EMAIL_BRAND_CID.mark ||
+      asset.contentId === EMAIL_BRAND_CID.wordmark
+  ).map((asset) => ({
+    filename: asset.filename,
+    content_id: asset.contentId,
+    content_type: asset.contentType,
+    content: asset.content,
+  }));
 }
 
 /** Attach only the images this HTML actually references. */

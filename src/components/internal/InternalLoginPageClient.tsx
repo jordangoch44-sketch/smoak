@@ -54,14 +54,6 @@ export function InternalLoginPageClient() {
     router.replace(INTERNAL_DASHBOARD_PATH);
   }, [isReady, session, router]);
 
-  if (isReady && session) {
-    return (
-      <div className="internal-login" aria-busy="true">
-        <PageWaitState label="Opening admin" />
-      </div>
-    );
-  }
-
   useEffect(() => {
     return () => {
       if (errorFadeTimerRef.current) {
@@ -69,6 +61,14 @@ export function InternalLoginPageClient() {
       }
     };
   }, []);
+
+  if (isReady && session) {
+    return (
+      <div className="internal-login" aria-busy="true">
+        <PageWaitState label="Opening admin" />
+      </div>
+    );
+  }
 
   function clearLoginError() {
     setFieldsError(false);
