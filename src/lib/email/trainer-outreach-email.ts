@@ -11,6 +11,8 @@ import {
   emailSiteOrigin,
   escapeEmailHtml,
 } from "@/lib/email/email-html-shell";
+import { FOUNDING_COUNTDOWN_ALT } from "@/lib/email/founding-countdown-gif";
+import { FOUNDING_LAUNCH_LABEL } from "@/lib/founding-50-invite";
 import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 const FONT =
@@ -153,28 +155,32 @@ function heroSplit(hello: string): string {
 }
 
 function launchCard(): string {
+  const countdownSrc = escapeEmailHtml(
+    emailAbsoluteUrl("/api/email/founding-countdown")
+  );
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
     <tr>
       <td bgcolor="${SMOAC_COLOR.violet}" style="padding:2px;border-radius:16px;background-color:${SMOAC_COLOR.violet};background-image:${SPECTRUM};">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
           <tr>
-            <td bgcolor="${PANEL}" style="padding:14px 14px;border-radius:14px;background-color:${PANEL};">
+            <td bgcolor="${PANEL}" style="padding:14px 14px 16px;border-radius:14px;background-color:${PANEL};">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                 <tr>
-                  <td width="48" valign="middle" style="width:48px;padding:0 12px 0 0;">
+                  <td width="48" valign="top" style="width:48px;padding:2px 12px 0 0;">
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                       <tr>
                         <td align="center" valign="middle" width="36" height="36" bgcolor="#2a1848" style="width:36px;height:36px;border-radius:18px;background-color:#2a1848;font-family:${FONT};font-size:16px;line-height:36px;color:${ACCENT};">★</td>
                       </tr>
                     </table>
                   </td>
-                  <td valign="middle" style="font-family:${FONT};">
+                  <td valign="top" style="font-family:${FONT};">
                     <p style="margin:0 0 4px;font-family:${FONT};font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${ACCENT};">BE PART OF THE LAUNCH</p>
                     <p style="margin:0 0 4px;font-family:${FONT};font-size:18px;line-height:1.25;font-weight:700;letter-spacing:-0.02em;color:${TITLE};">${escapeEmailHtml(LAUNCH_TITLE)}</p>
                     <p style="margin:0;font-family:${FONT};font-size:15px;line-height:1.45;color:${BODY};">${escapeEmailHtml(LAUNCH_BODY)}</p>
                   </td>
                 </tr>
               </table>
+              <img src="${countdownSrc}" width="456" height="92" alt="${escapeEmailHtml(FOUNDING_COUNTDOWN_ALT)}" style="display:block;width:100%;max-width:456px;height:auto;border:0;margin:14px auto 0;"/>
             </td>
           </tr>
         </table>
@@ -365,6 +371,7 @@ export function renderTrainerDiscoveryOutreachText(
     LAUNCH_TITLE,
     LAUNCH_BODY,
     `${CTA_LABEL}: ${href}`,
+    `Launch countdown: ${FOUNDING_LAUNCH_LABEL}`,
     `Check out smoac.com: ${emailSiteOrigin()}`,
     CLOSE,
     "Best,\nThe Smoac Team",
