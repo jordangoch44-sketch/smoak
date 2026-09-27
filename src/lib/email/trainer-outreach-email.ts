@@ -1,8 +1,8 @@
 /**
  * Designed cold email for San Diego trainers.
- * Desktop matches the launch mock: copy and benefits on the left,
- * the map phone on the right. Narrow screens stack the phone under
- * the copy. Footer links stay the same as the shared transactional shell.
+ * Copy and benefits stay on the left and the map phone stays on the
+ * right, including on a phone. Footer links stay the same as the
+ * shared transactional shell.
  */
 import { BRAND_NAME, SMOAC_COLOR } from "@/lib/brand";
 import {
@@ -90,12 +90,16 @@ function logoLockup(origin: string): string {
   </a>`;
 }
 
-function mapPhone(width: number): string {
+function mapPhone(): string {
   const src = escapeEmailHtml(emailPublicAssetUrl("/email/trainer-map-phone.png"));
   const alt = escapeEmailHtml(
     "An iPhone showing the SMOAC map with trainer pins around San Diego"
   );
-  return `<img class="hero-phone-img" src="${src}" width="${width}" alt="${alt}" style="display:block;width:100%;max-width:${width}px;height:auto;border:0;margin:0 auto;"/>`;
+  const img = `<img class="hero-phone-img" src="${src}" width="148" alt="${alt}" style="display:block;width:100%;max-width:100%;height:auto;border:0;"/>`;
+  return `<!--[if mso]>
+<img src="${src}" width="210" alt="${alt}" style="display:block;border:0;"/>
+<![endif]-->
+<!--[if !mso]><!-->${img}<!--<![endif]-->`;
 }
 
 function iconWell(filename: string): string {
@@ -120,8 +124,8 @@ function benefitRows(): string {
               ${iconWell(item.icon)}
             </td>
             <td valign="middle" style="font-family:${FONT};">
-              <p style="margin:0 0 2px;font-family:${FONT};font-size:16px;line-height:1.3;font-weight:700;color:${TITLE};">${escapeEmailHtml(item.title)}</p>
-              <p style="margin:0;font-family:${FONT};font-size:14px;line-height:1.35;color:${MUTED};">${escapeEmailHtml(item.body)}</p>
+              <p style="margin:0 0 2px;font-family:${FONT};font-size:15px;line-height:1.3;font-weight:700;color:${TITLE};">${escapeEmailHtml(item.title)}</p>
+              <p style="margin:0;font-family:${FONT};font-size:13px;line-height:1.35;color:${MUTED};">${escapeEmailHtml(item.body)}</p>
             </td>
           </tr>
         </table>
@@ -132,28 +136,20 @@ function benefitRows(): string {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">${rows}</table>`;
 }
 
-/** Copy on the left, phone on the right. Narrow clients stack the phone. */
+/** Copy on the left, phone on the right. A table keeps that split on a phone. */
 function heroSplit(hello: string): string {
-  const phoneWidth = 210;
-  return `<!--[if mso]>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
-<td width="318" valign="top">
-<![endif]-->
-<div class="hero-copy" style="display:inline-block;width:100%;max-width:318px;vertical-align:top;font-family:${FONT};font-size:16px;line-height:1.5;">
-  ${hello}
-  <p style="margin:0 0 18px;font-family:${FONT};font-size:16px;line-height:1.5;color:${BODY};">${escapeEmailHtml(LEDE)}</p>
-  ${benefitRows()}
-</div>
-<!--[if mso]>
-</td>
-<td width="210" valign="top" align="right">
-<![endif]-->
-<div class="hero-phone" style="display:inline-block;width:100%;max-width:${phoneWidth}px;vertical-align:top;font-size:16px;line-height:normal;">
-  ${mapPhone(phoneWidth)}
-</div>
-<!--[if mso]>
-</td></tr></table>
-<![endif]-->`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
+    <tr>
+      <td class="hero-copy" valign="top" width="58%" style="width:58%;padding:0 12px 0 0;font-family:${FONT};font-size:15px;line-height:1.45;">
+        ${hello}
+        <p style="margin:0 0 14px;font-family:${FONT};font-size:15px;line-height:1.45;color:${BODY};">${escapeEmailHtml(LEDE)}</p>
+        ${benefitRows()}
+      </td>
+      <td class="hero-phone" valign="top" width="42%" align="center" style="width:42%;font-size:15px;line-height:normal;">
+        ${mapPhone()}
+      </td>
+    </tr>
+  </table>`;
 }
 
 function launchCard(): string {
@@ -239,7 +235,7 @@ export function renderTrainerDiscoveryOutreachHtml(options: {
   const origin = emailSiteOrigin();
   const greeting = options.greetingName?.trim();
   const hello = greeting
-    ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:16px;line-height:1.5;color:${BODY};">Hi ${escapeEmailHtml(greeting)},</p>`
+    ? `<p style="margin:0 0 10px;font-family:${FONT};font-size:15px;line-height:1.45;color:${BODY};">Hi ${escapeEmailHtml(greeting)},</p>`
     : "";
 
   return `<!DOCTYPE html>
@@ -261,17 +257,6 @@ export function renderTrainerDiscoveryOutreachHtml(options: {
   </noscript>
   <style>table, td, p, a, h1 { font-family: Arial, Helvetica, sans-serif !important; }</style>
   <![endif]-->
-  <style>
-    @media only screen and (max-width: 520px) {
-      .hero-copy, .hero-phone {
-        display: block !important;
-        width: 100% !important;
-        max-width: 100% !important;
-      }
-      .hero-phone { padding-top: 20px !important; text-align: center !important; }
-      .hero-phone-img { width: 72% !important; max-width: 260px !important; }
-    }
-  </style>
 </head>
 <body style="margin:0;padding:0;background:${PAGE};-webkit-text-size-adjust:100%;">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;mso-hide:all;">${escapeEmailHtml(PREHEADER)}</div>
