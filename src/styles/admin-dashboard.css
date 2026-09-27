@@ -6584,25 +6584,46 @@ button.admin-email-tool:disabled {
 .admin-outreach__log {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0;
+  max-height: 7.25rem;
   margin: 0;
   padding: 0;
+  overflow-y: auto;
   list-style: none;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .admin-outreach__log li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  flex-wrap: wrap;
-  padding: 0.55rem 0.2rem;
+  flex-wrap: nowrap;
+  min-height: 0;
+  padding: 0.35rem 0.7rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
   color: #d4d4d8;
 }
 
+.admin-outreach__log li:first-child {
+  border-top: 0;
+}
+
+.admin-outreach__log li span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .admin-outreach__log li span:last-child {
+  flex: 0 0 auto;
   color: #a1a1aa;
+  white-space: nowrap;
 }
 
 /* ——— Outreach CRM ——— */

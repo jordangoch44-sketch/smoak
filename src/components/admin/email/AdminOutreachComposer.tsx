@@ -364,7 +364,7 @@ export function AdminOutreachComposer() {
       ) : null}
 
       {sends.length > 0 ? (
-        <ul className="admin-outreach__log">
+        <ul className="admin-outreach__log" aria-label="Sent emails">
           {sends.map((row) => (
             <li key={row.id}>
               <span>
