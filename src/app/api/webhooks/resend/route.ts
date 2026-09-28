@@ -11,6 +11,14 @@ function secretMatches(provided: string, expected: string): boolean {
   return timingSafeEqual(left, right);
 }
 
+const PROVIDER_EVENTS = {
+  "email.delivered": "delivered",
+  "email.bounced": "bounced",
+  "email.complained": "complained",
+  "email.opened": "opened",
+  "email.clicked": "clicked",
+} as const;
+
 /**
  * Resend delivery events. Disabled until RESEND_WEBHOOK_SECRET is set.
  * Point Resend at /api/webhooks/resend?token=SECRET
@@ -27,18 +35,19 @@ export async function POST(request: Request) {
 
   const body = (await request.json().catch(() => null)) as {
     type?: string;
-    data?: { email_id?: string };
+    created_at?: string;
+    data?: { email_id?: string; click?: { link?: string } };
   } | null;
   const providerId = body?.data?.email_id?.trim() ?? "";
   const type = body?.type ?? "";
-  if (providerId && (type === "email.delivered" || type === "email.bounced" || type === "email.complained")) {
-    const mapped =
-      type === "email.delivered"
-        ? "delivered"
-        : type === "email.bounced"
-          ? "bounced"
-          : "complained";
-    await applyOutreachProviderEvent({ providerId, type: mapped });
+  const mapped = PROVIDER_EVENTS[type as keyof typeof PROVIDER_EVENTS];
+  if (providerId && mapped) {
+    await applyOutreachProviderEvent({
+      providerId,
+      type: mapped,
+      at: body?.created_at,
+      link: body?.data?.click?.link,
+    });
   }
   return NextResponse.json({ ok: true });
 }

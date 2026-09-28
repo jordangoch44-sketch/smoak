@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { OutreachCampaignReport } from "@/components/admin/outreach/OutreachCampaignReport";
 import { OutreachDialog } from "@/components/admin/outreach/OutreachDialog";
 import type { AdminOutreachTemplate } from "@/lib/admin-outreach";
 import {
@@ -57,6 +58,7 @@ export function OutreachCampaignsTab({
   const [busy, setBusy] = useState(false);
   const [testTo, setTestTo] = useState("");
   const [progress, setProgress] = useState<string | null>(null);
+  const [reportId, setReportId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -298,7 +300,7 @@ export function OutreachCampaignsTab({
       {notice ? <p className="admin-outreach-crm__notice">{notice}</p> : null}
       {progress ? <p className="admin-outreach-crm__notice">{progress}</p> : null}
       <p className="admin-outreach-crm__muted">
-        Replies are counted when a prospect is marked Replied. Delivered and bounced update after a Resend webhook is connected. Instagram-only contacts are never included.
+        Open a campaign for the full result sheet: who to email next, who to leave off, and how the send went.
       </p>
       {loading ? <p className="admin-outreach-crm__muted">Loading campaigns…</p> : null}
       {!loading && !error && campaigns.length === 0 ? (
@@ -308,16 +310,22 @@ export function OutreachCampaignsTab({
         {campaigns.map((campaign) => (
           <li key={campaign.id} className="admin-entity-card">
             <div className="admin-entity-card__head">
-              <div>
-                <h3 className="admin-entity-card__title">{campaign.name}</h3>
-                <p className="admin-entity-card__sub">
+              <button
+                type="button"
+                className="admin-outreach-crm__campaign-open"
+                aria-label={`View results for ${campaign.name}`}
+                onClick={() => setReportId(campaign.id)}
+              >
+                <span className="admin-entity-card__title">{campaign.name}</span>
+                <span className="admin-entity-card__sub">
                   {campaign.templateName || "Template removed"} · {campaign.status}
                   {campaign.deliveryMode === "dry_run" ? " · test mode" : ""}
                   {campaign.scheduledAt
                     ? ` · ${formatOutreachDate(campaign.scheduledAt)}`
                     : ""}
-                </p>
-              </div>
+                </span>
+                <span className="admin-outreach-crm__campaign-cue">View results</span>
+              </button>
               {campaign.status === "sending" || campaign.status === "paused" ? (
                 <div className="admin-actions">
                   {campaign.status === "paused" ? (
@@ -347,14 +355,28 @@ export function OutreachCampaignsTab({
                 </div>
               ) : null}
             </div>
-            <dl className="admin-outreach-crm__stats">
-              {STAT_LABELS.map(([key, label]) => (
-                <div key={key}>
-                  <dt>{label}</dt>
-                  <dd>{campaign.stats[key]}</dd>
-                </div>
-              ))}
-            </dl>
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label={`View results for ${campaign.name}`}
+              className="admin-outreach-crm__campaign-open"
+              onClick={() => setReportId(campaign.id)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  setReportId(campaign.id);
+                }
+              }}
+            >
+              <dl className="admin-outreach-crm__stats">
+                {STAT_LABELS.map(([key, label]) => (
+                  <div key={key}>
+                    <dt>{label}</dt>
+                    <dd>{campaign.stats[key]}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </li>
         ))}
       </ul>
@@ -507,6 +529,10 @@ export function OutreachCampaignsTab({
             ) : null}
           </div>
         </OutreachDialog>
+      ) : null}
+
+      {reportId ? (
+        <OutreachCampaignReport campaignId={reportId} onClose={() => setReportId(null)} />
       ) : null}
 
       {confirming && preview ? (

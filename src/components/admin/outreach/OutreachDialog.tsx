@@ -8,12 +8,14 @@ export function OutreachDialog({
   title,
   subtitle,
   wide,
+  sheet,
   onClose,
   children,
 }: {
   title: string;
   subtitle?: string;
   wide?: boolean;
+  sheet?: boolean;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -47,9 +49,11 @@ export function OutreachDialog({
         aria-modal="true"
         aria-labelledby="outreach-dialog-title"
         className={
-          wide
-            ? "admin-outreach-dialog__panel admin-outreach-dialog__panel--wide"
-            : "admin-outreach-dialog__panel"
+          sheet
+            ? "admin-outreach-dialog__panel admin-outreach-dialog__panel--sheet"
+            : wide
+              ? "admin-outreach-dialog__panel admin-outreach-dialog__panel--wide"
+              : "admin-outreach-dialog__panel"
         }
       >
         <header className="admin-outreach-dialog__header">

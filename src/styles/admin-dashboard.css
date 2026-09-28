@@ -7087,6 +7087,393 @@ button.admin-email-tool:disabled {
   width: min(44rem, 100%);
 }
 
+.admin-outreach-dialog__panel--sheet {
+  width: min(58rem, 100%);
+}
+
+.admin-outreach-crm__campaign-open {
+  display: block;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-outreach-crm__campaign-open .admin-entity-card__title,
+.admin-outreach-crm__campaign-open .admin-entity-card__sub {
+  display: block;
+}
+
+.admin-outreach-crm__campaign-cue {
+  display: inline-block;
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+}
+
+.admin-outreach-report {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.admin-outreach-report__read {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-outreach-report__tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.admin-outreach-report__tile {
+  padding: 0.8rem 0.85rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-outreach-report__tile span {
+  display: block;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.admin-outreach-report__tile strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.65rem;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.admin-outreach-report__tile small {
+  display: block;
+  margin-top: 0.25rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.admin-outreach-report__note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.admin-outreach-report__section h3 {
+  margin: 0 0 0.7rem;
+  font-size: 0.95rem;
+}
+
+.admin-outreach-report__funnel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-outreach-report__step-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.admin-outreach-report__step-top strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-outreach-report__track {
+  height: 0.4rem;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.admin-outreach-report__track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7c3aed, #c4b5fd);
+}
+
+.admin-outreach-report__step p {
+  margin: 0.28rem 0 0;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.75rem;
+}
+
+.admin-outreach-report__groups {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-outreach-report__group {
+  padding: 0.85rem 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-outreach-report__group h4 {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.admin-outreach-report__group h4 span {
+  color: #c4b5fd;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-outreach-report__group header p {
+  margin: 0.28rem 0 0.7rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.admin-outreach-report__people {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-outreach-report__people li {
+  padding: 0.6rem 0.7rem;
+  border-radius: 0.75rem;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.admin-outreach-report__person-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-outreach-report__person-top strong {
+  font-size: 0.9rem;
+}
+
+.admin-outreach-report__people p {
+  margin: 0.2rem 0 0;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8125rem;
+}
+
+.admin-outreach-report__person-note {
+  color: #fcd34d !important;
+}
+
+.admin-outreach-report__summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.admin-outreach-report__summary .admin-btn {
+  flex-shrink: 0;
+}
+
+.admin-outreach-report__tile--good strong {
+  color: #6ee7b7;
+}
+
+.admin-outreach-report__tile--warn strong {
+  color: #fcd34d;
+}
+
+.admin-outreach-report__table-wrap {
+  overflow-x: auto;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-outreach-report__table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-outreach-report__table th,
+.admin-outreach-report__table td {
+  padding: 0.55rem 0.7rem;
+  text-align: right;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.admin-outreach-report__table thead th {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-outreach-report__table th:first-child {
+  text-align: left;
+  font-weight: 600;
+}
+
+.admin-outreach-report__table tbody tr:last-child th,
+.admin-outreach-report__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-outreach-report__table td strong {
+  color: #c4b5fd;
+}
+
+.admin-outreach-report__timing-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.8rem;
+}
+
+.admin-outreach-report__timing-stats div {
+  padding: 0.7rem 0.8rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.admin-outreach-report__timing-stats span {
+  display: block;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.admin-outreach-report__timing-stats strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.2rem;
+}
+
+.admin-outreach-report__timing {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.admin-outreach-report__timing-row {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.8125rem;
+}
+
+.admin-outreach-report__timing-row small {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-outreach-report__timing-bars {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.admin-outreach-report__bar {
+  display: block;
+  min-width: 2px;
+  height: 0.35rem;
+  border-radius: 999px;
+}
+
+.admin-outreach-report__bar--open {
+  background: #7dd3fc;
+}
+
+.admin-outreach-report__bar--response {
+  background: #6ee7b7;
+}
+
+.admin-outreach-report__links {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-outreach-report__links li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8125rem;
+}
+
+.admin-outreach-report__links span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-outreach-report__links strong {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-outreach-report__group header .admin-btn {
+  margin-bottom: 0.7rem;
+}
+
+.admin-outreach-report__person-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.admin-outreach-report__engaged {
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.admin-outreach-report__engaged--clicked {
+  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.admin-outreach-report__engaged--opened {
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.12);
+}
+
 .admin-outreach-dialog__header {
   display: flex;
   justify-content: space-between;
@@ -7123,6 +7510,15 @@ button.admin-email-tool:disabled {
 @media (max-width: 640px) {
   .admin-outreach-crm__filters {
     grid-template-columns: 1fr;
+  }
+
+  .admin-outreach-report__tiles {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-outreach-report__timing-row {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
   }
 }
 

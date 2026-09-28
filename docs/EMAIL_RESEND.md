@@ -110,7 +110,7 @@ Owner + Staff manage these from `/internal` → Email. Catalog rows persist in `
 | Open / click / bounce / complaint | `POST /api/webhooks/resend` |
 | Unsubscribe | `/email/unsubscribe?token=…` |
 
-**Resend dashboard:** enable Open and Click tracking, then add a webhook to `https://smoac.com/api/webhooks/resend` for `email.opened`, `email.clicked`, `email.bounced`, `email.complained`. Set `RESEND_WEBHOOK_SECRET` on Vercel. Optional: `EMAIL_UNSUBSCRIBE_SECRET` (falls back to `CRON_SECRET`).
+**Resend dashboard:** enable Open and Click tracking, then add a webhook to `https://smoac.com/api/webhooks/resend?token=RESEND_WEBHOOK_SECRET` for `email.delivered`, `email.opened`, `email.clicked`, `email.bounced`, `email.complained`. Cold-outreach campaign results (delivered / opened / clicked) come from these events. Set `RESEND_WEBHOOK_SECRET` on Vercel. Optional: `EMAIL_UNSUBSCRIBE_SECRET` (falls back to `CRON_SECRET`).
 
 After-signup catalog emails fire when a welcome/confirmation send succeeds (in addition to the hardcoded transactional templates). Founding-specialist catalog mail fires on **approval**. Inactive specialists (30 days quiet) get a one-time catalog mail from hourly cron. The weekly digest is the only recurring calendar email.
 

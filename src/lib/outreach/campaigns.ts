@@ -834,33 +834,110 @@ export async function processDueOutreachCampaigns(): Promise<{ processed: number
   return { processed };
 }
 
+const ENGAGEMENT_COLUMNS = "delivered_at, opened_at, clicked_at, open_count, click_count";
+
+function isMissingEngagementColumn(message: string): boolean {
+  return /delivered_at|opened_at|clicked_at|bounced_at|open_count|click_count/i.test(message);
+}
+
+/** Stamps are best-effort: before the engagement migration runs, only status changes. */
+async function stampOutreachMessage(
+  id: unknown,
+  stamps: Record<string, unknown>,
+  status?: string
+): Promise<void> {
+  const service = outreachService();
+  if (!service) return;
+  const update = status ? { ...stamps, status } : stamps;
+  const { error } = await service.from("outreach_messages").update(update).eq("id", id);
+  if (error && status && isMissingEngagementColumn(error.message)) {
+    await service.from("outreach_messages").update({ status }).eq("id", id);
+  }
+}
+
 export async function applyOutreachProviderEvent(input: {
   providerId: string;
-  type: "delivered" | "bounced" | "complained";
+  type: "delivered" | "bounced" | "complained" | "opened" | "clicked";
+  at?: string;
+  link?: string;
 }): Promise<void> {
   const service = outreachService();
   if (!service || !input.providerId) return;
-  const { data } = await service
+  const withEngagement = await service
     .from("outreach_messages")
-    .select("id, prospect_id, campaign_id, to_email")
+    .select(`id, prospect_id, campaign_id, to_email, status, ${ENGAGEMENT_COLUMNS}`)
     .eq("provider_id", input.providerId)
     .maybeSingle();
+  let data: Record<string, unknown> | null = withEngagement.data;
+  if (withEngagement.error && isMissingEngagementColumn(withEngagement.error.message)) {
+    const plain = await service
+      .from("outreach_messages")
+      .select("id, prospect_id, campaign_id, to_email, status")
+      .eq("provider_id", input.providerId)
+      .maybeSingle();
+    data = plain.data;
+  }
   if (!data) return;
 
+  const parsed = input.at ? new Date(input.at) : null;
+  const at =
+    parsed && !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : new Date().toISOString();
+  const status = asText(data.status);
+  const reachedInbox = status === "sent" ? "delivered" : undefined;
+  const event = {
+    prospect_id: data.prospect_id,
+    campaign_id: data.campaign_id,
+    message_id: data.id,
+  };
+
   if (input.type === "delivered") {
-    await service.from("outreach_messages").update({ status: "delivered" }).eq("id", data.id);
+    await stampOutreachMessage(
+      data.id,
+      { delivered_at: asText(data.delivered_at) || at },
+      status === "bounced" ? undefined : "delivered"
+    );
+    await service.from("outreach_events").insert({ ...event, event_type: "delivered", detail: {} });
+    return;
+  }
+
+  if (input.type === "opened") {
+    const first = !asText(data.opened_at);
+    await stampOutreachMessage(
+      data.id,
+      {
+        opened_at: asText(data.opened_at) || at,
+        open_count: (Number(data.open_count) || 0) + 1,
+        delivered_at: asText(data.delivered_at) || at,
+      },
+      reachedInbox
+    );
+    if (first) {
+      await service.from("outreach_events").insert({ ...event, event_type: "opened", detail: {} });
+    }
+    return;
+  }
+
+  if (input.type === "clicked") {
+    await stampOutreachMessage(
+      data.id,
+      {
+        clicked_at: asText(data.clicked_at) || at,
+        click_count: (Number(data.click_count) || 0) + 1,
+        opened_at: asText(data.opened_at) || at,
+        delivered_at: asText(data.delivered_at) || at,
+      },
+      reachedInbox
+    );
     await service.from("outreach_events").insert({
-      prospect_id: data.prospect_id,
-      campaign_id: data.campaign_id,
-      message_id: data.id,
-      event_type: "delivered",
-      detail: {},
+      ...event,
+      event_type: "clicked",
+      detail: input.link ? { link: input.link.slice(0, 500) } : {},
     });
     return;
   }
 
   if (input.type === "bounced") {
-    await service.from("outreach_messages").update({ status: "bounced" }).eq("id", data.id);
+    await stampOutreachMessage(data.id, { bounced_at: at }, "bounced");
     await service
       .from("outreach_prospects")
       .update({ status: "bounced" })
