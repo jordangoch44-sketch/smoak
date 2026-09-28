@@ -94,6 +94,8 @@ export interface OutreachCampaignReportData {
 const PERSON_LIMIT = 200;
 const SEGMENT_LIMIT = 12;
 const HOUR = 60 * 60 * 1000;
+/** Opens this soon after arrival are almost always Apple Mail privacy or a security scanner. */
+const AUTO_OPEN_MS = 60 * 1000;
 const DAY = 24 * HOUR;
 
 const CAMPAIGN_STATUS_LABELS: Record<string, string> = {
@@ -406,6 +408,7 @@ export async function loadOutreachCampaignReport(
     dryRun: 0,
     skipped: 0,
     opened: 0,
+    autoOpened: 0,
     clicked: 0,
     replied: 0,
     interested: 0,
@@ -449,12 +452,17 @@ export async function loadOutreachCampaignReport(
     const prospect = prospectById.get(prospectId);
     const prospectStatus = asText(prospect?.status) || "not_contacted";
     const emailed = messageStatus === "sent" || messageStatus === "delivered";
-    const opened = emailed && Boolean(asText(row.opened_at));
     const clicked = emailed && Boolean(asText(row.clicked_at));
+    const openedAt = emailed ? time(row.opened_at) : null;
+    const arrivedAt = time(row.delivered_at) ?? time(row.sent_at);
+    const autoOpened =
+      openedAt != null && !clicked && arrivedAt != null && openedAt - arrivedAt < AUTO_OPEN_MS;
+    const opened = openedAt != null && !autoOpened;
     const responded = emailed && RESPONDED_STATUSES.has(prospectStatus);
     const signedUp = prospectStatus === "signed_up";
 
     if (opened) counts.opened += 1;
+    if (autoOpened) counts.autoOpened += 1;
     if (clicked) counts.clicked += 1;
     if (responded) counts.responded += 1;
     if (prospectStatus === "replied") counts.replied += 1;
@@ -481,9 +489,8 @@ export async function loadOutreachCampaignReport(
       }
 
       const sentAt = time(row.sent_at);
-      const openedAt = time(row.opened_at);
       const respondedAt = firstResponseAt.get(prospectId) ?? null;
-      if (sentAt != null && openedAt != null && openedAt >= sentAt) {
+      if (opened && sentAt != null && openedAt != null && openedAt >= sentAt) {
         openWaits.push(openedAt - sentAt);
         timingBuckets[bucketIndex(openedAt - sentAt)].opens += 1;
       }
@@ -524,7 +531,8 @@ export async function loadOutreachCampaignReport(
   const followUp = followUpPeople.length;
   const warmFollowUp = followUpPeople.filter((person) => person.engagement).length;
   const leaveOff = grouped.get("leave_off")?.length ?? 0;
-  const webhookSeen = counts.delivered + counts.bounced + counts.opened > 0;
+  const webhookSeen =
+    counts.delivered + counts.bounced + counts.opened + counts.autoOpened > 0;
   const trackingLive = live && tracking && webhookSeen;
   const deliveryPending = live && accepted > 0 && !webhookSeen;
   const outcomeBase = live ? accepted : recipients;
@@ -648,7 +656,7 @@ export async function loadOutreachCampaignReport(
       ? "Opens and clicks start counting after apply-outreach-message-engagement-safe.sql runs. Replies count when you mark a contact Replied or Interested."
       : deliveryPending
         ? "Delivered, opened, and clicked stay at 0 until the Resend webhook is connected with open and click tracking on. Replies count when you mark a contact Replied or Interested."
-        : "Opens run high because Apple Mail loads images for privacy. Clicks and replies are the stronger signal. Replies count when you mark a contact Replied or Interested.";
+        : "Opens within a minute of arrival are left out. Those are usually Apple Mail privacy or a spam scanner, not a person. Opens can still run high, so clicks and replies are the stronger signal. Replies count when you mark a contact Replied or Interested.";
 
   const trackedRate = (count: number) => (trackingLive ? percent(count, accepted) : null);
   const trackedCaption = (count: number, verb: string) =>
@@ -710,7 +718,10 @@ export async function loadOutreachCampaignReport(
           label: "Opened",
           value: counts.opened,
           rate: trackedRate(counts.opened),
-          caption: trackedCaption(counts.opened, "opened"),
+          caption:
+            trackingLive && counts.autoOpened > 0
+              ? `${counts.opened} opened · ${counts.autoOpened} automatic, not counted`
+              : trackedCaption(counts.opened, "opened"),
         },
         {
           label: "Clicked",
@@ -768,7 +779,11 @@ export async function loadOutreachCampaignReport(
           count: counts.delivered,
           hint: deliveryPending ? "Updates when Resend reports delivery" : "Reached the inbox",
         },
-        { label: "Opened", count: counts.opened, hint: "Resend saw the email open" },
+        {
+          label: "Opened",
+          count: counts.opened,
+          hint: "Opened by a person, not an automatic image load",
+        },
         { label: "Clicked", count: counts.clicked, hint: "Clicked a link in the email" },
         {
           label: "Responded",

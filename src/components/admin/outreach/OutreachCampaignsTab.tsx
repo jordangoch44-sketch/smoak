@@ -59,6 +59,7 @@ export function OutreachCampaignsTab({
   const [testTo, setTestTo] = useState("");
   const [progress, setProgress] = useState<string | null>(null);
   const [reportId, setReportId] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -130,6 +131,7 @@ export function OutreachCampaignsTab({
     setPreviewHtml("");
     setProgress(null);
     setTestTo("");
+    setTestResult(null);
   }
 
   async function loadPreview() {
@@ -155,7 +157,7 @@ export function OutreachCampaignsTab({
 
   async function sendTest() {
     setBusy(true);
-    setError(null);
+    setTestResult(null);
     const res = await fetch("/api/admin/outreach/test", {
       method: "POST",
       credentials: "include",
@@ -171,10 +173,16 @@ export function OutreachCampaignsTab({
     const data = await readJson(res);
     setBusy(false);
     if (!res.ok || !data?.ok) {
-      setError(typeof data?.message === "string" ? data.message : "Test send failed.");
+      setTestResult({
+        ok: false,
+        text: typeof data?.message === "string" ? data.message : "Test send failed.",
+      });
       return;
     }
-    setNotice(typeof data.message === "string" ? data.message : "Test recorded.");
+    setTestResult({
+      ok: true,
+      text: typeof data.message === "string" ? data.message : "Test recorded.",
+    });
   }
 
   async function drain(campaignId: string) {
@@ -478,6 +486,7 @@ export function OutreachCampaignsTab({
                 {busy ? "Working…" : "Preview"}
               </button>
             </div>
+            {error && !confirming ? <p className="admin-outreach-crm__error">{error}</p> : null}
             {preview ? (
               <>
                 <p>
@@ -511,9 +520,19 @@ export function OutreachCampaignsTab({
                     disabled={busy || !testTo.includes("@")}
                     onClick={() => void sendTest()}
                   >
-                    Send test
+                    {busy ? "Sending…" : "Send test"}
                   </button>
                 </div>
+                {testResult ? (
+                  <p
+                    role="status"
+                    className={
+                      testResult.ok ? "admin-outreach-crm__notice" : "admin-outreach-crm__error"
+                    }
+                  >
+                    {testResult.text}
+                  </p>
+                ) : null}
                 <button
                   type="button"
                   className="admin-btn admin-btn--primary"
@@ -554,6 +573,7 @@ export function OutreachCampaignsTab({
               />
               I confirm this campaign.
             </label>
+            {error ? <p className="admin-outreach-crm__error">{error}</p> : null}
             <button
               type="button"
               className="admin-btn admin-btn--primary"
