@@ -22,6 +22,8 @@ const STAT_LABELS: Array<[keyof OutreachCampaignSummary["stats"], string]> = [
   ["recipients", "Recipients"],
   ["sent", "Sent"],
   ["delivered", "Delivered"],
+  ["opened", "Opened"],
+  ["clicked", "Clicked"],
   ["bounced", "Bounced"],
   ["unsubscribed", "Unsubscribed"],
   ["replies", "Replies"],

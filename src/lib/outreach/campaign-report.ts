@@ -147,6 +147,20 @@ function time(value: unknown): number | null {
   return Number.isNaN(ms) ? null : ms;
 }
 
+/**
+ * Only the first open time is stored. A lone open right after arrival is treated as automatic;
+ * a click or a second open means a person.
+ */
+export function outreachOpenKind(row: Record<string, unknown>): "clicked" | "opened" | "auto" | "" {
+  if (asText(row.clicked_at)) return "clicked";
+  const openedAt = time(row.opened_at);
+  if (openedAt == null) return "";
+  if ((Number(row.open_count) || 0) > 1) return "opened";
+  const arrivedAt = time(row.delivered_at) ?? time(row.sent_at);
+  if (arrivedAt != null && openedAt - arrivedAt < AUTO_OPEN_MS) return "auto";
+  return "opened";
+}
+
 function median(values: number[]): number | null {
   if (values.length === 0) return null;
   const sorted = [...values].sort((a, b) => a - b);
@@ -452,12 +466,11 @@ export async function loadOutreachCampaignReport(
     const prospect = prospectById.get(prospectId);
     const prospectStatus = asText(prospect?.status) || "not_contacted";
     const emailed = messageStatus === "sent" || messageStatus === "delivered";
-    const clicked = emailed && Boolean(asText(row.clicked_at));
-    const openedAt = emailed ? time(row.opened_at) : null;
-    const arrivedAt = time(row.delivered_at) ?? time(row.sent_at);
-    const autoOpened =
-      openedAt != null && !clicked && arrivedAt != null && openedAt - arrivedAt < AUTO_OPEN_MS;
-    const opened = openedAt != null && !autoOpened;
+    const openKind = emailed ? outreachOpenKind(row) : "";
+    const clicked = openKind === "clicked";
+    const autoOpened = openKind === "auto";
+    const opened = openKind === "clicked" || openKind === "opened";
+    const openedAt = opened ? time(row.opened_at) : null;
     const responded = emailed && RESPONDED_STATUSES.has(prospectStatus);
     const signedUp = prospectStatus === "signed_up";
 
@@ -656,7 +669,7 @@ export async function loadOutreachCampaignReport(
       ? "Opens and clicks start counting after apply-outreach-message-engagement-safe.sql runs. Replies count when you mark a contact Replied or Interested."
       : deliveryPending
         ? "Delivered, opened, and clicked stay at 0 until the Resend webhook is connected with open and click tracking on. Replies count when you mark a contact Replied or Interested."
-        : "Opens within a minute of arrival are left out. Those are usually Apple Mail privacy or a spam scanner, not a person. Opens can still run high, so clicks and replies are the stronger signal. Replies count when you mark a contact Replied or Interested.";
+        : "A single open within a minute of arrival is left out. That is usually Apple Mail privacy or a spam scanner, not a person. Opens can still run high, so clicks and replies are the stronger signal. Replies count when you mark a contact Replied or Interested.";
 
   const trackedRate = (count: number) => (trackingLive ? percent(count, accepted) : null);
   const trackedCaption = (count: number, verb: string) =>

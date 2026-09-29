@@ -14,6 +14,7 @@ import {
   markOutreachUnsubscribed,
   type OutreachProspect,
 } from "@/lib/outreach/prospects";
+import { outreachOpenKind } from "@/lib/outreach/campaign-report";
 import { renderProspectOutreachEmail } from "@/lib/outreach/render-message";
 import {
   asText,
@@ -26,6 +27,8 @@ export interface OutreachCampaignStats {
   recipients: number;
   sent: number;
   delivered: number;
+  opened: number;
+  clicked: number;
   bounced: number;
   unsubscribed: number;
   replies: number;
@@ -66,6 +69,8 @@ const EMPTY_STATS = (): OutreachCampaignStats => ({
   recipients: 0,
   sent: 0,
   delivered: 0,
+  opened: 0,
+  clicked: 0,
   bounced: 0,
   unsubscribed: 0,
   replies: 0,
@@ -470,14 +475,22 @@ async function loadStats(campaignIds: string[]): Promise<Map<string, OutreachCam
   const service = outreachService();
   if (!service) return map;
 
-  const messages = await selectInChunks(campaignIds, async (chunk) => {
-    const { data, error } = await service
-      .from("outreach_messages")
-      .select("campaign_id, status, prospect_id")
-      .in("campaign_id", chunk);
-    if (error) return [];
-    return data ?? [];
-  });
+  const messages = await selectInChunks(
+    campaignIds,
+    async (chunk): Promise<Array<Record<string, unknown>>> => {
+      const tracked = await service
+        .from("outreach_messages")
+        .select(`campaign_id, status, prospect_id, sent_at, ${ENGAGEMENT_COLUMNS}`)
+        .in("campaign_id", chunk);
+      if (!tracked.error) return tracked.data ?? [];
+      if (!isMissingEngagementColumn(tracked.error.message)) return [];
+      const { data } = await service
+        .from("outreach_messages")
+        .select("campaign_id, status, prospect_id")
+        .in("campaign_id", chunk);
+      return data ?? [];
+    }
+  );
 
   const prospectIds = [
     ...new Set(messages.map((row) => asText(row.prospect_id)).filter(Boolean)),
@@ -510,6 +523,11 @@ async function loadStats(campaignIds: string[]): Promise<Map<string, OutreachCam
     if (status === "failed") stats.failed += 1;
     if (status === "queued" || status === "sending") stats.queued += 1;
     if (status === "dry_run") stats.dryRun += 1;
+    if (status === "sent" || status === "delivered") {
+      const openKind = outreachOpenKind(row);
+      if (openKind === "clicked" || openKind === "opened") stats.opened += 1;
+      if (openKind === "clicked") stats.clicked += 1;
+    }
     const prospectStatus = statusByProspect.get(asText(row.prospect_id));
     const prospectId = asText(row.prospect_id);
     if (prospectStatus === "unsubscribed") {
