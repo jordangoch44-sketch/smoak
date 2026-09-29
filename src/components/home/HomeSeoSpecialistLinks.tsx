@@ -6,7 +6,7 @@ import {
 } from "@/lib/seo/marketplace-slugs";
 import {
   formatIndexableProviderLocation,
-  primarySearchPlaces,
+  primaryBasedSearchPlaces,
 } from "@/lib/seo/specialist-search-places";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
@@ -35,7 +35,7 @@ export function HomeSeoSpecialistLinks({ trainers }: HomeSeoSpecialistLinksProps
                 "Specialist";
               const location = formatIndexableProviderLocation(trainer);
               const professionLanding = findPathForProfession(profession);
-              const places = primarySearchPlaces(trainer, 3);
+              const places = primaryBasedSearchPlaces(trainer, 3);
               return (
                 <li key={trainer.id}>
                   <Link href={trainerProfilePath(trainer)}>

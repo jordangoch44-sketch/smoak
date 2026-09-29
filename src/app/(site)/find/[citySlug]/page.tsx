@@ -7,6 +7,7 @@ import {
   buildCityHubMetadata,
   buildLandingBreadcrumbJsonLd,
   filterTrainersForCity,
+  filterTravelingTrainersForCity,
   marketplaceCityHubPath,
 } from "@/lib/seo/marketplace-landing";
 import { cityToSlug } from "@/lib/seo/marketplace-slugs";
@@ -49,6 +50,7 @@ export default async function MarketplaceCityHubPage({ params }: PageProps) {
   const city = resolveSearchPlaceName(citySlug, catalog);
   if (!city) notFound();
   const trainers = filterTrainersForCity(catalog, city);
+  const travelingTrainers = filterTravelingTrainersForCity(catalog, city);
 
   const jsonLd = [
     buildCityHubJsonLd(city, trainers),
@@ -62,9 +64,8 @@ export default async function MarketplaceCityHubPage({ params }: PageProps) {
     <MarketplaceLandingShell
       city={city}
       trainers={trainers}
+      travelingTrainers={travelingTrainers}
       jsonLd={jsonLd}
-      title={`Health & fitness specialists in ${city}`}
-      lede={`Search personal trainers, nutritionists, coaches, and wellness professionals in ${city}. Every profile includes specialties, session rates, and client reviews on SMOAC.`}
     />
   );
 }

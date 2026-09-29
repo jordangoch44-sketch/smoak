@@ -3,6 +3,7 @@ import {
   MARKETPLACE_CITIES,
   type MarketplaceCity,
 } from "@/data/locations";
+import { lookupLocalZipPlace } from "@/lib/geo/zip-place-names";
 import { formatProviderLocation } from "@/lib/provider-location";
 import { toRankingMetroCity } from "@/lib/ranking-metro";
 import { cityToSlug } from "@/lib/seo/marketplace-slugs";
@@ -51,11 +52,7 @@ function mentionsPlace(blob: string, place: string): boolean {
   return new RegExp(`(?:^|[^a-z0-9])${escaped}(?:[^a-z0-9]|$)`, "i").test(blob);
 }
 
-/**
- * Places a specialist published on their profile: city, neighborhood,
- * service area, and the metro those roll up to. Order is specific first.
- */
-export function publishedSearchPlaces(trainer: Trainer): string[] {
+function createPlaceCollector() {
   const ordered: string[] = [];
   const seen = new Set<string>();
 
@@ -72,46 +69,96 @@ export function publishedSearchPlaces(trainer: Trainer): string[] {
     if (metro) add(metro);
   };
 
+  const addMentions = (parts: Array<string | null | undefined>) => {
+    const blob = parts
+      .filter((part): part is string => Boolean(part?.trim()))
+      .join(" \n ");
+    if (!blob) return;
+    for (const known of KNOWN_PLACES) {
+      if (mentionsPlace(blob, known)) add(known);
+    }
+  };
+
+  return { ordered, add, addMentions };
+}
+
+function addBasedPlaces(
+  trainer: Trainer,
+  collector: ReturnType<typeof createPlaceCollector>
+) {
+  const { add, addMentions } = collector;
   add(trainer.city);
   add(trainer.neighborhood);
+  add(trainer.zipCode ? lookupLocalZipPlace(trainer.zipCode)?.placeName : null);
   add(trainer.city2);
   add(trainer.neighborhood2);
-  for (const area of trainer.serviceArea ?? []) add(area);
-
-  const blob = [
+  add(trainer.zipCode2 ? lookupLocalZipPlace(trainer.zipCode2)?.placeName : null);
+  addMentions([
     trainer.city,
     trainer.neighborhood,
     trainer.city2,
     trainer.neighborhood2,
-    trainer.state,
-    ...(trainer.serviceArea ?? []),
-    trainer.serviceAreaDescription,
     trainer.workAddress,
     trainer.workAddress2,
     trainer.location,
-  ]
-    .filter((part): part is string => Boolean(part?.trim()))
-    .join(" \n ");
+  ]);
+}
 
-  for (const known of KNOWN_PLACES) {
-    if (mentionsPlace(blob, known)) add(known);
-  }
+/**
+ * Where a specialist is based: primary and second facility (city,
+ * neighborhood, ZIP area, street address) plus the metro those roll up to.
+ * Service-area tags are travel, not a base.
+ */
+export function basedSearchPlaces(trainer: Trainer): string[] {
+  const collector = createPlaceCollector();
+  addBasedPlaces(trainer, collector);
+  return collector.ordered;
+}
 
-  return ordered;
+/**
+ * Every place a specialist published: where they're based first, then
+ * where they travel (service-area tags and description).
+ */
+export function publishedSearchPlaces(trainer: Trainer): string[] {
+  const collector = createPlaceCollector();
+  addBasedPlaces(trainer, collector);
+  for (const area of trainer.serviceArea ?? []) collector.add(area);
+  collector.addMentions([
+    trainer.state,
+    ...(trainer.serviceArea ?? []),
+    trainer.serviceAreaDescription,
+  ]);
+  return collector.ordered;
 }
 
 export function primarySearchPlaces(trainer: Trainer, limit = 6): string[] {
   return publishedSearchPlaces(trainer).slice(0, limit);
 }
 
-/** True when this profile should appear for a Google-style “in {place}” query. */
+export function primaryBasedSearchPlaces(trainer: Trainer, limit = 6): string[] {
+  return basedSearchPlaces(trainer).slice(0, limit);
+}
+
+function placeListIncludes(places: string[], placeName: string): boolean {
+  const target = fold(canonicalPlaceName(placeName) ?? placeName);
+  if (!target) return false;
+  return places.some((place) => fold(place) === target);
+}
+
+/** Based in this place — listed as a specialist “in {place}”. */
+export function trainerBasedInSearchPlace(
+  trainer: Trainer,
+  placeName: string
+): boolean {
+  return placeListIncludes(basedSearchPlaces(trainer), placeName);
+}
+
+/** Based in or travels to this place. */
 export function trainerServesSearchPlace(
   trainer: Trainer,
   placeName: string
 ): boolean {
-  const target = fold(canonicalPlaceName(placeName) ?? placeName);
-  if (!target) return false;
-  return publishedSearchPlaces(trainer).some((place) => fold(place) === target);
+  return placeListIncludes(publishedSearchPlaces(trainer), placeName);
 }
 
 /**

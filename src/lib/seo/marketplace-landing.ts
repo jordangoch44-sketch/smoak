@@ -1,5 +1,12 @@
-import { isMarketplaceCity } from "@/data/locations";
+import { isMarketplaceCity, type MarketplaceCity } from "@/data/locations";
 import { buildExploreSearchParams } from "@/lib/explore-url";
+import { haversineMiles } from "@/lib/geo/haversine";
+import {
+  zipCodeToCoordinates,
+  type GeoCoordinates,
+} from "@/lib/geo/zip-centroids";
+import { findZipForPlaceName } from "@/lib/geo/zip-place-names";
+import { MARKETPLACE_CITY_CENTERS } from "@/lib/marketplace-city-centers";
 import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 import { absoluteUrl } from "@/lib/seo/site-url";
 import {
@@ -9,25 +16,96 @@ import {
 import {
   formatIndexableProviderLocation,
   parentMarketplaceCityForPlace,
+  trainerBasedInSearchPlace,
   trainerServesSearchPlace,
 } from "@/lib/seo/specialist-search-places";
+import { getTrainerCoordinates } from "@/lib/trainer-location";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 import type { Metadata } from "next";
 
-/** Profile matches a place search, including neighborhoods that roll up to a city. */
-export function trainerMatchesMarketplaceCity(
-  trainer: Trainer,
-  city: string
-): boolean {
-  return trainerServesSearchPlace(trainer, city);
+function cityCenter(city: MarketplaceCity): GeoCoordinates {
+  const center = MARKETPLACE_CITY_CENTERS[city];
+  return { latitude: center.lat, longitude: center.lng };
 }
 
+/** Neighborhood ZIP centroid, else the city it belongs to. */
+function searchPlaceCenter(place: string): GeoCoordinates | null {
+  if (isMarketplaceCity(place)) return cityCenter(place);
+  const zip = findZipForPlaceName(place);
+  const fromZip = zip ? zipCodeToCoordinates(zip) : null;
+  if (fromZip) return fromZip;
+  const parent = parentMarketplaceCityForPlace(place);
+  return parent ? cityCenter(parent) : null;
+}
+
+function secondLocationCoordinates(trainer: Trainer): GeoCoordinates | null {
+  const { latitude2: lat, longitude2: lng } = trainer;
+  if (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    !(lat === 0 && lng === 0)
+  ) {
+    return { latitude: lat, longitude: lng };
+  }
+  return trainer.zipCode2 ? zipCodeToCoordinates(trainer.zipCode2) : null;
+}
+
+function milesFromPlace(trainer: Trainer, center: GeoCoordinates): number | null {
+  const distances = [getTrainerCoordinates(trainer), secondLocationCoordinates(trainer)]
+    .filter((point): point is GeoCoordinates => point !== null)
+    .map((point) =>
+      haversineMiles(center.latitude, center.longitude, point.latitude, point.longitude)
+    );
+  return distances.length > 0 ? Math.min(...distances) : null;
+}
+
+/** Closest to the place first; no location last; then rating. */
+function sortTrainersNearPlace(trainers: Trainer[], place: string): Trainer[] {
+  const center = searchPlaceCenter(place);
+  return trainers
+    .map((trainer) => ({
+      trainer,
+      miles: center ? milesFromPlace(trainer, center) : null,
+    }))
+    .sort((a, b) => {
+      if (a.miles !== null && b.miles !== null && a.miles !== b.miles) {
+        return a.miles - b.miles;
+      }
+      if ((a.miles === null) !== (b.miles === null)) {
+        return a.miles === null ? 1 : -1;
+      }
+      if (b.trainer.rating !== a.trainer.rating) {
+        return b.trainer.rating - a.trainer.rating;
+      }
+      return b.trainer.reviewCount - a.trainer.reviewCount;
+    })
+    .map((entry) => entry.trainer);
+}
+
+function matchesLandingProfession(
+  trainer: Trainer,
+  profession?: MarketplaceProfessionLanding
+): boolean {
+  return !profession || trainerMatchesProfessionCategory(trainer, profession.profession);
+}
+
+/** Specialists based in the place, closest first. */
 export function filterTrainersForCity(
   trainers: Trainer[],
-  city: string
+  city: string,
+  profession?: MarketplaceProfessionLanding
 ): Trainer[] {
-  return trainers.filter((trainer) => trainerServesSearchPlace(trainer, city));
+  return sortTrainersNearPlace(
+    trainers.filter(
+      (trainer) =>
+        trainerBasedInSearchPlace(trainer, city) &&
+        matchesLandingProfession(trainer, profession)
+    ),
+    city
+  );
 }
 
 export function filterTrainersForCityProfession(
@@ -35,8 +113,23 @@ export function filterTrainersForCityProfession(
   city: string,
   profession: MarketplaceProfessionLanding
 ): Trainer[] {
-  return filterTrainersForCity(trainers, city).filter((trainer) =>
-    trainerMatchesProfessionCategory(trainer, profession.profession)
+  return filterTrainersForCity(trainers, city, profession);
+}
+
+/** Based elsewhere but list the place as a travel area, closest first. */
+export function filterTravelingTrainersForCity(
+  trainers: Trainer[],
+  city: string,
+  profession?: MarketplaceProfessionLanding
+): Trainer[] {
+  return sortTrainersNearPlace(
+    trainers.filter(
+      (trainer) =>
+        trainerServesSearchPlace(trainer, city) &&
+        !trainerBasedInSearchPlace(trainer, city) &&
+        matchesLandingProfession(trainer, profession)
+    ),
+    city
   );
 }
 

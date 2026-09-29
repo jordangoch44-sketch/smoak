@@ -9,7 +9,7 @@ import {
   type LocationTravelFact,
 } from "@/lib/specialist-service-area";
 import { cityToSlug, findPathForProfession } from "@/lib/seo/marketplace-slugs";
-import { primarySearchPlaces } from "@/lib/seo/specialist-search-places";
+import { primaryBasedSearchPlaces } from "@/lib/seo/specialist-search-places";
 import { ProfileLocationFactIcon } from "./ProfileDetailsIcons";
 import { ProfileDetailsRadiusMap } from "./ProfileDetailsRadiusMap";
 import { ProfileSection } from "./ProfileSection";
@@ -86,7 +86,7 @@ function ServiceAreaFactValue({ value }: { value: string }) {
 
 export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
   const display = buildLocationTravelDisplay(trainer);
-  const places = primarySearchPlaces(trainer, 6);
+  const places = primaryBasedSearchPlaces(trainer, 6);
   if (!display && places.length === 0) return null;
 
   const profession =

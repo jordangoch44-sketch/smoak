@@ -26,7 +26,8 @@ export type SpecialistEngagementSurface =
   | "rankings"
   | "rankings_boost"
   | "client_dashboard"
-  | "tools_calories";
+  | "tools_calories"
+  | "find";
 
 const SESSION_SEEN = new Set<string>();
 

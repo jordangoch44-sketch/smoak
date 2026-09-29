@@ -17,6 +17,7 @@ import { TrainerCardSaveSlot } from "./TrainerCardSaveSlot";
 import { TrainerVerifiedCheck } from "./TrainerVerifiedCheck";
 import { SpecialistImpressionBeacon } from "./SpecialistImpressionBeacon";
 import { ProfileSheetLink } from "./ProfileSheetLink";
+import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship";
 
@@ -25,7 +26,7 @@ interface TrainerCardProps {
   priority?: boolean;
   compactLayout?: TrainerCardCompactLayout;
   /** Search-appearance surface for analytics (default explore). */
-  impressionSurface?: "explore" | "saved" | "client_dashboard";
+  impressionSurface?: SpecialistEngagementSurface;
   /** Disable profile link while compare mode is selecting saved cards. */
   linkDisabled?: boolean;
 }

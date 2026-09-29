@@ -7,6 +7,7 @@ import {
   buildProfessionLandingJsonLd,
   buildProfessionLandingMetadata,
   filterTrainersForCityProfession,
+  filterTravelingTrainersForCity,
   marketplaceCityHubPath,
   marketplaceProfessionLandingPath,
 } from "@/lib/seo/marketplace-landing";
@@ -89,6 +90,7 @@ export default async function MarketplaceProfessionLandingPage({
   if (!city || !profession) notFound();
 
   const trainers = filterTrainersForCityProfession(catalog, city, profession);
+  const travelingTrainers = filterTravelingTrainersForCity(catalog, city, profession);
 
   const jsonLd = [
     buildProfessionLandingJsonLd(city, profession, trainers),
@@ -107,9 +109,8 @@ export default async function MarketplaceProfessionLandingPage({
       city={city}
       profession={profession}
       trainers={trainers}
+      travelingTrainers={travelingTrainers}
       jsonLd={jsonLd}
-      title={`${profession.pluralLabel} in ${city}`}
-      lede={`Find ${profession.pluralLabel.toLowerCase()} for ${profession.searchPhrase} in ${city}. Compare verified SMOAC profiles, specialties, reviews, and session rates — then contact specialists directly.`}
     />
   );
 }

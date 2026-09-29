@@ -219,7 +219,8 @@ body.specialist-profile-welcome-open,
 body.complete-account-lock,
 body.client-profile-sheet-open,
 body.client-workouts-open,
-body.admin-review-open {
+body.admin-review-open,
+body.seo-browse-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -244,7 +245,8 @@ html.review-modal-open,
   body.complete-account-lock,
   body.client-profile-sheet-open,
   body.client-workouts-open,
-  body.admin-review-open {
+  body.admin-review-open,
+  body.seo-browse-open {
     overflow: visible;
     overscroll-behavior: none;
   }
@@ -266,7 +268,8 @@ html.review-modal-open,
   body.complete-account-lock .app-main,
   body.client-profile-sheet-open .app-main,
   body.client-workouts-open .app-main,
-  body.admin-review-open .app-main {
+  body.admin-review-open .app-main,
+  body.seo-browse-open .app-main {
     overflow: hidden;
     overscroll-behavior: none;
     touch-action: pan-y;

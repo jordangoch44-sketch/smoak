@@ -1,3 +1,4 @@
+import type { SpecialistEngagementSurface } from "@/lib/specialist-engagement-tracking";
 import type { Trainer } from "@/types";
 import { cn } from "@/lib/utils";
 import { TrainerCard } from "./TrainerCard";
@@ -15,7 +16,7 @@ interface TrainerListProps {
   variant?: keyof typeof listLayouts;
   priorityCount?: number;
   className?: string;
-  impressionSurface?: "explore" | "saved" | "client_dashboard";
+  impressionSurface?: SpecialistEngagementSurface;
 }
 
 export function TrainerList({
