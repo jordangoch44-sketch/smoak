@@ -1,9 +1,13 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Trainer } from "@/types";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
-import { buildLocationTravelDisplay } from "@/lib/specialist-service-area";
+import {
+  buildLocationTravelDisplay,
+  type LocationTravelFact,
+} from "@/lib/specialist-service-area";
 import { cityToSlug, findPathForProfession } from "@/lib/seo/marketplace-slugs";
 import { primarySearchPlaces } from "@/lib/seo/specialist-search-places";
 import { ProfileLocationFactIcon } from "./ProfileDetailsIcons";
@@ -11,8 +15,73 @@ import { ProfileDetailsRadiusMap } from "./ProfileDetailsRadiusMap";
 import { ProfileSection } from "./ProfileSection";
 import { ProfileSectionHeader } from "./ProfileSectionHeader";
 
+/** Longer values clamp to a few lines; full text stays in the DOM for search. */
+const CLAMP_VALUE_MIN_CHARS = 200;
+
 interface ProfileServiceAreaProps {
   trainer: Trainer;
+}
+
+function ServiceAreaFactValue({ value }: { value: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [overflowing, setOverflowing] = useState(false);
+  const clampRef = useRef<HTMLParagraphElement>(null);
+  const clampable = value.length >= CLAMP_VALUE_MIN_CHARS;
+
+  useEffect(() => {
+    const el = clampRef.current;
+    if (!el || expanded) return;
+    const measure = () => setOverflowing(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [expanded, value]);
+
+  if (!clampable || expanded) {
+    return (
+      <>
+        <p className="profile-service-area__value">
+          {value.split("\n").map((line) => (
+            <span key={line} className="profile-service-area__value-line">
+              {line}
+            </span>
+          ))}
+        </p>
+        {clampable ? (
+          <button
+            type="button"
+            className="profile-service-area__more"
+            aria-expanded
+            onClick={() => setExpanded(false)}
+          >
+            Show less
+          </button>
+        ) : null}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <p
+        ref={clampRef}
+        className="profile-service-area__value profile-service-area__value--clamped"
+      >
+        {value.replace(/\s*\n+\s*/g, " ")}
+      </p>
+      {overflowing ? (
+        <button
+          type="button"
+          className="profile-service-area__more"
+          aria-expanded={false}
+          onClick={() => setExpanded(true)}
+        >
+          Read more
+        </button>
+      ) : null}
+    </>
+  );
 }
 
 export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
@@ -25,21 +94,15 @@ export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
     trainer.profession?.trim() ||
     "Wellness";
   const professionLanding = findPathForProfession(profession);
-  const placeList = places.join(", ");
+  const professionLabel = professionLanding?.pluralLabel ?? profession;
 
   return (
     <ProfileSection variant="panel" aria-label="Location and travel">
       <ProfileSectionHeader title="Location and travel" />
-      <div
-        className={
-          display?.map
-            ? "profile-section-body profile-service-area profile-service-area--visual profile-service-area--with-map"
-            : "profile-section-body profile-service-area profile-service-area--visual"
-        }
-      >
+      <div className="profile-section-body profile-service-area profile-service-area--visual">
         {display && display.facts.length > 0 ? (
           <ul className="profile-service-area__facts">
-            {display.facts.map((fact) => (
+            {display.facts.map((fact: LocationTravelFact) => (
               <li key={fact.label} className="profile-service-area__fact">
                 <span className="profile-service-area__icon-shell" aria-hidden>
                   <ProfileLocationFactIcon
@@ -49,13 +112,7 @@ export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
                 </span>
                 <div className="profile-service-area__meta">
                   <p className="profile-service-area__label">{fact.label}</p>
-                  <p className="profile-service-area__value">
-                    {fact.value.split("\n").map((line) => (
-                      <span key={line} className="profile-service-area__value-line">
-                        {line}
-                      </span>
-                    ))}
-                  </p>
+                  <ServiceAreaFactValue value={fact.value} />
                   {fact.parenthetical ? (
                     <p className="profile-service-area__parenthetical">
                       {fact.parenthetical}
@@ -73,28 +130,28 @@ export function ProfileServiceArea({ trainer }: ProfileServiceAreaProps) {
         {display?.map ? <ProfileDetailsRadiusMap map={display.map} /> : null}
 
         {places.length > 0 ? (
-          <div className="profile-service-area__search">
-            <p className="profile-service-area__search-line">
-              {profession} in {placeList}.
-            </p>
-            <nav aria-label={`${profession} by location`}>
-              <ul className="profile-service-area__search-links">
-                {places.map((place) => {
-                  const href = professionLanding
-                    ? `/find/${cityToSlug(place)}/${professionLanding.slug}`
-                    : `/find/${cityToSlug(place)}`;
-                  const label = professionLanding
-                    ? `${professionLanding.pluralLabel} in ${place}`
-                    : `${profession} in ${place}`;
-                  return (
-                    <li key={place}>
-                      <Link href={href}>{label}</Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
-          </div>
+          <nav
+            className="profile-service-area__search"
+            aria-label={`${professionLabel} by location`}
+          >
+            <h3 className="profile-service-area__search-title">
+              {professionLabel} near
+            </h3>
+            <ul className="profile-service-area__search-links">
+              {places.map((place) => {
+                const href = professionLanding
+                  ? `/find/${cityToSlug(place)}/${professionLanding.slug}`
+                  : `/find/${cityToSlug(place)}`;
+                return (
+                  <li key={place}>
+                    <Link href={href} aria-label={`${professionLabel} in ${place}`}>
+                      {place}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
         ) : null}
       </div>
     </ProfileSection>
