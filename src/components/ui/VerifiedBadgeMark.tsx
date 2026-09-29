@@ -21,7 +21,7 @@ const ROSETTE_PATH =
 export function VerifiedBadgeMark({
   className,
   iconClassName,
-  title = "Verified Pro specialist",
+  title = "SMOAC Pro",
   size,
 }: VerifiedBadgeMarkProps) {
   const reactId = useId();

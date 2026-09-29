@@ -76,6 +76,28 @@ export function allocateUniqueSpecialistSlug(input: {
   return `${base}-${Date.now().toString(36)}`.slice(0, 60);
 }
 
+/**
+ * Public URL identity. Prefer a stored slug, then a catalog slug, so
+ * sitemap, canonical, and the address bar stay on one stable path.
+ */
+export function preferCanonicalTrainerSlug<T extends TrainerPublicIdentity>(
+  trainer: T,
+  catalog: readonly TrainerPublicIdentity[] = []
+): T {
+  const own = trainer.slug?.trim() ?? "";
+  if (own && isValidSpecialistSlug(own)) {
+    return own === trainer.slug ? trainer : { ...trainer, slug: own };
+  }
+
+  const listed = catalog.find((item) => item.id === trainer.id);
+  const fallback = listed?.slug?.trim() ?? "";
+  if (fallback && isValidSpecialistSlug(fallback)) {
+    return { ...trainer, slug: fallback };
+  }
+
+  return trainer;
+}
+
 /** Canonical public path segment — slug when set, otherwise id. */
 export function publicTrainerSlug(trainer: TrainerPublicIdentity): string {
   const slug = trainer.slug?.trim();

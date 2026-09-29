@@ -15,6 +15,7 @@ import {
   type InquiryClientPreview,
 } from "@/lib/inquiry/inquiry-client-preview";
 import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
+import { isPersistableInquiryId } from "@/lib/inquiry/inquiry-inbox-state";
 import { submitInquiryReply } from "@/lib/inquiry/inquiry-submit";
 import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
 import { PageWaitState } from "@/components/brand/PageWaitState";
@@ -101,6 +102,7 @@ export function InquiryInboxPanel({
   );
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const sendingRef = useRef(false);
   const previewRequestId = useRef(0);
 
   const swipeActions =
@@ -178,6 +180,30 @@ export function InquiryInboxPanel({
     if (!id) return;
     void openConversationRef.current(id);
   }, [initialConversationId]);
+
+  useEffect(() => {
+    const id = openId?.trim() || "";
+    if (!id || isDemoInquiryConversationId(id)) return;
+    let cancelled = false;
+
+    async function refreshOpenThread() {
+      if (sendingRef.current || !id) return;
+      const next = await loadInquiryThread(id);
+      if (cancelled || !next) return;
+      setThread(next);
+      await markInquiryThreadRead(id, viewer);
+    }
+
+    function onUpdated() {
+      void refreshOpenThread();
+    }
+
+    window.addEventListener("smoac:inquiry-updated", onUpdated);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("smoac:inquiry-updated", onUpdated);
+    };
+  }, [openId, viewer]);
 
   function handleBack() {
     setOpenId(null);
@@ -285,6 +311,7 @@ export function InquiryInboxPanel({
 
   async function handleSend(message: string) {
     if (!openId || !thread?.canReply) return;
+    sendingRef.current = true;
     setSending(true);
     setError(null);
     const optimistic: InquiryThreadPayload = {
@@ -301,24 +328,28 @@ export function InquiryInboxPanel({
     };
     setThread(optimistic);
 
-    const result = await submitInquiryReply({
-      conversationId: openId,
-      message,
-      senderUserId,
-      senderRole: viewer,
-      specialistId: thread.specialistId,
-      clientFirstName: thread.clientFirstName,
-    });
+    try {
+      const result = await submitInquiryReply({
+        conversationId: openId,
+        message,
+        senderUserId,
+        senderRole: viewer,
+        specialistId: thread.specialistId,
+        clientFirstName: thread.clientFirstName,
+      });
 
-    setSending(false);
-    if (!result.ok) {
-      setError(result.message);
-      setThread(thread);
-      return;
+      if (!result.ok) {
+        setError(result.message);
+        setThread(thread);
+        return;
+      }
+
+      const refreshed = await loadInquiryThread(openId);
+      if (refreshed) setThread(refreshed);
+    } finally {
+      sendingRef.current = false;
+      setSending(false);
     }
-
-    const refreshed = await loadInquiryThread(openId);
-    if (refreshed) setThread(refreshed);
   }
 
   const list = (
@@ -376,6 +407,16 @@ export function InquiryInboxPanel({
     </>
   );
 
+  const trustTarget =
+    thread && openId && isPersistableInquiryId(openId)
+      ? {
+          specialistId: thread.specialistId,
+          conversationId: openId,
+          counterpartName:
+            viewer === "client" ? thread.specialistName : thread.clientFirstName,
+        }
+      : null;
+
   const threadLayer = openId ? (
     <div className="inquiry-thread-overlay" role="dialog" aria-modal="true">
       {loadingThread && !thread ? (
@@ -391,6 +432,7 @@ export function InquiryInboxPanel({
           onSend={(message) => {
             void handleSend(message);
           }}
+          trust={trustTarget}
         />
       ) : (
         <div className="inquiry-inbox__missing">
@@ -561,6 +603,7 @@ export function InquiryInboxPanel({
         onSend={(message) => {
           void handleSend(message);
         }}
+        trust={trustTarget}
       />
     );
   }

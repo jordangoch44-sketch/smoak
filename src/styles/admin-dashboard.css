@@ -2042,6 +2042,56 @@
   color: rgba(252, 165, 165, 0.95);
 }
 
+.admin-report-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-report-list__item {
+  padding: 0.85rem 1rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-report-list__title,
+.admin-report-list__meta,
+.admin-report-list__details {
+  margin: 0;
+}
+
+.admin-report-list__title {
+  font-size: 0.9rem;
+}
+
+.admin-report-list__meta,
+.admin-report-list__details {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.admin-report-list__actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+}
+
+.admin-report-list__actions button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: rgba(248, 226, 186, 0.9);
+  font: inherit;
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .admin-team-invite {
   display: flex;
   flex-wrap: wrap;

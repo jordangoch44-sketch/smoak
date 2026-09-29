@@ -1,4 +1,5 @@
 import { getApprovedSpecialistProfileById } from "@/lib/approved-specialist-profiles-store";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { getTrainerById } from "@/data/trainers";
 import { listPublicMarketplaceTrainers } from "@/lib/marketplace-public-catalog";
 import type { Trainer } from "@/types";
@@ -22,9 +23,12 @@ function photoFromTrainer(trainer: Trainer | undefined): string {
 export function resolveSpecialistListingAvatar(specialistId: string): string {
   const id = specialistId.trim();
   if (!id) return "";
+  const seedPhoto = isMarketplaceSupabaseActive()
+    ? ""
+    : photoFromTrainer(getTrainerById(id));
   return (
     photoFromTrainer(getApprovedSpecialistProfileById(id)) ||
-    photoFromTrainer(getTrainerById(id)) ||
+    seedPhoto ||
     photoFromTrainer(
       listPublicMarketplaceTrainers({ includeBrowserState: true }).find(
         (trainer) => trainer.id === id

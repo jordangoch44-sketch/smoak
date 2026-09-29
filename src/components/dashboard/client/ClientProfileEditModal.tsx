@@ -30,7 +30,7 @@ import {
   updateAuthEmail,
   updatePassword,
 } from "@/lib/auth/marketplace-auth";
-import { accountDeletionMailto } from "@/lib/site-contact";
+import { DeleteAccountButton } from "@/components/dashboard/shared/DeleteAccountButton";
 import {
   ClientAvatarPipelineError,
   formatClientAvatarPipelineError,
@@ -850,14 +850,12 @@ export function ClientProfileEditModal({
                     ) : null}
                   </div>
                 ) : null}
-                <a
+                <DeleteAccountButton
+                  role="client"
                   className="client-profile-delete-link"
-                  href={accountDeletionMailto("client")}
-                >
-                  Request account deletion
-                </a>
+                />
                 <p className="client-profile-section__hint">
-                  We’ll email you to confirm, then remove this account from SMOAC.
+                  Deletes this login from SMOAC. This cannot be undone.
                 </p>
               </section>
 

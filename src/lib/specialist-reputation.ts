@@ -4,8 +4,8 @@
  * Powers: `ReviewsCard`, `ReputationSourceRow`, `ReputationReviewFeedItem` on the
  * specialist dashboard only.
  *
- * Data: `constants/specialist-reputation-mock.ts` (connected Google/Yelp-style sources +
- * sample external reviews). May fold seed `trainer.reviews` into the hub preview.
+ * Data: `constants/specialist-reputation-mock.ts` for the demo dashboard only.
+ * Live specialist dashboards must use published SMOAC reviews, not this hub.
  *
  * Do **not** use for marketplace hero ★ (`trainer-reviews.ts`) or live SMOAC submit/read
  * (`reviews/specialist-reviews-client.ts`).

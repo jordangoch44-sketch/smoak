@@ -38,11 +38,9 @@ export function ProfileTrainingOptionRow({
           )}
         />
       </FastActivateButton>
-      {open ? (
-        <p id={detailsId} className="profile-train-tile__details">
-          {card.description}
-        </p>
-      ) : null}
+      <p id={detailsId} className="profile-train-tile__details" hidden={!open}>
+        {card.description}
+      </p>
     </li>
   );
 }

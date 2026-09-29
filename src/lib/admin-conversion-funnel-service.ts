@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { trainers } from "@/data/trainers";
 import type {
   FunnelKeyInsight,
   FunnelStageMetric,
@@ -297,20 +296,7 @@ export async function buildMarketplaceConversionFunnel(
         avatarUrl: p.avatar_url ?? null,
         profession: p.primary_service ?? undefined,
         city: p.city ?? undefined,
-        tier: p.tier ?? "Elite",
-      });
-    }
-  }
-
-  // Supplement with catalog mock trainers if profile not found in DB
-  for (const t of trainers) {
-    if (!profileMetaMap.has(t.id)) {
-      profileMetaMap.set(t.id, {
-        name: t.name,
-        avatarUrl: t.image,
-        profession: t.profession,
-        city: t.city,
-        tier: t.isPremium ? "Pro" : "Elite",
+        tier: p.tier ?? "",
       });
     }
   }
@@ -327,9 +313,9 @@ export async function buildMarketplaceConversionFunnel(
       specialistId: id,
       specialistName: meta?.name ?? `Specialist ${id.slice(0, 8)}`,
       avatarUrl: meta?.avatarUrl ?? null,
-      profession: meta?.profession ?? "Wellness Specialist",
-      city: meta?.city ?? "New York",
-      tier: meta?.tier ?? "Elite",
+      profession: meta?.profession ?? "Specialist",
+      city: meta?.city ?? "",
+      tier: meta?.tier ?? "",
       impressions: acc.impressions,
       profileViews: acc.profileViews,
       saves: acc.saves,
@@ -339,30 +325,6 @@ export async function buildMarketplaceConversionFunnel(
       overallEfficiencyRate: overallEff,
       engagementRate: engRate,
     });
-  }
-
-  // If no live telemetry was logged yet for specialists, populate with catalog baselines
-  if (specialistMetrics.length === 0) {
-    for (const t of trainers.slice(0, 8)) {
-      const pViews = Math.max(0, Math.floor(profileViewsCurr / 8));
-      const inqSub = Math.max(0, Math.floor(inquiriesCurr / 8));
-      specialistMetrics.push({
-        specialistId: t.id,
-        specialistName: t.name,
-        avatarUrl: t.image,
-        profession: t.profession,
-        city: t.city,
-        tier: t.isPremium ? "Pro" : "Elite",
-        impressions: Math.max(0, Math.floor(impressionsCurr / 8)),
-        profileViews: pViews,
-        saves: Math.max(0, Math.floor(savesCurr / 8)),
-        inquiryStarts: Math.max(0, Math.floor(inquiryStartedCurr / 8)),
-        inquiriesSubmitted: inqSub,
-        viewToInquiryRate: safePercent(inqSub, pViews),
-        overallEfficiencyRate: safePercent(inqSub, Math.max(1, impressionsCurr / 8)),
-        engagementRate: safePercent(savesCurr + inquiryStartedCurr, pViews),
-      });
-    }
   }
 
   // Sort by highest view-to-inquiry rate, then total inquiries, then profile views

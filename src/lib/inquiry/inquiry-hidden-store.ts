@@ -52,3 +52,18 @@ export function hideInquiryId(
   if (!id) return;
   writeIds(specialistId, [...readIds(specialistId), id]);
 }
+
+/** Drop ids that were copied onto the account. */
+export function forgetHiddenInquiryIds(
+  ownerId: string,
+  conversationIds: readonly string[]
+): void {
+  const remove = new Set(
+    conversationIds.map((id) => id.trim()).filter(Boolean)
+  );
+  if (remove.size === 0) return;
+  writeIds(
+    ownerId,
+    readIds(ownerId).filter((id) => !remove.has(id))
+  );
+}

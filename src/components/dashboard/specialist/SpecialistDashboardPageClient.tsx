@@ -172,6 +172,7 @@ export function SpecialistDashboardPageClient() {
     handleMarkInquiriesRead,
     handleMarkInquiriesUnread,
     isHydrated,
+    showSampleMetrics,
   } = useSpecialistDashboard();
 
   useEffect(() => {
@@ -530,6 +531,7 @@ export function SpecialistDashboardPageClient() {
         isPremium={premium}
         smoacRating={rankingRating.rating}
         smoacReviewCount={rankingRating.reviewCount}
+        sampleReputation={showSampleMetrics}
       />
       <GoogleReviewsCard
         trainer={trainer}

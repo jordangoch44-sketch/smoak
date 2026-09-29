@@ -3,7 +3,7 @@
 import { useCallback, useState, type CSSProperties } from "react";
 import type { Trainer } from "@/types";
 import type { TrainerCityRanking } from "@/data/city-rankings";
-import { formatProviderLocation } from "@/lib/provider-location";
+import { formatIndexableProviderLocation } from "@/lib/seo/specialist-search-places";
 import {
   buildTrainerGalleryImages,
   getProfileGalleryMedia,
@@ -254,7 +254,7 @@ export function ProfileHero({
                     className="profile-hero__profession"
                   />
                   <p className="profile-hero__location">
-                    {formatProviderLocation(trainer)}
+                    {formatIndexableProviderLocation(trainer)}
                   </p>
                   <TrainerDistanceLabel
                     trainer={trainer}

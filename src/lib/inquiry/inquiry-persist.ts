@@ -18,6 +18,10 @@ import {
   resolveSpecialistNotifyEmail,
   resolveSpecialistUserId,
 } from "@/lib/specialist-notify-email";
+import {
+  inquiryClosedMessage,
+  inquiryPairIsBlocked,
+} from "@/lib/trust/inquiry-block";
 
 function siteOrigin(): string {
   return getAuthSiteOrigin() ?? "https://smoac.com";
@@ -137,6 +141,15 @@ export async function persistSpecialistInquiry(
     supabase,
     input.specialistId
   );
+  if (
+    await inquiryPairIsBlocked(supabase, {
+      partyA: input.clientUserId,
+      partyB: specialistUserId,
+      specialistId: input.specialistId,
+    })
+  ) {
+    return { ok: false, message: inquiryClosedMessage() };
+  }
   const clientAvatarUrl = await resolveClientAvatarUrl(
     supabase,
     input.clientUserId,
@@ -327,6 +340,19 @@ export async function persistInquiryReply(
   }
 
   const row = conversation as InquiryConversationRow;
+  const recipientId =
+    input.senderRole === "client"
+      ? row.specialist_user_id
+      : row.client_user_id;
+  if (
+    await inquiryPairIsBlocked(supabase, {
+      partyA: input.senderUserId,
+      partyB: recipientId,
+      specialistId: row.specialist_id,
+    })
+  ) {
+    return { ok: false, message: inquiryClosedMessage() };
+  }
   const now = new Date().toISOString();
 
   const { data: message, error: messageError } = await supabase

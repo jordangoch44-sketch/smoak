@@ -81,11 +81,14 @@ export function resolveSavedTrainers(
       continue;
     }
 
-    /* Legacy / demo saves still show until the client unsaves them */
-    const seed = getSeedTrainerById(trimmed);
-    if (seed) {
-      result.push(applyOverridesIfNeeded(seed));
-      continue;
+    /* Seed cards only when Supabase is off. A live save that no longer
+     * resolves stays unavailable instead of a demo specialist. */
+    if (!isLivePublicCatalogMode() && !isMarketplaceSupabaseActive()) {
+      const seed = getSeedTrainerById(trimmed);
+      if (seed) {
+        result.push(applyOverridesIfNeeded(seed));
+        continue;
+      }
     }
 
     result.push(buildUnavailableSavedTrainer(trimmed));

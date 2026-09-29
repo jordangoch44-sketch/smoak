@@ -1,20 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { TrustActionSheet } from "@/components/trust/TrustActionSheet";
 import { cn } from "@/lib/utils";
 
 interface ProfileContactCtaProps {
+  specialistId: string;
   specialistName: string;
   onContact: () => void;
+  showReport?: boolean;
   className?: string;
 }
 
 /** Single inquiry entry point — topic selection lives in the contact sheet */
 export function ProfileContactCta({
+  specialistId,
   specialistName,
   onContact,
+  showReport = true,
   className,
 }: ProfileContactCtaProps) {
+  const [reportOpen, setReportOpen] = useState(false);
   return (
     <section
       className={cn("profile-contact-cta", className)}
@@ -36,6 +43,24 @@ export function ProfileContactCta({
       <p className="profile-contact-cta__helper">
         Your inquiry is sent to their portal and email.
       </p>
+      {showReport ? (
+        <button
+          type="button"
+          className="profile-contact-cta__report"
+          onClick={() => setReportOpen(true)}
+        >
+          Report this profile
+        </button>
+      ) : null}
+      {reportOpen ? (
+        <TrustActionSheet
+          mode="report"
+          surface="profile"
+          specialistId={specialistId}
+          specialistName={specialistName}
+          onClose={() => setReportOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }

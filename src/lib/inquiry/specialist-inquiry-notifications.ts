@@ -2,8 +2,8 @@ import { SPECIALIST_INQUIRY_NOTIFICATIONS_KEY } from "@/lib/dev-storage-keys";
 
 /**
  * Same-browser refresh signal after a new inquiry is written.
- * Unread badge/banner authority is `inquiry_messages.is_read` via
- * `loadSpecialistInquiryLeads` — not this localStorage list.
+ * Same-tab ping only. Unread on the account is `inquiry_messages.is_read`
+ * plus `specialist_marked_unread_at`, loaded by `loadSpecialistInquiryLeads`.
  */
 export interface SpecialistInquiryNotification {
   id: string;

@@ -9,31 +9,45 @@ import {
   filterTrainersForCity,
   marketplaceCityHubPath,
 } from "@/lib/seo/marketplace-landing";
-import { listMarketplaceCitySlugs, slugToCity } from "@/lib/seo/marketplace-slugs";
+import { cityToSlug } from "@/lib/seo/marketplace-slugs";
+import {
+  publishedSearchPlaces,
+  resolveSearchPlaceName,
+} from "@/lib/seo/specialist-search-places";
+import { MARKETPLACE_CITIES } from "@/data/locations";
 
 interface PageProps {
   params: Promise<{ citySlug: string }>;
 }
 
 export const revalidate = 45;
+export const dynamicParams = true;
 
-export function generateStaticParams() {
-  return listMarketplaceCitySlugs().map((citySlug) => ({ citySlug }));
+export async function generateStaticParams() {
+  const { trainers } = await loadPublicCatalogForServer();
+  const slugs = new Set(MARKETPLACE_CITIES.map((city) => cityToSlug(city)));
+  for (const trainer of trainers) {
+    for (const place of publishedSearchPlaces(trainer)) {
+      const slug = cityToSlug(place);
+      if (slug) slugs.add(slug);
+    }
+  }
+  return [...slugs].map((citySlug) => ({ citySlug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { citySlug } = await params;
-  const city = slugToCity(citySlug);
+  const { trainers: catalog } = await loadPublicCatalogForServer();
+  const city = resolveSearchPlaceName(citySlug, catalog);
   if (!city) return { title: "Market not found" };
   return buildCityHubMetadata(city);
 }
 
 export default async function MarketplaceCityHubPage({ params }: PageProps) {
   const { citySlug } = await params;
-  const city = slugToCity(citySlug);
-  if (!city) notFound();
-
   const { trainers: catalog } = await loadPublicCatalogForServer();
+  const city = resolveSearchPlaceName(citySlug, catalog);
+  if (!city) notFound();
   const trainers = filterTrainersForCity(catalog, city);
 
   const jsonLd = [

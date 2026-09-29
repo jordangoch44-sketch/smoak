@@ -13,6 +13,7 @@ import {
   getApprovedSpecialistProfileById,
   saveApprovedSpecialistProfileAsync,
 } from "@/lib/approved-specialist-profiles-store";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import {
   DEV_FREE_SPECIALIST_CREDENTIALS,
   DEV_SPECIALIST_CREDENTIALS,
@@ -220,6 +221,12 @@ export function getManagedTrainerBaseById(trainerId: string): Trainer | undefine
   if (trainerId === DEV_SPECIALIST_DASHBOARD_ID) {
     return getDevDashboardTrainerSeed();
   }
+
+  if (trainerId === DEMO_SPECIALIST_ID) {
+    return getSeedTrainerById(trainerId);
+  }
+
+  if (isMarketplaceSupabaseActive()) return undefined;
 
   return getSeedTrainerById(trainerId);
 }

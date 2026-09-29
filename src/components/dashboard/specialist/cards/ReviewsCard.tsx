@@ -12,6 +12,8 @@ import {
 import { LOGO_SRC } from "@/lib/brand";
 import { copyTextToClipboard } from "@/lib/profile-share";
 import { buildLeaveReviewAbsoluteUrl } from "@/lib/reviews/leave-review-href";
+import { fetchPublishedSpecialistReviews } from "@/lib/reviews/specialist-reviews-client";
+import type { SpecialistReview } from "@/lib/reviews/specialist-review-types";
 import {
   buildSpecialistReputationHub,
   formatReputationRating,
@@ -23,6 +25,7 @@ import {
 import { disputeReviewMailto } from "@/lib/site-contact";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import type { AggregatedReview } from "@/types/specialist-reputation";
 
 const COPY_FLASH_MS = 2500;
 
@@ -32,7 +35,36 @@ interface ReviewsCardProps {
   /** Live SMOAC client review average (not Google/catalog ★) */
   smoacRating?: number | null;
   smoacReviewCount?: number;
+  /** Demo dashboard only. Live accounts show published SMOAC reviews. */
+  sampleReputation?: boolean;
   defaultOpen?: boolean;
+}
+
+function formatReviewDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function liveReviewToFeed(
+  review: SpecialistReview,
+  profileId: string
+): AggregatedReview {
+  const reviewDate = formatReviewDate(review.createdAt);
+  return {
+    id: review.id,
+    profileId,
+    source: "smoac",
+    reviewerName: review.authorDisplayName,
+    rating: review.rating,
+    reviewText: review.reviewText,
+    reviewDate,
+    relativeTime: reviewDate,
+  };
 }
 
 export function ReviewsCard({
@@ -40,38 +72,71 @@ export function ReviewsCard({
   isPremium,
   smoacRating = null,
   smoacReviewCount,
+  sampleReputation = false,
   defaultOpen = false,
 }: ReviewsCardProps) {
   const [connectModalOpen, setConnectModalOpen] = useState(false);
   const [connectSourceLabel, setConnectSourceLabel] = useState("Reviews");
   const [copiedReview, setCopiedReview] = useState(false);
+  const [liveReviews, setLiveReviews] = useState<SpecialistReview[]>([]);
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { showToast } = useToast();
 
   const profileId = trainer?.id ?? "";
   const hub = useMemo(
-    () => buildSpecialistReputationHub(profileId, trainer),
-    [profileId, trainer]
+    () =>
+      sampleReputation
+        ? buildSpecialistReputationHub(profileId, trainer)
+        : null,
+    [sampleReputation, profileId, trainer]
   );
 
-  const reviewCount = smoacReviewCount ?? hub.totalReviewCount;
-  const rating =
-    smoacRating != null && smoacRating > 0
+  useEffect(() => {
+    if (sampleReputation || !profileId) {
+      setLiveReviews([]);
+      return;
+    }
+    let cancelled = false;
+    void fetchPublishedSpecialistReviews(profileId, { limit: 8 }).then((rows) => {
+      if (!cancelled) setLiveReviews(rows);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sampleReputation, profileId]);
+
+  const liveFeed = useMemo(
+    () => liveReviews.map((review) => liveReviewToFeed(review, profileId)),
+    [liveReviews, profileId]
+  );
+
+  const reviewCount = sampleReputation
+    ? (smoacReviewCount ?? hub?.totalReviewCount ?? 0)
+    : (smoacReviewCount ?? 0);
+  const rating = sampleReputation
+    ? smoacRating != null && smoacRating > 0
       ? smoacRating
-      : hub.overallRating > 0
+      : hub && hub.overallRating > 0
         ? hub.overallRating
-        : null;
+        : null
+    : smoacRating != null && smoacRating > 0
+      ? smoacRating
+      : null;
   const hasReviews = reviewCount > 0 && rating != null;
-  const hasReputation =
-    hub.totalReviewCount > 0 || hub.latestReviews.length > 0;
-  const connectedSources = hub.sources.filter(
-    (source) =>
-      source.sourceId !== "google" && source.connectedStatus === "connected"
-  );
-  const disconnectedSources = hub.sources.filter(
-    (source) =>
-      source.sourceId !== "google" && source.connectedStatus !== "connected"
-  );
+  const sampleReviews = hub?.latestReviews ?? [];
+  const hasSampleReputation =
+    (hub?.totalReviewCount ?? 0) > 0 || sampleReviews.length > 0;
+  const connectedSources =
+    hub?.sources.filter(
+      (source) =>
+        source.sourceId !== "google" && source.connectedStatus === "connected"
+    ) ?? [];
+  const disconnectedSources =
+    hub?.sources.filter(
+      (source) =>
+        source.sourceId !== "google" && source.connectedStatus !== "connected"
+    ) ?? [];
+  const feed = sampleReputation ? sampleReviews : liveFeed;
 
   useEffect(() => {
     return () => {
@@ -99,7 +164,7 @@ export function ReviewsCard({
   }, [profileId, showToast]);
 
   function handleConnect(sourceId: string) {
-    const source = hub.sources.find((entry) => entry.sourceId === sourceId);
+    const source = hub?.sources.find((entry) => entry.sourceId === sourceId);
     setConnectSourceLabel(source?.sourceName ?? "Reviews");
     setConnectModalOpen(true);
   }
@@ -176,11 +241,7 @@ export function ReviewsCard({
             Send clients a review link, or email support if a review looks unfair.
           </p>
 
-          {!hasReputation ? (
-            <p className="dashboard-section__desc">
-              Client reviews left on SMOAC show up here.
-            </p>
-          ) : (
+          {sampleReputation && hasSampleReputation ? (
             <>
               <PremiumLockedValues locked={!isPremium}>
                 <div className="dashboard-reputation__sources">
@@ -207,33 +268,40 @@ export function ReviewsCard({
                   ))}
                 </ul>
               ) : null}
-
-              {hub.latestReviews.length > 0 ? (
-                <div className="dashboard-reputation__feed">
-                  <p className="dashboard-reputation__feed-label">Latest reviews</p>
-                  <PremiumLockedValues locked={!isPremium}>
-                    <div className="dashboard-reputation__feed-list">
-                      {hub.latestReviews.map((review) => (
-                        <ReputationReviewFeedItem
-                          key={review.id}
-                          review={review}
-                        />
-                      ))}
-                    </div>
-                  </PremiumLockedValues>
-                </div>
-              ) : null}
             </>
-          )}
+          ) : null}
+
+          {feed.length > 0 ? (
+            <div className="dashboard-reputation__feed">
+              <p className="dashboard-reputation__feed-label">Latest reviews</p>
+              <PremiumLockedValues locked={!isPremium}>
+                <div className="dashboard-reputation__feed-list">
+                  {feed.map((review) => (
+                    <ReputationReviewFeedItem key={review.id} review={review} />
+                  ))}
+                </div>
+              </PremiumLockedValues>
+            </div>
+          ) : !sampleReputation && reviewCount === 0 ? (
+            <p className="dashboard-section__desc">
+              Client reviews left on SMOAC show up here.
+            </p>
+          ) : sampleReputation && !hasSampleReputation ? (
+            <p className="dashboard-section__desc">
+              Client reviews left on SMOAC show up here.
+            </p>
+          ) : null}
         </div>
       </DashboardCollapsibleSection>
 
-      <DashboardComingSoonModal
-        open={connectModalOpen}
-        onClose={() => setConnectModalOpen(false)}
-        title={`Connect ${connectSourceLabel}`}
-        description="Other review source connections are coming soon."
-      />
+      {sampleReputation ? (
+        <DashboardComingSoonModal
+          open={connectModalOpen}
+          onClose={() => setConnectModalOpen(false)}
+          title={`Connect ${connectSourceLabel}`}
+          description="Other review source connections are coming soon."
+        />
+      ) : null}
     </>
   );
 }

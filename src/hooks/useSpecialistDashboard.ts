@@ -34,15 +34,16 @@ import {
   markAllSpecialistInquiriesRead,
   markSpecialistInquiryRead,
 } from "@/lib/inquiry/inquiry-inbox";
-import { hideSpecialistInquiryConversation } from "@/lib/inquiry/inquiry-client-preview";
-import { hideInquiryId, listHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
 import {
-  flagInquiryUnreadIds,
+  hideInquiryForViewer,
+  persistInquiryMarkedUnread,
+  subscribeInquiryInbox,
+} from "@/lib/inquiry/inquiry-inbox-state";
+import { listHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
+import {
   isInquiryFlaggedUnread,
   unflagInquiryUnread,
 } from "@/lib/inquiry/inquiry-unread-flag-store";
-import { hideLocalInquiryForSpecialist } from "@/lib/inquiry/inquiry-local-store";
-import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
 import { markAllSpecialistInquiryNotificationsRead } from "@/lib/inquiry/specialist-inquiry-notifications";
 import { ensureSpecialistWelcomeInquiry } from "@/lib/inquiry/specialist-welcome-inquiry";
 import type {
@@ -178,9 +179,14 @@ export function useSpecialistDashboard() {
     /* Same-browser refresh signal after a new inquiry is written. */
     window.addEventListener("smoac:specialist-inquiry-notifications", loadLeads);
     window.addEventListener("smoac:inquiry-updated", loadLeads);
+    const unsubscribe = subscribeInquiryInbox({
+      column: "specialist_id",
+      value: trainerId,
+    });
 
     return () => {
       cancelled = true;
+      unsubscribe();
       window.removeEventListener("focus", loadLeads);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener(
@@ -215,14 +221,9 @@ export function useSpecialistDashboard() {
 
   async function handleHideInquiry(conversationId: string) {
     if (!trainerId || !conversationId) return;
-    hideInquiryId(trainerId, conversationId);
     unflagInquiryUnread(trainerId, conversationId);
-    hideLocalInquiryForSpecialist(conversationId);
-    const result = await hideSpecialistInquiryConversation(conversationId);
-    if (!result.ok && !isDemoInquiryConversationId(conversationId)) {
-      /* Keep it hidden locally even if the remote column is not migrated yet. */
-    }
     setInquiryLeads((prev) => prev.filter((item) => item.id !== conversationId));
+    await hideInquiryForViewer("specialist", trainerId, conversationId);
     if (typeof window !== "undefined") {
       window.dispatchEvent(new Event("smoac:inquiry-updated"));
     }
@@ -248,7 +249,7 @@ export function useSpecialistDashboard() {
     if (!trainerId) return;
     const ids = [...new Set(conversationIds.filter(Boolean))];
     if (ids.length === 0) return;
-    flagInquiryUnreadIds(trainerId, ids);
+    await persistInquiryMarkedUnread("specialist", trainerId, ids);
     setInquiryLeads((prev) =>
       prev.map((item) =>
         ids.includes(item.id) ? { ...item, unread: true } : item
@@ -403,5 +404,6 @@ export function useSpecialistDashboard() {
     handleMarkInquiriesRead,
     handleMarkInquiriesUnread,
     isHydrated,
+    showSampleMetrics: useDemoData,
   };
 }

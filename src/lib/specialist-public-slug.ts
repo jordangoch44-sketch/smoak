@@ -1,4 +1,5 @@
 import { trainers as seedTrainers } from "@/data/trainers";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import { getApprovedSpecialistProfilesSnapshot } from "@/lib/approved-specialist-profiles-store";
 import { listSpecialistApplications } from "@/lib/specialist-application-storage";
 import {
@@ -28,9 +29,11 @@ export function collectTakenSpecialistSlugs(excludeId?: string): Set<string> {
     taken.add(key);
   };
 
-  for (const trainer of seedTrainers) {
-    claim(trainer.id, trainer.id);
-    claim(trainer.slug, trainer.id);
+  if (!isMarketplaceSupabaseActive()) {
+    for (const trainer of seedTrainers) {
+      claim(trainer.id, trainer.id);
+      claim(trainer.slug, trainer.id);
+    }
   }
 
   for (const trainer of Object.values(getApprovedSpecialistProfilesSnapshot())) {

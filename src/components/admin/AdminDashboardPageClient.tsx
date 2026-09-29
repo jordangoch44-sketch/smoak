@@ -11,6 +11,7 @@ import { AdminJarvisFloatingWidget } from "@/components/admin/AdminJarvisFloatin
 import { AdminExecutiveRevenueSnapshot } from "@/components/admin/AdminExecutiveRevenueSnapshot";
 import { AdminApplicationsPanel } from "@/components/admin/panels/AdminApplicationsPanel";
 import { AdminClientsPanel } from "@/components/admin/panels/AdminClientsPanel";
+import { AdminReportsPanel } from "@/components/admin/panels/AdminReportsPanel";
 import { AdminOwnerRevenuePanel } from "@/components/admin/panels/AdminOwnerRevenuePanel";
 import { AdminSettingsPanel } from "@/components/admin/panels/AdminSettingsPanel";
 import { AdminSpecialistsPanel } from "@/components/admin/panels/AdminSpecialistsPanel";
@@ -433,6 +434,8 @@ export function AdminDashboardPageClient() {
             {resolvedSection === "clients" && permissions.canViewClients ? (
               <AdminClientsPanel canDelete={isOwnerAdmin} />
             ) : null}
+
+            {resolvedSection === "reports" ? <AdminReportsPanel /> : null}
 
             {resolvedSection === "email" && permissions.canManageEmails ? (
               <AdminEmailPanel />

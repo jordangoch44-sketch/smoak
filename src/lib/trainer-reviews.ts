@@ -4,14 +4,15 @@
  * Powers: `ProfileReviewMeta`, `TrainerProfilePageClient` source tags, legacy `Reviews`
  * list counts, `computeTrainerReviewCount` in catalog data.
  *
- * Data: static `TRAINER_DEMO_REVIEW_SOURCES` + optional `trainer.reviewSources` on seed
- * trainers. Not live Supabase.
+ * Data: `trainer.reviewSources` on the profile. The demo source map applies only
+ * when Supabase is off.
  *
  * Do **not** merge counts with `lib/reviews/specialist-reviews-client.ts` (live SMOAC) or
  * `lib/specialist-reputation.ts` (dashboard mock hub). Hero shows catalog total separately
  * from the SMOAC line in `ProfileReviewMeta`.
  */
 import { TRAINER_DEMO_REVIEW_SOURCES } from "@/constants/trainer-reputation-demo";
+import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";
 import type { Trainer, TrainerReviewSources } from "@/types/trainer";
 
 export type { TrainerReviewSources };
@@ -49,15 +50,25 @@ export function getDemoReviewSourcesForTrainer(
   return TRAINER_DEMO_REVIEW_SOURCES[trainerId];
 }
 
+function reviewSourcesForTrainer(
+  trainer: Pick<Trainer, "reviewSources" | "id">
+): TrainerReviewSources | undefined {
+  if (trainer.reviewSources && hasPositiveSourceCounts(trainer.reviewSources)) {
+    return trainer.reviewSources;
+  }
+  if (isMarketplaceSupabaseActive()) return undefined;
+  return getDemoReviewSourcesForTrainer(trainer.id);
+}
+
 export function resolveTrainerReviewSources(trainer: Trainer): TrainerReviewSources | undefined {
-  const sources = trainer.reviewSources ?? getDemoReviewSourcesForTrainer(trainer.id);
+  const sources = reviewSourcesForTrainer(trainer);
   return sources && hasPositiveSourceCounts(sources) ? sources : undefined;
 }
 
 export function computeTrainerReviewCount(
   trainer: Pick<Trainer, "reviewCount" | "reviewSources" | "id">
 ): number {
-  const sources = trainer.reviewSources ?? getDemoReviewSourcesForTrainer(trainer.id);
+  const sources = reviewSourcesForTrainer(trainer);
   if (sources && hasPositiveSourceCounts(sources)) {
     return sumReviewSources(sources);
   }

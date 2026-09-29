@@ -20,7 +20,7 @@ export function TrainerVerifiedCheck({
       <VerifiedBadgeMark
         className="trainer-verified__mark trainer-card__verified"
         iconClassName="trainer-card__verified-icon"
-        title="Verified specialist"
+        title="SMOAC Pro"
       />
     </span>
   );

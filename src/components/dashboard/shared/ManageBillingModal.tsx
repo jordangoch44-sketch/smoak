@@ -18,7 +18,7 @@ import type {
 } from "@/lib/stripe/manage-billing-types";
 import { createEmbeddedSubscriptionCheckout } from "@/lib/stripe/subscription-checkout";
 import type { SmoacMembershipProduct } from "@/lib/stripe/products";
-import { accountDeletionMailto } from "@/lib/site-contact";
+import { DeleteAccountButton } from "@/components/dashboard/shared/DeleteAccountButton";
 import { PageWaitState } from "@/components/brand/PageWaitState";
 import { DashboardButton } from "./DashboardButton";
 import {
@@ -497,12 +497,10 @@ export function ManageBillingModal({
                     </FastActivateButton>
                   ) : null}
 
-                  <a
+                  <DeleteAccountButton
+                    role="specialist"
                     className="dashboard-billing__link"
-                    href={accountDeletionMailto("specialist")}
-                  >
-                    Request account deletion
-                  </a>
+                  />
                 </>
               ) : null}
             </>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { formatProviderLocation } from "@/lib/provider-location";
+import { formatIndexableProviderLocation } from "@/lib/seo/specialist-search-places";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { isLikelyVideoUrl } from "@/lib/media/video-file";
 import { absoluteUrl } from "@/lib/seo/site-url";
@@ -38,7 +38,7 @@ export function buildTrainerPageMetadata(trainer: Trainer): Metadata {
     trainer.profession?.trim() ||
     "Wellness Specialist";
   const location =
-    formatProviderLocation(trainer) ||
+    formatIndexableProviderLocation(trainer) ||
     trainer.city?.trim() ||
     trainer.location?.trim() ||
     "";
@@ -59,6 +59,7 @@ export function buildTrainerPageMetadata(trainer: Trainer): Metadata {
   return {
     title,
     description,
+    robots: { index: true, follow: true },
     alternates: { canonical },
     openGraph: {
       title: trainer.name,

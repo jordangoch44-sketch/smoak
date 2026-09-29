@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MARKETPLACE_CITIES } from "@/data/locations";
+import { isMarketplaceCity, MARKETPLACE_CITIES } from "@/data/locations";
+import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 import { JsonLd } from "@/components/seo/JsonLd";
 import {
   MARKETPLACE_PROFESSION_LANDINGS,
@@ -11,14 +12,13 @@ import {
   marketplaceCityHubPath,
   marketplaceProfessionLandingPath,
 } from "@/lib/seo/marketplace-landing";
-import type { MarketplaceCity } from "@/data/locations";
 import type { MarketplaceProfessionLanding } from "@/lib/seo/marketplace-slugs";
 import { formatTrainerSessionPrice } from "@/lib/session-price";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
 interface MarketplaceLandingShellProps {
-  city: MarketplaceCity;
+  city: string;
   profession?: MarketplaceProfessionLanding;
   trainers: Trainer[];
   jsonLd: Record<string, unknown>[];
@@ -42,6 +42,13 @@ export function MarketplaceLandingShell({
   title,
   lede,
 }: MarketplaceLandingShellProps) {
+  const professionLinks = isMarketplaceCity(city)
+    ? MARKETPLACE_PROFESSION_LANDINGS
+    : MARKETPLACE_PROFESSION_LANDINGS.filter((entry) =>
+        trainers.some((trainer) =>
+          trainerMatchesProfessionCategory(trainer, entry.profession)
+        )
+      );
   const exploreHref = buildExploreHrefForLanding(city, profession);
   const cityHubHref = marketplaceCityHubPath(city);
 
@@ -87,7 +94,7 @@ export function MarketplaceLandingShell({
               Browse by profession in {city}
             </h2>
             <ul className="seo-landing__chip-list">
-              {MARKETPLACE_PROFESSION_LANDINGS.map((entry) => (
+              {professionLinks.map((entry) => (
                 <li key={entry.slug}>
                   <Link
                     href={marketplaceProfessionLandingPath(city, entry)}

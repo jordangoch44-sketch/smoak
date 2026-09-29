@@ -13,9 +13,12 @@ import {
   type ClientInquiryListItem,
 } from "@/lib/inquiry/inquiry-inbox";
 import { trackInquiryEvent } from "@/lib/inquiry/inquiry-analytics";
-import { hideInquiryId } from "@/lib/inquiry/inquiry-hidden-store";
 import {
-  flagInquiryUnreadIds,
+  hideInquiryForViewer,
+  persistInquiryMarkedUnread,
+  subscribeInquiryInbox,
+} from "@/lib/inquiry/inquiry-inbox-state";
+import {
   unflagInquiryUnread,
   unflagInquiryUnreadIds,
 } from "@/lib/inquiry/inquiry-unread-flag-store";
@@ -94,7 +97,12 @@ export function ClientDashboardPageClient() {
     window.addEventListener("focus", loadMessages);
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("smoac:inquiry-updated", loadMessages);
+    const unsubscribe = subscribeInquiryInbox({
+      column: "client_user_id",
+      value: userId,
+    });
     return () => {
+      unsubscribe();
       window.removeEventListener("focus", loadMessages);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("smoac:inquiry-updated", loadMessages);
@@ -211,12 +219,12 @@ export function ClientDashboardPageClient() {
     }
   }
 
-  function handleHideClientInquiry(id: string) {
+  async function handleHideClientInquiry(id: string) {
     if (!session?.userId || !id) return;
-    hideInquiryId(session.userId, id);
     unflagInquiryUnread(session.userId, id);
     setMessages((prev) => prev.filter((item) => item.id !== id));
     if (openConversationId === id) setOpenConversationId(null);
+    await hideInquiryForViewer("client", session.userId, id);
   }
 
   async function handleMarkClientInquiriesRead(ids: string[]) {
@@ -234,11 +242,11 @@ export function ClientDashboardPageClient() {
     );
   }
 
-  function handleMarkClientInquiriesUnread(ids: string[]) {
+  async function handleMarkClientInquiriesUnread(ids: string[]) {
     if (!session?.userId) return;
     const unique = [...new Set(ids.filter(Boolean))];
     if (unique.length === 0) return;
-    flagInquiryUnreadIds(session.userId, unique);
+    await persistInquiryMarkedUnread("client", session.userId, unique);
     setMessages((prev) =>
       prev.map((item) =>
         unique.includes(item.id) ? { ...item, unread: true } : item

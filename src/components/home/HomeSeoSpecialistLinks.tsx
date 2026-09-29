@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
-import { formatProviderLocation } from "@/lib/provider-location";
 import {
   cityToSlug,
   findPathForProfession,
 } from "@/lib/seo/marketplace-slugs";
+import {
+  formatIndexableProviderLocation,
+  primarySearchPlaces,
+} from "@/lib/seo/specialist-search-places";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
 import type { Trainer } from "@/types/trainer";
 
@@ -30,13 +33,9 @@ export function HomeSeoSpecialistLinks({ trainers }: HomeSeoSpecialistLinksProps
                 resolveTrainerProfessionCategory(trainer) ||
                 trainer.profession ||
                 "Specialist";
-              const location = formatProviderLocation(trainer);
+              const location = formatIndexableProviderLocation(trainer);
               const professionLanding = findPathForProfession(profession);
-              const citySlug = trainer.city ? cityToSlug(trainer.city) : "";
-              const categoryHref =
-                professionLanding && citySlug
-                  ? `/find/${citySlug}/${professionLanding.slug}`
-                  : null;
+              const places = primarySearchPlaces(trainer, 3);
               return (
                 <li key={trainer.id}>
                   <Link href={trainerProfilePath(trainer)}>
@@ -45,14 +44,19 @@ export function HomeSeoSpecialistLinks({ trainers }: HomeSeoSpecialistLinksProps
                   <span className="home-seo-links__meta">
                     {[profession, location].filter(Boolean).join(" · ")}
                   </span>
-                  {categoryHref && professionLanding ? (
-                    <>
-                      {" · "}
-                      <Link href={categoryHref} className="home-seo-links__category">
-                        {professionLanding.pluralLabel} in {trainer.city}
-                      </Link>
-                    </>
-                  ) : null}
+                  {professionLanding
+                    ? places.map((place) => (
+                        <span key={place}>
+                          {" · "}
+                          <Link
+                            href={`/find/${cityToSlug(place)}/${professionLanding.slug}`}
+                            className="home-seo-links__category"
+                          >
+                            {professionLanding.pluralLabel} in {place}
+                          </Link>
+                        </span>
+                      ))
+                    : null}
                 </li>
               );
             })}

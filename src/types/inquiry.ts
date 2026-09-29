@@ -15,6 +15,12 @@ export interface InquiryConversationRow {
   client_avatar_url?: string;
   /** Specialist inbox hide — client still has the thread. */
   specialist_hidden_at?: string | null;
+  /** Client inbox hide — specialist still has the thread. */
+  client_hidden_at?: string | null;
+  /** Client “mark unread”. Cleared on open or mark read. */
+  client_marked_unread_at?: string | null;
+  /** Specialist “mark unread”. Cleared on open or mark read. */
+  specialist_marked_unread_at?: string | null;
   last_message_at: string;
   created_at: string;
   updated_at: string;

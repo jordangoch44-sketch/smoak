@@ -21,6 +21,8 @@ export interface PurgeSpecialistAccountInput {
   callerUserId: string;
   /** Default true — frees the email for a fresh signup. */
   deleteAuthUser?: boolean;
+  /** Signed-in specialist deleting their own account. */
+  selfService?: boolean;
 }
 
 /**
@@ -86,7 +88,7 @@ export async function purgeSpecialistAccount(
     }
   }
 
-  if (userId && userId === input.callerUserId) {
+  if (userId && userId === input.callerUserId && !input.selfService) {
     return {
       ok: false,
       message: "You cannot delete your own admin-linked specialist account.",

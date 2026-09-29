@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { TrainerProfilePageClient } from "@/components/profile/TrainerProfilePageClient";
 import {
@@ -11,6 +11,12 @@ import { serializeReviewAggregates } from "@/lib/reviews/specialist-review-types
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { buildTrainerPageMetadata } from "@/lib/seo/trainer-metadata";
 import { buildTrainerProfileJsonLd } from "@/lib/seo/trainer-json-ld";
+import {
+  decodePublicTrainerKey,
+  preferCanonicalTrainerSlug,
+  publicTrainerSlug,
+  trainerProfilePath,
+} from "@/lib/trainer-profile-path";
 import { trainers } from "@/data/trainers";
 
 interface PageProps {
@@ -29,9 +35,12 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const trainer = await loadPublicTrainerByIdForServer(id);
+  const [{ trainers: catalog }, trainer] = await Promise.all([
+    loadPublicCatalogForServer(),
+    loadPublicTrainerByIdForServer(id),
+  ]);
   if (!trainer) return { title: "Specialist Not Found" };
-  return buildTrainerPageMetadata(trainer);
+  return buildTrainerPageMetadata(preferCanonicalTrainerSlug(trainer, catalog));
 }
 
 export default async function TrainerProfilePage({ params }: PageProps) {
@@ -42,27 +51,34 @@ export default async function TrainerProfilePage({ params }: PageProps) {
   ]);
   if (!trainer) notFound();
 
-  const city = trainer.city.trim().toLowerCase();
+  const published = preferCanonicalTrainerSlug(trainer, catalog);
+  const requested = decodePublicTrainerKey(id);
+  const canonicalKey = publicTrainerSlug(published);
+  if (requested.toLowerCase() !== canonicalKey.toLowerCase()) {
+    permanentRedirect(trainerProfilePath(published));
+  }
+
+  const city = published.city.trim().toLowerCase();
   const cityPeers =
     city.length > 0
       ? catalog.filter((t) => t.city.trim().toLowerCase() === city)
-      : [trainer];
+      : [published];
   const peerIds =
-    cityPeers.length > 0 ? cityPeers.map((t) => t.id) : [trainer.id];
+    cityPeers.length > 0 ? cityPeers.map((t) => t.id) : [published.id];
   const aggregates = await loadSmoacReviewAggregatesForServer(peerIds);
   const initialCityRanking = getLiveTrainerCityRanking(
-    trainer,
-    cityPeers.length > 0 ? cityPeers : [trainer],
+    published,
+    cityPeers.length > 0 ? cityPeers : [published],
     aggregates
   );
 
   return (
     <>
-      <JsonLd data={buildTrainerProfileJsonLd(trainer)} />
+      <JsonLd data={buildTrainerProfileJsonLd(published)} />
       <TrainerProfilePageClient
-        trainerId={trainer.id}
-        initialTrainer={trainer}
-        initialCatalog={cityPeers.length > 0 ? cityPeers : [trainer]}
+        trainerId={published.id}
+        initialTrainer={published}
+        initialCatalog={cityPeers.length > 0 ? cityPeers : [published]}
         initialAggregates={serializeReviewAggregates(aggregates)}
         initialCityRanking={initialCityRanking}
       />

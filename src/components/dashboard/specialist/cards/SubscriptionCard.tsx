@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 import { SMOAC_PRO_PRICE_LABEL } from "@/lib/specialist-premium";
 import { membershipPlanLabel } from "@/lib/stripe/products";
-import { accountDeletionMailto } from "@/lib/site-contact";
+import { DeleteAccountButton } from "@/components/dashboard/shared/DeleteAccountButton";
 import { PageWaitState } from "@/components/brand/PageWaitState";
 import { DashboardButton, DashboardSection, ManageBillingModal } from "@/components/dashboard/shared";
 
@@ -223,12 +223,10 @@ export function SubscriptionCard({
         >
           Manage billing →
         </DashboardButton>
-        <a
-          className="dashboard-account-delete-link"
-          href={accountDeletionMailto("specialist")}
-        >
-          Request account deletion
-        </a>
+          <DeleteAccountButton
+            role="specialist"
+            className="dashboard-account-delete-link"
+          />
       </div>
       <ManageBillingModal
         open={billingOpen}

@@ -248,7 +248,9 @@ export function TrainerProfileSheet({
   }, [exited, intercept, onProfilePath, trainerId]);
 
   useLayoutEffect(() => {
-    if (!isSheetViewport || !overlayActive) return;
+    /* Direct /trainers/[slug] is a real page. The off-screen sheet is only
+     * the soft-nav intercept, so crawlers are not left on a hidden shell. */
+    if (!intercept || !isSheetViewport || !overlayActive) return;
 
     const syncVh = () => {
       vhRef.current = viewportHeight();
@@ -299,20 +301,20 @@ export function TrainerProfileSheet({
       unlockSheetChrome(owner);
       clearSheetDismissing(owner);
     };
-  }, [exited, isSheetViewport, overlayActive, reduceMotion, y]);
+  }, [exited, intercept, isSheetViewport, overlayActive, reduceMotion, y]);
 
   useLayoutEffect(() => {
-    if (!isSheetViewport || !trainerId || exited || dismissingRef.current) {
+    if (!intercept || !isSheetViewport || !trainerId || exited || dismissingRef.current) {
       return;
     }
     const body = rootRef.current?.querySelector(".profile-sheet__body");
     if (body instanceof HTMLElement) {
       body.scrollTop = 0;
     }
-  }, [exited, hydrated, isSheetViewport, trainerId]);
+  }, [exited, hydrated, intercept, isSheetViewport, trainerId]);
 
   useEffect(() => {
-    if (!isSheetViewport) return;
+    if (!intercept || !isSheetViewport) return;
 
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
@@ -330,14 +332,14 @@ export function TrainerProfileSheet({
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [dismiss, isSheetViewport]);
+  }, [dismiss, intercept, isSheetViewport]);
 
   /*
    * Browser back: soft-nav keeps this tree mounted briefly. Run the same
    * slide-down; skip a second router.back() (history already moved).
    */
   useEffect(() => {
-    if (!isSheetViewport) return;
+    if (!intercept || !isSheetViewport) return;
 
     function onPopState() {
       if (programmaticNavRef.current) return;
@@ -348,12 +350,14 @@ export function TrainerProfileSheet({
 
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [exited, isSheetViewport, runDismissAnimation]);
+  }, [exited, intercept, isSheetViewport, runDismissAnimation]);
+
+  /* Canonical profile URL — visible document, no sign-in and no map tap. */
+  if (!intercept) {
+    return <>{children}</>;
+  }
 
   if (!isSheetViewport) {
-    if (!intercept) {
-      return <>{children}</>;
-    }
     if (!overlayActive) {
       return null;
     }

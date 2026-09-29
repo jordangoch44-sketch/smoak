@@ -2889,6 +2889,36 @@ body.review-modal-open .specialist-live-chrome {
   color: rgba(255, 255, 255, 0.48);
 }
 
+.profile-service-area__search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.profile-service-area__search-line {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.profile-service-area__search-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-service-area__search-links a {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.82rem;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
 .profile-details-map {
   position: relative;
   isolation: isolate;

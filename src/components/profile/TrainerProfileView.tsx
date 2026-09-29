@@ -168,8 +168,10 @@ export function TrainerProfileView({
             }
             inquire={
               <ProfileContactCta
+                specialistId={trainer.id}
                 specialistName={trainer.name}
                 onContact={onInquire}
+                showReport={!isSpecialistLive}
               />
             }
           />

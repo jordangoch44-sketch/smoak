@@ -61,7 +61,7 @@ export function buildExploreMapSinglePopupHtml(trainer: Trainer): string {
             <div class="explore-map-popup__copy">
               <div class="explore-map-popup__name-row">
                 <p class="explore-map-popup__name">${escapeExploreMapHtml(trainer.name)}</p>
-                ${isTrainerVerified(trainer) ? `<span class="explore-map-popup__verified-badge" title="Verified Specialist" aria-label="Verified Specialist"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5L9.5 17L19 7"/></svg></span>` : ""}
+                ${isTrainerVerified(trainer) ? `<span class="explore-map-popup__verified-badge" title="SMOAC Pro" aria-label="SMOAC Pro"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5L9.5 17L19 7"/></svg></span>` : ""}
               </div>
               <p class="explore-map-popup__meta">${escapeExploreMapHtml(profession)}</p>
               ${
@@ -103,7 +103,7 @@ export function buildExploreMapClusterPopupHtml(cluster: ExploreMapCluster): str
         <div class="explore-map-cluster-card__header">
           <div class="explore-map-cluster-card__photo-wrap">
             ${photoHtml}
-            ${isTrainerVerified(trainer) ? `<span class="explore-map-cluster-card__verified-badge" title="Verified Specialist" aria-label="Verified Specialist"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5L9.5 17L19 7"/></svg></span>` : ""}
+            ${isTrainerVerified(trainer) ? `<span class="explore-map-cluster-card__verified-badge" title="SMOAC Pro" aria-label="SMOAC Pro"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5L9.5 17L19 7"/></svg></span>` : ""}
           </div>
           <div class="explore-map-cluster-card__header-text">
             <h4 class="explore-map-cluster-card__name">${escapeExploreMapHtml(trainer.name)}</h4>

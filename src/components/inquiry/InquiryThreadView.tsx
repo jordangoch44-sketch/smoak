@@ -12,6 +12,7 @@ import type { InquiryThreadPayload } from "@/types/inquiry";
 import { INQUIRY_MESSAGE_MAX_LENGTH } from "@/lib/inquiry-options";
 import { ChevronLeftIcon, SendIcon } from "@/components/ui/icons";
 import { InquiryAvatar } from "./InquiryAvatar";
+import { TrustActionSheet } from "@/components/trust/TrustActionSheet";
 import { cn } from "@/lib/utils";
 
 interface InquiryThreadViewProps {
@@ -22,6 +23,11 @@ interface InquiryThreadViewProps {
   layout?: "card" | "page";
   onBack: () => void;
   onSend: (message: string) => void;
+  trust?: {
+    specialistId: string;
+    conversationId: string;
+    counterpartName: string;
+  } | null;
 }
 
 function formatBubbleTime(iso: string): string {
@@ -38,12 +44,14 @@ export function InquiryThreadView({
   layout = "card",
   onBack,
   onSend,
+  trust = null,
 }: InquiryThreadViewProps) {
   const titleId = useId();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const [trustMode, setTrustMode] = useState<"report" | "block" | null>(null);
 
   const counterpartName =
     viewer === "client" ? thread.specialistName : thread.clientFirstName;
@@ -113,6 +121,7 @@ export function InquiryThreadView({
   const topicLine = thread.topicLabels.join(" · ");
 
   return (
+    <>
     <div
       className={cn(
         "inquiry-thread",
@@ -149,6 +158,24 @@ export function InquiryThreadView({
             </p>
           ) : null}
         </div>
+        {trust ? (
+          <div className="inquiry-thread__trust-row">
+            <button
+              type="button"
+              className="inquiry-thread__trust"
+              onClick={() => setTrustMode("report")}
+            >
+              Report
+            </button>
+            <button
+              type="button"
+              className="inquiry-thread__trust"
+              onClick={() => setTrustMode("block")}
+            >
+              Block
+            </button>
+          </div>
+        ) : null}
       </header>
 
       <div className="inquiry-thread__scroller" ref={scrollerRef}>
@@ -233,5 +260,16 @@ export function InquiryThreadView({
         <p className="inquiry-thread__readonly">Demo conversation — replies send on live accounts.</p>
       )}
     </div>
+    {trust && trustMode ? (
+      <TrustActionSheet
+        mode={trustMode}
+        surface="thread"
+        specialistId={trust.specialistId}
+        conversationId={trust.conversationId}
+        counterpartName={trust.counterpartName}
+        onClose={() => setTrustMode(null)}
+      />
+    ) : null}
+    </>
   );
 }

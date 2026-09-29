@@ -2,12 +2,18 @@ import type { MetadataRoute } from "next";
 import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { absoluteUrl } from "@/lib/seo/site-url";
+import { isMarketplaceCity, MARKETPLACE_CITIES } from "@/data/locations";
+import { trainerMatchesProfessionCategory } from "@/lib/profession-category";
 import {
   cityToSlug,
   listMarketplaceLandingPaths,
+  MARKETPLACE_PROFESSION_LANDINGS,
 } from "@/lib/seo/marketplace-slugs";
+import {
+  publishedSearchPlaces,
+  trainerServesSearchPlace,
+} from "@/lib/seo/specialist-search-places";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
-import { MARKETPLACE_CITIES } from "@/data/locations";
 
 const STATIC_ROUTES: Array<{
   path: string;
@@ -57,20 +63,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  const cityHubEntries: MetadataRoute.Sitemap = MARKETPLACE_CITIES.map((city) => ({
+  const placeNames = new Set<string>(MARKETPLACE_CITIES);
+  for (const trainer of trainers) {
+    for (const place of publishedSearchPlaces(trainer)) placeNames.add(place);
+  }
+
+  const cityHubEntries: MetadataRoute.Sitemap = [...placeNames].map((city) => ({
     url: absoluteUrl(`/find/${cityToSlug(city)}`),
     lastModified,
     changeFrequency: "weekly",
     priority: 0.85,
   }));
 
-  const professionLandingEntries: MetadataRoute.Sitemap =
-    listMarketplaceLandingPaths().map(({ citySlug, professionSlug }) => ({
+  const professionPaths = new Map<string, { citySlug: string; professionSlug: string }>();
+  for (const path of listMarketplaceLandingPaths()) {
+    professionPaths.set(`${path.citySlug}/${path.professionSlug}`, path);
+  }
+  const extraPlaces = new Set<string>();
+  for (const trainer of trainers) {
+    for (const place of publishedSearchPlaces(trainer)) {
+      if (!isMarketplaceCity(place)) extraPlaces.add(place);
+    }
+  }
+  for (const place of extraPlaces) {
+    for (const profession of MARKETPLACE_PROFESSION_LANDINGS) {
+      const matches = trainers.some(
+        (trainer) =>
+          trainerServesSearchPlace(trainer, place) &&
+          trainerMatchesProfessionCategory(trainer, profession.profession)
+      );
+      if (!matches) continue;
+      const path = {
+        citySlug: cityToSlug(place),
+        professionSlug: profession.slug,
+      };
+      professionPaths.set(`${path.citySlug}/${path.professionSlug}`, path);
+    }
+  }
+
+  const professionLandingEntries: MetadataRoute.Sitemap = [...professionPaths.values()].map(
+    ({ citySlug, professionSlug }) => ({
       url: absoluteUrl(`/find/${citySlug}/${professionSlug}`),
       lastModified,
       changeFrequency: "weekly",
       priority: 0.82,
-    }));
+    })
+  );
 
   return [
     ...staticEntries,

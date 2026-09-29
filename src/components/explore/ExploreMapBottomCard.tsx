@@ -417,7 +417,7 @@ export function ExploreMapBottomCard({
                     {verified ? (
                       <VerifiedBadgeMark
                         className="explore-bottom-card__verified-badge"
-                        title="Verified Specialist"
+                        title="SMOAC Pro"
                       />
                     ) : null}
                   </div>

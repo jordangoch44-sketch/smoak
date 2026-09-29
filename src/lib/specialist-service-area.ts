@@ -387,6 +387,22 @@ export function buildLocationTravelDisplay(
     });
   }
 
+  const areaNames = uniqueTrimmed(
+    Array.isArray(trainer.serviceArea) ? trainer.serviceArea : []
+  );
+  const areaDescription = trainer.serviceAreaDescription?.trim() ?? "";
+  const areaValue = areaDescription || areaNames.join(", ");
+  const areaAlreadyShown = areaValue
+    .toLowerCase()
+    .replace(/\s+/g, " ") === placeValue.toLowerCase().replace(/\s+/g, " ");
+  if (areaValue && !areaAlreadyShown) {
+    facts.push({
+      label: "Service area",
+      value: areaValue,
+      icon: "place",
+    });
+  }
+
   const lat = trainer.latitude;
   const lng = trainer.longitude;
   const hasCoords =

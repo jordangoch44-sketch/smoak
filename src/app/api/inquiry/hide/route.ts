@@ -9,10 +9,11 @@ export const runtime = "nodejs";
 
 interface HideBody {
   conversationId?: string;
+  viewer?: "client" | "specialist";
 }
 
 /**
- * Hide a conversation from the specialist inbox. The client's thread stays.
+ * Hide a conversation from one inbox. The other party's thread stays.
  */
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();
@@ -72,11 +73,20 @@ export async function POST(request: Request) {
     );
   }
 
+  const viewer = body.viewer === "client" ? "client" : "specialist";
   const specialistUserId =
     typeof conversation.specialist_user_id === "string"
       ? conversation.specialist_user_id.trim()
       : "";
-  if (
+
+  if (viewer === "client") {
+    if (conversation.client_user_id !== user.id) {
+      return NextResponse.json(
+        { ok: false, message: "Could not delete this conversation." },
+        { status: 403 }
+      );
+    }
+  } else if (
     conversation.client_user_id === user.id ||
     (specialistUserId && specialistUserId !== user.id)
   ) {
@@ -86,13 +96,35 @@ export async function POST(request: Request) {
     );
   }
 
-  const { error } = await supabase
+  const now = new Date().toISOString();
+  const hiddenColumn =
+    viewer === "client" ? "client_hidden_at" : "specialist_hidden_at";
+  const unreadColumn =
+    viewer === "client"
+      ? "client_marked_unread_at"
+      : "specialist_marked_unread_at";
+
+  let { error } = await supabase
     .from("inquiry_conversations")
-    .update({ specialist_hidden_at: new Date().toISOString() })
+    .update({ [hiddenColumn]: now, [unreadColumn]: null })
     .eq("id", conversationId);
 
+  if (
+    error &&
+    /marked_unread_at/i.test(error.message) &&
+    /42703|column.*does not exist|PGRST204|schema cache/i.test(error.message)
+  ) {
+    const retry = await supabase
+      .from("inquiry_conversations")
+      .update({ [hiddenColumn]: now })
+      .eq("id", conversationId);
+    error = retry.error;
+  }
+
   if (error) {
-    if (/42703|column.*does not exist|PGRST204/i.test(error.message)) {
+    if (
+      /42703|column.*does not exist|PGRST204|schema cache/i.test(error.message)
+    ) {
       return NextResponse.json({ ok: true, localOnly: true });
     }
     return NextResponse.json(

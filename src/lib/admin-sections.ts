@@ -4,6 +4,7 @@ export const ADMIN_SECTIONS = [
   { id: "applications", label: "Applications" },
   { id: "specialists", label: "Specialists" },
   { id: "clients", label: "Clients" },
+  { id: "reports", label: "Reports" },
   { id: "email", label: "Email" },
   { id: "outreach", label: "Outreach" },
   { id: "revenue", label: "Revenue" },

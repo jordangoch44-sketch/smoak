@@ -31,6 +31,12 @@ import {
   isInquiryActionId,
   labelsForInquiryTopics,
 } from "@/lib/inquiry-options";
+import {
+  clearInquiryMarkedUnread,
+  importLocalInquiryInboxFlags,
+  isNewInboxColumnError,
+  noteNewInboxColumnsMissing,
+} from "@/lib/inquiry/inquiry-inbox-state";
 import { markSpecialistInquiryNotificationRead } from "@/lib/inquiry/specialist-inquiry-notifications";
 import { isInquiryHidden, listHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
 import {
@@ -158,7 +164,9 @@ async function fetchSpecialistConversations(
       .limit(5);
 
     const clientMessages = (messages as InquiryMessageRow[] | null) ?? [];
-    const unread = clientMessages.some((m) => !m.is_read);
+    const unread =
+      clientMessages.some((m) => !m.is_read) ||
+      Boolean(conversation.specialist_marked_unread_at);
     results.push({
       conversation,
       unread,
@@ -203,16 +211,31 @@ async function fetchClientConversations(
   supabase: SupabaseClient,
   clientUserId: string
 ): Promise<ClientInquiryListItem[]> {
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("inquiry_conversations")
     .select("*")
     .eq("client_user_id", clientUserId)
+    .is("client_hidden_at", null)
     .order("last_message_at", { ascending: false })
     .limit(20);
 
+  if (error && isNewInboxColumnError(error.message)) {
+    noteNewInboxColumnsMissing();
+    const retry = await supabase
+      .from("inquiry_conversations")
+      .select("*")
+      .eq("client_user_id", clientUserId)
+      .order("last_message_at", { ascending: false })
+      .limit(20);
+    data = retry.data;
+    error = retry.error;
+  }
+
   if (error || !data) return [];
 
-  const rows = data as InquiryConversationRow[];
+  const rows = (data as InquiryConversationRow[]).filter(
+    (conversation) => !conversation.client_hidden_at
+  );
   const results: ClientInquiryListItem[] = [];
 
   for (const conversation of rows) {
@@ -225,9 +248,9 @@ async function fetchClientConversations(
 
     const list = (messages as InquiryMessageRow[] | null) ?? [];
     const latest = list[0];
-    const unreadSpecialist = list.some(
-      (m) => m.sender_role === "specialist" && !m.is_read
-    );
+    const unreadSpecialist =
+      list.some((m) => m.sender_role === "specialist" && !m.is_read) ||
+      Boolean(conversation.client_marked_unread_at);
 
     results.push(
       conversationToClientItem(conversation, {
@@ -354,13 +377,15 @@ export async function loadSpecialistInquiryLeads(
           specialistId,
           record.messages.some(
             (m) => m.sender_role === "client" && !m.is_read
-          ),
+          ) || Boolean(record.conversation.specialist_marked_unread_at),
           record.conversation.id
         ),
         latestBody: latest?.body,
       });
     });
   }
+
+  await importLocalInquiryInboxFlags("specialist", specialistId);
 
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return [];
@@ -424,12 +449,15 @@ export async function markInquiryThreadRead(
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return;
 
-  await supabase
-    .from("inquiry_messages")
-    .update({ is_read: true })
-    .eq("conversation_id", conversationId)
-    .eq("sender_role", counterpart)
-    .eq("is_read", false);
+  await Promise.all([
+    supabase
+      .from("inquiry_messages")
+      .update({ is_read: true })
+      .eq("conversation_id", conversationId)
+      .eq("sender_role", counterpart)
+      .eq("is_read", false),
+    clearInquiryMarkedUnread(readerRole, conversationId),
+  ]);
 }
 
 export async function markSpecialistInquiryRead(
@@ -480,14 +508,17 @@ export async function loadClientInquiryMessages(
       listLocalInquiriesForClient(clientUserId).map((record) => {
         const latest = [...record.messages].reverse()[0];
         return conversationToClientItem(record.conversation, {
-          unread: record.messages.some(
-            (m) => m.sender_role === "specialist" && !m.is_read
-          ),
+          unread:
+            record.messages.some(
+              (m) => m.sender_role === "specialist" && !m.is_read
+            ) || Boolean(record.conversation.client_marked_unread_at),
           latestBody: latest?.body,
         });
       })
     );
   }
+
+  await importLocalInquiryInboxFlags("client", clientUserId);
 
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return [];

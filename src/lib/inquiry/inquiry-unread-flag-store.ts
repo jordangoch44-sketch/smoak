@@ -44,7 +44,11 @@ export function isInquiryFlaggedUnread(
   return readIds(specialistId).includes(id);
 }
 
-/** Specialist-only “read later” — does not change the client’s unread state. */
+/**
+ * Offline / pre-migration “read later”.
+ * Live accounts use inquiry_conversations.client_marked_unread_at or
+ * specialist_marked_unread_at. Does not change the other party’s unread state.
+ */
 export function flagInquiryUnread(
   specialistId: string,
   conversationId: string
