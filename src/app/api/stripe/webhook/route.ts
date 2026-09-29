@@ -9,7 +9,10 @@ import {
   clearSpecialistSubscription,
   syncSpecialistSubscription,
 } from "@/lib/stripe/sync-subscription";
-import { activateBoostCampaign } from "@/lib/stripe/activate-boost-campaign";
+import {
+  activateBoostCampaign,
+  revokeBoostCampaignTime,
+} from "@/lib/stripe/activate-boost-campaign";
 import { isBoostCampaignProduct } from "@/lib/boost-campaign";
 
 export const runtime = "nodejs";
@@ -158,15 +161,12 @@ export async function POST(request: Request) {
         const userId = paymentIntent.metadata.supabase_user_id;
         const product = paymentIntent.metadata.smoac_product;
         if (!userId || !isBoostCampaignProduct(product)) break;
+        /* Stripe can redeliver; the applied marker lives on the live intent. */
+        const current = await stripe.paymentIntents.retrieve(paymentIntent.id);
+        if (current.metadata?.boost_applied_ms) break;
         const days = Number(paymentIntent.metadata.boost_days);
         const dailyCents = Number(paymentIntent.metadata.boost_daily_cents);
-        const endsAt =
-          paymentIntent.metadata.boost_ends_at ||
-          new Date(
-            Date.now() +
-              (Number.isFinite(days) ? days : 7) * 24 * 60 * 60 * 1000
-          ).toISOString();
-        await activateBoostCampaign({
+        const activated = await activateBoostCampaign({
           userId,
           specialistProfileId:
             paymentIntent.metadata.specialist_profile_id || null,
@@ -174,10 +174,57 @@ export async function POST(request: Request) {
           days: Number.isFinite(days) ? days : 7,
           dailyCents: Number.isFinite(dailyCents) ? dailyCents : 1000,
           paymentIntentId: paymentIntent.id,
-          endsAt,
         });
+        if (activated) {
+          await stripe.paymentIntents.update(paymentIntent.id, {
+            metadata: {
+              boost_applied_ms: String(activated.addedMs),
+              boost_applied_ends_at: activated.endsAt,
+            },
+          });
+        }
         const { notifyOpsBoostPayment } = await import("@/lib/email/ops-alert");
         await notifyOpsBoostPayment(paymentIntent);
+        break;
+      }
+      case "charge.refunded":
+      case "charge.dispute.created": {
+        const object = event.data.object as Stripe.Charge | Stripe.Dispute;
+        const paymentIntentId =
+          typeof object.payment_intent === "string"
+            ? object.payment_intent
+            : object.payment_intent?.id;
+        if (!paymentIntentId) break;
+        const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        if (paymentIntent.metadata?.smoac_kind !== "boost_campaign") break;
+        const userId = paymentIntent.metadata.supabase_user_id;
+        const appliedMs =
+          Number(paymentIntent.metadata.boost_applied_ms) ||
+          (paymentIntent.status === "succeeded"
+            ? Number(paymentIntent.metadata.boost_days) * 24 * 60 * 60 * 1000
+            : 0);
+        if (!userId || !Number.isFinite(appliedMs) || appliedMs <= 0) break;
+
+        let refundedShare = 1;
+        if (event.type === "charge.refunded") {
+          const charge = object as Stripe.Charge;
+          refundedShare =
+            charge.amount > 0 ? Math.min(1, charge.amount_refunded / charge.amount) : 1;
+        }
+        /* Refund events report the running total, so revoke only the new part. */
+        const targetRevokedMs = Math.round(appliedMs * refundedShare);
+        const alreadyRevokedMs = Number(paymentIntent.metadata.boost_revoked_ms) || 0;
+        const revokeMs = targetRevokedMs - alreadyRevokedMs;
+        if (revokeMs <= 0) break;
+
+        await revokeBoostCampaignTime({
+          userId,
+          specialistProfileId: paymentIntent.metadata.specialist_profile_id || null,
+          revokeMs,
+        });
+        await stripe.paymentIntents.update(paymentIntentId, {
+          metadata: { boost_revoked_ms: String(targetRevokedMs) },
+        });
         break;
       }
       default:

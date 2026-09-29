@@ -102,6 +102,18 @@ export function applyCampaignExpiryToTrainerFlags(input: {
   };
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export type ActivatedBoostCampaign = {
+  endsAt: string;
+  /** Time this payment added to the campaign — refunds take back up to this. */
+  addedMs: number;
+};
+
+/**
+ * Starts a Boost, or extends a live one: new days are added after the current
+ * end, and the clock starts when payment clears (not when checkout opened).
+ */
 export async function activateBoostCampaign(input: {
   userId: string;
   specialistProfileId?: string | null;
@@ -109,17 +121,16 @@ export async function activateBoostCampaign(input: {
   days: number;
   dailyCents: number;
   paymentIntentId: string;
-  endsAt: string;
-}): Promise<void> {
+}): Promise<ActivatedBoostCampaign | null> {
   const supabase = createSupabaseServiceClient();
   if (!supabase) {
     console.error("[boost] activate unavailable — missing service client");
-    return;
+    return null;
   }
 
   const { data: existing } = await supabase
     .from("specialist_billing")
-    .select("boost_campaign_payment_intent_id")
+    .select("boost_campaign_payment_intent_id, boost_campaign_ends_at")
     .eq("user_id", input.userId)
     .maybeSingle();
 
@@ -127,8 +138,14 @@ export async function activateBoostCampaign(input: {
     existing?.boost_campaign_payment_intent_id &&
     existing.boost_campaign_payment_intent_id === input.paymentIntentId
   ) {
-    return;
+    return null;
   }
+
+  const now = Date.now();
+  const currentEnd = Date.parse(existing?.boost_campaign_ends_at ?? "");
+  const startMs = Number.isFinite(currentEnd) && currentEnd > now ? currentEnd : now;
+  const addedMs = Math.max(1, input.days) * DAY_MS;
+  const endsAt = new Date(startMs + addedMs).toISOString();
 
   const { error: billingError } = await supabase
     .from("specialist_billing")
@@ -137,7 +154,7 @@ export async function activateBoostCampaign(input: {
         user_id: input.userId,
         specialist_profile_id: input.specialistProfileId ?? null,
         boost_campaign_product: input.product,
-        boost_campaign_ends_at: input.endsAt,
+        boost_campaign_ends_at: endsAt,
         boost_campaign_daily_cents: input.dailyCents,
         boost_campaign_days: input.days,
         boost_campaign_payment_intent_id: input.paymentIntentId,
@@ -169,7 +186,7 @@ export async function activateBoostCampaign(input: {
     topRanked: false,
     campaign: {
       product: input.product,
-      endsAt: input.endsAt,
+      endsAt,
       paymentIntentId: input.paymentIntentId,
     },
   });
@@ -179,7 +196,7 @@ export async function activateBoostCampaign(input: {
     sponsored: merged.sponsored,
     category_spotlight: merged.categorySpotlight,
     boost_campaign_product: input.product,
-    boost_campaign_ends_at: input.endsAt,
+    boost_campaign_ends_at: endsAt,
     updated_at: new Date().toISOString(),
   };
 
@@ -214,6 +231,163 @@ export async function activateBoostCampaign(input: {
       console.error("[boost] profile campaign update failed:", retry.error.message);
     }
   }
+
+  return { endsAt, addedMs };
+}
+
+type ServiceClient = NonNullable<ReturnType<typeof createSupabaseServiceClient>>;
+
+type EndedBoostProfileRow = {
+  id: string;
+  user_id: string | null;
+  featured: boolean | null;
+  sponsored: boolean | null;
+  category_spotlight: boolean | null;
+  boost_campaign_product: string | null;
+  boost_campaign_ends_at: string | null;
+};
+
+const ENDED_BOOST_PROFILE_COLUMNS =
+  "id, user_id, featured, sponsored, category_spotlight, boost_campaign_product, boost_campaign_ends_at";
+
+/** Drop Boost placements from one profile, keeping any monthly add-on flags. */
+async function clearEndedBoostProfile(
+  supabase: ServiceClient,
+  row: EndedBoostProfileRow,
+  nowIso: string
+): Promise<boolean> {
+  const flags = applyCampaignExpiryToTrainerFlags({
+    featured: Boolean(row.featured),
+    sponsored: Boolean(row.sponsored),
+    categorySpotlight: Boolean(row.category_spotlight),
+    campaignProduct: row.boost_campaign_product,
+    campaignEndsAt: row.boost_campaign_ends_at,
+  });
+  let featured = flags.featured;
+  let sponsored = flags.sponsored;
+  let categorySpotlight = flags.categorySpotlight;
+  if (row.user_id) {
+    const { data: billing } = await supabase
+      .from("specialist_billing")
+      .select("active_addons")
+      .eq("user_id", row.user_id)
+      .maybeSingle();
+    const addons = Array.isArray(billing?.active_addons)
+      ? billing.active_addons.filter(
+          (item): item is string => typeof item === "string"
+        )
+      : [];
+    const monthly = entitlementsFromProducts(
+      addons.filter(isSmoacStripeProductKey)
+    );
+    featured = featured || monthly.featured;
+    sponsored = sponsored || monthly.sponsored;
+    categorySpotlight = categorySpotlight || monthly.categorySpotlight;
+  }
+  const { error: profileError } = await supabase
+    .from("specialist_profiles")
+    .update({
+      featured,
+      sponsored,
+      category_spotlight: categorySpotlight,
+      boost_campaign_product: null,
+      boost_campaign_ends_at: null,
+      updated_at: nowIso,
+    })
+    .eq("id", row.id);
+  if (profileError) {
+    console.error("[boost] expire profile failed:", profileError.message);
+    return false;
+  }
+  if (row.user_id) {
+    const { error: billingError } = await supabase
+      .from("specialist_billing")
+      .update({
+        boost_campaign_product: null,
+        boost_campaign_ends_at: null,
+        updated_at: nowIso,
+      })
+      .eq("user_id", row.user_id);
+    if (billingError) {
+      console.error("[boost] expire billing failed:", billingError.message);
+    }
+  }
+  return true;
+}
+
+/**
+ * Take refunded or disputed Boost time back off the live campaign.
+ * Ends the Boost immediately when nothing paid for is left.
+ */
+export async function revokeBoostCampaignTime(input: {
+  userId: string;
+  specialistProfileId?: string | null;
+  revokeMs: number;
+}): Promise<{ endsAt: string | null } | null> {
+  const supabase = createSupabaseServiceClient();
+  if (!supabase) {
+    console.error("[boost] revoke unavailable — missing service client");
+    return null;
+  }
+
+  const { data: billing } = await supabase
+    .from("specialist_billing")
+    .select("boost_campaign_ends_at")
+    .eq("user_id", input.userId)
+    .maybeSingle();
+
+  const now = Date.now();
+  const currentEnd = Date.parse(billing?.boost_campaign_ends_at ?? "");
+  if (!Number.isFinite(currentEnd) || currentEnd <= now) {
+    return { endsAt: null };
+  }
+
+  const nextEnd = currentEnd - Math.max(0, input.revokeMs);
+  const nowIso = new Date(now).toISOString();
+
+  if (nextEnd > now) {
+    const endsAt = new Date(nextEnd).toISOString();
+    await supabase
+      .from("specialist_billing")
+      .update({ boost_campaign_ends_at: endsAt, updated_at: nowIso })
+      .eq("user_id", input.userId);
+    const profileQuery = supabase
+      .from("specialist_profiles")
+      .update({ boost_campaign_ends_at: endsAt, updated_at: nowIso });
+    const { error } = input.specialistProfileId
+      ? await profileQuery.eq("id", input.specialistProfileId)
+      : await profileQuery.eq("user_id", input.userId);
+    if (error) {
+      console.error("[boost] revoke profile update failed:", error.message);
+    }
+    return { endsAt };
+  }
+
+  const endedIso = new Date(now - 1).toISOString();
+  const profileSelect = supabase
+    .from("specialist_profiles")
+    .select(ENDED_BOOST_PROFILE_COLUMNS);
+  const { data: profile } = input.specialistProfileId
+    ? await profileSelect.eq("id", input.specialistProfileId).maybeSingle()
+    : await profileSelect.eq("user_id", input.userId).maybeSingle();
+
+  if (profile) {
+    await clearEndedBoostProfile(
+      supabase,
+      { ...(profile as EndedBoostProfileRow), boost_campaign_ends_at: endedIso },
+      nowIso
+    );
+  } else {
+    await supabase
+      .from("specialist_billing")
+      .update({
+        boost_campaign_product: null,
+        boost_campaign_ends_at: null,
+        updated_at: nowIso,
+      })
+      .eq("user_id", input.userId);
+  }
+  return { endsAt: null };
 }
 
 /** Clear timed Boost flags after `boost_campaign_ends_at`. Safe to run daily. */
@@ -224,9 +398,7 @@ export async function expireEndedBoostCampaigns(): Promise<number> {
   const now = new Date().toISOString();
   const { data: rows, error } = await supabase
     .from("specialist_profiles")
-    .select(
-      "id, user_id, featured, sponsored, category_spotlight, boost_campaign_product, boost_campaign_ends_at"
-    )
+    .select(ENDED_BOOST_PROFILE_COLUMNS)
     .not("boost_campaign_ends_at", "is", null)
     .lt("boost_campaign_ends_at", now);
 
@@ -236,64 +408,8 @@ export async function expireEndedBoostCampaigns(): Promise<number> {
   }
 
   let expired = 0;
-  for (const row of rows ?? []) {
-    const flags = applyCampaignExpiryToTrainerFlags({
-      featured: Boolean(row.featured),
-      sponsored: Boolean(row.sponsored),
-      categorySpotlight: Boolean(row.category_spotlight),
-      campaignProduct: row.boost_campaign_product,
-      campaignEndsAt: row.boost_campaign_ends_at,
-    });
-    let featured = flags.featured;
-    let sponsored = flags.sponsored;
-    let categorySpotlight = flags.categorySpotlight;
-    if (row.user_id) {
-      const { data: billing } = await supabase
-        .from("specialist_billing")
-        .select("active_addons")
-        .eq("user_id", row.user_id)
-        .maybeSingle();
-      const addons = Array.isArray(billing?.active_addons)
-        ? billing.active_addons.filter(
-            (item): item is string => typeof item === "string"
-          )
-        : [];
-      const monthly = entitlementsFromProducts(
-        addons.filter(isSmoacStripeProductKey)
-      );
-      featured = featured || monthly.featured;
-      sponsored = sponsored || monthly.sponsored;
-      categorySpotlight = categorySpotlight || monthly.categorySpotlight;
-    }
-    const { error: profileError } = await supabase
-      .from("specialist_profiles")
-      .update({
-        featured,
-        sponsored,
-        category_spotlight: categorySpotlight,
-        boost_campaign_product: null,
-        boost_campaign_ends_at: null,
-        updated_at: now,
-      })
-      .eq("id", row.id);
-    if (profileError) {
-      console.error("[boost] expire profile failed:", profileError.message);
-      continue;
-    }
-    if (row.user_id) {
-      const { error: billingError } = await supabase
-        .from("specialist_billing")
-        .update({
-          boost_campaign_product: null,
-          boost_campaign_ends_at: null,
-          updated_at: now,
-        })
-        .eq("user_id", row.user_id);
-      if (billingError) {
-        console.error("[boost] expire billing failed:", billingError.message);
-      }
-    }
-    expired += 1;
+  for (const row of (rows ?? []) as EndedBoostProfileRow[]) {
+    if (await clearEndedBoostProfile(supabase, row, now)) expired += 1;
   }
   return expired;
 }

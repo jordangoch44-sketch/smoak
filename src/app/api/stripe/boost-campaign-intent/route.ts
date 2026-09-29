@@ -91,7 +91,6 @@ export async function POST(request: Request) {
   const proPlus = isProPlusPlan(customer.billingPlan);
   const listCents = boostCampaignListCents(dailyCents, days);
   const payCents = boostCampaignPayCents(dailyCents, days, proPlus);
-  const endsAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
 
   const paymentIntent = await stripe.paymentIntents.create({
     amount: payCents,
@@ -107,7 +106,6 @@ export async function POST(request: Request) {
       boost_daily_cents: String(dailyCents),
       boost_list_cents: String(listCents),
       boost_pay_cents: String(payCents),
-      boost_ends_at: endsAt,
       supabase_user_id: user.id,
       specialist_profile_id: customer.specialistProfileId ?? "",
     },
