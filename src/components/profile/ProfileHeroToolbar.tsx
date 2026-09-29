@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { SaveTrainerButton } from "@/components/trainers/SaveTrainerButton";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useToast } from "@/components/ui/toast";
+import { useFastActivate } from "@/hooks/useFastActivate";
 import { resolveInstagramProfileUrl } from "@/lib/instagram-profile-url";
 import { shareTrainerProfile } from "@/lib/profile-share";
 import { navigateToProfileSheetReturn } from "@/lib/profile-sheet-return";
@@ -56,6 +57,10 @@ export function ProfileHeroToolbar({
   const { showToast } = useToast();
   const instagramHref = resolveInstagramProfileUrl(instagram);
   const instagramGradId = useId().replace(/:/g, "");
+  const instagramActivate = useFastActivate(() => {
+    if (!instagramHref) return;
+    window.open(instagramHref, "_blank", "noopener,noreferrer");
+  });
   const canPortal = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -145,6 +150,13 @@ export function ProfileHeroToolbar({
               aria-label={`${trainerName} on Instagram`}
               target="_blank"
               rel="noopener noreferrer"
+              onPointerDown={instagramActivate.onPointerDown}
+              onPointerCancel={instagramActivate.onPointerCancel}
+              onPointerUp={instagramActivate.onPointerUp}
+              onClick={(event) => {
+                event.preventDefault();
+                instagramActivate.onClick(event);
+              }}
             >
               <svg
                 className="profile-toolbar__icon profile-toolbar__icon--instagram"
