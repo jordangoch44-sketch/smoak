@@ -30,15 +30,18 @@ import {
 } from "./ProfileSheetToolbarHostContext";
 import type { MotionValue } from "framer-motion";
 
-/** GPU tween — keep this short so pin/list taps feel instant. */
+/** iOS sheet curve — long enough to read as a slide, not a jump. */
+const SHEET_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 const OPEN_TRANSITION = {
   type: "tween" as const,
-  duration: 0.14,
-  ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+  duration: 0.34,
+  ease: SHEET_EASE,
 };
-const DISMISS_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
+const DISMISS_EASE = SHEET_EASE;
 /** Unified exit — entire sheet + floating chrome slide down together. */
-const DISMISS_DURATION = 0.26;
+const DISMISS_DURATION = 0.3;
+/** Covers the two-frame start delay in `afterNextPaint`. */
+const START_DELAY_MS = 60;
 /** Extra travel so iOS visualViewport < 100dvh never leaves a stuck strip. */
 const DISMISS_OVERFLOW_PX = 96;
 
@@ -82,15 +85,36 @@ let sheetChromeLockOwner = 0;
 function lockSheetChrome(): number {
   document.body.classList.add("profile-sheet-open");
   document.documentElement.classList.add("profile-sheet-open");
-  document.body.classList.remove("profile-sheet-dismissing");
+  document.body.classList.remove("profile-sheet-dismissing", "profile-sheet-covered");
   document.querySelector(".app-main")?.setAttribute("inert", "");
   sheetChromeLockOwner += 1;
   return sheetChromeLockOwner;
 }
 
+/** Sheet fully covers the page — safe to hide Search / map / header paint. */
+function markSheetCovered(owner: number) {
+  if (owner !== sheetChromeLockOwner) return;
+  document.body.classList.add("profile-sheet-covered");
+}
+
+/**
+ * Start a tween only after the restyle from lock/unlock has painted, so the
+ * first animation frames are not dropped (reads as a jump on iOS).
+ */
+function afterNextPaint(callback: () => void): () => void {
+  let second = 0;
+  const first = requestAnimationFrame(() => {
+    second = requestAnimationFrame(callback);
+  });
+  return () => {
+    cancelAnimationFrame(first);
+    cancelAnimationFrame(second);
+  };
+}
+
 function unlockSheetChrome(owner?: number) {
   if (owner != null && owner !== sheetChromeLockOwner) return;
-  document.body.classList.remove("profile-sheet-open");
+  document.body.classList.remove("profile-sheet-open", "profile-sheet-covered");
   document.documentElement.classList.remove("profile-sheet-open");
   document.querySelector(".app-main")?.removeAttribute("inert");
   restoreListingPointerAccess({ forceNudge: true });
@@ -164,7 +188,10 @@ export function TrainerProfileSheet({
       unlockSheetChrome(lockOwnerRef.current);
       markSheetDismissing();
       const root = rootRef.current;
-      root?.classList.add("profile-sheet-root--pass-through");
+      root?.classList.add(
+        "profile-sheet-root--pass-through",
+        "profile-sheet-root--dismissing"
+      );
       root?.setAttribute("inert", "");
 
       finishOnceRef.current = false;
@@ -187,14 +214,19 @@ export function TrainerProfileSheet({
         return;
       }
 
-      const safety = window.setTimeout(finish, DISMISS_DURATION * 1000 + 160);
-      void animate(y, target, {
-        type: "tween",
-        duration: DISMISS_DURATION,
-        ease: DISMISS_EASE,
-      }).then(() => {
-        window.clearTimeout(safety);
-        finish();
+      const safety = window.setTimeout(
+        finish,
+        DISMISS_DURATION * 1000 + START_DELAY_MS + 160
+      );
+      afterNextPaint(() => {
+        void animate(y, target, {
+          type: "tween",
+          duration: DISMISS_DURATION,
+          ease: DISMISS_EASE,
+        }).then(() => {
+          window.clearTimeout(safety);
+          finish();
+        });
       });
     },
     [navigateAway, reduceMotion, y]
@@ -274,7 +306,10 @@ export function TrainerProfileSheet({
     programmaticNavRef.current = false;
     /* Fresh open — never keep a prior exit's pass-through / inert. */
     const root = rootRef.current;
-    root?.classList.remove("profile-sheet-root--pass-through");
+    root?.classList.remove(
+      "profile-sheet-root--pass-through",
+      "profile-sheet-root--dismissing"
+    );
     root?.removeAttribute("inert");
     lockOwnerRef.current = lockSheetChrome();
     const owner = lockOwnerRef.current;
@@ -282,15 +317,21 @@ export function TrainerProfileSheet({
     if (reduceMotion) {
       y.set(0);
       setSheetMoving(false);
+      markSheetCovered(owner);
     } else {
       y.set(vhRef.current);
       setSheetMoving(true);
-      const controls = animate(y, 0, OPEN_TRANSITION);
-      openAnimRef.current = controls;
-      void controls.then(() => {
-        openAnimRef.current = null;
-        setSheetMoving(false);
+      const cancelStart = afterNextPaint(() => {
+        const controls = animate(y, 0, OPEN_TRANSITION);
+        openAnimRef.current = controls;
+        void controls.then(() => {
+          if (openAnimRef.current !== controls) return;
+          openAnimRef.current = null;
+          setSheetMoving(false);
+          markSheetCovered(owner);
+        });
       });
+      openAnimRef.current = { stop: cancelStart };
     }
 
     return () => {

@@ -1155,30 +1155,38 @@ body.explore-map-shell-open .app-main {
   }
 }
 
-/* Soft-nav keeps Search mounted — freeze map paint under the profile sheet */
-body.profile-sheet-open .explore-page--map-shell .explore-map-hero,
-body.profile-sheet-dismissing .explore-page--map-shell .explore-map-hero {
-  visibility: hidden;
+/*
+ * Soft-nav keeps Search mounted under the profile sheet. Map paint is only
+ * frozen once the sheet fully covers it (`profile-sheet-covered`) so the map
+ * stays visible behind the slide-up / slide-down instead of blanking out.
+ */
+body.profile-sheet-open .explore-page--map-shell .explore-map-hero {
   pointer-events: none !important;
+}
+
+body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .explore-map-hero {
+  visibility: hidden;
 }
 
 /*
  * iOS: position:fixed map chrome (bottom card, See results) can keep
- * receiving taps after the parent is visibility:hidden. Hide them fully
- * so the profile sheet X / heart / tabs / photos stay tappable.
+ * receiving taps after the parent is visibility:hidden, so it needs its own
+ * pointer-events / visibility. Avoid display:none — it replays the bottom
+ * card's enter animation when the sheet closes.
  */
 body.profile-sheet-open .explore-bottom-card-dock,
 body.profile-sheet-open .explore-split__cta-dock,
 body.profile-sheet-open .explore-map-hero__controls,
 body.profile-sheet-open .explore-map__recenter,
-body.profile-sheet-open .explore-page--map-shell .leaflet-top,
-body.profile-sheet-dismissing .explore-bottom-card-dock,
-body.profile-sheet-dismissing .explore-split__cta-dock,
-body.profile-sheet-dismissing .explore-map-hero__controls,
-body.profile-sheet-dismissing .explore-map__recenter,
-body.profile-sheet-dismissing .explore-page--map-shell .leaflet-top {
-  display: none !important;
+body.profile-sheet-open .explore-page--map-shell .leaflet-top {
   pointer-events: none !important;
+}
+
+body.profile-sheet-open.profile-sheet-covered .explore-bottom-card-dock,
+body.profile-sheet-open.profile-sheet-covered .explore-split__cta-dock,
+body.profile-sheet-open.profile-sheet-covered .explore-map-hero__controls,
+body.profile-sheet-open.profile-sheet-covered .explore-map__recenter,
+body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-top {
   visibility: hidden !important;
 }
 

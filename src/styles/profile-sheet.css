@@ -166,6 +166,19 @@ html.profile-desktop-popup-open {
   }
 }
 
+.profile-sheet-root--dismissing .profile-sheet__backdrop {
+  animation: profile-sheet-backdrop-out 0.3s ease both;
+}
+
+@keyframes profile-sheet-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 .profile-sheet {
   position: relative;
   z-index: 1;
@@ -186,8 +199,6 @@ html.profile-desktop-popup-open {
 
 /* During slide — GPU layer only while moving; pinch-zoom OOMs a permanent layer */
 .profile-sheet--animating {
-  box-shadow: none;
-  border-color: rgba(255, 255, 255, 0.08);
   will-change: transform;
   transform: translate3d(0, 0, 0);
   -webkit-backface-visibility: hidden;
@@ -278,18 +289,24 @@ html.profile-sheet-open {
   overscroll-behavior: none;
 }
 
-body.profile-sheet-open .mobile-bottom-nav {
+body.profile-sheet-open .mobile-bottom-nav,
+body.profile-sheet-open #site-header,
+body.profile-sheet-open .site-footer {
+  pointer-events: none;
+}
+
+/*
+ * Visual hides wait for `profile-sheet-covered` (set once the slide-up
+ * lands, cleared the moment dismiss starts) so the page never blanks out
+ * behind a sheet that is still moving.
+ */
+body.profile-sheet-open.profile-sheet-covered .mobile-bottom-nav {
   display: none !important;
 }
 
-body.profile-sheet-open #site-header {
+body.profile-sheet-open.profile-sheet-covered #site-header,
+body.profile-sheet-open.profile-sheet-covered .site-footer {
   visibility: hidden;
-  pointer-events: none;
-}
-
-body.profile-sheet-open .site-footer {
-  visibility: hidden;
-  pointer-events: none;
 }
 
 /*
@@ -333,8 +350,8 @@ body.profile-sheet-dismissing {
 }
 
 @media (max-width: 1023px) {
-  body.profile-sheet-open #root.app-shell,
-  body.profile-sheet-open .app-shell {
+  body.profile-sheet-open.profile-sheet-covered #root.app-shell,
+  body.profile-sheet-open.profile-sheet-covered .app-shell {
     padding-bottom: 0 !important;
   }
 }
@@ -347,15 +364,19 @@ body.profile-sheet-dismissing {
   body.profile-sheet-open .app-main {
     overflow: hidden;
     overscroll-behavior: none;
-    /* Search stays mounted under the sheet — hide it so pinch-zoom does not
-       re-rasterize the map + atmosphere and crash Safari. */
-    visibility: hidden;
     pointer-events: none;
+  }
+
+  /* Search stays mounted under the sheet — hide it so pinch-zoom does not
+     re-rasterize the map + atmosphere and crash Safari. */
+  body.profile-sheet-open.profile-sheet-covered .app-main {
+    visibility: hidden;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .profile-sheet__backdrop--fade-in {
+  .profile-sheet__backdrop--fade-in,
+  .profile-sheet-root--dismissing .profile-sheet__backdrop {
     animation: none;
   }
 }

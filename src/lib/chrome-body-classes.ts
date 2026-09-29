@@ -91,7 +91,7 @@ export function restoreListingPointerAccess(options?: {
   ) {
     hadLeftover = true;
   }
-  document.body.classList.remove("profile-sheet-open");
+  document.body.classList.remove("profile-sheet-open", "profile-sheet-covered");
   document.documentElement.classList.remove("profile-sheet-open");
 
   if (!dismissingSheet) {
