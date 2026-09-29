@@ -6072,6 +6072,71 @@ button.admin-email-tool:disabled {
   color: #a1a1aa;
 }
 
+.admin-email-system {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-email-system__row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-email-system__row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.admin-email-system__row span {
+  font-size: 0.8125rem;
+  color: #a1a1aa;
+}
+
+.admin-email-system__row .admin-email-system__trigger {
+  font-size: 0.75rem;
+  color: #c4b5fd;
+}
+
+.admin-email-system__to {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: min(18rem, 100%);
+  font-size: 0.75rem;
+  color: #a1a1aa;
+}
+
+.admin-email-system__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.4rem;
+}
+
+.admin-email-system__row .admin-email-system__status {
+  font-size: 0.75rem;
+  color: #86efac;
+}
+
+.admin-email-system__row .admin-email-system__status--error {
+  color: #fca5a5;
+}
+
+.admin-email-sheet__panel--preview {
+  width: min(44rem, calc(100% - 1.5rem));
+  max-height: 92vh;
+}
+
+.admin-email-preview__frame--tall {
+  height: min(72vh, 60rem);
+}
+
 @media (max-width: 1023px) {
   .admin-email-choose__grid,
   .admin-email-kpis,

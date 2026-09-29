@@ -9,6 +9,7 @@ import {
   type AdminEmailEditorAction,
 } from "@/components/admin/email/AdminEmailEditor";
 import { AdminOutreachComposer } from "@/components/admin/email/AdminOutreachComposer";
+import { AdminSystemEmails } from "@/components/admin/email/AdminSystemEmails";
 import { useAdminEmailCatalog } from "@/hooks/useAdminEmailCatalog";
 import { useBlockingModalOpen } from "@/hooks/useBlockingModalOpen";
 import {
@@ -350,6 +351,8 @@ export function AdminEmailPanel() {
           </p>
         </div>
       </section>
+
+      <AdminSystemEmails />
 
       <section className="admin-email-list" aria-label="Email list">
         <div className="admin-email-list__head">

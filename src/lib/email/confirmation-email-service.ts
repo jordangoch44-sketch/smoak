@@ -1,16 +1,23 @@
 import { dispatchTransactionalEmail } from "@/lib/email/email-transport";
 import {
   emailAbsoluteUrl,
-  renderEmailBioLinkBubble,
   renderEmailParagraphs,
   wrapTransactionalEmailHtml,
 } from "@/lib/email/email-html-shell";
+import {
+  SPECIALIST_APPROVAL_SUBJECT,
+  renderSpecialistApprovalEmailHtml,
+  renderSpecialistApprovalEmailText,
+  specialistApprovalTrialLine,
+} from "@/lib/email/specialist-approval-email";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 import { getSiteUrlForStripe } from "@/lib/stripe/config";
 import { trainerProfilePath } from "@/lib/trainer-profile-path";
-import { CLIENT_DASHBOARD_PATH, LOGIN_PATH } from "@/lib/auth-routes";
+import {
+  CLIENT_DASHBOARD_PATH,
+  SPECIALIST_DASHBOARD_PATH,
+} from "@/lib/auth-routes";
 import { CLIENT_WELCOME_EMAIL_SENT_PREFIX } from "@/lib/dev-storage-keys";
-import { FOUNDING_PREMIUM_TRIAL_DAYS } from "@/lib/founding-50-invite";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
 export interface ConfirmationEmailPayload {
@@ -47,9 +54,7 @@ function specialistFirstName(application: SpecialistApplication): string {
   );
 }
 
-function specialistLoginUrl(): string {
-  return `${getSiteUrlForStripe()}${LOGIN_PATH}`;
-}
+const SPECIALIST_EDIT_PROFILE_PATH = `${SPECIALIST_DASHBOARD_PATH}/edit-profile`;
 
 function buildSpecialistConfirmationEmail(
   application: SpecialistApplication
@@ -90,8 +95,6 @@ SMOAC`;
 function buildSpecialistApprovalEmail(
   application: SpecialistApplication
 ): ConfirmationEmailPayload {
-  const firstName = specialistFirstName(application);
-  const loginUrl = specialistLoginUrl();
   const profileUrl = emailAbsoluteUrl(
     trainerProfilePath({
       id: application.id,
@@ -101,71 +104,18 @@ function buildSpecialistApprovalEmail(
   const isFounding = Boolean(
     application.foundingInvite || application.foundingInviteCode?.trim()
   );
-  const foundingLine = isFounding
-    ? `As a Founding 100 specialist, you have ${FOUNDING_PREMIUM_TRIAL_DAYS} days of complimentary SMOAC Pro — no card required.`
-    : "";
-  const text = `Hi ${firstName},
-
-Great news — your SMOAC specialist account is approved and your profile is live on Marketplace.
-${foundingLine ? `\n${foundingLine}\n` : ""}
-Add your link to your Instagram bio:
-Your personal landing page is live. Share this link on your Instagram bio, TikTok, or website so clients can view your verified credentials and book you directly:
-${profileUrl}
-
-View Your Live Page:
-${profileUrl}
-
-Log in to Dashboard:
-${loginUrl}
-
-Choose Continue as Specialist to open your dashboard. You can deepen your listing anytime from Edit profile — availability, extra photos, credentials, and coaching details.
-
-Welcome to SMOAC,
-The SMOAC team`;
-
-  const bioLinkBubbleHtml = renderEmailBioLinkBubble({
-    title: "Add your link to your Instagram bio",
-    description:
-      "Your personal landing page is live. Share this link on your Instagram bio, TikTok, or website so clients can view your verified credentials and book you directly:",
+  const input = {
+    firstName: specialistFirstName(application),
     profileUrl,
-    viewPageLabel: "View Your Live Page",
-  });
-
-  const introParagraphs = [
-    `Hi ${firstName},`,
-    "Your specialist account is approved and your profile is live on Marketplace for clients to discover.",
-    ...(foundingLine ? [foundingLine] : []),
-  ];
-
-  const bodyHtml = [
-    renderEmailParagraphs(introParagraphs),
-    bioLinkBubbleHtml,
-    renderEmailParagraphs([
-      "Log in with the email and password you used to apply. Choose Continue as Specialist, then use Edit profile anytime to deepen availability, photos, credentials, and coaching details.",
-    ]),
-  ].join("");
-
-  const html = wrapTransactionalEmailHtml({
-    preheader: "You’re approved — your profile is live on SMOAC",
-    eyebrow: "You’re live",
-    title: "Welcome to SMOAC",
-    bodyHtml,
-    cta: {
-      label: "Log in to Dashboard",
-      href: loginUrl,
-    },
-    secondaryLink: {
-      label: "View Your Live Page",
-      href: profileUrl,
-    },
-    footerNote: "You’re discoverable now — keep strengthening your profile as you grow.",
-  });
+    editProfileUrl: SPECIALIST_EDIT_PROFILE_PATH,
+    trialLine: specialistApprovalTrialLine(isFounding),
+  };
 
   return {
     to: application.email.trim(),
-    subject: "You’re live on SMOAC — your profile is approved",
-    text,
-    html,
+    subject: SPECIALIST_APPROVAL_SUBJECT,
+    text: renderSpecialistApprovalEmailText(input),
+    html: renderSpecialistApprovalEmailHtml(input),
     applicationId: application.id,
     kind: "specialist",
   };

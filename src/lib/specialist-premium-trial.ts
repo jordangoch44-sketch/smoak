@@ -18,8 +18,9 @@ import {
 } from "@/lib/specialist-premium";
 import { FOUNDING_PREMIUM_TRIAL_DAYS } from "@/lib/founding-50-invite";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { PREMIUM_TRIAL_DAYS } from "@/lib/premium-trial-days";
 
-export const PREMIUM_TRIAL_DAYS = 30;
+export { PREMIUM_TRIAL_DAYS };
 
 export type PremiumTrialGrantResult = {
   granted: boolean;
