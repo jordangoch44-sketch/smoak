@@ -26,7 +26,7 @@ export function EmailUnsubscribeClient() {
         if (cancelled) return;
         if (body.ok) {
           setStatus("ok");
-          setMessage("You’re unsubscribed from SMOAC marketing emails.");
+          setMessage(body.message ?? "You’re unsubscribed from SMOAC marketing emails.");
           return;
         }
         setStatus("error");

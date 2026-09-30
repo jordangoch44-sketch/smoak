@@ -981,6 +981,42 @@ export function CheckCircleIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+/** Crossed arrows — shuffle / regenerate */
+export function ShuffleIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+    </svg>
+  );
+}
+
+/** Circular arrow — swap one item */
+export function RefreshIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7" />
+    </svg>
+  );
+}
+
 export function ChevronRightIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg

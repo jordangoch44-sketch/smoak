@@ -33,6 +33,13 @@ export interface ClientWorkoutDay {
 }
 
 export interface ClientWorkoutLog {
+  /** Strength days per week (days with exercises or a workout name). */
   goalDaysPerWeek: number;
+  /** Cardio days per week. 0 means no cardio goal. */
+  cardioGoalDaysPerWeek: number;
   days: Record<string, ClientWorkoutDay>;
+  /** Body weight in lb, keyed by local date (YYYY-MM-DD). One weigh-in per day. */
+  bodyWeights: Record<string, number>;
+  /** IANA zone of the last device that saved, e.g. "America/Denver". Times workout emails. */
+  timeZone?: string;
 }

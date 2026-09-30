@@ -4,10 +4,15 @@ import {
 } from "@/lib/auth/marketplace-auth";
 import { CLIENT_WORKOUTS_STORAGE_PREFIX } from "@/lib/dev-storage-keys";
 import {
+  clampCardioGoalDaysPerWeek,
   cloneWorkoutExercises,
+  DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK,
   DEFAULT_GOAL_DAYS_PER_WEEK,
   emptyClientWorkoutLog,
+  isWorkoutDateKey,
+  sanitizeBodyWeight,
   sanitizeClientWorkoutLog,
+  sanitizeTimeZone,
   sanitizeWorkoutCardio,
   sanitizeWorkoutExercises,
   sanitizeWorkoutTitle,
@@ -67,12 +72,36 @@ function writeLocal(userId: string, log: ClientWorkoutLog): void {
 function logHasAccountContent(log: ClientWorkoutLog): boolean {
   return (
     log.goalDaysPerWeek !== DEFAULT_GOAL_DAYS_PER_WEEK ||
-    Object.keys(log.days).length > 0
+    log.cardioGoalDaysPerWeek !== DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK ||
+    Object.keys(log.days).length > 0 ||
+    Object.keys(log.bodyWeights).length > 0
   );
+}
+
+function bodyWeightsEqual(
+  left: Record<string, number>,
+  right: Record<string, number>
+): boolean {
+  const leftKeys = Object.keys(left);
+  if (leftKeys.length !== Object.keys(right).length) return false;
+  return leftKeys.every((key) => left[key] === right[key]);
+}
+
+function deviceTimeZone(): string | undefined {
+  if (typeof Intl === "undefined") return undefined;
+  return sanitizeTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone);
+}
+
+function withDeviceTimeZone(log: ClientWorkoutLog): ClientWorkoutLog {
+  const timeZone = deviceTimeZone();
+  return timeZone && timeZone !== log.timeZone ? { ...log, timeZone } : log;
 }
 
 function logsEqual(left: ClientWorkoutLog, right: ClientWorkoutLog): boolean {
   if (left.goalDaysPerWeek !== right.goalDaysPerWeek) return false;
+  if (left.timeZone !== right.timeZone) return false;
+  if (left.cardioGoalDaysPerWeek !== right.cardioGoalDaysPerWeek) return false;
+  if (!bodyWeightsEqual(left.bodyWeights, right.bodyWeights)) return false;
   const leftKeys = Object.keys(left.days).sort();
   const rightKeys = Object.keys(right.days).sort();
   if (leftKeys.length !== rightKeys.length) return false;
@@ -91,16 +120,22 @@ function mergeLogs(
   local: ClientWorkoutLog,
   remote: ClientWorkoutLog
 ): ClientWorkoutLog {
-  return sanitizeClientWorkoutLog({
-    goalDaysPerWeek: remote.goalDaysPerWeek,
-    days: { ...local.days, ...remote.days },
-  });
+  return withDeviceTimeZone(
+    sanitizeClientWorkoutLog({
+      goalDaysPerWeek: remote.goalDaysPerWeek,
+      cardioGoalDaysPerWeek: remote.cardioGoalDaysPerWeek,
+      days: { ...local.days, ...remote.days },
+      bodyWeights: { ...local.bodyWeights, ...remote.bodyWeights },
+      timeZone: remote.timeZone ?? local.timeZone,
+    })
+  );
 }
 
 function persistLog(userId: string, log: ClientWorkoutLog): void {
-  writeLocal(userId, log);
+  const stamped = withDeviceTimeZone(log);
+  writeLocal(userId, stamped);
   const seq = ++writeSeq;
-  void syncLog(userId, log, seq);
+  void syncLog(userId, stamped, seq);
 }
 
 async function syncLog(
@@ -204,6 +239,38 @@ export function setClientWorkoutGoalDays(
     ...current,
     goalDaysPerWeek: clampGoalDaysPerWeek(goalDaysPerWeek),
   });
+}
+
+export function setClientWorkoutCardioGoalDays(
+  userId: string,
+  cardioGoalDaysPerWeek: number
+): void {
+  const current = getClientWorkoutLog(userId);
+  persistLog(userId, {
+    ...current,
+    cardioGoalDaysPerWeek: clampCardioGoalDaysPerWeek(cardioGoalDaysPerWeek),
+  });
+}
+
+/** Save one weigh-in for a day; pass null to delete it. */
+export function setClientBodyWeight(
+  userId: string,
+  dateKey: string,
+  weight: number | null
+): boolean {
+  if (!isWorkoutDateKey(dateKey)) return false;
+  const current = getClientWorkoutLog(userId);
+  const nextWeights = { ...current.bodyWeights };
+  if (weight === null) {
+    if (!(dateKey in nextWeights)) return false;
+    delete nextWeights[dateKey];
+  } else {
+    const cleaned = sanitizeBodyWeight(weight);
+    if (cleaned === null) return false;
+    nextWeights[dateKey] = cleaned;
+  }
+  persistLog(userId, { ...current, bodyWeights: nextWeights });
+  return true;
 }
 
 export function saveClientWorkoutDay(

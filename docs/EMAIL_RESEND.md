@@ -60,6 +60,9 @@ EMAIL_REPLY_TO=support@smoac.com
 | Specialist rejected | Specialist | `rejection_specialist` | Admin reject |
 | Specialist onboarding OTP | Specialist | `specialist_email_otp` | Server (not via `/api/email`) |
 | Pro trial reminders | Specialist | `premium_trial_*` | Cron (server) |
+| Workout streak emails | Client | `client_workout_*` | Hourly cron `/api/cron/client-workout-emails` |
+
+Workout streak emails (milestone at 2/4/8/12/26/52 weeks, Friday 5pm–Saturday noon at-risk nudge, Sunday 9am recap) use the client's time zone from their workout log. Each send is recorded once in `client_workout_email_sends`. Clients turn them off with the Workouts sheet switch or the email's unsubscribe link (`client_email_preferences.workout_emails`); a global marketing unsubscribe also stops them. Apply `supabase/production/apply-client-workout-emails-safe.sql`.
 
 Support alerts are one email per account or charge. Apply `supabase/migrations/20260922120000_ops_alert_log.sql` so a Stripe retry does not send the same payment twice. Until that table exists, the alert still sends.
 

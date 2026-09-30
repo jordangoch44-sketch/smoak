@@ -41,6 +41,16 @@ interface LiveSlide {
   exercise: ClientWorkoutExercise;
 }
 
+/**
+ * Tapping a button moves focus off the field and iOS drops the keyboard before we can hand
+ * focus to the next input. Cancelling the press keeps the field focused; the tap still
+ * activates on pointerup.
+ */
+const keepFieldFocus = {
+  onPointerDown: (event: { preventDefault: () => void }) => event.preventDefault(),
+  onMouseDown: (event: { preventDefault: () => void }) => event.preventDefault(),
+};
+
 export interface ExerciseSlideHandle {
   snapshot: () => ClientWorkoutExercise;
 }
@@ -119,6 +129,7 @@ export const ExerciseSlide = forwardRef<
   const [repsDraft, setRepsDraft] = useState("");
   const [weightDraft, setWeightDraft] = useState("");
   const [activeSet, setActiveSet] = useState(0);
+  const [setField, setSetField] = useState<"reps" | "weight">("reps");
   const [model, setModel] = useState<SlideModel>({
     name: exercise.name,
     sets: exercise.sets,
@@ -245,6 +256,7 @@ export const ExerciseSlide = forwardRef<
     const start = editing ? Math.min(previousCount, count - 1) : 0;
     flushSync(() => {
       publish(next);
+      setSetField("reps");
       setActiveSet(start);
       setRepsDraft(setLogs[start]?.reps ?? "");
       setWeightDraft(setLogs[start]?.weight ?? "");
@@ -276,6 +288,7 @@ export const ExerciseSlide = forwardRef<
       const upcoming = logs[activeSet + 1] ?? { reps: "", weight: "" };
       flushSync(() => {
         publish(next);
+        setSetField("reps");
         setActiveSet(activeSet + 1);
         setRepsDraft(upcoming.reps);
         setWeightDraft(upcoming.weight);
@@ -284,6 +297,11 @@ export const ExerciseSlide = forwardRef<
       return;
     }
     finish(next);
+  }
+
+  function focusWeight() {
+    setSetField("weight");
+    weightRef.current?.focus({ preventScroll: true });
   }
 
   function onEnter(event: KeyboardEvent<HTMLInputElement>, commit: () => void) {
@@ -321,9 +339,11 @@ export const ExerciseSlide = forwardRef<
         ? setsDraft.trim()
           ? "Lock sets"
           : "Skip sets"
-        : repsDraft.trim() || weightDraft.trim()
-          ? `Lock set ${activeSet + 1}`
-          : `Skip set ${activeSet + 1}`;
+        : setField === "reps"
+          ? `Set ${activeSet + 1} weight`
+          : repsDraft.trim() || weightDraft.trim()
+            ? `Lock set ${activeSet + 1}`
+            : `Skip set ${activeSet + 1}`;
 
   return (
     <div
@@ -430,6 +450,7 @@ export const ExerciseSlide = forwardRef<
             />
             <FastActivateButton
               className="client-workouts-slide__check"
+              {...keepFieldFocus}
               aria-label={checkLabel}
               disabled={!nameDraft.trim()}
               onActivate={lockName}
@@ -475,6 +496,7 @@ export const ExerciseSlide = forwardRef<
           </span>
           <FastActivateButton
             className="client-workouts-slide__check"
+            {...keepFieldFocus}
             aria-label={checkLabel}
             onActivate={lockSets}
           >
@@ -500,9 +522,8 @@ export const ExerciseSlide = forwardRef<
             maxLength={4}
             placeholder="reps"
             aria-label={`Set ${activeSet + 1} reps`}
-            onKeyDown={(event) =>
-              onEnter(event, () => weightRef.current?.focus({ preventScroll: true }))
-            }
+            onFocus={() => setSetField("reps")}
+            onKeyDown={(event) => onEnter(event, focusWeight)}
             onChange={(event) => setRepsDraft(sanitizeWorkoutCount(event.target.value, 4))}
           />
           <input
@@ -516,19 +537,22 @@ export const ExerciseSlide = forwardRef<
             maxLength={6}
             placeholder="#"
             aria-label={`Set ${activeSet + 1} weight`}
+            onFocus={() => setSetField("weight")}
             onKeyDown={(event) => onEnter(event, () => lockSet(false))}
             onChange={(event) => setWeightDraft(sanitizeWorkoutWeight(event.target.value))}
           />
           <FastActivateButton
             className="client-workouts-slide__check"
+            {...keepFieldFocus}
             aria-label={checkLabel}
-            onActivate={() => lockSet(false)}
+            onActivate={() => (setField === "reps" ? focusWeight() : lockSet(false))}
           >
             <CheckIcon className="h-4 w-4" />
           </FastActivateButton>
           {showSame ? (
             <FastActivateButton
               className="client-workouts-slide__same"
+              {...keepFieldFocus}
               onActivate={() => lockSet(true)}
             >
               Same for the rest

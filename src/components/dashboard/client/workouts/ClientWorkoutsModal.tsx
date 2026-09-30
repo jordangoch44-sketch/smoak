@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
+import { useWorkoutEmailPreference } from "@/hooks/useWorkoutEmailPreference";
 import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
 import { cn } from "@/lib/utils";
 import {
@@ -18,7 +19,9 @@ import {
   buildMonthGrid,
   currentWeekProgress,
   currentWeekStreak,
+  formatGoalOptionLabel,
   formatMonthTitle,
+  formatWeekProgressLabel,
   formatWorkoutDayAriaLabel,
   formatWorkoutDayHeading,
   hasCardioOnDay,
@@ -35,6 +38,8 @@ import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
 import "@/styles/client-workouts.css";
 
 const LOCK_CLASS = "client-workouts-open";
+const WORKOUT_GOAL_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+const CARDIO_GOAL_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export function ClientWorkoutsModal({
   userId,
@@ -56,8 +61,15 @@ export function ClientWorkoutsModal({
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
   const ignoreDayTapUntilRef = useRef(0);
-  const { log, setGoalDaysPerWeek, saveDay, removeDay, copyDayTo } =
-    useClientWorkouts(userId);
+  const {
+    log,
+    setGoalDaysPerWeek,
+    setCardioGoalDaysPerWeek,
+    saveDay,
+    removeDay,
+    copyDayTo,
+  } = useClientWorkouts(userId);
+  const emailPreference = useWorkoutEmailPreference(userId);
   const backdropDismiss = useOwnPointerDismiss(onClose);
   selectedDateKeyRef.current = selectedDateKey;
   pasteSourceKeyRef.current = pasteSourceKey;
@@ -117,9 +129,7 @@ export function ClientWorkoutsModal({
   const today = parseLocalDateKey(todayKey);
   const progress = currentWeekProgress(log, today);
   const streak = currentWeekStreak(log, today);
-  const weekLabel = `${progress.trained} / ${progress.goal} this week${
-    streak > 0 ? ` · ${streak}-week streak` : ""
-  }`;
+  const weekLabel = formatWeekProgressLabel(progress, streak);
 
   function closeSelectedDay() {
     ignoreDayTapUntilRef.current = Date.now() + 400;
@@ -187,31 +197,77 @@ export function ClientWorkoutsModal({
           </div>
           <div className="client-workouts-dialog__stats">
             <p className="client-workouts-dialog__stat">
-              This week <strong>{progress.trained} / {progress.goal}</strong>
+              Workouts{" "}
+              <strong>
+                {progress.workout.done} / {progress.workout.goal}
+              </strong>
             </p>
+            {progress.cardio ? (
+              <p className="client-workouts-dialog__stat client-workouts-dialog__stat--cardio">
+                Cardio{" "}
+                <strong>
+                  {progress.cardio.done} / {progress.cardio.goal}
+                </strong>
+              </p>
+            ) : null}
             {streak > 0 ? (
               <p className="client-workouts-dialog__stat client-workouts-dialog__stat--streak">
                 Streak <strong>{streak}-week</strong>
               </p>
             ) : null}
-            <label className="client-workouts-dialog__goal">
-              Workout goal
-              <select
-                aria-label="Workout goal days per week"
-                value={log.goalDaysPerWeek}
-                onChange={(event) =>
-                  setGoalDaysPerWeek(Number(event.target.value))
-                }
-              >
-                {Array.from({ length: 7 }, (_, index) => index + 1).map(
-                  (days) => (
+            <div className="client-workouts-dialog__goals">
+              <label className="client-workouts-dialog__goal">
+                Workout goal
+                <select
+                  aria-label="Workout goal days per week"
+                  value={log.goalDaysPerWeek}
+                  onChange={(event) =>
+                    setGoalDaysPerWeek(Number(event.target.value))
+                  }
+                >
+                  {WORKOUT_GOAL_OPTIONS.map((days) => (
                     <option key={days} value={days}>
-                      {days} {days === 1 ? "day" : "days"} a week
+                      {formatGoalOptionLabel(days)}
                     </option>
-                  )
-                )}
-              </select>
-            </label>
+                  ))}
+                </select>
+              </label>
+              <label className="client-workouts-dialog__goal">
+                Cardio goal
+                <select
+                  aria-label="Cardio goal days per week"
+                  value={log.cardioGoalDaysPerWeek}
+                  onChange={(event) =>
+                    setCardioGoalDaysPerWeek(Number(event.target.value))
+                  }
+                >
+                  {CARDIO_GOAL_OPTIONS.map((days) => (
+                    <option key={days} value={days}>
+                      {formatGoalOptionLabel(days)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {emailPreference.available ? (
+                <FastActivateButton
+                  role="switch"
+                  aria-checked={emailPreference.enabled}
+                  className="client-workouts-dialog__goal client-workouts-dialog__email"
+                  onActivate={() =>
+                    emailPreference.setWorkoutEmails(!emailPreference.enabled)
+                  }
+                >
+                  Streak emails
+                  <span
+                    className={cn(
+                      "client-workouts-switch",
+                      emailPreference.enabled && "client-workouts-switch--on"
+                    )}
+                    aria-hidden
+                  />
+                </FastActivateButton>
+              ) : null}
+            </div>
           </div>
           {pasteSourceKey ? (
             <div className="client-workouts-paste">
@@ -320,6 +376,7 @@ export function ClientWorkoutsModal({
       </div>
       {selectedDateKey && !pasteSourceKey ? (
         <ClientWorkoutDaySheet
+          key={selectedDateKey}
           dateKey={selectedDateKey}
           workout={log.days[selectedDateKey]}
           weekLabel={weekLabel}

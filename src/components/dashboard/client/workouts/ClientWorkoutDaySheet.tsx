@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { ChevronLeftIcon } from "@/components/ui/icons";
+import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import {
   ExerciseSlide,
   type ExerciseSlideHandle,
 } from "@/components/dashboard/client/workouts/ExerciseSlide";
+import { SwipeToRemove } from "@/components/dashboard/client/workouts/SwipeToRemove";
 import {
   blankWorkoutExercise,
   emptyWorkoutCardio,
@@ -67,6 +69,50 @@ function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
 
 type DaySheetStep = "pick" | "cardio" | "workout";
 
+/** Per-set lines start folded; the summary line ("4 sets") is the toggle. */
+function ExerciseDetails({
+  exercise,
+  expanded,
+  onToggle,
+}: {
+  exercise: ClientWorkoutExercise;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const lines = formatExerciseDetailLines(exercise);
+  if (lines.length <= 1) {
+    return lines.map((line, index) => (
+      <p key={`${exercise.id}-line-${index}`} className="client-workouts-bubble__range">
+        {line}
+      </p>
+    ));
+  }
+  const [summary, ...sets] = lines;
+  return (
+    <>
+      <FastActivateButton
+        className={cn(
+          "client-workouts-bubble__sets-toggle",
+          expanded && "client-workouts-bubble__sets-toggle--open"
+        )}
+        aria-expanded={expanded}
+        aria-label={`${summary}. ${expanded ? "Hide" : "View"} sets`}
+        onActivate={onToggle}
+      >
+        {summary}
+        <ChevronDownIcon className="client-workouts-bubble__sets-chevron" />
+      </FastActivateButton>
+      {expanded
+        ? sets.map((line, index) => (
+            <p key={`${exercise.id}-line-${index}`} className="client-workouts-bubble__range">
+              {line}
+            </p>
+          ))
+        : null}
+    </>
+  );
+}
+
 interface ClientWorkoutDaySheetProps {
   dateKey: string;
   workout: ClientWorkoutDay | undefined;
@@ -117,7 +163,12 @@ export function ClientWorkoutDaySheet({
   const [focusComposer, setFocusComposer] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [expandedSetIds, setExpandedSetIds] = useState<string[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const checkKeyboardClosedRef = useRef<(() => void) | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const slideRef = useRef<ExerciseSlideHandle>(null);
 
@@ -152,6 +203,7 @@ export function ClientWorkoutDaySheet({
     setCardio(workout?.cardio ?? emptyWorkoutCardio());
     setWantCardio(false);
     setWantWorkout(false);
+    setEditingTitle(false);
     setDraft(blankWorkoutExercise());
     setEditingId(null);
     setFocusComposer(false);
@@ -176,9 +228,12 @@ export function ClientWorkoutDaySheet({
     const sheet: HTMLDivElement = sheetNode;
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const touch = window.matchMedia("(pointer: coarse)").matches;
     let displayed = 0;
     let target = 0;
     let raf = 0;
+    let keyboardDismissed = false;
+    let blurTimer = 0;
 
     function apply(px: number) {
       root.style.setProperty("--workout-keyboard-inset", `${Math.max(0, px).toFixed(1)}px`);
@@ -217,7 +272,7 @@ export function ClientWorkoutDaySheet({
     }
 
     function syncKeyboard() {
-      const next = readInset();
+      const next = keyboardDismissed ? 0 : readInset();
       if (reduceMotion) {
         stopEase();
         displayed = next;
@@ -239,6 +294,9 @@ export function ClientWorkoutDaySheet({
     function onFocusIn(event: FocusEvent) {
       if (!isWorkoutField(event.target)) return;
       if (!sheet.contains(event.target)) return;
+      window.clearTimeout(blurTimer);
+      keyboardDismissed = false;
+      if (touch) setTyping(true);
       const field = event.target;
       const body = sheet.querySelector(".client-workouts-day__body");
       const lockedTop = body instanceof HTMLElement ? body.scrollTop : 0;
@@ -251,6 +309,23 @@ export function ClientWorkoutDaySheet({
       }, 380);
     }
 
+    // Moving between fields (name → sets → reps) blurs for a moment; wait before treating it as
+    // the keyboard closing. Then drop the inset at once so the footer grows from the bottom
+    // behind the closing keyboard instead of above it.
+    function onFocusOut() {
+      window.clearTimeout(blurTimer);
+      blurTimer = window.setTimeout(() => {
+        const active = document.activeElement;
+        if (isWorkoutField(active) && sheet.contains(active)) return;
+        keyboardDismissed = true;
+        stopEase();
+        displayed = 0;
+        target = 0;
+        apply(0);
+        if (touch) setTyping(false);
+      }, 120);
+    }
+
     displayed = readInset();
     target = displayed;
     apply(displayed);
@@ -258,15 +333,26 @@ export function ClientWorkoutDaySheet({
     window.visualViewport?.addEventListener("scroll", syncKeyboard);
     window.addEventListener("resize", syncKeyboard);
     document.addEventListener("focusin", onFocusIn);
+    sheet.addEventListener("focusout", onFocusOut);
+    checkKeyboardClosedRef.current = onFocusOut;
     return () => {
+      checkKeyboardClosedRef.current = null;
       stopEase();
       window.clearTimeout(scrollTimer);
+      window.clearTimeout(blurTimer);
       window.visualViewport?.removeEventListener("resize", syncKeyboard);
       window.visualViewport?.removeEventListener("scroll", syncKeyboard);
       window.removeEventListener("resize", syncKeyboard);
       document.removeEventListener("focusin", onFocusIn);
+      sheet.removeEventListener("focusout", onFocusOut);
     };
   }, [dateKey]);
+
+  // Safari fires no focusout when a focused field unmounts (a slide step locking), so re-check
+  // after every render while the footer is tucked away.
+  useEffect(() => {
+    if (typing) checkKeyboardClosedRef.current?.();
+  });
 
   function persist(
     next: ClientWorkoutExercise[],
@@ -287,17 +373,26 @@ export function ClientWorkoutDaySheet({
     setError(null);
   }
 
-  function commitExercise(exercise: ClientWorkoutExercise): ClientWorkoutExercise[] | null {
+  function commitExercise(
+    exercise: ClientWorkoutExercise,
+    { openNext = false }: { openNext?: boolean } = {}
+  ): ClientWorkoutExercise[] | null {
     const cleaned = sanitizeWorkoutExercise(exercise);
     if (!cleaned) {
       setError("Add an exercise name to save it.");
       return null;
     }
     const next = [...exercises, cleaned];
+    if (!openNext) {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && sheetRef.current?.contains(active)) {
+        active.blur();
+      }
+    }
     setExercises(next);
     setDraft(blankWorkoutExercise());
-    setComposerOpen(true);
-    setFocusComposer(true);
+    setComposerOpen(openNext);
+    setFocusComposer(openNext);
     setError(null);
     persist(next);
     return next;
@@ -329,7 +424,7 @@ export function ClientWorkoutDaySheet({
     }
     const live = slideRef.current?.snapshot() ?? draft;
     if (!live.name.trim()) return;
-    commitExercise(live);
+    commitExercise(live, { openNext: true });
   }
 
   function handleSaveWorkout() {
@@ -406,6 +501,12 @@ export function ClientWorkoutDaySheet({
     persist(exercises, title, next);
   }
 
+  function toggleSetsExpanded(id: string) {
+    setExpandedSetIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+  }
+
   function toggleExerciseComplete(id: string) {
     const next = exercises.map((exercise) =>
       exercise.id === id
@@ -426,6 +527,19 @@ export function ClientWorkoutDaySheet({
       )
     );
     setError(null);
+  }
+
+  function removeExercise(id: string) {
+    const next = exercises.filter((item) => item.id !== id);
+    setExercises(next);
+    if (editingId === id) setEditingId(null);
+    if (next.length === 0 && !title.trim() && !sanitizeWorkoutCardio(cardio)) {
+      setDraft(blankWorkoutExercise());
+      setComposerOpen(true);
+      onRemove();
+      return;
+    }
+    persist(next);
   }
 
   function finishEditing(id: string) {
@@ -466,7 +580,11 @@ export function ClientWorkoutDaySheet({
     >
       <div
         ref={sheetRef}
-        className={cn("client-workouts-day", closing && "client-workouts-day--closing")}
+        className={cn(
+          "client-workouts-day",
+          closing && "client-workouts-day--closing",
+          typing && "client-workouts-day--typing"
+        )}
         role="dialog"
         aria-modal="true"
         aria-labelledby={`client-workout-day-${dateKey}`}
@@ -593,49 +711,78 @@ export function ClientWorkoutDaySheet({
           {step === "workout" ? (
             <>
               {hasCardio ? (
-                <article className="client-workouts-bubble client-workouts-bubble--cardio">
-                  <FastActivateButton
-                    className="client-workouts-bubble__edit"
-                    onActivate={() => {
-                      setStep("cardio");
-                      setError(null);
-                    }}
-                  >
-                    Edit
-                  </FastActivateButton>
-                  <p className="client-workouts-bubble__name">Cardio</p>
-                  <FastActivateButton
-                    className={cn(
-                      "client-workouts-bubble__complete",
-                      cardio.completed && "client-workouts-bubble__complete--done"
-                    )}
-                    aria-pressed={Boolean(cardio.completed)}
-                    aria-label={
-                      cardio.completed
-                        ? "Cardio complete. Tap to undo."
-                        : "Mark cardio complete"
-                    }
-                    onActivate={toggleCardioComplete}
-                  >
-                    {cardio.completed ? "✓ Complete" : "Complete"}
-                  </FastActivateButton>
-                  <p className="client-workouts-bubble__range">
-                    {formatCardioLine(cardio)}
-                  </p>
-                </article>
+                <SwipeToRemove label="Remove cardio" onRemove={handleRemoveCardio}>
+                  <article className="client-workouts-bubble client-workouts-bubble--cardio">
+                    <FastActivateButton
+                      className="client-workouts-bubble__edit"
+                      onActivate={() => {
+                        setStep("cardio");
+                        setError(null);
+                      }}
+                    >
+                      Edit
+                    </FastActivateButton>
+                    <p className="client-workouts-bubble__name">Cardio</p>
+                    <FastActivateButton
+                      className={cn(
+                        "client-workouts-bubble__complete",
+                        cardio.completed && "client-workouts-bubble__complete--done"
+                      )}
+                      aria-pressed={Boolean(cardio.completed)}
+                      aria-label={
+                        cardio.completed
+                          ? "Cardio complete. Tap to undo."
+                          : "Mark cardio complete"
+                      }
+                      onActivate={toggleCardioComplete}
+                    >
+                      {cardio.completed ? "✓ Complete" : "Complete"}
+                    </FastActivateButton>
+                    <p className="client-workouts-bubble__range">
+                      {formatCardioLine(cardio)}
+                    </p>
+                  </article>
+                </SwipeToRemove>
+              ) : null}
+              {hasCardio ? (
+                <hr className="client-workouts-divider" aria-hidden />
               ) : null}
 
-              <input
-                className="client-workouts-titles__custom"
-                value={title}
-                autoComplete="off"
-                autoCorrect="off"
-                maxLength={24}
-                placeholder="Name this workout… (Push, pull, legs, etc.)"
-                aria-label="Workout name"
-                onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
-                onBlur={() => applyTitle(title)}
-              />
+              {title.trim() && !editingTitle ? (
+                <FastActivateButton
+                  className="client-workouts-titles__display"
+                  aria-label={`Workout name: ${title.trim()}. Tap to rename.`}
+                  onActivate={() => {
+                    flushSync(() => setEditingTitle(true));
+                    titleInputRef.current?.focus({ preventScroll: true });
+                  }}
+                >
+                  {title.trim()}
+                </FastActivateButton>
+              ) : (
+                <input
+                  ref={titleInputRef}
+                  className="client-workouts-titles__custom"
+                  value={title}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  enterKeyHint="done"
+                  maxLength={24}
+                  placeholder="Name this workout… (Push, pull, legs, etc.)"
+                  aria-label="Workout name"
+                  onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
+                  onFocus={() => setEditingTitle(true)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") return;
+                    event.preventDefault();
+                    event.currentTarget.blur();
+                  }}
+                  onBlur={() => {
+                    applyTitle(title);
+                    setEditingTitle(false);
+                  }}
+                />
+              )}
 
               {exercises.map((exercise, index) => (
                 <div key={exercise.id} className="client-workouts-ex-row">
@@ -649,57 +796,48 @@ export function ClientWorkoutDaySheet({
                       editing
                       onChange={(patch) => updateExercise(exercise.id, patch)}
                       onDone={() => finishEditing(exercise.id)}
-                      onRemove={() => {
-                        const next = exercises.filter((item) => item.id !== exercise.id);
-                        setExercises(next);
-                        setEditingId(null);
-                        if (next.length === 0 && !title.trim() && !sanitizeWorkoutCardio(cardio)) {
-                          setDraft(blankWorkoutExercise());
-                          setComposerOpen(true);
-                          onRemove();
-                          return;
-                        }
-                        persist(next);
-                      }}
+                      onRemove={() => removeExercise(exercise.id)}
                     />
                   ) : (
-                    <article className="client-workouts-bubble">
-                      <FastActivateButton
-                        className="client-workouts-bubble__edit"
-                        onActivate={() => {
-                          setEditingId(exercise.id);
-                          setComposerOpen(false);
-                          setError(null);
-                        }}
-                      >
-                        Edit
-                      </FastActivateButton>
-                      <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
-                      {formatExerciseDetailLines(exercise).map((line, lineIndex) => (
-                        <p
-                          key={`${exercise.id}-line-${lineIndex}`}
-                          className="client-workouts-bubble__range"
+                    <SwipeToRemove
+                      label={`Remove ${exercise.name.trim()}`}
+                      onRemove={() => removeExercise(exercise.id)}
+                    >
+                      <article className="client-workouts-bubble">
+                        <FastActivateButton
+                          className="client-workouts-bubble__edit"
+                          onActivate={() => {
+                            setEditingId(exercise.id);
+                            setComposerOpen(false);
+                            setError(null);
+                          }}
                         >
-                          {line}
-                        </p>
-                      ))}
-                      <FastActivateButton
-                        className={cn(
-                          "client-workouts-bubble__complete",
-                          exercise.completed &&
-                            "client-workouts-bubble__complete--done"
-                        )}
-                        aria-pressed={Boolean(exercise.completed)}
-                        aria-label={
-                          exercise.completed
-                            ? `${exercise.name.trim()} complete. Tap to undo.`
-                            : `Mark ${exercise.name.trim()} complete`
-                        }
-                        onActivate={() => toggleExerciseComplete(exercise.id)}
-                      >
-                        {exercise.completed ? "✓ Complete" : "Complete"}
-                      </FastActivateButton>
-                    </article>
+                          Edit
+                        </FastActivateButton>
+                        <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
+                        <ExerciseDetails
+                          exercise={exercise}
+                          expanded={expandedSetIds.includes(exercise.id)}
+                          onToggle={() => toggleSetsExpanded(exercise.id)}
+                        />
+                        <FastActivateButton
+                          className={cn(
+                            "client-workouts-bubble__complete",
+                            exercise.completed &&
+                              "client-workouts-bubble__complete--done"
+                          )}
+                          aria-pressed={Boolean(exercise.completed)}
+                          aria-label={
+                            exercise.completed
+                              ? `${exercise.name.trim()} complete. Tap to undo.`
+                              : `Mark ${exercise.name.trim()} complete`
+                          }
+                          onActivate={() => toggleExerciseComplete(exercise.id)}
+                        >
+                          {exercise.completed ? "✓ Complete" : "Complete"}
+                        </FastActivateButton>
+                      </article>
+                    </SwipeToRemove>
                   )}
                 </div>
               ))}
@@ -730,96 +868,102 @@ export function ClientWorkoutDaySheet({
           {error ? <p className="client-workouts-error">{error}</p> : null}
         </div>
 
-        <div className="client-workouts-day__footer">
-          {step === "pick" ? (
-            <FastActivateButton
-              className="client-workouts-btn client-workouts-btn--primary"
-              onActivate={handlePickContinue}
-            >
-              Continue
-            </FastActivateButton>
-          ) : step === "cardio" ? (
-            <>
+        <div
+          className="client-workouts-day__footer"
+          aria-hidden={typing || undefined}
+          inert={typing || undefined}
+        >
+          <div className="client-workouts-day__footer-inner">
+            {step === "pick" ? (
               <FastActivateButton
                 className="client-workouts-btn client-workouts-btn--primary"
-                onActivate={handleCardioContinue}
+                onActivate={handlePickContinue}
               >
-                Continue to workout
+                Continue
               </FastActivateButton>
-              <FastActivateButton
-                className="client-workouts-btn client-workouts-btn--ghost"
-                onActivate={handleRemoveCardio}
-              >
-                Remove cardio
-              </FastActivateButton>
-            </>
-          ) : showSavedActions ? (
-            <>
-              {!hasCardio ? (
+            ) : step === "cardio" ? (
+              <>
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--primary"
+                  onActivate={handleCardioContinue}
+                >
+                  Continue to workout
+                </FastActivateButton>
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--ghost"
+                  onActivate={handleRemoveCardio}
+                >
+                  Remove cardio
+                </FastActivateButton>
+              </>
+            ) : showSavedActions ? (
+              <>
+                {!hasCardio ? (
+                  <FastActivateButton
+                    className="client-workouts-btn"
+                    onActivate={() => {
+                      setStep("cardio");
+                      setError(null);
+                    }}
+                  >
+                    Add cardio
+                  </FastActivateButton>
+                ) : null}
                 <FastActivateButton
                   className="client-workouts-btn"
                   onActivate={() => {
-                    setStep("cardio");
+                    setComposerOpen(true);
+                    setFocusComposer(true);
+                    setDraft(blankWorkoutExercise());
                     setError(null);
                   }}
                 >
-                  Add cardio
+                  Add exercise
                 </FastActivateButton>
-              ) : null}
-              <FastActivateButton
-                className="client-workouts-btn"
-                onActivate={() => {
-                  setComposerOpen(true);
-                  setFocusComposer(true);
-                  setDraft(blankWorkoutExercise());
-                  setError(null);
-                }}
-              >
-                Add exercise
-              </FastActivateButton>
-              <FastActivateButton
-                className="client-workouts-btn client-workouts-btn--primary"
-                onActivate={onCopy}
-              >
-                Copy to another day
-              </FastActivateButton>
-              <FastActivateButton
-                className="client-workouts-btn"
-                onActivate={() => void handleShare()}
-              >
-                Share
-              </FastActivateButton>
-              <FastActivateButton
-                className="client-workouts-btn client-workouts-btn--ghost"
-                onActivate={onRemove}
-              >
-                Remove workout
-              </FastActivateButton>
-            </>
-          ) : (
-            <>
-              <FastActivateButton
-                className="client-workouts-btn"
-                onActivate={handleAddExercise}
-              >
-                Add exercise
-              </FastActivateButton>
-              <FastActivateButton
-                className="client-workouts-btn client-workouts-btn--primary"
-                onActivate={handleSaveWorkout}
-              >
-                Save workout
-              </FastActivateButton>
-              {hasLoggedDay ? (
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--primary"
+                  onActivate={onCopy}
+                >
+                  Copy to another day
+                </FastActivateButton>
+                <FastActivateButton
+                  className="client-workouts-btn"
+                  onActivate={() => void handleShare()}
+                >
+                  Share
+                </FastActivateButton>
                 <FastActivateButton
                   className="client-workouts-btn client-workouts-btn--ghost"
                   onActivate={onRemove}
                 >
                   Remove workout
                 </FastActivateButton>
-              ) : null}
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <FastActivateButton
+                  className="client-workouts-btn"
+                  onActivate={handleAddExercise}
+                >
+                  Add exercise
+                </FastActivateButton>
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--primary"
+                  onActivate={handleSaveWorkout}
+                >
+                  Save workout
+                </FastActivateButton>
+                {hasLoggedDay ? (
+                  <FastActivateButton
+                    className="client-workouts-btn client-workouts-btn--ghost"
+                    onActivate={onRemove}
+                  >
+                    Remove workout
+                  </FastActivateButton>
+                ) : null}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

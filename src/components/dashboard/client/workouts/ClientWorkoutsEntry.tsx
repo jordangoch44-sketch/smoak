@@ -13,9 +13,27 @@ import {
   currentWeekDayStatuses,
   formatWeekGoalCopy,
   WEEKDAY_LABELS,
+  type WeekGoalLine,
 } from "@/lib/workouts/client-workout";
 import { ClientWorkoutsModal } from "./ClientWorkoutsModal";
+import type { ClientWorkoutLog } from "@/types/client-workout";
 import "@/styles/client-workouts.css";
+
+function pendingGoalLines(log: ClientWorkoutLog): WeekGoalLine[] {
+  const empty = { done: 0, met: false, pct: 0 };
+  const lines: WeekGoalLine[] = [
+    { id: "workout", label: "Workout", goal: log.goalDaysPerWeek, ...empty },
+  ];
+  if (log.cardioGoalDaysPerWeek > 0) {
+    lines.push({
+      id: "cardio",
+      label: "Cardio",
+      goal: log.cardioGoalDaysPerWeek,
+      ...empty,
+    });
+  }
+  return lines;
+}
 
 export function ClientWorkoutsEntry({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
@@ -57,9 +75,6 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
           </span>
           <span className="client-workouts-entry__copy">
             <span className="client-workouts-entry__title">Workouts</span>
-            <span className="client-workouts-entry__goal">
-              {week?.copy.goal ?? "Workout goal 4 days a week"}
-            </span>
             <span
               className={cn(
                 "client-workouts-entry__status",
@@ -72,18 +87,41 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
           <ChevronRightIcon className="client-workouts-entry__chevron h-5 w-5" />
         </FastActivateButton>
 
-        <div
-          className="client-workouts-entry__track"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={week?.copy.pct ?? 0}
-          aria-label="Weekly workout goal"
-        >
-          <span
-            className="client-workouts-entry__fill"
-            style={{ width: `${week?.copy.pct ?? 0}%` }}
-          />
+        <div className="client-workouts-entry__goals">
+          {(week?.copy.lines ?? pendingGoalLines(log)).map((line) => (
+            <div
+              key={line.id}
+              className={cn(
+                "client-workouts-entry__goal-row",
+                line.id === "cardio" && "client-workouts-entry__goal-row--cardio"
+              )}
+            >
+              <span className="client-workouts-entry__goal-label">
+                {line.label}
+              </span>
+              <div
+                className="client-workouts-entry__track"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={line.pct}
+                aria-label={`Weekly ${line.label.toLowerCase()} goal`}
+              >
+                <span
+                  className="client-workouts-entry__fill"
+                  style={{ width: `${line.pct}%` }}
+                />
+              </div>
+              <span
+                className={cn(
+                  "client-workouts-entry__goal-count",
+                  line.met && "client-workouts-entry__goal-count--done"
+                )}
+              >
+                {line.done}/{line.goal}
+              </span>
+            </div>
+          ))}
         </div>
 
         <div
@@ -98,12 +136,18 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
               weekday: label,
               isToday: false,
               completed: false,
+              strength: false,
+              cardio: false,
               isFuture: true,
             }))
           ).map((day) => {
             const pending = day.dateKey.startsWith("pending-");
             const state = day.completed
-              ? "completed"
+              ? day.strength && day.cardio
+                ? "workout and cardio logged"
+                : day.cardio
+                  ? "cardio logged"
+                  : "workout logged"
               : day.isFuture
                 ? "upcoming"
                 : day.isToday
@@ -133,7 +177,22 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
                 </span>
                 <span className="client-workouts-entry__day-mark" aria-hidden>
                   {day.completed ? (
-                    <CheckIcon className="client-workouts-entry__day-check" />
+                    <>
+                      {day.cardio ? (
+                        <span className="client-workouts-cal__mark client-workouts-cal__mark--cardio">
+                          <span className="client-workouts-cal__check">
+                            <CheckIcon />
+                          </span>
+                        </span>
+                      ) : null}
+                      {day.strength ? (
+                        <span className="client-workouts-cal__mark">
+                          <span className="client-workouts-cal__check">
+                            <CheckIcon />
+                          </span>
+                        </span>
+                      ) : null}
+                    </>
                   ) : (
                     <span className="client-workouts-entry__day-slot" />
                   )}

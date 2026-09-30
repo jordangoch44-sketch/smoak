@@ -18,6 +18,8 @@ export interface DashboardHeaderProps {
   statusTone?: "pending" | "active" | "rejected";
   actions?: ReactNode;
   introActions?: ReactNode;
+  /** Sits left of the title block on every width (client avatar). */
+  leading?: ReactNode;
   className?: string;
 }
 
@@ -33,6 +35,7 @@ export function DashboardHeader({
   statusTone = "pending",
   actions,
   introActions,
+  leading,
   className,
 }: DashboardHeaderProps) {
   const hasAside = Boolean(roleLabel || statusLabel || actions);
@@ -46,16 +49,21 @@ export function DashboardHeader({
       }
     >
       <div
-        className={
-          hasAside
-            ? "dashboard-page__header-row"
-            : "dashboard-page__header-row dashboard-page__header-row--solo"
-        }
+        className={[
+          "dashboard-page__header-row",
+          !hasAside && "dashboard-page__header-row--solo",
+          leading && "dashboard-page__header-row--leading",
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
+        {leading ? (
+          <div className="dashboard-page__header-leading">{leading}</div>
+        ) : null}
         <div className="dashboard-page__header-main">
           <p className="dashboard-page__eyebrow">{eyebrow}</p>
           <h1 className="dashboard-page__title">{title}</h1>
-          <p className="dashboard-page__subtitle">{subtitle}</p>
+          {subtitle ? <p className="dashboard-page__subtitle">{subtitle}</p> : null}
           {quote ? (
             <blockquote className="dashboard-page__quote">
               <p className="dashboard-page__quote-text">“{quote}”</p>

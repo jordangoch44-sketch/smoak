@@ -3,6 +3,7 @@ import { parseUnsubscribeToken } from "@/lib/admin-email-unsubscribe";
 import { refreshAdminEmailCounts } from "@/lib/admin-email-db";
 import { markOutreachUnsubscribed } from "@/lib/outreach/prospects";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
+import { WORKOUT_EMAIL_UNSUBSCRIBE_PREFIX } from "@/lib/email/client-workout-email-service";
 
 export const runtime = "nodejs";
 
@@ -14,6 +15,23 @@ async function applyUnsubscribe(token: string | null) {
   const service = createSupabaseServiceClient();
   if (!service) {
     return { ok: false as const, message: "Unsubscribe is unavailable right now." };
+  }
+
+  if (parsed.emailId?.startsWith(WORKOUT_EMAIL_UNSUBSCRIBE_PREFIX)) {
+    const userId = parsed.emailId.slice(WORKOUT_EMAIL_UNSUBSCRIBE_PREFIX.length);
+    const { error } = await service.from("client_email_preferences").upsert({
+      user_id: userId,
+      workout_emails: false,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) {
+      return { ok: false as const, message: "Could not update your preferences." };
+    }
+    return {
+      ok: true as const,
+      email: parsed.email,
+      message: "You won’t get workout streak emails anymore. Turn them back on in Workouts.",
+    };
   }
 
   await service.from("admin_email_unsubscribes").upsert({

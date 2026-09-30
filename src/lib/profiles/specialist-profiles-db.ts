@@ -39,9 +39,20 @@ import {
   withSyncedSessionPrices,
 } from "@/lib/session-price";
 
-function isMissingColumnError(error: { message?: string } | null, column: string): boolean {
+function isMissingColumnError(
+  error: { message?: string; code?: string } | null,
+  column: string
+): boolean {
   const message = error?.message?.toLowerCase() ?? "";
-  return message.includes(column) && message.includes("does not exist");
+  const code = error?.code ?? "";
+  if (!message.includes(column.toLowerCase())) return false;
+  return (
+    code === "42703" ||
+    code === "PGRST204" ||
+    message.includes("does not exist") ||
+    message.includes("schema cache") ||
+    message.includes("could not find")
+  );
 }
 
 /** Listing entitlement from columns, with profile_data as fallback when the plan column is missing. */

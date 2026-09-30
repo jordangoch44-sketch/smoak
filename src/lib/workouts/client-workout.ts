@@ -7,6 +7,7 @@ import type {
 } from "@/types/client-workout";
 
 export const DEFAULT_GOAL_DAYS_PER_WEEK = 4;
+export const DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK = 3;
 export const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_STREAK_WEEKS = 520;
@@ -16,7 +17,51 @@ const MAX_CARDIO_DURATION_LENGTH = 16;
 export const MAX_WORKOUT_SETS = 10;
 
 export function emptyClientWorkoutLog(): ClientWorkoutLog {
-  return { goalDaysPerWeek: DEFAULT_GOAL_DAYS_PER_WEEK, days: {} };
+  return {
+    goalDaysPerWeek: DEFAULT_GOAL_DAYS_PER_WEEK,
+    cardioGoalDaysPerWeek: DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK,
+    days: {},
+    bodyWeights: {},
+  };
+}
+
+const MIN_BODY_WEIGHT_LB = 40;
+const MAX_BODY_WEIGHT_LB = 1000;
+
+/** Pounds rounded to 0.1, or null when outside a plausible body weight. */
+export function sanitizeBodyWeight(value: unknown): number | null {
+  const weight = typeof value === "string" ? Number.parseFloat(value) : Number(value);
+  if (!Number.isFinite(weight)) return null;
+  if (weight < MIN_BODY_WEIGHT_LB || weight > MAX_BODY_WEIGHT_LB) return null;
+  return Math.round(weight * 10) / 10;
+}
+
+export function sanitizeBodyWeights(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object") return {};
+  const weights: Record<string, number> = {};
+  for (const [dateKey, raw] of Object.entries(value)) {
+    if (!isWorkoutDateKey(dateKey)) continue;
+    const weight = sanitizeBodyWeight(raw);
+    if (weight !== null) weights[dateKey] = weight;
+  }
+  return weights;
+}
+
+/** A time zone the runtime can format with, or undefined. */
+export function sanitizeTimeZone(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const zone = value.trim();
+  if (!zone || zone.length > 64) return undefined;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: zone });
+    return zone;
+  } catch {
+    return undefined;
+  }
+}
+
+export function formatBodyWeight(weight: number): string {
+  return Number.isInteger(weight) ? String(weight) : weight.toFixed(1);
 }
 
 export function createWorkoutExerciseId(): string {
@@ -125,6 +170,16 @@ export function clampGoalDaysPerWeek(value: number): number {
   return Math.min(7, Math.max(1, Math.round(value)));
 }
 
+/** 0 turns the cardio goal off. Logs saved before cardio goals get the default. */
+export function clampCardioGoalDaysPerWeek(value: unknown): number {
+  if (value === undefined || value === null) {
+    return DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK;
+  }
+  const count = Number(value);
+  if (!Number.isFinite(count)) return DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK;
+  return Math.min(7, Math.max(0, Math.round(count)));
+}
+
 export function sanitizeWorkoutTitle(value: unknown): string {
   if (typeof value !== "string") return "";
   return value.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE_LENGTH);
@@ -191,13 +246,6 @@ export function hasStrengthOnDay(
   return day.exercises.length > 0 || Boolean(day.title.trim());
 }
 
-export function hasWorkoutOnDay(
-  log: ClientWorkoutLog,
-  dateKey: string
-): boolean {
-  return hasStrengthOnDay(log, dateKey) || hasCardioOnDay(log, dateKey);
-}
-
 export function workoutTitleOnDay(
   log: ClientWorkoutLog,
   dateKey: string
@@ -250,9 +298,13 @@ export function sanitizeClientWorkoutLog(value: unknown): ClientWorkoutLog {
     }
   }
 
+  const timeZone = sanitizeTimeZone(raw.timeZone);
   return {
     goalDaysPerWeek: clampGoalDaysPerWeek(Number(raw.goalDaysPerWeek)),
+    cardioGoalDaysPerWeek: clampCardioGoalDaysPerWeek(raw.cardioGoalDaysPerWeek),
     days,
+    bodyWeights: sanitizeBodyWeights(raw.bodyWeights),
+    ...(timeZone ? { timeZone } : {}),
   };
 }
 
@@ -280,28 +332,58 @@ export function buildMonthGrid(month: Date, todayKey: string): CalendarDayCell[]
   return cells;
 }
 
-export function trainedDateKeysInWeek(
+function countDaysInWeek(
   log: ClientWorkoutLog,
-  weekStart: Date
-): string[] {
-  const keys: string[] = [];
+  weekStart: Date,
+  matches: (log: ClientWorkoutLog, dateKey: string) => boolean
+): number {
+  let count = 0;
   for (let index = 0; index < 7; index += 1) {
-    const dateKey = toLocalDateKey(addDays(weekStart, index));
-    if (hasWorkoutOnDay(log, dateKey)) keys.push(dateKey);
+    if (matches(log, toLocalDateKey(addDays(weekStart, index)))) count += 1;
   }
-  return keys;
+  return count;
+}
+
+export interface WeekGoalProgress {
+  done: number;
+  goal: number;
+  met: boolean;
+}
+
+export interface WeekProgress {
+  workout: WeekGoalProgress;
+  /** Null when the cardio goal is off. */
+  cardio: WeekGoalProgress | null;
+  /** Every active goal is met. */
+  met: boolean;
+}
+
+function weekProgress(log: ClientWorkoutLog, weekStart: Date): WeekProgress {
+  const workoutDone = countDaysInWeek(log, weekStart, hasStrengthOnDay);
+  const workout = {
+    done: workoutDone,
+    goal: log.goalDaysPerWeek,
+    met: workoutDone >= log.goalDaysPerWeek,
+  };
+  const cardioGoal = log.cardioGoalDaysPerWeek;
+  const cardioDone =
+    cardioGoal > 0 ? countDaysInWeek(log, weekStart, hasCardioOnDay) : 0;
+  const cardio =
+    cardioGoal > 0
+      ? { done: cardioDone, goal: cardioGoal, met: cardioDone >= cardioGoal }
+      : null;
+  return { workout, cardio, met: workout.met && (cardio?.met ?? true) };
 }
 
 export function weekMetGoal(log: ClientWorkoutLog, weekStart: Date): boolean {
-  return trainedDateKeysInWeek(log, weekStart).length >= log.goalDaysPerWeek;
+  return weekProgress(log, weekStart).met;
 }
 
 export function currentWeekProgress(
   log: ClientWorkoutLog,
   today: Date = new Date()
-): { trained: number; goal: number } {
-  const trained = trainedDateKeysInWeek(log, startOfWeekSunday(today)).length;
-  return { trained, goal: log.goalDaysPerWeek };
+): WeekProgress {
+  return weekProgress(log, startOfWeekSunday(today));
 }
 
 export interface WeekDayStatus {
@@ -310,6 +392,8 @@ export interface WeekDayStatus {
   weekday: string;
   isToday: boolean;
   completed: boolean;
+  strength: boolean;
+  cardio: boolean;
   isFuture: boolean;
 }
 
@@ -322,31 +406,82 @@ export function currentWeekDayStatuses(
   return WEEKDAY_LABELS.map((label, index) => {
     const date = addDays(weekStart, index);
     const dateKey = toLocalDateKey(date);
+    const strength = hasStrengthOnDay(log, dateKey);
+    const cardio = hasCardioOnDay(log, dateKey);
     return {
       dateKey,
       label,
       weekday: date.toLocaleDateString("en-US", { weekday: "long" }),
       isToday: dateKey === todayKey,
-      completed: hasWorkoutOnDay(log, dateKey),
+      completed: strength || cardio,
+      strength,
+      cardio,
       isFuture: dateKey > todayKey,
     };
   });
 }
 
+function formatDaysCount(count: number): string {
+  return `${count} ${count === 1 ? "day" : "days"}`;
+}
+
+export function formatGoalOptionLabel(days: number): string {
+  return days === 0 ? "Off" : `${formatDaysCount(days)} a week`;
+}
+
+export interface WeekGoalLine {
+  id: "workout" | "cardio";
+  label: string;
+  done: number;
+  goal: number;
+  met: boolean;
+  pct: number;
+}
+
 export function formatWeekGoalCopy(
   log: ClientWorkoutLog,
   today: Date = new Date()
-): { goal: string; status: string; complete: boolean; pct: number } {
-  const { trained, goal } = currentWeekProgress(log, today);
-  const complete = trained >= goal;
+): { status: string; complete: boolean; lines: WeekGoalLine[] } {
+  const progress = currentWeekProgress(log, today);
+  const line = (
+    id: WeekGoalLine["id"],
+    label: string,
+    goal: WeekGoalProgress
+  ): WeekGoalLine => ({
+    id,
+    label,
+    done: goal.done,
+    goal: goal.goal,
+    met: goal.met,
+    pct:
+      goal.goal <= 0
+        ? 0
+        : Math.min(100, Math.round((goal.done / goal.goal) * 100)),
+  });
+  const lines = [line("workout", "Workout", progress.workout)];
+  if (progress.cardio) lines.push(line("cardio", "Cardio", progress.cardio));
   return {
-    goal: `Workout goal ${goal} ${goal === 1 ? "day" : "days"} a week`,
-    status: complete
+    status: progress.met
       ? "Week complete"
-      : `${trained} of ${goal} done this week`,
-    complete,
-    pct: goal <= 0 ? 0 : Math.min(100, Math.round((trained / goal) * 100)),
+      : lines
+          .map((item) => `${item.done} of ${item.goal} ${item.label.toLowerCase()}`)
+          .join(" · "),
+    complete: progress.met,
+    lines,
   };
+}
+
+/** One line for the day sheet header, e.g. "2 / 4 workouts · 1 / 3 cardio". */
+export function formatWeekProgressLabel(
+  progress: WeekProgress,
+  streak: number
+): string {
+  const parts = [`${progress.workout.done} / ${progress.workout.goal} workouts`];
+  if (progress.cardio) {
+    parts.push(`${progress.cardio.done} / ${progress.cardio.goal} cardio`);
+  }
+  if (streak > 0) parts.push(`${streak}-week streak`);
+  return parts.join(" · ");
 }
 
 export function currentWeekStreak(
@@ -365,6 +500,32 @@ export function currentWeekStreak(
     week = addDays(week, -7);
   }
   return streak;
+}
+
+/** Longest run of goal-met weeks, from the first logged day through this week. */
+export function bestWeekStreak(
+  log: ClientWorkoutLog,
+  today: Date = new Date()
+): number {
+  const firstKey = Object.keys(log.days)
+    .filter(isWorkoutDateKey)
+    .sort()[0];
+  if (!firstKey) return 0;
+
+  const lastWeek = startOfWeekSunday(today).getTime();
+  let week = startOfWeekSunday(parseLocalDateKey(firstKey));
+  let best = 0;
+  let run = 0;
+  for (
+    let index = 0;
+    index < MAX_STREAK_WEEKS && week.getTime() <= lastWeek;
+    index += 1
+  ) {
+    run = weekMetGoal(log, week) ? run + 1 : 0;
+    best = Math.max(best, run);
+    week = addDays(week, 7);
+  }
+  return best;
 }
 
 export function formatMonthTitle(month: Date): string {

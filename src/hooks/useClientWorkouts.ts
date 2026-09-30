@@ -8,6 +8,8 @@ import {
   getClientWorkoutLogServerSnapshot,
   removeClientWorkoutDay,
   saveClientWorkoutDay,
+  setClientBodyWeight,
+  setClientWorkoutCardioGoalDays,
   setClientWorkoutGoalDays,
   subscribeClientWorkouts,
 } from "@/lib/workouts/client-workout-store";
@@ -28,6 +30,22 @@ export function useClientWorkouts(userId: string | null) {
     (goalDaysPerWeek: number) => {
       if (!userId) return;
       setClientWorkoutGoalDays(userId, goalDaysPerWeek);
+    },
+    [userId]
+  );
+
+  const setCardioGoalDaysPerWeek = useCallback(
+    (cardioGoalDaysPerWeek: number) => {
+      if (!userId) return;
+      setClientWorkoutCardioGoalDays(userId, cardioGoalDaysPerWeek);
+    },
+    [userId]
+  );
+
+  const setBodyWeight = useCallback(
+    (dateKey: string, weight: number | null) => {
+      if (!userId) return false;
+      return setClientBodyWeight(userId, dateKey, weight);
     },
     [userId]
   );
@@ -65,10 +83,20 @@ export function useClientWorkouts(userId: string | null) {
     () => ({
       log,
       setGoalDaysPerWeek,
+      setCardioGoalDaysPerWeek,
+      setBodyWeight,
       saveDay,
       removeDay,
       copyDayTo,
     }),
-    [log, setGoalDaysPerWeek, saveDay, removeDay, copyDayTo]
+    [
+      log,
+      setGoalDaysPerWeek,
+      setCardioGoalDaysPerWeek,
+      setBodyWeight,
+      saveDay,
+      removeDay,
+      copyDayTo,
+    ]
   );
 }

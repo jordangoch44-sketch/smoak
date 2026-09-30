@@ -38,4 +38,3 @@ export type {
   ClientWorkoutDay,
   ClientWorkoutLog,
 } from "./client-workout";
-

@@ -37,7 +37,8 @@ import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOr
 import { TrainerList } from "@/components/trainers";
 import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiriesList";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
-import { ClientWorkoutsEntry } from "@/components/dashboard/client/workouts/ClientWorkoutsEntry";
+import { ClientWorkoutBadges } from "@/components/dashboard/client/workouts/ClientWorkoutBadges";
+import { ClientWorkoutsCarousel } from "@/components/dashboard/client/workouts/ClientWorkoutsCarousel";
 import { ClientDashboardOverlay } from "@/components/dashboard/client/ClientDashboardOverlay";
 import { PageWaitState } from "@/components/brand/PageWaitState";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
@@ -52,13 +53,6 @@ import { getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 
 type ClientDashboardOverlayId = "saved" | "messages";
-
-function formatLocation(form: ClientProfileFormState): string {
-  const parts = [form.city, form.state, form.postalCode]
-    .map((part) => part.trim())
-    .filter(Boolean);
-  return parts.length > 0 ? parts.join(", ") : "Add your location";
-}
 
 export function ClientDashboardPageClient() {
   const router = useRouter();
@@ -285,7 +279,29 @@ export function ClientDashboardPageClient() {
         variant="client"
         eyebrow="Client dashboard"
         title={`Welcome back, ${firstName}`}
-        subtitle="Your profile, saved specialists, and messages."
+        headerClassName="client-dash-header"
+        headerLeading={
+          <FastActivateButton
+            className="client-dash-summary__avatar-wrap"
+            aria-label={`${displayName}. Edit profile`}
+            onActivate={openProfileEditor}
+          >
+            <span className="client-dash-summary__avatar">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- auth avatar URLs
+                <img src={avatarUrl} alt="" />
+              ) : (
+                <span aria-hidden>{initials}</span>
+              )}
+            </span>
+            {profileComplete ? (
+              <span className="client-dash-summary__avatar-badge" aria-hidden>
+                <CheckIcon className="client-dash-summary__avatar-badge-icon" />
+              </span>
+            ) : null}
+          </FastActivateButton>
+        }
+        introActions={<ClientWorkoutBadges userId={session.userId} />}
         utilityBar={
           <FastActivateButton
             className="dashboard-signout dashboard-signout--utility"
@@ -328,40 +344,8 @@ export function ClientDashboardPageClient() {
         ) : null}
 
         <section className="client-dash-panel client-dash-panel--profile">
-          <div className="client-dash-summary">
-            <div className="client-dash-summary__identity">
-              <div className="client-dash-summary__avatar-wrap">
-                <div className="client-dash-summary__avatar">
-                  {avatarUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- auth avatar URLs
-                    <img src={avatarUrl} alt="" />
-                  ) : (
-                    <span aria-hidden>{initials}</span>
-                  )}
-                </div>
-                {profileComplete ? (
-                  <span
-                    className="client-dash-summary__avatar-badge"
-                    title="Profile complete"
-                    aria-label="Profile complete"
-                  >
-                    <CheckIcon className="client-dash-summary__avatar-badge-icon" />
-                  </span>
-                ) : null}
-              </div>
-              <div className="client-dash-summary__copy">
-                <h2 className="client-dash-summary__name">{displayName}</h2>
-                <p className="client-dash-summary__location">
-                  <span className="client-dash-summary__location-chip">
-                    <span>{form ? formatLocation(form) : "—"}</span>
-                  </span>
-                </p>
-              </div>
-            </div>
-          </div>
-
           <div className="client-dash-links">
-            <ClientWorkoutsEntry userId={session.userId} />
+            <ClientWorkoutsCarousel userId={session.userId} />
 
             <FastActivateButton
               className="smoac-control client-dash-nav-row"

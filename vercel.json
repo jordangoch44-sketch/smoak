@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/outreach",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/client-workout-emails",
+      "schedule": "5 * * * *"
     }
   ]
 }

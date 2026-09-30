@@ -116,8 +116,8 @@ export function ProfileHero({
     liveImages += 1;
     return true;
   });
-  const canShowPins =
-    trainer.isPremium === true || isTrainerProPlus(trainer);
+  const isPaidPlan = trainer.isPremium === true || isProPlus;
+  const canShowPins = isPaidPlan;
   const pinVideos = galleryMedia
     .filter((item) => item.type === "video")
     .map((item) => item.url);
@@ -452,7 +452,7 @@ export function ProfileHero({
           trainerId={trainer.id}
           trainerName={trainer.name}
           slug={trainer.slug}
-          instagram={trainer.social?.instagram}
+          instagram={isPaidPlan ? trainer.social?.instagram : null}
         />
       )}
     </>
