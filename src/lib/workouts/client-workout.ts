@@ -72,6 +72,104 @@ export function blankWorkoutExercise(): ClientWorkoutExercise {
   return { id: createWorkoutExerciseId(), name: "", sets: "", reps: "" };
 }
 
+function blankSetLog(): ClientWorkoutSetLog {
+  return { reps: "", weight: "" };
+}
+
+/** One empty set row, ready for a name. Previous weights fill in once the name matches. */
+export function freshExerciseBlock(): ClientWorkoutExercise {
+  return {
+    id: createWorkoutExerciseId(),
+    name: "",
+    sets: "1",
+    reps: "",
+    setLogs: [blankSetLog()],
+  };
+}
+
+/** A past exercise the set table can copy weights and reps from. Newest first. */
+export interface ExerciseSetMemory {
+  dateKey: string;
+  name: string;
+  sets: string;
+  reps: string;
+  setLogs?: ClientWorkoutSetLog[];
+}
+
+/** Earlier days, newest first, flattened to one row per exercise. */
+export function exerciseMemoryBefore(
+  entries: readonly {
+    dateKey: string;
+    exercises: readonly ClientWorkoutExercise[];
+  }[],
+  beforeDateKey: string
+): ExerciseSetMemory[] {
+  return entries
+    .filter((entry) => entry.dateKey < beforeDateKey)
+    .sort((a, b) => (a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0))
+    .flatMap((entry) =>
+      entry.exercises.map((exercise) => ({
+        dateKey: entry.dateKey,
+        name: exercise.name,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        setLogs: exercise.setLogs,
+      }))
+    );
+}
+
+/**
+ * Weights and reps from the newest exercise with this name.
+ * Checks are cleared. Null when this name has not been logged before.
+ */
+export function rememberExerciseSets(
+  memory: readonly ExerciseSetMemory[],
+  name: string
+): ClientWorkoutSetLog[] | null {
+  const needle = name.trim().toLowerCase();
+  if (!needle) return null;
+  for (const match of memory) {
+    if (match.name.trim().toLowerCase() !== needle) continue;
+    const filled = (match.setLogs ?? []).some((log) => log.reps.trim() || log.weight.trim());
+    if (match.setLogs && match.setLogs.length > 0 && filled) {
+      return match.setLogs.slice(0, MAX_WORKOUT_SETS).map((log) => ({
+        reps: log.reps.trim(),
+        weight: log.weight.trim(),
+      }));
+    }
+    const count = parseWorkoutSetCount(match.sets);
+    if (count && !match.setLogs?.length) {
+      const reps = match.reps.trim();
+      return Array.from({ length: count }, () => ({ reps, weight: "" }));
+    }
+  }
+  return null;
+}
+
+/** Replace the set rows and mark the exercise done only when every set is checked. */
+export function exerciseWithSetLogs(
+  exercise: ClientWorkoutExercise,
+  setLogs: readonly ClientWorkoutSetLog[]
+): ClientWorkoutExercise {
+  const logs = (setLogs.length > 0 ? setLogs : [blankSetLog()])
+    .slice(0, MAX_WORKOUT_SETS)
+    .map((log) => {
+      const next: ClientWorkoutSetLog = {
+        reps: log.reps,
+        weight: log.weight,
+      };
+      if (log.completed === true) next.completed = true;
+      return next;
+    });
+  return {
+    ...exercise,
+    sets: String(logs.length),
+    reps: "",
+    setLogs: logs,
+    completed: logs.every((log) => log.completed === true),
+  };
+}
+
 export function sanitizeWorkoutCount(value: unknown, maxLength: number): string {
   if (typeof value !== "string") return "";
   return value.replace(/\D/g, "").slice(0, maxLength);
@@ -103,12 +201,13 @@ export function sanitizeWorkoutSetLogs(
   const logs = value.slice(0, MAX_WORKOUT_SETS).map((item) => {
     if (!item || typeof item !== "object") return { reps: "", weight: "" };
     const raw = item as Partial<ClientWorkoutSetLog>;
-    return {
+    const log: ClientWorkoutSetLog = {
       reps: sanitizeWorkoutCount(raw.reps, 4),
       weight: sanitizeWorkoutWeight(raw.weight),
     };
+    if (raw.completed === true) log.completed = true;
+    return log;
   });
-  if (!logs.some((log) => log.reps || log.weight)) return undefined;
   return logs;
 }
 
@@ -121,6 +220,7 @@ export function sanitizeWorkoutExercise(
   const sets = setLogs
     ? String(setLogs.length)
     : exercise.sets.replace(/\s+/g, " ").trim().slice(0, 8);
+  const supersetId = sanitizeSupersetId(exercise.supersetId);
   return {
     id: exercise.id.trim() || createWorkoutExerciseId(),
     name,
@@ -128,7 +228,15 @@ export function sanitizeWorkoutExercise(
     reps: setLogs ? "" : exercise.reps.replace(/\s+/g, " ").trim().slice(0, 16),
     ...(setLogs ? { setLogs } : {}),
     ...(exercise.completed === true ? { completed: true } : {}),
+    ...(supersetId ? { supersetId } : {}),
   };
+}
+
+function sanitizeSupersetId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const id = value.trim();
+  if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) return undefined;
+  return id;
 }
 
 export function isWorkoutDateKey(value: string): boolean {

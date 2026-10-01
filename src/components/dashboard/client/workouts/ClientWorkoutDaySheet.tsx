@@ -1,26 +1,28 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { ChevronDownIcon, ChevronLeftIcon } from "@/components/ui/icons";
+import { CheckIcon, ChevronLeftIcon, PlusIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
-import {
-  ExerciseSlide,
-  type ExerciseSlideHandle,
-} from "@/components/dashboard/client/workouts/ExerciseSlide";
+import { ExerciseOptionsSheet } from "@/components/dashboard/client/workouts/ExerciseOptionsSheet";
+import { ExercisePickerSheet } from "@/components/dashboard/client/workouts/ExercisePickerSheet";
+import { ExerciseSetBlock } from "@/components/dashboard/client/workouts/ExerciseSetBlock";
 import { SwipeToRemove } from "@/components/dashboard/client/workouts/SwipeToRemove";
 import {
-  blankWorkoutExercise,
+  createWorkoutExerciseId,
   emptyWorkoutCardio,
+  exerciseWithSetLogs,
   formatCardioLine,
-  formatExerciseDetailLines,
   formatWorkoutDayHeading,
   formatWorkoutShareText,
+  freshExerciseBlock,
+  parseWorkoutSetCount,
+  rememberExerciseSets,
   shareOrCopyWorkoutText,
   sanitizeWorkoutCardio,
-  sanitizeWorkoutExercise,
   sanitizeWorkoutTitle,
+  type ExerciseSetMemory,
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
 import type {
@@ -69,50 +71,6 @@ function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
 
 type DaySheetStep = "pick" | "cardio" | "workout";
 
-/** Per-set lines start folded; the summary line ("4 sets") is the toggle. */
-function ExerciseDetails({
-  exercise,
-  expanded,
-  onToggle,
-}: {
-  exercise: ClientWorkoutExercise;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const lines = formatExerciseDetailLines(exercise);
-  if (lines.length <= 1) {
-    return lines.map((line, index) => (
-      <p key={`${exercise.id}-line-${index}`} className="client-workouts-bubble__range">
-        {line}
-      </p>
-    ));
-  }
-  const [summary, ...sets] = lines;
-  return (
-    <>
-      <FastActivateButton
-        className={cn(
-          "client-workouts-bubble__sets-toggle",
-          expanded && "client-workouts-bubble__sets-toggle--open"
-        )}
-        aria-expanded={expanded}
-        aria-label={`${summary}. ${expanded ? "Hide" : "View"} sets`}
-        onActivate={onToggle}
-      >
-        {summary}
-        <ChevronDownIcon className="client-workouts-bubble__sets-chevron" />
-      </FastActivateButton>
-      {expanded
-        ? sets.map((line, index) => (
-            <p key={`${exercise.id}-line-${index}`} className="client-workouts-bubble__range">
-              {line}
-            </p>
-          ))
-        : null}
-    </>
-  );
-}
-
 interface ClientWorkoutDaySheetProps {
   dateKey: string;
   workout: ClientWorkoutDay | undefined;
@@ -125,6 +83,20 @@ interface ClientWorkoutDaySheetProps {
   ) => boolean;
   onRemove: () => void;
   onCopy: () => void;
+  /** Workouts a coach sent for this day, above the log. */
+  coachSlot?: ReactNode;
+  /**
+   * Earlier exercises, newest first. Naming a new exercise copies that
+   * session's sets, weights, and reps into the rows.
+   */
+  priorSets?: readonly ExerciseSetMemory[];
+  /** A specialist building this for a client: nothing is logged, the footer sends it. */
+  send?: {
+    clientName: string;
+    dateControl: ReactNode;
+    /** Resolves to an error message, or null once sent. */
+    onSend: (exercises: ClientWorkoutExercise[], title: string) => Promise<string | null>;
+  };
 }
 
 export function ClientWorkoutDaySheet({
@@ -135,6 +107,9 @@ export function ClientWorkoutDaySheet({
   onSave,
   onRemove,
   onCopy,
+  coachSlot,
+  priorSets = [],
+  send,
 }: ClientWorkoutDaySheetProps) {
   const { showToast } = useToast();
   const saved = Boolean(workout && workout.exercises.length > 0);
@@ -143,7 +118,6 @@ export function ClientWorkoutDaySheet({
       ? workout.exercises.map((exercise) => ({ ...exercise }))
       : []
   );
-  const [draft, setDraft] = useState<ClientWorkoutExercise>(blankWorkoutExercise);
   const [title, setTitle] = useState(() => workout?.title.trim() ?? "");
   const [cardio, setCardio] = useState<ClientWorkoutCardio>(
     () => workout?.cardio ?? emptyWorkoutCardio()
@@ -151,26 +125,28 @@ export function ClientWorkoutDaySheet({
   const [wantCardio, setWantCardio] = useState(false);
   const [wantWorkout, setWantWorkout] = useState(false);
   const [step, setStep] = useState<DaySheetStep>(() =>
-    workout &&
-    (workout.exercises.length > 0 ||
-      Boolean(workout.title.trim()) ||
-      Boolean(workout.cardio))
+    send ||
+    (workout &&
+      (workout.exercises.length > 0 ||
+        Boolean(workout.title.trim()) ||
+        Boolean(workout.cardio)))
       ? "workout"
       : "pick"
   );
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [composerOpen, setComposerOpen] = useState(!saved);
-  const [focusComposer, setFocusComposer] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [focusExerciseId, setFocusExerciseId] = useState<string | null>(null);
+  const [menuExerciseId, setMenuExerciseId] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
   const [typing, setTyping] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
-  const [expandedSetIds, setExpandedSetIds] = useState<string[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const checkKeyboardClosedRef = useRef<(() => void) | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
-  const slideRef = useRef<ExerciseSlideHandle>(null);
+  const exercisesRef = useRef(exercises);
+  exercisesRef.current = exercises;
 
   function requestClose() {
     if (closing) return;
@@ -204,12 +180,12 @@ export function ClientWorkoutDaySheet({
     setWantCardio(false);
     setWantWorkout(false);
     setEditingTitle(false);
-    setDraft(blankWorkoutExercise());
-    setEditingId(null);
-    setFocusComposer(false);
-    setComposerOpen(existing.length === 0);
+    setFocusExerciseId(null);
+    setMenuExerciseId(null);
+    setPickerOpen(false);
     setStep(
-      existing.length > 0 ||
+      send ||
+        existing.length > 0 ||
         Boolean(workout?.title.trim()) ||
         Boolean(workout?.cardio)
         ? "workout"
@@ -371,84 +347,81 @@ export function ClientWorkoutDaySheet({
     setTitle(cleaned);
     persist(exercises, cleaned);
     setError(null);
+    return cleaned;
   }
 
-  function commitExercise(
-    exercise: ClientWorkoutExercise,
-    { openNext = false }: { openNext?: boolean } = {}
-  ): ClientWorkoutExercise[] | null {
-    const cleaned = sanitizeWorkoutExercise(exercise);
-    if (!cleaned) {
-      setError("Add an exercise name to save it.");
-      return null;
-    }
-    const next = [...exercises, cleaned];
-    if (!openNext) {
-      const active = document.activeElement;
-      if (active instanceof HTMLElement && sheetRef.current?.contains(active)) {
-        active.blur();
-      }
-    }
-    setExercises(next);
-    setDraft(blankWorkoutExercise());
-    setComposerOpen(openNext);
-    setFocusComposer(openNext);
+  function confirmWorkoutTitle() {
+    const cleaned = applyTitle(titleInputRef.current?.value ?? title);
+    if (!cleaned.trim()) return;
+    setEditingTitle(false);
+    titleInputRef.current?.blur();
+  }
+
+  function replaceExercise(next: ClientWorkoutExercise, commit: boolean) {
+    const list = exercisesRef.current.map((item) => (item.id === next.id ? next : item));
+    exercisesRef.current = list;
+    setExercises(list);
+    if (commit && next.name.trim()) persist(list);
     setError(null);
-    persist(next);
-    return next;
-  }
-
-  function applyLiveEdit(id: string): ClientWorkoutExercise[] | null {
-    const live = slideRef.current?.snapshot();
-    const current = live && live.id === id ? live : exercises.find((exercise) => exercise.id === id);
-    if (!current?.name.trim()) {
-      setError("Add an exercise name to save it.");
-      return null;
-    }
-    const next = exercises.map((exercise) => (exercise.id === id ? current : exercise));
-    setExercises(next);
-    return next;
   }
 
   function handleAddExercise() {
-    if (editingId) {
-      const next = applyLiveEdit(editingId);
-      if (!next) return;
-      setEditingId(null);
-      persist(next);
-      setComposerOpen(true);
-      setFocusComposer(true);
-      setDraft(blankWorkoutExercise());
-      setError(null);
-      return;
-    }
-    const live = slideRef.current?.snapshot() ?? draft;
-    if (!live.name.trim()) return;
-    commitExercise(live, { openNext: true });
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+    setPickerOpen(true);
+    setError(null);
+  }
+
+  function addNamedExercise(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const created = { ...freshExerciseBlock(), name: trimmed };
+    const remembered = rememberExerciseSets(
+      [
+        ...exercisesRef.current
+          .filter((item) => item.name.trim())
+          .map((item) => ({
+            dateKey,
+            name: item.name,
+            sets: item.sets,
+            reps: item.reps,
+            setLogs: item.setLogs,
+          })),
+        ...priorSets,
+      ],
+      trimmed
+    );
+    const next = remembered ? exerciseWithSetLogs(created, remembered) : created;
+    const list = [...exercisesRef.current, next];
+    exercisesRef.current = list;
+    setExercises(list);
+    persist(list);
+    setPickerOpen(false);
   }
 
   function handleSaveWorkout() {
-    let next = exercises;
-    if (editingId) {
-      const edited = applyLiveEdit(editingId);
-      if (!edited) return;
-      next = edited;
-      setEditingId(null);
-    } else if (composerOpen) {
-      const live = slideRef.current?.snapshot() ?? draft;
-      if (live.name.trim()) {
-        const cleaned = sanitizeWorkoutExercise(live);
-        if (!cleaned) {
-          setError("Add an exercise name to save it.");
-          return;
-        }
-        next = [...exercises, cleaned];
-        setExercises(next);
-        setDraft(blankWorkoutExercise());
-      }
-    }
-    if (!persist(next)) {
+    if (!persist(exercisesRef.current)) {
       setError("Add cardio, an exercise, or name this workout.");
+      return;
+    }
+    requestClose();
+  }
+
+  async function handleSend() {
+    if (!send || sending) return;
+    const next = exercisesRef.current;
+    persist(next);
+    const named = next.filter((exercise) => exercise.name.trim());
+    if (named.length === 0) {
+      setError("Add at least one exercise to send.");
+      return;
+    }
+    setError(null);
+    setSending(true);
+    const message = await send.onSend(named, sanitizeWorkoutTitle(title));
+    setSending(false);
+    if (message) {
+      setError(message);
       return;
     }
     requestClose();
@@ -501,53 +474,104 @@ export function ClientWorkoutDaySheet({
     persist(exercises, title, next);
   }
 
-  function toggleSetsExpanded(id: string) {
-    setExpandedSetIds((current) =>
-      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
-    );
+  function commitList(list: ClientWorkoutExercise[]) {
+    exercisesRef.current = list;
+    setExercises(list);
+    if (list.some((item) => item.name.trim())) persist(list);
   }
 
-  function toggleExerciseComplete(id: string) {
-    const next = exercises.map((exercise) =>
-      exercise.id === id
-        ? { ...exercise, completed: !exercise.completed }
-        : exercise
-    );
-    setExercises(next);
-    persist(next);
+  function moveExercise(id: string, direction: -1 | 1) {
+    const list = [...exercisesRef.current];
+    const index = list.findIndex((item) => item.id === id);
+    const nextIndex = index + direction;
+    if (index < 0 || nextIndex < 0 || nextIndex >= list.length) return;
+    const [item] = list.splice(index, 1);
+    if (!item) return;
+    list.splice(nextIndex, 0, item);
+    commitList(list);
   }
 
-  function updateExercise(
-    id: string,
-    patch: Partial<Pick<ClientWorkoutExercise, "name" | "sets" | "reps" | "setLogs">>
-  ) {
-    setExercises((current) =>
-      current.map((exercise) =>
-        exercise.id === id ? { ...exercise, ...patch } : exercise
-      )
+  function joinSuperset(sourceId: string, targetId: string) {
+    const list = [...exercisesRef.current];
+    const target = list.find((item) => item.id === targetId);
+    if (!target) return;
+    const groupId = target.supersetId || createWorkoutExerciseId();
+    const tagged = list.map((item) =>
+      item.id === sourceId ||
+      item.id === targetId ||
+      (target.supersetId && item.supersetId === target.supersetId)
+        ? { ...item, supersetId: groupId }
+        : item
     );
-    setError(null);
+    const source = tagged.find((item) => item.id === sourceId);
+    if (!source) return;
+    const without = tagged.filter((item) => item.id !== sourceId);
+    let insertAt = without.findIndex((item) => item.supersetId === groupId);
+    if (insertAt < 0) insertAt = without.length;
+    else {
+      while (insertAt < without.length && without[insertAt]?.supersetId === groupId) insertAt += 1;
+    }
+    without.splice(insertAt, 0, source);
+    commitList(without);
+    setMenuExerciseId(null);
+  }
+
+  function leaveSuperset(id: string) {
+    const current = exercisesRef.current.find((item) => item.id === id);
+    const groupId = current?.supersetId;
+    if (!groupId) return;
+    const cleared = exercisesRef.current.map((item) =>
+      item.id === id ? { ...item, supersetId: undefined } : item
+    );
+    const still = cleared.filter((item) => item.supersetId === groupId);
+    const next =
+      still.length < 2
+        ? cleared.map((item) =>
+            item.supersetId === groupId ? { ...item, supersetId: undefined } : item
+          )
+        : cleared;
+    commitList(next);
+    setMenuExerciseId(null);
+  }
+
+  function replaceExerciseName(id: string, name: string) {
+    const current = exercisesRef.current.find((item) => item.id === id);
+    if (!current) return;
+    const memory: ExerciseSetMemory[] = [
+      ...exercisesRef.current
+        .filter((item) => item.id !== id && item.name.trim())
+        .map((item) => ({
+          dateKey,
+          name: item.name,
+          sets: item.sets,
+          reps: item.reps,
+          setLogs: item.setLogs,
+        })),
+      ...priorSets,
+    ];
+    const remembered = rememberExerciseSets(memory, name);
+    const count = Math.max(
+      1,
+      current.setLogs?.length || parseWorkoutSetCount(current.sets) || 1
+    );
+    const logs = remembered ?? Array.from({ length: count }, () => ({ reps: "", weight: "" }));
+    replaceExercise(exerciseWithSetLogs({ ...current, name }, logs), true);
+    setMenuExerciseId(null);
   }
 
   function removeExercise(id: string) {
-    const next = exercises.filter((item) => item.id !== id);
+    const next = exercisesRef.current.filter((item) => item.id !== id);
+    exercisesRef.current = next;
     setExercises(next);
-    if (editingId === id) setEditingId(null);
+    if (focusExerciseId === id) setFocusExerciseId(null);
+    if (menuExerciseId === id) setMenuExerciseId(null);
     if (next.length === 0 && !title.trim() && !sanitizeWorkoutCardio(cardio)) {
-      setDraft(blankWorkoutExercise());
-      setComposerOpen(true);
-      onRemove();
+      if (workout && (workout.exercises.length > 0 || workout.title.trim() || workout.cardio)) {
+        onRemove();
+      }
       return;
     }
     persist(next);
-  }
-
-  function finishEditing(id: string) {
-    const next = applyLiveEdit(id);
-    if (!next) return;
-    setEditingId(null);
-    persist(next);
-    setError(null);
   }
 
   async function handleShare() {
@@ -565,10 +589,12 @@ export function ClientWorkoutDaySheet({
 
   const hasCardio = Boolean(sanitizeWorkoutCardio(cardio));
   const heading = formatWorkoutDayHeading(dateKey);
-  const hasBubbles = exercises.length > 0;
-  const hasLoggedDay = hasBubbles || Boolean(title.trim()) || hasCardio;
-  const showSavedActions =
-    hasLoggedDay && step === "workout" && !composerOpen && !editingId;
+  const hasLoggedDay =
+    exercises.some((exercise) => exercise.name.trim()) ||
+    Boolean(title.trim()) ||
+    hasCardio;
+  const showSavedActions = hasLoggedDay && step === "workout";
+  const menuExercise = exercises.find((item) => item.id === menuExerciseId) ?? null;
 
   return (
     <div
@@ -598,7 +624,7 @@ export function ClientWorkoutDaySheet({
         <div className="client-workouts-day__top">
           <FastActivateButton
             className="client-workouts-day__back"
-            aria-label="Back to calendar"
+            aria-label={send ? "Close" : "Back to calendar"}
             onPointerDown={(event) => {
               event.currentTarget.setPointerCapture(event.pointerId);
             }}
@@ -611,8 +637,8 @@ export function ClientWorkoutDaySheet({
               id={`client-workout-day-${dateKey}`}
               className="client-workouts-day__heading"
             >
-              {heading}
-              {hasLoggedDay ? " ✓" : ""}
+              {send ? `For ${send.clientName}` : heading}
+              {hasLoggedDay && !send ? " ✓" : ""}
               {title.trim() ? (
                 <span className="client-workouts-day__title-chip">{title.trim()}</span>
               ) : null}
@@ -632,11 +658,12 @@ export function ClientWorkoutDaySheet({
                 {step === "cardio" ? "Cardio" : "Workout"}
               </p>
             ) : null}
-            <p className="client-workouts-day__sub">{weekLabel}</p>
+            {send ? send.dateControl : <p className="client-workouts-day__sub">{weekLabel}</p>}
           </div>
         </div>
 
         <div className="client-workouts-day__body">
+          {coachSlot}
           {step === "pick" ? (
             <>
               <p className="client-workouts-pick__hint">
@@ -757,7 +784,7 @@ export function ClientWorkoutDaySheet({
                     titleInputRef.current?.focus({ preventScroll: true });
                   }}
                 >
-                  {title.trim()}
+                  <span className="client-workouts-titles__display-text">{title.trim()}</span>
                 </FastActivateButton>
               ) : (
                 <input
@@ -775,93 +802,82 @@ export function ClientWorkoutDaySheet({
                   onKeyDown={(event) => {
                     if (event.key !== "Enter") return;
                     event.preventDefault();
-                    event.currentTarget.blur();
-                  }}
-                  onBlur={() => {
-                    applyTitle(title);
-                    setEditingTitle(false);
+                    confirmWorkoutTitle();
                   }}
                 />
               )}
 
-              {exercises.map((exercise, index) => (
-                <div key={exercise.id} className="client-workouts-ex-row">
-                  <span className="client-workouts-ex-row__index">
-                    {index + 1}
-                  </span>
-                  {editingId === exercise.id ? (
-                    <ExerciseSlide
-                      ref={slideRef}
-                      exercise={exercise}
-                      editing
-                      onChange={(patch) => updateExercise(exercise.id, patch)}
-                      onDone={() => finishEditing(exercise.id)}
-                      onRemove={() => removeExercise(exercise.id)}
-                    />
-                  ) : (
-                    <SwipeToRemove
-                      label={`Remove ${exercise.name.trim()}`}
-                      onRemove={() => removeExercise(exercise.id)}
-                    >
-                      <article className="client-workouts-bubble">
-                        <FastActivateButton
-                          className="client-workouts-bubble__edit"
-                          onActivate={() => {
-                            setEditingId(exercise.id);
-                            setComposerOpen(false);
-                            setError(null);
-                          }}
-                        >
-                          Edit
-                        </FastActivateButton>
-                        <p className="client-workouts-bubble__name">{exercise.name.trim()}</p>
-                        <ExerciseDetails
-                          exercise={exercise}
-                          expanded={expandedSetIds.includes(exercise.id)}
-                          onToggle={() => toggleSetsExpanded(exercise.id)}
-                        />
-                        <FastActivateButton
-                          className={cn(
-                            "client-workouts-bubble__complete",
-                            exercise.completed &&
-                              "client-workouts-bubble__complete--done"
-                          )}
-                          aria-pressed={Boolean(exercise.completed)}
-                          aria-label={
-                            exercise.completed
-                              ? `${exercise.name.trim()} complete. Tap to undo.`
-                              : `Mark ${exercise.name.trim()} complete`
-                          }
-                          onActivate={() => toggleExerciseComplete(exercise.id)}
-                        >
-                          {exercise.completed ? "✓ Complete" : "Complete"}
-                        </FastActivateButton>
-                      </article>
-                    </SwipeToRemove>
-                  )}
-                </div>
-              ))}
-
-              {composerOpen && !editingId ? (
-                <div className="client-workouts-ex-row">
-                  <span className="client-workouts-ex-row__index">
-                    {exercises.length + 1}
-                  </span>
-                  <ExerciseSlide
-                    key={draft.id}
-                    ref={slideRef}
-                    exercise={draft}
-                    autoFocus={focusComposer}
-                    onChange={(patch) => {
-                      setDraft((current) => ({ ...current, ...patch }));
-                      setError(null);
-                    }}
-                    onFinished={(exercise) => {
-                      commitExercise(exercise);
-                    }}
-                  />
+              {title.trim() && !editingTitle && exercises.length === 0 ? (
+                <div className="exercise-block exercise-block--ghost" aria-hidden>
+                  <div className="exercise-block__name-wrap">
+                    <div className="exercise-block__title">
+                      <span className="exercise-block__name">Exercise</span>
+                      <span className="exercise-block__more">
+                        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                          <circle cx="6" cy="12" r="1.6" />
+                          <circle cx="12" cy="12" r="1.6" />
+                          <circle cx="18" cy="12" r="1.6" />
+                        </svg>
+                      </span>
+                    </div>
+                  </div>
+                  <div className="exercise-block__table">
+                    <div className="exercise-block__head">
+                      <span>Set</span>
+                      <span>Lbs</span>
+                      <span>Reps</span>
+                      <CheckIcon className="exercise-block__head-check" />
+                    </div>
+                    <div className="exercise-block__row">
+                      <span className="exercise-block__set">1</span>
+                      <span className="exercise-block__input">0</span>
+                      <span className="exercise-block__input">0</span>
+                      <span className="exercise-block__check" />
+                    </div>
+                  </div>
+                  <div className="exercise-block__actions">
+                    <span className="exercise-block__add">
+                      <PlusIcon className="h-4 w-4" />
+                      Add set
+                    </span>
+                  </div>
                 </div>
               ) : null}
+
+              {exercises.map((exercise) => (
+                <SwipeToRemove
+                  key={exercise.id}
+                  className="exercise-block-swipe"
+                  label={`Remove ${exercise.name.trim() || "exercise"}`}
+                  onRemove={() => removeExercise(exercise.id)}
+                >
+                  <ExerciseSetBlock
+                    exercise={exercise}
+                    prior={[
+                      ...exercises
+                        .filter((item) => item.id !== exercise.id && item.name.trim())
+                        .map((item) => ({
+                          dateKey,
+                          name: item.name,
+                          sets: item.sets,
+                          reps: item.reps,
+                          setLogs: item.setLogs,
+                        })),
+                      ...priorSets,
+                    ]}
+                    autoFocus={exercise.id === focusExerciseId}
+                    inSuperset={
+                      Boolean(exercise.supersetId) &&
+                      exercises.some(
+                        (item) =>
+                          item.id !== exercise.id && item.supersetId === exercise.supersetId
+                      )
+                    }
+                    onChange={replaceExercise}
+                    onOpenMenu={() => setMenuExerciseId(exercise.id)}
+                  />
+                </SwipeToRemove>
+              ))}
             </>
           ) : null}
 
@@ -874,7 +890,25 @@ export function ClientWorkoutDaySheet({
           inert={typing || undefined}
         >
           <div className="client-workouts-day__footer-inner">
-            {step === "pick" ? (
+            {send ? (
+              <>
+                <FastActivateButton
+                  className="client-workouts-btn"
+                  disabled={sending}
+                  onActivate={handleAddExercise}
+                >
+                  <PlusIcon className="client-workouts-btn__plus" />
+                  Add exercise
+                </FastActivateButton>
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--primary"
+                  disabled={sending}
+                  onActivate={() => void handleSend()}
+                >
+                  {sending ? "Sending…" : `Send to ${send.clientName}`}
+                </FastActivateButton>
+              </>
+            ) : step === "pick" ? (
               <FastActivateButton
                 className="client-workouts-btn client-workouts-btn--primary"
                 onActivate={handlePickContinue}
@@ -911,13 +945,9 @@ export function ClientWorkoutDaySheet({
                 ) : null}
                 <FastActivateButton
                   className="client-workouts-btn"
-                  onActivate={() => {
-                    setComposerOpen(true);
-                    setFocusComposer(true);
-                    setDraft(blankWorkoutExercise());
-                    setError(null);
-                  }}
+                  onActivate={handleAddExercise}
                 >
+                  <PlusIcon className="client-workouts-btn__plus" />
                   Add exercise
                 </FastActivateButton>
                 <FastActivateButton
@@ -945,6 +975,7 @@ export function ClientWorkoutDaySheet({
                   className="client-workouts-btn"
                   onActivate={handleAddExercise}
                 >
+                  <PlusIcon className="client-workouts-btn__plus" />
                   Add exercise
                 </FastActivateButton>
                 <FastActivateButton
@@ -966,6 +997,26 @@ export function ClientWorkoutDaySheet({
           </div>
         </div>
       </div>
+      {menuExercise ? (
+        <ExerciseOptionsSheet
+          exercise={menuExercise}
+          exercises={exercises}
+          prior={priorSets}
+          onClose={() => setMenuExerciseId(null)}
+          onMove={(direction) => moveExercise(menuExercise.id, direction)}
+          onJoinSuperset={(targetId) => joinSuperset(menuExercise.id, targetId)}
+          onLeaveSuperset={() => leaveSuperset(menuExercise.id)}
+          onReplace={(name) => replaceExerciseName(menuExercise.id, name)}
+          onRemove={() => removeExercise(menuExercise.id)}
+        />
+      ) : null}
+      {pickerOpen ? (
+        <ExercisePickerSheet
+          prior={priorSets}
+          onClose={() => setPickerOpen(false)}
+          onPick={addNamedExercise}
+        />
+      ) : null}
     </div>
   );
 }

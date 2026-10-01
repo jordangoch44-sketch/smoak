@@ -7,6 +7,7 @@ import {
   useState,
   type FormEvent,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import type { InquiryThreadPayload } from "@/types/inquiry";
 import { INQUIRY_MESSAGE_MAX_LENGTH } from "@/lib/inquiry-options";
@@ -28,6 +29,8 @@ interface InquiryThreadViewProps {
     conversationId: string;
     counterpartName: string;
   } | null;
+  /** Extra control beside Report/Block (specialist “Add to roster”). */
+  headerAction?: ReactNode;
 }
 
 function formatBubbleTime(iso: string): string {
@@ -45,6 +48,7 @@ export function InquiryThreadView({
   onBack,
   onSend,
   trust = null,
+  headerAction = null,
 }: InquiryThreadViewProps) {
   const titleId = useId();
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -158,6 +162,7 @@ export function InquiryThreadView({
             </p>
           ) : null}
         </div>
+        {headerAction}
         {trust ? (
           <div className="inquiry-thread__trust-row">
             <button

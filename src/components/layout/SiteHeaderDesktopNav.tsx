@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 const DESKTOP_NAV_LABELS: Record<MobileBottomNavItemId, string> = {
   home: "Marketplace",
   search: "Search",
+  clients: "Clients",
   saved: "Saved",
   profile: "Profile",
 };

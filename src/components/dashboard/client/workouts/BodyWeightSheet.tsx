@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { MiniDayCalendar } from "@/components/dashboard/client/workouts/MiniDayCalendar";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CloseIcon } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
@@ -125,16 +126,14 @@ export function BodyWeightSheet({
             />
             <span className="client-weight-sheet__unit">lb</span>
           </label>
-          <label className="client-weight-sheet__date">
-            <span>{dateKey === todayKey ? "Today" : formatWorkoutDayHeading(dateKey)}</span>
-            <input
-              type="date"
-              value={dateKey}
-              max={todayKey}
-              aria-label="Weigh-in date"
-              onChange={(event) => pickDate(event.target.value)}
-            />
-          </label>
+          <MiniDayCalendar
+            value={dateKey}
+            todayKey={todayKey}
+            max={todayKey}
+            onChange={pickDate}
+            block
+            triggerClassName="client-weight-sheet__date"
+          />
           {error ? <p className="client-workouts-error">{error}</p> : null}
           <button type="submit" className="client-workouts-btn client-workouts-btn--primary">
             Save weight

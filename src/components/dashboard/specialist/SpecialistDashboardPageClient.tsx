@@ -13,13 +13,13 @@ import {
   DashboardSignOutConfirmModal,
 } from "@/components/dashboard/shared";
 import {
-  AnalyticsCard,
   BoostProfileCard,
-  GoogleReviewsCard,
-  ReviewsCard,
   SubscriptionCard,
-  VisibilityRankingCard,
 } from "@/components/dashboard/specialist/cards";
+import {
+  OverviewPeriodChip,
+  SpecialistOverviewBoard,
+} from "@/components/dashboard/specialist/SpecialistOverviewBoard";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
@@ -45,7 +45,6 @@ import {
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
   SMOAC_FREE_PLAN_LABEL,
-  formatMembershipShortLabel,
   formatProTrialBadgeLabel,
   isProPlusPlan,
   membershipBadgeToneForSession,
@@ -462,13 +461,9 @@ export function SpecialistDashboardPageClient() {
 
   const planBadgeTone = membershipBadgeToneForSession(session);
 
-  /* Plan badge matches the signed-in account on every dashboard surface. */
+  /* Plan badge sits on Profile. Overview keeps the period chip on the eyebrow row. */
   const roleLabel =
-    headerSurface === "profile"
-      ? profilePlanLabel
-      : headerSurface === "overview"
-        ? formatMembershipShortLabel(session)
-        : undefined;
+    headerSurface === "profile" ? profilePlanLabel : undefined;
 
   const roleLabelTone = roleLabel ? planBadgeTone : "default";
 
@@ -483,7 +478,7 @@ export function SpecialistDashboardPageClient() {
             </>
           ),
           subtitle:
-            "Analytics and how you show up on Marketplace — at a glance.",
+            "Here's how your profile performed in the last 30 days.",
         }
       : headerSurface === "profile"
         ? {
@@ -508,37 +503,22 @@ export function SpecialistDashboardPageClient() {
             subtitle: dashboardSubtitle(dashboardMode),
           };
 
-  const overviewAccordions = (premium: boolean, teaseOpen = false) => (
-    <div className="dashboard-overview-accordions">
-      <AnalyticsCard
-        analytics={analytics}
-        isPremium={premium}
-        defaultOpen={teaseOpen}
-      />
-      <VisibilityRankingCard
-        ranking={data.ranking ?? null}
-        isPremium={premium}
-        defaultOpen={teaseOpen}
-        smoacRating={rankingRating.rating}
-        smoacReviewCount={rankingRating.reviewCount}
-        categoryLabel={
-          trainer ? resolveTrainerProfessionCategory(trainer) : undefined
-        }
-        onOpenBoost={() => setBoostOpen(true)}
-      />
-      <ReviewsCard
-        trainer={trainer}
-        isPremium={premium}
-        smoacRating={rankingRating.rating}
-        smoacReviewCount={rankingRating.reviewCount}
-        sampleReputation={showSampleMetrics}
-      />
-      <GoogleReviewsCard
-        trainer={trainer}
-        isPremium={premium}
-        onUpgrade={() => setUpgradeOpen(true)}
-      />
-    </div>
+  const overviewBoard = (premium: boolean) => (
+    <SpecialistOverviewBoard
+      analytics={analytics}
+      isPremium={premium}
+      ranking={data.ranking ?? null}
+      city={trainer?.city}
+      trainer={trainer}
+      smoacRating={rankingRating.rating}
+      smoacReviewCount={rankingRating.reviewCount}
+      sampleReputation={showSampleMetrics}
+      categoryLabel={
+        trainer ? resolveTrainerProfessionCategory(trainer) : undefined
+      }
+      onOpenBoost={() => setBoostOpen(true)}
+      onUpgrade={() => setUpgradeOpen(true)}
+    />
   );
 
   return (
@@ -551,6 +531,11 @@ export function SpecialistDashboardPageClient() {
       roleLabel={roleLabel}
       roleLabelTone={roleLabelTone}
       headerClassName={`dashboard-page__header--${headerSurface}`}
+      headerEyebrowAside={
+        premiumDashboard && headerSurface === "overview" ? (
+          <OverviewPeriodChip label={analytics.periodLabel} />
+        ) : undefined
+      }
       hideHeader={
         headerSurface === "profile" || freeOverview || pendingOverview
       }
@@ -629,7 +614,7 @@ export function SpecialistDashboardPageClient() {
                       openUpgrade({ skipPick: true });
                     }}
                   >
-                    {overviewAccordions(true)}
+                    {overviewBoard(true)}
                   </SpecialistLockedOverview>
                 </div>
               ) : null}
@@ -798,7 +783,7 @@ export function SpecialistDashboardPageClient() {
                   aria-labelledby="specialist-dash-tab-premium-overview"
                   className="specialist-dash-panel"
                 >
-                  {overviewAccordions(isPremium)}
+                  {overviewBoard(isPremium)}
                 </div>
               ) : null}
 

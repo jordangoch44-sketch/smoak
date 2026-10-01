@@ -8,6 +8,7 @@ export const SPECIALIST_DASHBOARD_PROFILE_TAB_HREF = `${SPECIALIST_DASHBOARD_PAT
 export const SPECIALIST_DASHBOARD_WELCOME_HREF = `${SPECIALIST_DASHBOARD_PROFILE_TAB_HREF}&welcome=1`;
 export const SPECIALIST_DASHBOARD_EDIT_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=edit`;
 export const SPECIALIST_DASHBOARD_INQUIRIES_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=inquiries`;
+export const SPECIALIST_DASHBOARD_CLIENTS_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=clients`;
 export const LOGIN_PATH = "/login";
 
 export function getDashboardPathForRole(role: PublicAuthRole): string {

@@ -26,6 +26,7 @@ import {
   formatWorkoutDayHeading,
   hasCardioOnDay,
   hasStrengthOnDay,
+  exerciseMemoryBefore,
   isWorkoutDateKey,
   parseLocalDateKey,
   startOfMonth,
@@ -34,6 +35,14 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
 import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
+import type { CoachWorkout } from "@/types/coaching";
+import { CoachWorkoutCard } from "@/components/dashboard/client/coaching/CoachWorkoutCard";
+import { useClientCoaching } from "@/hooks/useClientCoaching";
+import {
+  appendCoachExercises,
+  coachWorkoutHistoryExercises,
+  isCoachWorkoutInLog,
+} from "@/lib/coaching/coach-workout";
 import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
 import "@/styles/client-workouts.css";
 
@@ -70,6 +79,9 @@ export function ClientWorkoutsModal({
     copyDayTo,
   } = useClientWorkouts(userId);
   const emailPreference = useWorkoutEmailPreference(userId);
+  const coaching = useClientCoaching(userId);
+  /** Bumped after Start so the day sheet remounts with the new exercises. */
+  const [sheetVersion, setSheetVersion] = useState(0);
   const backdropDismiss = useOwnPointerDismiss(onClose);
   selectedDateKeyRef.current = selectedDateKey;
   pasteSourceKeyRef.current = pasteSourceKey;
@@ -154,6 +166,31 @@ export function ClientWorkoutsModal({
     if (!selectedDateKey) return false;
     return saveDay(selectedDateKey, exercises, title, cardio);
   }
+
+  /** Coach workouts always log on the day they're done: today. */
+  function startCoachWorkout(workout: CoachWorkout) {
+    const existing = log.days[todayKey];
+    const saved = saveDay(
+      todayKey,
+      appendCoachExercises(workout, existing?.exercises ?? []),
+      existing?.title || workout.title,
+      existing?.cardio ?? null
+    );
+    if (!saved) return;
+    setMonth(startOfMonth(parseLocalDateKey(todayKey)));
+    setSelectedDateKey(todayKey);
+    setSheetVersion((version) => version + 1);
+  }
+
+  function hasPendingCoachWorkout(dateKey: string): boolean {
+    return (coaching.workoutsByDate.get(dateKey) ?? []).some(
+      (workout) => !isCoachWorkoutInLog(workout, log.days)
+    );
+  }
+
+  const selectedCoachWorkouts = selectedDateKey
+    ? (coaching.workoutsByDate.get(selectedDateKey) ?? [])
+    : [];
 
   if (!mounted || !open || typeof document === "undefined") return null;
 
@@ -318,7 +355,10 @@ export function ClientWorkoutsModal({
               const trained = cardio || strength;
               const dayTitle = workoutTitleOnDay(log, cell.dateKey);
               const selected = selectedDateKey === cell.dateKey;
-              const label = formatWorkoutDayAriaLabel(cell.dateKey);
+              const coachPending = hasPendingCoachWorkout(cell.dateKey);
+              const label = `${formatWorkoutDayAriaLabel(cell.dateKey)}${
+                coachPending ? ", workout from your coach" : ""
+              }`;
               const loggedLabel = cardio && strength
                 ? `${label}, cardio and workout logged`
                 : cardio
@@ -347,6 +387,7 @@ export function ClientWorkoutsModal({
                   onActivate={() => handleDayActivate(cell.dateKey)}
                 >
                   <span className="client-workouts-cal__num">{cell.day}</span>
+                  {coachPending ? <span className="client-workouts-cal__coach" aria-hidden /> : null}
                   {trained ? (
                     <span className="client-workouts-cal__marks" aria-hidden>
                       {cardio ? (
@@ -376,9 +417,38 @@ export function ClientWorkoutsModal({
       </div>
       {selectedDateKey && !pasteSourceKey ? (
         <ClientWorkoutDaySheet
-          key={selectedDateKey}
+          key={`${selectedDateKey}:${sheetVersion}`}
           dateKey={selectedDateKey}
+          coachSlot={
+            selectedCoachWorkouts.length > 0 ? (
+              <div className="coach-workout-stack">
+                {selectedCoachWorkouts.map((workout) => (
+                  <CoachWorkoutCard
+                    key={workout.id}
+                    workout={workout}
+                    coachName={coaching.coachNameFor(workout)}
+                    todayKey={todayKey}
+                    inLog={isCoachWorkoutInLog(workout, log.days)}
+                    onStart={() => startCoachWorkout(workout)}
+                  />
+                ))}
+              </div>
+            ) : null
+          }
           workout={log.days[selectedDateKey]}
+          priorSets={exerciseMemoryBefore(
+            [
+              ...Object.values(log.days).map((day) => ({
+                dateKey: day.date,
+                exercises: day.exercises,
+              })),
+              ...coaching.workouts.map((workout) => ({
+                dateKey: workout.dateKey,
+                exercises: coachWorkoutHistoryExercises(workout),
+              })),
+            ],
+            selectedDateKey
+          )}
           weekLabel={weekLabel}
           onClose={closeSelectedDay}
           onSave={handleSave}

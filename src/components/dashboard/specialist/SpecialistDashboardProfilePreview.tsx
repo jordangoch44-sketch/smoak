@@ -34,6 +34,7 @@ import {
   MenuPencilIcon,
   MessageBubbleIcon,
 } from "@/components/ui/icons";
+import { SpecialistClientsPage } from "@/components/dashboard/specialist/clients/SpecialistClientsPage";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
@@ -78,6 +79,7 @@ import type { Trainer } from "@/types/trainer";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 import {
+  SPECIALIST_DASHBOARD_CLIENTS_HREF,
   SPECIALIST_DASHBOARD_EDIT_HREF,
   SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_PATH,
@@ -95,7 +97,7 @@ import { trainerMatchesPublicKey } from "@/lib/trainer-profile-path";
 import { updatePassword } from "@/lib/auth/marketplace-auth";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
-type ProfilePreviewMode = "edit" | "live" | "inquiries";
+type ProfilePreviewMode = "edit" | "live" | "inquiries" | "clients";
 const LOCK_CLASS = "specialist-live-edit-open";
 const EDIT_PAGE_LOCK_CLASS = "specialist-edit-profile-open";
 const MIN_PASSWORD_LENGTH = 8;
@@ -108,6 +110,7 @@ function previewModeFromSearch(
 ): ProfilePreviewMode {
   if (conversationParam || viewParam === "inquiries") return "inquiries";
   if (viewParam === "edit") return "edit";
+  if (viewParam === "clients") return "clients";
   return "live";
 }
 
@@ -658,7 +661,9 @@ export function SpecialistDashboardProfilePreview({
   const [billingOpen, setBillingOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
   const conversationParam = searchParams.get("c")?.trim() || "";
-  const viewParam = searchParams.get("view")?.trim() || "";
+  // Clients is its own bottom-nav tab but renders inside the profile surface.
+  const viewParam =
+    searchParams.get("tab") === "clients" ? "clients" : searchParams.get("view")?.trim() || "";
   const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
     previewModeFromSearch(viewParam, conversationParam)
   );
@@ -717,6 +722,10 @@ export function SpecialistDashboardProfilePreview({
     }
     if (next === "edit") {
       router.push(SPECIALIST_DASHBOARD_EDIT_HREF, { scroll: false });
+      return;
+    }
+    if (next === "clients") {
+      router.push(SPECIALIST_DASHBOARD_CLIENTS_HREF, { scroll: false });
       return;
     }
     router.push(SPECIALIST_DASHBOARD_PROFILE_TAB_HREF, { scroll: false });
@@ -1551,6 +1560,31 @@ export function SpecialistDashboardProfilePreview({
           onMarkRead={onMarkInquiryLeadsRead}
           onMarkUnread={onMarkInquiryLeadsUnread}
           onBack={() => replacePreviewMode("live")}
+          specialistId={trainerId}
+          isPremium={isPremium}
+          onUpgrade={onUpgrade}
+        />
+      </div>
+    );
+  }
+
+  if (canEdit && previewMode === "clients" && trainerId) {
+    return (
+      <div
+        id={LIVE_PROFILE_ANCHOR_ID}
+        className="specialist-profile-mode specialist-profile-mode--clients"
+      >
+        <SpecialistClientsPage
+          specialistId={trainerId}
+          specialistName={trainer.name}
+          isPremium={isPremium}
+          onUpgrade={onUpgrade}
+          onOpenConversation={(conversationId) =>
+            router.push(
+              `${SPECIALIST_DASHBOARD_PATH}?tab=profile&c=${encodeURIComponent(conversationId)}`,
+              { scroll: false }
+            )
+          }
         />
       </div>
     );

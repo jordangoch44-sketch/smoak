@@ -20,6 +20,8 @@ export interface DashboardHeaderProps {
   introActions?: ReactNode;
   /** Sits left of the title block on every width (client avatar). */
   leading?: ReactNode;
+  /** Sits on the eyebrow row, opposite the label (period chip). */
+  eyebrowAside?: ReactNode;
   className?: string;
 }
 
@@ -36,6 +38,7 @@ export function DashboardHeader({
   actions,
   introActions,
   leading,
+  eyebrowAside,
   className,
 }: DashboardHeaderProps) {
   const hasAside = Boolean(roleLabel || statusLabel || actions);
@@ -61,7 +64,10 @@ export function DashboardHeader({
           <div className="dashboard-page__header-leading">{leading}</div>
         ) : null}
         <div className="dashboard-page__header-main">
-          <p className="dashboard-page__eyebrow">{eyebrow}</p>
+          <div className="dashboard-page__eyebrow-row">
+            <p className="dashboard-page__eyebrow">{eyebrow}</p>
+            {eyebrowAside}
+          </div>
           <h1 className="dashboard-page__title">{title}</h1>
           {subtitle ? <p className="dashboard-page__subtitle">{subtitle}</p> : null}
           {quote ? (

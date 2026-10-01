@@ -3,6 +3,7 @@
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 import { InquiryInboxPanel } from "@/components/inquiry/InquiryInboxPanel";
 import { isDemoInquiryConversationId } from "@/lib/inquiry/inquiry-paths";
+import { RosterInviteButton } from "./clients/RosterInviteButton";
 
 interface SpecialistInquiriesInboxProps {
   leads: SpecialistLead[];
@@ -14,6 +15,10 @@ interface SpecialistInquiriesInboxProps {
   onMarkRead?: (ids: string[]) => void | Promise<void>;
   onMarkUnread?: (ids: string[]) => void | Promise<void>;
   onBack?: () => void;
+  /** Marketplace id; enables “Add to roster” in thread headers. */
+  specialistId?: string | null;
+  isPremium?: boolean;
+  onUpgrade?: () => void;
 }
 
 export function SpecialistInquiriesInbox({
@@ -26,6 +31,9 @@ export function SpecialistInquiriesInbox({
   onMarkRead,
   onMarkUnread,
   onBack,
+  specialistId = null,
+  isPremium = false,
+  onUpgrade,
 }: SpecialistInquiriesInboxProps) {
   const demoLeads = leads.filter((lead) => isDemoInquiryConversationId(lead.id));
 
@@ -45,6 +53,18 @@ export function SpecialistInquiriesInbox({
         onHideConversation={onHideLead}
         onMarkConversationsRead={onMarkRead}
         onMarkConversationsUnread={onMarkUnread}
+        renderThreadAction={
+          specialistId
+            ? (conversationId) => (
+                <RosterInviteButton
+                  specialistId={specialistId}
+                  conversationId={conversationId}
+                  isPremium={isPremium}
+                  onUpgrade={onUpgrade}
+                />
+              )
+            : undefined
+        }
         onOpenConversation={(id) => {
           const lead = leads.find((item) => item.id === id);
           if (lead) onOpenLead?.(lead);

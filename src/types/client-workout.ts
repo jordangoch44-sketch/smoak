@@ -4,6 +4,8 @@
 export interface ClientWorkoutSetLog {
   reps: string;
   weight: string;
+  /** Checked off while logging this set. */
+  completed?: boolean;
 }
 
 export interface ClientWorkoutExercise {
@@ -16,6 +18,8 @@ export interface ClientWorkoutExercise {
   setLogs?: ClientWorkoutSetLog[];
   /** Checked off while the client is doing the workout. */
   completed?: boolean;
+  /** Shared with the other exercises in a superset. */
+  supersetId?: string;
 }
 
 export interface ClientWorkoutCardio {

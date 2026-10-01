@@ -2,6 +2,7 @@ import {
   CLIENT_DASHBOARD_PATH,
   getDashboardPathForRole,
   LOGIN_PATH,
+  SPECIALIST_DASHBOARD_CLIENTS_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
@@ -14,10 +15,20 @@ import { getInitials } from "@/lib/utils";
 export type MobileBottomNavItemId =
   | "home"
   | "search"
+  | "clients"
   | "saved"
   | "profile";
 
 export type MobileBottomNavGlyph = "home" | "search" | "heart" | "chart" | "user";
+
+/** Tab order — drives panel slide direction. Clients only appears for specialists. */
+export const MOBILE_BOTTOM_NAV_ORDER: readonly MobileBottomNavItemId[] = [
+  "home",
+  "search",
+  "clients",
+  "saved",
+  "profile",
+];
 
 export interface MobileBottomNavItem {
   id: MobileBottomNavItemId;
@@ -75,7 +86,16 @@ export function isSpecialistDashboardProfileTab(
   }
   if (pathname !== SPECIALIST_DASHBOARD_PATH) return false;
   const tab = specialistDashboardTab(searchParams);
-  return tab !== "overview" && tab !== "plan";
+  return tab !== "overview" && tab !== "plan" && tab !== "clients";
+}
+
+/** Specialist roster — center bottom-nav slot. */
+export function isSpecialistDashboardClientsTab(
+  pathname: string,
+  searchParams?: URLSearchParams | null
+): boolean {
+  if (pathname !== SPECIALIST_DASHBOARD_PATH) return false;
+  return specialistDashboardTab(searchParams) === "clients";
 }
 
 /** Specialist dashboard overview / plan tab — Overview slot when logged in. */
@@ -125,6 +145,9 @@ export function getMobileBottomNavItems(
       href: SITE_ROUTES.exploreSearchFocus,
       label: "Search",
     },
+    ...(isSpecialist
+      ? [{ id: "clients" as const, href: SPECIALIST_DASHBOARD_CLIENTS_HREF, label: "Clients" }]
+      : []),
     isSpecialist
       ? {
           id: "saved",
@@ -206,6 +229,8 @@ export function isActiveNavItem(
       return pathname === SITE_ROUTES.home;
     case "search":
       return isExplorePath(pathname);
+    case "clients":
+      return isSpecialistDashboardClientsTab(pathname, searchParams);
     case "saved":
       return (
         pathname === SITE_ROUTES.saved ||
@@ -227,14 +252,7 @@ export function getActiveMobileBottomNavItemId(
   pathname: string,
   searchParams?: URLSearchParams
 ): MobileBottomNavItemId | null {
-  const ids: MobileBottomNavItemId[] = [
-    "home",
-    "search",
-    "saved",
-    "profile",
-  ];
-
-  for (const id of ids) {
+  for (const id of MOBILE_BOTTOM_NAV_ORDER) {
     if (isActiveNavItem(id, pathname, searchParams)) {
       return id;
     }

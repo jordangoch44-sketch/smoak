@@ -19,6 +19,7 @@ interface DashboardPageShellProps {
   utilityBar?: ReactNode;
   introActions?: ReactNode;
   headerLeading?: ReactNode;
+  headerEyebrowAside?: ReactNode;
   headerClassName?: string;
   hideHeader?: boolean;
   variant?: "default" | "client" | "admin" | "specialist";
@@ -41,6 +42,7 @@ export function DashboardPageShell({
   utilityBar,
   introActions,
   headerLeading,
+  headerEyebrowAside,
   headerClassName,
   hideHeader = false,
   variant = "default",
@@ -110,6 +112,7 @@ export function DashboardPageShell({
             actions={actions}
             introActions={introActions}
             leading={headerLeading}
+            eyebrowAside={headerEyebrowAside}
             className={headerClassName}
           />
         ) : null}

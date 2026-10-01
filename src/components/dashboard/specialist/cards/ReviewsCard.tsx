@@ -181,7 +181,7 @@ export function ReviewsCard({
   return (
     <>
       <DashboardCollapsibleSection
-        title="SMOAC Reviews"
+        title="Smoac Reviews"
         icon={
           <Image
             src={LOGO_SRC}
@@ -191,7 +191,7 @@ export function ReviewsCard({
             className="dashboard-accordion__brand-mark"
           />
         }
-        description="SMOAC client reviews from people who found you on the marketplace."
+        description="Smoac client reviews from people who found you on the marketplace."
         summary={summary}
         defaultOpen={defaultOpen}
         span="full"

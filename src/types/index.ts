@@ -38,3 +38,11 @@ export type {
   ClientWorkoutDay,
   ClientWorkoutLog,
 } from "./client-workout";
+
+export type {
+  CoachingStatus,
+  CoachingRelationship,
+  CoachWorkoutStatus,
+  CoachWorkout,
+} from "./coaching";
+

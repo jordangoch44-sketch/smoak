@@ -37,6 +37,7 @@ import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOr
 import { TrainerList } from "@/components/trainers";
 import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiriesList";
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
+import { ClientCoachingInvites } from "@/components/dashboard/client/coaching/ClientCoachingInvites";
 import { ClientWorkoutBadges } from "@/components/dashboard/client/workouts/ClientWorkoutBadges";
 import { ClientWorkoutsCarousel } from "@/components/dashboard/client/workouts/ClientWorkoutsCarousel";
 import { ClientDashboardOverlay } from "@/components/dashboard/client/ClientDashboardOverlay";
@@ -345,6 +346,7 @@ export function ClientDashboardPageClient() {
 
         <section className="client-dash-panel client-dash-panel--profile">
           <div className="client-dash-links">
+            <ClientCoachingInvites userId={session.userId} />
             <ClientWorkoutsCarousel userId={session.userId} />
 
             <FastActivateButton

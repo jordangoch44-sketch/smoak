@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import type { InquiryThreadPayload } from "@/types/inquiry";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
@@ -60,6 +67,8 @@ interface InquiryInboxPanelProps {
    */
   variant?: "card" | "page" | "embedded";
   listTitle?: string;
+  /** Header control for a saved conversation (specialist “Add to roster”). */
+  renderThreadAction?: (conversationId: string) => ReactNode;
 }
 
 export function InquiryInboxPanel({
@@ -80,6 +89,7 @@ export function InquiryInboxPanel({
   onExitPage,
   variant = "card",
   listTitle,
+  renderThreadAction,
 }: InquiryInboxPanelProps) {
   const titleId = useId();
   const isPage = variant === "page";
@@ -416,6 +426,8 @@ export function InquiryInboxPanel({
             viewer === "client" ? thread.specialistName : thread.clientFirstName,
         }
       : null;
+  const threadAction =
+    trustTarget && renderThreadAction ? renderThreadAction(trustTarget.conversationId) : null;
 
   const threadLayer = openId ? (
     <div className="inquiry-thread-overlay" role="dialog" aria-modal="true">
@@ -433,6 +445,7 @@ export function InquiryInboxPanel({
             void handleSend(message);
           }}
           trust={trustTarget}
+          headerAction={threadAction}
         />
       ) : (
         <div className="inquiry-inbox__missing">
@@ -604,6 +617,7 @@ export function InquiryInboxPanel({
           void handleSend(message);
         }}
         trust={trustTarget}
+        headerAction={threadAction}
       />
     );
   }

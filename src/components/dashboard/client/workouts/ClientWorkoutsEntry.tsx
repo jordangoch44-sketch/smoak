@@ -7,7 +7,9 @@ import {
   CheckIcon,
   ChevronRightIcon,
 } from "@/components/ui/icons";
+import { useClientCoaching } from "@/hooks/useClientCoaching";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
+import { isCoachWorkoutInLog } from "@/lib/coaching/coach-workout";
 import { cn } from "@/lib/utils";
 import {
   currentWeekDayStatuses,
@@ -40,6 +42,7 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
   const [openDateKey, setOpenDateKey] = useState<string | null>(null);
   const [today, setToday] = useState<Date | null>(null);
   const { log } = useClientWorkouts(userId);
+  const { workoutsByDate } = useClientCoaching(userId);
 
   useEffect(() => {
     setToday(new Date());
@@ -142,6 +145,9 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
             }))
           ).map((day) => {
             const pending = day.dateKey.startsWith("pending-");
+            const coachPending = (workoutsByDate.get(day.dateKey) ?? []).some(
+              (workout) => !isCoachWorkoutInLog(workout, log.days)
+            );
             const state = day.completed
               ? day.strength && day.cardio
                 ? "workout and cardio logged"
@@ -165,7 +171,9 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
                     "client-workouts-entry__day--empty"
                 )}
                 disabled={pending}
-                aria-label={`${day.weekday}, ${state}`}
+                aria-label={`${day.weekday}, ${state}${
+                  coachPending ? ", workout from your coach" : ""
+                }`}
                 aria-current={day.isToday ? "date" : undefined}
                 onActivate={() => {
                   if (pending) return;
@@ -175,6 +183,7 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
                 <span className="client-workouts-entry__day-label">
                   {day.label}
                 </span>
+                {coachPending ? <span className="client-workouts-cal__coach" aria-hidden /> : null}
                 <span className="client-workouts-entry__day-mark" aria-hidden>
                   {day.completed ? (
                     <>

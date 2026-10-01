@@ -209,6 +209,18 @@
   gap: 0.75rem;
 }
 
+.dashboard-page__eyebrow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.dashboard-page__eyebrow-row .dashboard-page__eyebrow {
+  min-width: 0;
+}
+
 .dashboard-page__eyebrow {
   margin: 0;
   font-size: 0.6875rem;
@@ -10391,7 +10403,8 @@ body:has(.specialist-overview-gate) .site-footer {
   min-width: 0;
 }
 
-.specialist-profile-mode--inquiries {
+.specialist-profile-mode--inquiries,
+.specialist-profile-mode--clients {
   flex: 1;
   min-height: calc(100dvh - 10.5rem);
 }
@@ -10432,6 +10445,28 @@ body:has(.specialist-overview-gate) .site-footer {
 
 .specialist-profile-mode--live {
   margin-top: 0;
+}
+
+/* Clients tab: full phone width — the roster page sets its own side padding. */
+.dashboard-page.dashboard-page--specialist:has(.specialist-profile-mode--clients)
+  .dashboard-page__content:not(:has(> .dashboard-page__utility-bar)),
+.dashboard-page.dashboard-page--specialist:has(.specialist-profile-mode--clients)
+  .dashboard-page__content {
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dashboard-page--specialist:has(.specialist-profile-mode--clients) .specialist-dash-layout {
+  gap: 0;
+}
+
+@media (min-width: 768px) {
+  .specialist-profile-mode--clients .roster-page {
+    width: 100%;
+    max-width: 44rem;
+    margin-inline: auto;
+  }
 }
 
 /*
@@ -10619,7 +10654,6 @@ body:has(.specialist-overview-gate) .site-footer {
   justify-self: end;
   justify-content: flex-end;
 }
-
 .specialist-live-chrome__btn:active {
   opacity: 0.7;
 }
@@ -12920,9 +12954,9 @@ a.ig-profile-edit__row {
 
 /* Overview vs Profile — same system, distinct page headers */
 .dashboard-page--specialist .dashboard-page__header--overview {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 1rem;
+  padding-bottom: 0;
+  border-bottom: 0;
 }
 
 .dashboard-page--specialist .dashboard-page__header--overview .dashboard-page__title {

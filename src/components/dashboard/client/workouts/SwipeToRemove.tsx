@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { CloseIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 const REVEAL_PX = 88;
@@ -26,12 +27,15 @@ export function SwipeToRemove({
   label,
   onRemove,
   className,
+  contain = false,
 }: {
   children: ReactNode;
   /** Screen reader name for the Remove action, e.g. "Remove Bench press". */
   label: string;
   onRemove: () => void;
   className?: string;
+  /** Keep this swipe from also dragging an ancestor swipe (a set inside an exercise). */
+  contain?: boolean;
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -39,6 +43,7 @@ export function SwipeToRemove({
   const start = useRef({ x: 0, y: 0, offset: 0 });
   const offset = useRef(0);
   const swallowClick = useRef(false);
+  const finishDragRef = useRef<() => void>(() => {});
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -68,6 +73,58 @@ export function SwipeToRemove({
     window.setTimeout(onRemove, SETTLE_MS);
   }
 
+  finishDragRef.current = () => {
+    if (gesture.current !== "drag") return;
+    gesture.current = "idle";
+    swallowClick.current = true;
+    setDragging(false);
+    const width = rootRef.current?.offsetWidth ?? 320;
+    if (offset.current < -width * FULL_SWIPE_RATIO) {
+      remove();
+      return;
+    }
+    settle(offset.current < -REVEAL_PX / 2 ? "open" : "closed");
+  };
+
+  useEffect(() => {
+    const node = contentRef.current;
+    if (!node) return;
+    // The day sheet scrolls vertically. A non-passive listener lets a left
+    // swipe win before iOS turns the gesture into a scroll and cancels it.
+    function onTouchMove(event: TouchEvent) {
+      if (contain) event.stopPropagation();
+      if (gesture.current !== "pending" && gesture.current !== "drag") return;
+      const touch = event.touches[0];
+      if (!touch) return;
+      const dx = touch.clientX - start.current.x;
+      const dy = touch.clientY - start.current.y;
+      if (gesture.current === "pending") {
+        if (Math.abs(dx) < DRAG_START_PX && Math.abs(dy) < DRAG_START_PX) return;
+        if (Math.abs(dy) > Math.abs(dx)) {
+          gesture.current = "scroll";
+          return;
+        }
+        gesture.current = "drag";
+        setDragging(true);
+      }
+      if (event.cancelable) event.preventDefault();
+      const width = rootRef.current?.offsetWidth ?? 320;
+      const raw = start.current.offset + dx;
+      place(Math.min(0, Math.max(-width, raw)), false);
+    }
+    function onTouchEnd() {
+      finishDragRef.current();
+    }
+    node.addEventListener("touchmove", onTouchMove, { passive: false });
+    node.addEventListener("touchend", onTouchEnd);
+    node.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      node.removeEventListener("touchmove", onTouchMove);
+      node.removeEventListener("touchend", onTouchEnd);
+      node.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [contain]);
+
   useEffect(() => {
     if (!open) return;
     function onOutside(event: PointerEvent) {
@@ -96,12 +153,15 @@ export function SwipeToRemove({
         tabIndex={open ? 0 : -1}
         onActivate={remove}
       >
-        Remove
+        <span className="client-workouts-swipe__x">
+          <CloseIcon className="h-5 w-5" />
+        </span>
       </FastActivateButton>
       <div
         ref={contentRef}
         className="client-workouts-swipe__content"
         onPointerDown={(event) => {
+          if (contain) event.stopPropagation();
           if (removing || !event.isPrimary) return;
           gesture.current = "pending";
           start.current = { x: event.clientX, y: event.clientY, offset: offset.current };
@@ -125,20 +185,13 @@ export function SwipeToRemove({
           place(Math.min(0, Math.max(-width, raw)), false);
         }}
         onPointerUpCapture={(event) => {
-          const was = gesture.current;
-          gesture.current = "idle";
-          swallowClick.current = was === "drag" || open;
-          if (was === "drag") {
+          if (gesture.current === "drag") {
             event.stopPropagation();
-            setDragging(false);
-            const width = rootRef.current?.offsetWidth ?? 320;
-            if (offset.current < -width * FULL_SWIPE_RATIO) {
-              remove();
-              return;
-            }
-            settle(offset.current < -REVEAL_PX / 2 ? "open" : "closed");
+            finishDragRef.current();
             return;
           }
+          gesture.current = "idle";
+          swallowClick.current = open;
           if (open) {
             event.stopPropagation();
             settle("closed");
@@ -151,10 +204,9 @@ export function SwipeToRemove({
           event.stopPropagation();
         }}
         onPointerCancel={() => {
-          if (gesture.current === "drag") {
-            setDragging(false);
-            settle(offset.current < -REVEAL_PX / 2 ? "open" : "closed");
-          }
+          // A claimed left-swipe keeps going; touchend settles it. Cancelling
+          // here is what made the card snap back on iPhone.
+          if (gesture.current === "drag") return;
           gesture.current = "idle";
         }}
       >

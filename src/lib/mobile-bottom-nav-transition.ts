@@ -1,4 +1,7 @@
-import type { MobileBottomNavItemId } from "@/lib/mobile-bottom-nav";
+import {
+  MOBILE_BOTTOM_NAV_ORDER,
+  type MobileBottomNavItemId,
+} from "@/lib/mobile-bottom-nav";
 
 export type BottomNavTransitionKind = "none" | "panel";
 
@@ -27,12 +30,7 @@ export const BOTTOM_NAV_PANEL_TOUCH_MS = 120;
 
 export const BOTTOM_NAV_PANEL_REDUCED_MS = 80;
 
-const TAB_ORDER: MobileBottomNavItemId[] = [
-  "home",
-  "search",
-  "saved",
-  "profile",
-];
+const TAB_ORDER = MOBILE_BOTTOM_NAV_ORDER;
 
 export type BottomNavPanelDirection = 1 | -1;
 
@@ -74,7 +72,11 @@ export function isSameBottomNavDestination(
       new URLSearchParams(target.search.slice(1)).get("tab") ?? "";
     const currentTab = searchParams.get("tab") ?? "";
     const normalizeDashTab = (tab: string) =>
-      tab === "overview" || tab === "plan" ? "overview" : "profile";
+      tab === "overview" || tab === "plan"
+        ? "overview"
+        : tab === "clients"
+          ? "clients"
+          : "profile";
     return normalizeDashTab(targetTab) === normalizeDashTab(currentTab);
   }
 

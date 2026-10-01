@@ -1,0 +1,1012 @@
+/* Specialist rosters + workouts sent to clients. */
+
+/* Thread header: Add to roster */
+.inquiry-thread__header .roster-invite {
+  margin-left: auto;
+}
+
+.roster-invite + .inquiry-thread__trust-row {
+  margin-left: 0.75rem;
+}
+
+.roster-invite {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 1.85rem;
+  padding: 0.2rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.roster-invite--action {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(12, 10, 18, 0.9), rgba(12, 10, 18, 0.9)) padding-box,
+    var(--smoac-color) border-box;
+  color: #fff;
+  cursor: pointer;
+}
+
+.roster-invite--action:disabled {
+  opacity: 0.6;
+}
+
+.roster-invite--error {
+  background:
+    linear-gradient(rgba(12, 10, 18, 0.9), rgba(12, 10, 18, 0.9)) padding-box,
+    linear-gradient(90deg, #ff6b6b, #ff9f6b) border-box;
+}
+
+.roster-invite--pending {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.roster-invite--done {
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.1);
+  color: rgb(134, 239, 172);
+}
+
+.coaching-invites {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.coaching-card--notice {
+  margin-bottom: 1rem;
+}
+
+/* Shared card chrome for coaching panels */
+.coaching-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.05rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--client-frost-bg, rgba(20, 16, 30, 0.72));
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: var(--client-frost-shadow, none);
+}
+
+.coaching-card__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background-image: var(--smoac-color);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.coaching-card__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.coaching-card__copy {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.coaching-card__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.coaching-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex: 1 1 0;
+  min-height: 2.4rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.coaching-btn:disabled {
+  opacity: 0.55;
+}
+
+.coaching-btn--primary {
+  border-color: transparent;
+  background: var(--smoac-color);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    var(--smoac-color-glow, none);
+}
+
+.coaching-btn--quiet {
+  flex: 0 0 auto;
+  border-color: transparent;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* Clients tab (specialist roster) */
+.roster-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem max(0.85rem, env(safe-area-inset-right, 0px)) 2.5rem
+    max(0.85rem, env(safe-area-inset-left, 0px));
+}
+
+.roster-page__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+}
+
+.roster-page__intro {
+  min-width: 0;
+}
+
+.roster-page__title {
+  margin: 0;
+  font-size: 1.85rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.roster-page__subtitle {
+  margin: 0.4rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.roster-page__add {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  min-height: 2.75rem;
+  padding: 0 1.05rem;
+  border: 0;
+  border-radius: 0.95rem;
+  background: var(--smoac-color);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    var(--smoac-color-glow, 0 8px 24px rgba(139, 92, 246, 0.35));
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.roster-page__add:active {
+  transform: scale(0.97);
+}
+
+.roster-page__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.roster-page__search-icon {
+  position: absolute;
+  left: 0.95rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.roster-page__search input {
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0 1rem 0 2.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.04);
+  /* 16px stops iOS zooming on focus. */
+  font-size: 16px;
+  color: #fff;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.roster-page__search input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.roster-page__search input:focus {
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.roster-page__filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.roster-page__filter {
+  min-height: 2.2rem;
+  padding: 0 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+
+.roster-page__filter--active {
+  border-color: transparent;
+  background:
+    linear-gradient(rgba(24, 18, 40, 0.95), rgba(24, 18, 40, 0.95)) padding-box,
+    var(--smoac-color) border-box;
+  box-shadow: 0 0 18px rgba(139, 92, 246, 0.28);
+  color: #fff;
+}
+
+.roster-page__status {
+  margin: 1.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.roster-page__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem 0;
+  text-align: center;
+}
+
+.roster-page__empty-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.roster-page__empty-copy {
+  max-width: 19rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.roster-page__empty-action {
+  flex: 0 0 auto;
+  margin-top: 0.5rem;
+  padding: 0 1.25rem;
+}
+
+/* Sample card before the first client: same layout, dashed + faded, not interactive. */
+.roster-card--sample {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
+.roster-card--sample .roster-card__main {
+  cursor: default;
+}
+
+.roster-card--sample .roster-card__name,
+.roster-card--sample .roster-card__last {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.roster-avatar--sample {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.roster-avatar__silhouette {
+  width: 1.6rem;
+  height: 1.6rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.roster-page__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.85rem 0.7rem 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1.2rem;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.roster-card__main {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0 0.2rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roster-card__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.roster-card__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.roster-card__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.roster-card__badge {
+  flex-shrink: 0;
+  padding: 0.12rem 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.roster-card__badge--active {
+  border-color: rgba(74, 222, 128, 0.35);
+  background: rgba(74, 222, 128, 0.1);
+  color: rgb(134, 239, 172);
+}
+
+.roster-card__badge--new {
+  border-color: rgba(167, 139, 250, 0.4);
+  background: rgba(167, 139, 250, 0.12);
+  color: rgb(196, 181, 253);
+}
+
+.roster-card__badge--invited {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+  color: #fcd34d;
+}
+
+.roster-card__last {
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.roster-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.roster-card__meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.roster-card__meta-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.roster-card__chevron {
+  flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.roster-card__actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.45rem;
+}
+
+.roster-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.35rem;
+  padding: 0 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.75rem;
+  font-weight: 550;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.roster-card__action:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.roster-card__action--send {
+  border-color: rgba(96, 165, 250, 0.3);
+  background: rgba(59, 130, 246, 0.14);
+  color: rgb(191, 219, 254);
+}
+
+.roster-card__action-icon {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* Avatar + activity dot */
+.roster-avatar {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 3.9rem;
+  height: 3.9rem;
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--smoac-color);
+}
+
+.roster-avatar--sm {
+  width: 2.6rem;
+  height: 2.6rem;
+}
+
+.roster-avatar__face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 2px solid rgb(10, 9, 16);
+}
+
+.roster-avatar__img,
+.roster-avatar__initials {
+  width: 100%;
+  height: 100%;
+}
+
+.roster-avatar__img {
+  display: block;
+  object-fit: cover;
+  object-position: center;
+}
+
+.roster-avatar__initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(20, 16, 30);
+  font-size: 1rem;
+  font-weight: 650;
+  color: #fff;
+}
+
+.roster-avatar--sm .roster-avatar__initials {
+  font-size: 0.8125rem;
+}
+
+.roster-avatar__dot {
+  position: absolute;
+  right: 0.1rem;
+  bottom: 0.1rem;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 999px;
+  border: 2px solid rgb(10, 9, 16);
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.roster-avatar__dot--recent {
+  background: rgb(34, 197, 94);
+}
+
+.roster-avatar__dot--slipping {
+  background: rgb(250, 176, 5);
+}
+
+/* Sheets */
+.roster-sheet__heading {
+  min-width: 0;
+}
+
+.roster-sheet__subtitle {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.roster-sheet__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.75rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.roster-sheet__empty p {
+  margin: 0;
+}
+
+.roster-sheet__list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster-sheet__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+}
+
+.roster-sheet__row + .roster-sheet__row {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.roster-sheet__row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.roster-sheet__row-action {
+  flex: 0 0 auto;
+  min-width: 5.5rem;
+}
+
+.roster-send__pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.roster-send__pill input,
+.roster-send__pill select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Day picker under "For <client>" in the send editor header */
+.roster-send__pill--day {
+  margin-top: 0.4rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+}
+
+.roster-send__input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 16px;
+  color: #fff;
+  outline: none;
+  resize: none;
+}
+
+.roster-send__input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.roster-send__input:focus {
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.roster-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.roster-plan__heading {
+  margin: 0 0 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.roster-plan__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.roster-plan__item {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.roster-plan__item-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.roster-plan__date {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.roster-plan__status {
+  padding: 0.08rem 0.45rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.roster-plan__status--started {
+  background: rgba(250, 176, 5, 0.14);
+  color: #fcd34d;
+}
+
+.roster-plan__status--completed {
+  background: rgba(74, 222, 128, 0.12);
+  color: rgb(134, 239, 172);
+}
+
+.roster-plan__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-left: auto;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.roster-plan__title {
+  margin: 0.35rem 0 0.4rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.roster-plan__exercises {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.roster-plan__exercises li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.roster-plan__scheme {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+.roster-plan__hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.75rem;
+  color: #fcd34d;
+}
+
+.roster-plan__end {
+  align-self: center;
+  min-height: 2.25rem;
+  padding: 0 1rem;
+  border: 0;
+  background: none;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: rgba(255, 138, 138, 0.9);
+  cursor: pointer;
+}
+
+/* Add client sheet: two choices, then messages list or link */
+.roster-add {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-bottom: 0.25rem;
+}
+
+.roster-add__choice {
+  width: 100%;
+  min-height: 3.5rem;
+  justify-content: center;
+  gap: 0.55rem;
+  border-radius: 1rem;
+  font-size: 1rem;
+}
+
+.roster-add__back {
+  align-self: flex-start;
+  padding-left: 0.25rem;
+}
+
+.roster-link__url {
+  margin: 0;
+  padding: 0.65rem 0.85rem;
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8125rem;
+  color: #fff;
+  word-break: break-all;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+/* /join/<token> */
+.coach-join {
+  display: flex;
+  justify-content: center;
+  padding: 2rem max(1rem, env(safe-area-inset-right, 0px)) 6rem
+    max(1rem, env(safe-area-inset-left, 0px));
+}
+
+.coach-join__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 26rem;
+  padding: 1.4rem 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem;
+  background: rgba(16, 12, 26, 0.9);
+  box-shadow: 0 0 48px rgba(139, 92, 246, 0.16);
+}
+
+.coach-join__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #fff;
+}
+
+.coach-join__copy {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.coach-join__muted {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.coach-join__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.coach-join__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.coach-join__cta {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 2.9rem;
+  font-size: 0.9375rem;
+}
+
+.coach-join__switch {
+  align-self: center;
+}
+
+/* Client: workout from a coach (day sheet + dashboard) */
+.coach-workout-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.coach-workout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid transparent;
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(rgba(16, 12, 26, 0.96), rgba(16, 12, 26, 0.96)) padding-box,
+    var(--smoac-color) border-box;
+}
+
+.coach-workout__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.coach-workout__status {
+  padding: 0.08rem 0.45rem;
+  border-radius: 0.4rem;
+  background: rgba(250, 176, 5, 0.14);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #fcd34d;
+}
+
+.coach-workout__status--completed {
+  background: rgba(74, 222, 128, 0.12);
+  color: rgb(134, 239, 172);
+}
+
+.coach-workout__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.coach-workout__date {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.coach-workout__note {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-style: italic;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.coach-workout__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.coach-workout__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.coach-workout__scheme {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+.coach-workout__hint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.coaching-error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #ff8a8a;
+}

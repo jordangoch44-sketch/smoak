@@ -40,7 +40,7 @@ export function VisibilityRankingCard({
     <DashboardCollapsibleSection
       title="Rankings"
       icon={<DashboardSectionIcon id="rankings" />}
-      description="How you appear across SMOAC city and category boards"
+      description="How you appear across SMOAC city and category boards."
       summary={`${citySummary} · ${smoacSummary}`}
       href="/rankings"
       linkLabel="View rankings"

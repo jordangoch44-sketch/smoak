@@ -19,6 +19,7 @@ import {
   HomeIcon,
   SearchIcon,
   UserIcon,
+  UsersIcon,
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -67,6 +68,8 @@ const NavIcon = memo(function NavIcon({
       return <HomeIcon className={className} />;
     case "search":
       return <SearchIcon className={className} />;
+    case "clients":
+      return <UsersIcon className={className} />;
     case "saved":
       if (glyph === "chart") {
         return <ChartIcon className={className} />;
