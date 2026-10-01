@@ -68,6 +68,8 @@ export interface AuthSessionContextValue {
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
 
 const AUTH_HYDRATE_ATTEMPTS = 4;
+/** Never leave /profile on "Loading your profile" if getUser stalls. */
+const AUTH_HYDRATE_WATCHDOG_MS = 8_000;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -155,13 +157,11 @@ export function AuthSessionProvider({
     }
 
     let cancelled = false;
+    const watchdog = window.setTimeout(() => {
+      if (!cancelled) setSupabaseHydrated(true);
+    }, AUTH_HYDRATE_WATCHDOG_MS);
 
     async function hydrateAuth() {
-      const { ensureSpecialistApplicationsHydrated } = await import(
-        "@/lib/specialist-application-storage"
-      );
-      ensureSpecialistApplicationsHydrated();
-
       for (let attempt = 0; attempt < AUTH_HYDRATE_ATTEMPTS; attempt += 1) {
         if (cancelled || signingOutRef.current) return;
 
@@ -174,6 +174,9 @@ export function AuthSessionProvider({
           /* Session may have landed after the first applications fetch
            * returned with no userId — retry so dashboard isn't stuck. */
           if (status === "ok") {
+            const { ensureSpecialistApplicationsHydrated } = await import(
+              "@/lib/specialist-application-storage"
+            );
             ensureSpecialistApplicationsHydrated();
           }
           return;
@@ -192,6 +195,7 @@ export function AuthSessionProvider({
 
     const supabase = getMarketplaceAuthClient();
     if (!supabase) {
+      window.clearTimeout(watchdog);
       setSupabaseHydrated(true);
       return () => {
         cancelled = true;
@@ -230,6 +234,7 @@ export function AuthSessionProvider({
 
     return () => {
       cancelled = true;
+      window.clearTimeout(watchdog);
       subscription.unsubscribe();
     };
   }, [supabaseAuth, refreshSession]);

@@ -190,8 +190,13 @@ async function runApplicationsHydrate(
     const sessionUserId = getAuthSessionSnapshot()?.userId?.trim();
     let userId = sessionUserId;
     if (!userId) {
-      const { data } = await supabase.auth.getSession();
-      userId = data.session?.user?.id?.trim() || undefined;
+      const sessionResult = await Promise.race([
+        supabase.auth.getSession().then((result) => result),
+        new Promise<null>((resolve) => {
+          window.setTimeout(() => resolve(null), 2_500);
+        }),
+      ]);
+      userId = sessionResult?.data.session?.user?.id?.trim() || undefined;
     }
     /* Queue reads still need a signed-in session so admin RLS applies.
      * They must not filter to that user's own row — the pending applicant
@@ -223,6 +228,15 @@ async function runApplicationsHydrate(
     window.clearTimeout(timeoutId);
     if (generation === loadGeneration) {
       hydrating = false;
+    }
+    /* A hydrate that started before sign-in must not block the real one. */
+    if (
+      generation === loadGeneration &&
+      !hydrated &&
+      getAuthSessionSnapshot()?.userId?.trim()
+    ) {
+      hydratePromise = null;
+      void hydrateFromSupabase(scope);
     }
   }
 }

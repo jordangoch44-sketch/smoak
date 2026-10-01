@@ -17,7 +17,15 @@ export function createSupabaseBrowserClient(): SupabaseClient | null {
   if (!config) return null;
 
   if (!browserClient) {
-    browserClient = createBrowserClient(config.url, config.anonKey);
+    browserClient = createBrowserClient(config.url, config.anonKey, {
+      auth: {
+        /* Safari (especially links opened from Mail) can orphan a Web Lock.
+         * getUser() then never settles, and /profile stays on
+         * "Loading your profile". Run auth without that lock. */
+        lock: async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>) =>
+          fn(),
+      },
+    });
   }
 
   return browserClient;

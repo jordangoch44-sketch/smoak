@@ -18,23 +18,53 @@ import {
 import type { AppRole } from "@/types/auth-roles";
 import { isAdminAppRole, isPublicAuthRole } from "@/types/auth-roles";
 import { getAuthAppUrl } from "@/lib/auth/site-origin";
+import {
+  buildLoginHref,
+  sanitizeAuthNextPath,
+} from "@/lib/auth-return";
 
 /**
  * Keep the browser on the host it typed (localhost stays localhost).
  * Only bounce unusable bind addresses (0.0.0.0) to SITE_URL.
  */
-function redirectToAppPath(request: NextRequest, pathname: string) {
+function redirectToAppPath(request: NextRequest, pathAndQuery: string) {
+  const qIndex = pathAndQuery.indexOf("?");
+  const pathname = qIndex === -1 ? pathAndQuery : pathAndQuery.slice(0, qIndex);
+  const search = qIndex === -1 ? "" : pathAndQuery.slice(qIndex);
   const host = request.nextUrl.hostname;
   if (host === "0.0.0.0" || host === "::") {
-    const absolute = getAuthAppUrl(pathname);
+    const absolute = getAuthAppUrl(`${pathname}${search}`);
     if (absolute) {
       return NextResponse.redirect(absolute);
     }
   }
   const url = request.nextUrl.clone();
   url.pathname = pathname;
-  url.search = "";
+  url.search = search;
   return NextResponse.redirect(url);
+}
+
+function loginHrefForProtectedPath(request: NextRequest): string {
+  const { pathname, search } = request.nextUrl;
+  if (
+    pathname === SPECIALIST_DASHBOARD_PATH ||
+    pathname.startsWith(`${SPECIALIST_DASHBOARD_PATH}/`)
+  ) {
+    return buildLoginHref({
+      role: "specialist",
+      next: `${pathname}${search}`,
+    });
+  }
+  if (
+    pathname === CLIENT_DASHBOARD_PATH ||
+    pathname.startsWith(`${CLIENT_DASHBOARD_PATH}/`)
+  ) {
+    return buildLoginHref({
+      role: "client",
+      next: `${pathname}${search}`,
+    });
+  }
+  return LOGIN_PATH;
 }
 
 const PROTECTED_PREFIXES = [
@@ -129,7 +159,11 @@ export async function updateSession(request: NextRequest) {
       return supabaseResponse;
     }
     if (role && isPublicAuthRole(role)) {
-      return redirectToAppPath(request, getDashboardForRole(role));
+      const next = sanitizeAuthNextPath(
+        request.nextUrl.searchParams.get("next"),
+        role
+      );
+      return redirectToAppPath(request, next ?? getDashboardForRole(role));
     }
     return redirectToAppPath(request, "/");
   }
@@ -158,7 +192,7 @@ export async function updateSession(request: NextRequest) {
     if (isInternalPath(pathname)) {
       return redirectToAppPath(request, INTERNAL_LOGIN_PATH);
     }
-    return redirectToAppPath(request, LOGIN_PATH);
+    return redirectToAppPath(request, loginHrefForProtectedPath(request));
   }
 
   const roleLookup = await fetchUserRole(supabase, user.id);

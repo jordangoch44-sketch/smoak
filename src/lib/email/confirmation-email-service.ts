@@ -17,6 +17,7 @@ import {
   CLIENT_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PATH,
 } from "@/lib/auth-routes";
+import { buildLoginHref } from "@/lib/auth-return";
 import { CLIENT_WELCOME_EMAIL_SENT_PREFIX } from "@/lib/dev-storage-keys";
 import type { SpecialistApplication } from "@/types/specialist-application";
 
@@ -107,7 +108,10 @@ function buildSpecialistApprovalEmail(
   const input = {
     firstName: specialistFirstName(application),
     profileUrl,
-    editProfileUrl: SPECIALIST_EDIT_PROFILE_PATH,
+    editProfileUrl: buildLoginHref({
+      role: "specialist",
+      next: SPECIALIST_EDIT_PROFILE_PATH,
+    }),
     trialLine: specialistApprovalTrialLine(isFounding),
   };
 

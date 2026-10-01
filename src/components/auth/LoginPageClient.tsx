@@ -19,7 +19,12 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { PUBLIC_INVALID_LOGIN_MESSAGE, type PublicAuthRole } from "@/lib/dev-auth";
 import type { AuthRole } from "@/types/auth";
 import { getUserRole } from "@/lib/specialist-saves";
-import { isAuthReturnToSaved } from "@/lib/auth-return";
+import {
+  AUTH_NEXT_PARAM,
+  isAuthReturnToSaved,
+  parseAuthRoleParam,
+  sanitizeAuthNextPath,
+} from "@/lib/auth-return";
 import { resolvePostLoginNavigation, navigateAfterAuth } from "@/lib/post-login-flow";
 import {
   CLIENT_DASHBOARD_PATH,
@@ -57,6 +62,7 @@ export function LoginPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnToSaved = isAuthReturnToSaved(searchParams);
+  const requestedRole = parseAuthRoleParam(searchParams.get("role"));
   const reducedMotion = useReducedMotion();
   const { isReady, session, signInWithPassword } = useAuthSession();
   const { showToast: showSaveToast } = useSaveToast();
@@ -108,6 +114,10 @@ export function LoginPageClient() {
   }
 
   useEffect(() => {
+    if (requestedRole) setRole(requestedRole);
+  }, [requestedRole]);
+
+  useEffect(() => {
     router.prefetch(
       role === "specialist" ? SPECIALIST_DASHBOARD_PATH : CLIENT_DASHBOARD_PATH
     );
@@ -133,12 +143,16 @@ export function LoginPageClient() {
     const publicRole = getUserRole(session);
     if (!publicRole) return;
     /* Pending specialists must land on their dashboard, not the homepage. */
+    const next = sanitizeAuthNextPath(
+      searchParams.get(AUTH_NEXT_PARAM),
+      publicRole
+    );
     const { path } = resolvePostLoginNavigation(publicRole, {
       returnToSaved,
       session,
     });
-    navigateAfterAuth(path);
-  }, [isReady, session, returnToSaved, submitting, submitPressed, roleMismatch, roleMismatchActive]);
+    navigateAfterAuth(next ?? path);
+  }, [isReady, session, returnToSaved, submitting, submitPressed, roleMismatch, roleMismatchActive, searchParams]);
 
   useEffect(() => {
     if (searchParams.get("error") !== "auth_callback") return;
@@ -280,6 +294,10 @@ export function LoginPageClient() {
       setRole(signedInRole);
     }
 
+    const next = sanitizeAuthNextPath(
+      searchParams.get(AUTH_NEXT_PARAM),
+      signedInRole
+    );
     const { path, toast } = resolvePostLoginNavigation(signedInRole, {
       returnToSaved,
       session: result.session,
@@ -289,7 +307,7 @@ export function LoginPageClient() {
     }
 
     /* Hard navigate so the proxy sees auth cookies (soft push can bounce to /login). */
-    navigateAfterAuth(path);
+    navigateAfterAuth(next ?? path);
   }
 
   const publicSessionRole =

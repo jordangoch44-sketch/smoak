@@ -2,6 +2,7 @@
  * Code-built emails shown under Admin → Email → System emails.
  * Sample data only — used for preview and "Send test".
  */
+import { buildLoginHref } from "@/lib/auth-return";
 import {
   SPECIALIST_APPROVAL_SUBJECT,
   renderSpecialistApprovalEmailHtml,
@@ -27,7 +28,10 @@ function approvalSample(isFounding: boolean): SystemEmailRendered {
   const input = {
     firstName: "Jordan",
     profileUrl: "/trainers/sample-specialist",
-    editProfileUrl: "/specialist-dashboard/edit-profile",
+    editProfileUrl: buildLoginHref({
+      role: "specialist",
+      next: "/specialist-dashboard/edit-profile",
+    }),
     trialLine: specialistApprovalTrialLine(isFounding),
   };
   return {

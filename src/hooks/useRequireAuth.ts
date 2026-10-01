@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
 import { getAuthSessionSnapshot } from "@/lib/auth-session-store";
-import { getDashboardPathForRole, LOGIN_PATH } from "@/lib/auth-routes";
+import { getDashboardPathForRole } from "@/lib/auth-routes";
+import { buildLoginHref } from "@/lib/auth-return";
 import { getUserRole } from "@/lib/specialist-saves";
 import type { PublicAuthRole } from "@/types/auth-roles";
 
@@ -34,7 +35,11 @@ export function useRequireAuth(requiredRole: PublicAuthRole): {
       }
       if (session.role !== requiredRole) {
         const role = getUserRole(session);
-        router.replace(role ? getDashboardPathForRole(role) : LOGIN_PATH);
+        router.replace(
+          role
+            ? getDashboardPathForRole(role)
+            : buildLoginHref({ role: requiredRole })
+        );
       }
       return;
     }
@@ -86,7 +91,11 @@ export function useRequireAuth(requiredRole: PublicAuthRole): {
       }
 
       if (cancelled) return;
-      router.replace(LOGIN_PATH);
+      const next =
+        typeof window !== "undefined"
+          ? `${window.location.pathname}${window.location.search}`
+          : undefined;
+      router.replace(buildLoginHref({ role: requiredRole, next }));
     })();
 
     return () => {
