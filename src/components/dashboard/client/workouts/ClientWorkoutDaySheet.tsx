@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { CheckIcon, ChevronLeftIcon, PlusIcon } from "@/components/ui/icons";
+import { CheckIcon, ChevronLeftIcon, PlusIcon, SendIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { ExerciseOptionsSheet } from "@/components/dashboard/client/workouts/ExerciseOptionsSheet";
 import { ExercisePickerSheet } from "@/components/dashboard/client/workouts/ExercisePickerSheet";
@@ -49,6 +49,11 @@ function swallowTrailingDismissTap() {
   }, DISMISS_TAP_GUARD_MS);
 }
 
+function setWorkoutKeyboardChrome(open: boolean) {
+  document.documentElement.classList.toggle("client-workouts-keyboard", open);
+  document.body.classList.toggle("client-workouts-keyboard", open);
+}
+
 function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
   const body = sheet.querySelector(".client-workouts-day__body");
   if (!(body instanceof HTMLElement)) return;
@@ -62,11 +67,7 @@ function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
     delta = fieldRect.top - bodyRect.top - pad;
   }
   if (Math.abs(delta) < 2) return;
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  body.scrollTo({
-    top: body.scrollTop + delta,
-    behavior: reduce ? "auto" : "smooth",
-  });
+  body.scrollTop += delta;
 }
 
 type DaySheetStep = "pick" | "cardio" | "workout";
@@ -154,6 +155,7 @@ export function ClientWorkoutDaySheet({
     if (active instanceof HTMLElement && sheetRef.current?.contains(active)) {
       active.blur();
     }
+    setWorkoutKeyboardChrome(false);
     swallowTrailingDismissTap();
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       onClose();
@@ -161,6 +163,12 @@ export function ClientWorkoutDaySheet({
     }
     setClosing(true);
   }
+
+  useEffect(() => {
+    const shell = rootRef.current?.closest(".client-workouts-root");
+    if (!(shell instanceof HTMLElement)) return;
+    shell.classList.toggle("client-workouts-root--closing", closing);
+  }, [closing]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -210,6 +218,8 @@ export function ClientWorkoutDaySheet({
     let raf = 0;
     let keyboardDismissed = false;
     let blurTimer = 0;
+    let settleTimer = 0;
+    let focusedField: HTMLElement | null = null;
 
     function apply(px: number) {
       root.style.setProperty("--workout-keyboard-inset", `${Math.max(0, px).toFixed(1)}px`);
@@ -219,9 +229,8 @@ export function ClientWorkoutDaySheet({
       const viewport = window.visualViewport;
       if (!viewport) return 0;
       const rect = root.getBoundingClientRect();
-      const fromRect = rect.bottom - viewport.height;
-      const fromLayout = window.innerHeight - viewport.offsetTop - viewport.height;
-      return Math.max(0, fromRect, fromLayout);
+      const visibleBottom = viewport.offsetTop + viewport.height;
+      return Math.max(0, rect.bottom - visibleBottom);
     }
 
     function stopEase() {
@@ -247,7 +256,23 @@ export function ClientWorkoutDaySheet({
       if (!raf) raf = requestAnimationFrame(easeFrame);
     }
 
+    function finishKeyboardMove() {
+      if (window.scrollY > 1) window.scrollTo(0, 0);
+      const field = focusedField;
+      if (field && sheet.contains(field)) scrollFieldInSheet(field, sheet);
+    }
+
     function syncKeyboard() {
+      // Phone: leave the sheet still while the keyboard moves, then scroll the field once.
+      if (touch) {
+        if (keyboardDismissed) {
+          window.clearTimeout(settleTimer);
+          return;
+        }
+        window.clearTimeout(settleTimer);
+        settleTimer = window.setTimeout(finishKeyboardMove, 80);
+        return;
+      }
       const next = keyboardDismissed ? 0 : readInset();
       if (reduceMotion) {
         stopEase();
@@ -266,23 +291,16 @@ export function ClientWorkoutDaySheet({
       apply(displayed);
     }
 
-    let scrollTimer = 0;
     function onFocusIn(event: FocusEvent) {
       if (!isWorkoutField(event.target)) return;
       if (!sheet.contains(event.target)) return;
       window.clearTimeout(blurTimer);
       keyboardDismissed = false;
-      if (touch) setTyping(true);
-      const field = event.target;
-      const body = sheet.querySelector(".client-workouts-day__body");
-      const lockedTop = body instanceof HTMLElement ? body.scrollTop : 0;
-      window.clearTimeout(scrollTimer);
-      requestAnimationFrame(() => {
-        if (body instanceof HTMLElement) body.scrollTop = lockedTop;
-      });
-      scrollTimer = window.setTimeout(() => {
-        scrollFieldInSheet(field, sheet);
-      }, 380);
+      focusedField = event.target;
+      if (touch) {
+        setTyping(true);
+        setWorkoutKeyboardChrome(true);
+      }
     }
 
     // Moving between fields (name → sets → reps) blurs for a moment; wait before treating it as
@@ -294,11 +312,16 @@ export function ClientWorkoutDaySheet({
         const active = document.activeElement;
         if (isWorkoutField(active) && sheet.contains(active)) return;
         keyboardDismissed = true;
+        focusedField = null;
+        window.clearTimeout(settleTimer);
         stopEase();
         displayed = 0;
         target = 0;
         apply(0);
-        if (touch) setTyping(false);
+        if (touch) {
+          setTyping(false);
+          setWorkoutKeyboardChrome(false);
+        }
       }, 120);
     }
 
@@ -314,8 +337,10 @@ export function ClientWorkoutDaySheet({
     return () => {
       checkKeyboardClosedRef.current = null;
       stopEase();
-      window.clearTimeout(scrollTimer);
+      window.clearTimeout(settleTimer);
       window.clearTimeout(blurTimer);
+      setWorkoutKeyboardChrome(false);
+      root.style.removeProperty("--workout-keyboard-inset");
       window.visualViewport?.removeEventListener("resize", syncKeyboard);
       window.visualViewport?.removeEventListener("scroll", syncKeyboard);
       window.removeEventListener("resize", syncKeyboard);
@@ -351,10 +376,11 @@ export function ClientWorkoutDaySheet({
   }
 
   function confirmWorkoutTitle() {
-    const cleaned = applyTitle(titleInputRef.current?.value ?? title);
+    const field = titleInputRef.current;
+    const cleaned = applyTitle(field?.value ?? title);
     if (!cleaned.trim()) return;
     setEditingTitle(false);
-    titleInputRef.current?.blur();
+    if (document.activeElement === field) field?.blur();
   }
 
   function replaceExercise(next: ClientWorkoutExercise, commit: boolean) {
@@ -608,6 +634,7 @@ export function ClientWorkoutDaySheet({
         ref={sheetRef}
         className={cn(
           "client-workouts-day",
+          send && "client-workouts-day--send",
           closing && "client-workouts-day--closing",
           typing && "client-workouts-day--typing"
         )}
@@ -648,7 +675,7 @@ export function ClientWorkoutDaySheet({
                 </span>
               ) : null}
             </h3>
-            {step === "cardio" || step === "workout" ? (
+            {!send && (step === "cardio" || step === "workout") ? (
               <p
                 className={cn(
                   "client-workouts-day__step",
@@ -660,6 +687,16 @@ export function ClientWorkoutDaySheet({
             ) : null}
             {send ? send.dateControl : <p className="client-workouts-day__sub">{weekLabel}</p>}
           </div>
+          {send ? (
+            <FastActivateButton
+              className="client-workouts-day__send"
+              aria-label={sending ? "Sending workout" : `Send to ${send.clientName}`}
+              disabled={sending}
+              onActivate={() => void handleSend()}
+            >
+              <SendIcon className="h-5 w-5" />
+            </FastActivateButton>
+          ) : null}
         </div>
 
         <div className="client-workouts-day__body">
@@ -799,6 +836,7 @@ export function ClientWorkoutDaySheet({
                   aria-label="Workout name"
                   onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
                   onFocus={() => setEditingTitle(true)}
+                  onBlur={() => confirmWorkoutTitle()}
                   onKeyDown={(event) => {
                     if (event.key !== "Enter") return;
                     event.preventDefault();
@@ -807,7 +845,7 @@ export function ClientWorkoutDaySheet({
                 />
               )}
 
-              {title.trim() && !editingTitle && exercises.length === 0 ? (
+              {exercises.length === 0 && (send || (title.trim() && !editingTitle)) ? (
                 <div className="exercise-block exercise-block--ghost" aria-hidden>
                   <div className="exercise-block__name-wrap">
                     <div className="exercise-block__title">
@@ -878,37 +916,30 @@ export function ClientWorkoutDaySheet({
                   />
                 </SwipeToRemove>
               ))}
+              {send ? (
+                <FastActivateButton
+                  className="exercise-block__add client-workouts-add-exercise"
+                  disabled={sending}
+                  onActivate={handleAddExercise}
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  Add exercise
+                </FastActivateButton>
+              ) : null}
             </>
           ) : null}
 
           {error ? <p className="client-workouts-error">{error}</p> : null}
         </div>
 
+        {send ? null : (
         <div
           className="client-workouts-day__footer"
           aria-hidden={typing || undefined}
           inert={typing || undefined}
         >
           <div className="client-workouts-day__footer-inner">
-            {send ? (
-              <>
-                <FastActivateButton
-                  className="client-workouts-btn"
-                  disabled={sending}
-                  onActivate={handleAddExercise}
-                >
-                  <PlusIcon className="client-workouts-btn__plus" />
-                  Add exercise
-                </FastActivateButton>
-                <FastActivateButton
-                  className="client-workouts-btn client-workouts-btn--primary"
-                  disabled={sending}
-                  onActivate={() => void handleSend()}
-                >
-                  {sending ? "Sending…" : `Send to ${send.clientName}`}
-                </FastActivateButton>
-              </>
-            ) : step === "pick" ? (
+            {step === "pick" ? (
               <FastActivateButton
                 className="client-workouts-btn client-workouts-btn--primary"
                 onActivate={handlePickContinue}
@@ -996,6 +1027,7 @@ export function ClientWorkoutDaySheet({
             )}
           </div>
         </div>
+        )}
       </div>
       {menuExercise ? (
         <ExerciseOptionsSheet
