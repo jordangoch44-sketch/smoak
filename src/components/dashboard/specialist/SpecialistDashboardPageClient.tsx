@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   DashboardButton,
@@ -23,6 +23,7 @@ import {
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
+import { SpecialistFirstTour } from "@/components/dashboard/specialist/SpecialistFirstTour";
 import { SpecialistLockedOverview } from "@/components/dashboard/specialist/SpecialistLockedOverview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistPendingOverview } from "@/components/dashboard/specialist/SpecialistPendingOverview";
@@ -58,6 +59,13 @@ import {
   PROFILE_WELCOME_AVATAR_TASK_ID,
   PROFILE_WELCOME_PHOTOS_TASK_ID,
 } from "@/lib/specialist-profile-welcome";
+import {
+  SPECIALIST_TOUR_STEPS,
+  markSpecialistTourComplete,
+  shouldOfferSpecialistTour,
+  specialistTourSurfaceMatches,
+  specialistTourTrialNote,
+} from "@/lib/specialist-first-tour";
 
 type FreeDashboardTab = "overview" | "profile";
 type PremiumDashboardTab = "overview" | "profile";
@@ -131,10 +139,14 @@ export function SpecialistDashboardPageClient() {
   const editView = searchParams.get("view") === "edit";
   const openInquiries = Boolean(conversationParam) || inquiriesView;
   const welcomeParam = searchParams.get("welcome") === "1";
+  const [tourPinned, setTourPinned] = useState(false);
+  const tourForce = searchParams.get("tour") === "1" || tourPinned;
   const freeTab = parseFreeTab(tabParam, openInquiries, editView);
   const premiumTab = parsePremiumTab(tabParam, openInquiries, editView);
   const [trialEndedOpen, setTrialEndedOpen] = useState(false);
   const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeSkipPick, setUpgradeSkipPick] = useState(false);
   const [boostOpen, setBoostOpen] = useState(false);
@@ -183,6 +195,17 @@ export function SpecialistDashboardPageClient() {
   useEffect(() => {
     if (!isReady || !session || !isHydrated) return;
     if (trialEndedOpen) return;
+    if (
+      shouldOfferSpecialistTour({
+        email: session.email,
+        userId: session.userId,
+        dashboardMode,
+        force: tourForce,
+        openInquiries,
+      })
+    ) {
+      return;
+    }
     const userId = session.userId;
     if (userId && welcomeDismissedThisRuntime.has(userId)) {
       return;
@@ -213,7 +236,72 @@ export function SpecialistDashboardPageClient() {
     dashboardMode,
     openInquiries,
     welcomeParam,
+    tourForce,
   ]);
+
+  const tourWasOpenRef = useRef(false);
+  const tourClosedRef = useRef(false);
+
+  useEffect(() => {
+    if (!isReady || !session || !isHydrated) return;
+    if (trialEndedOpen) return;
+    if (tourClosedRef.current) {
+      if (!tourForce) tourClosedRef.current = false;
+      return;
+    }
+    const offer = shouldOfferSpecialistTour({
+      email: session.email,
+      userId: session.userId,
+      dashboardMode,
+      force: tourForce,
+      openInquiries,
+    });
+    if (!offer) return;
+    if (session.userId) welcomeDismissedThisRuntime.add(session.userId);
+    setWelcomeOpen(false);
+    setTourOpen(true);
+  }, [
+    isReady,
+    session,
+    isHydrated,
+    trialEndedOpen,
+    dashboardMode,
+    openInquiries,
+    tourForce,
+  ]);
+
+  useEffect(() => {
+    if (tourOpen && !tourWasOpenRef.current) setTourStep(0);
+    tourWasOpenRef.current = tourOpen;
+  }, [tourOpen]);
+
+  useEffect(() => {
+    if (!tourOpen) return;
+    const step = SPECIALIST_TOUR_STEPS[tourStep];
+    if (!step) return;
+    const params = new URLSearchParams();
+    if (step.surface === "clients") params.set("tab", "clients");
+    else if (step.surface === "overview") params.set("tab", "overview");
+    else params.set("tab", "profile");
+    if (tourForce) params.set("tour", "1");
+    const href = `${SPECIALIST_DASHBOARD_PATH}?${params.toString()}`;
+    const current = `${SPECIALIST_DASHBOARD_PATH}?${searchParams.toString()}`;
+    if (
+      current === href &&
+      specialistTourSurfaceMatches(step.surface, searchParams)
+    ) {
+      return;
+    }
+    if (
+      specialistTourSurfaceMatches(step.surface, searchParams) &&
+      searchParams.get("welcome") !== "1" &&
+      searchParams.get("tour") === (tourForce ? "1" : null) &&
+      !searchParams.get("focus")
+    ) {
+      return;
+    }
+    router.replace(href, { scroll: false });
+  }, [tourOpen, tourStep, tourForce, searchParams, router]);
 
   useEffect(() => {
     if (!welcomeOpen) return;
@@ -401,6 +489,65 @@ export function SpecialistDashboardPageClient() {
       qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
       { scroll: false }
     );
+  }
+
+  function showTourStep(index: number) {
+    const next = Math.min(
+      Math.max(index, 0),
+      SPECIALIST_TOUR_STEPS.length - 1
+    );
+    setTourStep(next);
+  }
+
+  function closeSpecialistTour(
+    action: "skip" | "browse" | "edit",
+    sectionId?: string
+  ) {
+    const userId = session?.userId;
+    if (userId) {
+      markSpecialistTourComplete(userId);
+      welcomeDismissedThisRuntime.add(userId);
+    }
+    tourClosedRef.current = true;
+    setTourPinned(false);
+    setTourOpen(false);
+    setWelcomeOpen(false);
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete("tour");
+    next.delete("welcome");
+    next.delete("c");
+    next.delete("view");
+    if (action === "edit") {
+      const id = sectionId || welcomeTasks[0]?.id || "hero";
+      setFocusSection(id);
+      next.set("tab", "profile");
+      next.set("focus", id);
+    } else if (action === "browse") {
+      setFocusSection(null);
+      next.set("tab", "overview");
+      next.delete("focus");
+      next.delete("section");
+    } else {
+      next.delete("focus");
+    }
+    const qs = next.toString();
+    router.replace(
+      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
+      { scroll: false }
+    );
+  }
+
+  function replaySpecialistTour() {
+    tourClosedRef.current = false;
+    tourWasOpenRef.current = false;
+    setTourPinned(true);
+    setFocusSection(null);
+    setTourStep(0);
+    setWelcomeOpen(false);
+    setTourOpen(true);
+    router.replace(`${SPECIALIST_DASHBOARD_PROFILE_TAB_HREF}&tour=1`, {
+      scroll: false,
+    });
   }
 
   function openUpgrade(options?: { skipPick?: boolean }) {
@@ -638,6 +785,7 @@ export function SpecialistDashboardPageClient() {
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
                       onSignOut={() => setSignOutConfirmOpen(true)}
+                      onReplayWalkthrough={replaySpecialistTour}
                       {...inquiryPreviewProps}
                     />
                   ) : (
@@ -806,6 +954,7 @@ export function SpecialistDashboardPageClient() {
                       onClearFocus={() => setFocusSection(null)}
                       onUpgrade={() => setUpgradeOpen(true)}
                       onSignOut={() => setSignOutConfirmOpen(true)}
+                      onReplayWalkthrough={replaySpecialistTour}
                       {...inquiryPreviewProps}
                     />
                   ) : (
@@ -839,7 +988,7 @@ export function SpecialistDashboardPageClient() {
       onClose={() => setTrialEndedOpen(false)}
     />
     <SpecialistProfileWelcomeModal
-      open={welcomeOpen && !trialEndedOpen}
+      open={welcomeOpen && !trialEndedOpen && !tourOpen}
       tasks={welcomeTasks}
       avatarUrl={welcomeAvatarUrl}
       specialistName={welcomeDisplayName}
@@ -851,6 +1000,17 @@ export function SpecialistDashboardPageClient() {
       onGetMembership={() => openWelcomeMembership("join")}
       onUpgrade={() => openWelcomeMembership("upgrade")}
       onBoost={() => openWelcomeMembership("boost")}
+    />
+    <SpecialistFirstTour
+      open={tourOpen && !trialEndedOpen}
+      stepIndex={tourStep}
+      tasks={welcomeTasks}
+      trialNote={specialistTourTrialNote(session)}
+      onBack={() => showTourStep(tourStep - 1)}
+      onNext={() => showTourStep(tourStep + 1)}
+      onSkip={() => closeSpecialistTour("skip")}
+      onBrowse={() => closeSpecialistTour("browse")}
+      onFinish={(sectionId) => closeSpecialistTour("edit", sectionId)}
     />
     <SmoacProUpgradeModal
       open={upgradeOpen}

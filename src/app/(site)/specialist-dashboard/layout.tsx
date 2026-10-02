@@ -4,6 +4,7 @@ import "@/styles/profile.css";
 import "@/styles/profile-sheet.css";
 import "@/styles/inquiry.css";
 import "@/styles/specialist-reviews.css";
+import "@/styles/specialist-tour.css";
 
 export default function SpecialistDashboardLayout({
   children,

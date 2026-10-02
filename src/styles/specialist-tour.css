@@ -1,0 +1,221 @@
+/* Sample-account first-login walkthrough. Sits above the site header. */
+
+.specialist-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 10120;
+  pointer-events: none;
+}
+
+.specialist-tour__shade {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+  background: rgba(3, 3, 4, 0.74);
+}
+
+.specialist-tour--anchored .specialist-tour__shade {
+  background: transparent;
+}
+
+.specialist-tour__hole {
+  position: fixed;
+  pointer-events: none;
+  box-shadow:
+    0 0 18px 1px rgba(var(--smoac-color-violet-rgb), 0.45),
+    0 0 28px 2px rgba(var(--smoac-color-rose-rgb), 0.22),
+    0 0 0 9999px rgba(3, 3, 4, 0.74);
+}
+
+.specialist-tour__hole::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  padding: 2.5px;
+  background: var(--smoac-color);
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+.specialist-tour__pointer {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.specialist-tour__card {
+  position: fixed;
+  left: 50%;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  width: min(24rem, calc(100% - 1.5rem));
+  overflow: auto;
+  transform: translateX(-50%);
+  padding: 0.95rem 1rem 0.85rem;
+  border-radius: 1.125rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(14, 14, 20, 0.94);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+  color: #fff;
+  pointer-events: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.specialist-tour__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.specialist-tour__count {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.specialist-tour__skip,
+.specialist-tour__browse,
+.specialist-tour__back {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.specialist-tour__skip {
+  padding: 0.15rem 0.1rem;
+}
+
+.specialist-tour__dots {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0.7rem 0 0.85rem;
+}
+
+.specialist-tour__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.specialist-tour__dot--done {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.specialist-tour__dot--current {
+  width: 1.1rem;
+  background: #fff;
+}
+
+.specialist-tour__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.specialist-tour__body,
+.specialist-tour__trial {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.specialist-tour__tasks {
+  margin-top: 0.85rem;
+}
+
+.specialist-tour__tasks-label,
+.specialist-tour__more {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.specialist-tour__task-list {
+  margin: 0.45rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialist-tour__task {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.38rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.specialist-tour__task-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
+  color: #fbbf24;
+}
+
+.specialist-tour__more {
+  margin-top: 0.35rem;
+}
+
+.specialist-tour__actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.95rem;
+}
+
+.specialist-tour__back,
+.specialist-tour__next {
+  min-height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+}
+
+.specialist-tour__back {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.specialist-tour__next {
+  flex: 1;
+  border: 0;
+  background: #fff;
+  color: #0a0a0a;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.specialist-tour__browse {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  min-height: 2.5rem;
+}

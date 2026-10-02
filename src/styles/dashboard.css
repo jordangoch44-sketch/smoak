@@ -10519,6 +10519,14 @@ body:has(.specialist-overview-gate) .site-footer {
   height: 3.05rem;
 }
 
+.specialist-live-chrome__title-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  width: max-content;
+  max-width: 100%;
+}
+
 .specialist-live-chrome__title {
   display: inline-flex;
   align-items: center;

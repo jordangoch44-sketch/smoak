@@ -101,7 +101,7 @@ export function SpecialistOverviewBoard({
 
   return (
     <div className="specialist-overview-board">
-      <ul className="overview-kpis">
+      <ul className="overview-kpis" data-tour="overview-kpis">
         {analytics.coreMetrics.map((metric) => (
           <KpiTile
             key={metric.id}

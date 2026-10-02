@@ -248,6 +248,13 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       )}
       aria-label={ariaLabel}
       aria-current={active ? "page" : undefined}
+      data-tour={
+        item.id === "clients"
+          ? "clients-tab"
+          : item.id === "saved" && item.label === "Overview"
+            ? "overview-tab"
+            : undefined
+      }
       {...(isProfile ? { "data-profile-auth": profileAuthState } : {})}
     >
       <span

@@ -31,7 +31,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useProfileKeyboardChrome } from "@/hooks/useProfileKeyboardChrome";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
-import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { SPECIALIST_DASHBOARD_PATH, SPECIALIST_DASHBOARD_PROFILE_TAB_HREF } from "@/lib/auth-routes";
 import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
@@ -40,6 +40,7 @@ import {
   computeProfileCompletion,
   overlayProfileSectionDraft,
 } from "@/lib/specialist-profile-overrides";
+import { shouldOfferSpecialistTour } from "@/lib/specialist-first-tour";
 import {
   resolveSpecialistDashboardMode,
   showsProfileFirstDashboard,
@@ -216,6 +217,35 @@ export function SpecialistEditProfilePageClient({
     if (dashboardMode !== "onboarding") return;
     router.replace(SPECIALIST_ONBOARDING_RESUME_HREF);
   }, [isReady, session, isHydrated, dashboardMode, router]);
+
+  useEffect(() => {
+    if (presentation !== "page") return;
+    if (!isReady || !session || !isHydrated) return;
+    const forceTour = searchParams.get("tour") === "1";
+    if (
+      !shouldOfferSpecialistTour({
+        email: session.email,
+        userId: session.userId,
+        dashboardMode,
+        force: forceTour,
+      })
+    ) {
+      return;
+    }
+    router.replace(
+      forceTour
+        ? `${SPECIALIST_DASHBOARD_PROFILE_TAB_HREF}&tour=1`
+        : SPECIALIST_DASHBOARD_PROFILE_TAB_HREF
+    );
+  }, [
+    presentation,
+    isReady,
+    session,
+    isHydrated,
+    dashboardMode,
+    searchParams,
+    router,
+  ]);
 
   const isPremium = Boolean(session?.isPremium);
   const isProPlus =

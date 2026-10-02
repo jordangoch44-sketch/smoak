@@ -1,7 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { isSampleSpecialistTourAccount } from "@/lib/specialist-first-tour";
+import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { DashboardButton } from "@/components/dashboard/shared/DashboardButton";
+import {
+  DASHBOARD_MODAL_DIALOG_POINTER_PROPS,
+  DashboardModalScrim,
+} from "@/components/dashboard/shared/DashboardModalScrim";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatDualLocationPreview } from "@/lib/specialist-work-spots";
 import { formatMembershipShortLabel, isProPlusPlan, isTrainerProPlus, membershipBadgeToneForSession, membershipRoleBadgeClassName } from "@/lib/specialist-premium";
@@ -163,6 +171,57 @@ interface SpecialistIgStyleProfileEditorProps {
   footer?: ReactNode;
   onUpgrade?: () => void;
   onSignOut?: () => void;
+  onReplayWalkthrough?: () => void;
+}
+
+function WalkthroughAskDialog({
+  open,
+  onClose,
+  onConfirm,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
+    <DashboardModalScrim onDismiss={onClose}>
+      <div
+        className="dashboard-modal__dialog dashboard-modal__dialog--signout"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="site-walkthrough-title"
+        {...DASHBOARD_MODAL_DIALOG_POINTER_PROPS}
+      >
+        <div className="dashboard-modal__glow" aria-hidden />
+        <div className="dashboard-modal__content">
+          <h2 id="site-walkthrough-title" className="dashboard-modal__title">
+            Walkthrough SMOAC features?
+          </h2>
+          <div className="dashboard-modal__actions">
+            <FastActivateButton
+              className="smoac-control dashboard-modal__cancel"
+              onActivate={onClose}
+            >
+              No
+            </FastActivateButton>
+            <DashboardButton onClick={onConfirm}>Yes</DashboardButton>
+          </div>
+        </div>
+      </div>
+    </DashboardModalScrim>,
+    document.body
+  );
 }
 
 /** Instagram-style list editor — same fields/saves, familiar mobile layout. */
@@ -174,8 +233,11 @@ export function SpecialistIgStyleProfileEditor({
   footer,
   onUpgrade,
   onSignOut,
+  onReplayWalkthrough,
 }: SpecialistIgStyleProfileEditorProps) {
   const { session } = useAuthSession();
+  const [walkthroughAskOpen, setWalkthroughAskOpen] = useState(false);
+  const showWalkthrough = isSampleSpecialistTourAccount(session?.email);
   const isPremium = Boolean(session?.isPremium);
   const isProPlus =
     isProPlusPlan(session?.membershipPlan) || isTrainerProPlus(trainer);
@@ -615,6 +677,14 @@ export function SpecialistIgStyleProfileEditor({
           highlighted={isHighlighted("billing")}
           onClick={() => onEditSection("billing")}
         />
+        {showWalkthrough ? (
+          <IgEditRow
+            id="ig-edit-row-walkthrough"
+            label="Site walkthrough"
+            action
+            onClick={() => setWalkthroughAskOpen(true)}
+          />
+        ) : null}
         {onSignOut ? (
           <IgEditRow
             id="ig-edit-row-sign-out"
@@ -624,6 +694,15 @@ export function SpecialistIgStyleProfileEditor({
           />
         ) : null}
       </div>
+
+      <WalkthroughAskDialog
+        open={walkthroughAskOpen}
+        onClose={() => setWalkthroughAskOpen(false)}
+        onConfirm={() => {
+          setWalkthroughAskOpen(false);
+          onReplayWalkthrough?.();
+        }}
+      />
 
       {footer ? <div className="ig-profile-edit__footer">{footer}</div> : null}
     </div>

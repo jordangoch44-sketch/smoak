@@ -196,6 +196,7 @@ export function ProfileHero({
         style={styleVars}
         data-profile-accent={style.accent}
         data-profile-name-font={style.nameFont}
+        data-tour={isSpecialistLive ? "client-view" : undefined}
       >
         <div className="profile-hero__stage relative w-full">
           <ProfileHeroCoverGallery

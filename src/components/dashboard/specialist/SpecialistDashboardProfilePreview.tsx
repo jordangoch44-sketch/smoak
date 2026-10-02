@@ -172,6 +172,7 @@ interface SpecialistDashboardProfilePreviewProps {
   onClearFocus?: () => void;
   onUpgrade?: () => void;
   onSignOut?: () => void;
+  onReplayWalkthrough?: () => void;
   cityRanking?: TrainerCityRanking | null;
   inquiryLeads?: SpecialistLead[];
   inquirySenderUserId?: string;
@@ -478,6 +479,7 @@ function LiveProfileChrome({
               ? `Inquiries, ${inquiryUnreadCount} unread`
               : "Inquiries"
           }
+          data-tour="inquiries"
           onActivate={onOpenInquiries}
         >
           <MessageBubbleIcon className="specialist-live-chrome__icon" />
@@ -497,13 +499,18 @@ function LiveProfileChrome({
         )}
       >
         <span
-          className={cn(
-            "specialist-live-chrome__live-dot",
-            isPending && "specialist-live-chrome__live-dot--pending"
-          )}
-          aria-hidden
-        />
-        {isPending ? "Pending" : "Live view"}
+          className="specialist-live-chrome__title-cluster"
+          data-tour={isPending ? undefined : "live-title"}
+        >
+          <span
+            className={cn(
+              "specialist-live-chrome__live-dot",
+              isPending && "specialist-live-chrome__live-dot--pending"
+            )}
+            aria-hidden
+          />
+          {isPending ? "Pending" : "Live view"}
+        </span>
       </h1>
       {isPending ? (
         onSignOut ? (
@@ -520,6 +527,7 @@ function LiveProfileChrome({
         <FastActivateButton
           className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--edit"
           aria-label="Edit profile"
+          data-tour="edit-profile"
           onActivate={onOpenEdit}
         >
           <MenuPencilIcon className="specialist-live-chrome__icon" />
@@ -568,6 +576,7 @@ export function SpecialistDashboardProfilePreview({
   onClearFocus,
   onUpgrade,
   onSignOut,
+  onReplayWalkthrough,
   cityRanking = null,
   inquiryLeads = [],
   inquirySenderUserId,
@@ -1516,6 +1525,7 @@ export function SpecialistDashboardProfilePreview({
               highlightedSection={highlightedRow}
               onUpgrade={onUpgrade}
               onSignOut={onSignOut}
+              onReplayWalkthrough={onReplayWalkthrough}
               footer={
                 <p className="ig-profile-edit__hint">
                   Changes go live on Marketplace when you save. Clients still
