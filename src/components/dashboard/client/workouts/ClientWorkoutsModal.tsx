@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
-import { useWorkoutEmailPreference } from "@/hooks/useWorkoutEmailPreference";
 import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
 import { cn } from "@/lib/utils";
 import {
@@ -19,7 +18,6 @@ import {
   buildMonthGrid,
   currentWeekProgress,
   currentWeekStreak,
-  formatGoalOptionLabel,
   formatMonthTitle,
   formatWeekProgressLabel,
   formatWorkoutDayAriaLabel,
@@ -47,19 +45,20 @@ import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
 import "@/styles/client-workouts.css";
 
 const LOCK_CLASS = "client-workouts-open";
-const WORKOUT_GOAL_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
-const CARDIO_GOAL_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
 
 export function ClientWorkoutsModal({
   userId,
   open,
   onClose,
   initialDateKey = null,
+  onPaste,
 }: {
   userId: string;
   open: boolean;
   onClose: () => void;
   initialDateKey?: string | null;
+  /** Page calendar handles the paste target, so this sheet never opens a second month. */
+  onPaste?: (fromDateKey: string) => void;
 }) {
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
@@ -70,19 +69,15 @@ export function ClientWorkoutsModal({
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
   const ignoreDayTapUntilRef = useRef(0);
-  const {
-    log,
-    setGoalDaysPerWeek,
-    setCardioGoalDaysPerWeek,
-    saveDay,
-    removeDay,
-    copyDayTo,
-  } = useClientWorkouts(userId);
-  const emailPreference = useWorkoutEmailPreference(userId);
+  const ignoreBackdropUntilRef = useRef(0);
+  const { log, saveDay, removeDay, copyDayTo } = useClientWorkouts(userId);
   const coaching = useClientCoaching(userId);
   /** Bumped after Start so the day sheet remounts with the new exercises. */
   const [sheetVersion, setSheetVersion] = useState(0);
-  const backdropDismiss = useOwnPointerDismiss(onClose);
+  const backdropDismiss = useOwnPointerDismiss(() => {
+    if (Date.now() < ignoreBackdropUntilRef.current) return;
+    onClose();
+  });
   selectedDateKeyRef.current = selectedDateKey;
   pasteSourceKeyRef.current = pasteSourceKey;
 
@@ -93,6 +88,7 @@ export function ClientWorkoutsModal({
   useEffect(() => {
     if (!open) return;
     const now = new Date();
+    ignoreBackdropUntilRef.current = Date.now() + 450;
     setTodayKey(toLocalDateKey(now));
     setPasteSourceKey(null);
     if (initialDateKey && isWorkoutDateKey(initialDateKey)) {
@@ -143,8 +139,18 @@ export function ClientWorkoutsModal({
   const streak = currentWeekStreak(log, today);
   const weekLabel = formatWeekProgressLabel(progress, streak);
 
+  const openedOnDay = Boolean(
+    initialDateKey && isWorkoutDateKey(initialDateKey)
+  );
+  /** The workouts page already shows the month. This sheet is only the day. */
+  const showCalendar = Boolean(pasteSourceKey) ? !onPaste : !openedOnDay;
+
   function closeSelectedDay() {
     ignoreDayTapUntilRef.current = Date.now() + 400;
+    if (openedOnDay) {
+      onClose();
+      return;
+    }
     setSelectedDateKey(null);
   }
 
@@ -191,6 +197,18 @@ export function ClientWorkoutsModal({
   const selectedCoachWorkouts = selectedDateKey
     ? (coaching.workoutsByDate.get(selectedDateKey) ?? [])
     : [];
+  const pendingCoachWorkouts = selectedCoachWorkouts.filter(
+    (workout) => !isCoachWorkoutInLog(workout, log.days)
+  );
+  const selectedDay = selectedDateKey ? log.days[selectedDateKey] : undefined;
+  const coachAssigned = Boolean(
+    selectedDay &&
+      selectedCoachWorkouts.some((workout) =>
+        workout.exercises.some((exercise) =>
+          selectedDay.exercises.some((logged) => logged.id === exercise.id)
+        )
+      )
+  );
 
   if (!mounted || !open || typeof document === "undefined") return null;
 
@@ -204,6 +222,7 @@ export function ClientWorkoutsModal({
         onPointerUp={backdropDismiss.onPointerUp}
         onClick={backdropDismiss.onClick}
       />
+      {showCalendar ? (
       <div
         className={
           selectedDateKey && !pasteSourceKey
@@ -252,59 +271,6 @@ export function ClientWorkoutsModal({
                 Streak <strong>{streak}-week</strong>
               </p>
             ) : null}
-            <div className="client-workouts-dialog__goals">
-              <label className="client-workouts-dialog__goal">
-                Workout goal
-                <select
-                  aria-label="Workout goal days per week"
-                  value={log.goalDaysPerWeek}
-                  onChange={(event) =>
-                    setGoalDaysPerWeek(Number(event.target.value))
-                  }
-                >
-                  {WORKOUT_GOAL_OPTIONS.map((days) => (
-                    <option key={days} value={days}>
-                      {formatGoalOptionLabel(days)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="client-workouts-dialog__goal">
-                Cardio goal
-                <select
-                  aria-label="Cardio goal days per week"
-                  value={log.cardioGoalDaysPerWeek}
-                  onChange={(event) =>
-                    setCardioGoalDaysPerWeek(Number(event.target.value))
-                  }
-                >
-                  {CARDIO_GOAL_OPTIONS.map((days) => (
-                    <option key={days} value={days}>
-                      {formatGoalOptionLabel(days)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {emailPreference.available ? (
-                <FastActivateButton
-                  role="switch"
-                  aria-checked={emailPreference.enabled}
-                  className="client-workouts-dialog__goal client-workouts-dialog__email"
-                  onActivate={() =>
-                    emailPreference.setWorkoutEmails(!emailPreference.enabled)
-                  }
-                >
-                  Streak emails
-                  <span
-                    className={cn(
-                      "client-workouts-switch",
-                      emailPreference.enabled && "client-workouts-switch--on"
-                    )}
-                    aria-hidden
-                  />
-                </FastActivateButton>
-              ) : null}
-            </div>
           </div>
           {pasteSourceKey ? (
             <div className="client-workouts-paste">
@@ -313,7 +279,10 @@ export function ClientWorkoutsModal({
               </p>
               <FastActivateButton
                 className="client-workouts-paste__cancel"
-                onActivate={() => setPasteSourceKey(null)}
+                onActivate={() => {
+                  setPasteSourceKey(null);
+                  if (openedOnDay) onClose();
+                }}
               >
                 Cancel
               </FastActivateButton>
@@ -415,20 +384,22 @@ export function ClientWorkoutsModal({
         </div>
 
       </div>
+      ) : null}
       {selectedDateKey && !pasteSourceKey ? (
         <ClientWorkoutDaySheet
           key={`${selectedDateKey}:${sheetVersion}`}
           dateKey={selectedDateKey}
+          coachAssigned={coachAssigned}
           coachSlot={
-            selectedCoachWorkouts.length > 0 ? (
+            pendingCoachWorkouts.length > 0 ? (
               <div className="coach-workout-stack">
-                {selectedCoachWorkouts.map((workout) => (
+                {pendingCoachWorkouts.map((workout) => (
                   <CoachWorkoutCard
                     key={workout.id}
                     workout={workout}
                     coachName={coaching.coachNameFor(workout)}
                     todayKey={todayKey}
-                    inLog={isCoachWorkoutInLog(workout, log.days)}
+                    inLog={false}
                     onStart={() => startCoachWorkout(workout)}
                   />
                 ))}
@@ -457,6 +428,11 @@ export function ClientWorkoutsModal({
             closeSelectedDay();
           }}
           onCopy={() => {
+            if (onPaste) {
+              onPaste(selectedDateKey);
+              onClose();
+              return;
+            }
             setPasteSourceKey(selectedDateKey);
             setSelectedDateKey(null);
           }}

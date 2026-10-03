@@ -21,7 +21,7 @@ const DESKTOP_NAV_LABELS: Record<MobileBottomNavItemId, string> = {
   home: "Marketplace",
   search: "Search",
   clients: "Clients",
-  saved: "Saved",
+  saved: "Workouts",
   profile: "Profile",
 };
 

@@ -60,11 +60,16 @@ import type { ClientProfileFormState } from "@/types/client-profile";
 import type { Area } from "react-easy-crop";
 import { cn, getInitials } from "@/lib/utils";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
+import { useClientWorkouts } from "@/hooks/useClientWorkouts";
+import { useWorkoutEmailPreference } from "@/hooks/useWorkoutEmailPreference";
+import { formatGoalOptionLabel } from "@/lib/workouts/client-workout";
 import "@/styles/client-profile-sheet.css";
 import "@/styles/profile-photo-cropper.css";
 
 const LOCK_CLASS = "client-profile-sheet-open";
 const MIN_PASSWORD_LENGTH = 8;
+const WORKOUT_GOAL_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+const CARDIO_GOAL_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
 
 interface ClientProfileEditModalProps {
   open: boolean;
@@ -129,6 +134,9 @@ export function ClientProfileEditModal({
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailOk, setEmailOk] = useState<string | null>(null);
   const backdropDismiss = useOwnPointerDismiss(onClose);
+  const { log, setGoalDaysPerWeek, setCardioGoalDaysPerWeek } =
+    useClientWorkouts(userId);
+  const emailPreference = useWorkoutEmailPreference(userId);
 
   useEffect(() => {
     setMounted(true);
@@ -648,6 +656,82 @@ export function ClientProfileEditModal({
                     );
                   })}
                 </div>
+              </section>
+
+              <section className="client-profile-section">
+                <h3 className="client-profile-section__title">Training</h3>
+                <p className="client-profile-section__hint">
+                  Weekly targets and streak emails. These save as soon as you
+                  change them.
+                </p>
+                <div className="client-profile-fields client-profile-fields--2">
+                  <label className="client-profile-field">
+                    <span className="client-profile-field__label">
+                      Workout goal
+                    </span>
+                    <select
+                      className="client-profile-field__select"
+                      aria-label="Workout goal days per week"
+                      value={log.goalDaysPerWeek}
+                      onChange={(event) =>
+                        setGoalDaysPerWeek(Number(event.target.value))
+                      }
+                    >
+                      {WORKOUT_GOAL_OPTIONS.map((days) => (
+                        <option key={days} value={days}>
+                          {formatGoalOptionLabel(days)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="client-profile-field">
+                    <span className="client-profile-field__label">
+                      Cardio goal
+                    </span>
+                    <select
+                      className="client-profile-field__select"
+                      aria-label="Cardio goal days per week"
+                      value={log.cardioGoalDaysPerWeek}
+                      onChange={(event) =>
+                        setCardioGoalDaysPerWeek(Number(event.target.value))
+                      }
+                    >
+                      {CARDIO_GOAL_OPTIONS.map((days) => (
+                        <option key={days} value={days}>
+                          {formatGoalOptionLabel(days)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {emailPreference.available ? (
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={emailPreference.enabled}
+                    className="client-profile-switch-row"
+                    onClick={() =>
+                      emailPreference.setWorkoutEmails(!emailPreference.enabled)
+                    }
+                  >
+                    <span className="client-profile-switch-row__copy">
+                      <span className="client-profile-switch-row__label">
+                        Streak emails
+                      </span>
+                      <span className="client-profile-switch-row__hint">
+                        A note when a streak hits a milestone, and a nudge if
+                        the week is slipping.
+                      </span>
+                    </span>
+                    <span
+                      className={cn(
+                        "client-profile-switch",
+                        emailPreference.enabled && "client-profile-switch--on"
+                      )}
+                      aria-hidden
+                    />
+                  </button>
+                ) : null}
               </section>
 
               <section className="client-profile-section">

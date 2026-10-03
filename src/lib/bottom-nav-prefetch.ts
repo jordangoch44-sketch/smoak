@@ -4,7 +4,7 @@ import { SITE_ROUTES } from "@/lib/navigation";
 export const BOTTOM_NAV_PREFETCH_ROUTES: readonly string[] = [
   SITE_ROUTES.home,
   SITE_ROUTES.exploreSearchFocus,
-  SITE_ROUTES.saved,
+  SITE_ROUTES.workouts,
   SITE_ROUTES.profile,
   SITE_ROUTES.join,
   SITE_ROUTES.login,

@@ -42,6 +42,7 @@ export function isMagicLinkLoginDestination(nextPath: string): boolean {
     path === "/" ||
     path === "/saved" ||
     path === "/client-dashboard" ||
+    path === "/workouts" ||
     path === "/specialist-dashboard" ||
     path.startsWith("/explore")
   );

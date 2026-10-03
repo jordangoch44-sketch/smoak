@@ -21,6 +21,7 @@ import {
   isHomeNavPath,
   isProfileNavPath,
   isSpecialistDashboardPath,
+  isWorkoutsNavPath,
 } from "@/lib/mobile-bottom-nav";
 import {
   desktopPageTransition,
@@ -130,6 +131,7 @@ export function PageTransition({ children }: PageTransitionProps) {
   const toolbarTab =
     isHomeNavPath(pathname) ||
     isExploreNavPath(pathname) ||
+    isWorkoutsNavPath(pathname) ||
     isSavedPath(pathname) ||
     isProfileNavPath(pathname) ||
     isSpecialistDashboardPath(pathname);

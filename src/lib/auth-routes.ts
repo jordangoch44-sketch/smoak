@@ -2,6 +2,7 @@ import type { PublicAuthRole } from "@/types/auth-roles";
 import { isInternalPath } from "@/lib/internal-routes";
 
 export const CLIENT_DASHBOARD_PATH = "/client-dashboard";
+export const WORKOUTS_PATH = "/workouts";
 export const SPECIALIST_DASHBOARD_PATH = "/specialist-dashboard";
 export const SPECIALIST_DASHBOARD_OVERVIEW_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=overview`;
 export const SPECIALIST_DASHBOARD_PROFILE_TAB_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile`;

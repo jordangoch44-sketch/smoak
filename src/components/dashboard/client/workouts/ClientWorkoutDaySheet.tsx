@@ -5,6 +5,7 @@ import { flushSync } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CheckIcon, ChevronLeftIcon, PlusIcon, SendIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
+import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { ExerciseOptionsSheet } from "@/components/dashboard/client/workouts/ExerciseOptionsSheet";
 import { ExercisePickerSheet } from "@/components/dashboard/client/workouts/ExercisePickerSheet";
 import { ExerciseSetBlock } from "@/components/dashboard/client/workouts/ExerciseSetBlock";
@@ -18,12 +19,12 @@ import {
   formatWorkoutShareText,
   freshExerciseBlock,
   parseWorkoutSetCount,
-  rememberExerciseSets,
   shareOrCopyWorkoutText,
   sanitizeWorkoutCardio,
   sanitizeWorkoutTitle,
   type ExerciseSetMemory,
 } from "@/lib/workouts/client-workout";
+import { customExerciseFields, type CustomExercise } from "@/lib/workouts/custom-exercises";
 import { cn } from "@/lib/utils";
 import type {
   ClientWorkoutCardio,
@@ -54,20 +55,68 @@ function setWorkoutKeyboardChrome(open: boolean) {
   document.body.classList.toggle("client-workouts-keyboard", open);
 }
 
-function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
+const FIELD_KEYBOARD_GAP = 28;
+
+function workoutSheetBody(sheet: HTMLElement): HTMLElement | null {
   const body = sheet.querySelector(".client-workouts-day__body");
-  if (!(body instanceof HTMLElement)) return;
+  return body instanceof HTMLElement ? body : null;
+}
+
+function clearWorkoutSheetKeyboardPad(sheet: HTMLElement) {
+  const body = workoutSheetBody(sheet);
+  if (body) body.style.paddingBottom = "";
+}
+
+/**
+ * The day sheet stays full height while the keyboard is up, so a pounds or reps
+ * field can sit inside the list and still be covered. Scroll it above the
+ * keyboard. A short list grows bottom padding so the last row can move up.
+ */
+function scrollFieldInSheet(field: HTMLElement, sheet: HTMLElement) {
+  const body = workoutSheetBody(sheet);
+  if (!body) return;
+  liftFieldIntoView(field, body);
+  liftFieldIntoView(field, body);
+}
+
+/** Empty space under the last row. Padding has to exceed this before the list can scroll. */
+function trailingSlack(body: HTMLElement): number {
+  if (body.scrollHeight > body.clientHeight + 1) return 0;
+  const last = body.lastElementChild;
+  if (!(last instanceof HTMLElement)) return 0;
+  return Math.max(0, body.getBoundingClientRect().bottom - last.getBoundingClientRect().bottom);
+}
+
+/** Returns how far the field sat outside the visible band before this pass. */
+function liftFieldIntoView(field: HTMLElement, body: HTMLElement): number {
+  const viewport = window.visualViewport;
   const fieldRect = field.getBoundingClientRect();
   const bodyRect = body.getBoundingClientRect();
-  const pad = 28;
+  const visibleBottom = viewport
+    ? viewport.offsetTop + viewport.height
+    : window.innerHeight;
+  const limitBottom = Math.min(bodyRect.bottom, visibleBottom) - FIELD_KEYBOARD_GAP;
+  const limitTop = bodyRect.top + 12;
+
   let delta = 0;
-  if (fieldRect.bottom > bodyRect.bottom - pad) {
-    delta = fieldRect.bottom - bodyRect.bottom + pad;
-  } else if (fieldRect.top < bodyRect.top + pad) {
-    delta = fieldRect.top - bodyRect.top - pad;
+  if (fieldRect.bottom > limitBottom) {
+    delta = fieldRect.bottom - limitBottom;
+  } else if (fieldRect.top < limitTop) {
+    delta = fieldRect.top - limitTop;
   }
-  if (Math.abs(delta) < 2) return;
+  if (Math.abs(delta) < 2) return 0;
+
+  if (delta > 0) {
+    const room = Math.max(0, body.scrollHeight - body.clientHeight - body.scrollTop);
+    const shortfall = delta - room;
+    if (shortfall > 1) {
+      const current = Number.parseFloat(body.style.paddingBottom) || 0;
+      const extra = shortfall + trailingSlack(body);
+      body.style.paddingBottom = `${Math.ceil(current + extra + 2)}px`;
+    }
+  }
   body.scrollTop += delta;
+  return Math.abs(delta);
 }
 
 type DaySheetStep = "pick" | "cardio" | "workout";
@@ -86,6 +135,8 @@ interface ClientWorkoutDaySheetProps {
   onCopy: () => void;
   /** Workouts a coach sent for this day, above the log. */
   coachSlot?: ReactNode;
+  /** This day's log already includes a workout the coach sent. */
+  coachAssigned?: boolean;
   /**
    * Earlier exercises, newest first. Naming a new exercise copies that
    * session's sets, weights, and reps into the rows.
@@ -109,6 +160,7 @@ export function ClientWorkoutDaySheet({
   onRemove,
   onCopy,
   coachSlot,
+  coachAssigned = false,
   priorSets = [],
   send,
 }: ClientWorkoutDaySheetProps) {
@@ -138,6 +190,7 @@ export function ClientWorkoutDaySheet({
   const [focusExerciseId, setFocusExerciseId] = useState<string | null>(null);
   const [menuExerciseId, setMenuExerciseId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -147,7 +200,9 @@ export function ClientWorkoutDaySheet({
   const checkKeyboardClosedRef = useRef<(() => void) | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const exercisesRef = useRef(exercises);
+  const actionsOpenRef = useRef(false);
   exercisesRef.current = exercises;
+  actionsOpenRef.current = actionsOpen;
 
   function requestClose() {
     if (closing) return;
@@ -174,6 +229,10 @@ export function ClientWorkoutDaySheet({
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
       event.preventDefault();
+      if (actionsOpenRef.current) {
+        setActionsOpen(false);
+        return;
+      }
       requestClose();
     }
     window.addEventListener("keydown", onKeyDown);
@@ -191,6 +250,7 @@ export function ClientWorkoutDaySheet({
     setFocusExerciseId(null);
     setMenuExerciseId(null);
     setPickerOpen(false);
+    setActionsOpen(false);
     setStep(
       send ||
         existing.length > 0 ||
@@ -219,6 +279,7 @@ export function ClientWorkoutDaySheet({
     let keyboardDismissed = false;
     let blurTimer = 0;
     let settleTimer = 0;
+    let revealFrame = 0;
     let focusedField: HTMLElement | null = null;
 
     function apply(px: number) {
@@ -256,21 +317,37 @@ export function ClientWorkoutDaySheet({
       if (!raf) raf = requestAnimationFrame(easeFrame);
     }
 
-    function finishKeyboardMove() {
+    function revealFocusedField() {
       if (window.scrollY > 1) window.scrollTo(0, 0);
       const field = focusedField;
       if (field && sheet.contains(field)) scrollFieldInSheet(field, sheet);
     }
 
+    function queueReveal() {
+      if (keyboardDismissed) return;
+      if (!revealFrame) {
+        revealFrame = requestAnimationFrame(() => {
+          revealFrame = 0;
+          if (!keyboardDismissed) revealFocusedField();
+        });
+      }
+      // The keyboard animation and Safari's own scroll both land after focus.
+      window.clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(() => {
+        if (!keyboardDismissed) revealFocusedField();
+      }, 320);
+    }
+
     function syncKeyboard() {
-      // Phone: leave the sheet still while the keyboard moves, then scroll the field once.
+      // Phone: leave the sheet still while the keyboard moves, and keep the
+      // focused field above it. A pounds/reps row low on the screen is inside
+      // the list and still covered unless we scroll to the visual viewport.
       if (touch) {
         if (keyboardDismissed) {
           window.clearTimeout(settleTimer);
           return;
         }
-        window.clearTimeout(settleTimer);
-        settleTimer = window.setTimeout(finishKeyboardMove, 80);
+        queueReveal();
         return;
       }
       const next = keyboardDismissed ? 0 : readInset();
@@ -300,6 +377,7 @@ export function ClientWorkoutDaySheet({
       if (touch) {
         setTyping(true);
         setWorkoutKeyboardChrome(true);
+        queueReveal();
       }
     }
 
@@ -314,10 +392,13 @@ export function ClientWorkoutDaySheet({
         keyboardDismissed = true;
         focusedField = null;
         window.clearTimeout(settleTimer);
+        if (revealFrame) cancelAnimationFrame(revealFrame);
+        revealFrame = 0;
         stopEase();
         displayed = 0;
         target = 0;
         apply(0);
+        clearWorkoutSheetKeyboardPad(sheet);
         if (touch) {
           setTyping(false);
           setWorkoutKeyboardChrome(false);
@@ -339,6 +420,8 @@ export function ClientWorkoutDaySheet({
       stopEase();
       window.clearTimeout(settleTimer);
       window.clearTimeout(blurTimer);
+      if (revealFrame) cancelAnimationFrame(revealFrame);
+      clearWorkoutSheetKeyboardPad(sheet);
       setWorkoutKeyboardChrome(false);
       root.style.removeProperty("--workout-keyboard-inset");
       window.visualViewport?.removeEventListener("resize", syncKeyboard);
@@ -398,39 +481,23 @@ export function ClientWorkoutDaySheet({
     setError(null);
   }
 
-  function addNamedExercise(name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    const created = { ...freshExerciseBlock(), name: trimmed };
-    const remembered = rememberExerciseSets(
-      [
-        ...exercisesRef.current
-          .filter((item) => item.name.trim())
-          .map((item) => ({
-            dateKey,
-            name: item.name,
-            sets: item.sets,
-            reps: item.reps,
-            setLogs: item.setLogs,
-          })),
-        ...priorSets,
-      ],
-      trimmed
-    );
-    const next = remembered ? exerciseWithSetLogs(created, remembered) : created;
-    const list = [...exercisesRef.current, next];
+  function addNamedExercises(picked: readonly CustomExercise[]) {
+    const additions: ClientWorkoutExercise[] = [];
+    for (const item of picked) {
+      const trimmed = item.name.trim();
+      if (!trimmed) continue;
+      additions.push({
+        ...freshExerciseBlock(),
+        name: trimmed,
+        ...customExerciseFields(item),
+      });
+    }
+    if (additions.length === 0) return;
+    const list = [...exercisesRef.current, ...additions];
     exercisesRef.current = list;
     setExercises(list);
     persist(list);
     setPickerOpen(false);
-  }
-
-  function handleSaveWorkout() {
-    if (!persist(exercisesRef.current)) {
-      setError("Add cardio, an exercise, or name this workout.");
-      return;
-    }
-    requestClose();
   }
 
   async function handleSend() {
@@ -563,24 +630,11 @@ export function ClientWorkoutDaySheet({
   function replaceExerciseName(id: string, name: string) {
     const current = exercisesRef.current.find((item) => item.id === id);
     if (!current) return;
-    const memory: ExerciseSetMemory[] = [
-      ...exercisesRef.current
-        .filter((item) => item.id !== id && item.name.trim())
-        .map((item) => ({
-          dateKey,
-          name: item.name,
-          sets: item.sets,
-          reps: item.reps,
-          setLogs: item.setLogs,
-        })),
-      ...priorSets,
-    ];
-    const remembered = rememberExerciseSets(memory, name);
     const count = Math.max(
       1,
       current.setLogs?.length || parseWorkoutSetCount(current.sets) || 1
     );
-    const logs = remembered ?? Array.from({ length: count }, () => ({ reps: "", weight: "" }));
+    const logs = Array.from({ length: count }, () => ({ reps: "", weight: "" }));
     replaceExercise(exerciseWithSetLogs({ ...current, name }, logs), true);
     setMenuExerciseId(null);
   }
@@ -619,7 +673,6 @@ export function ClientWorkoutDaySheet({
     exercises.some((exercise) => exercise.name.trim()) ||
     Boolean(title.trim()) ||
     hasCardio;
-  const showSavedActions = hasLoggedDay && step === "workout";
   const menuExercise = exercises.find((item) => item.id === menuExerciseId) ?? null;
 
   return (
@@ -635,6 +688,7 @@ export function ClientWorkoutDaySheet({
         className={cn(
           "client-workouts-day",
           send && "client-workouts-day--send",
+          !send && step === "workout" && "client-workouts-day--log",
           closing && "client-workouts-day--closing",
           typing && "client-workouts-day--typing"
         )}
@@ -679,10 +733,17 @@ export function ClientWorkoutDaySheet({
               <p
                 className={cn(
                   "client-workouts-day__step",
-                  step === "cardio" && "client-workouts-day__step--cardio"
+                  step === "cardio" && "client-workouts-day__step--cardio",
+                  coachAssigned && step === "workout" && "client-workouts-day__step--coach"
                 )}
               >
-                {step === "cardio" ? "Cardio" : "Workout"}
+                {step === "cardio" ? (
+                  "Cardio"
+                ) : coachAssigned ? (
+                  <span className="client-workouts-day__coach-chip">Coach assigned workout</span>
+                ) : (
+                  "Workout"
+                )}
               </p>
             ) : null}
             {send ? send.dateControl : <p className="client-workouts-day__sub">{weekLabel}</p>}
@@ -696,8 +757,93 @@ export function ClientWorkoutDaySheet({
             >
               <SendIcon className="h-5 w-5" />
             </FastActivateButton>
+          ) : step === "workout" ? (
+            <FastActivateButton
+              className="client-workouts-day__more"
+              aria-label="Workout actions"
+              aria-expanded={actionsOpen}
+              aria-haspopup="menu"
+              aria-controls="client-workout-actions"
+              onActivate={() => {
+                const active = document.activeElement;
+                if (active instanceof HTMLElement) active.blur();
+                setActionsOpen((open) => !open);
+              }}
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <circle cx="12" cy="5.5" r="1.7" />
+                <circle cx="12" cy="12" r="1.7" />
+                <circle cx="12" cy="18.5" r="1.7" />
+              </svg>
+            </FastActivateButton>
+          ) : null}
+          {actionsOpen && step === "workout" && !send ? (
+            <div
+              id="client-workout-actions"
+              className="client-workouts-day__menu"
+              role="menu"
+              aria-label="Workout actions"
+            >
+              {!hasCardio ? (
+                <FastActivateButton
+                  className="client-workouts-btn"
+                  role="menuitem"
+                  onActivate={() => {
+                    setActionsOpen(false);
+                    setStep("cardio");
+                    setError(null);
+                  }}
+                >
+                  Add cardio
+                </FastActivateButton>
+              ) : null}
+              {hasLoggedDay ? (
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--primary"
+                  role="menuitem"
+                  onActivate={() => {
+                    setActionsOpen(false);
+                    onCopy();
+                  }}
+                >
+                  Copy to another day
+                </FastActivateButton>
+              ) : null}
+              {workout ? (
+                <FastActivateButton
+                  className="client-workouts-btn"
+                  role="menuitem"
+                  onActivate={() => {
+                    setActionsOpen(false);
+                    void handleShare();
+                  }}
+                >
+                  Share
+                </FastActivateButton>
+              ) : null}
+              {hasLoggedDay ? (
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--ghost"
+                  role="menuitem"
+                  onActivate={() => {
+                    setActionsOpen(false);
+                    onRemove();
+                  }}
+                >
+                  Remove workout
+                </FastActivateButton>
+              ) : null}
+            </div>
           ) : null}
         </div>
+        {actionsOpen && step === "workout" && !send ? (
+          <button
+            type="button"
+            className="client-workouts-day__menu-backdrop"
+            aria-label="Close workout actions"
+            onClick={() => setActionsOpen(false)}
+          />
+        ) : null}
 
         <div className="client-workouts-day__body">
           {coachSlot}
@@ -849,6 +995,7 @@ export function ClientWorkoutDaySheet({
                 <div className="exercise-block exercise-block--ghost" aria-hidden>
                   <div className="exercise-block__name-wrap">
                     <div className="exercise-block__title">
+                      <ExerciseAvatar name="" logoWhenEmpty className="exercise-block__mark" />
                       <span className="exercise-block__name">Exercise</span>
                       <span className="exercise-block__more">
                         <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
@@ -891,18 +1038,6 @@ export function ClientWorkoutDaySheet({
                 >
                   <ExerciseSetBlock
                     exercise={exercise}
-                    prior={[
-                      ...exercises
-                        .filter((item) => item.id !== exercise.id && item.name.trim())
-                        .map((item) => ({
-                          dateKey,
-                          name: item.name,
-                          sets: item.sets,
-                          reps: item.reps,
-                          setLogs: item.setLogs,
-                        })),
-                      ...priorSets,
-                    ]}
                     autoFocus={exercise.id === focusExerciseId}
                     inSuperset={
                       Boolean(exercise.supersetId) &&
@@ -916,23 +1051,21 @@ export function ClientWorkoutDaySheet({
                   />
                 </SwipeToRemove>
               ))}
-              {send ? (
-                <FastActivateButton
-                  className="exercise-block__add client-workouts-add-exercise"
-                  disabled={sending}
-                  onActivate={handleAddExercise}
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  Add exercise
-                </FastActivateButton>
-              ) : null}
+              <FastActivateButton
+                className="exercise-block__add client-workouts-add-exercise"
+                disabled={sending}
+                onActivate={handleAddExercise}
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add exercise
+              </FastActivateButton>
             </>
           ) : null}
 
           {error ? <p className="client-workouts-error">{error}</p> : null}
         </div>
 
-        {send ? null : (
+        {send || step === "workout" ? null : (
         <div
           className="client-workouts-day__footer"
           aria-hidden={typing || undefined}
@@ -946,7 +1079,7 @@ export function ClientWorkoutDaySheet({
               >
                 Continue
               </FastActivateButton>
-            ) : step === "cardio" ? (
+            ) : (
               <>
                 <FastActivateButton
                   className="client-workouts-btn client-workouts-btn--primary"
@@ -960,69 +1093,6 @@ export function ClientWorkoutDaySheet({
                 >
                   Remove cardio
                 </FastActivateButton>
-              </>
-            ) : showSavedActions ? (
-              <>
-                {!hasCardio ? (
-                  <FastActivateButton
-                    className="client-workouts-btn"
-                    onActivate={() => {
-                      setStep("cardio");
-                      setError(null);
-                    }}
-                  >
-                    Add cardio
-                  </FastActivateButton>
-                ) : null}
-                <FastActivateButton
-                  className="client-workouts-btn"
-                  onActivate={handleAddExercise}
-                >
-                  <PlusIcon className="client-workouts-btn__plus" />
-                  Add exercise
-                </FastActivateButton>
-                <FastActivateButton
-                  className="client-workouts-btn client-workouts-btn--primary"
-                  onActivate={onCopy}
-                >
-                  Copy to another day
-                </FastActivateButton>
-                <FastActivateButton
-                  className="client-workouts-btn"
-                  onActivate={() => void handleShare()}
-                >
-                  Share
-                </FastActivateButton>
-                <FastActivateButton
-                  className="client-workouts-btn client-workouts-btn--ghost"
-                  onActivate={onRemove}
-                >
-                  Remove workout
-                </FastActivateButton>
-              </>
-            ) : (
-              <>
-                <FastActivateButton
-                  className="client-workouts-btn"
-                  onActivate={handleAddExercise}
-                >
-                  <PlusIcon className="client-workouts-btn__plus" />
-                  Add exercise
-                </FastActivateButton>
-                <FastActivateButton
-                  className="client-workouts-btn client-workouts-btn--primary"
-                  onActivate={handleSaveWorkout}
-                >
-                  Save workout
-                </FastActivateButton>
-                {hasLoggedDay ? (
-                  <FastActivateButton
-                    className="client-workouts-btn client-workouts-btn--ghost"
-                    onActivate={onRemove}
-                  >
-                    Remove workout
-                  </FastActivateButton>
-                ) : null}
               </>
             )}
           </div>
@@ -1046,7 +1116,7 @@ export function ClientWorkoutDaySheet({
         <ExercisePickerSheet
           prior={priorSets}
           onClose={() => setPickerOpen(false)}
-          onPick={addNamedExercise}
+          onPick={addNamedExercises}
         />
       ) : null}
     </div>

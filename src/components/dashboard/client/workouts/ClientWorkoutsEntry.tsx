@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
-  CalendarIcon,
   CheckIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
 } from "@/components/ui/icons";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
@@ -12,8 +12,19 @@ import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import { isCoachWorkoutInLog } from "@/lib/coaching/coach-workout";
 import { cn } from "@/lib/utils";
 import {
+  addMonths,
+  buildMonthGrid,
   currentWeekDayStatuses,
+  formatMonthTitle,
   formatWeekGoalCopy,
+  formatWorkoutDayAriaLabel,
+  formatWorkoutDayHeading,
+  hasCardioOnDay,
+  hasStrengthOnDay,
+  parseLocalDateKey,
+  startOfMonth,
+  toLocalDateKey,
+  workoutTitleOnDay,
   WEEKDAY_LABELS,
   type WeekGoalLine,
 } from "@/lib/workouts/client-workout";
@@ -37,61 +48,70 @@ function pendingGoalLines(log: ClientWorkoutLog): WeekGoalLine[] {
   return lines;
 }
 
-export function ClientWorkoutsEntry({ userId }: { userId: string }) {
+export function ClientWorkoutsEntry({
+  userId,
+  pasteFrom = null,
+  onPasteFromChange,
+}: {
+  userId: string;
+  pasteFrom?: string | null;
+  onPasteFromChange?: (dateKey: string | null) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [openDateKey, setOpenDateKey] = useState<string | null>(null);
   const [today, setToday] = useState<Date | null>(null);
-  const { log } = useClientWorkouts(userId);
+  const [month, setMonth] = useState<Date | null>(null);
+  const { log, copyDayTo } = useClientWorkouts(userId);
   const { workoutsByDate } = useClientCoaching(userId);
 
   useEffect(() => {
-    setToday(new Date());
+    const now = new Date();
+    setToday(now);
+    setMonth(startOfMonth(now));
   }, []);
 
-  const week = useMemo(() => {
-    if (!today) return null;
-    return {
-      copy: formatWeekGoalCopy(log, today),
-      days: currentWeekDayStatuses(log, today),
-    };
-  }, [log, today]);
+  const weekCopy = useMemo(
+    () => (today ? formatWeekGoalCopy(log, today) : null),
+    [log, today]
+  );
+  const weekDays = useMemo(
+    () => (today ? currentWeekDayStatuses(log, today) : null),
+    [log, today]
+  );
 
-  function openCalendar(dateKey?: string) {
-    setOpenDateKey(dateKey ?? null);
+  const todayKey = today ? toLocalDateKey(today) : "";
+  const cells = useMemo(
+    () => (month && todayKey ? buildMonthGrid(month, todayKey) : []),
+    [month, todayKey]
+  );
+
+  function openDay(dateKey: string) {
+    setOpenDateKey(dateKey);
     setOpen(true);
   }
 
-  function closeCalendar() {
+  function closeDay() {
     setOpen(false);
     setOpenDateKey(null);
+  }
+
+  function activateDay(dateKey: string) {
+    if (!pasteFrom) {
+      openDay(dateKey);
+      return;
+    }
+    const pasted = copyDayTo(pasteFrom, dateKey);
+    if (!pasted) return;
+    onPasteFromChange?.(null);
+    setMonth(startOfMonth(parseLocalDateKey(dateKey)));
+    openDay(dateKey);
   }
 
   return (
     <>
       <div className="client-workouts-entry">
-        <FastActivateButton
-          className="client-workouts-entry__main"
-          onActivate={() => openCalendar()}
-        >
-          <span className="client-workouts-entry__icon" aria-hidden>
-            <CalendarIcon className="h-5 w-5" />
-          </span>
-          <span className="client-workouts-entry__copy">
-            <span className="client-workouts-entry__title">Workouts</span>
-            <span
-              className={cn(
-                "client-workouts-entry__status",
-                week?.copy.complete && "client-workouts-entry__status--done"
-              )}
-            >
-              {week?.copy.status ?? "Log this week’s training"}
-            </span>
-          </span>
-          <ChevronRightIcon className="client-workouts-entry__chevron h-5 w-5" />
-        </FastActivateButton>
-
         <div className="client-workouts-entry__goals">
-          {(week?.copy.lines ?? pendingGoalLines(log)).map((line) => (
+          {(weekCopy?.lines ?? pendingGoalLines(log)).map((line) => (
             <div
               key={line.id}
               className={cn(
@@ -127,12 +147,8 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
           ))}
         </div>
 
-        <div
-          className="client-workouts-entry__days"
-          role="group"
-          aria-label="This week’s workouts"
-        >
-          {(week?.days ??
+        <div className="client-workouts-entry__days" role="group" aria-label="This week’s workouts">
+          {(weekDays ??
             WEEKDAY_LABELS.map((label, index) => ({
               dateKey: `pending-${index}`,
               label,
@@ -166,23 +182,17 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
                   "client-workouts-entry__day",
                   day.isToday && "client-workouts-entry__day--today",
                   day.completed && "client-workouts-entry__day--done",
-                  !day.completed &&
-                    !day.isFuture &&
-                    "client-workouts-entry__day--empty"
+                  !day.completed && !day.isFuture && "client-workouts-entry__day--empty"
                 )}
                 disabled={pending}
-                aria-label={`${day.weekday}, ${state}${
-                  coachPending ? ", workout from your coach" : ""
-                }`}
+                aria-label={`${day.weekday}, ${state}${coachPending ? ", workout from your coach" : ""}`}
                 aria-current={day.isToday ? "date" : undefined}
                 onActivate={() => {
                   if (pending) return;
-                  openCalendar(day.dateKey);
+                  activateDay(day.dateKey);
                 }}
               >
-                <span className="client-workouts-entry__day-label">
-                  {day.label}
-                </span>
+                <span className="client-workouts-entry__day-label">{day.label}</span>
                 {coachPending ? <span className="client-workouts-cal__coach" aria-hidden /> : null}
                 <span className="client-workouts-entry__day-mark" aria-hidden>
                   {day.completed ? (
@@ -212,11 +222,117 @@ export function ClientWorkoutsEntry({ userId }: { userId: string }) {
         </div>
       </div>
 
+      {month ? (
+        <div className="client-workouts-page-cal">
+            {pasteFrom ? (
+              <div className="client-workouts-paste">
+                <p className="client-workouts-paste__copy">
+                  Paste “{formatWorkoutDayHeading(pasteFrom)}” — tap a day.
+                </p>
+                <FastActivateButton
+                  className="client-workouts-paste__cancel"
+                  onActivate={() => onPasteFromChange?.(null)}
+                >
+                  Cancel
+                </FastActivateButton>
+              </div>
+            ) : null}
+            <div className="client-workouts-month">
+              <FastActivateButton
+                className="client-workouts-month__nav"
+                aria-label="Previous month"
+                onActivate={() => setMonth((current) => (current ? addMonths(current, -1) : current))}
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </FastActivateButton>
+              <h3 className="client-workouts-month__title">{formatMonthTitle(month)}</h3>
+              <FastActivateButton
+                className="client-workouts-month__nav"
+                aria-label="Next month"
+                onActivate={() => setMonth((current) => (current ? addMonths(current, 1) : current))}
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </FastActivateButton>
+            </div>
+
+            <div className="client-workouts-weekdays" aria-hidden>
+              {WEEKDAY_LABELS.map((label, index) => (
+                <span key={`cal-${label}-${index}`}>{label}</span>
+              ))}
+            </div>
+
+            <div className="client-workouts-cal" role="grid" aria-label="Workout calendar">
+              {cells.map((cell) => {
+                const cardio = hasCardioOnDay(log, cell.dateKey);
+                const strength = hasStrengthOnDay(log, cell.dateKey);
+                const trained = cardio || strength;
+                const dayTitle = workoutTitleOnDay(log, cell.dateKey);
+                const coachPending = (workoutsByDate.get(cell.dateKey) ?? []).some(
+                  (workout) => !isCoachWorkoutInLog(workout, log.days)
+                );
+                const label = `${formatWorkoutDayAriaLabel(cell.dateKey)}${
+                  coachPending ? ", workout from your coach" : ""
+                }`;
+                const loggedLabel =
+                  cardio && strength
+                    ? `${label}, cardio and workout logged`
+                    : cardio
+                      ? `${label}, cardio logged`
+                      : strength
+                        ? dayTitle
+                          ? `${label}, ${dayTitle}`
+                          : `${label}, workout logged`
+                        : label;
+                return (
+                  <FastActivateButton
+                    key={cell.dateKey}
+                    className={cn(
+                      "client-workouts-cal__day",
+                      !cell.inMonth && "client-workouts-cal__day--muted",
+                      cell.isToday && "client-workouts-cal__day--today",
+                      pasteFrom && "client-workouts-cal__day--paste"
+                    )}
+                    aria-label={
+                      pasteFrom ? `Paste workout onto ${label}` : loggedLabel
+                    }
+                    aria-current={cell.isToday ? "date" : undefined}
+                    onActivate={() => activateDay(cell.dateKey)}
+                  >
+                    <span className="client-workouts-cal__num">{cell.day}</span>
+                    {coachPending ? <span className="client-workouts-cal__coach" aria-hidden /> : null}
+                    {trained ? (
+                      <span className="client-workouts-cal__marks" aria-hidden>
+                        {cardio ? (
+                          <span className="client-workouts-cal__mark client-workouts-cal__mark--cardio">
+                            <span className="client-workouts-cal__check">
+                              <CheckIcon />
+                            </span>
+                          </span>
+                        ) : null}
+                        {strength ? (
+                          <span className="client-workouts-cal__mark">
+                            <span className="client-workouts-cal__check">
+                              <CheckIcon />
+                            </span>
+                          </span>
+                        ) : null}
+                      </span>
+                    ) : (
+                      <span className="client-workouts-cal__dot" aria-hidden />
+                    )}
+                  </FastActivateButton>
+                );
+              })}
+            </div>
+        </div>
+      ) : null}
+
       <ClientWorkoutsModal
         userId={userId}
         open={open}
         initialDateKey={openDateKey}
-        onClose={closeCalendar}
+        onClose={closeDay}
+        onPaste={(dateKey) => onPasteFromChange?.(dateKey)}
       />
     </>
   );

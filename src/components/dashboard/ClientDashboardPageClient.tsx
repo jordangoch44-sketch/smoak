@@ -39,7 +39,7 @@ import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiri
 import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
 import { ClientCoachingInvites } from "@/components/dashboard/client/coaching/ClientCoachingInvites";
 import { ClientWorkoutBadges } from "@/components/dashboard/client/workouts/ClientWorkoutBadges";
-import { ClientWorkoutsCarousel } from "@/components/dashboard/client/workouts/ClientWorkoutsCarousel";
+import { ClientWeekOverview } from "@/components/dashboard/client/workouts/ClientWeekOverview";
 import { ClientDashboardOverlay } from "@/components/dashboard/client/ClientDashboardOverlay";
 import { PageWaitState } from "@/components/brand/PageWaitState";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
@@ -312,6 +312,10 @@ export function ClientDashboardPageClient() {
           </FastActivateButton>
         }
       >
+        <div className="client-dash-week">
+          <ClientWeekOverview userId={session.userId} />
+        </div>
+
         {!profileComplete ? (
           <FastActivateButton
             className="client-dash-progress"
@@ -347,7 +351,6 @@ export function ClientDashboardPageClient() {
         <section className="client-dash-panel client-dash-panel--profile">
           <div className="client-dash-links">
             <ClientCoachingInvites userId={session.userId} />
-            <ClientWorkoutsCarousel userId={session.userId} />
 
             <FastActivateButton
               className="smoac-control client-dash-nav-row"
@@ -359,7 +362,7 @@ export function ClientDashboardPageClient() {
               <span className="client-dash-nav-row__copy">
                 <span className="client-dash-nav-row__title">Edit profile</span>
                 <span className="client-dash-nav-row__meta">
-                  Goals, travel distance, and budget
+                  Training, goals, and budget
                 </span>
               </span>
               <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />

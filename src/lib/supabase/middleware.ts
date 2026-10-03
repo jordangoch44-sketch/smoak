@@ -8,6 +8,7 @@ import {
   CLIENT_DASHBOARD_PATH,
   LOGIN_PATH,
   SPECIALIST_DASHBOARD_PATH,
+  WORKOUTS_PATH,
 } from "@/lib/auth-routes";
 import { COMPLETE_ACCOUNT_PATH } from "@/lib/auth/account-setup";
 import {
@@ -57,7 +58,9 @@ function loginHrefForProtectedPath(request: NextRequest): string {
   }
   if (
     pathname === CLIENT_DASHBOARD_PATH ||
-    pathname.startsWith(`${CLIENT_DASHBOARD_PATH}/`)
+    pathname.startsWith(`${CLIENT_DASHBOARD_PATH}/`) ||
+    pathname === WORKOUTS_PATH ||
+    pathname.startsWith(`${WORKOUTS_PATH}/`)
   ) {
     return buildLoginHref({
       role: "client",
@@ -69,6 +72,7 @@ function loginHrefForProtectedPath(request: NextRequest): string {
 
 const PROTECTED_PREFIXES = [
   CLIENT_DASHBOARD_PATH,
+  WORKOUTS_PATH,
   SPECIALIST_DASHBOARD_PATH,
   INTERNAL_DASHBOARD_PATH,
 ] as const;
@@ -204,7 +208,11 @@ export async function updateSession(request: NextRequest) {
 
   const role = roleLookup.status === "ok" ? roleLookup.role : null;
 
-  if (pathname.startsWith(CLIENT_DASHBOARD_PATH)) {
+  if (
+    pathname.startsWith(CLIENT_DASHBOARD_PATH) ||
+    pathname === WORKOUTS_PATH ||
+    pathname.startsWith(`${WORKOUTS_PATH}/`)
+  ) {
     if (role !== "client") {
       return redirectToAppPath(
         request,

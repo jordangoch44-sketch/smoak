@@ -6,6 +6,7 @@ import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import { cn } from "@/lib/utils";
 import { buildWeekOverview } from "@/lib/workouts/client-workout-overview";
 import { BodyWeightSheet } from "./BodyWeightSheet";
+import "@/styles/client-workouts.css";
 
 const ARROWS = { up: "▲", down: "▼", same: "=", none: "" } as const;
 

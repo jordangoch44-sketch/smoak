@@ -30,7 +30,7 @@ async function applyUnsubscribe(token: string | null) {
     return {
       ok: true as const,
       email: parsed.email,
-      message: "You won’t get workout streak emails anymore. Turn them back on in Workouts.",
+      message: "You won’t get workout streak emails anymore. Turn them back on in Edit profile.",
     };
   }
 

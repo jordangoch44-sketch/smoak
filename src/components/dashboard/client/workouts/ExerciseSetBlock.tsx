@@ -1,30 +1,20 @@
 "use client";
 
-import { useRef } from "react";
+import { useState, useRef } from "react";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
+import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
+import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
 import { SwipeToRemove } from "@/components/dashboard/client/workouts/SwipeToRemove";
 import {
   createWorkoutExerciseId,
   exerciseWithSetLogs,
   MAX_WORKOUT_SETS,
   parseWorkoutSetCount,
-  rememberExerciseSets,
   sanitizeWorkoutCount,
   sanitizeWorkoutWeight,
-  type ExerciseSetMemory,
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
 import type { ClientWorkoutExercise, ClientWorkoutSetLog } from "@/types/client-workout";
-
-function rowsUntouched(exercise: ClientWorkoutExercise): boolean {
-  const rows = exercise.setLogs ?? [];
-  if (rows.length > 0) {
-    return rows.every(
-      (row) => !row.reps.trim() && !row.weight.trim() && row.completed !== true
-    );
-  }
-  return !exercise.sets.trim() && !exercise.reps.trim() && exercise.completed !== true;
-}
 
 /** Set rows to show. Legacy "3 × 8" becomes three rows. A finished exercise shows every set checked. */
 function logsOf(exercise: ClientWorkoutExercise): ClientWorkoutSetLog[] {
@@ -57,14 +47,12 @@ function DotsIcon() {
 /** Hevy-style set table: name, then set / lbs / reps / check. No previous column. */
 export function ExerciseSetBlock({
   exercise,
-  prior,
   autoFocus = false,
   inSuperset = false,
   onChange,
   onOpenMenu,
 }: {
   exercise: ClientWorkoutExercise;
-  prior: readonly ExerciseSetMemory[];
   autoFocus?: boolean;
   inSuperset?: boolean;
   /** `commit` writes the day. Name keystrokes stay local until the field blurs. */
@@ -73,13 +61,10 @@ export function ExerciseSetBlock({
 }) {
   const setIds = useRef<string[]>([]);
   const logs = logsOf(exercise);
+  const [howToOpen, setHowToOpen] = useState(false);
+  const named = exercise.name.trim();
 
   function commitName(name: string) {
-    const remembered = rememberExerciseSets(prior, name);
-    if (remembered && rowsUntouched(exercise)) {
-      onChange(exerciseWithSetLogs({ ...exercise, name }, remembered), true);
-      return;
-    }
     if (name === exercise.name) {
       if (name.trim()) onChange(exercise, true);
       return;
@@ -114,6 +99,22 @@ export function ExerciseSetBlock({
       <div className="exercise-block__name-wrap">
         {inSuperset ? <p className="exercise-block__superset">Superset</p> : null}
         <div className="exercise-block__title">
+          <button
+            type="button"
+            className="exercise-block__thumb"
+            aria-label={named ? `How to do ${named}` : "Exercise photo"}
+            disabled={!named}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => {
+              if (named) setHowToOpen(true);
+            }}
+          >
+            <ExerciseAvatar
+              name={exercise.name}
+              imageUrl={exercise.imageUrl}
+              className="exercise-block__mark"
+            />
+          </button>
           <input
             className="exercise-block__name"
             value={exercise.name}
@@ -235,6 +236,13 @@ export function ExerciseSetBlock({
           </button>
         ) : null}
       </div>
+      {howToOpen && named ? (
+        <ExerciseHowToSheet
+          name={named}
+          imageUrl={exercise.imageUrl}
+          onClose={() => setHowToOpen(false)}
+        />
+      ) : null}
     </article>
   );
 }

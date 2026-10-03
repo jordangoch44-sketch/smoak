@@ -17,6 +17,26 @@ function movedPastSlop(
   return Math.hypot(event.clientX - origin.x, event.clientY - origin.y) > slopPx;
 }
 
+const TRAILING_CLICK_GUARD_MS = 400;
+
+/**
+ * Touch commits on pointerup, then the control often unmounts before the
+ * compatibility click. iOS retargets that click at whatever is now under the
+ * finger — Sign out, when a sheet's close control sat on top of it.
+ * Catch the click on document so it cannot land on the page underneath.
+ */
+function swallowTrailingClick(onSwallow?: () => void) {
+  const block = (event: Event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onSwallow?.();
+  };
+  document.addEventListener("click", block, { capture: true, once: true });
+  window.setTimeout(() => {
+    document.removeEventListener("click", block, true);
+  }, TRAILING_CLICK_GUARD_MS);
+}
+
 /**
  * Buttons / overlay openers: touch commits on pointerup so a busy main thread
  * cannot drop the later click. Mouse still uses click so drag-off cancels.
@@ -56,6 +76,9 @@ export function useFastActivate(
     originRef.current = null;
     /* Swallow the trailing click whether this was a tap or a scroll. */
     openedByPointerRef.current = true;
+    swallowTrailingClick(() => {
+      openedByPointerRef.current = false;
+    });
     if (movedPastSlop(origin, event, slopPx)) return;
     activateRef.current();
   }, [slopPx, stopPropagation]);
@@ -98,6 +121,9 @@ export function useOwnPointerDismiss(dismiss: () => void): {
     if (!armedRef.current) return;
     armedRef.current = false;
     openedByPointerRef.current = true;
+    swallowTrailingClick(() => {
+      openedByPointerRef.current = false;
+    });
     dismissRef.current();
   }, []);
 

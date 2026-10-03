@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
+import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   CalendarIcon,
@@ -29,7 +30,13 @@ function isTouchPicker(): boolean {
 }
 
 /** Random workout generator. Start drops it into today; Add to calendar picks a day. */
-export function ClientSuggestedWorkout({ userId }: { userId: string }) {
+export function ClientSuggestedWorkout({
+  userId,
+  onPaste,
+}: {
+  userId: string;
+  onPaste?: (fromDateKey: string) => void;
+}) {
   const { log, saveDay } = useClientWorkouts(userId);
   // Today’s date seeds the pick; build only in the browser.
   const inBrowser = useSyncExternalStore(noopSubscribe, () => true, () => false);
@@ -121,6 +128,7 @@ export function ClientSuggestedWorkout({ userId }: { userId: string }) {
         <ol className="client-suggested__list">
           {(plan?.exercises ?? []).map((exercise, index) => (
             <li key={`${index}-${exercise.name}`} className="client-suggested__row">
+              <ExerciseAvatar name={exercise.name} className="client-suggested__mark" />
               <span className="client-suggested__name">{exercise.name}</span>
               <span className="client-suggested__scheme">
                 {exercise.sets} × {exercise.reps}
@@ -175,6 +183,7 @@ export function ClientSuggestedWorkout({ userId }: { userId: string }) {
         open={openDateKey !== null}
         initialDateKey={openDateKey}
         onClose={() => setOpenDateKey(null)}
+        onPaste={onPaste}
       />
     </>
   );

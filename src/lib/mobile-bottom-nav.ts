@@ -19,7 +19,13 @@ export type MobileBottomNavItemId =
   | "saved"
   | "profile";
 
-export type MobileBottomNavGlyph = "home" | "search" | "heart" | "chart" | "user";
+export type MobileBottomNavGlyph =
+  | "home"
+  | "search"
+  | "heart"
+  | "dumbbell"
+  | "chart"
+  | "user";
 
 /** Tab order — drives panel slide direction. Clients only appears for specialists. */
 export const MOBILE_BOTTOM_NAV_ORDER: readonly MobileBottomNavItemId[] = [
@@ -125,6 +131,14 @@ export function isExploreNavPath(pathname: string): boolean {
   return isExplorePath(pathname);
 }
 
+/** Workouts tab — client training carousel. Slot id stays `saved` so tab order is unchanged. */
+export function isWorkoutsNavPath(pathname: string): boolean {
+  return (
+    pathname === SITE_ROUTES.workouts ||
+    pathname.startsWith(`${SITE_ROUTES.workouts}/`)
+  );
+}
+
 export function getMobileBottomNavItems(
   session: AuthSession | null
 ): MobileBottomNavItem[] {
@@ -155,7 +169,12 @@ export function getMobileBottomNavItems(
           label: "Overview",
           glyph: "chart",
         }
-      : { id: "saved", href: SITE_ROUTES.saved, label: "Favorites", glyph: "heart" },
+      : {
+          id: "saved",
+          href: SITE_ROUTES.workouts,
+          label: "Workouts",
+          glyph: "dumbbell",
+        },
     { id: "profile", href: profileHref, label: "Profile" },
   ];
 }
@@ -233,8 +252,7 @@ export function isActiveNavItem(
       return isSpecialistDashboardClientsTab(pathname, searchParams);
     case "saved":
       return (
-        pathname === SITE_ROUTES.saved ||
-        pathname.startsWith(`${SITE_ROUTES.saved}/`) ||
+        isWorkoutsNavPath(pathname) ||
         isSpecialistDashboardOverviewTab(pathname, searchParams)
       );
     case "profile":

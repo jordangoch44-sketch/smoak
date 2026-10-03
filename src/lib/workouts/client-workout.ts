@@ -5,6 +5,8 @@ import type {
   ClientWorkoutLog,
   ClientWorkoutSetLog,
 } from "@/types/client-workout";
+import { officialExerciseName } from "@/data/workout-exercise-library";
+import { customExerciseFields } from "@/lib/workouts/custom-exercises";
 
 export const DEFAULT_GOAL_DAYS_PER_WEEK = 4;
 export const DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK = 3;
@@ -76,7 +78,7 @@ function blankSetLog(): ClientWorkoutSetLog {
   return { reps: "", weight: "" };
 }
 
-/** One empty set row, ready for a name. Previous weights fill in once the name matches. */
+/** One empty set row, ready for a name. */
 export function freshExerciseBlock(): ClientWorkoutExercise {
   return {
     id: createWorkoutExerciseId(),
@@ -116,34 +118,6 @@ export function exerciseMemoryBefore(
         setLogs: exercise.setLogs,
       }))
     );
-}
-
-/**
- * Weights and reps from the newest exercise with this name.
- * Checks are cleared. Null when this name has not been logged before.
- */
-export function rememberExerciseSets(
-  memory: readonly ExerciseSetMemory[],
-  name: string
-): ClientWorkoutSetLog[] | null {
-  const needle = name.trim().toLowerCase();
-  if (!needle) return null;
-  for (const match of memory) {
-    if (match.name.trim().toLowerCase() !== needle) continue;
-    const filled = (match.setLogs ?? []).some((log) => log.reps.trim() || log.weight.trim());
-    if (match.setLogs && match.setLogs.length > 0 && filled) {
-      return match.setLogs.slice(0, MAX_WORKOUT_SETS).map((log) => ({
-        reps: log.reps.trim(),
-        weight: log.weight.trim(),
-      }));
-    }
-    const count = parseWorkoutSetCount(match.sets);
-    if (count && !match.setLogs?.length) {
-      const reps = match.reps.trim();
-      return Array.from({ length: count }, () => ({ reps, weight: "" }));
-    }
-  }
-  return null;
 }
 
 /** Replace the set rows and mark the exercise done only when every set is checked. */
@@ -214,7 +188,7 @@ export function sanitizeWorkoutSetLogs(
 export function sanitizeWorkoutExercise(
   exercise: ClientWorkoutExercise
 ): ClientWorkoutExercise | null {
-  const name = exercise.name.trim();
+  const name = officialExerciseName(exercise.name);
   if (!name) return null;
   const setLogs = sanitizeWorkoutSetLogs(exercise.setLogs);
   const sets = setLogs
@@ -229,6 +203,7 @@ export function sanitizeWorkoutExercise(
     ...(setLogs ? { setLogs } : {}),
     ...(exercise.completed === true ? { completed: true } : {}),
     ...(supersetId ? { supersetId } : {}),
+    ...customExerciseFields(exercise),
   };
 }
 

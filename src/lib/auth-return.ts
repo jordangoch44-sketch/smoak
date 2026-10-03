@@ -2,6 +2,7 @@ import {
   CLIENT_DASHBOARD_PATH,
   LOGIN_PATH,
   SPECIALIST_DASHBOARD_PATH,
+  WORKOUTS_PATH,
 } from "@/lib/auth-routes";
 import { JOIN_FLOW_PATH } from "@/lib/join-flow";
 import { isPublicAuthRole, type PublicAuthRole } from "@/types/auth-roles";
@@ -48,7 +49,9 @@ export function sanitizeAuthNextPath(
     path.startsWith(`${SPECIALIST_DASHBOARD_PATH}/`);
   const client =
     path === CLIENT_DASHBOARD_PATH ||
-    path.startsWith(`${CLIENT_DASHBOARD_PATH}/`);
+    path.startsWith(`${CLIENT_DASHBOARD_PATH}/`) ||
+    path === WORKOUTS_PATH ||
+    path.startsWith(`${WORKOUTS_PATH}/`);
   if (!specialist && !client) return null;
   if (role === "specialist" && !specialist) return null;
   if (role === "client" && !client) return null;

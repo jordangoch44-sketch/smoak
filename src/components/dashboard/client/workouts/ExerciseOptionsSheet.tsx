@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
@@ -222,6 +223,7 @@ export function ExerciseOptionsSheet({
                   className="exercise-menu__item"
                   onActivate={() => onReplace(name)}
                 >
+                  <ExerciseAvatar name={name} className="exercise-menu__mark" />
                   {name}
                 </FastActivateButton>
               ))

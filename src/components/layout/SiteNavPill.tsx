@@ -15,6 +15,7 @@ import {
 import { TapLink } from "@/components/ui/TapLink";
 import {
   ChartIcon,
+  DumbbellIcon,
   HeartIcon,
   HomeIcon,
   SearchIcon,
@@ -73,6 +74,9 @@ const NavIcon = memo(function NavIcon({
     case "saved":
       if (glyph === "chart") {
         return <ChartIcon className={className} />;
+      }
+      if (glyph === "dumbbell") {
+        return <DumbbellIcon className={className} />;
       }
       return (
         <HeartIcon className={className} filled={active || savedCount > 0} />

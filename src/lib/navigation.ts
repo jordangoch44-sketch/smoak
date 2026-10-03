@@ -4,7 +4,7 @@
  * Mobile: bottom bar (primary) + utility drawer (secondary).
  */
 
-import { LOGIN_PATH } from "@/lib/auth-routes";
+import { LOGIN_PATH, WORKOUTS_PATH } from "@/lib/auth-routes";
 import { buildJoinFlowHref } from "@/lib/join-flow";
 
 /** Canonical app routes used across chrome */
@@ -13,6 +13,7 @@ export const SITE_ROUTES = {
   explore: "/explore",
   exploreSearchFocus: "/explore?focus=search",
   saved: "/saved",
+  workouts: WORKOUTS_PATH,
   profile: "/profile",
   discover: "/discover",
   rankings: "/rankings",

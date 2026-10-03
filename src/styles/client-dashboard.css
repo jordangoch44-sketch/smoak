@@ -229,6 +229,14 @@
   margin-top: 0.5rem;
 }
 
+.dashboard-page--client .client-dash-header.dashboard-page__header {
+  margin-bottom: 0.85rem;
+}
+
+.client-dash-week .client-week-overview {
+  margin: 0;
+}
+
 .client-dash-summary__avatar-wrap {
   position: relative;
   display: block;

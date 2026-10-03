@@ -329,6 +329,77 @@
   box-shadow: var(--smoac-color-glow);
 }
 
+.client-profile-switch-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.9);
+  text-align: left;
+  cursor: pointer;
+}
+
+.client-profile-switch-row__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.client-profile-switch-row__label {
+  font-size: 0.9375rem;
+}
+
+.client-profile-switch-row__hint {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.client-profile-switch {
+  position: relative;
+  width: 2.35rem;
+  height: 1.4rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 200ms ease;
+}
+
+.client-profile-switch::after {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  left: 0.15rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 200ms ease;
+}
+
+.client-profile-switch--on {
+  background: var(--smoac-color);
+}
+
+.client-profile-switch--on::after {
+  transform: translateX(0.95rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .client-profile-switch,
+  .client-profile-switch::after {
+    transition: none;
+  }
+}
+
 .client-profile-account-toggle {
   display: flex;
   width: 100%;

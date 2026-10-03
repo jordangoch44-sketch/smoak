@@ -20,6 +20,12 @@ export interface ClientWorkoutExercise {
   completed?: boolean;
   /** Shared with the other exercises in a superset. */
   supersetId?: string;
+  /** Photo for an exercise the client created. Library exercises load an ExerciseDB still by name. */
+  imageUrl?: string;
+  equipment?: string;
+  muscle?: string;
+  otherMuscles?: string[];
+  exerciseType?: string;
 }
 
 export interface ClientWorkoutCardio {
