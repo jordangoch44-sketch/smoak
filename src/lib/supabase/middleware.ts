@@ -193,6 +193,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (!user) {
+    /* Workouts is usable without an account. Training stays on this device. */
+    if (
+      pathname === WORKOUTS_PATH ||
+      pathname.startsWith(`${WORKOUTS_PATH}/`)
+    ) {
+      return supabaseResponse;
+    }
     if (isInternalPath(pathname)) {
       return redirectToAppPath(request, INTERNAL_LOGIN_PATH);
     }

@@ -1,21 +1,40 @@
 "use client";
 
-import { useState } from "react";
-import { useRequireAuth } from "@/hooks/useRequireAuth";
-import {
-  DashboardLoadingState,
-  DashboardPageShell,
-} from "@/components/dashboard";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { DashboardLoadingState } from "@/components/dashboard/shared/DashboardLoadingState";
+import { DashboardPageShell } from "@/components/dashboard/shared/DashboardPageShell";
 import { ClientSuggestedWorkout } from "@/components/dashboard/client/workouts/ClientSuggestedWorkout";
 import { ClientWorkoutsEntry } from "@/components/dashboard/client/workouts/ClientWorkoutsEntry";
+import { ClientWorkoutsGate } from "@/components/dashboard/client/workouts/ClientWorkoutsGate";
+import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { INTERNAL_DASHBOARD_PATH } from "@/lib/internal-routes";
 
 export function ClientWorkoutsPageClient() {
-  const { isReady, session } = useRequireAuth("client");
+  const router = useRouter();
+  const { isReady, session } = useAuthSession();
   const [pasteFrom, setPasteFrom] = useState<string | null>(null);
+  const signedInElsewhere = isReady && session != null && session.role !== "client";
 
-  if (!isReady || !session) {
+  useEffect(() => {
+    if (!signedInElsewhere || !session) return;
+    router.replace(
+      session.role === "specialist"
+        ? SPECIALIST_DASHBOARD_PATH
+        : INTERNAL_DASHBOARD_PATH
+    );
+  }, [signedInElsewhere, session, router]);
+
+  if (!isReady || signedInElsewhere) {
     return <DashboardLoadingState />;
   }
+
+  if (!session) {
+    return <ClientWorkoutsGate />;
+  }
+
+  const userId = session.userId;
 
   return (
     <DashboardPageShell
@@ -26,11 +45,11 @@ export function ClientWorkoutsPageClient() {
     >
       <section className="client-workouts-page">
         <ClientWorkoutsEntry
-          userId={session.userId}
+          userId={userId}
           pasteFrom={pasteFrom}
           onPasteFromChange={setPasteFrom}
         />
-        <ClientSuggestedWorkout userId={session.userId} onPaste={setPasteFrom} />
+        <ClientSuggestedWorkout userId={userId} onPaste={setPasteFrom} />
       </section>
     </DashboardPageShell>
   );

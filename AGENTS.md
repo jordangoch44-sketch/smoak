@@ -91,6 +91,14 @@ Global footer: `components/layout/Footer.tsx` + `lib/footer-nav.ts` (`FOOTER_NAV
 Legal pages use `LegalDocumentPage` + content from `lib/legal-content.ts`.  
 Canonical paths: `SITE_ROUTES` in `lib/navigation.ts` (`/pricing`, `/contact`, `/faq`, `/safety`, `/privacy`, `/terms`, `/cookies`, `/accessibility`, etc.).
 
+## Client workouts (launch ceiling)
+
+The client owns the log and can use it with or without a trainer. A specialist can invite a client, send a workout onto a day, and see what happened to **that** workout: sent, started, or done, plus the weights and reps logged on those exercises.
+
+Roster cards may show last finished workout, finished-per-week over the last 4 weeks, weeks since they accepted, and a done count. Those numbers come only from workouts the specialist sent.
+
+Do not add, for launch: programs, specialist access to the client’s private log or body weight, missed-session alerts, or editing a workout the client already started.
+
 ## Adding a feature (checklist)
 
 1. Types → `src/types/` (+ `types/index.ts`).

@@ -16,6 +16,7 @@ import {
   subscribeCoaching,
   upsertById,
 } from "@/lib/coaching/coaching-store";
+import { isGuestWorkoutUser } from "@/lib/workouts/client-workout-store";
 import type { ClientWorkoutExercise } from "@/types/client-workout";
 import type { CoachWorkout, CoachWorkoutStatus } from "@/types/coaching";
 
@@ -28,7 +29,7 @@ export function useClientCoaching(userId: string | null) {
   );
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || isGuestWorkoutUser(userId)) return;
     const refresh = () => void refreshCoaching("client", userId);
     refresh();
     const onVisible = () => {

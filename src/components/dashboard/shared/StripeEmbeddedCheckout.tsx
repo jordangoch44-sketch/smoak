@@ -20,7 +20,20 @@ import { ChevronDownIcon } from "@/components/ui/icons";
 const publishableKey =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || "";
 
-const stripePromise = publishableKey ? loadStripe(publishableKey) : null;
+let stripePromise: ReturnType<typeof loadStripe> | null = null;
+
+/** Live Stripe.js rejects on http:// LAN dev and shows up as a page error. */
+function getStripePromise() {
+  if (!publishableKey || typeof window === "undefined") return null;
+  if (
+    window.location.protocol !== "https:" &&
+    publishableKey.startsWith("pk_live")
+  ) {
+    return null;
+  }
+  stripePromise ??= loadStripe(publishableKey);
+  return stripePromise;
+}
 
 const ELEMENTS_OPTIONS: StripeElementsOptions["appearance"] = {
   theme: "night",
@@ -289,7 +302,9 @@ export function StripeEmbeddedCheckout({
     [clientSecret]
   );
 
-  if (!stripePromise) {
+  const stripe = getStripePromise();
+
+  if (!stripe) {
     return (
       <p className="dashboard-modal__error" role="alert">
         Stripe publishable key is not configured.
@@ -298,7 +313,7 @@ export function StripeEmbeddedCheckout({
   }
 
   return (
-    <Elements stripe={stripePromise} options={options}>
+    <Elements stripe={stripe} options={options}>
       <StripeEmbeddedPayForm
         productLabel={productLabel}
         priceLabel={priceLabel}

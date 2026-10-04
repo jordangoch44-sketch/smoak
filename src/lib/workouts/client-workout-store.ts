@@ -28,6 +28,13 @@ import type {
   ClientWorkoutLog,
 } from "@/types/client-workout";
 
+/** Signed-out training. Stored only in localStorage, never synced to an account. */
+export const GUEST_WORKOUT_USER_ID = "guest";
+
+export function isGuestWorkoutUser(userId: string | null | undefined): boolean {
+  return userId === GUEST_WORKOUT_USER_ID;
+}
+
 const EMPTY_LOG: ClientWorkoutLog = emptyClientWorkoutLog();
 const listeners = new Set<() => void>();
 
@@ -144,6 +151,7 @@ async function syncLog(
   seq: number
 ): Promise<boolean> {
   if (seq !== writeSeq) return true;
+  if (isGuestWorkoutUser(userId)) return true;
   if (!isMarketplaceSupabaseActive()) return true;
   const supabase = getMarketplaceAuthClient();
   if (!supabase) return true;
@@ -170,7 +178,7 @@ async function syncLog(
 export function ensureClientWorkoutsHydrated(userId: string): void {
   const id = userId.trim();
   if (!id || hydratedUserId === id || hydrateInFlightUserId === id) return;
-  if (!isMarketplaceSupabaseActive()) {
+  if (isGuestWorkoutUser(id) || !isMarketplaceSupabaseActive()) {
     hydratedUserId = id;
     return;
   }

@@ -286,7 +286,7 @@ export function SpecialistClientsPage({
         <div className="roster-page__intro">
           <h1 className="roster-page__title">Clients</h1>
           <p className="roster-page__subtitle">
-            Manage your clients, send workouts, and track progress.
+            Invite clients, send workouts, and see when they finish.
           </p>
         </div>
         <FastActivateButton

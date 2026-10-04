@@ -53,13 +53,13 @@ body:has(.login-page--specialist-onboarding) .page-transition__content {
 }
 
 body.specialist-interview-keyboard-open .mobile-bottom-nav,
-body:has(.login-page--interview-flow) .mobile-bottom-nav {
+body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mobile-bottom-nav {
   visibility: hidden;
   pointer-events: none;
 }
 
 @media (max-width: 1023px) {
-  body:has(.login-page--interview-flow) .mobile-bottom-nav {
+  body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mobile-bottom-nav {
     display: none;
   }
 }
@@ -177,6 +177,10 @@ body:has(.login-page--interview-flow) .mobile-bottom-nav {
   .login-page--interview-flow .interview-stage,
   .login-page--interview-keyboard .interview-stage {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .login-page--create-account.login-page--interview-flow .interview-stage {
+    padding-bottom: var(--mobile-bottom-nav-offset);
   }
 }
 

@@ -53,7 +53,7 @@ function createAccountInterviewCopy(step: WizardStep): {
     return {
       introTitle: "Quick sign up",
       introSub: "Browse and compare specialists near you instantly.",
-      cardTitle: "Create your account",
+      cardTitle: "Create your client account",
       cardSubtitle: "Email and that’s it!",
     };
   }

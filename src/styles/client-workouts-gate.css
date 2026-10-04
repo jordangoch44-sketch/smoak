@@ -1,0 +1,765 @@
+/* Signed-out workouts tab — compact product preview between header and tab bar */
+
+.client-workouts-gate {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 26.5rem);
+  margin: 0 auto;
+  padding: 0 0.95rem 0.45rem;
+  isolation: isolate;
+  color: #fff;
+  background-color: #080b10;
+}
+
+body:has(.client-workouts-gate),
+body:has(.client-workouts-gate) .app-shell,
+body:has(.client-workouts-gate) .site-page-backdrop,
+body:has(.client-workouts-gate) .app-main {
+  background-color: #080b10;
+  background-image: none;
+}
+
+body:has(.client-workouts-gate) .site-page-backdrop__base,
+body:has(.client-workouts-gate) .site-page-backdrop__stars,
+body:has(.client-workouts-gate) .site-page-backdrop__mesh,
+body:has(.client-workouts-gate) .site-page-backdrop__vignette {
+  opacity: 0;
+}
+
+body:has(.client-workouts-gate) .site-footer {
+  background: #080b10;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body:has(.client-workouts-gate) .site-footer__glow {
+  display: none;
+}
+
+.client-workouts-gate__copy {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.client-workouts-gate__title {
+  margin: 0;
+  font-size: clamp(2.15rem, 10.6vw, 2.85rem);
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 0.96;
+}
+
+.client-workouts-gate__title span {
+  display: block;
+  margin-bottom: -0.08em;
+  padding-bottom: 0.22em;
+  line-height: 1;
+  background-image: var(--smoac-color);
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.client-workouts-gate__lede {
+  margin: 0.28rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.client-workouts-gate__stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0.55rem;
+  pointer-events: none;
+  user-select: none;
+  container-type: size;
+}
+
+.client-workouts-gate__glow {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  z-index: 0;
+  width: 88%;
+  height: 38%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at 50% 72%,
+    rgba(168, 85, 247, 0.42) 0%,
+    rgba(244, 114, 182, 0.18) 34%,
+    rgba(125, 211, 252, 0.08) 52%,
+    transparent 70%
+  );
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.client-workouts-gate__phone {
+  position: absolute;
+  top: auto;
+  bottom: 0.55rem;
+  z-index: 1;
+  width: min(44cqw, calc((100cqh - 1rem) * 9 / 19.5));
+  height: min(calc(100cqh - 1rem), calc(44cqw * 19.5 / 9));
+  aspect-ratio: auto;
+  padding: 0.38rem 0.28rem 0.42rem;
+  border-radius: 1.85rem;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, #3a3a42 0%, #16161a 16%, #0c0c10 100%) padding-box,
+    linear-gradient(
+      165deg,
+      rgba(255, 255, 255, 0.55) 0%,
+      rgba(244, 114, 182, 0.55) 18%,
+      rgba(40, 40, 48, 0.9) 46%,
+      rgba(125, 211, 252, 0.45) 100%
+    )
+      border-box;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.46),
+    inset 0 -10px 14px rgba(0, 0, 0, 0.38),
+    0 8px 12px rgba(0, 0, 0, 0.4),
+    0 22px 28px rgba(0, 0, 0, 0.38),
+    0 40px 54px rgba(0, 0, 0, 0.32),
+    0 0 28px rgba(168, 85, 247, 0.22);
+}
+
+.client-workouts-gate__phone--cal {
+  left: 50%;
+  transform: translateX(-98%) translateY(-0.45rem) rotate(-3.5deg);
+}
+
+.client-workouts-gate__phone--log {
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-4%) translateY(-0.15rem) rotate(3.5deg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.52),
+    inset 0 -10px 14px rgba(0, 0, 0, 0.4),
+    0 12px 16px rgba(0, 0, 0, 0.48),
+    0 28px 36px rgba(0, 0, 0, 0.4),
+    0 48px 64px rgba(0, 0, 0, 0.34),
+    0 0 34px rgba(125, 211, 252, 0.16),
+    0 18px 46px rgba(168, 85, 247, 0.24);
+}
+
+.client-workouts-gate__screen {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  background: #07070c;
+  font-size: 7.5px;
+  font-size: 4.45cqw;
+  container-type: inline-size;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.client-workouts-gate__island,
+.client-workouts-gate__home,
+.client-workouts-gate__key {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.client-workouts-gate__island {
+  top: 0.62rem;
+  left: 50%;
+  width: 38%;
+  height: 0.82rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: #000;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 0 0 1px #000;
+}
+
+.client-workouts-gate__island::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0.18rem;
+  width: 0.34rem;
+  height: 0.34rem;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 35%, #3d5a8a, #070a12 64%);
+  box-shadow: inset 0 0 0 1px rgba(160, 196, 240, 0.45);
+}
+
+.client-workouts-gate__home {
+  bottom: 0.62rem;
+  left: 50%;
+  width: 36%;
+  height: 0.16rem;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.client-workouts-gate__key {
+  width: 0.18rem;
+  background: linear-gradient(90deg, #8d8d96, #2c2c32 55%, #151518);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
+
+.client-workouts-gate__key--silent {
+  top: 15%;
+  left: -0.16rem;
+  height: 0.48rem;
+  border-radius: 0.1rem 0 0 0.1rem;
+}
+
+.client-workouts-gate__key--vol {
+  top: 23%;
+  left: -0.18rem;
+  height: 1.55rem;
+  border-radius: 0.1rem 0 0 0.1rem;
+}
+
+.client-workouts-gate__key--power {
+  top: 19%;
+  right: -0.18rem;
+  height: 1.85rem;
+  border-radius: 0 0.1rem 0.1rem 0;
+  background: linear-gradient(270deg, #8d8d96, #2c2c32 55%, #151518);
+}
+
+.client-workouts-gate__phone {
+  container-type: size;
+}
+
+.client-workouts-gate__cal-top,
+.client-workouts-gate__log-top,
+.client-workouts-gate__month,
+.client-workouts-gate__dayline,
+.client-workouts-gate__session,
+.client-workouts-gate__exercise-head {
+  display: flex;
+  align-items: center;
+}
+
+.client-workouts-gate__screen {
+  padding: 1.15rem 0.55rem 0.7rem;
+}
+
+.client-workouts-gate__cal-top {
+  justify-content: space-between;
+}
+
+.client-workouts-gate__cal-top p,
+.client-workouts-gate__log-top p,
+.client-workouts-gate__month p,
+.client-workouts-gate__dayline p,
+.client-workouts-gate__session p,
+.client-workouts-gate__exercise-head p,
+.client-workouts-gate__workout,
+.client-workouts-gate__meta,
+.client-workouts-gate__add,
+.client-workouts-gate__add-exercise {
+  margin: 0;
+}
+
+.client-workouts-gate__cal-top p {
+  font-size: 1.45em;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+}
+
+.client-workouts-gate__plus {
+  display: grid;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 0.45em;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.client-workouts-gate__plus svg,
+.client-workouts-gate__month svg,
+.client-workouts-gate__log-top > svg,
+.client-workouts-gate__done svg {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.client-workouts-gate__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 0.7em;
+  padding: 0.18em;
+  border-radius: 0.7em;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.client-workouts-gate__tabs span {
+  padding: 0.38em 0;
+  border-radius: 0.55em;
+  text-align: center;
+  font-size: 1.05em;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.client-workouts-gate__tabs .is-on {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.client-workouts-gate__month {
+  justify-content: space-between;
+  margin-top: 0.7em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.client-workouts-gate__month p {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+.client-workouts-gate__weekdays,
+.client-workouts-gate__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.client-workouts-gate__weekdays {
+  margin-top: 0.45em;
+  font-size: 0.85em;
+  font-weight: 650;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.client-workouts-gate__grid {
+  flex: 1 1 auto;
+  align-content: space-evenly;
+  margin-top: 0.35em;
+}
+
+.client-workouts-gate__grid span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.12em;
+  min-height: 2.15em;
+  border-radius: 0.45em;
+  font-size: 1em;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.client-workouts-gate__grid i {
+  width: 0.28em;
+  height: 0.28em;
+  border-radius: 999px;
+  background: #c084fc;
+}
+
+.client-workouts-gate__grid i.is-empty {
+  background: transparent;
+}
+
+.client-workouts-gate__grid .is-muted {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.client-workouts-gate__grid .is-selected {
+  background: linear-gradient(160deg, #f472b6 0%, #7c3aed 80%);
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 0 0.8em rgba(168, 85, 247, 0.65);
+}
+
+.client-workouts-gate__dayline {
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 0.45em;
+  gap: 0.12em;
+}
+
+.client-workouts-gate__dayline p {
+  font-size: 1.1em;
+  font-weight: 750;
+}
+
+.client-workouts-gate__dayline span,
+.client-workouts-gate__session div span {
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.client-workouts-gate__session {
+  gap: 0.55em;
+  margin-top: 0.45em;
+  padding: 0.4em;
+  border-radius: 0.7em;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.client-workouts-gate__session div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.client-workouts-gate__session p {
+  font-size: 1.05em;
+  font-weight: 700;
+}
+
+.client-workouts-gate__thumb,
+.client-workouts-gate__run {
+  width: 2.35em;
+  height: 2.35em;
+  flex: 0 0 auto;
+  border-radius: 0.45em;
+}
+
+.client-workouts-gate__run {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(125, 211, 252, 0.9), rgba(14, 116, 144, 0.2) 70%),
+    #102028;
+}
+
+.client-workouts-gate__done {
+  display: grid;
+  place-items: center;
+  width: 1.35em;
+  height: 1.35em;
+  border-radius: 999px;
+  background: linear-gradient(160deg, #f472b6, #818cf8);
+  color: #fff;
+}
+
+.client-workouts-gate__done svg {
+  width: 0.75em;
+  height: 0.75em;
+}
+
+.client-workouts-gate__log-top {
+  gap: 0.35em;
+}
+
+.client-workouts-gate__log-top p {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28em;
+  white-space: nowrap;
+  font-size: 1.15em;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.client-workouts-gate__log-top p i {
+  width: 0.32em;
+  height: 0.32em;
+  margin-top: -0.15em;
+  border-right: 1.5px solid rgba(255, 255, 255, 0.7);
+  border-bottom: 1.5px solid rgba(255, 255, 255, 0.7);
+  transform: rotate(45deg);
+}
+
+.client-workouts-gate__badge {
+  margin-left: auto;
+  padding: 0.28em 0.5em;
+  border-radius: 999px;
+  background: var(--smoac-color);
+  font-size: 0.72em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.client-workouts-gate__more {
+  width: 0.22em;
+  height: 0.22em;
+  margin-left: 0.35em;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 -0.38em 0 rgba(255, 255, 255, 0.55),
+    0 0.38em 0 rgba(255, 255, 255, 0.55);
+}
+
+.client-workouts-gate__meta {
+  margin-top: 0.45em;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.client-workouts-gate__workout {
+  margin-top: 0.15em;
+  font-size: 1.15em;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.client-workouts-gate__exercise {
+  margin-top: 0.7em;
+}
+
+.client-workouts-gate__exercise-head {
+  gap: 0.5em;
+}
+
+.client-workouts-gate__exercise-head div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.client-workouts-gate__exercise-head p {
+  font-size: 1.02em;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.client-workouts-gate__exercise-head div span {
+  display: block;
+  margin-top: 0.12em;
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.client-workouts-gate__sets {
+  display: grid;
+  grid-template-columns: 1.7em 1fr 1fr 1.45em;
+  gap: 0.28em 0.35em;
+  margin-top: 0.45em;
+  font-size: 0.72em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.34);
+}
+
+.client-workouts-gate__set {
+  display: contents;
+  font-size: 1.25em;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.client-workouts-gate__set > span:not(:last-child) {
+  padding: 0.28em 0.1em;
+  border-radius: 0.45em;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.client-workouts-gate__set > span:last-child {
+  align-self: center;
+  justify-self: center;
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 0.32em;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.client-workouts-gate__set > span.is-on {
+  border-color: transparent;
+  background: linear-gradient(160deg, #f472b6, #a855f7);
+}
+
+.client-workouts-gate__set > span.is-on::after {
+  content: "";
+  display: block;
+  width: 0.28em;
+  height: 0.48em;
+  margin: 0.22em auto 0;
+  border-right: 1.5px solid #fff;
+  border-bottom: 1.5px solid #fff;
+  transform: rotate(40deg);
+}
+
+.client-workouts-gate__add {
+  margin-top: 0.45em;
+  text-align: center;
+  font-size: 0.95em;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.client-workouts-gate__add-exercise {
+  margin-top: auto;
+  padding: 0.65em;
+  border-radius: 0.75em;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(#101018, #101018) padding-box,
+    var(--smoac-color) border-box;
+  text-align: center;
+  font-size: 1.05em;
+  font-weight: 750;
+}
+
+.client-workouts-gate__features {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.client-workouts-gate__features li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  text-align: center;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.client-workouts-gate__feature-icon {
+  display: grid;
+  place-items: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(196, 181, 253, 0.4);
+  background: rgba(12, 10, 22, 0.92);
+  color: #ddd6fe;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.22);
+}
+
+.client-workouts-gate__feature--calendar .client-workouts-gate__feature-icon {
+  border-color: rgba(125, 211, 252, 0.45);
+  color: #bae6fd;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.22);
+}
+
+.client-workouts-gate__feature--progress .client-workouts-gate__feature-icon {
+  border-color: rgba(251, 113, 133, 0.5);
+  color: #fecdd3;
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.24);
+}
+
+.client-workouts-gate__feature-glyph {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.client-workouts-gate__signup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 3.45rem;
+  margin-top: 0.45rem;
+  padding: 0 1.25rem;
+  border-radius: 999px;
+  background: var(--smoac-color);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 24px rgba(0, 0, 0, 0.32);
+}
+
+.client-workouts-gate__signup:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    var(--smoac-color-focus-ring);
+}
+
+.client-workouts-gate__login {
+  flex: 0 0 auto;
+  margin: 0.4rem 0 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.client-workouts-gate__login a {
+  color: var(--smoac-color-cool);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+@media (max-width: 1023px) {
+  .client-workouts-gate {
+    height: calc(
+      100svh - var(--site-header-total-height) - var(--mobile-bottom-nav-offset)
+    );
+    margin-bottom: 2.25rem;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1023px) and (max-height: 740px) {
+  .client-workouts-gate {
+    padding-top: 0;
+  }
+
+  .client-workouts-gate__title {
+    font-size: 1.9rem;
+  }
+
+  .client-workouts-gate__lede {
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+  }
+
+  .client-workouts-gate__stage {
+    margin-top: 0.25rem;
+  }
+
+  .client-workouts-gate__features {
+    margin-top: 0.25rem;
+  }
+
+  .client-workouts-gate__feature-icon {
+    width: 1.85rem;
+    height: 1.85rem;
+  }
+
+  .client-workouts-gate__signup {
+    min-height: 3rem;
+    margin-top: 0.3rem;
+  }
+
+  .client-workouts-gate__login {
+    margin-top: 0.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .client-workouts-gate {
+    padding-top: 1.5rem;
+    padding-bottom: 2.5rem;
+  }
+
+  .client-workouts-gate__stage {
+    flex: none;
+    height: 24rem;
+    margin-top: 0.85rem;
+  }
+
+  .client-workouts-gate__features {
+    margin-top: 0.85rem;
+  }
+}
