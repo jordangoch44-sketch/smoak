@@ -26,7 +26,9 @@ const guidePromises = new Map<string, Promise<ExerciseGuide>>();
 export function loadLibraryExerciseMedia(): Promise<Record<string, LibraryExerciseMedia>> {
   if (!catalogPromise) {
     catalogPromise = fetch("/api/workouts/exercise-media")
-      .then((response) => (response.ok ? (response.json() as Promise<MediaResponse>) : {}))
+      .then((response) =>
+        response.ok ? (response.json() as Promise<MediaResponse>) : Promise.resolve({} as MediaResponse)
+      )
       .then((body) => body.media ?? {})
       .catch(() => ({}));
   }
@@ -35,7 +37,9 @@ export function loadLibraryExerciseMedia(): Promise<Record<string, LibraryExerci
 
 function fetchGuide(name: string): Promise<ExerciseGuide> {
   return fetch(`/api/workouts/exercise-media?name=${encodeURIComponent(name)}`)
-    .then((response) => (response.ok ? (response.json() as Promise<MediaResponse>) : {}))
+    .then((response) =>
+      response.ok ? (response.json() as Promise<MediaResponse>) : Promise.resolve({} as MediaResponse)
+    )
     .then((body) => ({
       gifUrl: body.gifUrl?.trim() || null,
       overview: body.overview?.trim() || null,

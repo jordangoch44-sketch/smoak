@@ -200,7 +200,7 @@ export function ExercisePickerSheet({
   return createPortal(
     <>
     <div
-      className={cn("exercise-picker", frame && "exercise-picker--keyboard")}
+      className={cn("exercise-picker", frame ? "exercise-picker--keyboard" : undefined)}
       role="dialog"
       aria-modal="true"
       aria-labelledby="exercise-picker-title"
@@ -242,14 +242,20 @@ export function ExercisePickerSheet({
         </label>
         <div className="exercise-picker__filters">
           <FastActivateButton
-            className={cn("exercise-picker__filter", equipment && "exercise-picker__filter--on")}
+            className={cn(
+              "exercise-picker__filter",
+              equipment ? "exercise-picker__filter--on" : undefined
+            )}
             aria-expanded={openFilter === "equipment"}
             onActivate={() => toggleFilter("equipment")}
           >
             {equipment ? equipmentLabel(equipment) : "All equipment"}
           </FastActivateButton>
           <FastActivateButton
-            className={cn("exercise-picker__filter", muscle && "exercise-picker__filter--on")}
+            className={cn(
+              "exercise-picker__filter",
+              muscle ? "exercise-picker__filter--on" : undefined
+            )}
             aria-expanded={openFilter === "muscle"}
             onActivate={() => toggleFilter("muscle")}
           >

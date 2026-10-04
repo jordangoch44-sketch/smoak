@@ -290,7 +290,7 @@ export function ClientWorkoutsEntry({
                       "client-workouts-cal__day",
                       !cell.inMonth && "client-workouts-cal__day--muted",
                       cell.isToday && "client-workouts-cal__day--today",
-                      pasteFrom && "client-workouts-cal__day--paste"
+                      pasteFrom ? "client-workouts-cal__day--paste" : undefined
                     )}
                     aria-label={
                       pasteFrom ? `Paste workout onto ${label}` : loggedLabel
