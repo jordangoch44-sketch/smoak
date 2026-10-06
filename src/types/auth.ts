@@ -40,5 +40,7 @@ export interface AuthSession {
   premiumTrialDaysRemaining?: number;
   /** Trial ended this session — show continue-Pro prompt once */
   premiumTrialJustEnded?: boolean;
+  /** OTG sample account finished the first-login walkthrough. */
+  specialistTourCompleted?: boolean;
   adminRole?: AdminRoleType;
 }

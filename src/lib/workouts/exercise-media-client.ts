@@ -21,7 +21,22 @@ interface MediaResponse {
 const EMPTY_GUIDE: ExerciseGuide = { gifUrl: null, overview: null, instructions: [] };
 
 let catalogPromise: Promise<Record<string, LibraryExerciseMedia>> | null = null;
+let catalogCache: Record<string, LibraryExerciseMedia> | null = null;
 const guidePromises = new Map<string, Promise<ExerciseGuide>>();
+const guideCache = new Map<string, ExerciseGuide>();
+
+function mediaKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+/** Still already loaded for the library circle, so the detail sheet can open on it. */
+export function cachedLibraryStill(name: string): string {
+  return catalogCache?.[mediaKey(name)]?.imageUrl ?? "";
+}
+
+export function cachedExerciseGuide(name: string): ExerciseGuide | null {
+  return guideCache.get(mediaKey(name)) ?? null;
+}
 
 export function loadLibraryExerciseMedia(): Promise<Record<string, LibraryExerciseMedia>> {
   if (!catalogPromise) {
@@ -29,8 +44,14 @@ export function loadLibraryExerciseMedia(): Promise<Record<string, LibraryExerci
       .then((response) =>
         response.ok ? (response.json() as Promise<MediaResponse>) : Promise.resolve({} as MediaResponse)
       )
-      .then((body) => body.media ?? {})
-      .catch(() => ({}));
+      .then((body) => {
+        catalogCache = body.media ?? {};
+        return catalogCache;
+      })
+      .catch(() => {
+        catalogCache = {};
+        return catalogCache;
+      });
   }
   return catalogPromise;
 }
@@ -55,11 +76,16 @@ export function loadExerciseGif(name: string): Promise<string | null> {
 }
 
 export function loadExerciseGuide(name: string): Promise<ExerciseGuide> {
-  const key = name.trim().toLowerCase();
+  const key = mediaKey(name);
   if (!key) return Promise.resolve(EMPTY_GUIDE);
+  const cached = guideCache.get(key);
+  if (cached) return Promise.resolve(cached);
   const existing = guidePromises.get(key);
   if (existing) return existing;
-  const load = fetchGuide(name);
+  const load = fetchGuide(name).then((guide) => {
+    guideCache.set(key, guide);
+    return guide;
+  });
   guidePromises.set(key, load);
   return load;
 }

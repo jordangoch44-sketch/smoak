@@ -90,7 +90,13 @@ export function useClientCoaching(userId: string | null) {
       if (!result.ok) return false;
       patchCoaching("client", userId, (current) => ({
         ...current,
-        workouts: upsertById(current.workouts, result.data),
+        workouts: current.workouts.some((item) => item.id === result.data.id)
+          ? current.workouts.map((item) => {
+              if (item.id !== result.data.id) return item;
+              if (item.status === "completed" && result.data.status !== "completed") return item;
+              return result.data;
+            })
+          : upsertById(current.workouts, result.data),
       }));
       return true;
     },

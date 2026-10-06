@@ -5,6 +5,7 @@ import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
 import { SwipeToRemove } from "@/components/dashboard/client/workouts/SwipeToRemove";
+import { findLibraryExercise } from "@/lib/workouts/exercise-catalog";
 import {
   createWorkoutExerciseId,
   exerciseWithSetLogs,
@@ -63,6 +64,11 @@ export function ExerciseSetBlock({
   const logs = logsOf(exercise);
   const [howToOpen, setHowToOpen] = useState(false);
   const named = exercise.name.trim();
+  const fromLibrary = Boolean(named && findLibraryExercise(named));
+
+  function openHowTo() {
+    if (named) setHowToOpen(true);
+  }
 
   function commitName(name: string) {
     if (name === exercise.name) {
@@ -105,9 +111,7 @@ export function ExerciseSetBlock({
             aria-label={named ? `How to do ${named}` : "Exercise photo"}
             disabled={!named}
             onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => {
-              if (named) setHowToOpen(true);
-            }}
+            onClick={openHowTo}
           >
             <ExerciseAvatar
               name={exercise.name}
@@ -115,24 +119,36 @@ export function ExerciseSetBlock({
               className="exercise-block__mark"
             />
           </button>
-          <input
-            className="exercise-block__name"
-            value={exercise.name}
-            autoFocus={autoFocus}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="words"
-            enterKeyHint="done"
-            placeholder="Exercise"
-            aria-label="Exercise name"
-            onChange={(event) => onChange({ ...exercise, name: event.target.value }, false)}
-            onBlur={(event) => commitName(event.currentTarget.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              event.currentTarget.blur();
-            }}
-          />
+          {fromLibrary ? (
+            <button
+              type="button"
+              className="exercise-block__name"
+              aria-label={`How to do ${named}`}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={openHowTo}
+            >
+              {named}
+            </button>
+          ) : (
+            <input
+              className="exercise-block__name"
+              value={exercise.name}
+              autoFocus={autoFocus}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="words"
+              enterKeyHint="done"
+              placeholder="Exercise"
+              aria-label="Exercise name"
+              onChange={(event) => onChange({ ...exercise, name: event.target.value }, false)}
+              onBlur={(event) => commitName(event.currentTarget.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                event.currentTarget.blur();
+              }}
+            />
+          )}
           <button
             type="button"
             className="exercise-block__more"

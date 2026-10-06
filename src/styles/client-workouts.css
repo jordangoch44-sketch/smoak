@@ -666,9 +666,63 @@
 
 .client-workouts-entry__goal-row {
   display: grid;
-  grid-template-columns: 3.6rem minmax(0, 1fr) 2.2rem;
+  grid-template-columns: 4.85rem minmax(0, 1fr) 2.2rem;
   align-items: center;
   gap: 0.6rem;
+}
+
+.client-workouts-entry__goal-row--specialist .client-workouts-entry__goal-label {
+  white-space: nowrap;
+}
+
+.client-workouts-entry__specialist {
+  grid-column: 2 / -1;
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.client-workouts-entry__specialist-empty {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.client-workouts-entry__specialist-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  overflow: hidden;
+  padding: 0.16rem 0.55rem;
+  border: 1px solid rgba(96, 165, 250, 0.72);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.22);
+  color: #dbeafe;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.client-workouts-entry__specialist-chip--action {
+  cursor: pointer;
+  font: inherit;
+  background: transparent;
+}
+
+.client-workouts-entry__specialist-chip--action:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.client-workouts-entry__specialist-error {
+  flex-basis: 100%;
+  font-size: 0.6875rem;
+  color: #fca5a5;
 }
 
 .client-workouts-entry__goal-label {
@@ -710,82 +764,73 @@
   transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.client-workouts-entry__days {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+.client-workouts-entry__goal-row--week .client-workouts-entry__goal-label {
+  white-space: nowrap;
+}
+
+.client-workouts-entry__week {
+  grid-column: 2 / -1;
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.35rem;
 }
 
-.client-workouts-entry__day {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.28rem;
+.client-workouts-entry__week-chip {
+  display: inline-flex;
+  max-width: 100%;
   min-width: 0;
-  padding: 0.4rem 0.15rem 0.38rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.85rem;
-  background: rgba(255, 255, 255, 0.04);
-  color: inherit;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.16rem 0.55rem;
+  border: 1px solid rgba(96, 165, 250, 0.72);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.22);
+  color: #dbeafe;
   font: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
   cursor: pointer;
 }
 
-.client-workouts-entry__day:active {
-  transform: scale(0.96);
+.client-workouts-entry__week-chip:active {
+  opacity: 0.72;
 }
 
-.client-workouts-entry__day--today {
-  border-color: #facc15;
-  background: rgba(250, 204, 21, 0.12);
+.client-workouts-entry__week-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.client-workouts-entry__day--done {
-  border-color: rgba(34, 197, 94, 0.35);
-  background: rgba(34, 197, 94, 0.1);
+.client-workouts-entry__week-date {
+  flex: 0 0 auto;
+  font-weight: 500;
+  color: rgba(219, 234, 254, 0.78);
 }
 
-.client-workouts-entry__day--today.client-workouts-entry__day--done {
-  border-color: #facc15;
-  background: rgba(34, 197, 94, 0.12);
+.client-workouts-entry__week-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: #4ade80;
 }
 
-.client-workouts-entry__day-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.62);
-}
-
-.client-workouts-entry__day--today .client-workouts-entry__day-label {
-  color: #fff;
-}
-
-.client-workouts-entry__day-mark {
-  display: flex;
-  min-width: 1.15rem;
-  height: 1.15rem;
+.client-workouts-entry__week-check {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.12rem;
-}
-
-.client-workouts-entry__day-slot {
-  display: block;
-  width: 0.55rem;
-  height: 0.55rem;
+  width: 1.05rem;
+  height: 1.05rem;
   border-radius: 999px;
-  border: 1.5px solid rgba(255, 255, 255, 0.28);
-  background: transparent;
-}
-
-.client-workouts-entry__day--empty .client-workouts-entry__day-slot {
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.client-workouts-entry__day:disabled {
-  cursor: default;
+  background: #22c55e;
+  color: #fff;
 }
 
 .client-workouts-page-cal {
@@ -1070,17 +1115,38 @@
   gap: 0.2rem;
 }
 
-/* A coach workout waiting on this day (hidden once it's in the log). */
-.client-workouts-cal__coach {
-  position: absolute;
-  top: 0.3rem;
-  right: 0.3rem;
-  width: 0.45rem;
-  height: 0.45rem;
+/* A workout a connected specialist sent for this day. Tap the day to open it.
+   Kept in the mark row under the date — never a corner badge. */
+.client-workouts-cal__marks > .client-workouts-cal__coach {
+  position: static;
+  inset: auto;
+  display: block;
+  flex: 0 0 0.95rem;
+  align-self: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin: 0;
+  border: 1.5px dashed #60a5fa;
   border-radius: 999px;
-  background: var(--smoac-color);
-  box-shadow: 0 0 8px rgba(var(--smoac-color-violet-rgb), 0.7);
+  background: transparent;
+  box-shadow: 0 0 8px rgba(96, 165, 250, 0.55);
   pointer-events: none;
+}
+
+.client-workouts-cal__marks > .client-workouts-cal__coach--done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-style: solid;
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.7);
+}
+
+.client-workouts-cal__coach--done .client-workouts-cal__check {
+  width: 0.68rem;
+  height: 0.68rem;
 }
 
 .client-workouts-cal__day {
@@ -1209,7 +1275,9 @@
 }
 
 .client-workouts-day--closing {
-  animation: client-workouts-day-down 0.38s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: client-workouts-day-down 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+  will-change: transform;
+  pointer-events: none;
 }
 
 @keyframes client-workouts-day-up {
@@ -1412,6 +1480,43 @@
   font-weight: 650;
   letter-spacing: 0.01em;
   line-height: 1.2;
+}
+
+.client-workouts-day__from-coach {
+  margin: 0.28rem 0 0;
+}
+
+.client-workouts-day__from-coach-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.client-workouts-day__from-coach-chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  padding: 0.12rem 0.5rem;
+  border: 1px solid rgba(96, 165, 250, 0.72);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.22);
+  color: #dbeafe;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.client-workouts-day__from-coach-hint {
+  margin: 0.28rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.48);
 }
 
 .client-workouts-day__sub {
@@ -1860,6 +1965,15 @@
     var(--smoac-color-glow-strong);
 }
 
+.client-workouts-btn--coach {
+  border-color: transparent;
+  background: #3b82f6;
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 0 16px rgba(59, 130, 246, 0.55);
+}
+
 .client-workouts-btn--ghost {
   border-color: transparent;
   background: transparent;
@@ -2017,6 +2131,15 @@ body.client-workouts-keyboard {
 
 .exercise-block__name:focus {
   outline: none;
+}
+
+button.exercise-block__name {
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .exercise-block__more {
@@ -2664,6 +2787,16 @@ body.client-workouts-keyboard {
   flex-direction: column;
   background: #000;
   color: #fff;
+  animation: exercise-howto-in 0.38s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes exercise-howto-in {
+  from {
+    transform: translate3d(0, 100%, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
 .exercise-howto__bar {
@@ -2725,12 +2858,100 @@ body.client-workouts-keyboard {
 .exercise-howto__stage .exercise-howto__media {
   width: auto;
   max-width: 100%;
-  height: auto;
+  height: 100%;
   max-height: 100%;
+  border-radius: 0;
   object-fit: contain;
   object-position: center;
   background: transparent;
-  border-radius: 0;
+}
+
+.exercise-avatar--wait {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .exercise-howto {
+    animation: none;
+  }
+}
+
+.workout-nice {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(4, 4, 8, 0.72);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.workout-nice__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 999px;
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 0 28px rgba(59, 130, 246, 0.7);
+  animation: workout-nice-pop 0.62s cubic-bezier(0.2, 1.45, 0.32, 1) both;
+}
+
+.workout-nice__text {
+  font-size: 2.15rem;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  animation: workout-nice-pop 0.62s cubic-bezier(0.2, 1.45, 0.32, 1) 0.08s both;
+}
+
+@keyframes workout-nice-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  58% {
+    transform: scale(1.16);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.workout-nice-error {
+  position: fixed;
+  z-index: 12000;
+  left: 50%;
+  bottom: max(1.25rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: min(22rem, calc(100% - 2rem));
+  padding: 0.7rem 0.9rem;
+  border: none;
+  border-radius: 0.9rem;
+  background: #1c1c24;
+  color: #fca5a5;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workout-nice__mark,
+  .workout-nice__text {
+    animation: none;
+  }
 }
 
 .exercise-howto__body {

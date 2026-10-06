@@ -6,7 +6,11 @@ import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseA
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { findLibraryExercise } from "@/lib/workouts/exercise-catalog";
-import { loadExerciseGuide, type ExerciseGuide } from "@/lib/workouts/exercise-media-client";
+import {
+  cachedExerciseGuide,
+  loadExerciseGuide,
+  type ExerciseGuide,
+} from "@/lib/workouts/exercise-media-client";
 
 /** Full-screen clip and numbered steps for one exercise. */
 export function ExerciseHowToSheet({
@@ -24,13 +28,13 @@ export function ExerciseHowToSheet({
   actionLabel?: string;
   onAction?: () => void;
 }) {
-  const [guide, setGuide] = useState<ExerciseGuide | null>(null);
-  const [ready, setReady] = useState(false);
   const library = findLibraryExercise(name);
+  const [guide, setGuide] = useState<ExerciseGuide | null>(() =>
+    library ? cachedExerciseGuide(name) : null
+  );
   const titleId = "exercise-howto-title";
 
   useEffect(() => {
-    setReady(true);
     const active = document.activeElement;
     if (active instanceof HTMLElement) active.blur();
   }, []);
@@ -40,8 +44,12 @@ export function ExerciseHowToSheet({
       setGuide(null);
       return;
     }
+    const cached = cachedExerciseGuide(name);
+    if (cached) {
+      setGuide(cached);
+      return;
+    }
     let cancelled = false;
-    setGuide(null);
     void loadExerciseGuide(name).then((next) => {
       if (!cancelled) setGuide(next);
     });
@@ -62,7 +70,6 @@ export function ExerciseHowToSheet({
   }, [onClose]);
 
   const steps = guide?.instructions ?? [];
-  if (!ready) return null;
 
   return createPortal(
     <div className="exercise-howto" role="dialog" aria-modal="true" aria-labelledby={titleId}>
@@ -89,19 +96,15 @@ export function ExerciseHowToSheet({
 
         <div className="exercise-howto__body">
           <h3 className="exercise-howto__name">{name}</h3>
-          {library ? (
-            guide ? (
-              steps.length > 0 ? (
-                <ol className="exercise-howto__steps">
-                  {steps.map((step, index) => (
-                    <li key={`${index}-${step}`}>{step}</li>
-                  ))}
-                </ol>
-              ) : (
-                <p className="exercise-howto__empty">No steps for this exercise yet.</p>
-              )
+          {library && guide ? (
+            steps.length > 0 ? (
+              <ol className="exercise-howto__steps">
+                {steps.map((step, index) => (
+                  <li key={`${index}-${step}`}>{step}</li>
+                ))}
+              </ol>
             ) : (
-              <p className="exercise-howto__empty">Loading the how-to…</p>
+              <p className="exercise-howto__empty">No steps for this exercise yet.</p>
             )
           ) : null}
           {actionLabel && onAction ? (

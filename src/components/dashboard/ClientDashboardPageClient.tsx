@@ -376,7 +376,7 @@ export function ClientDashboardPageClient() {
                 <MessageBubbleIcon className="h-5 w-5" />
               </span>
               <span className="client-dash-nav-row__copy">
-                <span className="client-dash-nav-row__title">Inquiries</span>
+                <span className="client-dash-nav-row__title">Messages</span>
                 <span className="client-dash-nav-row__meta">
                   {inquiriesSubtitle}
                 </span>

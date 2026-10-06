@@ -59,6 +59,7 @@ function sessionSignature(session: AuthSession | null): string {
     premiumTrialUsed: Boolean(session.premiumTrialUsed),
     premiumTrialActive: Boolean(session.premiumTrialActive),
     premiumTrialEndsAt: session.premiumTrialEndsAt ?? "",
+    specialistTourCompleted: Boolean(session.specialistTourCompleted),
   });
 }
 

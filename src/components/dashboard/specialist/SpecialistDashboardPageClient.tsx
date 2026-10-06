@@ -21,6 +21,7 @@ import {
   SpecialistOverviewBoard,
 } from "@/components/dashboard/specialist/SpecialistOverviewBoard";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
+import { WorkoutFinishedBanner } from "@/components/dashboard/specialist/WorkoutFinishedBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistFirstTour } from "@/components/dashboard/specialist/SpecialistFirstTour";
@@ -28,9 +29,16 @@ import { SpecialistLockedOverview } from "@/components/dashboard/specialist/Spec
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistPendingOverview } from "@/components/dashboard/specialist/SpecialistPendingOverview";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { useCoachingRoster } from "@/hooks/useCoachingRoster";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
+import {
+  rememberLocalFinishedSeen,
+  readLocalFinishedSeen,
+  unseenCoachCompletions,
+} from "@/lib/coaching/coach-workout";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
+  SPECIALIST_DASHBOARD_CLIENTS_HREF,
   SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
@@ -61,7 +69,9 @@ import {
 } from "@/lib/specialist-profile-welcome";
 import {
   SPECIALIST_TOUR_STEPS,
+  isSampleSpecialistTourAccount,
   markSpecialistTourComplete,
+  readSpecialistTourComplete,
   shouldOfferSpecialistTour,
   specialistTourSurfaceMatches,
   specialistTourTrialNote,
@@ -185,6 +195,10 @@ export function SpecialistDashboardPageClient() {
     isHydrated,
     showSampleMetrics,
   } = useSpecialistDashboard();
+  const coachingRoster = useCoachingRoster(trainer?.id ?? null);
+  const [locallySeenFinished, setLocallySeenFinished] = useState<string[]>(() =>
+    readLocalFinishedSeen()
+  );
 
   useEffect(() => {
     if (session?.premiumTrialJustEnded) {
@@ -202,6 +216,7 @@ export function SpecialistDashboardPageClient() {
         dashboardMode,
         force: tourForce,
         openInquiries,
+        completedOnAccount: session.specialistTourCompleted,
       })
     ) {
       return;
@@ -239,6 +254,13 @@ export function SpecialistDashboardPageClient() {
     tourForce,
   ]);
 
+  useEffect(() => {
+    if (!session?.userId || !isSampleSpecialistTourAccount(session.email)) return;
+    if (session.specialistTourCompleted) return;
+    if (!readSpecialistTourComplete(session.userId)) return;
+    markSpecialistTourComplete(session.userId);
+  }, [session]);
+
   const tourWasOpenRef = useRef(false);
   const tourClosedRef = useRef(false);
 
@@ -255,6 +277,7 @@ export function SpecialistDashboardPageClient() {
       dashboardMode,
       force: tourForce,
       openInquiries,
+      completedOnAccount: session.specialistTourCompleted,
     });
     if (!offer) return;
     if (session.userId) welcomeDismissedThisRuntime.add(session.userId);
@@ -441,6 +464,9 @@ export function SpecialistDashboardPageClient() {
               ? "profile"
               : "overview"
             : "status";
+  const finishedNotices = unseenCoachCompletions(coachingRoster.workouts).filter(
+    (workout) => !locallySeenFinished.includes(workout.id)
+  );
 
   function openProfileInquiries() {
     const latest = data.newLeads.find((lead) => lead.unread);
@@ -714,6 +740,28 @@ export function SpecialistDashboardPageClient() {
             onReview={openProfileInquiries}
             onDismiss={() => {
               void handleDismissInquiryNotifications();
+            }}
+          />
+        ) : null}
+
+        {premiumDashboard &&
+        !pendingOverview &&
+        (headerSurface === "overview" || searchParams.get("tab") === "clients") &&
+        finishedNotices.length > 0 ? (
+          <WorkoutFinishedBanner
+            notices={finishedNotices.map((workout) => ({
+              id: workout.id,
+              clientFirstName:
+                coachingRoster.roster.find((item) => item.id === workout.relationshipId)
+                  ?.clientFirstName ?? "Your client",
+              title: workout.title.trim() || "their workout",
+            }))}
+            onView={() => router.push(SPECIALIST_DASHBOARD_CLIENTS_HREF)}
+            onDismiss={() => {
+              const ids = finishedNotices.map((workout) => workout.id);
+              rememberLocalFinishedSeen(ids);
+              setLocallySeenFinished((current) => [...new Set([...current, ...ids])]);
+              void coachingRoster.dismissFinished(ids);
             }}
           />
         ) : null}

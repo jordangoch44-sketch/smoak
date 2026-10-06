@@ -137,6 +137,12 @@ interface ClientWorkoutDaySheetProps {
   coachSlot?: ReactNode;
   /** This day's log already includes a workout the coach sent. */
   coachAssigned?: boolean;
+  /** Business name of the coach who sent this day's workout. */
+  fromCoach?: string | null;
+  /** Shown once every set is checked. Resolves to an error message, or null once finished. */
+  onFinish?: (exercises: ClientWorkoutExercise[]) => Promise<string | null>;
+  /** Called after the sheet has slid away, with the finish result. */
+  onFinished?: (message: string | null) => void;
   /**
    * Earlier exercises, newest first. Naming a new exercise copies that
    * session's sets, weights, and reps into the rows.
@@ -161,6 +167,9 @@ export function ClientWorkoutDaySheet({
   onCopy,
   coachSlot,
   coachAssigned = false,
+  fromCoach = null,
+  onFinish,
+  onFinished,
   priorSets = [],
   send,
 }: ClientWorkoutDaySheetProps) {
@@ -187,6 +196,7 @@ export function ClientWorkoutDaySheet({
       : "pick"
   );
   const [sending, setSending] = useState(false);
+  const [finishing, setFinishing] = useState(false);
   const [focusExerciseId, setFocusExerciseId] = useState<string | null>(null);
   const [menuExerciseId, setMenuExerciseId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -201,8 +211,20 @@ export function ClientWorkoutDaySheet({
   const sheetRef = useRef<HTMLDivElement>(null);
   const exercisesRef = useRef(exercises);
   const actionsOpenRef = useRef(false);
+  const afterCloseRef = useRef<(() => void) | null>(null);
+  const onFinishRef = useRef(onFinish);
+  const onFinishedRef = useRef(onFinished);
   exercisesRef.current = exercises;
   actionsOpenRef.current = actionsOpen;
+  onFinishRef.current = onFinish ?? onFinishRef.current;
+  onFinishedRef.current = onFinished;
+
+  function finishClose() {
+    const after = afterCloseRef.current;
+    afterCloseRef.current = null;
+    onClose();
+    after?.();
+  }
 
   function requestClose() {
     if (closing) return;
@@ -213,7 +235,7 @@ export function ClientWorkoutDaySheet({
     setWorkoutKeyboardChrome(false);
     swallowTrailingDismissTap();
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      onClose();
+      finishClose();
       return;
     }
     setClosing(true);
@@ -520,6 +542,32 @@ export function ClientWorkoutDaySheet({
     requestClose();
   }
 
+  const readyToFinish =
+    Boolean(fromCoach && onFinish) &&
+    exercises.length > 0 &&
+    exercises.every((exercise) => exercise.name.trim() && exercise.completed === true);
+
+  function handleFinish() {
+    if (!onFinish || finishing) return;
+    const next = exercisesRef.current;
+    if (!persist(next)) {
+      setError("Couldn’t save the workout.");
+      return;
+    }
+    const named = next.filter((exercise) => exercise.name.trim());
+    const finish = onFinishRef.current;
+    setError(null);
+    setFinishing(true);
+    afterCloseRef.current = () => {
+      if (!finish) return;
+      onFinishedRef.current?.(null);
+      void finish(named).then((message) => {
+        if (message) onFinishedRef.current?.(message);
+      });
+    };
+    requestClose();
+  }
+
   function handlePickContinue() {
     if (!wantCardio && !wantWorkout) {
       setError("Choose cardio, workout, or both.");
@@ -699,7 +747,7 @@ export function ClientWorkoutDaySheet({
           if (event.target !== event.currentTarget) return;
           if (!closing) return;
           if (event.animationName !== "client-workouts-day-down") return;
-          onClose();
+          finishClose();
         }}
       >
         <div className="client-workouts-day__top">
@@ -719,7 +767,7 @@ export function ClientWorkoutDaySheet({
               className="client-workouts-day__heading"
             >
               {send ? `For ${send.clientName}` : heading}
-              {hasLoggedDay && !send ? " ✓" : ""}
+              {hasLoggedDay && !send && !(fromCoach && onFinish) ? " ✓" : ""}
               {title.trim() ? (
                 <span className="client-workouts-day__title-chip">{title.trim()}</span>
               ) : null}
@@ -729,7 +777,7 @@ export function ClientWorkoutDaySheet({
                 </span>
               ) : null}
             </h3>
-            {!send && (step === "cardio" || step === "workout") ? (
+            {!send && !fromCoach && (step === "cardio" || step === "workout") ? (
               <p
                 className={cn(
                   "client-workouts-day__step",
@@ -746,7 +794,21 @@ export function ClientWorkoutDaySheet({
                 )}
               </p>
             ) : null}
-            {send ? send.dateControl : <p className="client-workouts-day__sub">{weekLabel}</p>}
+            {fromCoach ? (
+              <div className="client-workouts-day__from-coach">
+                <p className="client-workouts-day__from-coach-line">
+                  From coach{" "}
+                  <span className="client-workouts-day__from-coach-chip">{fromCoach}</span>
+                </p>
+                <p className="client-workouts-day__from-coach-hint">
+                  ( Please Checkmark all sets to finish workout )
+                </p>
+              </div>
+            ) : send ? (
+              send.dateControl
+            ) : (
+              <p className="client-workouts-day__sub">{weekLabel}</p>
+            )}
           </div>
           {send ? (
             <FastActivateButton
@@ -1065,7 +1127,19 @@ export function ClientWorkoutDaySheet({
           {error ? <p className="client-workouts-error">{error}</p> : null}
         </div>
 
-        {send || step === "workout" ? null : (
+        {fromCoach && step === "workout" && readyToFinish ? (
+          <div className="client-workouts-day__footer">
+            <div className="client-workouts-day__footer-inner">
+              <FastActivateButton
+                className="client-workouts-btn client-workouts-btn--coach"
+                disabled={finishing}
+                onActivate={() => void handleFinish()}
+              >
+                {finishing ? "Finishing…" : "Finish workout"}
+              </FastActivateButton>
+            </div>
+          </div>
+        ) : send || step === "workout" ? null : (
         <div
           className="client-workouts-day__footer"
           aria-hidden={typing || undefined}

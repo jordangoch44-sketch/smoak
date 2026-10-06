@@ -455,7 +455,7 @@ export function InquiryInboxPanel({
             className="smoac-control inquiry-thread__back-text"
             onClick={handleBack}
           >
-            Back to inquiries
+            Back to {viewer === "client" ? "messages" : "inquiries"}
           </button>
         </div>
       )}
@@ -600,7 +600,7 @@ export function InquiryInboxPanel({
             className="smoac-control inquiry-thread__back-text"
             onClick={handleBack}
           >
-            Back to inquiries
+            Back to {viewer === "client" ? "messages" : "inquiries"}
           </button>
         </div>
       );

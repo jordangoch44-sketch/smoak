@@ -1,5 +1,5 @@
 /**
- * Coaching emails: roster invite, accepted (both sides), and new workout from a specialist.
+ * Coaching emails: roster invite, accepted (both sides), and a workout sent by a specialist.
  */
 import { sendOutboundEmail, type EmailSendResult } from "@/lib/email/email-transport";
 import {
@@ -116,7 +116,7 @@ export async function sendCoachWorkoutEmail(input: {
   const paragraphs = [
     greeting(input.clientFirstName),
     `${coach} sent you ${name} for ${day} — ${input.exerciseCount} exercise${input.exerciseCount === 1 ? "" : "s"}.`,
-    "It’s on your Workouts calendar. Tap Start when you’re ready.",
+    "It’s on your Workouts calendar. Open that day and check off each set as you go.",
   ];
   return sendOutboundEmail({
     to: input.to,

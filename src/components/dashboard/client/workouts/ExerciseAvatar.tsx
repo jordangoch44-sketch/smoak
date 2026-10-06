@@ -5,12 +5,14 @@ import { ExerciseMark } from "@/components/dashboard/client/workouts/ExerciseMar
 import { LOGO_SRC } from "@/lib/brand";
 import { findLibraryExercise } from "@/lib/workouts/exercise-catalog";
 import {
+  cachedExerciseGuide,
+  cachedLibraryStill,
   loadExerciseGif,
   loadLibraryExerciseMedia,
 } from "@/lib/workouts/exercise-media-client";
 import { cn } from "@/lib/utils";
 
-/** Library exercises use an ExerciseDB still, or the drawn figure. Created ones use a photo, or the SMOAC mark. */
+/** Library exercises use the ExerciseDB photo. Created ones use their photo, or the SMOAC mark. */
 export function ExerciseAvatar({
   name,
   imageUrl,
@@ -28,32 +30,45 @@ export function ExerciseAvatar({
 }) {
   const ownPhoto = imageUrl?.trim() || "";
   const fromLibrary = !ownPhoto && Boolean(name.trim() && findLibraryExercise(name));
-  const [remote, setRemote] = useState("");
+  const [still, setStill] = useState(() => (fromLibrary ? cachedLibraryStill(name) : ""));
+  const [gif, setGif] = useState(() =>
+    animated && fromLibrary ? cachedExerciseGuide(name)?.gifUrl ?? "" : ""
+  );
 
   useEffect(() => {
     if (!fromLibrary) return;
     let cancelled = false;
     const key = name.trim().toLowerCase();
-    const load = animated
-      ? loadExerciseGif(name).then(async (gif) => {
-          if (gif) return gif;
-          const media = await loadLibraryExerciseMedia();
-          return media[key]?.imageUrl ?? "";
-        })
-      : loadLibraryExerciseMedia().then((media) => media[key]?.imageUrl ?? "");
-    void load.then((url) => {
-      if (!cancelled && url) setRemote(url);
+    void loadLibraryExerciseMedia().then((media) => {
+      const url = media[key]?.imageUrl ?? "";
+      if (!cancelled && url) setStill(url);
+    });
+    if (!animated) {
+      return () => {
+        cancelled = true;
+      };
+    }
+    void loadExerciseGif(name).then((url) => {
+      if (!cancelled && url) setGif(url);
     });
     return () => {
       cancelled = true;
     };
   }, [animated, fromLibrary, name]);
 
-  const photo = ownPhoto || remote;
+  const photo = ownPhoto || gif || still;
   if (photo) {
     return <img src={photo} alt="" className={cn("exercise-mark exercise-avatar", className)} />;
   }
-  if (logoWhenEmpty || (name.trim() && !findLibraryExercise(name))) {
+  if (fromLibrary) {
+    return (
+      <span
+        className={cn("exercise-mark exercise-avatar exercise-avatar--wait", className)}
+        aria-hidden
+      />
+    );
+  }
+  if (logoWhenEmpty || name.trim()) {
     return (
       <img src={LOGO_SRC} alt="" className={cn("exercise-mark exercise-avatar", className)} />
     );

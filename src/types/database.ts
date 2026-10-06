@@ -10,6 +10,8 @@ export interface UserRoleRow {
   premium_trial_day10_emailed_at?: string | null;
   premium_trial_day20_emailed_at?: string | null;
   premium_trial_last_day_emailed_at?: string | null;
+  /** Set once the OTG sample account finishes the first-login walkthrough. */
+  specialist_tour_completed_at?: string | null;
   created_at: string;
   updated_at: string;
 }

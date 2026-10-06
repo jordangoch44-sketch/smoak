@@ -1,12 +1,18 @@
 /**
  * First-login specialist walkthrough.
  * Sample account only — other specialists keep the existing welcome modal.
+ * Completion is saved on the account so Safari private browsing cannot replay it.
  */
+import {
+  getAuthSessionSnapshot,
+  setAuthSession,
+} from "@/lib/auth-session-store";
 import type { SpecialistDashboardMode } from "@/lib/specialist-dashboard-mode";
 
 export const SAMPLE_SPECIALIST_TOUR_EMAIL = "jordan@otgtrain.com";
 
 const STORAGE_KEY = "smoac.specialist-first-tour.v1";
+const completedIds = new Set<string>();
 
 export type SpecialistTourStepId =
   | "live"
@@ -88,20 +94,81 @@ export function specialistTourEligibleMode(
   );
 }
 
-export function readSpecialistTourComplete(userId: string): boolean {
+function tourStorageKey(userId: string): string {
+  return `${STORAGE_KEY}:${userId}`;
+}
+
+function readStoredTourFlag(userId: string): boolean {
   if (typeof window === "undefined") return false;
+  const key = tourStorageKey(userId);
   try {
-    return window.localStorage.getItem(`${STORAGE_KEY}:${userId}`) === "done";
+    if (window.localStorage.getItem(key) === "done") return true;
   } catch {
-    return false;
+    /* Safari private browsing can block localStorage. */
+  }
+  try {
+    if (window.sessionStorage.getItem(key) === "done") return true;
+  } catch {
+    /* Safari private browsing can block sessionStorage too. */
+  }
+  return false;
+}
+
+function writeStoredTourFlag(userId: string): void {
+  if (typeof window === "undefined") return;
+  const key = tourStorageKey(userId);
+  try {
+    window.localStorage.setItem(key, "done");
+  } catch {
+    /* private mode */
+  }
+  try {
+    window.sessionStorage.setItem(key, "done");
+  } catch {
+    /* private mode */
   }
 }
 
+export function readSpecialistTourComplete(userId: string): boolean {
+  if (completedIds.has(userId)) return true;
+  if (!readStoredTourFlag(userId)) return false;
+  completedIds.add(userId);
+  return true;
+}
+
+function patchSessionTourComplete(userId: string): void {
+  const current = getAuthSessionSnapshot();
+  if (!current || current.userId !== userId || current.specialistTourCompleted) {
+    return;
+  }
+  setAuthSession({ ...current, specialistTourCompleted: true });
+}
+
+/** Remember on this device and on the account. Safe to call more than once. */
 export function markSpecialistTourComplete(userId: string): void {
+  completedIds.add(userId);
+  writeStoredTourFlag(userId);
+  patchSessionTourComplete(userId);
+  void persistSpecialistTourCompletedAt();
+}
+
+async function persistSpecialistTourCompletedAt(): Promise<void> {
   try {
-    window.localStorage.setItem(`${STORAGE_KEY}:${userId}`, "done");
+    const { getMarketplaceAuthClient } = await import(
+      "@/lib/auth/marketplace-auth"
+    );
+    const supabase = getMarketplaceAuthClient();
+    if (!supabase) return;
+    const { data } = await supabase.auth.getUser();
+    const userId = data.user?.id;
+    if (!userId) return;
+    await supabase
+      .from("user_roles")
+      .update({ specialist_tour_completed_at: new Date().toISOString() })
+      .eq("user_id", userId)
+      .is("specialist_tour_completed_at", null);
   } catch {
-    /* private mode */
+    /* Column may not be applied on this database yet. */
   }
 }
 
@@ -112,12 +179,15 @@ export function shouldOfferSpecialistTour(input: {
   dashboardMode: SpecialistDashboardMode;
   force?: boolean;
   openInquiries?: boolean;
+  /** Saved on the account — survives a new Safari private window. */
+  completedOnAccount?: boolean;
 }): boolean {
   if (!isSampleSpecialistTourAccount(input.email)) return false;
   if (!input.userId) return false;
   if (input.openInquiries) return false;
   if (!specialistTourEligibleMode(input.dashboardMode)) return false;
   if (input.force) return true;
+  if (input.completedOnAccount) return false;
   return !readSpecialistTourComplete(input.userId);
 }
 

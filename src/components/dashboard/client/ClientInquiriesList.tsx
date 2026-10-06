@@ -31,9 +31,9 @@ export function ClientInquiriesList({
       viewer="client"
       senderUserId={userId}
       variant="page"
-      listTitle="Inquiries"
+      listTitle="Messages"
       initialConversationId={initialConversationId}
-      emptyMessage="Inquiries you send to specialists appear here. They’ll reply in this thread."
+      emptyMessage="Messages with specialists appear here. They’ll reply in this thread."
       emptyActionHref="/explore"
       emptyActionLabel="Find a specialist"
       onOpenConversation={onConversationOpened}

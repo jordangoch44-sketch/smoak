@@ -35,6 +35,10 @@ export interface CoachWorkout {
   sentAt: string;
   startedAt: string | null;
   completedAt: string | null;
+  /** Set once the finish email to the specialist has been sent. */
+  completionNotifiedAt: string | null;
+  /** Set when the specialist dismisses the portal notice. */
+  completionSeenAt: string | null;
 }
 
 export interface CoachingRelationshipRow {
@@ -64,4 +68,6 @@ export interface CoachWorkoutRow {
   sent_at: string;
   started_at: string | null;
   completed_at: string | null;
+  completion_notified_at?: string | null;
+  completion_seen_at?: string | null;
 }

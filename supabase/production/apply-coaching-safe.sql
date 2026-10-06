@@ -257,10 +257,14 @@ begin
     raise exception 'bad_status' using errcode = '22023';
   end if;
   update public.coach_workouts
-     set status = p_status,
-         client_log = p_client_log,
+     set client_log = p_client_log,
          started_at = coalesce(started_at, now()),
-         completed_at = case when p_status = 'completed' then coalesce(completed_at, now()) else null end,
+         status = case when status = 'completed' then status else p_status end,
+         completed_at = case
+           when status = 'completed' then completed_at
+           when p_status = 'completed' then coalesce(completed_at, now())
+           else null
+         end,
          updated_at = now()
    where id = p_workout_id
      and client_user_id = auth.uid()

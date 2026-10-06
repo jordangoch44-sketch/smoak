@@ -6,6 +6,7 @@ import {
   createCoachingInviteLink,
   deleteCoachWorkout,
   endCoaching,
+  markCoachWorkoutCompletionSeen,
   requestRosterInvite,
   requestSendCoachWorkout,
   type CoachingResult,
@@ -101,6 +102,24 @@ export function useCoachingRoster(specialistId: string | null) {
     [specialistId]
   );
 
+  const dismissFinished = useCallback(
+    async (workoutIds: string[]) => {
+      const supabase = getMarketplaceAuthClient();
+      if (!specialistId || !supabase || workoutIds.length === 0) return false;
+      const results = await Promise.all(
+        workoutIds.map((workoutId) => markCoachWorkoutCompletionSeen(supabase, workoutId))
+      );
+      const seen = results.flatMap((result) => (result.ok ? [result.data] : []));
+      if (seen.length === 0) return false;
+      patchCoaching("specialist", specialistId, (current) => ({
+        ...current,
+        workouts: seen.reduce((list, item) => upsertById(list, item), current.workouts),
+      }));
+      return true;
+    },
+    [specialistId]
+  );
+
   const removeClient = useCallback(
     async (relationshipId: string) => {
       const supabase = getMarketplaceAuthClient();
@@ -130,7 +149,8 @@ export function useCoachingRoster(specialistId: string | null) {
       sendWorkout,
       removeWorkout,
       removeClient,
+      dismissFinished,
     }),
-    [snapshot, invite, createInviteLink, sendWorkout, removeWorkout, removeClient]
+    [snapshot, invite, createInviteLink, sendWorkout, removeWorkout, removeClient, dismissFinished]
   );
 }

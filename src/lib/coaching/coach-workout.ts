@@ -6,7 +6,13 @@ import type {
   CoachWorkoutRow,
   CoachWorkoutStatus,
 } from "@/types/coaching";
-import { parseLocalDateKey, sanitizeWorkoutExercises } from "@/lib/workouts/client-workout";
+import {
+  addDays,
+  parseLocalDateKey,
+  sanitizeWorkoutExercises,
+  startOfWeekSunday,
+  toLocalDateKey,
+} from "@/lib/workouts/client-workout";
 
 export const COACH_NOTE_MAX_LENGTH = 500;
 
@@ -44,6 +50,102 @@ export function mapCoachWorkout(row: CoachWorkoutRow): CoachWorkout {
     sentAt: row.sent_at,
     startedAt: row.started_at,
     completedAt: row.completed_at,
+    completionNotifiedAt: row.completion_notified_at ?? null,
+    completionSeenAt: row.completion_seen_at ?? null,
+  };
+}
+
+/**
+ * Open specialist workouts through the end of this Sunday–Saturday week.
+ * A finished workout drops off. The week reads completed once every workout
+ * dated this week is done and nothing earlier is still open.
+ */
+export function coachWeekPlan(
+  workouts: readonly CoachWorkout[],
+  today: Date
+): { open: CoachWorkout[]; completed: boolean } {
+  const weekStart = startOfWeekSunday(today);
+  const startKey = toLocalDateKey(weekStart);
+  const endKey = toLocalDateKey(addDays(weekStart, 6));
+  const open = workouts
+    .filter((workout) => workout.status !== "completed" && workout.dateKey <= endKey)
+    .slice()
+    .sort((a, b) => a.dateKey.localeCompare(b.dateKey) || a.title.localeCompare(b.title));
+  const thisWeek = workouts.filter(
+    (workout) => workout.dateKey >= startKey && workout.dateKey <= endKey
+  );
+  return {
+    open,
+    completed: thisWeek.length > 0 && thisWeek.every((workout) => workout.status === "completed") && open.length === 0,
+  };
+}
+
+/** Calendar mark for a day that has coach workouts. */
+export function coachDayMark(
+  workouts: readonly CoachWorkout[] | undefined
+): "open" | "done" | null {
+  if (!workouts || workouts.length === 0) return null;
+  return workouts.every((workout) => workout.status === "completed") ? "done" : "open";
+}
+
+const FINISHED_NOTICE_MS = 14 * 24 * 60 * 60 * 1000;
+
+const FINISHED_SEEN_KEY = "smoac.coach-finished-seen";
+
+/** Browser fallback so Not now still clears the notice before the SQL columns exist. */
+export function readLocalFinishedSeen(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(FINISHED_SEEN_KEY) || "[]") as unknown;
+    return Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberLocalFinishedSeen(ids: readonly string[]) {
+  if (typeof window === "undefined" || ids.length === 0) return;
+  const next = [...new Set([...readLocalFinishedSeen(), ...ids])].slice(-200);
+  window.localStorage.setItem(FINISHED_SEEN_KEY, JSON.stringify(next));
+}
+
+/** Completed coach workouts the specialist has not dismissed, from the last two weeks. */
+export function unseenCoachCompletions(
+  workouts: readonly CoachWorkout[],
+  now = Date.now()
+): CoachWorkout[] {
+  return workouts.filter((workout) => {
+    if (workout.status !== "completed" || workout.completionSeenAt) return false;
+    const stamp = workout.completedAt ? Date.parse(workout.completedAt) : NaN;
+    return Number.isFinite(stamp) && now - stamp <= FINISHED_NOTICE_MS;
+  });
+}
+
+/**
+ * Day sheet contents for a coach-sent day. Open workouts are already filled in,
+ * keeping the coach exercise ids so Finish can match them back.
+ */
+export function coachDayForSheet(
+  dateKey: string,
+  day: ClientWorkoutDay | undefined,
+  workouts: readonly CoachWorkout[]
+): ClientWorkoutDay | undefined {
+  const open = workouts.filter((workout) => workout.status !== "completed");
+  if (open.length === 0) return day;
+  const exercises = open.reduce(
+    (list, workout) => appendCoachExercises(workout, list),
+    day?.exercises ?? []
+  );
+  const unchanged =
+    day != null &&
+    exercises.length === day.exercises.length &&
+    exercises.every((exercise, index) => exercise.id === day.exercises[index]?.id);
+  if (unchanged) return day;
+  return {
+    date: dateKey,
+    title: day?.title.trim() || open.find((workout) => workout.title.trim())?.title || "",
+    exercises,
+    ...(day?.cardio ? { cardio: day.cardio } : {}),
   };
 }
 

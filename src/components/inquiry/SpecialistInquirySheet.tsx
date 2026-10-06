@@ -681,7 +681,7 @@ export function SpecialistInquirySheet({
               {view === "success" ? (
                 <div className="inquiry-sheet__state">
                   <p className="inquiry-sheet__success">
-                    Sent to {specialistName}. They’ll reply in your Inquiries.
+                    Sent to {specialistName}. They’ll reply in your Messages.
                   </p>
                   <p className="inquiry-sheet__support">
                     {emailMode === "resend"
@@ -693,7 +693,7 @@ export function SpecialistInquirySheet({
                     className="smoac-control inquiry-sheet__submit"
                     onActivate={onClose}
                   >
-                    View your inquiry
+                    View messages
                   </HeaderChromeLink>
                   <FastActivateButton
                     className="smoac-control inquiry-sheet__text-btn"

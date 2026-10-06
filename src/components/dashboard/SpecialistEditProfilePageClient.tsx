@@ -228,6 +228,7 @@ export function SpecialistEditProfilePageClient({
         userId: session.userId,
         dashboardMode,
         force: forceTour,
+        completedOnAccount: session.specialistTourCompleted,
       })
     ) {
       return;

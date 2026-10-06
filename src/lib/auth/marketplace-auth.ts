@@ -195,6 +195,7 @@ export async function buildAuthSessionFromSupabaseUser(
     premiumTrialActive,
     premiumTrialDaysRemaining,
     premiumTrialJustEnded,
+    specialistTourCompleted: Boolean(roleRow.specialist_tour_completed_at),
     displayName: profile
       ? displayNameFromProfile(
           profile.first_name,

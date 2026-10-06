@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
@@ -33,15 +33,16 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
 import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
-import type { CoachWorkout } from "@/types/coaching";
-import { CoachWorkoutCard } from "@/components/dashboard/client/coaching/CoachWorkoutCard";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
 import {
-  appendCoachExercises,
+  coachDayForSheet,
+  coachDayMark,
   coachWorkoutHistoryExercises,
-  isCoachWorkoutInLog,
+  coachWorkoutProgress,
 } from "@/lib/coaching/coach-workout";
 import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
+import { WorkoutNiceOverlay } from "./WorkoutNiceOverlay";
+import { CoachDayMark } from "./CoachDayMark";
 import "@/styles/client-workouts.css";
 
 const LOCK_CLASS = "client-workouts-open";
@@ -66,6 +67,9 @@ export function ClientWorkoutsModal({
   const [todayKey, setTodayKey] = useState(() => toLocalDateKey(new Date()));
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [pasteSourceKey, setPasteSourceKey] = useState<string | null>(null);
+  const [celebrate, setCelebrate] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
+  const dismissNice = useCallback(() => setCelebrate(false), []);
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
   const ignoreDayTapUntilRef = useRef(0);
@@ -73,7 +77,6 @@ export function ClientWorkoutsModal({
   const { log, saveDay, removeDay, copyDayTo } = useClientWorkouts(userId);
   const coaching = useClientCoaching(userId);
   /** Bumped after Start so the day sheet remounts with the new exercises. */
-  const [sheetVersion, setSheetVersion] = useState(0);
   const backdropDismiss = useOwnPointerDismiss(() => {
     if (Date.now() < ignoreBackdropUntilRef.current) return;
     onClose();
@@ -173,46 +176,49 @@ export function ClientWorkoutsModal({
     return saveDay(selectedDateKey, exercises, title, cardio);
   }
 
-  /** Coach workouts always log on the day they're done: today. */
-  function startCoachWorkout(workout: CoachWorkout) {
-    const existing = log.days[todayKey];
-    const saved = saveDay(
-      todayKey,
-      appendCoachExercises(workout, existing?.exercises ?? []),
-      existing?.title || workout.title,
-      existing?.cardio ?? null
-    );
-    if (!saved) return;
-    setMonth(startOfMonth(parseLocalDateKey(todayKey)));
-    setSelectedDateKey(todayKey);
-    setSheetVersion((version) => version + 1);
-  }
-
-  function hasPendingCoachWorkout(dateKey: string): boolean {
-    return (coaching.workoutsByDate.get(dateKey) ?? []).some(
-      (workout) => !isCoachWorkoutInLog(workout, log.days)
-    );
-  }
-
   const selectedCoachWorkouts = selectedDateKey
     ? (coaching.workoutsByDate.get(selectedDateKey) ?? [])
     : [];
-  const pendingCoachWorkouts = selectedCoachWorkouts.filter(
-    (workout) => !isCoachWorkoutInLog(workout, log.days)
-  );
   const selectedDay = selectedDateKey ? log.days[selectedDateKey] : undefined;
-  const coachAssigned = Boolean(
-    selectedDay &&
-      selectedCoachWorkouts.some((workout) =>
-        workout.exercises.some((exercise) =>
-          selectedDay.exercises.some((logged) => logged.id === exercise.id)
-        )
-      )
-  );
+  const sheetWorkout = selectedDateKey
+    ? coachDayForSheet(selectedDateKey, selectedDay, selectedCoachWorkouts)
+    : undefined;
+  const fromCoach = (() => {
+    const names = [
+      ...new Set(
+        selectedCoachWorkouts
+          .map((workout) => coaching.coachNameFor(workout).trim())
+          .filter(Boolean)
+      ),
+    ];
+    if (names.length > 0) return names.join(", ");
+    return selectedCoachWorkouts.length > 0 ? "your coach" : null;
+  })();
+  const coachStillOpen = selectedCoachWorkouts.some((workout) => workout.status !== "completed");
 
-  if (!mounted || !open || typeof document === "undefined") return null;
+  async function finishCoachWorkouts(exercises: ClientWorkoutExercise[]) {
+    const open = selectedCoachWorkouts.filter((workout) => workout.status !== "completed");
+    for (const workout of open) {
+      const progress = coachWorkoutProgress(workout, exercises);
+      const saved = await coaching.reportProgress(workout.id, "completed", progress.clientLog);
+      if (!saved) return "Couldn’t finish the workout. Try again.";
+    }
+    return null;
+  }
 
-  return createPortal(
+  function handleWorkoutFinished(message: string | null) {
+    if (message) {
+      setFinishError(message);
+      return;
+    }
+    setFinishError(null);
+    setCelebrate(true);
+  }
+
+  if (!mounted || typeof document === "undefined") return null;
+  if (!open && !celebrate && !finishError) return null;
+
+  const workouts = open ? createPortal(
     <div className="client-workouts-root" role="presentation">
       <button
         type="button"
@@ -320,13 +326,17 @@ export function ClientWorkoutsModal({
           <div className="client-workouts-cal" role="grid" aria-label="Workout calendar">
             {cells.map((cell) => {
               const cardio = hasCardioOnDay(log, cell.dateKey);
-              const strength = hasStrengthOnDay(log, cell.dateKey);
+              const coachMark = coachDayMark(coaching.workoutsByDate.get(cell.dateKey));
+              const strength = hasStrengthOnDay(log, cell.dateKey) && !coachMark;
               const trained = cardio || strength;
               const dayTitle = workoutTitleOnDay(log, cell.dateKey);
               const selected = selectedDateKey === cell.dateKey;
-              const coachPending = hasPendingCoachWorkout(cell.dateKey);
               const label = `${formatWorkoutDayAriaLabel(cell.dateKey)}${
-                coachPending ? ", workout from your coach" : ""
+                coachMark === "done"
+                  ? ", coach workout finished"
+                  : coachMark === "open"
+                    ? ", workout from your coach"
+                    : ""
               }`;
               const loggedLabel = cardio && strength
                 ? `${label}, cardio and workout logged`
@@ -356,8 +366,7 @@ export function ClientWorkoutsModal({
                   onActivate={() => handleDayActivate(cell.dateKey)}
                 >
                   <span className="client-workouts-cal__num">{cell.day}</span>
-                  {coachPending ? <span className="client-workouts-cal__coach" aria-hidden /> : null}
-                  {trained ? (
+                  {trained || coachMark ? (
                     <span className="client-workouts-cal__marks" aria-hidden>
                       {cardio ? (
                         <span className="client-workouts-cal__mark client-workouts-cal__mark--cardio">
@@ -366,13 +375,14 @@ export function ClientWorkoutsModal({
                           </span>
                         </span>
                       ) : null}
-                      {strength ? (
+                      {strength && coachMark !== "done" ? (
                         <span className="client-workouts-cal__mark">
                           <span className="client-workouts-cal__check">
                             <CheckIcon />
                           </span>
                         </span>
                       ) : null}
+                      {coachMark ? <CoachDayMark done={coachMark === "done"} /> : null}
                     </span>
                   ) : (
                     <span className="client-workouts-cal__dot" aria-hidden />
@@ -387,26 +397,12 @@ export function ClientWorkoutsModal({
       ) : null}
       {selectedDateKey && !pasteSourceKey ? (
         <ClientWorkoutDaySheet
-          key={`${selectedDateKey}:${sheetVersion}`}
+          key={selectedDateKey}
           dateKey={selectedDateKey}
-          coachAssigned={coachAssigned}
-          coachSlot={
-            pendingCoachWorkouts.length > 0 ? (
-              <div className="coach-workout-stack">
-                {pendingCoachWorkouts.map((workout) => (
-                  <CoachWorkoutCard
-                    key={workout.id}
-                    workout={workout}
-                    coachName={coaching.coachNameFor(workout)}
-                    todayKey={todayKey}
-                    inLog={false}
-                    onStart={() => startCoachWorkout(workout)}
-                  />
-                ))}
-              </div>
-            ) : null
-          }
-          workout={log.days[selectedDateKey]}
+          fromCoach={fromCoach}
+          onFinish={coachStillOpen ? finishCoachWorkouts : undefined}
+          onFinished={handleWorkoutFinished}
+          workout={sheetWorkout}
           priorSets={exerciseMemoryBefore(
             [
               ...Object.values(log.days).map((day) => ({
@@ -440,5 +436,24 @@ export function ClientWorkoutsModal({
       ) : null}
     </div>,
     document.body
+  ) : null;
+
+  return (
+    <>
+      {workouts}
+      {celebrate ? <WorkoutNiceOverlay onDone={dismissNice} /> : null}
+      {finishError
+        ? createPortal(
+            <button
+              type="button"
+              className="workout-nice-error"
+              onClick={() => setFinishError(null)}
+            >
+              {finishError}
+            </button>,
+            document.body
+          )
+        : null}
+    </>
   );
 }

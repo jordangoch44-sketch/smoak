@@ -221,6 +221,17 @@ export async function deleteCoachWorkout(
   return { ok: true, data: null };
 }
 
+export async function markCoachWorkoutCompletionSeen(
+  supabase: SupabaseClient,
+  workoutId: string
+): Promise<CoachingResult<CoachWorkout>> {
+  const { data, error } = await supabase.rpc("mark_coach_workout_completion_seen", {
+    p_workout_id: workoutId,
+  });
+  if (error || !data) return failure(error?.message, "Could not dismiss that notice.");
+  return { ok: true, data: mapCoachWorkout(data as CoachWorkoutRow) };
+}
+
 export async function updateCoachWorkoutProgress(
   supabase: SupabaseClient,
   workoutId: string,

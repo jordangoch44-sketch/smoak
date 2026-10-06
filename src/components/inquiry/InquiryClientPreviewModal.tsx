@@ -209,6 +209,11 @@ export function InquiryDeleteConfirmModal({
 
   if (!open || typeof document === "undefined") return null;
 
+  const inboxLabel = counterpart === "specialist" ? "Messages" : "Inquiries";
+  const removedName =
+    name.trim() ||
+    (counterpart === "specialist" ? "This specialist" : "This client");
+
   return createPortal(
     <div className="dashboard-modal" role="presentation" onClick={onCancel}>
       <div
@@ -226,8 +231,8 @@ export function InquiryDeleteConfirmModal({
           </h2>
           <p id="inquiry-delete-desc" className="dashboard-modal__body">
             {count > 1
-              ? `${count} conversations will be removed from your Inquiries. Those ${counterpart}s can still message you later.`
-              : `${name.trim() || (counterpart === "specialist" ? "This specialist" : "This client")} will be removed from your Inquiries. They can still message you later.`}
+              ? `${count} conversations will be removed from your ${inboxLabel}. Those ${counterpart}s can still message you later.`
+              : `${removedName} will be removed from your ${inboxLabel}. They can still message you later.`}
           </p>
           <div className="dashboard-modal__actions">
             <button
