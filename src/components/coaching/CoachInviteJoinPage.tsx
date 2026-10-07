@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -27,7 +27,7 @@ const DEAD_LINK_COPY: Record<string, string> = {
   claimed: "This invite link was already used. Ask your specialist for a new one.",
 };
 
-/** /join/<token>: sign up (or log in) and accept a specialist's roster invite. */
+/** /join/<token>: sign up or log in and join that specialist's roster. */
 export function CoachInviteJoinPage({ token }: { token: string }) {
   const router = useRouter();
   const { isReady, session, signUp, signInWithPassword, signOut } = useAuthSession();
@@ -39,6 +39,7 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
+  const claimStarted = useRef(false);
 
   useEffect(() => {
     const supabase = getMarketplaceAuthClient();
@@ -54,14 +55,20 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
     };
   }, [token, session?.userId]);
 
-  async function accept() {
+  const accept = useCallback(async () => {
     const supabase = getMarketplaceAuthClient();
     if (!supabase) return;
     setBusy(true);
     setError(null);
     let result = await requestAcceptCoaching({ token });
     if (!result.ok && result.message === "Sign in to continue.") {
-      // Fresh sign-up whose session cookie hasn't reached the server yet: claim without emails.
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 400);
+      });
+      result = await requestAcceptCoaching({ token });
+    }
+    if (!result.ok && result.message === "Sign in to continue.") {
+      // Fresh sign-up whose session cookie hasn't reached the server yet.
       result = await claimCoachingInviteLink(supabase, token);
     }
     if (!result.ok) {
@@ -70,7 +77,15 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
       return;
     }
     router.replace(CLIENT_DASHBOARD_PATH);
-  }
+  }, [router, token]);
+
+  useEffect(() => {
+    if (claimStarted.current) return;
+    if (!isReady || !session || session.role !== "client") return;
+    if (!preview || preview === "missing" || preview.status !== "valid") return;
+    claimStarted.current = true;
+    void accept();
+  }, [accept, isReady, preview, session]);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -81,6 +96,7 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
         ? await signUp("client", email, password, {
             firstName: firstName.trim(),
             emailRedirectTo: getAuthCallbackUrl(coachingInvitePath(token)) ?? undefined,
+            coachingInviteToken: token,
           })
         : await signInWithPassword("client", email, password);
     if (result.ok === "confirm_email") {
@@ -98,7 +114,7 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
       setError("That’s a specialist account. Use a client account to join.");
       return;
     }
-    await accept();
+    /* Session effect claims the link and leaves this page. */
   }
 
   const coach =
@@ -141,8 +157,8 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
     if (confirmEmail) {
       return (
         <p className="coach-join__copy">
-          We sent a confirmation link to <strong>{confirmEmail}</strong>. Tap it and you’ll come
-          back here to accept.
+          We sent a confirmation link to <strong>{confirmEmail}</strong>. Tap it and you’ll be
+          added to {coach}’s roster.
         </p>
       );
     }
@@ -165,16 +181,19 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
       return (
         <>
           <p className="coach-join__copy">
-            Signed in as {session.email}. Accept to let {coachFirst} send workouts to your
-            calendar.
+            {error
+              ? `Signed in as ${session.email}.`
+              : `Adding you to ${coach}’s roster…`}
           </p>
-          <FastActivateButton
-            className="coaching-btn coaching-btn--primary coach-join__cta"
-            disabled={busy}
-            onActivate={() => void accept()}
-          >
-            {busy ? "Accepting…" : "Accept invite"}
-          </FastActivateButton>
+          {error ? (
+            <FastActivateButton
+              className="coaching-btn coaching-btn--primary coach-join__cta"
+              disabled={busy}
+              onActivate={() => void accept()}
+            >
+              {busy ? "Joining…" : "Try again"}
+            </FastActivateButton>
+          ) : null}
         </>
       );
     }
@@ -228,8 +247,8 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
           {busy
             ? "One moment…"
             : mode === "signup"
-              ? "Create account & accept"
-              : "Log in & accept"}
+              ? "Create account & join"
+              : "Log in & join"}
         </button>
         <FastActivateButton
           className="coaching-btn coaching-btn--quiet coach-join__switch"

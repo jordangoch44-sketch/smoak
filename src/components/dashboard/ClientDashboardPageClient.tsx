@@ -22,10 +22,6 @@ import {
   unflagInquiryUnread,
   unflagInquiryUnreadIds,
 } from "@/lib/inquiry/inquiry-unread-flag-store";
-import {
-  getClientProfileCompletionPercent,
-  isClientProfileMinimumComplete,
-} from "@/lib/profiles/client-profile-form";
 import { loadClientProfileFormState } from "@/lib/profiles/client-profile-service";
 import type { ClientProfileFormState } from "@/types/client-profile";
 import {
@@ -36,20 +32,11 @@ import {
 import { SavedSpecialistsOrganizer } from "@/components/saved/SavedSpecialistsOrganizer";
 import { TrainerList } from "@/components/trainers";
 import { ClientInquiriesList } from "@/components/dashboard/client/ClientInquiriesList";
-import { ClientProfileEditModal } from "@/components/dashboard/client/ClientProfileEditModal";
+import { ClientProfileEditModal, type ClientProfileEditorFocus } from "@/components/dashboard/client/ClientProfileEditModal";
+import { ClientProfileHome } from "@/components/dashboard/client/ClientProfileHome";
 import { ClientCoachingInvites } from "@/components/dashboard/client/coaching/ClientCoachingInvites";
-import { ClientWorkoutBadges } from "@/components/dashboard/client/workouts/ClientWorkoutBadges";
-import { ClientWeekOverview } from "@/components/dashboard/client/workouts/ClientWeekOverview";
 import { ClientDashboardOverlay } from "@/components/dashboard/client/ClientDashboardOverlay";
 import { PageWaitState } from "@/components/brand/PageWaitState";
-import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import {
-  CheckIcon,
-  ChevronRightIcon,
-  HeartIcon,
-  MessageBubbleIcon,
-  UserIcon,
-} from "@/components/ui/icons";
 import { getInitials } from "@/lib/utils";
 import "@/styles/client-profile-sheet.css";
 
@@ -70,6 +57,7 @@ export function ClientDashboardPageClient() {
   const saved = useMemo(() => getSavedTrainers(), [getSavedTrainers]);
   const [messages, setMessages] = useState<ClientInquiryListItem[]>([]);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profileFocus, setProfileFocus] = useState<ClientProfileEditorFocus | null>(null);
   const [overlay, setOverlay] = useState<ClientDashboardOverlayId | null>(null);
   const [openConversationId, setOpenConversationId] = useState<string | null>(
     null
@@ -107,6 +95,7 @@ export function ClientDashboardPageClient() {
   useEffect(() => {
     if (!isReady || !session) return;
     if (searchParams.get("editProfile") === "1") {
+      setProfileFocus(null);
       setProfileOpen(true);
       setOverlay(null);
       router.replace("/client-dashboard", { scroll: false });
@@ -155,38 +144,13 @@ export function ClientDashboardPageClient() {
     return <DashboardLoadingState />;
   }
 
-  const firstName = session.firstName?.trim() || "there";
   const form = profileForm;
-  const profileComplete =
-    session.profileCompletionStatus === "complete" ||
-    (form
-      ? isClientProfileMinimumComplete({
-          firstName: form.firstName,
-          postalCode: form.postalCode,
-          city: form.city,
-          goals: form.goals,
-        })
-      : false);
-
-  const completionPercent = form
-    ? getClientProfileCompletionPercent({
-        firstName: form.firstName,
-        postalCode: form.postalCode,
-        city: form.city,
-        goals: form.goals,
-        hasAvatar: Boolean(form.avatarUrl || session.avatarUrl),
-        hasBudget: form.pricePreset !== "none",
-        hasRadiusPreference: form.preferredRadiusMiles != null,
-      })
-    : profileComplete
-      ? 100
-      : 35;
-
   const displayName =
     form?.displayName.trim() ||
     [form?.firstName, form?.lastName].filter(Boolean).join(" ").trim() ||
     session.displayName?.trim() ||
-    firstName;
+    session.firstName?.trim() ||
+    "";
 
   const avatarUrl = form?.avatarUrl || session.avatarUrl || "";
   const initials =
@@ -199,13 +163,15 @@ export function ClientDashboardPageClient() {
     afterLogoutNavigation("/profile");
   }
 
-  function openProfileEditor() {
+  function openProfileEditor(focus: ClientProfileEditorFocus | null = null) {
     trackInquiryEvent("profile_completion_opened");
+    setProfileFocus(focus);
     setProfileOpen(true);
   }
 
   function handleProfileModalClose() {
     setProfileOpen(false);
+    setProfileFocus(null);
     void refreshSession();
     if (session?.userId) {
       void loadClientProfileFormState(session.userId, session.email).then(
@@ -263,152 +229,28 @@ export function ClientDashboardPageClient() {
   }
 
   const unreadCount = messages.filter((item) => item.unread).length;
-  const savedSubtitle =
-    savedCount > 0
-      ? `${savedCount} specialist${savedCount === 1 ? "" : "s"}`
-      : "Save specialists from Search";
-  const inquiriesSubtitle =
-    unreadCount > 0
-      ? `${unreadCount} unread`
-      : messages.length > 0
-        ? `${messages.length} conversation${messages.length === 1 ? "" : "s"}`
-        : "Message your specialists";
 
   return (
     <>
-      <DashboardPageShell
-        variant="client"
-        eyebrow="Client dashboard"
-        title={`Welcome back, ${firstName}`}
-        headerClassName="client-dash-header"
-        headerLeading={
-          <FastActivateButton
-            className="client-dash-summary__avatar-wrap"
-            aria-label={`${displayName}. Edit profile`}
-            onActivate={openProfileEditor}
-          >
-            <span className="client-dash-summary__avatar">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- auth avatar URLs
-                <img src={avatarUrl} alt="" />
-              ) : (
-                <span aria-hidden>{initials}</span>
-              )}
-            </span>
-            {profileComplete ? (
-              <span className="client-dash-summary__avatar-badge" aria-hidden>
-                <CheckIcon className="client-dash-summary__avatar-badge-icon" />
-              </span>
-            ) : null}
-          </FastActivateButton>
-        }
-        introActions={<ClientWorkoutBadges userId={session.userId} />}
-        utilityBar={
-          <FastActivateButton
-            className="dashboard-signout dashboard-signout--utility"
-            onActivate={() => void handleSignOut()}
-          >
-            Sign out
-          </FastActivateButton>
-        }
-      >
-        <div className="client-dash-week">
-          <ClientWeekOverview userId={session.userId} />
-        </div>
-
-        {!profileComplete ? (
-          <FastActivateButton
-            className="client-dash-progress"
-            onActivate={openProfileEditor}
-          >
-            <div className="client-dash-progress__row">
-              <span className="client-dash-progress__title">
-                Complete your profile
-              </span>
-              <span className="client-dash-progress__pct">
-                {completionPercent}%
-              </span>
-            </div>
-            <div
-              className="client-dash-progress__track"
-              role="progressbar"
-              aria-valuenow={completionPercent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="Profile completion"
-            >
-              <span
-                className="client-dash-progress__fill"
-                style={{ width: `${completionPercent}%` }}
-              />
-            </div>
-            <p className="client-dash-progress__hint">
-              Add a few details for better specialist matches.
-            </p>
-          </FastActivateButton>
-        ) : null}
-
-        <section className="client-dash-panel client-dash-panel--profile">
-          <div className="client-dash-links">
-            <ClientCoachingInvites userId={session.userId} />
-
-            <FastActivateButton
-              className="smoac-control client-dash-nav-row"
-              onActivate={openProfileEditor}
-            >
-              <span className="client-dash-nav-row__icon" aria-hidden>
-                <UserIcon className="h-5 w-5" />
-              </span>
-              <span className="client-dash-nav-row__copy">
-                <span className="client-dash-nav-row__title">Edit profile</span>
-                <span className="client-dash-nav-row__meta">
-                  Training, goals, and budget
-                </span>
-              </span>
-              <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />
-            </FastActivateButton>
-
-            <FastActivateButton
-              className="smoac-control client-dash-nav-row"
-              onActivate={() => openOverlay("messages")}
-            >
-              <span className="client-dash-nav-row__icon" aria-hidden>
-                <MessageBubbleIcon className="h-5 w-5" />
-              </span>
-              <span className="client-dash-nav-row__copy">
-                <span className="client-dash-nav-row__title">Messages</span>
-                <span className="client-dash-nav-row__meta">
-                  {inquiriesSubtitle}
-                </span>
-              </span>
-              {unreadCount > 0 ? (
-                <span className="client-dash-nav-row__count">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              ) : null}
-              <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />
-            </FastActivateButton>
-
-            <FastActivateButton
-              className="smoac-control client-dash-nav-row"
-              onActivate={() => openOverlay("saved")}
-            >
-              <span className="client-dash-nav-row__icon" aria-hidden>
-                <HeartIcon className="h-5 w-5" filled={savedCount > 0} />
-              </span>
-              <span className="client-dash-nav-row__copy">
-                <span className="client-dash-nav-row__title">
-                  Saved Specialists
-                </span>
-                <span className="client-dash-nav-row__meta">{savedSubtitle}</span>
-              </span>
-              {savedCount > 0 ? (
-                <span className="client-dash-nav-row__count">{savedCount}</span>
-              ) : null}
-              <ChevronRightIcon className="client-dash-nav-row__chevron h-5 w-5" />
-            </FastActivateButton>
-          </div>
-        </section>
+      <DashboardPageShell variant="client" hideHeader>
+        <ClientProfileHome
+          userId={session.userId}
+          displayName={displayName}
+          avatarUrl={avatarUrl}
+          initials={initials}
+          postalCode={form?.postalCode ?? ""}
+          city={form?.city ?? ""}
+          goals={form?.goals ?? []}
+          specialties={form?.preferredSpecialties ?? []}
+          sessionFormat={form?.preferredSessionFormat ?? ""}
+          unreadCount={unreadCount}
+          savedCount={savedCount}
+          notices={<ClientCoachingInvites userId={session.userId} />}
+          onEditProfile={(focus) => openProfileEditor(focus ?? null)}
+          onOpenMessages={() => openOverlay("messages")}
+          onOpenSaved={() => openOverlay("saved")}
+          onSignOut={() => void handleSignOut()}
+        />
       </DashboardPageShell>
 
       {overlay === "saved" ? (
@@ -474,6 +316,7 @@ export function ClientDashboardPageClient() {
         open={profileOpen}
         userId={session.userId}
         authEmail={session.email}
+        focus={profileFocus}
         onClose={handleProfileModalClose}
       />
     </>

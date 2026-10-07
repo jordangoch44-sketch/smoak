@@ -159,6 +159,45 @@ export function sanitizeWorkoutWeight(value: unknown): string {
   return body.slice(0, 6);
 }
 
+export const EXERCISE_NOTE_MAX_LENGTH = 160;
+
+/** One line. Empty after trim is dropped when the exercise is saved. */
+export function sanitizeExerciseNote(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.replace(/[\r\n]+/g, " ").slice(0, EXERCISE_NOTE_MAX_LENGTH);
+}
+
+/**
+ * Weight and reps from the last time this exercise was actually logged.
+ * `prior` is newest first. Blank sessions are skipped.
+ */
+export function previousSetsForExercise(
+  prior: readonly ExerciseSetMemory[],
+  name: string
+): ClientWorkoutSetLog[] {
+  const key = name.trim().toLowerCase();
+  if (!key) return [];
+  const match = prior.find((item) => {
+    if (item.name.trim().toLowerCase() !== key) return false;
+    if (item.setLogs?.some((set) => set.weight?.trim() || set.reps?.trim())) return true;
+    return Boolean(item.reps.trim()) && !(item.setLogs && item.setLogs.length > 0);
+  });
+  if (!match) return [];
+  if (match.setLogs && match.setLogs.length > 0) return match.setLogs;
+  const reps = match.reps.trim();
+  const count = parseWorkoutSetCount(match.sets) ?? 1;
+  return Array.from({ length: count }, () => ({ reps, weight: "" }));
+}
+
+/** "135×10", or a dash when that set wasn't logged. */
+export function formatPreviousSet(log: ClientWorkoutSetLog | undefined): string {
+  const weight = log?.weight?.trim() ?? "";
+  const reps = log?.reps?.trim() ?? "";
+  if (weight && reps) return `${weight}×${reps}`;
+  if (weight || reps) return weight || reps;
+  return "–";
+}
+
 /** Positive set count, capped so the phone flow stays short. */
 export function parseWorkoutSetCount(value: string): number | null {
   const digits = sanitizeWorkoutCount(value, 2);
@@ -195,12 +234,14 @@ export function sanitizeWorkoutExercise(
     ? String(setLogs.length)
     : exercise.sets.replace(/\s+/g, " ").trim().slice(0, 8);
   const supersetId = sanitizeSupersetId(exercise.supersetId);
+  const note = sanitizeExerciseNote(exercise.note).trim();
   return {
     id: exercise.id.trim() || createWorkoutExerciseId(),
     name,
     sets,
     reps: setLogs ? "" : exercise.reps.replace(/\s+/g, " ").trim().slice(0, 16),
     ...(setLogs ? { setLogs } : {}),
+    ...(note ? { note } : {}),
     ...(exercise.completed === true ? { completed: true } : {}),
     ...(supersetId ? { supersetId } : {}),
     ...customExerciseFields(exercise),
@@ -320,12 +361,16 @@ export function hasCardioOnDay(
   return Boolean(day?.cardio?.type.trim() || day?.cardio?.duration.trim());
 }
 
+export function hasRestOnDay(log: ClientWorkoutLog, dateKey: string): boolean {
+  return log.days[dateKey]?.rest === true;
+}
+
 export function hasStrengthOnDay(
   log: ClientWorkoutLog,
   dateKey: string
 ): boolean {
   const day = log.days[dateKey];
-  if (!day) return false;
+  if (!day || day.rest === true) return false;
   return day.exercises.length > 0 || Boolean(day.title.trim());
 }
 
@@ -371,12 +416,15 @@ export function sanitizeClientWorkoutLog(value: unknown): ClientWorkoutLog {
       const cardio = sanitizeWorkoutCardio(
         "cardio" in day ? day.cardio : undefined
       );
-      if (exercises.length === 0 && !title && !cardio) continue;
+      const rest =
+        day.rest === true && exercises.length === 0 && !title && !cardio;
+      if (exercises.length === 0 && !title && !cardio && !rest) continue;
       days[dateKey] = {
         date: dateKey,
         title,
         exercises,
         ...(cardio ? { cardio } : {}),
+        ...(rest ? { rest: true } : {}),
       };
     }
   }

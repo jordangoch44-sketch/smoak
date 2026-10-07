@@ -197,21 +197,25 @@ export async function libraryExerciseMedia(): Promise<Record<string, ExerciseDbM
 
 async function guideEntry(name: string): Promise<CacheEntry | null> {
   if (!exerciseDbConfigured()) return null;
-  await ensureLibraryMedia();
-  const entry = cache().byName.get(nameKey(name));
-  if (!entry || entry.miss || !entry.exerciseId) return null;
-  if (entry.instructions?.length) return entry;
+  const key = nameKey(name);
+  const store = cache();
+  const cached = store.byName.get(key);
+  if (cached?.instructions?.length) return cached;
+  const exerciseId =
+    cached?.exerciseId ||
+    WORKOUT_EXERCISE_LIBRARY.find((item) => nameKey(item.name) === key)?.exerciseId;
+  if (!exerciseId) return null;
   try {
-    const fresh = await mediaForExercise(entry.exerciseId);
-    if (!fresh) return entry;
-    if (fresh.gifUrl) entry.gifUrl = fresh.gifUrl;
-    if (fresh.imageUrl && !entry.imageUrl) entry.imageUrl = fresh.imageUrl;
-    if (fresh.overview) entry.overview = fresh.overview;
-    if (fresh.instructions) entry.instructions = fresh.instructions;
+    const fresh = await mediaForExercise(exerciseId);
+    if (!fresh) {
+      if (!cached) store.byName.set(key, { exerciseId, miss: true });
+      return cached && !cached.miss ? cached : null;
+    }
+    store.byName.set(key, fresh);
+    return fresh;
   } catch {
-    /* The still can still play. A later open can retry the how-to. */
+    return cached && !cached.miss ? cached : null;
   }
-  return entry;
 }
 
 export async function exerciseGifUrl(name: string): Promise<string | null> {

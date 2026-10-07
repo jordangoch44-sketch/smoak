@@ -1,6 +1,6 @@
 /**
- * Specialist dashboard welcome after login: incomplete profile tasks plus
- * a membership prompt (join, trial days left, or upgrade/boost).
+ * Specialist dashboard welcome: incomplete profile tasks plus a membership
+ * comparison. Opens on every third login, not every visit.
  */
 import { parseCoachingStyleSelection } from "@/constants/specialist-onboarding-options";
 import {
@@ -13,7 +13,31 @@ import {
   isProPlusPlan,
   isSpecialistPayingPro,
 } from "@/lib/specialist-premium";
+import { PROFILE_WELCOME_LOGIN_COUNT_KEY } from "@/lib/dev-storage-keys";
 import type { SpecialistProfileEditForm } from "@/types/specialist-profile-edit";
+
+/** Welcome opens when the specialist login count is a multiple of this. */
+export const PROFILE_WELCOME_EVERY_N_LOGINS = 3;
+
+const WELCOME_FREE_BENEFITS = [
+  "Marketplace listing",
+  "Client inquiries",
+  "Public profile",
+] as const;
+
+const WELCOME_PRO_BENEFITS = [
+  "Profile analytics",
+  "Ranking insights",
+  "Client engagement",
+  "Free first session",
+  "Intro video",
+] as const;
+
+const WELCOME_PRO_PLUS_BENEFITS = [
+  "Up to 5 phone videos",
+  "Client results",
+  "20% off Boosts",
+] as const;
 
 export const SPECIALIST_PROFILE_WELCOME_LOCK_CLASS =
   "specialist-profile-welcome-open";
@@ -33,26 +57,12 @@ export const SMOAC_PROFILE_WELCOME = {
     "Help your profile stand out and get more inquiries from clients.",
   nextStepFallbackDescription:
     "Complete this section so clients know what to expect from you.",
-  joinHeadline: "Upgrade to Pro",
-  joinBody:
-    "Unlock analytics, ranking insights, and more inquiries with SMOAC Pro.",
   joinCta: "Upgrade to Pro",
-  restoreHeadline: "Restore your Pro features",
-  restoreBody:
-    "Extra photos, pins, intro video, and Free first session are still saved. Clients can't see them until you upgrade.",
   restoreCta: "Restore Pro",
   trialFallbackHeadline: "Your Pro trial is running out",
-  trialBody:
-    "Keep Pro before your trial ends — analytics, ranking insights, and growth tools stay unlocked.",
   trialCta: "Keep Pro",
-  upgradeBoostHeadline: "Upgrade to PRO+",
-  upgradeBoostBody:
-    "Add up to 5 phone videos, client results, and 20% off Boosts.",
   upgradeCta: "Upgrade to PRO+",
-  boostHeadline: "Boost your profile",
-  boostBody: "Put your profile in front of more clients near you.",
   boostCta: "Boost profile",
-  primaryCta: "Add photos",
   secondaryCta: "Maybe later",
 } as const;
 
@@ -68,12 +78,20 @@ export type ProfileWelcomeMembershipKind =
   | "upgrade-or-boost"
   | "boost";
 
+export type ProfileWelcomeTier = {
+  name: string;
+  benefits: readonly string[];
+};
+
 export type ProfileWelcomeMembershipPrompt = {
   kind: ProfileWelcomeMembershipKind;
-  headline: string;
-  body: string;
   primaryCta: string;
-  secondaryCta?: string;
+  /** Trial countdown or a short restore note above the comparison. */
+  note?: string;
+  /** Label above the next tier. Trial uses "Keep". */
+  upgradeEyebrow?: string;
+  current: ProfileWelcomeTier;
+  upgrade?: ProfileWelcomeTier;
 };
 
 export type SpecialistProfileWelcomeSession = {
@@ -225,45 +243,52 @@ export function resolveProfileWelcomeMembership(
   if (session.premiumTrialActive) {
     return {
       kind: "trial",
-      headline: profileWelcomeTrialHeadline(session.premiumTrialDaysRemaining),
-      body: SMOAC_PROFILE_WELCOME.trialBody,
+      note: profileWelcomeTrialHeadline(session.premiumTrialDaysRemaining),
       primaryCta: SMOAC_PROFILE_WELCOME.trialCta,
+      upgradeEyebrow: "Keep",
+      current: { name: "Pro Trial", benefits: WELCOME_PRO_BENEFITS },
+      upgrade: {
+        name: "Pro",
+        benefits: ["These benefits stay after your trial"],
+      },
     };
   }
 
   if (isProPlusPlan(session.membershipPlan)) {
     return {
       kind: "boost",
-      headline: SMOAC_PROFILE_WELCOME.boostHeadline,
-      body: SMOAC_PROFILE_WELCOME.boostBody,
       primaryCta: SMOAC_PROFILE_WELCOME.boostCta,
+      current: {
+        name: "PRO+",
+        benefits: ["Everything in Pro", ...WELCOME_PRO_PLUS_BENEFITS],
+      },
     };
   }
 
   if (isSpecialistPayingPro(session)) {
     return {
       kind: "upgrade-or-boost",
-      headline: SMOAC_PROFILE_WELCOME.upgradeBoostHeadline,
-      body: SMOAC_PROFILE_WELCOME.upgradeBoostBody,
       primaryCta: SMOAC_PROFILE_WELCOME.upgradeCta,
-      secondaryCta: SMOAC_PROFILE_WELCOME.boostCta,
+      current: { name: "Pro", benefits: WELCOME_PRO_BENEFITS },
+      upgrade: { name: "PRO+", benefits: WELCOME_PRO_PLUS_BENEFITS },
     };
   }
 
   if (session.premiumTrialUsed || session.premiumTrialJustEnded) {
     return {
       kind: "join",
-      headline: SMOAC_PROFILE_WELCOME.restoreHeadline,
-      body: SMOAC_PROFILE_WELCOME.restoreBody,
+      note: "Saved Pro extras come back on your profile.",
       primaryCta: SMOAC_PROFILE_WELCOME.restoreCta,
+      current: { name: "Free", benefits: WELCOME_FREE_BENEFITS },
+      upgrade: { name: "Pro", benefits: WELCOME_PRO_BENEFITS },
     };
   }
 
   return {
     kind: "join",
-    headline: SMOAC_PROFILE_WELCOME.joinHeadline,
-    body: SMOAC_PROFILE_WELCOME.joinBody,
     primaryCta: SMOAC_PROFILE_WELCOME.joinCta,
+    current: { name: "Free", benefits: WELCOME_FREE_BENEFITS },
+    upgrade: { name: "Pro", benefits: WELCOME_PRO_BENEFITS },
   };
 }
 
@@ -292,4 +317,65 @@ export function shouldShowSpecialistProfileWelcome(input: {
     return false;
   }
   return Boolean(input.session?.userId);
+}
+
+type WelcomeLoginCountMap = Record<string, number>;
+
+/** Same document can resolve the post-login path more than once. Count once. */
+const recordedWelcomeLogins = new Map<string, number>();
+
+function readWelcomeLoginCounts(): WelcomeLoginCountMap {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(PROFILE_WELCOME_LOGIN_COUNT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    const counts: WelcomeLoginCountMap = {};
+    for (const [id, value] of Object.entries(parsed)) {
+      if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+        counts[id] = Math.floor(value);
+      }
+    }
+    return counts;
+  } catch {
+    return {};
+  }
+}
+
+function writeWelcomeLoginCounts(counts: WelcomeLoginCountMap) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      PROFILE_WELCOME_LOGIN_COUNT_KEY,
+      JSON.stringify(counts)
+    );
+  } catch {
+    /* Private mode or a full store — skip the count rather than block login. */
+  }
+}
+
+export function profileWelcomeDueOnLogin(loginCount: number): boolean {
+  return (
+    loginCount > 0 && loginCount % PROFILE_WELCOME_EVERY_N_LOGINS === 0
+  );
+}
+
+/** Next login number for this user, including one already counted on this page. */
+export function peekProfileWelcomeLoginCount(userId: string): number {
+  const recorded = recordedWelcomeLogins.get(userId);
+  if (recorded != null) return recorded;
+  return (readWelcomeLoginCounts()[userId] ?? 0) + 1;
+}
+
+/** Count this login once per page load. */
+export function recordProfileWelcomeLogin(userId: string): number {
+  const recorded = recordedWelcomeLogins.get(userId);
+  if (recorded != null) return recorded;
+  const counts = readWelcomeLoginCounts();
+  const next = (counts[userId] ?? 0) + 1;
+  counts[userId] = next;
+  writeWelcomeLoginCounts(counts);
+  recordedWelcomeLogins.set(userId, next);
+  return next;
 }

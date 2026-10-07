@@ -3999,15 +3999,6 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   box-shadow: 0 0 16px rgba(168, 85, 247, 0.35);
 }
 
-.dashboard-welcome-card__icon--trial {
-  border-radius: 999px;
-  background: linear-gradient(
-    160deg,
-    rgba(192, 132, 252, 0.95) 0%,
-    rgba(124, 58, 237, 0.92) 100%
-  );
-}
-
 .dashboard-welcome-card__glyph {
   width: 1.2rem;
   height: 1.2rem;
@@ -4048,63 +4039,99 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: rgba(255, 255, 255, 0.38);
 }
 
-.dashboard-welcome-card--trial,
-.dashboard-welcome-card--growth {
-  border-color: rgba(168, 85, 247, 0.38);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(124, 58, 237, 0.38) 0%,
-      rgba(76, 29, 149, 0.22) 55%,
-      rgba(14, 12, 28, 0.55) 100%
-    );
-  box-shadow: 0 0 24px rgba(124, 58, 237, 0.18);
+.dashboard-welcome-plans {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid rgba(168, 85, 247, 0.38);
+  background: rgba(8, 8, 14, 0.55);
+  text-align: left;
 }
 
-.dashboard-welcome-card--trial .dashboard-welcome-card__title,
-.dashboard-welcome-card--growth .dashboard-welcome-card__title {
-  font-size: 0.95rem;
+.dashboard-welcome-plans__note {
+  margin: 0;
+  padding: 0.55rem 0.75rem 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: rgba(216, 180, 254, 0.92);
+}
+
+.dashboard-welcome-plans__compare {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.dashboard-welcome-plans--solo .dashboard-welcome-plans__compare {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.dashboard-welcome-plans__tier {
+  min-width: 0;
+  padding: 0.7rem 0.7rem 0.75rem;
+}
+
+.dashboard-welcome-plans__tier--next {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(124, 58, 237, 0.34) 0%,
+      rgba(76, 29, 149, 0.16) 100%
+    );
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-welcome-plans__eyebrow {
+  margin: 0;
+  font-size: 0.625rem;
   font-weight: 650;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.46);
 }
 
-.dashboard-welcome-card--growth-pro {
-  border-color: rgba(56, 189, 248, 0.4);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(14, 165, 233, 0.32) 0%,
-      rgba(30, 64, 175, 0.22) 55%,
-      rgba(14, 12, 28, 0.55) 100%
-    );
-  box-shadow: 0 0 24px rgba(14, 165, 233, 0.18);
+.dashboard-welcome-plans__name {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #fff;
 }
 
-.dashboard-welcome-card--growth-trial {
-  border-color: rgba(168, 85, 247, 0.42);
+.dashboard-welcome-plans__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
 }
 
-.dashboard-welcome-card--growth-pro-plus {
-  border-color: rgba(var(--smoac-color-rose-rgb), 0.42);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(var(--smoac-color-rose-rgb), 0.28) 0%,
-      rgba(var(--smoac-color-violet-rgb), 0.22) 48%,
-      rgba(14, 12, 28, 0.55) 100%
-    );
-  box-shadow: var(--smoac-color-glow);
+.dashboard-welcome-plans__benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.78);
 }
 
-.dashboard-welcome-card--growth-boost {
-  border-color: rgba(250, 204, 21, 0.42);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(250, 204, 21, 0.2) 0%,
-      rgba(161, 98, 7, 0.18) 55%,
-      rgba(14, 12, 28, 0.55) 100%
-    );
-  box-shadow: 0 0 24px rgba(250, 204, 21, 0.16);
+.dashboard-welcome-plans__mark {
+  flex-shrink: 0;
+  width: 0.8rem;
+  height: 0.8rem;
+  margin-top: 0.05rem;
+  color: rgba(167, 243, 208, 0.9);
+}
+
+.dashboard-welcome-plans__plus {
+  flex-shrink: 0;
+  width: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
+  color: #fff;
 }
 
 .dashboard-welcome-remaining {

@@ -945,6 +945,25 @@ export function LockIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
+/** Green charging battery for a rest day on the workout calendar. */
+export function BatteryChargingIcon({ className = "h-3 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 22 12"
+      fill="currentColor"
+      aria-hidden
+    >
+      <rect x="0.75" y="1" width="16.5" height="10" rx="2.2" />
+      <rect x="18.2" y="3.7" width="2.6" height="4.6" rx="0.9" />
+      <path
+        fill="#04140a"
+        d="M10.15 2.15 6.55 6.35h2.45L7.85 9.85l4.85-5.35H10.2l-.05-2.35Z"
+      />
+    </svg>
+  );
+}
+
 /** Checkmark icon for complete profile sections */
 export function CheckIcon({ className = "h-4 w-4" }: IconProps) {
   return (
@@ -1067,6 +1086,20 @@ export function PercentIcon({ className = "h-4 w-4" }: IconProps) {
       <path d="M19.5 4.5 4.5 19.5" />
       <circle cx="6.75" cy="6.75" r="2.25" />
       <circle cx="17.25" cy="17.25" r="2.25" />
+    </svg>
+  );
+}
+
+/** Filled pushpin for pinned profile photos (Instagram-style corner mark). */
+export function PinIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a6 6 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182c-.195.195-1.219.902-1.414.707-.195-.195.512-1.22.707-1.414l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a6 6 0 0 1 1.013.16l3.134-3.133a2.8 2.8 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146" />
     </svg>
   );
 }

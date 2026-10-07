@@ -16,6 +16,8 @@ export interface ClientWorkoutExercise {
   reps: string;
   /** Per-set reps and weight, in set order. Missing entries were skipped. */
   setLogs?: ClientWorkoutSetLog[];
+  /** Short note the specialist or the client can edit on this exercise. */
+  note?: string;
   /** Checked off while the client is doing the workout. */
   completed?: boolean;
   /** Shared with the other exercises in a superset. */
@@ -40,6 +42,8 @@ export interface ClientWorkoutDay {
   title: string;
   exercises: ClientWorkoutExercise[];
   cardio?: ClientWorkoutCardio;
+  /** A planned day off. Cardio and a workout are not logged on this day. */
+  rest?: boolean;
 }
 
 export interface ClientWorkoutLog {

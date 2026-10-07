@@ -8,6 +8,7 @@ import {
   bestWeekStreak,
   currentWeekStreak,
   formatBodyWeight,
+  hasStrengthOnDay,
   isWorkoutDateKey,
   startOfWeekSunday,
   toLocalDateKey,
@@ -128,6 +129,19 @@ export function exerciseTopWeight(exercise: ClientWorkoutExercise): number {
   );
 }
 
+function exerciseReps(exercise: ClientWorkoutExercise): number {
+  if (exercise.setLogs?.length) {
+    return exercise.setLogs.reduce((sum, log) => {
+      const reps = Number.parseInt(log.reps, 10);
+      return sum + (Number.isFinite(reps) && reps > 0 ? reps : 0);
+    }, 0);
+  }
+  const reps = Number.parseInt(exercise.reps, 10);
+  const sets = exerciseSetCount(exercise);
+  if (!Number.isFinite(reps) || reps <= 0 || sets <= 0) return 0;
+  return reps * sets;
+}
+
 /** Reads minutes out of free-text durations: "30 min", "1 hr", "1h 15m", "1:30", "45". */
 export function parseCardioMinutes(duration: string): number {
   const text = duration.trim().toLowerCase();
@@ -222,6 +236,70 @@ function topLifts(log: ClientWorkoutLog, weekStart: Date): TopLift[] {
     ...lift,
     previous: before.get(key) ?? 0,
   }));
+}
+
+export interface WeekRecapTopSet {
+  name: string;
+  weightLb: number;
+  /** Pounds above the previous best. 0 when this lift is not a PR. */
+  prGainLb: number;
+}
+
+/** Numbers the Sunday recap email draws. */
+export interface WeekRecapFigures {
+  /** Biggest PR this week, or the heaviest set when nothing was a PR. */
+  topSet: WeekRecapTopSet | null;
+  sets: number;
+  reps: number;
+  cardioMinutes: number;
+  workouts: number;
+  /** Latest weigh-in on or before the end of the week. */
+  weightLb: number | null;
+  /** Recent weigh-ins, oldest first, for the weight sparkline. */
+  weightSeries: number[];
+}
+
+function featuredLift(lifts: TopLift[]): TopLift | null {
+  const prs = lifts
+    .filter((lift) => lift.previous > 0 && lift.weight > lift.previous)
+    .sort((a, b) => b.weight - b.previous - (a.weight - a.previous));
+  if (prs[0]) return prs[0];
+  return [...lifts].sort((a, b) => b.weight - a.weight)[0] ?? null;
+}
+
+export function weekRecapFigures(log: ClientWorkoutLog, weekStart: Date): WeekRecapFigures {
+  const totals = weekTotals(log, weekStart);
+  const lift = featuredLift(topLifts(log, weekStart));
+  const endKey = toLocalDateKey(addDays(weekStart, 6));
+  const entries = bodyWeightEntries(log, endKey);
+  let reps = 0;
+  let workouts = 0;
+  for (let index = 0; index < 7; index += 1) {
+    const dateKey = toLocalDateKey(addDays(weekStart, index));
+    const day = log.days[dateKey];
+    if (hasStrengthOnDay(log, dateKey)) workouts += 1;
+    if (!day) continue;
+    for (const exercise of day.exercises) reps += exerciseReps(exercise);
+  }
+  const gain =
+    lift && lift.previous > 0 && lift.weight > lift.previous
+      ? Math.round((lift.weight - lift.previous) * 10) / 10
+      : 0;
+
+  return {
+    topSet: lift
+      ? { name: lift.name, weightLb: lift.weight, prGainLb: gain }
+      : null,
+    sets: totals.sets,
+    reps,
+    cardioMinutes: totals.cardioMinutes,
+    workouts,
+    weightLb: entries[0]?.weight ?? null,
+    weightSeries: entries
+      .slice(0, 7)
+      .map((entry) => entry.weight)
+      .reverse(),
+  };
 }
 
 /** Times any lift beat its previous heaviest set. A lift's first log is not a PR. */

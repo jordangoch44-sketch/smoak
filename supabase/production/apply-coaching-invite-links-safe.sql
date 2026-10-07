@@ -127,7 +127,7 @@ begin
   select coalesce(nullif(trim(p.first_name), ''), link.client_first_name)
     into first_name
     from public.profiles p
-   where p.id = auth.uid();
+   where p.user_id = auth.uid();
 
   insert into public.coaching_relationships as r (
     specialist_id, specialist_user_id, client_user_id, conversation_id,

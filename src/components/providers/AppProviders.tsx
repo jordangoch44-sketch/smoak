@@ -9,6 +9,7 @@ import { SupabaseConfigProvider } from "@/contexts/SupabaseConfigContext";
 import { UserLocationProvider } from "@/contexts/UserLocationContext";
 import { InquiryAutoSendBridge } from "@/components/inquiry";
 import { PendingSaveResumeBridge } from "@/components/auth/PendingSaveResumeBridge";
+import { CoachingInviteClaimBridge } from "@/components/coaching/CoachingInviteClaimBridge";
 
 export function AppProviders({
   children,
@@ -27,6 +28,7 @@ export function AppProviders({
                 <Suspense fallback={null}>
                   <InquiryAutoSendBridge />
                   <PendingSaveResumeBridge />
+                  <CoachingInviteClaimBridge />
                 </Suspense>
                 {children}
               </MobileBottomNavTransitionProvider>

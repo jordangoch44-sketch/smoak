@@ -5,11 +5,10 @@
 import { sendOutboundEmail, type EmailSendResult } from "@/lib/email/email-transport";
 import {
   emailAbsoluteUrl,
-  renderEmailDetailRows,
   renderEmailParagraphs,
   wrapTransactionalEmailHtml,
-  type EmailDetailRow,
 } from "@/lib/email/email-html-shell";
+import { renderWeeklyRecapEmail } from "@/lib/email/weekly-recap-email";
 import { unsubscribeUrlFor } from "@/lib/admin-email-unsubscribe";
 import type { DueWorkoutEmail } from "@/lib/workouts/client-workout-email-rules";
 
@@ -30,7 +29,6 @@ interface BuiltEmail {
   eyebrow: string;
   title: string;
   paragraphs: string[];
-  rows?: EmailDetailRow[];
   cta: string;
 }
 
@@ -85,52 +83,12 @@ function buildAtRisk(
   };
 }
 
-function goalLine(done: number, goal: number): string {
-  return `${done} / ${goal}${done >= goal ? " ✓" : ""}`;
-}
-
-function buildRecap(
-  email: Extract<DueWorkoutEmail, { kind: "weekly_recap" }>,
+function build(
+  email: Exclude<DueWorkoutEmail, { kind: "weekly_recap" }>,
   name: string
 ): BuiltEmail {
-  const rows: EmailDetailRow[] = [
-    { label: "Workouts", value: goalLine(email.workout.done, email.workout.goal) },
-  ];
-  if (email.cardio) {
-    rows.push({ label: "Cardio days", value: goalLine(email.cardio.done, email.cardio.goal) });
-  }
-  rows.push({
-    label: "Streak",
-    value: email.streak > 0 ? `🔥 ${weeks(email.streak)}` : "Starts this week",
-  });
-  const weight = email.stats.find((stat) => stat.id === "weight");
-  if (weight && weight.value !== "—") {
-    rows.push({ label: "Weight", value: `${weight.value} lb` });
-  }
-  const cardio = email.stats.find((stat) => stat.id === "cardio");
-  if (cardio && cardio.value !== "0") {
-    rows.push({ label: "Cardio time", value: `${cardio.value} min` });
-  }
-
-  const met = email.workout.done >= email.workout.goal && (email.cardio?.met ?? true);
-  return {
-    subject: `Your week: ${email.rangeLabel}`,
-    preheader: email.highlight ?? `${goalLine(email.workout.done, email.workout.goal)} workouts`,
-    eyebrow: "Weekly recap",
-    title: met ? "Goal hit this week" : "Your week in review",
-    paragraphs: [
-      `Hi ${name}, here's ${email.rangeLabel}.`,
-      ...(email.highlight ? [email.highlight] : []),
-    ],
-    rows,
-    cta: "Plan this week",
-  };
-}
-
-function build(email: DueWorkoutEmail, name: string): BuiltEmail {
   if (email.kind === "streak_milestone") return buildMilestone(email, name);
-  if (email.kind === "streak_at_risk") return buildAtRisk(email, name);
-  return buildRecap(email, name);
+  return buildAtRisk(email, name);
 }
 
 export async function sendClientWorkoutEmail(
@@ -138,16 +96,35 @@ export async function sendClientWorkoutEmail(
   email: DueWorkoutEmail
 ): Promise<EmailSendResult> {
   const name = recipient.firstName.trim() || "there";
-  const built = build(email, name);
   const unsubscribeHref = unsubscribeUrlFor(
     recipient.email,
     `${WORKOUT_EMAIL_UNSUBSCRIBE_PREFIX}${recipient.userId}`
   );
+
+  if (email.kind === "weekly_recap") {
+    const recap = renderWeeklyRecapEmail(name, email, {
+      planUrl: "/workouts",
+      logUrl: "/workouts",
+      goalUrl: "/client-dashboard?editProfile=1",
+      exploreUrl: "/workouts",
+      trainersUrl: "/explore",
+      unsubscribeHref,
+    });
+    return sendOutboundEmail({
+      to: recipient.email,
+      subject: recap.subject,
+      text: recap.text,
+      html: recap.html,
+      kind: `client_workout_${email.kind}`,
+      tags: [{ name: "category", value: `client_workout_${email.kind}` }],
+    });
+  }
+
+  const built = build(email, name);
   const dashboardUrl = emailAbsoluteUrl(DASHBOARD_PATH);
 
   const text = [
     ...built.paragraphs,
-    ...(built.rows ?? []).map((row) => `${row.label}: ${row.value}`),
     `${built.cta}: ${dashboardUrl}`,
     `Stop workout emails: ${unsubscribeHref}`,
     "— SMOAC",
@@ -157,9 +134,7 @@ export async function sendClientWorkoutEmail(
     preheader: built.preheader,
     eyebrow: built.eyebrow,
     title: built.title,
-    bodyHtml:
-      renderEmailParagraphs(built.paragraphs) +
-      (built.rows ? renderEmailDetailRows(built.rows) : ""),
+    bodyHtml: renderEmailParagraphs(built.paragraphs),
     cta: { label: built.cta, href: dashboardUrl },
     footerNote: "You get these because workout emails are on in your SMOAC Workouts.",
     unsubscribeHref,

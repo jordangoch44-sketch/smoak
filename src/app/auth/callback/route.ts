@@ -8,6 +8,12 @@ import {
 } from "@/lib/auth/account-setup";
 import { ensureClientProfileForAuthUser } from "@/lib/auth/ensure-client-profile";
 import { updatePasswordSetupStatus } from "@/lib/auth/password-setup-status";
+import { CLIENT_DASHBOARD_PATH } from "@/lib/auth-routes";
+import { acceptCoachingInvite } from "@/lib/coaching/accept-coaching-invite";
+import {
+  coachingInviteTokenFromNextPath,
+  readCoachingInviteToken,
+} from "@/lib/coaching/invite-token";
 
 const PROFILE_ENSURE_BUDGET_MS = 2_000;
 
@@ -92,9 +98,11 @@ export async function GET(request: Request) {
             metadataStatus
           );
 
-          /* Quick-signup links always land on account setup when still pending. */
+          /* Quick-signup links always land on account setup when still pending.
+           * A coaching join link is kept so the invite is not thrown away. */
           if (
             !isCompleteAccountNextPath(destination) &&
+            !coachingInviteTokenFromNextPath(destination) &&
             (metadataStatus === "pending" ||
               profile?.password_setup_status === "pending") &&
             !shouldSkipPasswordSetupOnLogin(profile, next, metadataStatus)
@@ -104,6 +112,18 @@ export async function GET(request: Request) {
               : next.includes("inquiry=1")
                 ? "/complete-account?inquiry=1"
                 : "/complete-account";
+          }
+
+          const inviteToken =
+            coachingInviteTokenFromNextPath(next) ||
+            readCoachingInviteToken(user.user_metadata);
+          if (inviteToken && metaRole !== "specialist" && metaRole !== "admin") {
+            const claimed = await acceptCoachingInvite(supabase, user, {
+              token: inviteToken,
+            });
+            if (claimed.ok && !isCompleteAccountNextPath(destination)) {
+              destination = CLIENT_DASHBOARD_PATH;
+            }
           }
 
           return redirectToApp(request, destination);

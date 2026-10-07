@@ -8,6 +8,7 @@ import {
   OUTREACH_ICON_PEOPLE_PNG_BASE64,
   OUTREACH_ICON_PIN_PNG_BASE64,
 } from "@/lib/email/trainer-outreach-icons";
+import { WEEKLY_RECAP_ICON_PNG_BASE64 } from "@/lib/email/weekly-recap-icons";
 
 /** Content-IDs referenced after `rewriteEmailBrandImagesToCid`. */
 export const EMAIL_BRAND_CID = {
@@ -68,6 +69,12 @@ const INLINE_ASSETS: Array<{
     contentType: "image/png",
     content: OUTREACH_ICON_DOLLAR_PNG_BASE64,
   },
+  ...Object.entries(WEEKLY_RECAP_ICON_PNG_BASE64).map(([filename, content]) => ({
+    filename,
+    contentId: `smoac-${filename.replace(/\.png$/, "")}`,
+    contentType: "image/png" as const,
+    content,
+  })),
 ];
 
 export function emailBrandInlineAttachments(): ResendInlineImage[] {

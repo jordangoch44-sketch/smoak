@@ -30,7 +30,7 @@ export function lockOverlayDocumentScroll(): () => void {
     }
 
     const scroller = target.closest(
-      ".inquiry-inbox-page__body, .inquiry-thread__scroller, .client-workouts-body, .client-workouts-day__body, .exercise-howto__scroll, .exercise-picker__list"
+      ".inquiry-inbox-page__body, .inquiry-thread__scroller, .client-workouts-body, .client-workouts-day__body, .exercise-howto__scroll, .exercise-picker__list, .workout-share__body"
     );
     if (scroller instanceof HTMLElement) {
       const { scrollTop, scrollHeight, clientHeight } = scroller;

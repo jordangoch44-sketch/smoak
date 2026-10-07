@@ -8,7 +8,6 @@ import {
   CameraIcon,
   CheckIcon,
   ChevronRightIcon,
-  CrownIcon,
 } from "@/components/ui/icons";
 import {
   PROFILE_WELCOME_AVATAR_TASK_ID,
@@ -45,6 +44,63 @@ interface SpecialistProfileWelcomeModalProps {
   onBoost?: () => void;
 }
 
+function WelcomeMembership({
+  membership,
+}: {
+  membership: ProfileWelcomeMembershipPrompt;
+}) {
+  const upgrade = membership.upgrade;
+
+  return (
+    <div
+      id="profile-welcome-membership"
+      className={
+        upgrade
+          ? "dashboard-welcome-plans"
+          : "dashboard-welcome-plans dashboard-welcome-plans--solo"
+      }
+    >
+      {membership.note ? (
+        <p className="dashboard-welcome-plans__note">{membership.note}</p>
+      ) : null}
+      <div className="dashboard-welcome-plans__compare">
+        <section className="dashboard-welcome-plans__tier dashboard-welcome-plans__tier--current">
+          <p className="dashboard-welcome-plans__eyebrow">Your plan</p>
+          <p className="dashboard-welcome-plans__name">{membership.current.name}</p>
+          <ul className="dashboard-welcome-plans__list">
+            {membership.current.benefits.map((benefit) => (
+              <li key={benefit} className="dashboard-welcome-plans__benefit">
+                <CheckIcon className="dashboard-welcome-plans__mark" />
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+        {upgrade ? (
+          <section className="dashboard-welcome-plans__tier dashboard-welcome-plans__tier--next">
+            <p className="dashboard-welcome-plans__eyebrow">
+              {membership.upgradeEyebrow ?? "Upgrade"}
+            </p>
+            <p className="dashboard-welcome-plans__name">
+              <span className="smoac-color-text">{upgrade.name}</span>
+            </p>
+            <ul className="dashboard-welcome-plans__list">
+              {upgrade.benefits.map((benefit) => (
+                <li key={benefit} className="dashboard-welcome-plans__benefit">
+                  <span className="dashboard-welcome-plans__plus" aria-hidden>
+                    +
+                  </span>
+                  <span>{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function WelcomeAvatar({
   src,
   name,
@@ -78,8 +134,8 @@ function WelcomeAvatar({
 }
 
 /**
- * Welcome after each specialist login. Live avatar, unfinished profile
- * tasks, then a membership prompt (join, trial days, or upgrade/boost).
+ * Welcome on every third specialist login. Live avatar, unfinished profile
+ * tasks, then current membership beside the next tier.
  */
 export function SpecialistProfileWelcomeModal({
   open,
@@ -261,32 +317,7 @@ export function SpecialistProfileWelcomeModal({
             </div>
           ) : null}
 
-          {membership ? (
-            <div
-              id="profile-welcome-membership"
-              className={
-                membership.kind === "boost"
-                  ? "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-boost"
-                  : membership.kind === "upgrade-or-boost"
-                    ? "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-pro-plus"
-                    : membership.kind === "trial"
-                      ? "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-trial"
-                      : "dashboard-welcome-card dashboard-welcome-card--growth dashboard-welcome-card--growth-pro"
-              }
-            >
-              <span className="dashboard-welcome-card__icon dashboard-welcome-card__icon--trial" aria-hidden>
-                <CrownIcon className="dashboard-welcome-card__glyph" />
-              </span>
-              <span className="dashboard-welcome-card__copy">
-                <span className="dashboard-welcome-card__title">
-                  {membership.headline}
-                </span>
-                <span className="dashboard-welcome-card__body">
-                  {membership.body}
-                </span>
-              </span>
-            </div>
-          ) : null}
+          {membership ? <WelcomeMembership membership={membership} /> : null}
 
           {membership ? (
             <div className="dashboard-welcome__cta-row">
@@ -296,14 +327,6 @@ export function SpecialistProfileWelcomeModal({
               >
                 {membership.primaryCta}
               </DashboardButton>
-              {membership.kind === "upgrade-or-boost" ? (
-                <FastActivateButton
-                  className="dashboard-modal__secondary dashboard-welcome__later"
-                  onActivate={() => onBoost?.()}
-                >
-                  {membership.secondaryCta}
-                </FastActivateButton>
-              ) : null}
             </div>
           ) : nextStep ? (
             <DashboardButton

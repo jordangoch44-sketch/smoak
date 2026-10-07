@@ -32,6 +32,10 @@ export const LOCAL_INQUIRIES_STORAGE_KEY = "smoac_local_inquiries";
 /** Specialist portal inquiry alerts (local + same-browser notify) */
 export const SPECIALIST_INQUIRY_NOTIFICATIONS_KEY =
   "smoac_specialist_inquiry_notifications";
+/** Clients tab dot — roster joins and finished workouts already opened */
+export const CLIENT_NAV_SEEN_KEY = "smoac_client_nav_seen";
+/** Specialist welcome modal — login count per user, shown every third login */
+export const PROFILE_WELCOME_LOGIN_COUNT_KEY = "smoac_profile_welcome_logins";
 /** Explore search history (write-only until recent-search chips ship) */
 export { RECENT_SEARCHES_STORAGE_KEY } from "@/lib/recent-searches-storage";
 /** Per-client workout calendar (local until synced) */

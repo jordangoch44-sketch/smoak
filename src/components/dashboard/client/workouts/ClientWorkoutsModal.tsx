@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
+  BatteryChargingIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -23,6 +24,7 @@ import {
   formatWorkoutDayAriaLabel,
   formatWorkoutDayHeading,
   hasCardioOnDay,
+  hasRestOnDay,
   hasStrengthOnDay,
   exerciseMemoryBefore,
   isWorkoutDateKey,
@@ -32,7 +34,7 @@ import {
   workoutTitleOnDay,
   WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
-import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
+import type { ClientWorkoutCardio, ClientWorkoutDay, ClientWorkoutExercise } from "@/types/client-workout";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
 import {
   coachDayForSheet,
@@ -42,6 +44,7 @@ import {
 } from "@/lib/coaching/coach-workout";
 import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
 import { WorkoutNiceOverlay } from "./WorkoutNiceOverlay";
+import { WorkoutShareSheet } from "./WorkoutShareSheet";
 import { CoachDayMark } from "./CoachDayMark";
 import "@/styles/client-workouts.css";
 
@@ -68,8 +71,17 @@ export function ClientWorkoutsModal({
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [pasteSourceKey, setPasteSourceKey] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [shareWorkout, setShareWorkout] = useState<ClientWorkoutDay | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
-  const dismissNice = useCallback(() => setCelebrate(false), []);
+  const dismissNice = useCallback(() => {
+    setCelebrate(false);
+    setShareOpen((openShare) => openShare || Boolean(shareWorkout));
+  }, [shareWorkout]);
+  const dismissShare = useCallback(() => {
+    setShareOpen(false);
+    setShareWorkout(null);
+  }, []);
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
   const ignoreDayTapUntilRef = useRef(0);
@@ -171,9 +183,14 @@ export function ClientWorkoutsModal({
     setSelectedDateKey(dateKey);
   }
 
-  function handleSave(exercises: ClientWorkoutExercise[], title: string, cardio?: ClientWorkoutCardio) {
+  function handleSave(
+    exercises: ClientWorkoutExercise[],
+    title: string,
+    cardio?: ClientWorkoutCardio,
+    rest = false
+  ) {
     if (!selectedDateKey) return false;
-    return saveDay(selectedDateKey, exercises, title, cardio);
+    return saveDay(selectedDateKey, exercises, title, cardio, rest);
   }
 
   const selectedCoachWorkouts = selectedDateKey
@@ -206,17 +223,23 @@ export function ClientWorkoutsModal({
     return null;
   }
 
-  function handleWorkoutFinished(message: string | null) {
+  function handleWorkoutFinished(message: string | null, workout?: ClientWorkoutDay) {
     if (message) {
       setFinishError(message);
+      setCelebrate(false);
+      setShareOpen(false);
+      setShareWorkout(null);
       return;
     }
     setFinishError(null);
+    setShareWorkout(
+      workout && workout.exercises.some((exercise) => exercise.name.trim()) ? workout : null
+    );
     setCelebrate(true);
   }
 
   if (!mounted || typeof document === "undefined") return null;
-  if (!open && !celebrate && !finishError) return null;
+  if (!open && !celebrate && !shareOpen && !finishError) return null;
 
   const workouts = open ? createPortal(
     <div className="client-workouts-root" role="presentation">
@@ -328,7 +351,8 @@ export function ClientWorkoutsModal({
               const cardio = hasCardioOnDay(log, cell.dateKey);
               const coachMark = coachDayMark(coaching.workoutsByDate.get(cell.dateKey));
               const strength = hasStrengthOnDay(log, cell.dateKey) && !coachMark;
-              const trained = cardio || strength;
+              const rest = hasRestOnDay(log, cell.dateKey) && !cardio && !strength && !coachMark;
+              const trained = cardio || strength || rest;
               const dayTitle = workoutTitleOnDay(log, cell.dateKey);
               const selected = selectedDateKey === cell.dateKey;
               const label = `${formatWorkoutDayAriaLabel(cell.dateKey)}${
@@ -346,7 +370,9 @@ export function ClientWorkoutsModal({
                     ? dayTitle
                       ? `${label}, ${dayTitle}`
                       : `${label}, workout logged`
-                    : label;
+                    : rest
+                      ? `${label}, rest day`
+                      : label;
               return (
                 <FastActivateButton
                   key={cell.dateKey}
@@ -380,6 +406,11 @@ export function ClientWorkoutsModal({
                           <span className="client-workouts-cal__check">
                             <CheckIcon />
                           </span>
+                        </span>
+                      ) : null}
+                      {rest ? (
+                        <span className="client-workouts-cal__mark client-workouts-cal__mark--rest">
+                          <BatteryChargingIcon />
                         </span>
                       ) : null}
                       {coachMark ? <CoachDayMark done={coachMark === "done"} /> : null}
@@ -423,6 +454,9 @@ export function ClientWorkoutsModal({
             removeDay(selectedDateKey);
             closeSelectedDay();
           }}
+          onReleaseDay={() => {
+            if (selectedDateKey) removeDay(selectedDateKey);
+          }}
           onCopy={() => {
             if (onPaste) {
               onPaste(selectedDateKey);
@@ -442,6 +476,13 @@ export function ClientWorkoutsModal({
     <>
       {workouts}
       {celebrate ? <WorkoutNiceOverlay onDone={dismissNice} /> : null}
+      {shareOpen && shareWorkout ? (
+        <WorkoutShareSheet
+          workout={shareWorkout}
+          streakWeeks={streak}
+          onClose={dismissShare}
+        />
+      ) : null}
       {finishError
         ? createPortal(
             <button

@@ -55,10 +55,11 @@ export function useClientWorkouts(userId: string | null) {
       dateKey: string,
       exercises: readonly ClientWorkoutExercise[],
       title = "",
-      cardio?: ClientWorkoutCardio | null
+      cardio?: ClientWorkoutCardio | null,
+      rest = false
     ) => {
       if (!userId) return false;
-      return saveClientWorkoutDay(userId, dateKey, exercises, title, cardio);
+      return saveClientWorkoutDay(userId, dateKey, exercises, title, cardio, rest);
     },
     [userId]
   );

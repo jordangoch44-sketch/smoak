@@ -7,6 +7,7 @@ import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { findLibraryExercise } from "@/lib/workouts/exercise-catalog";
 import {
+  bundledExerciseMedia,
   cachedExerciseGuide,
   loadExerciseGuide,
   type ExerciseGuide,
@@ -29,9 +30,13 @@ export function ExerciseHowToSheet({
   onAction?: () => void;
 }) {
   const library = findLibraryExercise(name);
-  const [guide, setGuide] = useState<ExerciseGuide | null>(() =>
-    library ? cachedExerciseGuide(name) : null
-  );
+  const bundled = library ? bundledExerciseMedia(name) : null;
+  const [guide, setGuide] = useState<ExerciseGuide | null>(() => {
+    if (bundled) {
+      return { gifUrl: bundled.gifUrl, overview: null, instructions: [...bundled.instructions] };
+    }
+    return library ? cachedExerciseGuide(name) : null;
+  });
   const titleId = "exercise-howto-title";
 
   useEffect(() => {
@@ -42,6 +47,10 @@ export function ExerciseHowToSheet({
   useEffect(() => {
     if (!library) {
       setGuide(null);
+      return;
+    }
+    if (bundled?.instructions.length) {
+      setGuide({ gifUrl: bundled.gifUrl, overview: null, instructions: [...bundled.instructions] });
       return;
     }
     const cached = cachedExerciseGuide(name);
@@ -56,7 +65,7 @@ export function ExerciseHowToSheet({
     return () => {
       cancelled = true;
     };
-  }, [library, name]);
+  }, [bundled, library, name]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

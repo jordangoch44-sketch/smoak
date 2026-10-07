@@ -67,9 +67,13 @@ export function ClientPlanSheet({
           {workout.exercises.map((exercise) => {
             const log = workout.clientLog?.find((entry) => entry.id === exercise.id);
             const sets = (log?.setLogs ?? []).filter((set) => set.weight || set.reps);
+            const note = (log ? log.note : exercise.note)?.trim() ?? "";
             return (
               <li key={exercise.id}>
-                <span>{exercise.name}</span>
+                <span>
+                  {exercise.name}
+                  {note ? <span className="roster-plan__note">{note}</span> : null}
+                </span>
                 <span className="roster-plan__scheme">
                   {sets.length > 0
                     ? sets

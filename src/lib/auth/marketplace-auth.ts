@@ -1,6 +1,7 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { logAuth } from "@/lib/auth/auth-logger";
+import { COACHING_INVITE_TOKEN_META } from "@/lib/coaching/invite-token";
 import {
   validateDevLoginDetailed,
   validateDevSignup,
@@ -677,6 +678,8 @@ export async function signUpWithPassword(
     specialistOnboarding?: SpecialistOnboardingState;
     /** Override confirm-email / magic-link return URL */
     emailRedirectTo?: string;
+    /** Share-link token. Kept on the user so confirm-email still joins the roster. */
+    coachingInviteToken?: string;
   }
 ): Promise<AuthResult & { userId?: string }> {
   const trimmedEmail = email.trim().toLowerCase();
@@ -738,6 +741,9 @@ export async function signUpWithPassword(
         role,
         first_name: options?.firstName?.trim() ?? "",
         last_name: options?.lastName?.trim() ?? "",
+        ...(options?.coachingInviteToken?.trim()
+          ? { [COACHING_INVITE_TOKEN_META]: options.coachingInviteToken.trim() }
+          : {}),
       },
     },
   });

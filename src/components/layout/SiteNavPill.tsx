@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import { useClientNavAttention } from "@/hooks/useClientNavAttention";
 import { useMobileBottomNavProfilePhoto } from "@/hooks/useMobileBottomNavProfilePhoto";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
@@ -33,6 +34,7 @@ import {
   getMobileBottomNavProfileAuthState,
   getMobileBottomNavProfilePresentation,
   isActiveNavItem,
+  isSpecialistDashboardClientsTab,
   type MobileBottomNavItem,
   type MobileBottomNavItemId,
   type MobileBottomNavProfileAuthState,
@@ -165,6 +167,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   profilePresentation,
   showSaveBadge,
   savedCount,
+  showClientAttention,
   onNavigate,
   onPointerDown,
   onPointerCommit,
@@ -176,6 +179,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   profilePresentation?: MobileBottomNavProfilePresentation;
   showSaveBadge: boolean;
   savedCount: number;
+  showClientAttention: boolean;
   onNavigate: (
     item: MobileBottomNavItem,
     event: MouseEvent<HTMLAnchorElement>
@@ -202,9 +206,11 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
     ? signedIn
       ? "Open My Profile"
       : "Open Profile"
-    : item.id === "saved" && item.href === "/saved" && showSaveBadge
-      ? `${item.label}, ${savedCount} saved`
-      : item.label;
+    : item.id === "clients" && showClientAttention
+      ? "Clients, new activity"
+      : item.id === "saved" && item.href === "/saved" && showSaveBadge
+        ? `${item.label}, ${savedCount} saved`
+        : item.label;
 
   const handleClick = useCallback(
     (event: MouseEvent<HTMLAnchorElement>) => {
@@ -292,6 +298,9 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
         {item.id === "saved" && item.href === "/saved" && showSaveBadge ? (
           <SavedNavBadge count={savedCount} />
         ) : null}
+        {item.id === "clients" && showClientAttention ? (
+          <span className="mobile-bottom-nav__attention" aria-hidden />
+        ) : null}
       </span>
       <span
         className={cn(
@@ -312,6 +321,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   profilePresentation,
   showSaveBadge,
   savedCount,
+  showClientAttention,
   onNavClick,
   onPointerDown,
   onPointerCommit,
@@ -323,6 +333,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   profilePresentation: MobileBottomNavProfilePresentation;
   showSaveBadge: boolean;
   savedCount: number;
+  showClientAttention: boolean;
   onNavClick: (
     item: MobileBottomNavItem,
     event: MouseEvent<HTMLAnchorElement>
@@ -352,6 +363,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
             }
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
+            showClientAttention={showClientAttention}
             onNavigate={onNavClick}
             onPointerDown={onPointerDown}
             onPointerCommit={onPointerCommit}
@@ -403,6 +415,9 @@ function SiteNavPillShell({
     isSavesReady &&
     canSaveSpecialists(session) &&
     savedCount > 0;
+  const viewingClients = isSpecialistDashboardClientsTab(pathname, routeSearch);
+  const showClientAttention =
+    useClientNavAttention(viewingClients) && pendingId !== "clients";
   const items = useMemo(
     () => getMobileBottomNavItems(session),
     [session]
@@ -524,6 +539,7 @@ function SiteNavPillShell({
         profilePresentation={profilePresentation}
         showSaveBadge={showSaveBadge}
         savedCount={savedCount}
+        showClientAttention={showClientAttention}
         onNavClick={handleNavClick}
         onPointerDown={handlePointerDown}
         onPointerCommit={handlePointerCommit}

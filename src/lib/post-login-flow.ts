@@ -6,7 +6,12 @@ import {
 } from "@/lib/auth-routes";
 import { peekPendingSave } from "@/lib/pending-save-storage";
 import type { SaveToastOptions } from "@/lib/saved-ui";
-import { hasPendingSpecialistProfileWelcome } from "@/lib/specialist-profile-welcome";
+import {
+  hasPendingSpecialistProfileWelcome,
+  peekProfileWelcomeLoginCount,
+  profileWelcomeDueOnLogin,
+  recordProfileWelcomeLogin,
+} from "@/lib/specialist-profile-welcome";
 
 export interface PostLoginNavigation {
   path: string;
@@ -17,6 +22,8 @@ export interface PostLoginNavigationOptions {
   /** After auth from saved panel, land on /saved instead of dashboard */
   returnToSaved?: boolean;
   session?: Pick<AuthSession, "userId" | "role"> | null;
+  /** Count this specialist login. Preview copy should leave this off. */
+  recordWelcomeLogin?: boolean;
 }
 
 /** DEV ONLY — dashboard route + toast after login with optional pending save */
@@ -44,9 +51,17 @@ export function resolvePostLoginNavigation(
     return { path: "/saved" };
   }
 
-  /* Every specialist login — including the first — opens the welcome. */
+  /* Every third specialist login opens the welcome. */
   if (hasPendingSpecialistProfileWelcome(options?.session)) {
-    return { path: SPECIALIST_DASHBOARD_WELCOME_HREF };
+    const userId = options?.session?.userId;
+    if (userId) {
+      const loginCount = options?.recordWelcomeLogin
+        ? recordProfileWelcomeLogin(userId)
+        : peekProfileWelcomeLoginCount(userId);
+      if (profileWelcomeDueOnLogin(loginCount)) {
+        return { path: SPECIALIST_DASHBOARD_WELCOME_HREF };
+      }
+    }
   }
 
   return {

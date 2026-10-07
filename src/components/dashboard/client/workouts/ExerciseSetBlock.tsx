@@ -9,10 +9,15 @@ import { findLibraryExercise } from "@/lib/workouts/exercise-catalog";
 import {
   createWorkoutExerciseId,
   exerciseWithSetLogs,
+  EXERCISE_NOTE_MAX_LENGTH,
+  formatPreviousSet,
   MAX_WORKOUT_SETS,
   parseWorkoutSetCount,
+  previousSetsForExercise,
+  sanitizeExerciseNote,
   sanitizeWorkoutCount,
   sanitizeWorkoutWeight,
+  type ExerciseSetMemory,
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
 import type { ClientWorkoutExercise, ClientWorkoutSetLog } from "@/types/client-workout";
@@ -45,15 +50,18 @@ function DotsIcon() {
   );
 }
 
-/** Hevy-style set table: name, then set / lbs / reps / check. No previous column. */
+/** Set table: name, notes, then set / previous / lbs / reps / check. */
 export function ExerciseSetBlock({
   exercise,
+  prior = [],
   autoFocus = false,
   inSuperset = false,
   onChange,
   onOpenMenu,
 }: {
   exercise: ClientWorkoutExercise;
+  /** Earlier sessions, newest first. Previous shows the last logged sets. */
+  prior?: readonly ExerciseSetMemory[];
   autoFocus?: boolean;
   inSuperset?: boolean;
   /** `commit` writes the day. Name keystrokes stay local until the field blurs. */
@@ -62,12 +70,18 @@ export function ExerciseSetBlock({
 }) {
   const setIds = useRef<string[]>([]);
   const logs = logsOf(exercise);
+  const previous = previousSetsForExercise(prior, exercise.name);
   const [howToOpen, setHowToOpen] = useState(false);
   const named = exercise.name.trim();
   const fromLibrary = Boolean(named && findLibraryExercise(named));
 
   function openHowTo() {
     if (named) setHowToOpen(true);
+  }
+
+  function commitNote(value: string) {
+    const note = sanitizeExerciseNote(value).trim();
+    onChange({ ...exercise, note }, Boolean(exercise.name.trim()));
   }
 
   function commitName(name: string) {
@@ -159,11 +173,35 @@ export function ExerciseSetBlock({
             <DotsIcon />
           </button>
         </div>
+        <input
+          className="exercise-block__note"
+          value={exercise.note ?? ""}
+          maxLength={EXERCISE_NOTE_MAX_LENGTH}
+          autoComplete="off"
+          autoCorrect="on"
+          enterKeyHint="done"
+          placeholder="Add notes..."
+          aria-label={named ? `Notes for ${named}` : "Exercise notes"}
+          onPointerDown={(event) => event.stopPropagation()}
+          onChange={(event) =>
+            onChange(
+              { ...exercise, note: sanitizeExerciseNote(event.target.value) },
+              Boolean(exercise.name.trim())
+            )
+          }
+          onBlur={(event) => commitNote(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            event.currentTarget.blur();
+          }}
+        />
       </div>
 
       <div className="exercise-block__table">
         <div className="exercise-block__head" aria-hidden>
           <span>Set</span>
+          <span className="exercise-block__head-previous">Previous</span>
           <span>Lbs</span>
           <span>Reps</span>
           <CheckIcon className="exercise-block__head-check" />
@@ -172,6 +210,9 @@ export function ExerciseSetBlock({
           const row = (
             <div className={cn("exercise-block__row", log.completed && "exercise-block__row--done")}>
               <span className="exercise-block__set">{index + 1}</span>
+              <span className="exercise-block__previous">
+                {formatPreviousSet(previous[index])}
+              </span>
               <input
                 className="exercise-block__input"
                 inputMode="decimal"

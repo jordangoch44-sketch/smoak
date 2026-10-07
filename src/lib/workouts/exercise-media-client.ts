@@ -1,3 +1,12 @@
+import { WORKOUT_EXERCISE_MEDIA, type BundledExerciseMedia } from "@/data/workout-exercise-media";
+
+export type { BundledExerciseMedia };
+
+/** Still, clip, and steps shipped with the app, keyed by exercise name. */
+export function bundledExerciseMedia(name: string): BundledExerciseMedia | null {
+  return WORKOUT_EXERCISE_MEDIA[name.trim().toLowerCase()] ?? null;
+}
+
 export interface LibraryExerciseMedia {
   exerciseId: string;
   imageUrl?: string;

@@ -358,6 +358,25 @@ body.bottom-nav-panel-active .mobile-bottom-nav__pill {
   color: #fff;
 }
 
+.mobile-bottom-nav__attention {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.35rem;
+  z-index: 3;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #ff3b30;
+  box-shadow:
+    0 0 0 1.5px #0c0a12,
+    0 0 8px rgba(255, 59, 48, 0.7);
+  pointer-events: none;
+}
+
+.mobile-bottom-nav__item--active .mobile-bottom-nav__attention {
+  display: none;
+}
+
 .mobile-bottom-nav__badge {
   position: absolute;
   top: -0.0625rem;

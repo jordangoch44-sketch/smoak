@@ -88,7 +88,10 @@ export function coachDayMark(
   return workouts.every((workout) => workout.status === "completed") ? "done" : "open";
 }
 
-const FINISHED_NOTICE_MS = 14 * 24 * 60 * 60 * 1000;
+/** How long a finished workout (and a new roster join) stays a notice. */
+export const COACH_NOTICE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
+
+const FINISHED_NOTICE_MS = COACH_NOTICE_WINDOW_MS;
 
 const FINISHED_SEEN_KEY = "smoac.coach-finished-seen";
 
@@ -107,6 +110,7 @@ export function rememberLocalFinishedSeen(ids: readonly string[]) {
   if (typeof window === "undefined" || ids.length === 0) return;
   const next = [...new Set([...readLocalFinishedSeen(), ...ids])].slice(-200);
   window.localStorage.setItem(FINISHED_SEEN_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event("smoac:coach-finished-seen"));
 }
 
 /** Completed coach workouts the specialist has not dismissed, from the last two weeks. */
@@ -194,11 +198,12 @@ export function appendCoachExercises(
   const have = new Set(existing.map((exercise) => exercise.id));
   const added = workout.exercises
     .filter((exercise) => !have.has(exercise.id))
-    .map(({ id, name, sets, reps, setLogs }) => ({
+    .map(({ id, name, sets, reps, setLogs, note }) => ({
       id,
       name,
       sets,
       reps,
+      ...(note?.trim() ? { note: note.trim() } : {}),
       ...(setLogs?.length
         ? {
             setLogs: setLogs.map((set) => ({
@@ -254,6 +259,7 @@ export function coachProgressSignature(
     Boolean(exercise.completed),
     exercise.sets,
     exercise.reps,
+    exercise.note?.trim() ?? "",
     (exercise.setLogs ?? []).map(
       (set) => `${set.reps}|${set.weight}|${set.completed ? 1 : 0}`
     ),

@@ -286,12 +286,14 @@ export function saveClientWorkoutDay(
   dateKey: string,
   exercises: readonly ClientWorkoutExercise[],
   title = "",
-  cardio?: ClientWorkoutCardio | null
+  cardio?: ClientWorkoutCardio | null,
+  rest = false
 ): boolean {
-  const nextExercises = sanitizeWorkoutExercises(exercises);
-  const nextTitle = sanitizeWorkoutTitle(title);
-  const nextCardio = sanitizeWorkoutCardio(cardio);
-  if (nextExercises.length === 0 && !nextTitle && !nextCardio) return false;
+  const nextExercises = rest ? [] : sanitizeWorkoutExercises(exercises);
+  const nextTitle = rest ? "" : sanitizeWorkoutTitle(title);
+  const nextCardio = rest ? undefined : sanitizeWorkoutCardio(cardio);
+  const nextRest = rest && nextExercises.length === 0 && !nextTitle && !nextCardio;
+  if (!nextRest && nextExercises.length === 0 && !nextTitle && !nextCardio) return false;
   const current = getClientWorkoutLog(userId);
   persistLog(userId, {
     ...current,
@@ -302,6 +304,7 @@ export function saveClientWorkoutDay(
         title: nextTitle,
         exercises: nextExercises,
         ...(nextCardio ? { cardio: nextCardio } : {}),
+        ...(nextRest ? { rest: true } : {}),
       },
     },
   });
@@ -331,7 +334,8 @@ export function copyClientWorkoutDay(
   const cardio = copiedCardio
     ? { type: copiedCardio.type, duration: copiedCardio.duration }
     : undefined;
-  if (exercises.length === 0 && !title && !cardio) return false;
+  const rest = source.rest === true && exercises.length === 0 && !title && !cardio;
+  if (!rest && exercises.length === 0 && !title && !cardio) return false;
   persistLog(userId, {
     ...current,
     days: {
@@ -341,6 +345,7 @@ export function copyClientWorkoutDay(
         title,
         exercises,
         ...(cardio ? { cardio } : {}),
+        ...(rest ? { rest: true } : {}),
       },
     },
   });

@@ -1,3 +1,4 @@
+import { coachingInviteTokenFromNextPath } from "@/lib/coaching/invite-token";
 import type { ProfileRow } from "@/types/database";
 
 export const COMPLETE_ACCOUNT_PATH = "/complete-account";
@@ -56,6 +57,11 @@ export function resolvePostAuthCallbackPath(
   const normalizedNext = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
 
   if (isCompleteAccountNextPath(normalizedNext)) {
+    return normalizedNext;
+  }
+
+  /* A coaching share link is the acceptance. Don't drop it for password setup. */
+  if (coachingInviteTokenFromNextPath(normalizedNext)) {
     return normalizedNext;
   }
 

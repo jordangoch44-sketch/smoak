@@ -71,10 +71,32 @@ const MIN_PASSWORD_LENGTH = 8;
 const WORKOUT_GOAL_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
 const CARDIO_GOAL_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7];
 
+export type ClientProfileEditorFocus =
+  | "photo"
+  | "basic"
+  | "goals"
+  | "frequency"
+  | "specialties"
+  | "format"
+  | "location"
+  | "preferences";
+
+const PROFILE_EDITOR_FOCUS_IDS: Record<ClientProfileEditorFocus, string> = {
+  photo: "client-profile-focus-photo",
+  basic: "client-profile-focus-basic",
+  goals: "client-profile-focus-goals",
+  frequency: "client-profile-focus-frequency",
+  specialties: "client-profile-focus-specialties",
+  format: "client-profile-focus-format",
+  location: "client-profile-focus-location",
+  preferences: "client-profile-preferences",
+};
+
 interface ClientProfileEditModalProps {
   open: boolean;
   userId: string;
   authEmail: string;
+  focus?: ClientProfileEditorFocus | null;
   onClose: () => void;
 }
 
@@ -108,11 +130,13 @@ export function ClientProfileEditModal({
   open,
   userId,
   authEmail,
+  focus = null,
   onClose,
 }: ClientProfileEditModalProps) {
   const { showToast } = useToast();
   const titleId = useId();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sheetBodyRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState<ClientProfileFormState>(() =>
@@ -195,6 +219,38 @@ export function ClientProfileEditModal({
       cancelled = true;
     };
   }, [open, userId, authEmail]);
+
+  useEffect(() => {
+    if (!open || loading) return;
+    const body = sheetBodyRef.current;
+    if (!body) return;
+    let cancelled = false;
+
+    function align() {
+      const scroller = sheetBodyRef.current;
+      if (cancelled || !scroller) return;
+      if (!focus) {
+        scroller.scrollTop = 0;
+        return;
+      }
+      const target = scroller.querySelector<HTMLElement>(
+        `#${PROFILE_EDITOR_FOCUS_IDS[focus]}`
+      );
+      if (!target) return;
+      scroller.scrollTop = 0;
+      const top =
+        target.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      scroller.scrollTop = Math.max(0, top - 12);
+    }
+
+    const frame = window.requestAnimationFrame(align);
+    const timer = window.setTimeout(align, 360);
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [open, loading, focus]);
 
   const patchForm = useCallback(
     (patch: Partial<ClientProfileFormState>) => {
@@ -502,12 +558,12 @@ export function ClientProfileEditModal({
           </div>
         </div>
 
-        <div className="client-profile-sheet__body">
+        <div ref={sheetBodyRef} className="client-profile-sheet__body">
           {loading ? (
             <PageWaitState label="Loading your profile" compact />
           ) : (
             <>
-              <section className="client-profile-section">
+              <section id="client-profile-focus-photo" className="client-profile-section">
                 <h3 className="client-profile-section__title">Profile photo</h3>
                 <div className="client-profile-avatar">
                   <div className="client-profile-avatar__circle">
@@ -561,7 +617,7 @@ export function ClientProfileEditModal({
                 </div>
               </section>
 
-              <section className="client-profile-section">
+              <section id="client-profile-focus-basic" className="client-profile-section">
                 <h3 className="client-profile-section__title">Basic information</h3>
                 <div className="client-profile-fields client-profile-fields--2">
                   <label className="client-profile-field">
@@ -601,7 +657,7 @@ export function ClientProfileEditModal({
                       inputMode="tel"
                     />
                   </label>
-                  <label className="client-profile-field">
+                  <label id="client-profile-focus-location" className="client-profile-field">
                     <span className="client-profile-field__label">ZIP code</span>
                     <input
                       className="client-profile-field__input"
@@ -631,7 +687,7 @@ export function ClientProfileEditModal({
                 </div>
               </section>
 
-              <section className="client-profile-section">
+              <section id="client-profile-focus-goals" className="client-profile-section">
                 <h3 className="client-profile-section__title">Goals</h3>
                 <div className="client-profile-chips">
                   {CLIENT_PROFILE_GOAL_OPTIONS.map((goal) => {
@@ -665,7 +721,7 @@ export function ClientProfileEditModal({
                   change them.
                 </p>
                 <div className="client-profile-fields client-profile-fields--2">
-                  <label className="client-profile-field">
+                  <label id="client-profile-focus-frequency" className="client-profile-field">
                     <span className="client-profile-field__label">
                       Workout goal
                     </span>
@@ -943,7 +999,10 @@ export function ClientProfileEditModal({
                 </p>
               </section>
 
-              <section className="client-profile-section">
+              <section
+                className="client-profile-section"
+                id="client-profile-preferences"
+              >
                 <h3 className="client-profile-section__title">
                   Specialist preferences
                 </h3>
@@ -978,7 +1037,9 @@ export function ClientProfileEditModal({
                     );
                   })}
                 </div>
-                <p className="client-profile-field__label">Preferred specialties</p>
+                <p id="client-profile-focus-specialties" className="client-profile-field__label">
+                  Preferred specialties
+                </p>
                 <div className="client-profile-chips">
                   {CLIENT_SPECIALTY_OPTIONS.map((item) => {
                     const active = form.preferredSpecialties.includes(item);
@@ -1023,7 +1084,7 @@ export function ClientProfileEditModal({
                     ))}
                   </select>
                 </label>
-                <label className="client-profile-field">
+                <label id="client-profile-focus-format" className="client-profile-field">
                   <span className="client-profile-field__label">
                     Training format
                   </span>

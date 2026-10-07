@@ -10,7 +10,9 @@ import {
 } from "@/lib/workouts/client-workout";
 import {
   buildWeekOverview,
+  weekRecapFigures,
   type WeekOverviewStat,
+  type WeekRecapFigures,
 } from "@/lib/workouts/client-workout-overview";
 
 export type WorkoutEmailKind = "streak_at_risk" | "streak_milestone" | "weekly_recap";
@@ -49,6 +51,7 @@ export type DueWorkoutEmail =
       cardio: WeekGoalProgress | null;
       stats: WeekOverviewStat[];
       highlight: string | null;
+      figures: WeekRecapFigures;
     };
 
 /**
@@ -141,6 +144,7 @@ function recapEmail(log: ClientWorkoutLog, localNow: Date): DueWorkoutEmail | nu
     cardio: progress.cardio,
     stats: overview.stats,
     highlight: overview.highlight,
+    figures: weekRecapFigures(log, lastWeekStart),
   };
 }
 

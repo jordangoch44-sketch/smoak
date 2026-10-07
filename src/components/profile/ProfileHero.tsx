@@ -36,7 +36,7 @@ import {
 } from "@/lib/free-first-session";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
-import { LockIcon, PhotosStackIcon } from "@/components/ui/icons";
+import { LockIcon, PhotosStackIcon, PinIcon } from "@/components/ui/icons";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { MEDIA_TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
@@ -386,6 +386,9 @@ export function ProfileHero({
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={preview} alt="" />
                       ) : null}
+                      <span className="profile-hero__pinned-mark" aria-hidden>
+                        <PinIcon className="profile-hero__pinned-mark-icon" />
+                      </span>
                       {isVideo && !pinsLocked ? (
                         <span className="profile-hero__pinned-seconds">
                           {formatClipSecondsLabel(item.duration ?? 0)}

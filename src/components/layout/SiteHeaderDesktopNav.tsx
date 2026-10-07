@@ -6,9 +6,11 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
+import { useClientNavAttention } from "@/hooks/useClientNavAttention";
 import {
   getMobileBottomNavItems,
   isActiveNavItem,
+  isSpecialistDashboardClientsTab,
   type MobileBottomNavItemId,
 } from "@/lib/mobile-bottom-nav";
 import { isSameBottomNavDestination } from "@/lib/mobile-bottom-nav-transition";
@@ -63,6 +65,9 @@ function SiteHeaderDesktopNavInner({
     isSavesReady &&
     canSaveSpecialists(session) &&
     savedCount > 0;
+  const viewingClients = isSpecialistDashboardClientsTab(pathname, searchParams);
+  const showClientAttention =
+    useClientNavAttention(viewingClients) && pendingId !== "clients";
 
   return (
     <nav className="site-header-desktop-nav" aria-label="Main">
@@ -86,6 +91,11 @@ function SiteHeaderDesktopNavInner({
                   active && "site-header-desktop-nav__link--active"
                 )}
                 aria-current={active ? "page" : undefined}
+                aria-label={
+                  item.id === "clients" && showClientAttention
+                    ? "Clients, new activity"
+                    : undefined
+                }
                 onClick={(event) => {
                   if (!isActiveNavItem(item.id, pathname, searchParams)) {
                     setPendingId(item.id);
@@ -101,6 +111,9 @@ function SiteHeaderDesktopNavInner({
                 }}
               >
                 {label}
+                {item.id === "clients" && showClientAttention ? (
+                  <span className="site-header-desktop-nav__attention" aria-hidden />
+                ) : null}
                 {item.id === "saved" &&
                 item.href === SITE_ROUTES.saved &&
                 showSaveBadge ? (

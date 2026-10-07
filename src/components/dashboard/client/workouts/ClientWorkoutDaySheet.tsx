@@ -129,9 +129,12 @@ interface ClientWorkoutDaySheetProps {
   onSave: (
     exercises: ClientWorkoutExercise[],
     title: string,
-    cardio?: ClientWorkoutCardio
+    cardio?: ClientWorkoutCardio,
+    rest?: boolean
   ) => boolean;
   onRemove: () => void;
+  /** Drop a saved rest day without closing the sheet, so the calendar updates. */
+  onReleaseDay?: () => void;
   onCopy: () => void;
   /** Workouts a coach sent for this day, above the log. */
   coachSlot?: ReactNode;
@@ -141,8 +144,8 @@ interface ClientWorkoutDaySheetProps {
   fromCoach?: string | null;
   /** Shown once every set is checked. Resolves to an error message, or null once finished. */
   onFinish?: (exercises: ClientWorkoutExercise[]) => Promise<string | null>;
-  /** Called after the sheet has slid away, with the finish result. */
-  onFinished?: (message: string | null) => void;
+  /** Called after the sheet has slid away. A saved day is included when finish succeeded. */
+  onFinished?: (message: string | null, workout?: ClientWorkoutDay) => void;
   /**
    * Earlier exercises, newest first. Naming a new exercise copies that
    * session's sets, weights, and reps into the rows.
@@ -164,6 +167,7 @@ export function ClientWorkoutDaySheet({
   onClose,
   onSave,
   onRemove,
+  onReleaseDay,
   onCopy,
   coachSlot,
   coachAssigned = false,
@@ -186,6 +190,7 @@ export function ClientWorkoutDaySheet({
   );
   const [wantCardio, setWantCardio] = useState(false);
   const [wantWorkout, setWantWorkout] = useState(false);
+  const [wantRest, setWantRest] = useState(() => workout?.rest === true && !send);
   const [step, setStep] = useState<DaySheetStep>(() =>
     send ||
     (workout &&
@@ -214,6 +219,7 @@ export function ClientWorkoutDaySheet({
   const afterCloseRef = useRef<(() => void) | null>(null);
   const onFinishRef = useRef(onFinish);
   const onFinishedRef = useRef(onFinished);
+  const releasedRestRef = useRef(false);
   exercisesRef.current = exercises;
   actionsOpenRef.current = actionsOpen;
   onFinishRef.current = onFinish ?? onFinishRef.current;
@@ -542,10 +548,13 @@ export function ClientWorkoutDaySheet({
     requestClose();
   }
 
-  const readyToFinish =
-    Boolean(fromCoach && onFinish) &&
+  const namedExercises = exercises.some((exercise) => exercise.name.trim());
+  const setsComplete =
     exercises.length > 0 &&
     exercises.every((exercise) => exercise.name.trim() && exercise.completed === true);
+  const readyToFinish = Boolean(fromCoach && onFinish) && setsComplete;
+  /** Coach day that is already reported done, so Finish only opens sharing. */
+  const coachAlreadyDone = Boolean(fromCoach) && !onFinish && !send && namedExercises;
 
   function handleFinish() {
     if (!onFinish || finishing) return;
@@ -558,9 +567,10 @@ export function ClientWorkoutDaySheet({
     const finish = onFinishRef.current;
     setError(null);
     setFinishing(true);
+    const day = finishedDay();
     afterCloseRef.current = () => {
       if (!finish) return;
-      onFinishedRef.current?.(null);
+      onFinishedRef.current?.(null, day);
       void finish(named).then((message) => {
         if (message) onFinishedRef.current?.(message);
       });
@@ -568,9 +578,95 @@ export function ClientWorkoutDaySheet({
     requestClose();
   }
 
+  function handleShareFinished() {
+    if (finishing || send) return;
+    const next = exercisesRef.current;
+    if (!next.some((exercise) => exercise.name.trim())) return;
+    if (!persist(next)) {
+      setError("Couldn’t save the workout.");
+      return;
+    }
+    setError(null);
+    setFinishing(true);
+    const day = finishedDay();
+    afterCloseRef.current = () => {
+      onFinishedRef.current?.(null, day);
+    };
+    requestClose();
+  }
+
+  function handleOwnFinish() {
+    if (finishing || send || fromCoach) return;
+    const next = exercisesRef.current;
+    if (!next.some((exercise) => exercise.name.trim())) {
+      setError("Add at least one exercise to finish.");
+      return;
+    }
+    if (!persist(next)) {
+      setError("Couldn’t save the workout.");
+      return;
+    }
+    setError(null);
+    setFinishing(true);
+    const day = finishedDay();
+    afterCloseRef.current = () => {
+      onFinishedRef.current?.(null, day);
+    };
+    requestClose();
+  }
+
+  function finishedDay(): ClientWorkoutDay {
+    const cleaned = sanitizeWorkoutCardio(cardio);
+    return {
+      date: dateKey,
+      title: sanitizeWorkoutTitle(title),
+      exercises: exercisesRef.current
+        .filter((exercise) => exercise.name.trim())
+        .map((exercise) => ({
+          ...exercise,
+          setLogs: exercise.setLogs?.map((log) => ({ ...log })),
+        })),
+      ...(cleaned ? { cardio: cleaned } : {}),
+    };
+  }
+
+  function releaseLoggedRest() {
+    if (send || workout?.rest !== true) return;
+    releasedRestRef.current = true;
+    onReleaseDay?.();
+  }
+
+  function restoreRestDay() {
+    if (send || !releasedRestRef.current || workout?.rest === true) return;
+    const saved = onSave([], "", undefined, true);
+    if (!saved) {
+      setError("Couldn’t save the rest day.");
+      return;
+    }
+    releasedRestRef.current = false;
+  }
+
   function handlePickContinue() {
+    if (wantRest) {
+      const saved = workout?.rest === true || onSave([], "", undefined, true);
+      if (!saved) {
+        setError("Couldn’t save the rest day.");
+        return;
+      }
+      setError(null);
+      requestClose();
+      return;
+    }
     if (!wantCardio && !wantWorkout) {
-      setError("Choose cardio, workout, or both.");
+      if (workout?.rest) {
+        onRemove();
+        return;
+      }
+      if (releasedRestRef.current) {
+        requestClose();
+        return;
+      }
+      setError("Choose cardio, workout, both, or a rest day.");
       return;
     }
     setError(null);
@@ -912,7 +1008,7 @@ export function ClientWorkoutDaySheet({
           {step === "pick" ? (
             <>
               <p className="client-workouts-pick__hint">
-                Cardio, workout, or both.
+                Cardio, workout, both, or a rest day.
               </p>
               <div className="client-workouts-pick" role="group" aria-label="Session type">
                 <FastActivateButton
@@ -920,8 +1016,15 @@ export function ClientWorkoutDaySheet({
                     "client-workouts-pick__choice client-workouts-pick__choice--cardio",
                     wantCardio && "client-workouts-pick__choice--on"
                   )}
+                  aria-pressed={wantCardio}
                   onActivate={() => {
-                    setWantCardio((value) => !value);
+                    if (wantRest) {
+                      setWantRest(false);
+                      setWantCardio(true);
+                      releaseLoggedRest();
+                    } else {
+                      setWantCardio((value) => !value);
+                    }
                     setError(null);
                   }}
                 >
@@ -932,12 +1035,41 @@ export function ClientWorkoutDaySheet({
                     "client-workouts-pick__choice",
                     wantWorkout && "client-workouts-pick__choice--on"
                   )}
+                  aria-pressed={wantWorkout}
                   onActivate={() => {
-                    setWantWorkout((value) => !value);
+                    if (wantRest) {
+                      setWantRest(false);
+                      setWantWorkout(true);
+                      releaseLoggedRest();
+                    } else {
+                      setWantWorkout((value) => !value);
+                    }
                     setError(null);
                   }}
                 >
                   Workout
+                </FastActivateButton>
+                <FastActivateButton
+                  className={cn(
+                    "client-workouts-pick__choice client-workouts-pick__choice--rest",
+                    wantRest && "client-workouts-pick__choice--on"
+                  )}
+                  aria-pressed={wantRest}
+                  onActivate={() => {
+                    const next = !wantRest;
+                    setError(null);
+                    if (next) {
+                      setWantCardio(false);
+                      setWantWorkout(false);
+                      setWantRest(true);
+                      restoreRestDay();
+                      return;
+                    }
+                    setWantRest(false);
+                    releaseLoggedRest();
+                  }}
+                >
+                  Rest day
                 </FastActivateButton>
               </div>
             </>
@@ -1067,16 +1199,19 @@ export function ClientWorkoutDaySheet({
                         </svg>
                       </span>
                     </div>
+                    <span className="exercise-block__note">Add notes...</span>
                   </div>
                   <div className="exercise-block__table">
                     <div className="exercise-block__head">
                       <span>Set</span>
+                      <span className="exercise-block__head-previous">Previous</span>
                       <span>Lbs</span>
                       <span>Reps</span>
                       <CheckIcon className="exercise-block__head-check" />
                     </div>
                     <div className="exercise-block__row">
                       <span className="exercise-block__set">1</span>
+                      <span className="exercise-block__previous">–</span>
                       <span className="exercise-block__input">0</span>
                       <span className="exercise-block__input">0</span>
                       <span className="exercise-block__check" />
@@ -1100,6 +1235,7 @@ export function ClientWorkoutDaySheet({
                 >
                   <ExerciseSetBlock
                     exercise={exercise}
+                    prior={priorSets}
                     autoFocus={exercise.id === focusExerciseId}
                     inSuperset={
                       Boolean(exercise.supersetId) &&
@@ -1121,19 +1257,31 @@ export function ClientWorkoutDaySheet({
                 <PlusIcon className="h-4 w-4" />
                 Add exercise
               </FastActivateButton>
+              {!send && !fromCoach && exercises.some((exercise) => exercise.name.trim()) ? (
+                <FastActivateButton
+                  className="client-workouts-btn client-workouts-btn--primary client-workouts-finish-own"
+                  disabled={finishing}
+                  onActivate={handleOwnFinish}
+                >
+                  {finishing ? "Finishing…" : "Finished workout"}
+                </FastActivateButton>
+              ) : null}
             </>
           ) : null}
 
           {error ? <p className="client-workouts-error">{error}</p> : null}
         </div>
 
-        {fromCoach && step === "workout" && readyToFinish ? (
+        {fromCoach && !send && step === "workout" && (onFinish || coachAlreadyDone) && namedExercises ? (
           <div className="client-workouts-day__footer">
             <div className="client-workouts-day__footer-inner">
               <FastActivateButton
                 className="client-workouts-btn client-workouts-btn--coach"
-                disabled={finishing}
-                onActivate={() => void handleFinish()}
+                disabled={finishing || (Boolean(onFinish) && !setsComplete)}
+                onActivate={() => {
+                  if (onFinish) void handleFinish();
+                  else handleShareFinished();
+                }}
               >
                 {finishing ? "Finishing…" : "Finish workout"}
               </FastActivateButton>

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
+  BatteryChargingIcon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -20,6 +21,7 @@ import {
   formatWorkoutDayAriaLabel,
   formatWorkoutDayHeading,
   hasCardioOnDay,
+  hasRestOnDay,
   hasStrengthOnDay,
   parseLocalDateKey,
   startOfMonth,
@@ -295,7 +297,8 @@ export function ClientWorkoutsEntry({
                 const cardio = hasCardioOnDay(log, cell.dateKey);
                 const coachMark = coachDayMark(workoutsByDate.get(cell.dateKey));
                 const strength = hasStrengthOnDay(log, cell.dateKey) && !coachMark;
-                const trained = cardio || strength;
+                const rest = hasRestOnDay(log, cell.dateKey) && !cardio && !strength && !coachMark;
+                const trained = cardio || strength || rest;
                 const dayTitle = workoutTitleOnDay(log, cell.dateKey);
                 const label = `${formatWorkoutDayAriaLabel(cell.dateKey)}${
                   coachMark === "done"
@@ -313,7 +316,9 @@ export function ClientWorkoutsEntry({
                         ? dayTitle
                           ? `${label}, ${dayTitle}`
                           : `${label}, workout logged`
-                        : label;
+                        : rest
+                          ? `${label}, rest day`
+                          : label;
                 return (
                   <FastActivateButton
                     key={cell.dateKey}
@@ -344,6 +349,11 @@ export function ClientWorkoutsEntry({
                             <span className="client-workouts-cal__check">
                               <CheckIcon />
                             </span>
+                          </span>
+                        ) : null}
+                        {rest ? (
+                          <span className="client-workouts-cal__mark client-workouts-cal__mark--rest">
+                            <BatteryChargingIcon />
                           </span>
                         ) : null}
                         {coachMark ? <CoachDayMark done={coachMark === "done"} /> : null}

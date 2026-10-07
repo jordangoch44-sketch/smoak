@@ -150,6 +150,7 @@ export function LoginPageClient() {
     const { path } = resolvePostLoginNavigation(publicRole, {
       returnToSaved,
       session,
+      recordWelcomeLogin: true,
     });
     navigateAfterAuth(next ?? path);
   }, [isReady, session, returnToSaved, submitting, submitPressed, roleMismatch, roleMismatchActive, searchParams]);
@@ -301,6 +302,7 @@ export function LoginPageClient() {
     const { path, toast } = resolvePostLoginNavigation(signedInRole, {
       returnToSaved,
       session: result.session,
+      recordWelcomeLogin: true,
     });
     if (toast) {
       showSaveToast(toast);

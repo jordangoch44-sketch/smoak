@@ -59,6 +59,7 @@ export interface AuthSessionContextValue {
       specialistProfile?: CreateAccountProfile;
       specialistOnboarding?: SpecialistOnboardingState;
       emailRedirectTo?: string;
+      coachingInviteToken?: string;
     }
   ) => Promise<AuthResult & { userId?: string }>;
   signOut: () => Promise<void>;
@@ -388,6 +389,7 @@ export function AuthSessionProvider({
         specialistProfile?: CreateAccountProfile;
         specialistOnboarding?: SpecialistOnboardingState;
         emailRedirectTo?: string;
+        coachingInviteToken?: string;
       }
     ) => {
       const result = await signUpWithPassword(role, email, password, options);
