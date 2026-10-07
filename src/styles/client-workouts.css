@@ -2458,10 +2458,17 @@ button.exercise-block__name {
 
 .exercise-picker {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
   z-index: 11300;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  height: 100svh;
+  max-height: 100vh;
+  max-height: 100svh;
+  overflow: hidden;
   background: #0e0e14;
   color: #fff;
 }
@@ -2606,13 +2613,16 @@ button.exercise-block__name {
 .exercise-picker__list {
   flex: 1 1 auto;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   padding: 0.35rem 0 0.5rem;
 }
 
 .exercise-picker__list:last-child {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
 .exercise-picker__label {
@@ -2781,13 +2791,21 @@ button.exercise-block__name {
 
 .exercise-howto {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  left: 0;
   z-index: 11500;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  height: 100svh;
+  max-height: 100vh;
+  max-height: 100svh;
+  overflow: hidden;
   background: #000;
   color: #fff;
-  animation: exercise-howto-in 0.38s cubic-bezier(0.32, 0.72, 0, 1) both;
+  /* backwards only: a leftover transform blocks touch scrolling on iOS */
+  animation: exercise-howto-in 0.38s cubic-bezier(0.32, 0.72, 0, 1) backwards;
 }
 
 @keyframes exercise-howto-in {
@@ -2842,8 +2860,11 @@ button.exercise-block__name {
 .exercise-howto__scroll {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .exercise-howto__stage {
@@ -2851,6 +2872,7 @@ button.exercise-block__name {
   align-items: center;
   justify-content: center;
   height: min(42vh, 20rem);
+  height: min(42svh, 20rem);
   background: #fff;
   overflow: hidden;
 }
@@ -2955,7 +2977,7 @@ button.exercise-block__name {
 }
 
 .exercise-howto__body {
-  padding: 1.25rem 1.15rem max(1.5rem, env(safe-area-inset-bottom));
+  padding: 1.25rem 1.15rem calc(1.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 .exercise-howto__name {
