@@ -29,6 +29,12 @@ export function lockOverlayDocumentScroll(): () => void {
       return;
     }
 
+    // A text field needs the touch to finish. Cancelling it makes iOS drop
+    // the keyboard and open it again when the tap completes.
+    if (target.closest("input, textarea, select, [contenteditable='true']")) {
+      return;
+    }
+
     const scroller = target.closest(
       ".inquiry-inbox-page__body, .inquiry-thread__scroller, .client-workouts-body, .client-workouts-day__body, .exercise-howto__scroll, .exercise-picker__list, .workout-share__body"
     );

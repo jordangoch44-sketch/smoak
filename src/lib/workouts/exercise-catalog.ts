@@ -1,3 +1,4 @@
+import { catalogExerciseId } from "@/data/exercise-db-catalog";
 import {
   WORKOUT_EXERCISE_LIBRARY,
   type ExerciseMuscle,
@@ -138,6 +139,12 @@ const EQUIPMENT_EXACT: Record<string, ExerciseEquipment> = {
 
 export function findLibraryExercise(name: string): LibraryExercise | undefined {
   return libraryByName.get(name.trim().toLowerCase());
+}
+
+/** Curated library or the wider ExerciseDB catalog. */
+export function isKnownExercise(name: string): boolean {
+  const key = name.trim().toLowerCase();
+  return libraryByName.has(key) || Boolean(catalogExerciseId(name));
 }
 
 export function muscleLabel(muscle: ExerciseMuscle): string {

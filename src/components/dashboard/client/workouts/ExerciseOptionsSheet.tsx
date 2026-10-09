@@ -5,8 +5,10 @@ import { createPortal } from "react-dom";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
+import { catalogExercises } from "@/data/exercise-db-catalog";
 import { WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
 import type { ExerciseSetMemory } from "@/lib/workouts/client-workout";
+import { rankExerciseSearch } from "@/lib/workouts/exercise-search";
 import type { ClientWorkoutExercise } from "@/types/client-workout";
 
 type MenuView = "menu" | "reorder" | "superset" | "replace";
@@ -69,9 +71,18 @@ export function ExerciseOptionsSheet({
       seen.add(key);
       names.push(item.name);
     }
+    for (const item of catalogExercises()) {
+      const key = item.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      names.push(item.name);
+    }
     const needle = query.trim().toLowerCase();
     const matches = needle
-      ? names.filter((name) => name.toLowerCase().includes(needle))
+      ? rankExerciseSearch(
+          names.map((name) => ({ name })),
+          needle
+        ).map((item) => item.name)
       : names;
     return matches.slice(0, 8);
   }, [exercise.id, exercises, prior, query]);

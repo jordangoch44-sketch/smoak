@@ -2289,6 +2289,8 @@ body.client-workouts-keyboard {
   letter-spacing: -0.02em;
   color: #8eb6ff;
   caret-color: #fff;
+  scroll-margin-top: 0.75rem;
+  scroll-margin-bottom: 2.5rem;
 }
 
 .exercise-block__name::placeholder {
@@ -2378,10 +2380,12 @@ button.exercise-block__name {
   padding: 0;
   border: none;
   background: none;
-  font-size: 0.9375rem;
+  font-size: 16px;
   font-weight: 500;
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.82);
+  scroll-margin-top: 0.75rem;
+  scroll-margin-bottom: 2.5rem;
 }
 
 .exercise-block__note::placeholder {
@@ -2432,11 +2436,13 @@ button.exercise-block__name {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 0.7rem;
   background: rgba(255, 255, 255, 0.05);
-  font-size: 1rem;
+  font-size: 16px;
   font-weight: 600;
   text-align: center;
   color: #fff;
   caret-color: #fff;
+  scroll-margin-top: 0.75rem;
+  scroll-margin-bottom: 2.5rem;
 }
 
 .exercise-block__input::placeholder {

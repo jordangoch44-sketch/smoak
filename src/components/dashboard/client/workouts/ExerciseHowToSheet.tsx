@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
-import { findLibraryExercise } from "@/lib/workouts/exercise-catalog";
+import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
 import {
   bundledExerciseMedia,
   cachedExerciseGuide,
@@ -29,7 +29,7 @@ export function ExerciseHowToSheet({
   actionLabel?: string;
   onAction?: () => void;
 }) {
-  const library = findLibraryExercise(name);
+  const library = isKnownExercise(name);
   const bundled = library ? bundledExerciseMedia(name) : null;
   const [guide, setGuide] = useState<ExerciseGuide | null>(() => {
     if (bundled) {
@@ -97,6 +97,7 @@ export function ExerciseHowToSheet({
           <ExerciseAvatar
             name={name}
             imageUrl={imageUrl}
+            gifUrl={guide?.gifUrl || undefined}
             logoWhenEmpty={logoWhenEmpty}
             animated
             className="exercise-howto__media"

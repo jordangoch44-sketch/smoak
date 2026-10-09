@@ -245,6 +245,20 @@ const FORMER_EXERCISE_NAMES: Record<string, string> = {
   "russian twist": "russian twist",
 };
 
+const aliasesByOfficial = new Map<string, string[]>();
+for (const [alias, official] of Object.entries(FORMER_EXERCISE_NAMES)) {
+  const key = official.toLowerCase();
+  if (alias === key) continue;
+  const list = aliasesByOfficial.get(key) ?? [];
+  list.push(alias);
+  aliasesByOfficial.set(key, list);
+}
+
+/** Older names and gym nicknames for one official exercise title. */
+export function formerNamesFor(name: string): readonly string[] {
+  return aliasesByOfficial.get(name.trim().toLowerCase()) ?? [];
+}
+
 /** ExerciseDB title when this is one of the old library names. Otherwise the typed name. */
 export function officialExerciseName(name: string): string {
   const trimmed = name.trim().replace(/\s+/g, " ");

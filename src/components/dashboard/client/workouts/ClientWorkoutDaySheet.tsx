@@ -305,9 +305,9 @@ export function ClientWorkoutDaySheet({
     let target = 0;
     let raf = 0;
     let keyboardDismissed = false;
+    let handoff = false;
     let blurTimer = 0;
     let settleTimer = 0;
-    let revealFrame = 0;
     let focusedField: HTMLElement | null = null;
 
     function apply(px: number) {
@@ -346,36 +346,29 @@ export function ClientWorkoutDaySheet({
     }
 
     function revealFocusedField() {
-      if (window.scrollY > 1) window.scrollTo(0, 0);
       const field = focusedField;
       if (field && sheet.contains(field)) scrollFieldInSheet(field, sheet);
     }
 
-    function queueReveal() {
+    function scheduleReveal() {
       if (keyboardDismissed) return;
-      if (!revealFrame) {
-        revealFrame = requestAnimationFrame(() => {
-          revealFrame = 0;
-          if (!keyboardDismissed) revealFocusedField();
-        });
-      }
-      // The keyboard animation and Safari's own scroll both land after focus.
       window.clearTimeout(settleTimer);
+      // Wait until the keyboard animation has settled, then move the list once.
       settleTimer = window.setTimeout(() => {
         if (!keyboardDismissed) revealFocusedField();
-      }, 320);
+      }, 280);
     }
 
     function syncKeyboard() {
-      // Phone: leave the sheet still while the keyboard moves, and keep the
-      // focused field above it. A pounds/reps row low on the screen is inside
-      // the list and still covered unless we scroll to the visual viewport.
+      // Phone: let the sheet padding track the keyboard as it slides. Scrolling
+      // on every viewport tick fights that slide and looks like a jump.
       if (touch) {
-        if (keyboardDismissed) {
-          window.clearTimeout(settleTimer);
-          return;
-        }
-        queueReveal();
+        const next = readInset();
+        const changed = Math.abs(next - displayed) > 0.5;
+        displayed = keyboardDismissed ? Math.min(displayed, next) : next;
+        target = displayed;
+        apply(displayed);
+        if (!keyboardDismissed && changed) scheduleReveal();
         return;
       }
       const next = keyboardDismissed ? 0 : readInset();
@@ -396,42 +389,66 @@ export function ClientWorkoutDaySheet({
       apply(displayed);
     }
 
+    function onPointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const field = target.closest("input, textarea");
+      if (field instanceof HTMLElement && sheet.contains(field)) handoff = true;
+    }
+
     function onFocusIn(event: FocusEvent) {
       if (!isWorkoutField(event.target)) return;
       if (!sheet.contains(event.target)) return;
       window.clearTimeout(blurTimer);
+      handoff = false;
       keyboardDismissed = false;
       focusedField = event.target;
       if (touch) {
         setTyping(true);
         setWorkoutKeyboardChrome(true);
-        queueReveal();
+        scheduleReveal();
       }
     }
 
-    // Moving between fields (name → sets → reps) blurs for a moment; wait before treating it as
-    // the keyboard closing. Then drop the inset at once so the footer grows from the bottom
-    // behind the closing keyboard instead of above it.
+    function releaseKeyboard() {
+      const active = document.activeElement;
+      if (isWorkoutField(active) && sheet.contains(active)) {
+        handoff = false;
+        return;
+      }
+      if (handoff) {
+        handoff = false;
+        blurTimer = window.setTimeout(releaseKeyboard, 280);
+        return;
+      }
+      keyboardDismissed = true;
+      focusedField = null;
+      window.clearTimeout(settleTimer);
+      if (touch) {
+        setTyping(false);
+        setWorkoutKeyboardChrome(false);
+        window.setTimeout(() => {
+          if (!keyboardDismissed) return;
+          displayed = 0;
+          target = 0;
+          apply(0);
+          clearWorkoutSheetKeyboardPad(sheet);
+        }, 420);
+        return;
+      }
+      stopEase();
+      displayed = 0;
+      target = 0;
+      apply(0);
+      clearWorkoutSheetKeyboardPad(sheet);
+    }
+
+    // Moving between pounds, reps, and notes blurs for a moment. Keep the
+    // keyboard up across that gap. A real dismiss (the keyboard checkmark)
+    // follows the keyboard down instead of snapping the sheet.
     function onFocusOut() {
       window.clearTimeout(blurTimer);
-      blurTimer = window.setTimeout(() => {
-        const active = document.activeElement;
-        if (isWorkoutField(active) && sheet.contains(active)) return;
-        keyboardDismissed = true;
-        focusedField = null;
-        window.clearTimeout(settleTimer);
-        if (revealFrame) cancelAnimationFrame(revealFrame);
-        revealFrame = 0;
-        stopEase();
-        displayed = 0;
-        target = 0;
-        apply(0);
-        clearWorkoutSheetKeyboardPad(sheet);
-        if (touch) {
-          setTyping(false);
-          setWorkoutKeyboardChrome(false);
-        }
-      }, 120);
+      blurTimer = window.setTimeout(releaseKeyboard, handoff ? 420 : 200);
     }
 
     displayed = readInset();
@@ -441,6 +458,7 @@ export function ClientWorkoutDaySheet({
     window.visualViewport?.addEventListener("scroll", syncKeyboard);
     window.addEventListener("resize", syncKeyboard);
     document.addEventListener("focusin", onFocusIn);
+    sheet.addEventListener("pointerdown", onPointerDown, true);
     sheet.addEventListener("focusout", onFocusOut);
     checkKeyboardClosedRef.current = onFocusOut;
     return () => {
@@ -448,7 +466,6 @@ export function ClientWorkoutDaySheet({
       stopEase();
       window.clearTimeout(settleTimer);
       window.clearTimeout(blurTimer);
-      if (revealFrame) cancelAnimationFrame(revealFrame);
       clearWorkoutSheetKeyboardPad(sheet);
       setWorkoutKeyboardChrome(false);
       root.style.removeProperty("--workout-keyboard-inset");
@@ -456,14 +473,19 @@ export function ClientWorkoutDaySheet({
       window.visualViewport?.removeEventListener("scroll", syncKeyboard);
       window.removeEventListener("resize", syncKeyboard);
       document.removeEventListener("focusin", onFocusIn);
+      sheet.removeEventListener("pointerdown", onPointerDown, true);
       sheet.removeEventListener("focusout", onFocusOut);
     };
   }, [dateKey]);
 
-  // Safari fires no focusout when a focused field unmounts (a slide step locking), so re-check
-  // after every render while the footer is tucked away.
+  // Safari fires no focusout when a focused field unmounts (a slide step locking).
+  // Skip this while a field still has focus, or a keystroke re-render looks like a dismiss.
   useEffect(() => {
-    if (typing) checkKeyboardClosedRef.current?.();
+    if (!typing) return;
+    const active = document.activeElement;
+    const sheet = sheetRef.current;
+    if (isWorkoutField(active) && sheet?.contains(active)) return;
+    checkKeyboardClosedRef.current?.();
   });
 
   function persist(

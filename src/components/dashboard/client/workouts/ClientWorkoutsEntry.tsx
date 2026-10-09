@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/icons";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
+import { warmExerciseLibraryThumbs } from "@/lib/workouts/exercise-media-client";
 import { coachDayMark, coachWeekPlan } from "@/lib/coaching/coach-workout";
 import { cn } from "@/lib/utils";
 import type { CoachingRelationship } from "@/types/coaching";
@@ -136,6 +137,10 @@ export function ClientWorkoutsEntry({
     const now = new Date();
     setToday(now);
     setMonth(startOfMonth(now));
+  }, []);
+
+  useEffect(() => {
+    warmExerciseLibraryThumbs();
   }, []);
 
   const weekCopy = useMemo(

@@ -5,7 +5,7 @@ import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
 import { SwipeToRemove } from "@/components/dashboard/client/workouts/SwipeToRemove";
-import { findLibraryExercise } from "@/lib/workouts/exercise-catalog";
+import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
 import {
   createWorkoutExerciseId,
   exerciseWithSetLogs,
@@ -73,7 +73,7 @@ export function ExerciseSetBlock({
   const previous = previousSetsForExercise(prior, exercise.name);
   const [howToOpen, setHowToOpen] = useState(false);
   const named = exercise.name.trim();
-  const fromLibrary = Boolean(named && findLibraryExercise(named));
+  const fromLibrary = Boolean(named && isKnownExercise(named));
 
   function openHowTo() {
     if (named) setHowToOpen(true);
@@ -154,6 +154,7 @@ export function ExerciseSetBlock({
               enterKeyHint="done"
               placeholder="Exercise"
               aria-label="Exercise name"
+              onPointerDown={(event) => event.stopPropagation()}
               onChange={(event) => onChange({ ...exercise, name: event.target.value }, false)}
               onBlur={(event) => commitName(event.currentTarget.value)}
               onKeyDown={(event) => {
@@ -221,18 +222,20 @@ export function ExerciseSetBlock({
                 value={log.weight}
                 placeholder="0"
                 aria-label={`Set ${index + 1} weight in pounds`}
+                onPointerDown={(event) => event.stopPropagation()}
                 onChange={(event) =>
                   patchLog(index, { weight: sanitizeWorkoutWeight(event.target.value) })
                 }
               />
               <input
                 className="exercise-block__input"
-                inputMode="numeric"
+                inputMode="decimal"
                 enterKeyHint="done"
                 autoComplete="off"
                 value={log.reps}
                 placeholder="0"
                 aria-label={`Set ${index + 1} reps`}
+                onPointerDown={(event) => event.stopPropagation()}
                 onChange={(event) =>
                   patchLog(index, { reps: sanitizeWorkoutCount(event.target.value, 4) })
                 }

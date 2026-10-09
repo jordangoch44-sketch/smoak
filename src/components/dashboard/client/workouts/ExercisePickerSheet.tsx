@@ -7,18 +7,20 @@ import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseA
 import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CheckIcon, SearchIcon } from "@/components/ui/icons";
+import { catalogExercises } from "@/data/exercise-db-catalog";
 import { WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
 import {
   equipmentForExercise,
   equipmentLabel,
   EXERCISE_EQUIPMENT_OPTIONS,
   EXERCISE_MUSCLE_OPTIONS,
-  findLibraryExercise,
+  isKnownExercise,
   muscleLabel,
   POPULAR_EXERCISE_NAMES,
   type ExerciseEquipment,
   type ExerciseMuscle,
 } from "@/lib/workouts/exercise-catalog";
+import { rankExerciseSearch } from "@/lib/workouts/exercise-search";
 import {
   loadCustomExercises,
   saveCustomExercise,
@@ -71,13 +73,22 @@ export function ExercisePickerSheet({
       if (!name || byName.has(key)) continue;
       byName.set(key, { name });
     }
+    for (const item of catalogExercises()) {
+      const key = item.name.toLowerCase();
+      if (byName.has(key)) continue;
+      byName.set(key, {
+        name: item.name,
+        ...(item.muscle ? { muscle: item.muscle } : {}),
+        ...(item.equipment ? { equipment: item.equipment } : {}),
+      });
+    }
     for (const item of WORKOUT_EXERCISE_LIBRARY) {
       const key = item.name.toLowerCase();
       const known = byName.get(key);
       const next: PickerExercise = {
         name: item.name,
         muscle: item.muscle,
-        equipment: equipmentForExercise(item.name) ?? undefined,
+        equipment: equipmentForExercise(item.name) ?? known?.equipment,
       };
       if (known) byName.set(key, { ...known, ...next, name: item.name });
       else byName.set(key, next);
@@ -91,19 +102,20 @@ export function ExercisePickerSheet({
         name: custom.name,
         muscle: custom.muscle ?? known?.muscle,
         equipment: custom.equipment ?? known?.equipment,
-        custom: !findLibraryExercise(custom.name),
+        custom: !isKnownExercise(custom.name),
       });
     }
     return [...byName.values()];
   }, [prior]);
 
   const filtered = useMemo(() => {
-    return catalog.filter((item) => {
+    const narrowed = catalog.filter((item) => {
       if (muscle && item.muscle !== muscle) return false;
       if (equipment && item.equipment !== equipment) return false;
-      if (needle && !item.name.toLowerCase().includes(needle)) return false;
       return true;
     });
+    if (!needle) return narrowed;
+    return rankExerciseSearch(narrowed, needle);
   }, [catalog, equipment, muscle, needle]);
 
   const browsing = !needle && !muscle && !equipment;
@@ -321,7 +333,7 @@ export function ExercisePickerSheet({
       </div>
       <div className="exercise-picker__list">
         {results.length > 0 ? <p className="exercise-picker__label">{sectionLabel}</p> : null}
-        {results.map((item) => {
+        {results.map((item, index) => {
           const on = selected.some((entry) => entry.name.toLowerCase() === item.name.toLowerCase());
           return (
             <div
@@ -339,6 +351,7 @@ export function ExercisePickerSheet({
                     name={item.name}
                     imageUrl={item.imageUrl}
                     logoWhenEmpty={item.custom}
+                    priority={index < 12}
                     className="exercise-picker__mark"
                   />
                   {on ? (

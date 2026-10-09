@@ -36,6 +36,7 @@ import {
 } from "@/lib/workouts/client-workout";
 import type { ClientWorkoutCardio, ClientWorkoutDay, ClientWorkoutExercise } from "@/types/client-workout";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
+import { warmExerciseLibraryThumbs } from "@/lib/workouts/exercise-media-client";
 import {
   coachDayForSheet,
   coachDayMark,
@@ -99,6 +100,11 @@ export function ClientWorkoutsModal({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    warmExerciseLibraryThumbs();
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;

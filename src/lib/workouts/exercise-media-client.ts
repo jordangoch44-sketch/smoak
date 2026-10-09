@@ -1,10 +1,62 @@
 import { WORKOUT_EXERCISE_MEDIA, type BundledExerciseMedia } from "@/data/workout-exercise-media";
+import { POPULAR_EXERCISE_NAMES } from "@/lib/workouts/exercise-catalog";
 
 export type { BundledExerciseMedia };
 
 /** Still, clip, and steps shipped with the app, keyed by exercise name. */
 export function bundledExerciseMedia(name: string): BundledExerciseMedia | null {
   return WORKOUT_EXERCISE_MEDIA[name.trim().toLowerCase()] ?? null;
+}
+
+/** Bump when regenerated thumbs should replace a long-lived browser cache. */
+const THUMB_VERSION = "1";
+
+const warmedThumbs = new Set<string>();
+let libraryWarmStarted = false;
+
+export function exerciseThumbSlug(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** 128px still on this origin. List circles use this instead of the 360px ExerciseDB PNG. */
+export function libraryThumbUrl(name: string): string {
+  if (!bundledExerciseMedia(name)?.imageUrl) return "";
+  const slug = exerciseThumbSlug(name);
+  if (!slug) return "";
+  return `/exercises/thumbs/${slug}.jpg?v=${THUMB_VERSION}`;
+}
+
+function queueThumb(name: string, priority: "high" | "auto") {
+  const url = libraryThumbUrl(name);
+  if (!url || warmedThumbs.has(url)) return;
+  warmedThumbs.add(url);
+  const img = new Image();
+  img.decoding = "async";
+  img.fetchPriority = priority;
+  img.src = url;
+}
+
+/** Pull list stills into cache before Add exercise opens, popular names first. */
+export function warmExerciseLibraryThumbs() {
+  if (typeof window === "undefined" || libraryWarmStarted) return;
+  libraryWarmStarted = true;
+  const popular = new Set(POPULAR_EXERCISE_NAMES.map((name) => name.toLowerCase()));
+  const names = Object.keys(WORKOUT_EXERCISE_MEDIA);
+  for (const name of names) {
+    if (popular.has(name)) queueThumb(name, "high");
+  }
+  const rest = names.filter((name) => !popular.has(name));
+  const pump = () => {
+    const batch = rest.splice(0, 16);
+    if (batch.length === 0) return;
+    for (const name of batch) queueThumb(name, "auto");
+    if (rest.length > 0) window.setTimeout(pump, 40);
+  };
+  window.setTimeout(pump, 50);
 }
 
 export interface LibraryExerciseMedia {

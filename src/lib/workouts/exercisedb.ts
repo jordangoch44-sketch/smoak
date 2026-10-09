@@ -1,3 +1,4 @@
+import { catalogExerciseId } from "@/data/exercise-db-catalog";
 import { WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
 
 const RAPID_HOST = "edb-with-gifs-and-images-by-ascendapi.p.rapidapi.com";
@@ -203,7 +204,8 @@ async function guideEntry(name: string): Promise<CacheEntry | null> {
   if (cached?.instructions?.length) return cached;
   const exerciseId =
     cached?.exerciseId ||
-    WORKOUT_EXERCISE_LIBRARY.find((item) => nameKey(item.name) === key)?.exerciseId;
+    WORKOUT_EXERCISE_LIBRARY.find((item) => nameKey(item.name) === key)?.exerciseId ||
+    catalogExerciseId(name);
   if (!exerciseId) return null;
   try {
     const fresh = await mediaForExercise(exerciseId);

@@ -5,9 +5,12 @@ import { sendOutboundEmail, type EmailSendResult } from "@/lib/email/email-trans
 import {
   emailAbsoluteUrl,
   renderEmailParagraphs,
-  renderEmailQuote,
   wrapTransactionalEmailHtml,
 } from "@/lib/email/email-html-shell";
+import {
+  coachWorkoutLoginUrl,
+  renderCoachWorkoutEmailHtml,
+} from "@/lib/email/coach-workout-email-html";
 import { formatWorkoutDayHeading } from "@/lib/workouts/client-workout";
 
 const DASHBOARD_PATH = "/client-dashboard";
@@ -110,13 +113,14 @@ export async function sendCoachWorkoutEmail(input: {
   exerciseCount: number;
 }): Promise<EmailSendResult> {
   const coach = input.specialistName.trim() || "Your coach";
-  const url = emailAbsoluteUrl(DASHBOARD_PATH);
+  const url = coachWorkoutLoginUrl();
   const day = formatWorkoutDayHeading(input.dateKey);
   const name = input.title.trim() || "a workout";
+  const first = input.clientFirstName.trim() || "there";
   const paragraphs = [
-    greeting(input.clientFirstName),
-    `${coach} sent you ${name} for ${day} — ${input.exerciseCount} exercise${input.exerciseCount === 1 ? "" : "s"}.`,
-    "It’s on your Workouts calendar. Open that day and check off each set as you go.",
+    `Hey ${first},`,
+    "Your coach just sent you a new workout. It’s on your Workouts calendar and ready to go.",
+    `${name} · ${day} · ${input.exerciseCount} exercise${input.exerciseCount === 1 ? "" : "s"}.`,
   ];
   return sendOutboundEmail({
     to: input.to,
@@ -124,17 +128,18 @@ export async function sendCoachWorkoutEmail(input: {
     text: [
       ...paragraphs,
       ...(input.note.trim() ? [`Note from ${coach}: ${input.note.trim()}`] : []),
-      `Open Workouts: ${url}`,
+      `View my workout: ${url}`,
+      "Sign in, then open Workouts.",
       "— SMOAC",
     ].join("\n\n"),
-    html: wrapTransactionalEmailHtml({
-      preheader: `${name} for ${day}`,
-      eyebrow: "From your coach",
-      title: `New workout from ${coach}`,
-      bodyHtml:
-        renderEmailParagraphs(paragraphs) +
-        renderEmailQuote(`Note from ${coach}`, input.note),
-      cta: { label: "Open Workouts", href: url },
+    html: renderCoachWorkoutEmailHtml({
+      clientFirstName: input.clientFirstName,
+      specialistName: coach,
+      dateKey: input.dateKey,
+      title: input.title,
+      note: input.note,
+      exerciseCount: input.exerciseCount,
+      href: url,
     }),
     kind: "coaching_workout_sent",
   });
