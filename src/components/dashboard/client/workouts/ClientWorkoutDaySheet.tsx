@@ -6,6 +6,7 @@ import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CheckIcon, ChevronLeftIcon, PlusIcon, SendIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
+import { exerciseLabel } from "@/data/exercise-display";
 import { ExerciseOptionsSheet } from "@/components/dashboard/client/workouts/ExerciseOptionsSheet";
 import { ExercisePickerSheet } from "@/components/dashboard/client/workouts/ExercisePickerSheet";
 import { ExerciseSetBlock } from "@/components/dashboard/client/workouts/ExerciseSetBlock";
@@ -237,6 +238,19 @@ export function ClientWorkoutDaySheet({
     const active = document.activeElement;
     if (active instanceof HTMLElement && sheetRef.current?.contains(active)) {
       active.blur();
+    }
+    const named = exercisesRef.current.some((exercise) => exercise.name.trim());
+    const keptCardio = Boolean(sanitizeWorkoutCardio(cardio));
+    if (
+      !send &&
+      workout?.rest !== true &&
+      !named &&
+      !keptCardio &&
+      workout &&
+      (workout.exercises.length > 0 || workout.title.trim() || workout.cardio)
+    ) {
+      onRemove();
+      return;
     }
     setWorkoutKeyboardChrome(false);
     swallowTrailingDismissTap();
@@ -496,6 +510,7 @@ export function ClientWorkoutDaySheet({
     const named = next.filter((exercise) => exercise.name.trim());
     const cleanedTitle = sanitizeWorkoutTitle(nextTitle);
     const cleanedCardio = sanitizeWorkoutCardio(nextCardio);
+    if (!send && named.length === 0 && !cleanedCardio) return false;
     if (named.length === 0 && !cleanedTitle && !cleanedCardio) return false;
     return onSave(named, cleanedTitle, cleanedCardio);
   }
@@ -510,8 +525,7 @@ export function ClientWorkoutDaySheet({
 
   function confirmWorkoutTitle() {
     const field = titleInputRef.current;
-    const cleaned = applyTitle(field?.value ?? title);
-    if (!cleaned.trim()) return;
+    applyTitle(field?.value ?? title);
     setEditingTitle(false);
     if (document.activeElement === field) field?.blur();
   }
@@ -714,8 +728,7 @@ export function ClientWorkoutDaySheet({
     setCardio(cleared);
     setError(null);
     const named = exercises.filter((exercise) => exercise.name.trim());
-    const cleanedTitle = sanitizeWorkoutTitle(title);
-    if (named.length === 0 && !cleanedTitle) {
+    if (named.length === 0) {
       if (workout) {
         onRemove();
         return;
@@ -836,9 +849,7 @@ export function ClientWorkoutDaySheet({
   const hasCardio = Boolean(sanitizeWorkoutCardio(cardio));
   const heading = formatWorkoutDayHeading(dateKey);
   const hasLoggedDay =
-    exercises.some((exercise) => exercise.name.trim()) ||
-    Boolean(title.trim()) ||
-    hasCardio;
+    exercises.some((exercise) => exercise.name.trim()) || hasCardio;
   const menuExercise = exercises.find((item) => item.id === menuExerciseId) ?? null;
 
   return (
@@ -1177,7 +1188,7 @@ export function ClientWorkoutDaySheet({
               {title.trim() && !editingTitle ? (
                 <FastActivateButton
                   className="client-workouts-titles__display"
-                  aria-label={`Workout name: ${title.trim()}. Tap to rename.`}
+                  aria-label={`Muscle group: ${title.trim()}. Tap to change.`}
                   onActivate={() => {
                     flushSync(() => setEditingTitle(true));
                     titleInputRef.current?.focus({ preventScroll: true });
@@ -1186,25 +1197,32 @@ export function ClientWorkoutDaySheet({
                   <span className="client-workouts-titles__display-text">{title.trim()}</span>
                 </FastActivateButton>
               ) : (
-                <input
-                  ref={titleInputRef}
-                  className="client-workouts-titles__custom"
-                  value={title}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  enterKeyHint="done"
-                  maxLength={24}
-                  placeholder="Name this workout… (Push, pull, legs, etc.)"
-                  aria-label="Workout name"
-                  onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
-                  onFocus={() => setEditingTitle(true)}
-                  onBlur={() => confirmWorkoutTitle()}
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") return;
-                    event.preventDefault();
-                    confirmWorkoutTitle();
-                  }}
-                />
+                <div className="client-workouts-titles__field">
+                  <input
+                    ref={titleInputRef}
+                    className="client-workouts-titles__custom"
+                    value={title}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    enterKeyHint="done"
+                    maxLength={24}
+                    placeholder=""
+                    aria-label="Muscle group today? Push, pull, legs."
+                    onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
+                    onFocus={() => setEditingTitle(true)}
+                    onBlur={() => confirmWorkoutTitle()}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      confirmWorkoutTitle();
+                    }}
+                  />
+                  {!title.trim() && !editingTitle ? (
+                    <span className="client-workouts-titles__prompt" aria-hidden>
+                      <span>Muscle group today? (Push, pull, legs…)</span>
+                    </span>
+                  ) : null}
+                </div>
               )}
 
               {exercises.length === 0 && (send || (title.trim() && !editingTitle)) ? (
@@ -1252,7 +1270,7 @@ export function ClientWorkoutDaySheet({
                 <SwipeToRemove
                   key={exercise.id}
                   className="exercise-block-swipe"
-                  label={`Remove ${exercise.name.trim() || "exercise"}`}
+                  label={`Remove ${exerciseLabel(exercise.name) || "exercise"}`}
                   onRemove={() => removeExercise(exercise.id)}
                 >
                   <ExerciseSetBlock

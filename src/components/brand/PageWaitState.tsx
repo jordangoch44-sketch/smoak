@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { cn } from "@/lib/utils";
+import "@/styles/smoac-saving-mark.css";
 
-import { SmoacSavingMark } from "./SmoacSavingMark";
+import { SmoacLoader } from "./SmoacLoader";
 
 const DEFAULT_STALL_MS = 8_000;
 
 interface PageWaitStateProps {
   label: string;
   className?: string;
-  /** Tighter padding for panels and modals — still uses the full ring. */
+  /** Tighter padding for panels, cards, and sheets. */
   compact?: boolean;
   /** 0 disables Retry. Full-page waits default to 8s; compact defaults off. */
   stallMs?: number;
@@ -49,7 +50,10 @@ export function PageWaitState({
       aria-live="polite"
       aria-busy="true"
     >
-      <SmoacSavingMark label={label} />
+      <SmoacLoader
+        size={compact ? "medium" : "large"}
+        label={label}
+      />
       {stalled ? (
         <FastActivateButton
           className="smoac-control page-wait-state__retry"

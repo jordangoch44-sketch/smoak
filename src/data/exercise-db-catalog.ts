@@ -1,4 +1,5 @@
 import catalog from "@/data/exercise-db-catalog.json";
+import { formatExerciseName } from "@/data/workout-exercise-library";
 import type { ExerciseEquipment, ExerciseMuscle } from "@/lib/workouts/exercise-catalog";
 
 interface RawCatalogExercise {
@@ -111,7 +112,7 @@ function equipmentFor(values: readonly string[]): ExerciseEquipment | null {
 
 const exercises: CatalogExercise[] = (catalog as RawCatalogExercise[]).map((item) => ({
   exerciseId: item.exerciseId,
-  name: item.name,
+  name: formatExerciseName(item.name),
   imageUrl: item.imageUrl.startsWith("https://") ? item.imageUrl : "",
   muscle: muscleFor(item),
   equipment: equipmentFor(item.equipments),

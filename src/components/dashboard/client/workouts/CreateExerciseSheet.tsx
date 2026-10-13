@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
+import { formatExerciseName } from "@/data/workout-exercise-library";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import {
@@ -61,7 +62,7 @@ export function CreateExerciseSheet({
   function save() {
     if (!trimmed) return;
     onSave({
-      name: trimmed,
+      name: formatExerciseName(trimmed),
       ...(imageUrl ? { imageUrl } : {}),
       ...(equipment ? { equipment } : {}),
       ...(muscle ? { muscle } : {}),

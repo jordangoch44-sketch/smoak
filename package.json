@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "start:lan": "node scripts/start-lan.mjs",
+    "test:exercise-search": "node --experimental-strip-types --import ./scripts/register-test-alias.mjs --test src/lib/workouts/exercise-search.test.ts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:supabase": "node scripts/test-supabase-connection.mjs",

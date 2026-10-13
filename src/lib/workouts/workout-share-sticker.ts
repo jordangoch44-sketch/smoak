@@ -1,3 +1,4 @@
+import { exerciseLabel } from "@/data/exercise-display";
 import { LOGO_ICON_SRC, WORDMARK_SRC } from "@/lib/brand";
 import { shareSafeName, shareSafeTitle } from "@/lib/text/share-language";
 import { formatWorkoutDayHeading, parseWorkoutSetCount } from "@/lib/workouts/client-workout";
@@ -62,7 +63,7 @@ export function buildWorkoutStickerCard(
       if (weight && reps) volumeLb += weight * reps;
       if (weight && (topLiftLb === null || weight > topLiftLb)) {
         topLiftLb = weight;
-        topLiftRaw = exercise.name;
+        topLiftRaw = exerciseLabel(exercise.name);
       }
     }
   }

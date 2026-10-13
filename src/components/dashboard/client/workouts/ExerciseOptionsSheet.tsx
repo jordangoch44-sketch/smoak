@@ -6,7 +6,8 @@ import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseA
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { catalogExercises } from "@/data/exercise-db-catalog";
-import { WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
+import { exerciseLabel } from "@/data/exercise-display";
+import { formatExerciseName, WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
 import type { ExerciseSetMemory } from "@/lib/workouts/client-workout";
 import { rankExerciseSearch } from "@/lib/workouts/exercise-search";
 import type { ClientWorkoutExercise } from "@/types/client-workout";
@@ -45,21 +46,21 @@ export function ExerciseOptionsSheet({
         (item) => item.id !== exercise.id && item.supersetId === exercise.supersetId
       )
   );
-  const title = exercise.name.trim() || "Exercise";
+  const title = exerciseLabel(exercise.name) || "Exercise";
 
   const replacements = useMemo(() => {
     const seen = new Set<string>();
     const names: string[] = [];
     for (const item of exercises) {
       if (item.id === exercise.id) continue;
-      const name = item.name.trim();
+      const name = formatExerciseName(item.name);
       const key = name.toLowerCase();
       if (!name || seen.has(key)) continue;
       seen.add(key);
       names.push(name);
     }
     for (const item of prior) {
-      const name = item.name.trim();
+      const name = formatExerciseName(item.name);
       const key = name.toLowerCase();
       if (!name || seen.has(key)) continue;
       seen.add(key);
@@ -69,13 +70,13 @@ export function ExerciseOptionsSheet({
       const key = item.name.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      names.push(item.name);
+      names.push(formatExerciseName(item.name));
     }
     for (const item of catalogExercises()) {
       const key = item.name.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      names.push(item.name);
+      names.push(formatExerciseName(item.name));
     }
     const needle = query.trim().toLowerCase();
     const matches = needle
@@ -198,7 +199,7 @@ export function ExerciseOptionsSheet({
                   className="exercise-menu__item"
                   onActivate={() => onJoinSuperset(item.id)}
                 >
-                  {item.name.trim() || "Exercise"}
+                  {exerciseLabel(item.name) || "Exercise"}
                 </FastActivateButton>
               ))
             )}
@@ -235,7 +236,7 @@ export function ExerciseOptionsSheet({
                   onActivate={() => onReplace(name)}
                 >
                   <ExerciseAvatar name={name} className="exercise-menu__mark" />
-                  {name}
+                  {exerciseLabel(name)}
                 </FastActivateButton>
               ))
             )}

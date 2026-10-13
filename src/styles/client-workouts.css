@@ -1736,17 +1736,43 @@
   cursor: default;
 }
 
+.client-workouts-titles__field {
+  position: relative;
+  margin: 0 0 0.85rem;
+}
+
 .client-workouts-titles__custom {
   min-height: 2.65rem;
   width: 100%;
-  margin: 0 0 0.85rem;
+  margin: 0;
   border-radius: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.28);
   padding: 0.55rem 0.9rem;
   font-size: 1rem;
   color: #fff;
+  text-align: center;
   outline: none;
+}
+
+.client-workouts-titles__prompt {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 0.9rem;
+  pointer-events: none;
+}
+
+.client-workouts-titles__prompt span {
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .client-workouts-titles__display {
@@ -2843,9 +2869,33 @@ button.exercise-block__name {
   color: rgba(255, 255, 255, 0.45);
 }
 
+.exercise-picker__tabs {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.85rem;
+}
+
+.exercise-picker__tab {
+  margin: 0;
+  padding: 0.15rem 0 0.4rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, 0.42);
+  cursor: pointer;
+}
+
+.exercise-picker__tab--on {
+  color: rgba(255, 255, 255, 0.94);
+  border-bottom-color: var(--smoac-color-violet);
+}
+
 .exercise-picker__row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   column-gap: 0.15rem;
   padding: 0 0.9rem;
@@ -2945,9 +2995,9 @@ button.exercise-block__name {
   color: rgba(255, 255, 255, 0.42);
 }
 
+.exercise-picker__star,
 .exercise-picker__info {
   display: inline-flex;
-  grid-column: 3;
   grid-row: 1;
   flex: 0 0 auto;
   align-items: center;
@@ -2963,13 +3013,33 @@ button.exercise-block__name {
   cursor: pointer;
 }
 
+.exercise-picker__star {
+  grid-column: 3;
+  color: rgba(255, 255, 255, 0.38);
+}
+
+span.exercise-picker__star {
+  pointer-events: none;
+  cursor: default;
+}
+
+.exercise-picker__star--on {
+  color: var(--smoac-color-violet);
+}
+
+.exercise-picker__star svg,
 .exercise-picker__info svg {
   width: 1.35rem;
   height: 1.35rem;
 }
 
+.exercise-picker__star:active,
 .exercise-picker__info:active {
   background: rgba(255, 255, 255, 0.06);
+}
+
+.exercise-picker__info {
+  grid-column: 4;
 }
 
 .exercise-picker__dock {

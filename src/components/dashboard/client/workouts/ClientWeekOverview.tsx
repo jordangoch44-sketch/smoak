@@ -20,6 +20,7 @@ import {
   HeartIcon,
   PlusIcon,
 } from "@/components/ui/icons";
+import { exerciseLabel } from "@/data/exercise-display";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
@@ -300,7 +301,7 @@ function WeekRecapSheet({
           <li>
             <span>{figures.topSet.prGainLb > 0 ? "Top set PR" : "Top set"}</span>
             <span>
-              {figures.topSet.name} {formatBodyWeight(figures.topSet.weightLb)} lb
+              {exerciseLabel(figures.topSet.name)} {formatBodyWeight(figures.topSet.weightLb)} lb
             </span>
           </li>
         ) : null}

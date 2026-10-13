@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
+import { exerciseLabel, storedExerciseName } from "@/data/exercise-display";
 import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
 import {
   bundledExerciseMedia,
@@ -29,13 +30,15 @@ export function ExerciseHowToSheet({
   actionLabel?: string;
   onAction?: () => void;
 }) {
-  const library = isKnownExercise(name);
-  const bundled = library ? bundledExerciseMedia(name) : null;
+  const lookupName = storedExerciseName(name);
+  const label = exerciseLabel(name);
+  const library = isKnownExercise(lookupName);
+  const bundled = library ? bundledExerciseMedia(lookupName) : null;
   const [guide, setGuide] = useState<ExerciseGuide | null>(() => {
     if (bundled) {
       return { gifUrl: bundled.gifUrl, overview: null, instructions: [...bundled.instructions] };
     }
-    return library ? cachedExerciseGuide(name) : null;
+    return library ? cachedExerciseGuide(lookupName) : null;
   });
   const titleId = "exercise-howto-title";
 
@@ -53,19 +56,19 @@ export function ExerciseHowToSheet({
       setGuide({ gifUrl: bundled.gifUrl, overview: null, instructions: [...bundled.instructions] });
       return;
     }
-    const cached = cachedExerciseGuide(name);
+    const cached = cachedExerciseGuide(lookupName);
     if (cached) {
       setGuide(cached);
       return;
     }
     let cancelled = false;
-    void loadExerciseGuide(name).then((next) => {
+    void loadExerciseGuide(lookupName).then((next) => {
       if (!cancelled) setGuide(next);
     });
     return () => {
       cancelled = true;
     };
-  }, [bundled, library, name]);
+  }, [bundled, library, lookupName]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -87,7 +90,7 @@ export function ExerciseHowToSheet({
           <ChevronLeftIcon className="h-5 w-5" />
         </FastActivateButton>
         <h2 id={titleId} className="exercise-howto__title">
-          {name}
+          {label}
         </h2>
         <span className="exercise-howto__bar-spacer" aria-hidden />
       </div>
@@ -95,7 +98,7 @@ export function ExerciseHowToSheet({
       <div className="exercise-howto__scroll">
         <div className="exercise-howto__stage">
           <ExerciseAvatar
-            name={name}
+            name={lookupName}
             imageUrl={imageUrl}
             gifUrl={guide?.gifUrl || undefined}
             logoWhenEmpty={logoWhenEmpty}
@@ -105,7 +108,7 @@ export function ExerciseHowToSheet({
         </div>
 
         <div className="exercise-howto__body">
-          <h3 className="exercise-howto__name">{name}</h3>
+          <h3 className="exercise-howto__name">{label}</h3>
           {library && guide ? (
             steps.length > 0 ? (
               <ol className="exercise-howto__steps">

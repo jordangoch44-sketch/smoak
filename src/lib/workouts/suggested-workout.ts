@@ -1,4 +1,5 @@
 import {
+  formatExerciseName,
   WORKOUT_EXERCISE_LIBRARY,
   type ExerciseKind,
   type ExerciseMuscle,
@@ -102,7 +103,7 @@ export function generateSuggestedWorkout(
     const exercise = pick(candidates, random);
     taken.add(exercise.name);
     const scheme = exercise.scheme ?? pick(SCHEMES[exercise.kind], random);
-    return [{ name: exercise.name, sets: scheme.sets, reps: scheme.reps }];
+    return [{ name: formatExerciseName(exercise.name), sets: scheme.sets, reps: scheme.reps }];
   });
 }
 

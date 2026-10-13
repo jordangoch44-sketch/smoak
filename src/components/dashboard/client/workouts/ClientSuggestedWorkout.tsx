@@ -9,6 +9,7 @@ import {
   RefreshIcon,
   ShuffleIcon,
 } from "@/components/ui/icons";
+import { exerciseLabel } from "@/data/exercise-display";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import {
   createWorkoutExerciseId,
@@ -129,13 +130,13 @@ export function ClientSuggestedWorkout({
           {(plan?.exercises ?? []).map((exercise, index) => (
             <li key={`${index}-${exercise.name}`} className="client-suggested__row">
               <ExerciseAvatar name={exercise.name} className="client-suggested__mark" />
-              <span className="client-suggested__name">{exercise.name}</span>
+              <span className="client-suggested__name">{exerciseLabel(exercise.name)}</span>
               <span className="client-suggested__scheme">
                 {exercise.sets} × {exercise.reps}
               </span>
               <FastActivateButton
                 className="client-suggested__swap"
-                aria-label={`Swap ${exercise.name}`}
+                aria-label={`Swap ${exerciseLabel(exercise.name)}`}
                 onActivate={() => swap(index)}
               >
                 <RefreshIcon className="h-3.5 w-3.5" />

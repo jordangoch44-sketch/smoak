@@ -5,7 +5,7 @@ import type {
   ClientWorkoutLog,
   ClientWorkoutSetLog,
 } from "@/types/client-workout";
-import { officialExerciseName } from "@/data/workout-exercise-library";
+import { storedExerciseName } from "@/data/exercise-display";
 import { customExerciseFields } from "@/lib/workouts/custom-exercises";
 
 export const DEFAULT_GOAL_DAYS_PER_WEEK = 4;
@@ -189,12 +189,12 @@ export function previousSetsForExercise(
   return Array.from({ length: count }, () => ({ reps, weight: "" }));
 }
 
-/** "135×10", or a dash when that set wasn't logged. */
+/** "135 lbs", or a dash when that set wasn't logged. */
 export function formatPreviousSet(log: ClientWorkoutSetLog | undefined): string {
   const weight = log?.weight?.trim() ?? "";
   const reps = log?.reps?.trim() ?? "";
-  if (weight && reps) return `${weight}×${reps}`;
-  if (weight || reps) return weight || reps;
+  if (weight) return `${weight} lbs`;
+  if (reps) return reps;
   return "–";
 }
 
@@ -227,7 +227,7 @@ export function sanitizeWorkoutSetLogs(
 export function sanitizeWorkoutExercise(
   exercise: ClientWorkoutExercise
 ): ClientWorkoutExercise | null {
-  const name = officialExerciseName(exercise.name);
+  const name = storedExerciseName(exercise.name);
   if (!name) return null;
   const setLogs = sanitizeWorkoutSetLogs(exercise.setLogs);
   const sets = setLogs
@@ -371,7 +371,7 @@ export function hasStrengthOnDay(
 ): boolean {
   const day = log.days[dateKey];
   if (!day || day.rest === true) return false;
-  return day.exercises.length > 0 || Boolean(day.title.trim());
+  return day.exercises.some((exercise) => exercise.name.trim());
 }
 
 export function workoutTitleOnDay(
@@ -418,7 +418,7 @@ export function sanitizeClientWorkoutLog(value: unknown): ClientWorkoutLog {
       );
       const rest =
         day.rest === true && exercises.length === 0 && !title && !cardio;
-      if (exercises.length === 0 && !title && !cardio && !rest) continue;
+      if (exercises.length === 0 && !cardio && !rest) continue;
       days[dateKey] = {
         date: dateKey,
         title,

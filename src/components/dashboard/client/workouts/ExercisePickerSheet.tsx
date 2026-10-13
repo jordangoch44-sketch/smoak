@@ -7,8 +7,9 @@ import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseA
 import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CheckIcon, SearchIcon } from "@/components/ui/icons";
-import { catalogExercises } from "@/data/exercise-db-catalog";
-import { WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
+import { catalogExerciseId, catalogExercises } from "@/data/exercise-db-catalog";
+import { exerciseLabel } from "@/data/exercise-display";
+import { formatExerciseName, WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
 import {
   equipmentForExercise,
   equipmentLabel,
@@ -22,6 +23,12 @@ import {
 } from "@/lib/workouts/exercise-catalog";
 import { rankExerciseSearch } from "@/lib/workouts/exercise-search";
 import {
+  fetchExerciseFavoriteIds,
+  setExerciseFavorite,
+} from "@/lib/workouts/exercise-favorites";
+import { useAuthSession } from "@/hooks/useAuthSession";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
   loadCustomExercises,
   saveCustomExercise,
   type CustomExercise,
@@ -31,6 +38,24 @@ import { cn } from "@/lib/utils";
 
 interface PickerExercise extends CustomExercise {
   custom?: boolean;
+  /** ExerciseDB id, or the custom exercise id. Favorites are stored on this. */
+  exerciseId?: string;
+}
+
+type PickerTab = "all" | "favorites";
+
+function StarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path
+        d="M12 3.4 14.5 8.6l5.7.7-4.2 3.9 1.1 5.6L12 16.2 6.9 18.8l1.1-5.6L3.8 9.3l5.7-.7L12 3.4z"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 function InfoIcon() {
@@ -62,22 +87,38 @@ export function ExercisePickerSheet({
   const [frame, setFrame] = useState<{ top: number; height: number } | null>(null);
   const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [tab, setTab] = useState<PickerTab>("all");
+  const [favoriteIds, setFavoriteIds] = useState<ReadonlySet<string>>(() => new Set());
   const searchRef = useRef<HTMLInputElement>(null);
+  const { session } = useAuthSession();
+  const accountId =
+    session && (session.role === "specialist" || session.role === "client") ? session.userId : "";
   const needle = query.trim().toLowerCase();
 
   const catalog = useMemo(() => {
     const byName = new Map<string, PickerExercise>();
     for (const item of prior) {
-      const name = item.name.trim();
+      const name = formatExerciseName(item.name);
       const key = name.toLowerCase();
       if (!name || byName.has(key)) continue;
-      byName.set(key, { name });
+      const exerciseId = catalogExerciseId(name);
+      byName.set(key, { name, ...(exerciseId ? { exerciseId } : {}) });
     }
     for (const item of catalogExercises()) {
       const key = item.name.toLowerCase();
-      if (byName.has(key)) continue;
+      const known = byName.get(key);
+      if (known) {
+        byName.set(key, {
+          ...known,
+          exerciseId: known.exerciseId || item.exerciseId,
+          muscle: known.muscle ?? item.muscle ?? undefined,
+          equipment: known.equipment ?? item.equipment ?? undefined,
+        });
+        continue;
+      }
       byName.set(key, {
         name: item.name,
+        exerciseId: item.exerciseId,
         ...(item.muscle ? { muscle: item.muscle } : {}),
         ...(item.equipment ? { equipment: item.equipment } : {}),
       });
@@ -86,23 +127,26 @@ export function ExercisePickerSheet({
       const key = item.name.toLowerCase();
       const known = byName.get(key);
       const next: PickerExercise = {
-        name: item.name,
+        name: formatExerciseName(item.name),
+        exerciseId: item.exerciseId,
         muscle: item.muscle,
         equipment: equipmentForExercise(item.name) ?? known?.equipment,
       };
-      if (known) byName.set(key, { ...known, ...next, name: item.name });
+      if (known) byName.set(key, { ...known, ...next, name: formatExerciseName(item.name) });
       else byName.set(key, next);
     }
     for (const custom of loadCustomExercises()) {
       const key = custom.name.toLowerCase();
       const known = byName.get(key);
+      const customOnly = !isKnownExercise(custom.name);
       byName.set(key, {
         ...known,
         ...custom,
-        name: custom.name,
+        name: formatExerciseName(custom.name),
+        exerciseId: customOnly ? custom.id : known?.exerciseId || custom.id,
         muscle: custom.muscle ?? known?.muscle,
         equipment: custom.equipment ?? known?.equipment,
-        custom: !isKnownExercise(custom.name),
+        custom: customOnly,
       });
     }
     return [...byName.values()];
@@ -120,21 +164,60 @@ export function ExercisePickerSheet({
 
   const browsing = !needle && !muscle && !equipment;
   const results = useMemo(() => {
-    if (!browsing) return filtered;
-    return POPULAR_EXERCISE_NAMES.map((name) =>
+    const favored = (item: PickerExercise) =>
+      Boolean(item.exerciseId && favoriteIds.has(item.exerciseId));
+    const favoritesFirst = (items: readonly PickerExercise[]) => {
+      const starred: PickerExercise[] = [];
+      const rest: PickerExercise[] = [];
+      for (const item of items) {
+        if (favored(item)) starred.push(item);
+        else rest.push(item);
+      }
+      return [...starred, ...rest];
+    };
+    if (tab === "favorites") {
+      const pool = browsing ? catalog : filtered;
+      return pool.filter(favored);
+    }
+    if (!browsing) return favoritesFirst(filtered);
+    const popular = POPULAR_EXERCISE_NAMES.map((name) =>
       catalog.find((item) => item.name.toLowerCase() === name.toLowerCase())
     ).filter((item): item is PickerExercise => Boolean(item));
-  }, [browsing, catalog, filtered]);
+    const starred = catalog.filter(favored);
+    const starredNames = new Set(starred.map((item) => item.name.toLowerCase()));
+    return [
+      ...starred,
+      ...popular.filter((item) => !starredNames.has(item.name.toLowerCase())),
+    ];
+  }, [browsing, catalog, favoriteIds, filtered, tab]);
 
-  const sectionLabel = browsing
-    ? "Popular exercises"
-    : muscle
-      ? muscleLabel(muscle)
-      : "Exercises";
+  const sectionLabel =
+    tab === "favorites"
+      ? null
+      : browsing
+        ? results.some((item) => item.exerciseId && favoriteIds.has(item.exerciseId))
+          ? null
+          : "Popular exercises"
+        : muscle
+          ? muscleLabel(muscle)
+          : "Exercises";
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!accountId) return;
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return;
+    let cancelled = false;
+    void fetchExerciseFavoriteIds(supabase, accountId).then((result) => {
+      if (!cancelled && result.ok) setFavoriteIds(new Set(result.exerciseIds));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [accountId]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -192,6 +275,28 @@ export function ExercisePickerSheet({
       ...(item.custom && item.otherMuscles?.length ? { otherMuscles: item.otherMuscles } : {}),
       ...(item.custom && item.exerciseType ? { exerciseType: item.exerciseType } : {}),
     };
+  }
+
+  function toggleFavorite(exerciseId: string) {
+    if (!accountId) return;
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) return;
+    const next = !favoriteIds.has(exerciseId);
+    setFavoriteIds((current) => {
+      const copy = new Set(current);
+      if (next) copy.add(exerciseId);
+      else copy.delete(exerciseId);
+      return copy;
+    });
+    void setExerciseFavorite(supabase, accountId, exerciseId, next).then((result) => {
+      if (result.ok) return;
+      setFavoriteIds((current) => {
+        const copy = new Set(current);
+        if (next) copy.delete(exerciseId);
+        else copy.add(exerciseId);
+        return copy;
+      });
+    });
   }
 
   function toggle(item: PickerExercise) {
@@ -330,11 +435,36 @@ export function ExercisePickerSheet({
             ))}
           </div>
         ) : null}
+        <div className="exercise-picker__tabs" role="tablist" aria-label="Exercise lists">
+          <FastActivateButton
+            className={cn("exercise-picker__tab", tab === "all" && "exercise-picker__tab--on")}
+            role="tab"
+            aria-selected={tab === "all"}
+            onActivate={() => setTab("all")}
+          >
+            All Exercises
+          </FastActivateButton>
+          <FastActivateButton
+            className={cn(
+              "exercise-picker__tab",
+              tab === "favorites" && "exercise-picker__tab--on"
+            )}
+            role="tab"
+            aria-selected={tab === "favorites"}
+            onActivate={() => setTab("favorites")}
+          >
+            Favorites
+          </FastActivateButton>
+        </div>
       </div>
       <div className="exercise-picker__list">
-        {results.length > 0 ? <p className="exercise-picker__label">{sectionLabel}</p> : null}
+        {sectionLabel && results.length > 0 ? (
+          <p className="exercise-picker__label">{sectionLabel}</p>
+        ) : null}
         {results.map((item, index) => {
           const on = selected.some((entry) => entry.name.toLowerCase() === item.name.toLowerCase());
+          const favored = Boolean(item.exerciseId && favoriteIds.has(item.exerciseId));
+          const label = exerciseLabel(item.name);
           return (
             <div
               key={item.name}
@@ -343,7 +473,7 @@ export function ExercisePickerSheet({
               <button
                 type="button"
                 className="exercise-picker__thumb"
-                aria-label={`How to do ${item.name}`}
+                aria-label={`How to do ${label}`}
                 onClick={() => setDetail(item)}
               >
                 <span className="exercise-picker__avatar">
@@ -367,15 +497,29 @@ export function ExercisePickerSheet({
                 onActivate={() => toggle(item)}
               >
                 <span className="exercise-picker__copy">
-                  <span className="exercise-picker__name">{item.name}</span>
+                  <span className="exercise-picker__name">{label}</span>
                   {item.muscle ? (
                     <span className="exercise-picker__muscle">{muscleLabel(item.muscle)}</span>
                   ) : null}
                 </span>
               </FastActivateButton>
+              {item.exerciseId ? (
+                <FastActivateButton
+                  className={cn("exercise-picker__star", favored && "exercise-picker__star--on")}
+                  aria-pressed={favored}
+                  aria-label={
+                    favored ? `Remove ${label} from favorites` : `Favorite ${label}`
+                  }
+                  onActivate={() => toggleFavorite(item.exerciseId!)}
+                >
+                  <StarIcon filled={favored} />
+                </FastActivateButton>
+              ) : (
+                <span className="exercise-picker__star" aria-hidden />
+              )}
               <FastActivateButton
                 className="exercise-picker__info"
-                aria-label={`About ${item.name}`}
+                aria-label={`About ${label}`}
                 onActivate={() => setDetail(item)}
               >
                 <InfoIcon />
@@ -385,9 +529,13 @@ export function ExercisePickerSheet({
         })}
         {results.length === 0 ? (
           <p className="exercise-picker__empty">
-            {needle
-              ? `No matches. Create “${query.trim()}” to add it.`
-              : "No exercises match these filters."}
+            {tab === "favorites"
+              ? needle || muscle || equipment
+                ? "No favorites match."
+                : "No favorites yet."
+              : needle
+                ? `No matches. Create “${query.trim()}” to add it.`
+                : "No exercises match these filters."}
           </p>
         ) : null}
       </div>

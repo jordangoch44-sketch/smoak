@@ -34,7 +34,7 @@ const CALF = { sets: "4", reps: "12-15" };
 export const WORKOUT_EXERCISE_LIBRARY: readonly LibraryExercise[] = [
   // Chest
   { name: "barbell bench press", exerciseId: "edb_T5uXtLj", muscle: "chest", kind: "compound" },
-  { name: "dumbbell incline bench press", exerciseId: "edb_nu6WxTv", muscle: "chest", kind: "compound" },
+  { name: "dumbbell incline bench press", exerciseId: "edb_5CBCSzk", muscle: "chest", kind: "compound" },
   { name: "dumbbell bench press", exerciseId: "edb_viHr4ul", muscle: "chest", kind: "compound" },
   { name: "barbell incline bench press", exerciseId: "edb_RBqXK5O", muscle: "chest", kind: "compound" },
   { name: "weighted straight bar dip", exerciseId: "edb_oxiRenQ", muscle: "chest", kind: "compound" },
@@ -102,9 +102,9 @@ export const WORKOUT_EXERCISE_LIBRARY: readonly LibraryExercise[] = [
   { name: "barbell jm bench press", exerciseId: "edb_ZHHFqwV", muscle: "triceps", kind: "accessory" },
   { name: "diamond push-up", exerciseId: "edb_D7yvTS6", muscle: "triceps", kind: "accessory" },
   // Legs
-  { name: "barbell full squat", exerciseId: "edb_QBu7CSt", muscle: "quads", kind: "compound" },
+  { name: "barbell full squat", exerciseId: "edb_hsthzyc", muscle: "quads", kind: "compound" },
   { name: "barbell front squat", exerciseId: "edb_AwprQgE", muscle: "quads", kind: "compound" },
-  { name: "sled 45° leg press", exerciseId: "edb_dzVzAdF", muscle: "quads", kind: "compound" },
+  { name: "sled 45° leg press", exerciseId: "edb_2lEsmpB", muscle: "quads", kind: "compound" },
   { name: "sled hack squat", exerciseId: "edb_W0SqdiD", muscle: "quads", kind: "compound" },
   { name: "dumbbell goblet squat", exerciseId: "edb_fem3z9O", muscle: "quads", kind: "compound" },
   { name: "dumbbell single leg split squat", exerciseId: "edb_4jmTQPo", muscle: "quads", kind: "accessory" },
@@ -121,7 +121,7 @@ export const WORKOUT_EXERCISE_LIBRARY: readonly LibraryExercise[] = [
   { name: "kettlebell swing", exerciseId: "edb_9wN8Ufu", muscle: "hamstrings", kind: "accessory", scheme: { sets: "3", reps: "15" } },
   { name: "barbell glute bridge", exerciseId: "edb_TbssZve", muscle: "glutes", kind: "compound" },
   { name: "low glute bridge on floor", exerciseId: "edb_frITueN", muscle: "glutes", kind: "accessory" },
-  { name: "cable kickback", exerciseId: "edb_NMxqY0w", muscle: "glutes", kind: "accessory" },
+  { name: "cable kickback", exerciseId: "edb_NMxqY0w", muscle: "triceps", kind: "accessory" },
   { name: "Machine Seated Hip Abduction", exerciseId: "edb_eLg2UQ1", muscle: "glutes", kind: "accessory" },
   { name: "barbell sumo deadlift", exerciseId: "edb_TdoNRHY", muscle: "glutes", kind: "compound" },
   { name: "cable pull through (with rope)", exerciseId: "edb_zMI8F8k", muscle: "glutes", kind: "accessory" },
@@ -259,9 +259,22 @@ export function formerNamesFor(name: string): readonly string[] {
   return aliasesByOfficial.get(name.trim().toLowerCase()) ?? [];
 }
 
+const NAME_ACRONYMS = new Set(["ez", "jm"]);
+
+/** Capitalize the first letter of each word, including the letter after a hyphen. */
+export function formatExerciseName(name: string): string {
+  const trimmed = name.trim().replace(/\s+/g, " ");
+  if (!trimmed) return "";
+  return trimmed.replace(/(^|[^A-Za-z0-9])([a-z]+)/g, (_, boundary: string, word: string) => {
+    if (NAME_ACRONYMS.has(word)) return boundary + word.toUpperCase();
+    return boundary + word.charAt(0).toUpperCase() + word.slice(1);
+  });
+}
+
 /** ExerciseDB title when this is one of the old library names. Otherwise the typed name. */
 export function officialExerciseName(name: string): string {
   const trimmed = name.trim().replace(/\s+/g, " ");
   if (!trimmed) return "";
-  return FORMER_EXERCISE_NAMES[trimmed.toLowerCase()] ?? trimmed;
+  const official = FORMER_EXERCISE_NAMES[trimmed.toLowerCase()] ?? trimmed;
+  return formatExerciseName(official);
 }

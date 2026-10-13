@@ -7,7 +7,7 @@ interface DashboardLoadingStateProps {
 }
 
 /**
- * Full-page dashboard wait with the branded spinning ring. After a stall,
+ * Full-page dashboard wait with the branded loader. After a stall,
  * Retry is offered so a hung hydrate cannot look frozen with no way out.
  */
 export function DashboardLoadingState({

@@ -1,6 +1,7 @@
 "use client";
 
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { exerciseLabel } from "@/data/exercise-display";
 import { COACH_WORKOUT_STATUS_LABEL, formatCoachName } from "@/lib/coaching/coach-workout";
 import { formatExerciseRange, formatWorkoutDayHeading } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,7 @@ export function CoachWorkoutCard({
       <ul className="coach-workout__list">
         {workout.exercises.map((exercise) => (
           <li key={exercise.id}>
-            <span>{exercise.name}</span>
+            <span>{exerciseLabel(exercise.name)}</span>
             <span className="coach-workout__scheme">
               {formatExerciseRange(exercise)}
             </span>

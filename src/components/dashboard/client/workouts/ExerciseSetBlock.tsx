@@ -5,6 +5,8 @@ import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
 import { SwipeToRemove } from "@/components/dashboard/client/workouts/SwipeToRemove";
+import { exerciseLabel } from "@/data/exercise-display";
+import { formatExerciseName } from "@/data/workout-exercise-library";
 import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
 import {
   createWorkoutExerciseId,
@@ -72,8 +74,8 @@ export function ExerciseSetBlock({
   const logs = logsOf(exercise);
   const previous = previousSetsForExercise(prior, exercise.name);
   const [howToOpen, setHowToOpen] = useState(false);
-  const named = exercise.name.trim();
-  const fromLibrary = Boolean(named && isKnownExercise(named));
+  const named = exerciseLabel(exercise.name);
+  const fromLibrary = Boolean(exercise.name.trim() && isKnownExercise(exercise.name));
 
   function openHowTo() {
     if (named) setHowToOpen(true);
@@ -85,11 +87,12 @@ export function ExerciseSetBlock({
   }
 
   function commitName(name: string) {
-    if (name === exercise.name) {
-      if (name.trim()) onChange(exercise, true);
+    const next = formatExerciseName(name);
+    if (next === exercise.name) {
+      if (next) onChange(exercise, true);
       return;
     }
-    onChange({ ...exercise, name }, Boolean(name.trim()));
+    onChange({ ...exercise, name: next }, Boolean(next));
   }
 
   function writeLogs(next: ClientWorkoutSetLog[], commit: boolean) {
@@ -141,7 +144,7 @@ export function ExerciseSetBlock({
               onPointerDown={(event) => event.stopPropagation()}
               onClick={openHowTo}
             >
-              {named}
+              {named || "Exercise"}
             </button>
           ) : (
             <input

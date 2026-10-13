@@ -1,3 +1,4 @@
+import { formatExerciseName } from "@/data/workout-exercise-library";
 import {
   EXERCISE_EQUIPMENT_OPTIONS,
   EXERCISE_MUSCLE_OPTIONS,
@@ -14,14 +15,32 @@ export const CUSTOM_EXERCISE_TYPES: readonly { id: CustomExerciseType; label: st
   { id: "cardio", label: "Cardio" },
 ];
 
-/** An exercise the client added themselves. Name is the only required field. */
+/** An exercise the client or specialist added themselves. Name is the only required field. */
 export interface CustomExercise {
+  /** Stable id for favorites. ExerciseDB exercises use their catalog id instead. */
+  id?: string;
   name: string;
   imageUrl?: string;
   equipment?: ExerciseEquipment;
   muscle?: ExerciseMuscle;
   otherMuscles?: ExerciseMuscle[];
   exerciseType?: CustomExerciseType;
+}
+
+const CUSTOM_ID = /^custom_[A-Za-z0-9_-]{8,40}$/;
+
+export function createCustomExerciseId(): string {
+  const bytes =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID().replace(/-/g, "")
+      : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+  return `custom_${bytes.slice(0, 24)}`;
+}
+
+function customExerciseId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const id = value.trim();
+  return CUSTOM_ID.test(id) ? id : undefined;
 }
 
 const STORAGE_KEY = "smoac.custom-exercises";
@@ -86,13 +105,23 @@ export function loadCustomExercises(): CustomExercise[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
-    return parsed.flatMap((item) => {
+    let missingId = false;
+    const exercises = parsed.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const record = item as Partial<CustomExercise>;
-      const name = typeof record.name === "string" ? record.name.trim() : "";
+      const name = typeof record.name === "string" ? formatExerciseName(record.name) : "";
       if (!name) return [];
-      return [{ name: name.slice(0, 80), ...customExerciseFields(record) }];
+      let id = customExerciseId(record.id);
+      if (!id) {
+        id = createCustomExerciseId();
+        missingId = true;
+      }
+      return [{ id, name: name.slice(0, 80), ...customExerciseFields(record) }];
     });
+    if (missingId) {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(exercises.slice(0, MAX_STORED)));
+    }
+    return exercises;
   } catch {
     return [];
   }
@@ -100,9 +129,13 @@ export function loadCustomExercises(): CustomExercise[] {
 
 export function saveCustomExercise(exercise: CustomExercise): void {
   if (typeof window === "undefined") return;
-  const name = exercise.name.trim();
+  const name = formatExerciseName(exercise.name);
   if (!name) return;
-  const next: CustomExercise = { name: name.slice(0, 80), ...customExerciseFields(exercise) };
+  const next: CustomExercise = {
+    id: customExerciseId(exercise.id) ?? createCustomExerciseId(),
+    name: name.slice(0, 80),
+    ...customExerciseFields(exercise),
+  };
   const others = loadCustomExercises().filter(
     (item) => item.name.toLowerCase() !== next.name.toLowerCase()
   );

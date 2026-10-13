@@ -293,7 +293,7 @@ export function saveClientWorkoutDay(
   const nextTitle = rest ? "" : sanitizeWorkoutTitle(title);
   const nextCardio = rest ? undefined : sanitizeWorkoutCardio(cardio);
   const nextRest = rest && nextExercises.length === 0 && !nextTitle && !nextCardio;
-  if (!nextRest && nextExercises.length === 0 && !nextTitle && !nextCardio) return false;
+  if (!nextRest && nextExercises.length === 0 && !nextCardio) return false;
   const current = getClientWorkoutLog(userId);
   persistLog(userId, {
     ...current,
@@ -335,7 +335,7 @@ export function copyClientWorkoutDay(
     ? { type: copiedCardio.type, duration: copiedCardio.duration }
     : undefined;
   const rest = source.rest === true && exercises.length === 0 && !title && !cardio;
-  if (!rest && exercises.length === 0 && !title && !cardio) return false;
+  if (!rest && exercises.length === 0 && !cardio) return false;
   persistLog(userId, {
     ...current,
     days: {

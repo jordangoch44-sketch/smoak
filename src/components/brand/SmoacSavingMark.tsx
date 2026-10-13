@@ -3,17 +3,19 @@
 import { cn } from "@/lib/utils";
 import "@/styles/smoac-saving-mark.css";
 
+import { SmoacLoader } from "./SmoacLoader";
+
 interface SmoacSavingMarkProps {
   label?: string;
   className?: string;
   size?: "default" | "compact";
-  /** Parent already shows the copy — keep the ring only. */
+  /** Parent already shows the copy — keep the mark only. */
   hideLabel?: boolean;
 }
 
 /**
- * Clean spinning ring + label — photo upload, specialist submit, and
- * other 2s+ waits (location, inquiry, Google Reviews).
+ * Branded wait used for photo upload, specialist submit, and other
+ * multi-second waits (location, inquiry, checkout).
  */
 export function SmoacSavingMark({
   label = "Uploading",
@@ -22,21 +24,12 @@ export function SmoacSavingMark({
   hideLabel = false,
 }: SmoacSavingMarkProps) {
   return (
-    <div
-      className={cn(
-        "smoac-saving-mark",
-        size === "compact" && "smoac-saving-mark--compact",
-        className
-      )}
-      role="status"
-      aria-live="polite"
-      aria-label={label}
-    >
-      <span className="smoac-saving-mark__ring" aria-hidden />
-      {hideLabel ? null : (
-        <p className="smoac-saving-mark__label">{label}</p>
-      )}
-    </div>
+    <SmoacLoader
+      className={cn(className)}
+      size={size === "compact" ? "small" : "large"}
+      label={label}
+      showLabel={!hideLabel}
+    />
   );
 }
 
@@ -45,7 +38,7 @@ interface SmoacSavingOverlayProps {
   className?: string;
 }
 
-/** Dims a `position: relative` parent and centers the green ring. */
+/** Dims a `position: relative` parent and centers the branded loader. */
 export function SmoacSavingOverlay({
   label,
   className,

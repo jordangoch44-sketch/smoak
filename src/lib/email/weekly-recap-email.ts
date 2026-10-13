@@ -2,6 +2,7 @@
  * Sunday "week in review" email. Table layout so the poster holds up
  * in mail clients. Metrics come from the client's own log.
  */
+import { exerciseLabel } from "@/data/exercise-display";
 import { BRAND_NAME } from "@/lib/brand";
 import {
   emailAbsoluteUrl,
@@ -154,7 +155,7 @@ function exerciseTitle(name: string): string {
 
 function topSetBlock(email: RecapEmail): string {
   const lift = email.figures.topSet;
-  const name = lift ? exerciseTitle(lift.name) : "No lift this week";
+  const name = lift ? exerciseTitle(exerciseLabel(lift.name)) : "No lift this week";
   const weight = lift ? pounds(lift.weightLb) : "—";
   const badge =
     lift && lift.prGainLb > 0
@@ -313,7 +314,7 @@ function recapText(name: string, email: RecapEmail, links: WeeklyRecapEmailLinks
   ];
   const lift = email.figures.topSet;
   if (lift) {
-    lines.push(`Top set: ${lift.name} ${pounds(lift.weightLb)}`);
+    lines.push(`Top set: ${exerciseLabel(lift.name)} ${pounds(lift.weightLb)}`);
     if (lift.prGainLb > 0) lines.push(`New PR: +${pounds(lift.prGainLb)}`);
   }
   lines.push(`Workouts: ${email.workout.done} / ${email.workout.goal}`);
