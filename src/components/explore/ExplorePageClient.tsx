@@ -13,6 +13,7 @@ import { peekDesktopProfilePopup } from "@/lib/desktop-profile-popup";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
+import { useDrivingDistances } from "@/hooks/useDrivingDistances";
 import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
 import { cn } from "@/lib/utils";
 import { ExplorePageHeader } from "./ExplorePageHeader";
@@ -65,6 +66,7 @@ export function ExplorePageClient() {
     initialCatalog: trainers,
     catalogMode,
   });
+  useDrivingDistances(areaEmpty ? suggestedTrainers : filtered);
 
   useLayoutEffect(() => {
     const href = peekDesktopProfilePopup();

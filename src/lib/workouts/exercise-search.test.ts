@@ -41,11 +41,14 @@ describe("exercise search", () => {
   });
 
   it("ranks the cable lat pulldown first", () => {
-    assert.equal(top("Lat Pulldown", 1)[0], "Cable Lat Pulldown Full Range Of Motion");
+    assert.equal(top("Lat Pulldown", 1)[0], "Cable Pulldown (Pro Lat Bar)");
+    assert.equal(exerciseLabel("Cable Pulldown (Pro Lat Bar)"), "Lat Pulldown");
+    assert.equal(storedExerciseName("Lat Pulldown"), "Cable Pulldown (Pro Lat Bar)");
     assert.equal(
       exerciseLabel("Cable Lat Pulldown Full Range Of Motion"),
-      "Cable Lat Pulldown"
+      "Cable Crossover Pulldown"
     );
+    assert.equal(top("Cable Crossover Pulldown", 1)[0], "Cable Lat Pulldown Full Range Of Motion");
   });
 
   it("ranks the back squat above the camera-angle duplicate", () => {
@@ -83,6 +86,37 @@ describe("exercise search", () => {
 
   it("forgives a one-letter misspelling", () => {
     assert.equal(top("romainian deadlift", 1)[0], "Barbell Romanian Deadlift");
+  });
+
+  it("names the seated machine fly as a pec fly", () => {
+    assert.equal(exerciseLabel("Machine Seated Fly"), "Pec Fly");
+    assert.equal(top("Pec Fly", 1)[0], "Machine Seated Fly");
+    assert.equal(storedExerciseName("Pec Fly"), "Machine Seated Fly");
+  });
+
+  it("names the kneeling machine curl as a standing leg curl", () => {
+    assert.equal(exerciseLabel("Machine Kneeling Leg Curl"), "Standing Leg Curl");
+    assert.equal(top("Standing Leg Curl", 1)[0], "Machine Kneeling Leg Curl");
+    assert.equal(storedExerciseName("Standing Leg Curl"), "Machine Kneeling Leg Curl");
+  });
+
+  it("names the bar pulldown as a lat pulldown", () => {
+    assert.equal(exerciseLabel("Cable Bar Lateral Pulldown"), "Cable Bar Lat Pulldown");
+    assert.equal(top("Cable Bar Lat Pulldown", 1)[0], "Cable Bar Lateral Pulldown");
+    assert.equal(storedExerciseName("Cable Bar Lat Pulldown"), "Cable Bar Lateral Pulldown");
+  });
+
+  it("names the suspended row as a TRX or rings inverted row", () => {
+    assert.equal(exerciseLabel("Suspended Row"), "TRX/Rings Inverted Row");
+    assert.equal(top("TRX/Rings Inverted Row", 1)[0], "Suspended Row");
+    assert.equal(storedExerciseName("TRX/Rings Inverted Row"), "Suspended Row");
+  });
+
+  it("keeps the upside-down pull separate from the inverted row", () => {
+    assert.equal(exerciseLabel("Inverted Row"), "Inverted Pull-Up");
+    assert.equal(storedExerciseName("Inverted Row"), "Inverted Row");
+    assert.equal(top("Inverted Row", 1)[0], "Inverted Row Bent Knees");
+    assert.equal(exerciseLabel("Inverted Row Bent Knees"), "Inverted Row");
   });
 
   it("keeps the stored title when a gym display name is saved", () => {

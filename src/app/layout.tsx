@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import { AppBootSplash } from "@/components/brand/AppBootSplash";
 
 export const metadata: Metadata = {
   title: {
@@ -58,6 +60,10 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body style={{ margin: 0, background: "#020203" }}>
+        <Script id="native-app-class" strategy="beforeInteractive">
+          {`try{var c=window.Capacitor;if(c&&typeof c.isNativePlatform==="function"&&c.isNativePlatform()){document.documentElement.classList.add("native-app")}}catch(e){}`}
+        </Script>
+        <AppBootSplash />
         {children}
       </body>
     </html>

@@ -708,6 +708,21 @@ body:has(.client-workouts-gate) .site-footer__glow {
     margin-bottom: 2.25rem;
     overflow: hidden;
   }
+
+  /* The pitch fills the screen above the tab bar. The site footer sits
+     under that bar and only the logo shows through the pill. */
+  body:has(.client-workouts-gate) .site-footer {
+    display: none;
+  }
+}
+
+/* Native app has no header. The safe area has to live inside the gate,
+   or the title sits under the clock and the footer rises into the tab bar. */
+html.native-app .client-workouts-gate {
+  box-sizing: border-box;
+  height: calc(100svh - var(--mobile-bottom-nav-offset));
+  margin-bottom: 0;
+  padding-top: calc(env(safe-area-inset-top, 0px) + 0.35rem);
 }
 
 @media (max-width: 1023px) and (max-height: 740px) {

@@ -47,6 +47,34 @@ export async function sendRosterInviteEmail(input: {
   });
 }
 
+/** To the specialist when a client asks to connect from their profile. */
+export async function sendCoachingRequestEmail(input: {
+  to: string;
+  specialistFirstName: string;
+  clientFirstName: string;
+}): Promise<EmailSendResult> {
+  const client = input.clientFirstName.trim() || "A client";
+  const url = emailAbsoluteUrl(SPECIALIST_CLIENTS_PATH);
+  const paragraphs = [
+    greeting(input.specialistFirstName),
+    `${client} wants to add you as their specialist on SMOAC.`,
+    "If you accept, you can send workouts to their calendar. You only see the workouts you send, not the rest of their log.",
+  ];
+  return sendOutboundEmail({
+    to: input.to,
+    subject: `${client} wants to connect`,
+    text: [...paragraphs, `Review the request: ${url}`, "— SMOAC"].join("\n\n"),
+    html: wrapTransactionalEmailHtml({
+      preheader: `${client} asked to train with you`,
+      eyebrow: "Connection request",
+      title: `${client} wants to connect`,
+      bodyHtml: renderEmailParagraphs(paragraphs),
+      cta: { label: "Review request", href: url },
+    }),
+    kind: "coaching_connection_request",
+  });
+}
+
 /** To the specialist once a client accepts an invite or joins through their link. */
 export async function sendRosterJoinedEmail(input: {
   to: string;

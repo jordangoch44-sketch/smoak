@@ -86,7 +86,7 @@ export const POPULAR_EXERCISE_NAMES: readonly string[] = [
   "barbell bent over row",
   "dumbbell biceps curl",
   "cable standing fly",
-  "cable lat pulldown full range of motion",
+  "cable pulldown (pro lat bar)",
   "barbell seated overhead press",
   "barbell full squat",
   "barbell romanian deadlift",

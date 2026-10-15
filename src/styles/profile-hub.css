@@ -11,6 +11,20 @@
   background-color: #080b10;
 }
 
+@media (max-width: 1023px) {
+  .profile-hub {
+    box-sizing: border-box;
+    /* Fill the screen so the site footer starts below the fold, not under the tab bar. */
+    min-height: calc(100svh - var(--site-header-total-height, 0px));
+    padding-bottom: 1.5rem;
+  }
+}
+
+html.native-app .profile-hub {
+  min-height: 100svh;
+  padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+}
+
 .profile-hub__canvas,
 .profile-hub__cosmic,
 .profile-hub__aurora,

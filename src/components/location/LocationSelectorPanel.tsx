@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   lookupLocalZipPlace,
   UNKNOWN_ZIP_AREA_LABEL,
@@ -11,7 +12,7 @@ import {
 } from "@/lib/user-location-store";
 import { loadSavedZipCode } from "@/lib/user-location-storage";
 import { isValidZipCode, normalizeZipCode } from "@/lib/zip-to-marketplace-city";
-import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
+import { SmoacLoader } from "@/components/brand/SmoacLoader";
 import { LocationMarkIcon } from "@/components/ui/icons";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
@@ -332,9 +333,24 @@ export function LocationSelectorPanel({
         </p>
       )}
 
-      {geoLoading ? (
-        <SmoacSavingOverlay label="Finding your location" />
-      ) : null}
+      {geoLoading
+        ? createPortal(
+            <div
+              className="location-finding-screen"
+              role="status"
+              aria-live="polite"
+              aria-busy="true"
+              aria-label="Finding your location"
+            >
+              <SmoacLoader
+                size="large"
+                label="Finding your location"
+                showLabel={false}
+              />
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

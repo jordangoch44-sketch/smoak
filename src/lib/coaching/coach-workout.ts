@@ -125,6 +125,44 @@ export function unseenCoachCompletions(
   });
 }
 
+/** Planned sets for one exercise, without the client's check marks. */
+function plannedCoachExercise(exercise: ClientWorkoutExercise): ClientWorkoutExercise {
+  const { id, name, sets, reps, setLogs, note, supersetId, imageUrl, equipment, muscle, otherMuscles, exerciseType } =
+    exercise;
+  return {
+    id,
+    name,
+    sets,
+    reps,
+    ...(note?.trim() ? { note: note.trim() } : {}),
+    ...(setLogs?.length
+      ? { setLogs: setLogs.map((set) => ({ reps: set.reps, weight: set.weight })) }
+      : {}),
+    ...(supersetId ? { supersetId } : {}),
+    ...(imageUrl ? { imageUrl } : {}),
+    ...(equipment ? { equipment } : {}),
+    ...(muscle ? { muscle } : {}),
+    ...(otherMuscles?.length ? { otherMuscles: [...otherMuscles] } : {}),
+    ...(exerciseType ? { exerciseType } : {}),
+  };
+}
+
+/**
+ * Until the client starts, the specialist's latest plan replaces matching rows.
+ * A started workout keeps whatever the client already logged.
+ */
+function withLatestSentPlan(
+  workout: CoachWorkout,
+  existing: readonly ClientWorkoutExercise[]
+): ClientWorkoutExercise[] {
+  if (workout.status !== "sent") return [...existing];
+  const planned = new Map(workout.exercises.map((exercise) => [exercise.id, exercise]));
+  return existing.map((exercise) => {
+    const plan = planned.get(exercise.id);
+    return plan ? plannedCoachExercise(plan) : exercise;
+  });
+}
+
 /**
  * Day sheet contents for a coach-sent day. Open workouts are already filled in,
  * keeping the coach exercise ids so Finish can match them back.
@@ -137,7 +175,7 @@ export function coachDayForSheet(
   const open = workouts.filter((workout) => workout.status !== "completed");
   if (open.length === 0) return day;
   const exercises = open.reduce(
-    (list, workout) => appendCoachExercises(workout, list),
+    (list, workout) => appendCoachExercises(workout, withLatestSentPlan(workout, list)),
     day?.exercises ?? []
   );
   const unchanged =

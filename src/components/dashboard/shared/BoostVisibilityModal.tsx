@@ -249,6 +249,7 @@ export function BoostVisibilityModal({
         <div
           className={[
             "dashboard-modal__content dashboard-modal__content--boost",
+            step === "budget" ? "dashboard-modal__content--boost-budget" : "",
             step === "checkout" ? "dashboard-modal__content--boost-pay" : "",
             step === "paid" ? "dashboard-modal__content--boost-live" : "",
             payingWithCard ? "is-card-open" : "",

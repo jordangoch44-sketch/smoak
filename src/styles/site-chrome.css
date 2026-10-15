@@ -19,6 +19,30 @@
   );
 }
 
+/* iPhone app: bottom tabs replace the header. The page paints under the clock. */
+html.native-app {
+  --site-navbar-height: 0px;
+  --site-header-total-height: env(safe-area-inset-top, 0px);
+}
+
+html.native-app #site-header {
+  display: none;
+}
+
+html.native-app #root.app-shell,
+html.native-app .app-shell {
+  padding-top: 0;
+}
+
+html.native-app .dashboard-page {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+html.native-app .explore-page--map-shell {
+  height: 100dvh;
+  height: 100svh;
+}
+
 /* ═══ Decorative layers NEVER receive pointer events ═══ */
 .site-page-backdrop,
 .site-page-backdrop *,

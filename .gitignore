@@ -41,3 +41,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Capacitor iOS — generated web copy and CocoaPods
+ios/App/Pods
+ios/App/App/public
+ios/DerivedData

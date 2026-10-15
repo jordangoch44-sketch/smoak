@@ -4348,7 +4348,8 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   max-height: 100%;
   margin: 0 auto;
   overflow: hidden;
-  padding: 0.55rem 1.15rem max(1.15rem, env(safe-area-inset-bottom, 0px));
+  padding: max(0.55rem, env(safe-area-inset-top, 0px)) 1.15rem
+    max(1.15rem, env(safe-area-inset-bottom, 0px));
   border: none;
   border-radius: 0;
   background: #000;
@@ -4375,7 +4376,25 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .dashboard-modal__content--boost-pay {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Budget is a short form. Don't pin Next to the bottom of a tall phone. */
+.dashboard-modal__content--boost-budget .boost-ig-next {
+  margin-top: 1.35rem;
+  flex-shrink: 0;
+}
+
+.dashboard-modal__content--boost-pay .boost-checkout-spotlight,
+.dashboard-modal__content--boost-pay .dashboard-boost-checkout {
+  flex: 0 0 auto;
+}
+
+.dashboard-modal__content--boost-pay .dashboard-boost-checkout {
+  margin-top: 0.85rem;
 }
 
 .dashboard-modal__content--boost-live {
@@ -5186,7 +5205,7 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .dashboard-modal__dialog--boost:has(.dashboard-modal__content--pro-pay) {
-  padding-top: 0.35rem;
+  padding-top: max(0.35rem, env(safe-area-inset-top, 0px));
   padding-bottom: max(0.7rem, env(safe-area-inset-bottom, 0px));
 }
 
@@ -5972,13 +5991,9 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
 }
 
 .dashboard-modal__content--boost-pay.is-card-open .dashboard-boost-checkout {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
   margin-top: 0.35rem;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
+  overflow: visible;
 }
 
 .dashboard-boost-checkout__label {

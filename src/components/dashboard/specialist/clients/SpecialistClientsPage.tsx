@@ -110,6 +110,7 @@ type OpenSheet =
   | { kind: "add" }
   | { kind: "send"; relationshipId: string }
   | { kind: "plan"; relationshipId: string }
+  | { kind: "edit"; relationshipId: string; workoutId: string }
   | null;
 
 /** Clients tab (center of the bottom nav): the specialist’s roster. Pro only; Free sees a pitch. */
@@ -127,7 +128,6 @@ export function SpecialistClientsPage({
   onUpgrade?: () => void;
   onOpenConversation: (conversationId: string) => void;
 }) {
-  const rosterId = isPremium ? specialistId : null;
   const {
     loaded,
     roster,
@@ -135,18 +135,22 @@ export function SpecialistClientsPage({
     invite,
     createInviteLink,
     sendWorkout,
+    updateWorkout,
     removeWorkout,
     removeClient,
-  } = useCoachingRoster(rosterId);
-  const inquiries = useSpecialistInquiryContacts(rosterId);
+    respondToRequest,
+  } = useCoachingRoster(specialistId);
+  const inquiries = useSpecialistInquiryContacts(isPremium ? specialistId : null);
   // Activity depends on today’s date; build only in the browser.
   const inBrowser = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RosterFilter>("all");
   const [sheet, setSheet] = useState<OpenSheet>(null);
+  const [requestBusyId, setRequestBusyId] = useState<string | null>(null);
+  const [requestError, setRequestError] = useState<{ id: string; message: string } | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
 
-  const profileAvatars = useRosterClientAvatars(rosterId);
+  const profileAvatars = useRosterClientAvatars(specialistId);
   const avatarByClient = useMemo(() => {
     const map = new Map(profileAvatars);
     for (const contact of inquiries.contacts) {
@@ -157,15 +161,24 @@ export function SpecialistClientsPage({
     return map;
   }, [profileAvatars, inquiries.contacts]);
 
+  const requests = useMemo(
+    () => roster.filter((relationship) => relationship.status === "requested"),
+    [roster]
+  );
+  const clients = useMemo(
+    () => roster.filter((relationship) => relationship.status !== "requested"),
+    [roster]
+  );
+
   const rows = useMemo(() => {
     if (!inBrowser) return [];
     const now = new Date();
     const todayKey = toLocalDateKey(now);
-    return roster.map((relationship) => ({
+    return clients.map((relationship) => ({
       relationship,
       summary: summarizeRosterClient(relationship, workoutsFor(relationship.id), now, todayKey),
     }));
-  }, [inBrowser, roster, workoutsFor]);
+  }, [inBrowser, clients, workoutsFor]);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -180,6 +193,10 @@ export function SpecialistClientsPage({
     sheet && sheet.kind !== "add"
       ? roster.find((item) => item.id === sheet.relationshipId) ?? null
       : null;
+  const editingWorkout =
+    sheet?.kind === "edit" && sheetRelationship
+      ? (workoutsFor(sheetRelationship.id).find((workout) => workout.id === sheet.workoutId) ?? null)
+      : null;
 
   async function handleRemoveClient(relationship: CoachingRelationship) {
     const name = relationship.clientFirstName || "this client";
@@ -190,6 +207,72 @@ export function SpecialistClientsPage({
     if (!window.confirm(question)) return;
     const ok = await removeClient(relationship.id);
     if (ok) setSheet(null);
+  }
+
+  async function handleRequest(relationship: CoachingRelationship, accept: boolean) {
+    if (accept && !isPremium) {
+      onUpgrade?.();
+      return;
+    }
+    setRequestBusyId(relationship.id);
+    setRequestError(null);
+    const result = await respondToRequest(relationship.id, accept);
+    setRequestBusyId(null);
+    if (!result.ok) setRequestError({ id: relationship.id, message: result.message });
+  }
+
+  function renderRequests() {
+    if (requests.length === 0) return null;
+    return (
+      <section className="roster-page__requests" aria-label="Connection requests">
+        <h2 className="roster-page__requests-title">Connection requests</h2>
+        <ul className="roster-page__list">
+          {requests.map((relationship) => {
+            const name = relationship.clientFirstName.trim() || "Client";
+            const busy = requestBusyId === relationship.id;
+            return (
+              <li key={relationship.id} className="roster-card">
+                <div className="roster-card__main roster-card__main--static">
+                  <RosterAvatar
+                    name={name}
+                    avatarUrl={avatarByClient.get(relationship.clientUserId) ?? ""}
+                  />
+                  <span className="roster-card__copy">
+                    <span className="roster-card__title">
+                      <span className="roster-card__name">{name}</span>
+                      <span className="roster-card__badge roster-card__badge--requested">Request</span>
+                    </span>
+                    <span className="roster-card__last">Wants to connect</span>
+                    <span className="roster-card__meta">
+                      <span>They asked to add you as their specialist</span>
+                    </span>
+                  </span>
+                </div>
+                {requestError?.id === relationship.id ? (
+                  <p className="coaching-error">{requestError.message}</p>
+                ) : null}
+                <div className="roster-card__actions">
+                  <FastActivateButton
+                    className="roster-card__action roster-card__action--send"
+                    disabled={busy}
+                    onActivate={() => void handleRequest(relationship, true)}
+                  >
+                    {busy ? "Saving…" : isPremium ? "Accept" : "Accept · Pro"}
+                  </FastActivateButton>
+                  <FastActivateButton
+                    className="roster-card__action"
+                    disabled={busy}
+                    onActivate={() => void handleRequest(relationship, false)}
+                  >
+                    Decline
+                  </FastActivateButton>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    );
   }
 
   function renderCard(relationship: CoachingRelationship, summary: RosterClientSummary) {
@@ -286,7 +369,7 @@ export function SpecialistClientsPage({
         <div className="roster-page__intro">
           <h1 className="roster-page__title">Clients</h1>
           <p className="roster-page__subtitle">
-            Invite clients, send workouts, and see when they finish.
+            Invite clients, accept connection requests, and see when workouts are finished.
           </p>
         </div>
         <FastActivateButton
@@ -300,6 +383,7 @@ export function SpecialistClientsPage({
 
       {!isPremium ? (
         <>
+          {loaded ? renderRequests() : null}
           <ul className="roster-page__list">
             <SampleClientCard />
           </ul>
@@ -322,15 +406,22 @@ export function SpecialistClientsPage({
         </>
       ) : !loaded || !inBrowser ? (
         <p className="roster-page__status">Loading your clients…</p>
-      ) : roster.length === 0 ? (
+      ) : clients.length === 0 ? (
         <>
-          <ul className="roster-page__list">
-            <SampleClientCard />
-          </ul>
+          {renderRequests()}
+          {requests.length === 0 ? (
+            <ul className="roster-page__list">
+              <SampleClientCard />
+            </ul>
+          ) : null}
           <div className="roster-page__empty">
-            <p className="roster-page__empty-title">No clients yet</p>
+            <p className="roster-page__empty-title">
+              {requests.length > 0 ? "No other clients yet" : "No clients yet"}
+            </p>
             <p className="roster-page__empty-copy">
-              Invite someone who has messaged you. Once they accept, their card shows up here.
+              {requests.length > 0
+                ? "Accept a request above, or invite someone who has messaged you."
+                : "Invite someone who has messaged you, or wait for a client to request you. Once they’re connected, their card shows up here."}
             </p>
             <FastActivateButton
               className="coaching-btn coaching-btn--primary roster-page__empty-action"
@@ -343,6 +434,7 @@ export function SpecialistClientsPage({
         </>
       ) : (
         <>
+          {renderRequests()}
           <label className="roster-page__search">
             <SearchIcon className="roster-page__search-icon" />
             <input
@@ -404,11 +496,23 @@ export function SpecialistClientsPage({
           onClose={closeSheet}
         />
       ) : null}
+      {sheet?.kind === "edit" && sheetRelationship && editingWorkout ? (
+        <SendWorkoutSheet
+          relationship={sheetRelationship}
+          workouts={workoutsFor(sheetRelationship.id)}
+          editing={editingWorkout}
+          onUpdate={updateWorkout}
+          onClose={() => setSheet({ kind: "plan", relationshipId: sheetRelationship.id })}
+        />
+      ) : null}
       {sheet?.kind === "plan" && sheetRelationship ? (
         <ClientPlanSheet
           relationship={sheetRelationship}
           workouts={workoutsFor(sheetRelationship.id)}
           onSendWorkout={() => setSheet({ kind: "send", relationshipId: sheetRelationship.id })}
+          onEditWorkout={(workout) =>
+            setSheet({ kind: "edit", relationshipId: sheetRelationship.id, workoutId: workout.id })
+          }
           onRemoveWorkout={removeWorkout}
           onRemoveClient={() => void handleRemoveClient(sheetRelationship)}
           onClose={closeSheet}

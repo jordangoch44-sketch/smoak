@@ -6,7 +6,11 @@ import { ClientWorkoutDaySheet } from "@/components/dashboard/client/workouts/Cl
 import { MiniDayCalendar } from "@/components/dashboard/client/workouts/MiniDayCalendar";
 import { useToast } from "@/components/ui/toast";
 import { coachWorkoutHistoryExercises } from "@/lib/coaching/coach-workout";
-import type { CoachingResult, SendCoachWorkoutInput } from "@/lib/coaching/coaching-service";
+import type {
+  CoachingResult,
+  SendCoachWorkoutInput,
+  UpdateCoachWorkoutInput,
+} from "@/lib/coaching/coaching-service";
 import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
 import { exerciseMemoryBefore, toLocalDateKey } from "@/lib/workouts/client-workout";
 import type { ClientWorkoutDay } from "@/types/client-workout";
@@ -15,23 +19,36 @@ import "@/styles/client-workouts.css";
 
 const LOCK_CLASS = "client-workouts-open";
 
-/** The client workout editor, ending in "Send to …" instead of logging. */
+/** The client workout editor. A new workout is sent; an upcoming one is saved in place. */
 export function SendWorkoutSheet({
   relationship,
   workouts = [],
+  editing = null,
   onSend,
+  onUpdate,
   onClose,
 }: {
   relationship: CoachingRelationship;
   /** Workouts already sent to this client, used to refill sets and weights. */
   workouts?: readonly CoachWorkout[];
-  onSend: (input: SendCoachWorkoutInput) => Promise<CoachingResult<CoachWorkout>>;
+  /** An upcoming workout the client has not started. */
+  editing?: CoachWorkout | null;
+  onSend?: (input: SendCoachWorkoutInput) => Promise<CoachingResult<CoachWorkout>>;
+  onUpdate?: (input: UpdateCoachWorkoutInput) => Promise<CoachingResult<CoachWorkout>>;
   onClose: () => void;
 }) {
   const { showToast } = useToast();
   const [todayKey] = useState(() => toLocalDateKey(new Date()));
-  const [dateKey, setDateKey] = useState(todayKey);
-  const [draft, setDraft] = useState<ClientWorkoutDay | undefined>(undefined);
+  const [dateKey, setDateKey] = useState(editing?.dateKey ?? todayKey);
+  const [draft, setDraft] = useState<ClientWorkoutDay | undefined>(() =>
+    editing
+      ? {
+          date: editing.dateKey,
+          title: editing.title,
+          exercises: editing.exercises.map((exercise) => ({ ...exercise })),
+        }
+      : undefined
+  );
   const name = relationship.clientFirstName.trim() || "your client";
   const priorSets = useMemo(
     () =>
@@ -57,6 +74,20 @@ export function SendWorkoutSheet({
   }, []);
 
   async function send(exercises: ClientWorkoutDay["exercises"], title: string) {
+    if (editing) {
+      if (!onUpdate) return "Could not save the workout.";
+      const result = await onUpdate({
+        workoutId: editing.id,
+        dateKey,
+        title: title || "Workout",
+        note: editing.note,
+        exercises,
+      });
+      if (!result.ok) return result.message;
+      showToast({ type: "success", message: "Workout updated" });
+      return null;
+    }
+    if (!onSend) return "Could not send the workout.";
     const result = await onSend({
       relationshipId: relationship.id,
       dateKey,
@@ -94,7 +125,12 @@ export function SendWorkoutSheet({
         onRemove={() => setDraft(undefined)}
         onCopy={() => {}}
         priorSets={priorSets}
-        send={{ clientName: name, dateControl, onSend: send }}
+        send={{
+          clientName: name,
+          dateControl,
+          action: editing ? "save" : "send",
+          onSend: send,
+        }}
       />
     </div>,
     document.body

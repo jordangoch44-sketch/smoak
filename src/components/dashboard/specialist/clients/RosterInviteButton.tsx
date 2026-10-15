@@ -29,6 +29,9 @@ export function RosterInviteButton({
   if (relationship?.status === "invited") {
     return <span className="roster-invite roster-invite--pending">Invited</span>;
   }
+  if (relationship?.status === "requested") {
+    return <span className="roster-invite roster-invite--pending">Request waiting</span>;
+  }
 
   async function handleInvite() {
     if (!isPremium) {

@@ -2,7 +2,7 @@
 
 import type { ClientWorkoutExercise } from "./client-workout";
 
-export type CoachingStatus = "invited" | "active" | "declined" | "ended";
+export type CoachingStatus = "invited" | "requested" | "active" | "declined" | "ended";
 
 export interface CoachingRelationship {
   id: string;

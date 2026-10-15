@@ -35,7 +35,11 @@ function resolveAnchor(
   if (explicit) return explicit;
   if (fallbackRef) return fallbackRef;
   if (typeof document === "undefined") return null;
-  return document.querySelector<HTMLButtonElement>(PRIMARY_PILL_SELECTOR);
+  const pills = document.querySelectorAll<HTMLButtonElement>(PRIMARY_PILL_SELECTOR);
+  for (const pill of pills) {
+    if (pill.getClientRects().length > 0) return pill;
+  }
+  return pills[0] ?? null;
 }
 
 export function UserLocationProvider({ children }: { children: ReactNode }) {

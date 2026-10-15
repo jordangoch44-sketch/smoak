@@ -32,7 +32,7 @@ export function loadAppleMapKit(): Promise<AppleMapKit> {
     mapkitPromise = load({
       token,
       language: "en-US",
-      libraries: ["map", "annotations"],
+      libraries: ["map", "annotations", "overlays", "services"],
     }).catch((error) => {
       mapkitPromise = null;
       throw error;

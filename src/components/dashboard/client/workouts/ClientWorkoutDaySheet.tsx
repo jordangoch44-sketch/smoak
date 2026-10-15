@@ -152,11 +152,13 @@ interface ClientWorkoutDaySheetProps {
    * session's sets, weights, and reps into the rows.
    */
   priorSets?: readonly ExerciseSetMemory[];
-  /** A specialist building this for a client: nothing is logged, the footer sends it. */
+  /** A specialist building this for a client: nothing is logged, the footer sends or saves it. */
   send?: {
     clientName: string;
     dateControl: ReactNode;
-    /** Resolves to an error message, or null once sent. */
+    /** Save revises a workout already sent. Send creates one. */
+    action?: "send" | "save";
+    /** Resolves to an error message, or null once sent or saved. */
     onSend: (exercises: ClientWorkoutExercise[], title: string) => Promise<string | null>;
   };
 }
@@ -570,7 +572,11 @@ export function ClientWorkoutDaySheet({
     persist(next);
     const named = next.filter((exercise) => exercise.name.trim());
     if (named.length === 0) {
-      setError("Add at least one exercise to send.");
+      setError(
+        send.action === "save"
+          ? "Add at least one exercise to save."
+          : "Add at least one exercise to send."
+      );
       return;
     }
     setError(null);
@@ -579,6 +585,7 @@ export function ClientWorkoutDaySheet({
     setSending(false);
     if (message) {
       setError(message);
+      showToast({ type: "info", message });
       return;
     }
     requestClose();
@@ -941,12 +948,23 @@ export function ClientWorkoutDaySheet({
           </div>
           {send ? (
             <FastActivateButton
-              className="client-workouts-day__send"
-              aria-label={sending ? "Sending workout" : `Send to ${send.clientName}`}
+              className={cn(
+                "client-workouts-day__send",
+                send.action === "save" && "client-workouts-day__send--save"
+              )}
+              aria-label={
+                sending
+                  ? send.action === "save"
+                    ? "Saving workout"
+                    : "Sending workout"
+                  : send.action === "save"
+                    ? "Save workout"
+                    : `Send to ${send.clientName}`
+              }
               disabled={sending}
               onActivate={() => void handleSend()}
             >
-              <SendIcon className="h-5 w-5" />
+              {send.action === "save" ? (sending ? "Saving" : "Save") : <SendIcon className="h-5 w-5" />}
             </FastActivateButton>
           ) : step === "workout" ? (
             <FastActivateButton

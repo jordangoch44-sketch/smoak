@@ -5,7 +5,7 @@ import { createSupabaseServiceClient } from "@/lib/supabase/service";
 
 export const runtime = "nodejs";
 
-const OPEN_STATUSES = ["invited", "active"] as const;
+const OPEN_STATUSES = ["invited", "requested", "active"] as const;
 
 /**
  * Profile photos for the signed-in specialist's roster.

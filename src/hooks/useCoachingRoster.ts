@@ -7,10 +7,13 @@ import {
   deleteCoachWorkout,
   endCoaching,
   markCoachWorkoutCompletionSeen,
+  requestRespondCoachingConnection,
   requestRosterInvite,
   requestSendCoachWorkout,
+  requestUpdateCoachWorkout,
   type CoachingResult,
   type SendCoachWorkoutInput,
+  type UpdateCoachWorkoutInput,
 } from "@/lib/coaching/coaching-service";
 import {
   EMPTY_COACHING,
@@ -73,6 +76,20 @@ export function useCoachingRoster(specialistId: string | null) {
     [specialistId]
   );
 
+  const updateWorkout = useCallback(
+    async (input: UpdateCoachWorkoutInput): Promise<CoachingResult<CoachWorkout>> => {
+      const result = await requestUpdateCoachWorkout(input);
+      if (result.ok && specialistId) {
+        patchCoaching("specialist", specialistId, (current) => ({
+          ...current,
+          workouts: upsertById(current.workouts, result.data),
+        }));
+      }
+      return result;
+    },
+    [specialistId]
+  );
+
   const removeWorkout = useCallback(
     async (workoutId: string) => {
       const supabase = getMarketplaceAuthClient();
@@ -120,6 +137,23 @@ export function useCoachingRoster(specialistId: string | null) {
     [specialistId]
   );
 
+  const respondToRequest = useCallback(
+    async (relationshipId: string, accept: boolean): Promise<CoachingResult<CoachingRelationship>> => {
+      const result = await requestRespondCoachingConnection(relationshipId, accept);
+      if (result.ok && specialistId) {
+        patchCoaching("specialist", specialistId, (current) => ({
+          ...current,
+          relationships:
+            result.data.status === "active"
+              ? upsertById(current.relationships, result.data)
+              : current.relationships.filter((item) => item.id !== relationshipId),
+        }));
+      }
+      return result;
+    },
+    [specialistId]
+  );
+
   const removeClient = useCallback(
     async (relationshipId: string) => {
       const supabase = getMarketplaceAuthClient();
@@ -147,10 +181,12 @@ export function useCoachingRoster(specialistId: string | null) {
       invite,
       createInviteLink,
       sendWorkout,
+      updateWorkout,
       removeWorkout,
       removeClient,
+      respondToRequest,
       dismissFinished,
     }),
-    [snapshot, invite, createInviteLink, sendWorkout, removeWorkout, removeClient, dismissFinished]
+    [snapshot, invite, createInviteLink, sendWorkout, updateWorkout, removeWorkout, removeClient, respondToRequest, dismissFinished]
   );
 }

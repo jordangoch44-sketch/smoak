@@ -149,14 +149,15 @@ export function sanitizeWorkoutCount(value: unknown, maxLength: number): string 
   return value.replace(/\D/g, "").slice(0, maxLength);
 }
 
+/** Digits and one decimal place. A trailing dot stays so "7." can become "7.5". */
 export function sanitizeWorkoutWeight(value: unknown): string {
   if (typeof value !== "string") return "";
   const cleaned = value.replace(/[^\d.]/g, "");
-  const [whole, ...rest] = cleaned.split(".");
-  const fraction = rest.join("").replace(/\D/g, "").slice(0, 1);
-  const digits = (whole ?? "").replace(/\D/g, "");
-  const body = fraction ? `${digits}.${fraction}` : digits;
-  return body.slice(0, 6);
+  const dot = cleaned.indexOf(".");
+  if (dot === -1) return cleaned.slice(0, 6);
+  const whole = cleaned.slice(0, dot).replace(/\D/g, "");
+  const fraction = cleaned.slice(dot + 1).replace(/\D/g, "").slice(0, 1);
+  return `${whole}.${fraction}`.slice(0, 6);
 }
 
 export const EXERCISE_NOTE_MAX_LENGTH = 160;

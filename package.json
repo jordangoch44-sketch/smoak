@@ -25,10 +25,14 @@
     "apply:signup-fix": "node scripts/apply-signup-fix.mjs",
     "verify:auth": "node scripts/verify-auth.mjs",
     "verify:reviews": "node scripts/verify-specialist-reviews.mjs",
-    "setup:stripe": "node scripts/setup-stripe-products.mjs"
+    "setup:stripe": "node scripts/setup-stripe-products.mjs",
+    "ios:sync": "cap sync ios",
+    "ios:open": "cap open ios"
   },
   "dependencies": {
     "@apple/mapkit-loader": "^1.0.0",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@stripe/react-stripe-js": "^6.8.0",
     "@stripe/stripe-js": "^9.12.1",
     "@supabase/ssr": "^0.10.3",
@@ -42,6 +46,7 @@
     "stripe": "^22.3.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
     "@tailwindcss/postcss": "^4",
     "@types/leaflet": "^1.9.22",
     "@types/node": "^20",

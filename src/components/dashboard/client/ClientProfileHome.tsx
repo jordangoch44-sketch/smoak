@@ -16,6 +16,7 @@ import {
 import { CLIENT_SESSION_FORMAT_OPTIONS } from "@/constants/client-profile-options";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import type { ClientProfileEditorFocus } from "./ClientProfileEditModal";
+import { ConnectSpecialistsCard } from "@/components/dashboard/client/coaching/ConnectSpecialistsCard";
 import { ClientWeekOverview } from "./workouts/ClientWeekOverview";
 
 interface ClientProfileHomeProps {
@@ -181,6 +182,8 @@ export function ClientProfileHome({
           </div>
         </div>
       </section>
+
+      <ConnectSpecialistsCard userId={userId} />
 
       <section className="client-profile-home__card" aria-labelledby="client-profile-about">
         <div className="client-profile-home__card-top">

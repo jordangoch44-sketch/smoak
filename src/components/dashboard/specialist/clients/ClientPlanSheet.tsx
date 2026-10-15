@@ -4,13 +4,13 @@ import { useCallback, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Logo } from "@/components/ui/Logo";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { exerciseLabel } from "@/data/exercise-display";
 import {
   CalendarIcon,
   ChartIcon,
   ChevronRightIcon,
   CloseIcon,
   DumbbellIcon,
-  UserIcon,
 } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { formatSetCount, formatWorkoutDayHeading, toLocalDateKey } from "@/lib/workouts/client-workout";
@@ -121,7 +121,7 @@ function summaryRow(exercise: ClientWorkoutExercise, source: ClientWorkoutExerci
 
   return {
     id: exercise.id,
-    name: titleCase(exercise.name.trim() || "Exercise"),
+    name: exerciseLabel(exercise.name.trim()) || "Exercise",
     setCount,
     setLabel: setCount > 0 ? formatSetCount(setCount) : null,
     cue: cue ? null : note ? titleCase(note) : null,
@@ -177,9 +177,13 @@ function LayersIcon({ className }: { className?: string }) {
 
 function SentWorkoutSummary({
   workout,
+  canEdit,
+  onEdit,
   onClose,
 }: {
   workout: CoachWorkout;
+  canEdit: boolean;
+  onEdit: () => void;
   onClose: () => void;
 }) {
   const titleId = useId();
@@ -207,13 +211,11 @@ function SentWorkoutSummary({
         <div className="roster-summary__brand">
           <Logo href={null} size="sm" />
           <div className="roster-summary__brand-actions">
-            <span className="roster-summary__view">
-              <span className="roster-summary__view-avatar">
-                <UserIcon className="h-3.5 w-3.5" />
-              </span>
-              Client View
-              <span className="roster-summary__view-dot" aria-hidden />
-            </span>
+            {canEdit ? (
+              <FastActivateButton className="roster-summary__view" onActivate={onEdit}>
+                Edit Workout
+              </FastActivateButton>
+            ) : null}
             <FastActivateButton className="roster-summary__close" aria-label="Close" onActivate={onClose}>
               <CloseIcon className="h-3.5 w-3.5" />
             </FastActivateButton>
@@ -304,6 +306,7 @@ export function ClientPlanSheet({
   relationship,
   workouts,
   onSendWorkout,
+  onEditWorkout,
   onRemoveWorkout,
   onRemoveClient,
   onClose,
@@ -311,6 +314,7 @@ export function ClientPlanSheet({
   relationship: CoachingRelationship;
   workouts: readonly CoachWorkout[];
   onSendWorkout: () => void;
+  onEditWorkout: (workout: CoachWorkout) => void;
   onRemoveWorkout: (workoutId: string) => Promise<boolean>;
   onRemoveClient: () => void;
   onClose: () => void;
@@ -404,7 +408,12 @@ export function ClientPlanSheet({
         {relationship.status === "invited" ? "Cancel invite" : "Remove from roster"}
       </FastActivateButton>
       {selected ? (
-        <SentWorkoutSummary workout={selected} onClose={() => setSelectedId(null)} />
+        <SentWorkoutSummary
+          workout={selected}
+          canEdit={selected.status === "sent" && selected.dateKey >= todayKey}
+          onEdit={() => onEditWorkout(selected)}
+          onClose={() => setSelectedId(null)}
+        />
       ) : null}
     </RosterSheet>
   );

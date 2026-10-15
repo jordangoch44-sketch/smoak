@@ -5,6 +5,7 @@ import { getMarketplaceAuthClient } from "@/lib/auth/marketplace-auth";
 import {
   endCoaching,
   requestAcceptCoaching,
+  requestSpecialistConnection,
   respondRosterInvite,
   updateCoachWorkoutProgress,
 } from "@/lib/coaching/coaching-service";
@@ -78,6 +79,20 @@ export function useClientCoaching(userId: string | null) {
     [userId]
   );
 
+  const requestConnection = useCallback(
+    async (specialistId: string) => {
+      if (!userId) return { ok: false as const, message: "Sign in to send a request." };
+      const result = await requestSpecialistConnection(specialistId);
+      if (!result.ok) return result;
+      patchCoaching("client", userId, (current) => ({
+        ...current,
+        relationships: upsertById(current.relationships, result.data),
+      }));
+      return result;
+    },
+    [userId]
+  );
+
   const reportProgress = useCallback(
     async (
       workoutId: string,
@@ -105,6 +120,7 @@ export function useClientCoaching(userId: string | null) {
 
   return useMemo(() => {
     const invites = snapshot.relationships.filter((item) => item.status === "invited");
+    const requests = snapshot.relationships.filter((item) => item.status === "requested");
     const coaches = snapshot.relationships.filter((item) => item.status === "active");
     const coachNames = new Map(coaches.map((item) => [item.id, item.specialistName]));
     const workoutsByDate = new Map<string, CoachWorkout[]>();
@@ -116,7 +132,11 @@ export function useClientCoaching(userId: string | null) {
     return {
       loaded: snapshot.loaded,
       invites,
+      requests,
       coaches,
+      relationshipForSpecialist: (specialistId: string) =>
+        snapshot.relationships.find((item) => item.specialistId === specialistId) ?? null,
+      requestConnection,
       workouts: snapshot.workouts,
       workoutsByDate,
       coachNameFor: (workout: CoachWorkout) => coachNames.get(workout.relationshipId) ?? "",
@@ -124,5 +144,5 @@ export function useClientCoaching(userId: string | null) {
       leave,
       reportProgress,
     };
-  }, [snapshot, respond, leave, reportProgress]);
+  }, [snapshot, respond, leave, requestConnection, reportProgress]);
 }

@@ -1,3 +1,4 @@
+import { SiteLocationPill } from "@/components/location/SiteLocationPill";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { HomeBoostRibbon } from "./HomeBoostRibbon";
 import { HomeSearchBar } from "./HomeSearchBar";
@@ -27,6 +28,9 @@ export function Hero() {
         <div className="atmosphere-grain" />
       </div>
 
+      <div className="home-native-zip">
+        <SiteLocationPill compact primary />
+      </div>
       <div className="home-hero__content home-hero__content--discovery">
         <div className="home-hero__headline">
           <RotatingSpecialistHeadline />

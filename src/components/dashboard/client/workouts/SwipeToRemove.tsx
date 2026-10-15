@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 const REVEAL_PX = 88;
 const DRAG_START_PX = 8;
+/** Set rows sit under fields. A short slide should snap the X open. */
+const EAGER_OPEN_PX = 28;
 /** Past this share of the card width, letting go removes without tapping Remove. */
 const FULL_SWIPE_RATIO = 0.55;
 const SETTLE_MS = 260;
@@ -43,7 +45,10 @@ export function SwipeToRemove({
   const start = useRef({ x: 0, y: 0, offset: 0 });
   const offset = useRef(0);
   const swallowClick = useRef(false);
+  /** A sideways drag must not leave the keyboard open on the field under the finger. */
+  const suppressFocus = useRef(false);
   const finishDragRef = useRef<() => void>(() => {});
+  const claimDragRef = useRef<() => void>(() => {});
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [removing, setRemoving] = useState(false);
@@ -52,6 +57,18 @@ export function SwipeToRemove({
     offset.current = px;
     translateContent(contentRef.current, px, animate);
   }
+
+  function claimDrag() {
+    if (gesture.current === "drag") return;
+    gesture.current = "drag";
+    suppressFocus.current = true;
+    rootRef.current?.classList.add("client-workouts-swipe--active");
+    setDragging(true);
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && rootRef.current?.contains(active)) active.blur();
+  }
+
+  claimDragRef.current = claimDrag;
 
   function settle(next: "open" | "closed") {
     place(next === "open" ? -REVEAL_PX : 0, true);
@@ -77,13 +94,15 @@ export function SwipeToRemove({
     if (gesture.current !== "drag") return;
     gesture.current = "idle";
     swallowClick.current = true;
+    suppressFocus.current = true;
     setDragging(false);
     const width = rootRef.current?.offsetWidth ?? 320;
     if (offset.current < -width * FULL_SWIPE_RATIO) {
       remove();
       return;
     }
-    settle(offset.current < -REVEAL_PX / 2 ? "open" : "closed");
+    const openAt = contain ? EAGER_OPEN_PX : REVEAL_PX / 2;
+    settle(offset.current < -openAt ? "open" : "closed");
   };
 
   useEffect(() => {
@@ -104,8 +123,7 @@ export function SwipeToRemove({
           gesture.current = "scroll";
           return;
         }
-        gesture.current = "drag";
-        setDragging(true);
+        claimDragRef.current();
       }
       if (event.cancelable) event.preventDefault();
       const width = rootRef.current?.offsetWidth ?? 320;
@@ -160,8 +178,24 @@ export function SwipeToRemove({
       <div
         ref={contentRef}
         className="client-workouts-swipe__content"
+        onPointerDownCapture={(event) => {
+          if (gesture.current === "idle" || gesture.current === "scroll") {
+            suppressFocus.current = false;
+          }
+          // Fields stop the bubble. Arm here so a drag on pounds or reps still slides the row.
+          if (!contain || removing || !event.isPrimary) return;
+          gesture.current = "pending";
+          start.current = { x: event.clientX, y: event.clientY, offset: offset.current };
+        }}
+        onFocusCapture={(event) => {
+          if (gesture.current !== "drag" && !suppressFocus.current) return;
+          if (event.target instanceof HTMLElement) event.target.blur();
+        }}
         onPointerDown={(event) => {
-          if (contain) event.stopPropagation();
+          if (contain) {
+            event.stopPropagation();
+            return;
+          }
           if (removing || !event.isPrimary) return;
           gesture.current = "pending";
           start.current = { x: event.clientX, y: event.clientY, offset: offset.current };
@@ -176,8 +210,7 @@ export function SwipeToRemove({
               return;
             }
             if (Math.abs(dx) < DRAG_START_PX) return;
-            gesture.current = "drag";
-            setDragging(true);
+            claimDrag();
             event.currentTarget.setPointerCapture(event.pointerId);
           }
           const width = rootRef.current?.offsetWidth ?? 320;
@@ -188,6 +221,11 @@ export function SwipeToRemove({
           if (gesture.current === "drag") {
             event.stopPropagation();
             finishDragRef.current();
+            return;
+          }
+          // touchend can settle the drag before pointerup. Don't undo that.
+          if (suppressFocus.current || swallowClick.current) {
+            event.stopPropagation();
             return;
           }
           gesture.current = "idle";

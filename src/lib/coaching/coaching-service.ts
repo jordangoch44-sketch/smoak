@@ -12,7 +12,7 @@ import { mapCoachingRelationship, mapCoachWorkout } from "@/lib/coaching/coach-w
 
 export type CoachingResult<T> = { ok: true; data: T } | { ok: false; message: string };
 
-const OPEN_STATUSES = ["invited", "active"] as const;
+const OPEN_STATUSES = ["invited", "requested", "active"] as const;
 
 function failure(message: string | undefined, fallback: string): { ok: false; message: string } {
   if (message?.includes("pro_required")) {
@@ -21,7 +21,7 @@ function failure(message: string | undefined, fallback: string): { ok: false; me
   return { ok: false, message: message || fallback };
 }
 
-/** Invited + active clients for the specialist's marketplace id. */
+/** Invited, requested, and active clients for the specialist's marketplace id. */
 export async function fetchSpecialistRoster(
   supabase: SupabaseClient,
   specialistId: string
@@ -36,7 +36,7 @@ export async function fetchSpecialistRoster(
   return { ok: true, data: (data as CoachingRelationshipRow[]).map(mapCoachingRelationship) };
 }
 
-/** Pending invites + active coaches for the signed-in client. */
+/** Pending invites, connection requests, and active coaches for the signed-in client. */
 export async function fetchClientCoaching(
   supabase: SupabaseClient,
   clientUserId: string
@@ -255,11 +255,31 @@ export interface SendCoachWorkoutInput {
   exercises: ClientWorkoutExercise[];
 }
 
+export interface UpdateCoachWorkoutInput {
+  workoutId: string;
+  dateKey: string;
+  title: string;
+  note: string;
+  exercises: ClientWorkoutExercise[];
+}
+
 /** Browser → API route (sends the email after the insert). */
 export async function requestSendCoachWorkout(
   input: SendCoachWorkoutInput
 ): Promise<CoachingResult<CoachWorkout>> {
   return postJson<CoachWorkout>("/api/coaching/workouts", input, "Could not send the workout.");
+}
+
+/** Browser → API route. Only a workout the client has not started can change. */
+export async function requestUpdateCoachWorkout(
+  input: UpdateCoachWorkoutInput
+): Promise<CoachingResult<CoachWorkout>> {
+  return postJson<CoachWorkout>(
+    "/api/coaching/workouts",
+    input,
+    "Could not save the workout.",
+    "PATCH"
+  );
 }
 
 /** Browser → API route: accept an invite or claim a link, then email both sides. */
@@ -280,14 +300,92 @@ export async function requestRosterInvite(
   );
 }
 
+export interface SpecialistConnectMatch {
+  id: string;
+  slug: string;
+  businessName: string;
+  fullName: string;
+  profession: string;
+  city: string;
+  neighborhood: string;
+  imageUrl: string;
+}
+
+interface SpecialistConnectMatchRow {
+  id?: string;
+  slug?: string | null;
+  business_name?: string | null;
+  full_name?: string | null;
+  profession?: string | null;
+  city?: string | null;
+  neighborhood?: string | null;
+  image_url?: string | null;
+}
+
+/** Approved specialists whose full name or business name matches. */
+export async function searchSpecialistsToConnect(
+  supabase: SupabaseClient,
+  query: string
+): Promise<CoachingResult<SpecialistConnectMatch[]>> {
+  const q = query.trim();
+  if (q.length < 2) return { ok: true, data: [] };
+  const { data, error } = await supabase.rpc("search_specialists_to_connect", { p_query: q });
+  if (error) {
+    if (error.message.includes("search_specialists_to_connect")) {
+      return { ok: false, message: "Search isn’t available yet." };
+    }
+    return failure(error.message, "Could not search specialists.");
+  }
+  const rows = (Array.isArray(data) ? data : []) as SpecialistConnectMatchRow[];
+  return {
+    ok: true,
+    data: rows
+      .map((row) => ({
+        id: String(row.id ?? "").trim(),
+        slug: String(row.slug ?? "").trim(),
+        businessName: String(row.business_name ?? "").trim(),
+        fullName: String(row.full_name ?? "").trim(),
+        profession: String(row.profession ?? "").trim(),
+        city: String(row.city ?? "").trim(),
+        neighborhood: String(row.neighborhood ?? "").trim(),
+        imageUrl: String(row.image_url ?? "").trim(),
+      }))
+      .filter((row) => row.id),
+  };
+}
+
+/** Browser → API route. Emails the specialist when the request is new. */
+export async function requestSpecialistConnection(
+  specialistId: string
+): Promise<CoachingResult<CoachingRelationship>> {
+  return postJson<CoachingRelationship>(
+    "/api/coaching/connect",
+    { specialistId },
+    "Couldn’t send the request."
+  );
+}
+
+/** Browser → API route. Accepting emails the client; declining does not. */
+export async function requestRespondCoachingConnection(
+  relationshipId: string,
+  accept: boolean
+): Promise<CoachingResult<CoachingRelationship>> {
+  return postJson<CoachingRelationship>(
+    "/api/coaching/connect/respond",
+    { relationshipId, accept },
+    accept ? "Couldn’t accept the request." : "Couldn’t decline the request."
+  );
+}
+
 async function postJson<T>(
   url: string,
   body: unknown,
-  fallback: string
+  fallback: string,
+  method: "POST" | "PATCH" = "POST"
 ): Promise<CoachingResult<T>> {
   try {
     const response = await fetch(url, {
-      method: "POST",
+      method,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });

@@ -580,6 +580,18 @@
   opacity: 0.85;
 }
 
+/* GPS wait covers the whole screen. The card must not clip the S into a box. */
+.location-finding-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000002;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(72, 72, 78, 0.62);
+  pointer-events: auto;
+}
+
 .location-selector-panel__body--gate {
   text-align: center;
 }

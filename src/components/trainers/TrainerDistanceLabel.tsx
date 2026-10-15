@@ -1,7 +1,15 @@
 "use client";
 
 import { LocationMarkIcon } from "@/components/ui/icons";
+import { useSyncExternalStore } from "react";
 import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
+import {
+  drivingOriginKey,
+  formatDistanceMilesAway,
+  getDrivingDistanceServerSnapshot,
+  getDrivingDistanceSnapshot,
+  subscribeDrivingDistances,
+} from "@/lib/driving-distance";
 import { getTrainerDistanceMiles } from "@/lib/trainer-proximity-sort";
 import type { Trainer } from "@/types";
 import { cn } from "@/lib/utils";
@@ -20,15 +28,21 @@ export function TrainerDistanceLabel({
   showIcon = false,
 }: TrainerDistanceLabelProps) {
   const userCoords = useExplicitUserCoordinates();
+  const driving = useSyncExternalStore(
+    subscribeDrivingDistances,
+    getDrivingDistanceSnapshot,
+    getDrivingDistanceServerSnapshot
+  );
   if (!userCoords) return null;
 
-  const miles = getTrainerDistanceMiles(trainer, userCoords);
-  if (miles === null) return null;
+  const drivingMiles =
+    driving.originKey === drivingOriginKey(userCoords)
+      ? driving.byTrainerId[trainer.id]?.miles
+      : undefined;
+  const miles = drivingMiles ?? getTrainerDistanceMiles(trainer, userCoords);
+  if (miles === null || miles === undefined) return null;
 
-  const label =
-    miles < 20
-      ? `${miles.toFixed(1)} mi away`
-      : `${Math.round(miles)} mi away`;
+  const label = formatDistanceMilesAway(miles);
 
   return (
     <span

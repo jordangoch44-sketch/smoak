@@ -1782,6 +1782,27 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
   pointer-events: none;
 }
 
+.explore-map-route-miles {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0 0.7rem;
+  border-radius: 999px;
+  background: #0a84ff;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+  pointer-events: auto;
+  user-select: none;
+  white-space: nowrap;
+}
+
 .explore-map-me__dot::before {
   content: "";
   position: absolute;

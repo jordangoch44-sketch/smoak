@@ -127,10 +127,16 @@ export function clientNavAttention(input: {
   const now = input.now ?? Date.now();
   const relationshipIds: string[] = [];
   for (const relationship of input.relationships) {
-    if (relationship.status !== "active" || !relationship.respondedAt) continue;
-    const stamp = Date.parse(relationship.respondedAt);
+    const seenStamp =
+      relationship.status === "requested"
+        ? relationship.invitedAt
+        : relationship.status === "active"
+          ? relationship.respondedAt
+          : null;
+    if (!seenStamp) continue;
+    const stamp = Date.parse(seenStamp);
     if (!Number.isFinite(stamp) || now - stamp > COACH_NOTICE_WINDOW_MS) continue;
-    if (input.seen.relationships[relationship.id] === relationship.respondedAt) continue;
+    if (input.seen.relationships[relationship.id] === seenStamp) continue;
     relationshipIds.push(relationship.id);
   }
 
@@ -180,9 +186,10 @@ export function acknowledgeClientNav(
   const nextRelationships = { ...seen.relationships };
   const pending = new Set(attention.relationshipIds);
   for (const relationship of relationships) {
-    if (pending.has(relationship.id) && relationship.respondedAt) {
-      nextRelationships[relationship.id] = relationship.respondedAt;
-    }
+    if (!pending.has(relationship.id)) continue;
+    const seenStamp =
+      relationship.status === "requested" ? relationship.invitedAt : relationship.respondedAt;
+    if (seenStamp) nextRelationships[relationship.id] = seenStamp;
   }
 
   const next: ClientNavSeen = {

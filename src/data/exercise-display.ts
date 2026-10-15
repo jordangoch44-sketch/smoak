@@ -52,8 +52,28 @@ const DISPLAY_NAMES: Record<string, { displayName: string; aliases: readonly str
     aliases: ["smith bulgarian split squat", "smith bss", "bulgarian split squat"],
   },
   edb_bL8zkUU: {
-    displayName: "Cable Lat Pulldown",
-    aliases: ["lat pulldown", "lat pd"],
+    displayName: "Cable Crossover Pulldown",
+    aliases: ["crossover pulldown", "standing cable pulldown"],
+  },
+  edb_xh1wGdv: {
+    displayName: "Cable Bar Lat Pulldown",
+    aliases: ["cable bar lateral pulldown"],
+  },
+  edb_srHLVB5: {
+    displayName: "Lat Pulldown",
+    aliases: ["pro lat bar pulldown", "lat pd"],
+  },
+  edb_yiWQvU1: {
+    displayName: "TRX/Rings Inverted Row",
+    aliases: ["trx row", "ring row", "suspended row"],
+  },
+  edb_CsBkea0: {
+    displayName: "Inverted Pull-Up",
+    aliases: ["upside-down pull-up"],
+  },
+  edb_remL2xX: {
+    displayName: "Inverted Row",
+    aliases: ["bent-knee inverted row"],
   },
   edb_bgpSDRE: {
     displayName: "Machine Lat Pulldown",
@@ -90,6 +110,14 @@ const DISPLAY_NAMES: Record<string, { displayName: string; aliases: readonly str
   edb_lBYdjKY: {
     displayName: "Bodyweight Standing Calf Raise",
     aliases: ["bodyweight calf raise"],
+  },
+  edb_JNNiTUn: {
+    displayName: "Standing Leg Curl",
+    aliases: ["kneeling leg curl"],
+  },
+  edb_CJNsnwU: {
+    displayName: "Pec Fly",
+    aliases: ["pec deck", "machine fly"],
   },
 };
 
@@ -129,12 +157,14 @@ export function displayAliases(name: string): readonly string[] {
 
 /**
  * ExerciseDB title to store. A unique gym display name maps back to that title.
- * Shared phrases such as "reverse lunge" stay as typed, because more than one
- * exercise uses them.
+ * A catalog title stays put, even when another exercise uses those words as its
+ * display name. Shared phrases such as "reverse lunge" stay as typed.
  */
 export function storedExerciseName(name: string): string {
-  const official = officialExerciseName(name);
-  const display = byDisplay.get(name.trim().toLowerCase());
+  const key = name.trim().toLowerCase();
+  const catalog = byCatalog.get(key);
+  if (catalog) return catalog.catalogName;
+  const display = byDisplay.get(key);
   if (display) return display.catalogName;
-  return official;
+  return officialExerciseName(name);
 }

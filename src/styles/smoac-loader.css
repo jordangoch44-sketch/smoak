@@ -252,6 +252,81 @@
   }
 }
 
+/* Native cold start — hidden on the website. The phone app class is set
+   before first paint, so this covers the black gap until Marketplace. */
+#app-boot-splash {
+  display: none;
+}
+
+html.native-app #app-boot-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #020203;
+  pointer-events: auto;
+}
+
+html.native-app #app-boot-splash .smoac-loader--boot {
+  --smoac-loader-size: 148px;
+}
+
+html.native-app #app-boot-splash.is-zoom {
+  pointer-events: none;
+  background: transparent;
+  transition: background 0.45s ease;
+}
+
+html.native-app #app-boot-splash.is-zoom .app-boot-splash__mark {
+  animation: app-boot-splash-zoom 0.72s cubic-bezier(0.16, 0.84, 0.28, 1) forwards;
+}
+
+html.native-app #app-boot-splash.is-zoom .smoac-loader__cycle,
+html.native-app #app-boot-splash.is-zoom .smoac-loader__draw,
+html.native-app #app-boot-splash.is-zoom .smoac-loader__streak,
+html.native-app #app-boot-splash.is-zoom .smoac-loader__star {
+  animation: none;
+}
+
+html.native-app #app-boot-splash.is-zoom .smoac-loader__cycle {
+  opacity: 1;
+}
+
+html.native-app #app-boot-splash.is-zoom .smoac-loader__draw--upper,
+html.native-app #app-boot-splash.is-zoom .smoac-loader__draw--lower {
+  stroke-dashoffset: 0;
+}
+
+html.native-app #app-boot-splash.is-zoom .smoac-loader__streak {
+  opacity: 0;
+}
+
+html.native-app #app-boot-splash.is-zoom .smoac-loader__star {
+  opacity: 1;
+  transform: none;
+}
+
+@keyframes app-boot-splash-zoom {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.85);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.native-app #app-boot-splash.is-zoom .app-boot-splash__mark {
+    animation: none;
+    opacity: 0;
+    transition: opacity 0.2s linear;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .smoac-loader__cycle,
   .smoac-loader__draw--upper,

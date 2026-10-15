@@ -756,3 +756,197 @@ button.client-profile-home__chip {
     animation: none;
   }
 }
+
+.connect-specialists {
+  gap: 0.7rem;
+}
+
+.connect-specialists__copy,
+.connect-specialists__status,
+.connect-specialists__card-person,
+.connect-specialists__card-meta {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.connect-specialists__chips,
+.connect-specialists__results {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.connect-specialists__results {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0.55rem;
+}
+
+.connect-specialists__chip {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  padding: 0.42rem 0.8rem;
+  border: 1px solid rgba(96, 165, 250, 0.72);
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.22);
+  color: #dbeafe;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: transform 0.14s ease;
+}
+
+.connect-specialists__chip:active {
+  transform: translateY(3px) scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connect-specialists__chip,
+  .connect-specialists__chip:active {
+    transition: none;
+    transform: none;
+  }
+}
+
+.connect-specialists__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.connect-specialists__search-icon {
+  position: absolute;
+  left: 0.95rem;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.connect-specialists__search input {
+  width: 100%;
+  min-height: 2.9rem;
+  padding: 0 1rem 0 2.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.95rem;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 16px;
+  color: #fff;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.connect-specialists__search input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.connect-specialists__search input:focus {
+  border-color: rgba(167, 139, 250, 0.55);
+}
+
+.connect-specialists__card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 0.75rem;
+  border-radius: 1.1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(8, 7, 16, 0.45);
+}
+
+.connect-specialists__card-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.connect-specialists__photo {
+  width: 4.5rem !important;
+  height: 5.25rem !important;
+  border-radius: 0.85rem !important;
+}
+
+.connect-specialists__card-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.connect-specialists__card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.connect-specialists__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.connect-specialists__actions .coaching-btn {
+  text-decoration: none;
+}
+
+.connect-specialists__state {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.connect-disconnect {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.connect-disconnect__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(8, 6, 16, 0.45);
+}
+
+.connect-disconnect__card {
+  position: relative;
+  width: min(100%, 22rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.15rem 1.05rem 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(18, 16, 28, 0.96);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+}
+
+.connect-disconnect__copy {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+
+.connect-disconnect__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+

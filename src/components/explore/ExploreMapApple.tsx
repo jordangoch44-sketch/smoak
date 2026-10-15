@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { FoldedMapIcon } from "@/components/ui/icons";
 import {
   useProfileSheetOpen,
@@ -20,10 +21,18 @@ import {
 } from "@/lib/warm-trainer-profile-navigation";
 import { bindExploreMapPopupProfileNav } from "@/lib/explore-map-profile-nav";
 import {
+  fetchDrivingRoute,
+  midpointAlongPath,
+} from "@/lib/apple-directions";
+import {
   loadAppleMapKit,
   regionForRadiusMiles,
   type AppleMapKit,
 } from "@/lib/apple-maps";
+import {
+  formatDistanceMiles,
+  publishDrivingMiles,
+} from "@/lib/driving-distance";
 import {
   clusterTrainersForMap,
   clustersPinSignature,
@@ -41,8 +50,55 @@ import type { ExploreMapArea, ExploreMapProps } from "./ExploreMapLeaflet";
 
 type MapKitAnnotation = InstanceType<AppleMapKit["Annotation"]>;
 type MapKitMap = InstanceType<AppleMapKit["Map"]>;
+type MapKitOverlay = InstanceType<AppleMapKit["PolylineOverlay"]>;
 
 const FALLBACK_CENTER: ExploreMapArea = defaultMarketplaceCenter();
+
+/** Clear space between the search bar and the specialist card. */
+function routeFrameInsets(container: HTMLElement): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
+  const bounds = container.getBoundingClientRect();
+  const reservedBottom = Math.round(Math.max(210, bounds.height * 0.38));
+  let top = 96;
+  let bottom = reservedBottom;
+  const controls = document.querySelector(
+    ".explore-map-hero__controls, .explore-page__map-rail-controls"
+  );
+  if (controls instanceof HTMLElement) {
+    const covered = controls.getBoundingClientRect().bottom - bounds.top;
+    if (covered > 0) top = Math.round(covered + 56);
+  }
+  const card = document.querySelector(".explore-bottom-card-dock");
+  if (card instanceof HTMLElement) {
+    const covered = bounds.bottom - card.getBoundingClientRect().top;
+    if (covered > reservedBottom * 0.55) {
+      bottom = Math.round(covered + 56);
+    }
+  }
+  return { top, right: 72, bottom, left: 72 };
+}
+
+/** Keep the ME pin and the specialist pin inside the open map, with room around them. */
+function paddingForRouteFrame(
+  mapkit: AppleMapKit,
+  container: HTMLElement
+) {
+  const insets = routeFrameInsets(container);
+  const height = Math.max(container.clientHeight, 1);
+  const maxVertical = height * 0.7;
+  const vertical = insets.top + insets.bottom;
+  const scale = vertical > maxVertical ? maxVertical / vertical : 1;
+  return new mapkit.Padding(
+    Math.round(insets.top * scale),
+    insets.right,
+    Math.round(insets.bottom * scale),
+    insets.left
+  );
+}
 
 function clustersFrameKey(clusters: ExploreMapCluster[]): string {
   if (clusters.length === 0) return "clusters:empty";
@@ -238,6 +294,12 @@ export function ExploreMapApple({
   const mapkitRef = useRef<AppleMapKit | null>(null);
   const pinAnnotationsRef = useRef<MapKitAnnotation[]>([]);
   const meAnnotationRef = useRef<MapKitAnnotation | null>(null);
+  const routeOverlaysRef = useRef<MapKitOverlay[]>([]);
+  const routeLabelRef = useRef<MapKitAnnotation | null>(null);
+  const routeOriginMarkRef = useRef<MapKitAnnotation | null>(null);
+  const routeFitUntilRef = useRef(0);
+  const routeCameraMovesRef = useRef(0);
+  const routeRequestRef = useRef(0);
   const framedOriginRef = useRef<string>("");
   const selectedCoordRef = useRef<{
     latitude: number;
@@ -262,6 +324,7 @@ export function ExploreMapApple({
   const [mapEpoch, setMapEpoch] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCluster, setSelectedCluster] = useState<ExploreMapCluster | null>(null);
+  const routeOrigin = useExplicitUserCoordinates();
   const pinsSignatureRef = useRef("");
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
@@ -404,7 +467,7 @@ export function ExploreMapApple({
       if (!(target instanceof Element)) return;
       if (
         target.closest(
-          ".explore-map-callout, .explore-bottom-card-dock, .explore-bottom-card, .explore-bottom-card__carousel, .explore-map-cluster-popup__carousel"
+          ".explore-map-callout, .explore-map-route-miles, .explore-bottom-card-dock, .explore-bottom-card, .explore-bottom-card__carousel, .explore-map-cluster-popup__carousel"
         )
       ) {
         return;
@@ -566,12 +629,24 @@ export function ExploreMapApple({
 
         // User pan/zoom → dismiss callout (don't let it follow the map)
         const onRegionChangeStart = () => {
-          if (Date.now() < suppressUntilRef.current) return;
+          if (
+            routeCameraMovesRef.current > 0 ||
+            Date.now() < suppressUntilRef.current ||
+            Date.now() < routeFitUntilRef.current
+          ) {
+            return;
+          }
           clearSelection();
           onMapSearchStartRef.current?.();
         };
         const onRegionChangeEnd = () => {
           if (!mapRef.current) return;
+          if (routeCameraMovesRef.current > 0) {
+            routeCameraMovesRef.current -= 1;
+            routeFitUntilRef.current = Date.now() + 700;
+            return;
+          }
+          if (Date.now() < routeFitUntilRef.current) return;
           emitPendingFromMap(mapRef.current);
         };
         map.addEventListener("region-change-start", onRegionChangeStart);
@@ -634,12 +709,12 @@ export function ExploreMapApple({
 
     const observer = new ResizeObserver(() => {
       const map = mapRef.current;
-      if (!map || mapPaused) return;
+      if (!map) return;
       recaptureAppleMapSize(map, el, mapSizeKeyRef, suppressUntilRef);
     });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [mapEpoch, variant, layoutEpoch, mapPaused]);
+  }, [mapEpoch, variant, layoutEpoch]);
 
   useEffect(() => {
     recaptureAppleMapSize(
@@ -710,7 +785,7 @@ export function ExploreMapApple({
           calloutEnabled: false,
           animates: false,
           size: { width: 32, height: 32 },
-          anchorOffset: new DOMPoint(0, -16),
+          anchorOffset: new DOMPoint(0, 0),
         }
       );
       map.addAnnotation(me);
@@ -793,6 +868,224 @@ export function ExploreMapApple({
     selectCluster,
     clearSelection,
   ]);
+
+  const selectedClusterRef = useRef(selectedCluster);
+  selectedClusterRef.current = selectedCluster;
+  const routeOriginRef = useRef(routeOrigin);
+  routeOriginRef.current = routeOrigin;
+  const selectedRouteKey = selectedCluster
+    ? `${selectedCluster.id}:${selectedCluster.latitude.toFixed(5)},${selectedCluster.longitude.toFixed(5)}`
+    : "";
+  const routeOriginKey = routeOrigin
+    ? `${routeOrigin.latitude.toFixed(4)},${routeOrigin.longitude.toFixed(4)}`
+    : "";
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const mapkit = mapkitRef.current;
+    const cluster = selectedClusterRef.current;
+    const origin = routeOriginRef.current;
+
+    function clearRouteGraphics() {
+      const liveMap = mapRef.current;
+      if (routeOverlaysRef.current.length > 0 && liveMap) {
+        try {
+          liveMap.removeOverlays(routeOverlaysRef.current);
+        } catch {
+          /* map already destroyed */
+        }
+      }
+      routeOverlaysRef.current = [];
+      if (routeLabelRef.current && liveMap) {
+        try {
+          liveMap.removeAnnotation(routeLabelRef.current);
+        } catch {
+          /* map already destroyed */
+        }
+      }
+      routeLabelRef.current = null;
+      if (routeOriginMarkRef.current && liveMap) {
+        try {
+          liveMap.removeAnnotation(routeOriginMarkRef.current);
+        } catch {
+          /* map already destroyed */
+        }
+      }
+      routeOriginMarkRef.current = null;
+    }
+
+    if (!map || !mapkit || !cluster || !origin) {
+      clearRouteGraphics();
+      return;
+    }
+
+    const requestId = routeRequestRef.current + 1;
+    routeRequestRef.current = requestId;
+    const controller = new AbortController();
+    clearRouteGraphics();
+
+    void (async () => {
+      try {
+        const route = await fetchDrivingRoute(
+          mapkit,
+          origin,
+          { latitude: cluster.latitude, longitude: cluster.longitude },
+          controller.signal
+        );
+        if (requestId !== routeRequestRef.current) return;
+        const liveMap = mapRef.current;
+        const liveMapkit = mapkitRef.current;
+        if (!route || !liveMap || !liveMapkit) return;
+
+        const casing = new liveMapkit.PolylineOverlay(route.points, {
+          enabled: false,
+          style: new liveMapkit.Style({
+            strokeColor: "#041018",
+            strokeOpacity: 0.55,
+            lineWidth: 9,
+            lineCap: "round",
+            lineJoin: "round",
+          }),
+        });
+        const line = new liveMapkit.PolylineOverlay(route.points, {
+          enabled: false,
+          style: new liveMapkit.Style({
+            strokeColor: "#0A84FF",
+            lineWidth: 5,
+            lineCap: "round",
+            lineJoin: "round",
+          }),
+        });
+        liveMap.addOverlays([casing, line]);
+        routeOverlaysRef.current = [casing, line];
+
+        const milesLabel = formatDistanceMiles(route.miles);
+        const labelPoint = midpointAlongPath(route.points);
+        const labelWidth = Math.max(118, Math.ceil(milesLabel.length * 8.6) + 18);
+        const label = new liveMapkit.Annotation(
+          new liveMapkit.Coordinate(labelPoint.latitude, labelPoint.longitude),
+          () => {
+            const el = document.createElement("div");
+            el.className = "explore-map-route-miles";
+            el.textContent = milesLabel;
+            return el;
+          },
+          {
+            title: milesLabel,
+            accessibilityLabel: `${milesLabel} by car`,
+            calloutEnabled: false,
+            animates: false,
+            size: { width: labelWidth, height: 32 },
+            anchorOffset: new DOMPoint(0, -10),
+          }
+        );
+        liveMap.addAnnotation(label);
+        routeLabelRef.current = label;
+
+        publishDrivingMiles(
+          origin,
+          cluster.trainers.map((trainer) => trainer.id),
+          route.miles,
+          "route"
+        );
+
+        await new Promise((resolve) => window.setTimeout(resolve, 280));
+        if (requestId !== routeRequestRef.current) return;
+        const container = containerRef.current;
+        const specialistPin = pinAnnotationsRef.current.find(
+          (annotation) =>
+            (annotation.data as { clusterId?: string })?.clusterId === cluster.id
+        );
+        const frameItems = [line, label];
+        if (meAnnotationRef.current) frameItems.push(meAnnotationRef.current);
+        if (specialistPin) frameItems.push(specialistPin);
+        if (!meAnnotationRef.current) {
+          const originMark = new liveMapkit.Annotation(
+            new liveMapkit.Coordinate(origin.latitude, origin.longitude),
+            () => document.createElement("div"),
+            {
+              size: { width: 28, height: 28 },
+              calloutEnabled: false,
+              animates: false,
+            }
+          );
+          liveMap.addAnnotation(originMark);
+          routeOriginMarkRef.current = originMark;
+          frameItems.push(originMark);
+        }
+        routeCameraMovesRef.current += 1;
+        routeFitUntilRef.current = Date.now() + 3200;
+        suppressUntilRef.current = Date.now() + 3200;
+        window.setTimeout(() => {
+          routeCameraMovesRef.current = 0;
+        }, 3400);
+        if (container) {
+          liveMap.showItems(frameItems, {
+            animate: false,
+            padding: paddingForRouteFrame(liveMapkit, container),
+          });
+          const endpoints = [
+            origin,
+            { latitude: cluster.latitude, longitude: cluster.longitude },
+          ];
+          const meCoordinate = meAnnotationRef.current?.coordinate;
+          if (
+            meCoordinate &&
+            Number.isFinite(meCoordinate.latitude) &&
+            Number.isFinite(meCoordinate.longitude)
+          ) {
+            endpoints.push({
+              latitude: meCoordinate.latitude,
+              longitude: meCoordinate.longitude,
+            });
+          }
+          const north = Math.max(...endpoints.map((point) => point.latitude));
+          const south = Math.min(...endpoints.map((point) => point.latitude));
+          const east = Math.max(...endpoints.map((point) => point.longitude));
+          const west = Math.min(...endpoints.map((point) => point.longitude));
+          window.setTimeout(() => {
+            if (requestId !== routeRequestRef.current) return;
+            const settledMap = mapRef.current;
+            const settledKit = mapkitRef.current;
+            const settledContainer = containerRef.current;
+            if (!settledMap || !settledKit || !settledContainer) return;
+            const insets = routeFrameInsets(settledContainer);
+            const height = Math.max(settledContainer.clientHeight, 1);
+            const width = Math.max(settledContainer.clientWidth, 1);
+            const maxVertical = height * 0.7;
+            const vertical = insets.top + insets.bottom;
+            const scale = vertical > maxVertical ? maxVertical / vertical : 1;
+            const top = insets.top * scale;
+            const bottom = insets.bottom * scale;
+            const visibleH = Math.max(160, height - top - bottom);
+            const visibleW = Math.max(160, width - insets.left - insets.right);
+            const span = settledMap.region.span;
+            const centerLat =
+              (north + south) / 2 -
+              (0.5 - (top + visibleH / 2) / height) * span.latitudeDelta;
+            const centerLng =
+              (east + west) / 2 -
+              ((insets.left + visibleW / 2) / width - 0.5) *
+                span.longitudeDelta;
+            routeCameraMovesRef.current += 1;
+            settledMap.setCenterAnimated(
+              new settledKit.Coordinate(centerLat, centerLng),
+              false
+            );
+          }, 450);
+        }
+      } catch {
+        /* Keep the pin selected. Cards stay on the last known miles. */
+      }
+    })();
+
+    return () => {
+      controller.abort();
+      if (routeRequestRef.current === requestId) {
+        clearRouteGraphics();
+      }
+    };
+  }, [selectedRouteKey, routeOriginKey, mapEpoch]);
 
   const handleRecenter = useCallback(() => {
     if (mapPaused) return;

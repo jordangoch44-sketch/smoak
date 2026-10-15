@@ -1531,6 +1531,14 @@
   cursor: default;
 }
 
+.client-workouts-day__send--save {
+  width: auto;
+  min-width: 4.25rem;
+  padding: 0 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
 .client-workouts-day--send .client-workouts-day__body,
 .client-workouts-day--log .client-workouts-day__body {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
@@ -2360,6 +2368,28 @@ button.exercise-block__name {
   border-radius: 0.7rem;
 }
 
+/* Site chrome sets touch-action: manipulation on inputs and buttons.
+   Every cell in a set row needs pan-y so a sideways drag stays with the swipe. */
+.app-main .exercise-block__set-swipe .exercise-block__row,
+.app-main .exercise-block__set-swipe .exercise-block__set,
+.app-main .exercise-block__set-swipe .exercise-block__previous,
+.app-main .exercise-block__set-swipe .exercise-block__input,
+.app-main .exercise-block__set-swipe .exercise-block__check,
+.client-workouts-root .exercise-block__set-swipe .exercise-block__row,
+.client-workouts-root .exercise-block__set-swipe .exercise-block__set,
+.client-workouts-root .exercise-block__set-swipe .exercise-block__previous,
+.client-workouts-root .exercise-block__set-swipe .exercise-block__input,
+.client-workouts-root .exercise-block__set-swipe .exercise-block__check {
+  touch-action: pan-y;
+}
+
+.app-main .exercise-block__set-swipe .exercise-block__row,
+.client-workouts-root .exercise-block__set-swipe .exercise-block__row {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .exercise-block__set-swipe .client-workouts-swipe__x {
   width: 2.35rem;
   height: 2.35rem;
@@ -2701,10 +2731,11 @@ button.exercise-block__name {
   z-index: 11300;
   display: flex;
   flex-direction: column;
+  /* Large viewport stays full height under the keyboard. svh/dvh shrink and
+     make the list jump when the keyboard slides away. */
   height: 100vh;
-  height: 100svh;
-  max-height: 100vh;
-  max-height: 100svh;
+  height: 100lvh;
+  max-height: none;
   overflow: hidden;
   background: #0e0e14;
   color: #fff;
@@ -2717,7 +2748,7 @@ button.exercise-block__name {
 
 .exercise-picker__bar {
   display: grid;
-  grid-template-columns: 5.5rem 1fr 5.5rem;
+  grid-template-columns: 6.5rem 1fr 6.5rem;
   align-items: center;
   gap: 0.4rem;
   margin-bottom: 0.85rem;
@@ -2753,8 +2784,15 @@ button.exercise-block__name {
 
 .exercise-picker__create {
   justify-self: end;
+  gap: 0.28rem;
   background: var(--smoac-color);
   color: #fff;
+}
+
+.exercise-picker__create-plus {
+  width: 0.9rem;
+  height: 0.9rem;
+  flex: 0 0 auto;
 }
 
 .exercise-picker__create:disabled {
@@ -2847,6 +2885,14 @@ button.exercise-block__name {
   outline: none;
 }
 
+.exercise-picker__scroll {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .exercise-picker__list {
   flex: 1 1 auto;
   min-height: 0;
@@ -2855,11 +2901,11 @@ button.exercise-block__name {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
-  padding: 0.35rem 0 0.5rem;
+  padding: 0.35rem 0 calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
-.exercise-picker__list:last-child {
-  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+.exercise-picker__scroll:has(~ .exercise-picker__dock) .exercise-picker__list {
+  padding-bottom: 0.5rem;
 }
 
 .exercise-picker__label {
@@ -3045,10 +3091,6 @@ span.exercise-picker__star {
 .exercise-picker__dock {
   flex: 0 0 auto;
   padding: 0.45rem 0.85rem max(0.7rem, env(safe-area-inset-bottom));
-}
-
-.exercise-picker--keyboard .exercise-picker__dock {
-  padding-bottom: 0.45rem;
 }
 
 .exercise-picker__dock-button {

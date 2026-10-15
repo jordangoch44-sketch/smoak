@@ -203,12 +203,12 @@ export const WORKOUT_EXERCISE_MEDIA: Readonly<Record<string, BundledExerciseMedi
     "imageUrl": "https://assets.exercisedb.dev/media/3UvVPea.png",
     "gifUrl": "https://assets.exercisedb.dev/media/x1MBet7.gif",
     "instructions": [
-      "Take a seat on the lat pulldown machine with your knees positioned under the pads.",
-      "Hold the cable bar with palms facing down, just beyond shoulder width.",
-      "Sit tall and set the shoulders before drawing the handle down.",
-      "Pull the handle down by driving your elbows toward your ribs; keep your torso steady.",
-      "Pull with the elbows rather than leaning far back to move the handle.",
-      "Let the handle rise steadily until the arms are long, then reset the shoulders."
+      "Set both pulleys high on a cable crossover and clip a handle to each side.",
+      "Stand in the center and take the opposite handle in each hand so the cables cross in front of you.",
+      "Stand tall with a soft elbow bend and set the shoulders before you pull.",
+      "Pull the handles down toward your hips, driving the elbows toward your sides.",
+      "Keep the torso still and the arms long rather than turning the pull into a row.",
+      "Let the handles rise back up along the same path without rushing."
     ]
   },
   "weighted svend press": {
@@ -311,12 +311,24 @@ export const WORKOUT_EXERCISE_MEDIA: Readonly<Record<string, BundledExerciseMedi
     "imageUrl": "https://assets.exercisedb.dev/media/7DDxV5l.png",
     "gifUrl": "https://assets.exercisedb.dev/media/mmdp5HH.gif",
     "instructions": [
-      "Prepare a bar at waist height on a Smith machine or use a suspension trainer.",
-      "Face the bar or suspension trainer and grab it with palms facing down, hands about shoulder width.",
-      "Set the torso and allow the arms to reach forward without rounding excessively.",
-      "Draw your elbows back and bring the handle or weight toward your torso.",
+      "Hang from a pull-up bar, then hook your knees over it so you are upside down.",
+      "Grip the bar with both hands and let your arms hang toward the floor.",
+      "Brace and set the shoulders before you pull.",
+      "Pull your chest toward the bar by bending the elbows.",
+      "Keep the knees hooked and the body from swinging.",
+      "Lower until the arms are long, then set up for the next pull."
+    ]
+  },
+  "inverted row bent knees": {
+    "imageUrl": "https://assets.exercisedb.dev/media/SS0b6qy.png",
+    "gifUrl": "",
+    "instructions": [
+      "Set a bar at about waist height in a rack or Smith machine.",
+      "Lie underneath it and grab the bar with palms facing down, hands about shoulder width, knees bent and feet flat.",
+      "Set the torso and allow the arms to reach toward the bar without rounding excessively.",
+      "Draw your elbows back and pull your chest toward the bar.",
       "Bring the elbows back without jerking the torso.",
-      "Reach the arms forward again without letting the torso lurch."
+      "Lower until the arms are long without letting the hips sag."
     ]
   },
   "cable seated wide-grip row": {

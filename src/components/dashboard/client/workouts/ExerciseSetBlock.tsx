@@ -225,10 +225,13 @@ export function ExerciseSetBlock({
                 value={log.weight}
                 placeholder="0"
                 aria-label={`Set ${index + 1} weight in pounds`}
-                onPointerDown={(event) => event.stopPropagation()}
                 onChange={(event) =>
                   patchLog(index, { weight: sanitizeWorkoutWeight(event.target.value) })
                 }
+                onBlur={(event) => {
+                  const next = sanitizeWorkoutWeight(event.currentTarget.value).replace(/\.$/, "");
+                  if (next !== log.weight) patchLog(index, { weight: next });
+                }}
               />
               <input
                 className="exercise-block__input"
@@ -238,7 +241,6 @@ export function ExerciseSetBlock({
                 value={log.reps}
                 placeholder="0"
                 aria-label={`Set ${index + 1} reps`}
-                onPointerDown={(event) => event.stopPropagation()}
                 onChange={(event) =>
                   patchLog(index, { reps: sanitizeWorkoutCount(event.target.value, 4) })
                 }

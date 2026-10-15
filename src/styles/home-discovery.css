@@ -206,6 +206,25 @@
 }
 
 /* Hero — headline + search as a dark deck that fades into Browse */
+/* ZIP lives here only inside the iPhone app, where the header is hidden. */
+.home-native-zip {
+  display: none;
+}
+
+html.native-app .home-native-zip {
+  display: flex;
+  justify-content: flex-end;
+  position: absolute;
+  z-index: 4;
+  top: calc(env(safe-area-inset-top, 0px) + 0.2rem);
+  right: 1rem;
+  pointer-events: auto;
+}
+
+html.native-app .home-page--discovery > .home-hero.home-hero--discovery {
+  padding-top: calc(env(safe-area-inset-top, 0px) + clamp(2.35rem, 7.5vw, 4rem));
+}
+
 .home-page--discovery .home-hero--discovery {
   position: relative;
   min-height: 0;

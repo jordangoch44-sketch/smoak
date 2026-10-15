@@ -6,7 +6,7 @@ import { CreateExerciseSheet } from "@/components/dashboard/client/workouts/Crea
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { CheckIcon, SearchIcon } from "@/components/ui/icons";
+import { CheckIcon, PlusIcon, SearchIcon } from "@/components/ui/icons";
 import { catalogExerciseId, catalogExercises } from "@/data/exercise-db-catalog";
 import { exerciseLabel } from "@/data/exercise-display";
 import { formatExerciseName, WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
@@ -84,12 +84,12 @@ export function ExercisePickerSheet({
   const [openFilter, setOpenFilter] = useState<"muscle" | "equipment" | null>(null);
   const [detail, setDetail] = useState<PickerExercise | null>(null);
   const [selected, setSelected] = useState<PickerExercise[]>([]);
-  const [frame, setFrame] = useState<{ top: number; height: number } | null>(null);
   const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<PickerTab>("all");
   const [favoriteIds, setFavoriteIds] = useState<ReadonlySet<string>>(() => new Set());
   const searchRef = useRef<HTMLInputElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const { session } = useAuthSession();
   const accountId =
     session && (session.role === "specialist" || session.role === "client") ? session.userId : "";
@@ -229,18 +229,41 @@ export function ExercisePickerSheet({
 
   useEffect(() => {
     if (!mounted) return;
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-    const sync = () => {
-      const covered = window.innerHeight - viewport.height - viewport.offsetTop;
-      setFrame(covered > 80 ? { top: viewport.offsetTop, height: viewport.height } : null);
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+
+    // Lock the sheet to the full layout height. Resizing it to the visual
+    // viewport lifts the list off the keyboard and then grows it in steps
+    // when the keyboard slides away.
+    let lockedWidth = window.innerWidth;
+    let lockedHeight = Math.round(
+      Math.max(window.innerHeight, document.documentElement.clientHeight)
+    );
+
+    const pin = () => {
+      if (window.innerWidth !== lockedWidth) {
+        lockedWidth = window.innerWidth;
+        lockedHeight = Math.round(
+          Math.max(window.innerHeight, document.documentElement.clientHeight)
+        );
+      }
+      const height = `${lockedHeight}px`;
+      if (sheet.style.height !== height) {
+        sheet.style.top = "0px";
+        sheet.style.bottom = "auto";
+        sheet.style.height = height;
+        sheet.style.maxHeight = height;
+      }
     };
-    sync();
-    viewport.addEventListener("resize", sync);
-    viewport.addEventListener("scroll", sync);
+
+    pin();
+    window.addEventListener("orientationchange", pin);
     return () => {
-      viewport.removeEventListener("resize", sync);
-      viewport.removeEventListener("scroll", sync);
+      window.removeEventListener("orientationchange", pin);
+      sheet.style.top = "";
+      sheet.style.bottom = "";
+      sheet.style.height = "";
+      sheet.style.maxHeight = "";
     };
   }, [mounted]);
 
@@ -317,11 +340,11 @@ export function ExercisePickerSheet({
   return createPortal(
     <>
     <div
-      className={cn("exercise-picker", frame ? "exercise-picker--keyboard" : undefined)}
+      ref={sheetRef}
+      className="exercise-picker"
       role="dialog"
       aria-modal="true"
       aria-labelledby="exercise-picker-title"
-      style={frame ? { top: frame.top, height: frame.height, bottom: "auto" } : undefined}
     >
       <div className="exercise-picker__top">
         <div className="exercise-picker__bar">
@@ -340,6 +363,7 @@ export function ExercisePickerSheet({
             }}
           >
             Create
+            <PlusIcon className="exercise-picker__create-plus" />
           </FastActivateButton>
         </div>
         <label className="exercise-picker__search">
@@ -457,7 +481,8 @@ export function ExercisePickerSheet({
           </FastActivateButton>
         </div>
       </div>
-      <div className="exercise-picker__list">
+      <div className="exercise-picker__scroll">
+        <div className="exercise-picker__list">
         {sectionLabel && results.length > 0 ? (
           <p className="exercise-picker__label">{sectionLabel}</p>
         ) : null}
@@ -538,6 +563,7 @@ export function ExercisePickerSheet({
                 : "No exercises match these filters."}
           </p>
         ) : null}
+        </div>
       </div>
       {selected.length > 0 ? (
         <div className="exercise-picker__dock">
