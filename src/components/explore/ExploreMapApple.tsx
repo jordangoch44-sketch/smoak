@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useExplicitUserCoordinates } from "@/hooks/useActiveUserCoordinates";
 import { FoldedMapIcon } from "@/components/ui/icons";
 import {
   useProfileSheetOpen,
@@ -21,18 +20,15 @@ import {
 } from "@/lib/warm-trainer-profile-navigation";
 import { bindExploreMapPopupProfileNav } from "@/lib/explore-map-profile-nav";
 import {
-  fetchDrivingRoute,
-  midpointAlongPath,
-} from "@/lib/apple-directions";
+  cameraShiftToClearPin,
+  selectedPinClearBox,
+  syncExploreMapPinSelection,
+} from "@/lib/explore-map-pin-frame";
 import {
   loadAppleMapKit,
   regionForRadiusMiles,
   type AppleMapKit,
 } from "@/lib/apple-maps";
-import {
-  formatDistanceMiles,
-  publishDrivingMiles,
-} from "@/lib/driving-distance";
 import {
   clusterTrainersForMap,
   clustersPinSignature,
@@ -40,6 +36,7 @@ import {
   buildExploreMapPinHtml,
   EXPLORE_MAP_CLUSTER_PIN_SIZE,
   EXPLORE_MAP_SINGLE_PIN_SIZE,
+  PIN_TAP_SLOP_PX,
   type ExploreMapCluster,
 } from "@/lib/explore-map-clusters";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
@@ -50,54 +47,31 @@ import type { ExploreMapArea, ExploreMapProps } from "./ExploreMapLeaflet";
 
 type MapKitAnnotation = InstanceType<AppleMapKit["Annotation"]>;
 type MapKitMap = InstanceType<AppleMapKit["Map"]>;
-type MapKitOverlay = InstanceType<AppleMapKit["PolylineOverlay"]>;
 
 const FALLBACK_CENTER: ExploreMapArea = defaultMarketplaceCenter();
 
-/** Clear space between the search bar and the specialist card. */
-function routeFrameInsets(container: HTMLElement): {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-} {
-  const bounds = container.getBoundingClientRect();
-  const reservedBottom = Math.round(Math.max(210, bounds.height * 0.38));
-  let top = 96;
-  let bottom = reservedBottom;
-  const controls = document.querySelector(
-    ".explore-map-hero__controls, .explore-page__map-rail-controls"
-  );
-  if (controls instanceof HTMLElement) {
-    const covered = controls.getBoundingClientRect().bottom - bounds.top;
-    if (covered > 0) top = Math.round(covered + 56);
-  }
-  const card = document.querySelector(".explore-bottom-card-dock");
-  if (card instanceof HTMLElement) {
-    const covered = bounds.bottom - card.getBoundingClientRect().top;
-    if (covered > reservedBottom * 0.55) {
-      bottom = Math.round(covered + 56);
+function pinNearPoint(
+  root: ParentNode | null,
+  x: number,
+  y: number
+): HTMLElement | null {
+  if (!root) return null;
+  let best: HTMLElement | null = null;
+  let bestDistance = PIN_TAP_SLOP_PX;
+  root.querySelectorAll(".explore-map-pin").forEach((node) => {
+    if (!(node instanceof HTMLElement)) return;
+    const rect = node.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const distance = Math.hypot(
+      x - (rect.left + rect.width / 2),
+      y - (rect.top + rect.height / 2)
+    );
+    if (distance < bestDistance) {
+      best = node;
+      bestDistance = distance;
     }
-  }
-  return { top, right: 72, bottom, left: 72 };
-}
-
-/** Keep the ME pin and the specialist pin inside the open map, with room around them. */
-function paddingForRouteFrame(
-  mapkit: AppleMapKit,
-  container: HTMLElement
-) {
-  const insets = routeFrameInsets(container);
-  const height = Math.max(container.clientHeight, 1);
-  const maxVertical = height * 0.7;
-  const vertical = insets.top + insets.bottom;
-  const scale = vertical > maxVertical ? maxVertical / vertical : 1;
-  return new mapkit.Padding(
-    Math.round(insets.top * scale),
-    insets.right,
-    Math.round(insets.bottom * scale),
-    insets.left
-  );
+  });
+  return best;
 }
 
 function clustersFrameKey(clusters: ExploreMapCluster[]): string {
@@ -107,94 +81,65 @@ function clustersFrameKey(clusters: ExploreMapCluster[]): string {
   return `clusters:${clusters.length}:${first.latitude.toFixed(3)},${first.longitude.toFixed(3)}:${last.latitude.toFixed(3)},${last.longitude.toFixed(3)}`;
 }
 
-/**
- * Checks if the tapped pin is already clearly visible and unobstructed in the upper viewport.
- * The bottom ~35-40% of the screen is where the bottom card pops up.
- * Returns true if the map should pan (i.e. pin is in bottom zone or near/past edges).
- */
-function shouldPanToPinApple(
+const SELECTION_HOLD_MS = 1800;
+
+/** Slide the map so the selected pin sits above the card, ring included. */
+function revealApplePin(
   map: MapKitMap,
   mapkit: AppleMapKit,
+  container: HTMLElement,
   cluster: ExploreMapCluster,
-  containerEl: HTMLElement | null,
-  annotationEl?: HTMLElement | null
-): boolean {
-  if (!containerEl) return true;
-  const containerRect = containerEl.getBoundingClientRect();
-  if (containerRect.width <= 0 || containerRect.height <= 0) return true;
+  pinEl: HTMLElement | null
+): void {
+  const box = selectedPinClearBox(container);
+  let pinX: number | null = null;
+  let pinY: number | null = null;
 
-  let relativeX: number | null = null;
-  let relativeY: number | null = null;
+  if (pinEl) {
+    const rect = pinEl.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      pinX = rect.left + rect.width / 2;
+      pinY = rect.top + rect.height / 2;
+    }
+  }
 
-  // 1. Try MapKit coordinate-to-point if available
-  try {
-    if (typeof map.convertCoordinateToPointOnPage === "function") {
-      const pagePoint = map.convertCoordinateToPointOnPage(
-        new mapkit.Coordinate(cluster.latitude, cluster.longitude)
-      );
-      if (
-        pagePoint &&
-        typeof pagePoint.x === "number" &&
-        typeof pagePoint.y === "number"
-      ) {
-        relativeX =
-          (pagePoint.x - (containerRect.left + window.scrollX)) /
-          containerRect.width;
-        relativeY =
-          (pagePoint.y - (containerRect.top + window.scrollY)) /
-          containerRect.height;
+  if (pinX === null || pinY === null) {
+    try {
+      if (typeof map.convertCoordinateToPointOnPage === "function") {
+        const pagePoint = map.convertCoordinateToPointOnPage(
+          new mapkit.Coordinate(cluster.latitude, cluster.longitude)
+        );
+        if (
+          pagePoint &&
+          typeof pagePoint.x === "number" &&
+          typeof pagePoint.y === "number"
+        ) {
+          pinX = pagePoint.x - window.scrollX;
+          pinY = pagePoint.y - window.scrollY;
+        }
       }
-    }
-  } catch {
-    /* fallback to element or region */
-  }
-
-  // 2. Try DOM element bounding rect
-  if (relativeX === null || relativeY === null) {
-    const pinEl =
-      annotationEl?.querySelector?.(".explore-map-pin") || annotationEl;
-    if (pinEl) {
-      const pinRect = pinEl.getBoundingClientRect();
-      if (pinRect.width > 0 && pinRect.height > 0) {
-        relativeX =
-          (pinRect.left + pinRect.width / 2 - containerRect.left) /
-          containerRect.width;
-        relativeY =
-          (pinRect.top + pinRect.height / 2 - containerRect.top) /
-          containerRect.height;
-      }
+    } catch {
+      /* leave the camera where it is */
     }
   }
 
-  // 3. Fallback to geographic region bounds
-  if (relativeX === null || relativeY === null) {
-    const region = map.region;
-    if (
-      region?.center &&
-      region?.span &&
-      region.span.latitudeDelta > 0 &&
-      region.span.longitudeDelta > 0
-    ) {
-      const north = region.center.latitude + region.span.latitudeDelta / 2;
-      const west = region.center.longitude - region.span.longitudeDelta / 2;
-      relativeY = (north - cluster.latitude) / region.span.latitudeDelta;
-      relativeX = (cluster.longitude - west) / region.span.longitudeDelta;
-    }
-  }
+  if (pinX === null || pinY === null) return;
+  const shift = cameraShiftToClearPin(pinX, pinY, box);
+  if (!shift) return;
 
-  // If position couldn't be determined, default to panning
-  if (relativeX === null || relativeY === null) return true;
+  const region = map.region;
+  const span = region?.span;
+  const height = Math.max(container.clientHeight, 1);
+  const width = Math.max(container.clientWidth, 1);
+  if (!region?.center || !span) return;
 
-  // Check if pin is in the safe upper viewport (top 8% to 60%, and 8% to 92% horizontally).
-  // If so, the pin is unobstructed above the bottom card dock.
-  const isClearAndUnobstructed =
-    relativeY >= 0.08 &&
-    relativeY <= 0.60 &&
-    relativeX >= 0.08 &&
-    relativeX <= 0.92;
-
-  // Only pan if NOT in the safe upper viewport (e.g. in bottom ~35-40% or near/past edges)
-  return !isClearAndUnobstructed;
+  map.setCenterAnimated(
+    new mapkit.Coordinate(
+      region.center.latitude - shift.y * (span.latitudeDelta / height),
+      region.center.longitude + shift.x * (span.longitudeDelta / width)
+    ),
+    false
+  );
 }
 
 function applyAppleCamera(
@@ -252,7 +197,10 @@ function recaptureAppleMapSize(
   const key = `${Math.round(width)}x${Math.round(height)}`;
   if (key === lastSizeKey.current) return false;
   lastSizeKey.current = key;
-  if (suppressUntil) suppressUntil.current = Date.now() + 280;
+  if (suppressUntil) {
+    const until = Date.now() + 280;
+    if (until > suppressUntil.current) suppressUntil.current = until;
+  }
   const view = container.querySelector<HTMLElement>(".mk-map-view");
   if (view) {
     view.style.width = `${Math.round(width)}px`;
@@ -294,12 +242,6 @@ export function ExploreMapApple({
   const mapkitRef = useRef<AppleMapKit | null>(null);
   const pinAnnotationsRef = useRef<MapKitAnnotation[]>([]);
   const meAnnotationRef = useRef<MapKitAnnotation | null>(null);
-  const routeOverlaysRef = useRef<MapKitOverlay[]>([]);
-  const routeLabelRef = useRef<MapKitAnnotation | null>(null);
-  const routeOriginMarkRef = useRef<MapKitAnnotation | null>(null);
-  const routeFitUntilRef = useRef(0);
-  const routeCameraMovesRef = useRef(0);
-  const routeRequestRef = useRef(0);
   const framedOriginRef = useRef<string>("");
   const selectedCoordRef = useRef<{
     latitude: number;
@@ -307,6 +249,7 @@ export function ExploreMapApple({
   } | null>(null);
   const selectedClusterIdRef = useRef<string | null>(null);
   const pinSelectGuardRef = useRef(0);
+  const selectingRef = useRef(false);
   const pinPressRef = useRef<{
     x: number;
     y: number;
@@ -324,7 +267,6 @@ export function ExploreMapApple({
   const [mapEpoch, setMapEpoch] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedCluster, setSelectedCluster] = useState<ExploreMapCluster | null>(null);
-  const routeOrigin = useExplicitUserCoordinates();
   const pinsSignatureRef = useRef("");
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
@@ -342,76 +284,97 @@ export function ExploreMapApple({
   const trainersRef = useRef(trainers);
   trainersRef.current = trainers;
 
+  const holdSelection = useCallback(() => {
+    const until = Date.now() + SELECTION_HOLD_MS;
+    pinSelectGuardRef.current = until;
+    suppressUntilRef.current = until;
+  }, []);
+
+  const revealSelectedPin = useCallback((cluster: ExploreMapCluster) => {
+    if (selectedClusterIdRef.current !== cluster.id) return;
+    const map = mapRef.current;
+    const mapkit = mapkitRef.current;
+    const container = containerRef.current;
+    if (!map || !mapkit || !container) return;
+    const pin = syncExploreMapPinSelection(stageRef.current, cluster.id);
+    revealApplePin(map, mapkit, container, cluster, pin);
+  }, []);
+
   const clearSelection = useCallback(() => {
     selectedCoordRef.current = null;
     selectedClusterIdRef.current = null;
     setSelectedCluster(null);
     const map = mapRef.current;
     if (map) map.selectedAnnotation = null;
-    const stage = stageRef.current;
-    if (stage) {
-      stage
-        .querySelectorAll(".explore-map-pin--selected")
-        .forEach((el) => el.classList.remove("explore-map-pin--selected"));
-    }
+    syncExploreMapPinSelection(stageRef.current, null);
   }, []);
 
   const selectCluster = useCallback(
     (cluster: ExploreMapCluster) => {
-      if (selectedClusterIdRef.current === cluster.id) return;
+      if (selectingRef.current) return;
+      selectingRef.current = true;
+      try {
+        const alreadySelected = selectedClusterIdRef.current === cluster.id;
+        holdSelection();
 
-      pinSelectGuardRef.current = Date.now() + 1000;
-      suppressUntilRef.current = Date.now() + 1200;
-      selectedCoordRef.current = {
-        latitude: cluster.latitude,
-        longitude: cluster.longitude,
-      };
-      selectedClusterIdRef.current = cluster.id;
-      setSelectedCluster(cluster);
-      warmExploreMapCluster(cluster, routerRef.current);
-
-      const stage = stageRef.current;
-      if (stage) {
-        stage
-          .querySelectorAll(".explore-map-pin--selected")
-          .forEach((el) => el.classList.remove("explore-map-pin--selected"));
-      }
-
-      const ann = pinAnnotationsRef.current.find(
-        (a) => (a.data as { clusterId?: string })?.clusterId === cluster.id
-      );
-      if (ann?.element) {
-        const pinEl = ann.element.querySelector(".explore-map-pin");
-        if (pinEl) pinEl.classList.add("explore-map-pin--selected");
-      }
-
-      // Instant pan only when the card would cover the pin — never animate against the card.
-      const map = mapRef.current;
-      const mapkit = mapkitRef.current;
-      if (map && mapkit) {
-        const needsPan = shouldPanToPinApple(
-          map,
-          mapkit,
-          cluster,
-          containerRef.current,
-          ann?.element
-        );
-
-        if (needsPan) {
-          const region = map.region;
-          const offsetLat = (region.span?.latitudeDelta ?? 0.05) * 0.22;
-          map.setCenterAnimated(
-            new mapkit.Coordinate(
-              cluster.latitude - offsetLat,
-              cluster.longitude
-            ),
-            false
-          );
+        if (!alreadySelected) {
+          selectedCoordRef.current = {
+            latitude: cluster.latitude,
+            longitude: cluster.longitude,
+          };
+          selectedClusterIdRef.current = cluster.id;
+          setSelectedCluster(cluster);
+          warmExploreMapCluster(cluster, routerRef.current);
         }
+
+        const mapkit = mapkitRef.current;
+        for (const annotation of pinAnnotationsRef.current) {
+          const id = (annotation.data as { clusterId?: string } | undefined)
+            ?.clusterId;
+          const on = id === cluster.id;
+          if (mapkit) {
+            annotation.displayPriority = on
+              ? mapkit.AnnotationDisplayPriority.Required
+              : mapkit.AnnotationDisplayPriority.High;
+          }
+          if (annotation.selected !== on) annotation.selected = on;
+        }
+
+        revealSelectedPin(cluster);
+      } finally {
+        selectingRef.current = false;
       }
     },
-    []
+    [holdSelection, revealSelectedPin]
   );
+
+  useEffect(() => {
+    if (!selectedCluster) return;
+    holdSelection();
+    revealSelectedPin(selectedCluster);
+    const root = stageRef.current;
+    const container = root?.querySelector(".mk-annotation-container") ?? root;
+    const apply = () => {
+      if (selectedClusterIdRef.current !== selectedCluster.id) return;
+      syncExploreMapPinSelection(stageRef.current, selectedCluster.id);
+    };
+    const observer =
+      container instanceof HTMLElement
+        ? new MutationObserver(apply)
+        : null;
+    observer?.observe(container as HTMLElement, {
+      childList: true,
+      subtree: true,
+    });
+    const timer = window.setTimeout(() => {
+      holdSelection();
+      revealSelectedPin(selectedCluster);
+    }, 240);
+    return () => {
+      observer?.disconnect();
+      window.clearTimeout(timer);
+    };
+  }, [selectedCluster, revealSelectedPin, holdSelection, mapEpoch]);
 
   useEffect(() => {
     const root = stageRef.current;
@@ -435,7 +398,11 @@ export function ExploreMapApple({
         return;
       }
 
-      const pinEl = target.closest<HTMLElement>(".explore-map-pin");
+      const pinEl =
+        target.closest<HTMLElement>(".explore-map-pin") ??
+        (event instanceof PointerEvent
+          ? pinNearPoint(stageRef.current, event.clientX, event.clientY)
+          : null);
       const clusterId =
         pinEl?.getAttribute("data-cluster-id") ??
         pinPressRef.current?.clusterId ??
@@ -446,7 +413,8 @@ export function ExploreMapApple({
         const press = pinPressRef.current;
         if (
           press &&
-          Math.hypot(event.clientX - press.x, event.clientY - press.y) > 12
+          Math.hypot(event.clientX - press.x, event.clientY - press.y) >
+            PIN_TAP_SLOP_PX
         ) {
           pinPressRef.current = null;
           return;
@@ -467,14 +435,20 @@ export function ExploreMapApple({
       if (!(target instanceof Element)) return;
       if (
         target.closest(
-          ".explore-map-callout, .explore-map-route-miles, .explore-bottom-card-dock, .explore-bottom-card, .explore-bottom-card__carousel, .explore-map-cluster-popup__carousel"
+          ".explore-map-callout, .explore-bottom-card-dock, .explore-bottom-card, .explore-bottom-card__carousel, .explore-map-cluster-popup__carousel"
         )
       ) {
         return;
       }
-      if (target.closest(".explore-map-pin, .explore-map-annotation-wrapper")) {
-        pinSelectGuardRef.current = Date.now() + 1000;
-        const pinEl = target.closest<HTMLElement>(".explore-map-pin");
+      const pressedPin =
+        target.closest<HTMLElement>(".explore-map-pin") ??
+        pinNearPoint(stageRef.current, event.clientX, event.clientY);
+      if (
+        pressedPin ||
+        target.closest(".explore-map-annotation-wrapper")
+      ) {
+        pinSelectGuardRef.current = Date.now() + SELECTION_HOLD_MS;
+        const pinEl = pressedPin;
         const clusterId = pinEl?.getAttribute("data-cluster-id");
         if (clusterId) {
           pinPressRef.current = {
@@ -522,7 +496,8 @@ export function ExploreMapApple({
     : "";
 
   const suppressMoves = useCallback((ms = 220) => {
-    suppressUntilRef.current = Date.now() + ms;
+    const until = Date.now() + ms;
+    if (until > suppressUntilRef.current) suppressUntilRef.current = until;
   }, []);
 
   const emitPendingFromMap = useCallback((map: MapKitMap) => {
@@ -554,7 +529,10 @@ export function ExploreMapApple({
     const currentClusters = clustersRef.current;
     const radius =
       activeSearchAreaRef.current?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
-    suppressUntilRef.current = Date.now() + 1000;
+    const cameraHold = Date.now() + 1000;
+    if (cameraHold > suppressUntilRef.current) {
+      suppressUntilRef.current = cameraHold;
+    }
     applyAppleCamera(
       mapkit,
       map,
@@ -629,24 +607,17 @@ export function ExploreMapApple({
 
         // User pan/zoom → dismiss callout (don't let it follow the map)
         const onRegionChangeStart = () => {
-          if (
-            routeCameraMovesRef.current > 0 ||
-            Date.now() < suppressUntilRef.current ||
-            Date.now() < routeFitUntilRef.current
-          ) {
-            return;
-          }
+          if (Date.now() < suppressUntilRef.current) return;
+          if (Date.now() < pinSelectGuardRef.current) return;
           clearSelection();
           onMapSearchStartRef.current?.();
         };
         const onRegionChangeEnd = () => {
           if (!mapRef.current) return;
-          if (routeCameraMovesRef.current > 0) {
-            routeCameraMovesRef.current -= 1;
-            routeFitUntilRef.current = Date.now() + 700;
-            return;
-          }
-          if (Date.now() < routeFitUntilRef.current) return;
+          syncExploreMapPinSelection(
+            stageRef.current,
+            selectedClusterIdRef.current
+          );
           emitPendingFromMap(mapRef.current);
         };
         map.addEventListener("region-change-start", onRegionChangeStart);
@@ -795,20 +766,20 @@ export function ExploreMapApple({
     const nextPins: MapKitAnnotation[] = [];
     for (const cluster of clusters) {
       const isMulti = cluster.isMulti;
-      const pinHtml = buildExploreMapPinHtml(cluster, false);
 
       const annotation = new mapkit.Annotation(
         new mapkit.Coordinate(cluster.latitude, cluster.longitude),
         () => {
+          const selected = selectedClusterIdRef.current === cluster.id;
           const el = document.createElement("div");
-          el.className = `explore-map-annotation-wrapper ${isMulti ? "explore-map-annotation-wrapper--cluster" : "explore-map-annotation-wrapper--single"}`;
-          el.innerHTML = pinHtml;
+          el.className = `explore-map-annotation-wrapper ${isMulti ? "explore-map-annotation-wrapper--cluster" : "explore-map-annotation-wrapper--single"}${selected ? " explore-map-pin-frame--selected" : ""}`;
+          el.innerHTML = buildExploreMapPinHtml(cluster, selected);
 
           bindExploreMapPinSelect(
             el,
             () => selectCluster(cluster),
             () => {
-              pinSelectGuardRef.current = Date.now() + 1000;
+              pinSelectGuardRef.current = Date.now() + SELECTION_HOLD_MS;
               warmExploreMapCluster(cluster, routerRef.current);
             }
           );
@@ -831,20 +802,16 @@ export function ExploreMapApple({
             ? new DOMPoint(0, -EXPLORE_MAP_CLUSTER_PIN_SIZE.height / 2)
             : new DOMPoint(0, -EXPLORE_MAP_SINGLE_PIN_SIZE.height / 2),
           calloutEnabled: false,
+          collisionMode: mapkit.AnnotationCollisionMode.None,
+          displayPriority:
+            selectedClusterIdRef.current === cluster.id
+              ? mapkit.AnnotationDisplayPriority.Required
+              : mapkit.AnnotationDisplayPriority.High,
         }
       );
 
       annotation.addEventListener("select", () => {
         selectCluster(cluster);
-      });
-
-      annotation.addEventListener("deselect", () => {
-        if (Date.now() < pinSelectGuardRef.current) return;
-        const pinEl = annotation.element?.querySelector(".explore-map-pin");
-        if (pinEl) pinEl.classList.remove("explore-map-pin--selected");
-        if (selectedClusterIdRef.current === cluster.id) {
-          clearSelection();
-        }
       });
 
       nextPins.push(annotation);
@@ -854,6 +821,7 @@ export function ExploreMapApple({
       map.addAnnotations(nextPins);
     }
     pinAnnotationsRef.current = nextPins;
+    syncExploreMapPinSelection(stageRef.current, selectedClusterIdRef.current);
 
     if (
       selectedClusterIdRef.current &&
@@ -868,224 +836,6 @@ export function ExploreMapApple({
     selectCluster,
     clearSelection,
   ]);
-
-  const selectedClusterRef = useRef(selectedCluster);
-  selectedClusterRef.current = selectedCluster;
-  const routeOriginRef = useRef(routeOrigin);
-  routeOriginRef.current = routeOrigin;
-  const selectedRouteKey = selectedCluster
-    ? `${selectedCluster.id}:${selectedCluster.latitude.toFixed(5)},${selectedCluster.longitude.toFixed(5)}`
-    : "";
-  const routeOriginKey = routeOrigin
-    ? `${routeOrigin.latitude.toFixed(4)},${routeOrigin.longitude.toFixed(4)}`
-    : "";
-
-  useEffect(() => {
-    const map = mapRef.current;
-    const mapkit = mapkitRef.current;
-    const cluster = selectedClusterRef.current;
-    const origin = routeOriginRef.current;
-
-    function clearRouteGraphics() {
-      const liveMap = mapRef.current;
-      if (routeOverlaysRef.current.length > 0 && liveMap) {
-        try {
-          liveMap.removeOverlays(routeOverlaysRef.current);
-        } catch {
-          /* map already destroyed */
-        }
-      }
-      routeOverlaysRef.current = [];
-      if (routeLabelRef.current && liveMap) {
-        try {
-          liveMap.removeAnnotation(routeLabelRef.current);
-        } catch {
-          /* map already destroyed */
-        }
-      }
-      routeLabelRef.current = null;
-      if (routeOriginMarkRef.current && liveMap) {
-        try {
-          liveMap.removeAnnotation(routeOriginMarkRef.current);
-        } catch {
-          /* map already destroyed */
-        }
-      }
-      routeOriginMarkRef.current = null;
-    }
-
-    if (!map || !mapkit || !cluster || !origin) {
-      clearRouteGraphics();
-      return;
-    }
-
-    const requestId = routeRequestRef.current + 1;
-    routeRequestRef.current = requestId;
-    const controller = new AbortController();
-    clearRouteGraphics();
-
-    void (async () => {
-      try {
-        const route = await fetchDrivingRoute(
-          mapkit,
-          origin,
-          { latitude: cluster.latitude, longitude: cluster.longitude },
-          controller.signal
-        );
-        if (requestId !== routeRequestRef.current) return;
-        const liveMap = mapRef.current;
-        const liveMapkit = mapkitRef.current;
-        if (!route || !liveMap || !liveMapkit) return;
-
-        const casing = new liveMapkit.PolylineOverlay(route.points, {
-          enabled: false,
-          style: new liveMapkit.Style({
-            strokeColor: "#041018",
-            strokeOpacity: 0.55,
-            lineWidth: 9,
-            lineCap: "round",
-            lineJoin: "round",
-          }),
-        });
-        const line = new liveMapkit.PolylineOverlay(route.points, {
-          enabled: false,
-          style: new liveMapkit.Style({
-            strokeColor: "#0A84FF",
-            lineWidth: 5,
-            lineCap: "round",
-            lineJoin: "round",
-          }),
-        });
-        liveMap.addOverlays([casing, line]);
-        routeOverlaysRef.current = [casing, line];
-
-        const milesLabel = formatDistanceMiles(route.miles);
-        const labelPoint = midpointAlongPath(route.points);
-        const labelWidth = Math.max(118, Math.ceil(milesLabel.length * 8.6) + 18);
-        const label = new liveMapkit.Annotation(
-          new liveMapkit.Coordinate(labelPoint.latitude, labelPoint.longitude),
-          () => {
-            const el = document.createElement("div");
-            el.className = "explore-map-route-miles";
-            el.textContent = milesLabel;
-            return el;
-          },
-          {
-            title: milesLabel,
-            accessibilityLabel: `${milesLabel} by car`,
-            calloutEnabled: false,
-            animates: false,
-            size: { width: labelWidth, height: 32 },
-            anchorOffset: new DOMPoint(0, -10),
-          }
-        );
-        liveMap.addAnnotation(label);
-        routeLabelRef.current = label;
-
-        publishDrivingMiles(
-          origin,
-          cluster.trainers.map((trainer) => trainer.id),
-          route.miles,
-          "route"
-        );
-
-        await new Promise((resolve) => window.setTimeout(resolve, 280));
-        if (requestId !== routeRequestRef.current) return;
-        const container = containerRef.current;
-        const specialistPin = pinAnnotationsRef.current.find(
-          (annotation) =>
-            (annotation.data as { clusterId?: string })?.clusterId === cluster.id
-        );
-        const frameItems = [line, label];
-        if (meAnnotationRef.current) frameItems.push(meAnnotationRef.current);
-        if (specialistPin) frameItems.push(specialistPin);
-        if (!meAnnotationRef.current) {
-          const originMark = new liveMapkit.Annotation(
-            new liveMapkit.Coordinate(origin.latitude, origin.longitude),
-            () => document.createElement("div"),
-            {
-              size: { width: 28, height: 28 },
-              calloutEnabled: false,
-              animates: false,
-            }
-          );
-          liveMap.addAnnotation(originMark);
-          routeOriginMarkRef.current = originMark;
-          frameItems.push(originMark);
-        }
-        routeCameraMovesRef.current += 1;
-        routeFitUntilRef.current = Date.now() + 3200;
-        suppressUntilRef.current = Date.now() + 3200;
-        window.setTimeout(() => {
-          routeCameraMovesRef.current = 0;
-        }, 3400);
-        if (container) {
-          liveMap.showItems(frameItems, {
-            animate: false,
-            padding: paddingForRouteFrame(liveMapkit, container),
-          });
-          const endpoints = [
-            origin,
-            { latitude: cluster.latitude, longitude: cluster.longitude },
-          ];
-          const meCoordinate = meAnnotationRef.current?.coordinate;
-          if (
-            meCoordinate &&
-            Number.isFinite(meCoordinate.latitude) &&
-            Number.isFinite(meCoordinate.longitude)
-          ) {
-            endpoints.push({
-              latitude: meCoordinate.latitude,
-              longitude: meCoordinate.longitude,
-            });
-          }
-          const north = Math.max(...endpoints.map((point) => point.latitude));
-          const south = Math.min(...endpoints.map((point) => point.latitude));
-          const east = Math.max(...endpoints.map((point) => point.longitude));
-          const west = Math.min(...endpoints.map((point) => point.longitude));
-          window.setTimeout(() => {
-            if (requestId !== routeRequestRef.current) return;
-            const settledMap = mapRef.current;
-            const settledKit = mapkitRef.current;
-            const settledContainer = containerRef.current;
-            if (!settledMap || !settledKit || !settledContainer) return;
-            const insets = routeFrameInsets(settledContainer);
-            const height = Math.max(settledContainer.clientHeight, 1);
-            const width = Math.max(settledContainer.clientWidth, 1);
-            const maxVertical = height * 0.7;
-            const vertical = insets.top + insets.bottom;
-            const scale = vertical > maxVertical ? maxVertical / vertical : 1;
-            const top = insets.top * scale;
-            const bottom = insets.bottom * scale;
-            const visibleH = Math.max(160, height - top - bottom);
-            const visibleW = Math.max(160, width - insets.left - insets.right);
-            const span = settledMap.region.span;
-            const centerLat =
-              (north + south) / 2 -
-              (0.5 - (top + visibleH / 2) / height) * span.latitudeDelta;
-            const centerLng =
-              (east + west) / 2 -
-              ((insets.left + visibleW / 2) / width - 0.5) *
-                span.longitudeDelta;
-            routeCameraMovesRef.current += 1;
-            settledMap.setCenterAnimated(
-              new settledKit.Coordinate(centerLat, centerLng),
-              false
-            );
-          }, 450);
-        }
-      } catch {
-        /* Keep the pin selected. Cards stay on the last known miles. */
-      }
-    })();
-
-    return () => {
-      controller.abort();
-      if (routeRequestRef.current === requestId) {
-        clearRouteGraphics();
-      }
-    };
-  }, [selectedRouteKey, routeOriginKey, mapEpoch]);
 
   const handleRecenter = useCallback(() => {
     if (mapPaused) return;

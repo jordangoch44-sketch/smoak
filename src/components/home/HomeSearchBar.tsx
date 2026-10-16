@@ -14,6 +14,7 @@ import { buildHomeSearchHref } from "@/lib/home-browse-categories";
 import { EXPLORE_SEARCH_PLACEHOLDER } from "@/lib/explore-search-prompts";
 import { hasClientSearchLocation } from "@/lib/explore-location-filters";
 import { prepareNavScrollReset } from "@/lib/mobile-chrome";
+import { nativeStatusBarInset } from "@/lib/native-status-inset";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +51,11 @@ export function HomeSearchBar() {
      */
     const header = document.getElementById("site-header");
     const headerBottom = header?.getBoundingClientRect().bottom ?? 0;
-    const top = Math.max(0, headerBottom + 10);
+    const statusInset = nativeStatusBarInset();
+    const top =
+      statusInset > 0
+        ? statusInset + 8
+        : Math.max(0, headerBottom + 10);
 
     return { top, insetInline };
   }

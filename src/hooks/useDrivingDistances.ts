@@ -20,7 +20,7 @@ type DestinationGroup = RoutePoint & { trainerIds: string[] };
 
 /**
  * Fills specialist-card miles from Apple driving distance for the current
- * origin. The selected map route overwrites these with the drawn route.
+ * origin (current location or ZIP).
  */
 export function useDrivingDistances(trainers: readonly Trainer[]): void {
   const origin = useExplicitUserCoordinates();
@@ -95,13 +95,12 @@ export function useDrivingDistances(trainers: readonly Trainer[]): void {
             publishDrivingMiles(
               currentOrigin,
               destination.trainerIds,
-              distance,
-              "eta"
+              distance
             );
           });
         }
       } catch {
-        /* Straight-line miles stay until a route or ETA succeeds. */
+        /* Straight-line miles stay until a driving distance succeeds. */
       }
     })();
 

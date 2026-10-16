@@ -2,6 +2,7 @@ import type { Trainer } from "@/types";
 import { formatTrainerPriceLabel } from "@/lib/home-discovery";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatProviderLocation } from "@/lib/provider-location";
+import { normalizePinnedPhotos } from "@/lib/specialist-media-limits";
 import {
   type ExploreMapCluster,
   getClusterHeaderInfo,
@@ -16,6 +17,65 @@ export function escapeExploreMapHtml(value: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+const EXPLORE_MAP_CARD_PHOTO_LIMIT = 3;
+const EXPLORE_MAP_VIDEO_EXT = /\.(mp4|m4v|mov|webm|ogg)(?:$|\?)/i;
+
+function isExploreMapVideoUrl(url: string, trainer: Trainer): boolean {
+  if (EXPLORE_MAP_VIDEO_EXT.test(url)) return true;
+  return (trainer.gallery ?? []).some(
+    (item) => item.type === "video" && item.src.trim() === url
+  );
+}
+
+function cardPhotoKey(url: string): string {
+  const trimmed = url.trim();
+  const query = trimmed.indexOf("?");
+  return query >= 0 ? trimmed.slice(0, query) : trimmed;
+}
+
+function pushCardPhoto(
+  photos: string[],
+  seen: Set<string>,
+  raw: string | null | undefined
+): void {
+  if (photos.length >= EXPLORE_MAP_CARD_PHOTO_LIMIT) return;
+  const src = typeof raw === "string" ? safeExploreMapImageSrc(raw) : null;
+  if (!src) return;
+  const key = cardPhotoKey(src);
+  if (seen.has(key)) return;
+  seen.add(key);
+  photos.push(src);
+}
+
+/**
+ * Photos for the single-specialist map card.
+ * The profile photo is first. The next two come from pinned photos,
+ * or from cover photos when nothing is pinned.
+ */
+export function exploreMapCardPhotos(trainer: Trainer): string[] {
+  const photos: string[] = [];
+  const seen = new Set<string>();
+  pushCardPhoto(photos, seen, trainer.image);
+  if (photos.length === 0) pushCardPhoto(photos, seen, trainer.heroImage);
+
+  const pins = normalizePinnedPhotos(trainer.pinnedPhotos).filter(
+    (url) => !isExploreMapVideoUrl(url, trainer)
+  );
+  const covers = [
+    trainer.heroImage,
+    ...(trainer.galleryImages ?? []),
+    ...(trainer.gallery ?? [])
+      .filter((item) => item.type === "image")
+      .map((item) => item.src),
+  ];
+  const extras = pins.length > 0 ? pins : covers;
+  for (const url of extras) {
+    if (photos.length >= EXPLORE_MAP_CARD_PHOTO_LIMIT) break;
+    pushCardPhoto(photos, seen, url);
+  }
+  return photos;
 }
 
 export function safeExploreMapImageSrc(

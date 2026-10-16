@@ -22,6 +22,11 @@ import {
   warmExploreMapCluster,
 } from "@/lib/warm-trainer-profile-navigation";
 import { bindExploreMapPopupProfileNav } from "@/lib/explore-map-profile-nav";
+import {
+  cameraShiftToClearPin,
+  selectedPinClearBox,
+  syncExploreMapPinSelection,
+} from "@/lib/explore-map-pin-frame";
 import { getExploreMapBasemap } from "@/lib/explore-map-tiles";
 import {
   clusterTrainersForMap,
@@ -100,37 +105,36 @@ function clustersFrameKey(clusters: ExploreMapCluster[]): string {
   return `clusters:${clusters.length}:${first.latitude.toFixed(3)},${first.longitude.toFixed(3)}:${last.latitude.toFixed(3)},${last.longitude.toFixed(3)}`;
 }
 
-/**
- * Checks if the tapped pin is already clearly visible and unobstructed in the upper viewport.
- * The bottom ~35-40% of the screen is where the bottom card pops up.
- * Returns true if the map should pan (i.e. pin is in bottom zone or near/past edges).
- */
-function shouldPanToPinLeaflet(
+function revealLeafletPin(
   map: import("leaflet").Map,
+  container: HTMLElement,
   cluster: ExploreMapCluster,
-  containerEl: HTMLElement | null
-): boolean {
-  if (!containerEl) return true;
-  const size = map.getSize();
-  if (size.x <= 0 || size.y <= 0) return true;
-
-  const point = map.latLngToContainerPoint([
-    cluster.latitude,
-    cluster.longitude,
-  ]);
-  const relativeX = point.x / size.x;
-  const relativeY = point.y / size.y;
-
-  // Check if pin is clearly visible and unobstructed in the upper viewport (top 8% to 60%, 8% to 92% horizontally).
-  // The bottom ~35-40% of the screen is where the bottom card pops up and covers the pin.
-  const isClearAndUnobstructed =
-    relativeY >= 0.08 &&
-    relativeY <= 0.60 &&
-    relativeX >= 0.08 &&
-    relativeX <= 0.92;
-
-  // Only pan if NOT in the safe upper viewport (e.g. in bottom ~35-40% covered by bottom card, or near/off screen edges)
-  return !isClearAndUnobstructed;
+  pinEl: HTMLElement | null
+): void {
+  const box = selectedPinClearBox(container);
+  let pinX: number | null = null;
+  let pinY: number | null = null;
+  if (pinEl) {
+    const rect = pinEl.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      pinX = rect.left + rect.width / 2;
+      pinY = rect.top + rect.height / 2;
+    }
+  }
+  if (pinX === null || pinY === null) {
+    const point = map.latLngToContainerPoint([
+      cluster.latitude,
+      cluster.longitude,
+    ]);
+    const origin = container.getBoundingClientRect();
+    pinX = origin.left + point.x;
+    pinY = origin.top + point.y;
+  }
+  const shift = cameraShiftToClearPin(pinX, pinY, box);
+  if (!shift) return;
+  const center = map.latLngToContainerPoint(map.getCenter());
+  const next = map.containerPointToLatLng([center.x + shift.x, center.y + shift.y]);
+  map.panTo(next, { animate: false });
 }
 
 function safeInvalidateMapSize(map: import("leaflet").Map | null | undefined): boolean {
@@ -216,62 +220,47 @@ export function ExploreMapLeaflet({
   const layoutEpoch = useExploreMapLayoutEpoch();
   const wasPausedRef = useRef(false);
 
+  const revealSelectedPin = useCallback((cluster: ExploreMapCluster) => {
+    if (selectedClusterIdRef.current !== cluster.id) return;
+    const map = mapRef.current;
+    const container = containerRef.current;
+    if (!map || !container) return;
+    const pin = syncExploreMapPinSelection(container, cluster.id);
+    revealLeafletPin(map, container, cluster, pin);
+  }, []);
+
   const clearSelection = useCallback(() => {
     selectedClusterIdRef.current = null;
     setSelectedCluster(null);
-    const container = containerRef.current;
-    if (container) {
-      container
-        .querySelectorAll(".explore-map-pin--selected")
-        .forEach((el) => el.classList.remove("explore-map-pin--selected"));
-    }
+    syncExploreMapPinSelection(containerRef.current, null);
   }, []);
 
   const selectCluster = useCallback(
     (cluster: ExploreMapCluster) => {
-      if (selectedClusterIdRef.current === cluster.id) return;
+      const alreadySelected = selectedClusterIdRef.current === cluster.id;
+      suppressUntilRef.current = Date.now() + 1800;
 
-      suppressUntilRef.current = Date.now() + 1200;
-      selectedClusterIdRef.current = cluster.id;
-      setSelectedCluster(cluster);
-      warmExploreMapCluster(cluster, routerRef.current);
-
-      const map = mapRef.current;
-      if (map) {
-        map.closePopup();
+      if (!alreadySelected) {
+        selectedClusterIdRef.current = cluster.id;
+        setSelectedCluster(cluster);
+        warmExploreMapCluster(cluster, routerRef.current);
       }
 
-      const container = containerRef.current;
-      if (container) {
-        container
-          .querySelectorAll(".explore-map-pin--selected")
-          .forEach((el) => el.classList.remove("explore-map-pin--selected"));
-
-        const targetPin = container.querySelector(
-          `.explore-map-pin[data-cluster-id="${cluster.id}"]`
-        );
-        targetPin?.classList.add("explore-map-pin--selected");
-      }
-
-      if (map) {
-        const needsPan = shouldPanToPinLeaflet(
-          map,
-          cluster,
-          containerRef.current
-        );
-
-        if (needsPan) {
-          const bounds = map.getBounds();
-          const latSpan = bounds.getNorth() - bounds.getSouth();
-          const offsetLat = (latSpan || 0.05) * 0.22;
-          map.panTo([cluster.latitude - offsetLat, cluster.longitude], {
-            animate: false,
-          });
-        }
-      }
+      mapRef.current?.closePopup();
+      revealSelectedPin(cluster);
     },
-    []
+    [revealSelectedPin]
   );
+
+  useEffect(() => {
+    if (!selectedCluster) return;
+    revealSelectedPin(selectedCluster);
+    const timer = window.setTimeout(
+      () => revealSelectedPin(selectedCluster),
+      240
+    );
+    return () => window.clearTimeout(timer);
+  }, [selectedCluster, revealSelectedPin, mapEpoch]);
 
   const clusters = useMemo(() => {
     return clusterTrainersForMap(trainers);
@@ -594,7 +583,10 @@ export function ExploreMapLeaflet({
 
     for (const cluster of clusters) {
       const isMulti = cluster.isMulti;
-      const pinHtml = buildExploreMapPinHtml(cluster, false);
+      const pinHtml = buildExploreMapPinHtml(
+        cluster,
+        selectedClusterIdRef.current === cluster.id
+      );
       const pinSize = isMulti
         ? EXPLORE_MAP_CLUSTER_PIN_SIZE
         : EXPLORE_MAP_SINGLE_PIN_SIZE;
@@ -642,6 +634,10 @@ export function ExploreMapLeaflet({
 
       layer.addLayer(marker);
     }
+    syncExploreMapPinSelection(
+      containerRef.current,
+      selectedClusterIdRef.current
+    );
   }, [clusters, userLocationDot, mapEpoch, selectCluster]);
 
   useEffect(() => {

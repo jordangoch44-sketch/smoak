@@ -246,7 +246,8 @@ export function buildTrainerAvatarHtml(
 export const EXPLORE_MAP_SINGLE_PIN_SIZE = { width: 36, height: 40 } as const;
 export const EXPLORE_MAP_CLUSTER_PIN_SIZE = { width: 88, height: 56 } as const;
 
-const PIN_TAP_SLOP_PX = 12;
+/** Finger taps wander. Treat anything inside this radius as a pin tap. */
+export const PIN_TAP_SLOP_PX = 36;
 
 /** Stable key so pin layers skip a full rebuild when membership/coords are unchanged. */
 export function clustersPinSignature(clusters: ExploreMapCluster[]): string {

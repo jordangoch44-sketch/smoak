@@ -13,7 +13,10 @@ import {
   type ExploreMapCluster,
   getClusterHeaderInfo,
 } from "@/lib/explore-map-clusters";
-import { safeExploreMapImageSrc } from "@/lib/explore-map-popup";
+import {
+  exploreMapCardPhotos,
+  safeExploreMapImageSrc,
+} from "@/lib/explore-map-popup";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
   formatTrainerRating,
@@ -47,14 +50,17 @@ export function ExploreMapBottomCard({
   const router = useRouter();
   const profileSheetOpen = useProfileSheetOpen();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [photoIndex, setPhotoIndex] = useState(0);
   const [prevClusterId, setPrevClusterId] = useState(cluster?.id);
   if (cluster?.id !== prevClusterId) {
     setPrevClusterId(cluster?.id);
     setActiveIndex(0);
+    setPhotoIndex(0);
   }
 
   const [dragOffset, setDragOffset] = useState(0);
   const carouselRef = useRef<HTMLDivElement | null>(null);
+  const photoStripRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     startY: number;
     lastY: number;
@@ -67,6 +73,12 @@ export function ExploreMapBottomCard({
     if (!cluster) return;
     warmExploreMapCluster(cluster, router);
   }, [cluster, router]);
+
+  useEffect(() => {
+    const strip = photoStripRef.current;
+    if (!strip) return;
+    strip.scrollLeft = 0;
+  }, [cluster?.id]);
 
   useEffect(() => {
     return () => {
@@ -198,6 +210,7 @@ export function ExploreMapBottomCard({
       className={cn(
         "explore-bottom-card-dock",
         cluster && "explore-bottom-card-dock--open",
+        !isMulti && "explore-bottom-card-dock--solo",
         dragOffset > 0 && "explore-bottom-card-dock--dragging",
         activeSponsored && "smoac-sponsored-ring",
         className
@@ -381,7 +394,12 @@ export function ExploreMapBottomCard({
             trainer.city?.trim() ||
             cluster.locationLabel ||
             "San Diego";
-          const photoSrc = safeExploreMapImageSrc(trainer.image);
+          const cardPhotos = isMulti
+            ? [safeExploreMapImageSrc(trainer.image)].filter(
+                (src): src is string => Boolean(src)
+              )
+            : exploreMapCardPhotos(trainer);
+          const photoScrollable = !isMulti && cardPhotos.length > 1;
 
           return (
             <div key={trainer.id} className="explore-bottom-card-slide">
@@ -393,16 +411,47 @@ export function ExploreMapBottomCard({
               {/* Left Photo Hero */}
               <div className="explore-bottom-card__photo-col">
                 <div className="explore-bottom-card__photo-wrap">
-                  {photoSrc ? (
-                    <img
-                      src={photoSrc}
-                      alt={displayName}
-                      width={160}
-                      height={160}
-                      className="explore-bottom-card__photo"
-                      decoding="async"
-                      fetchPriority="high"
-                    />
+                  {cardPhotos.length > 0 ? (
+                    <div
+                      ref={photoScrollable ? photoStripRef : undefined}
+                      className={cn(
+                        "explore-bottom-card__photo-strip",
+                        photoScrollable &&
+                          "explore-bottom-card__photo-strip--scroll"
+                      )}
+                      onScroll={
+                        photoScrollable
+                          ? (event) => {
+                              const width = event.currentTarget.clientWidth;
+                              if (width <= 0) return;
+                              const next = Math.round(
+                                event.currentTarget.scrollLeft / width
+                              );
+                              setPhotoIndex((current) =>
+                                current === next ? current : next
+                              );
+                            }
+                          : undefined
+                      }
+                    >
+                      {cardPhotos.map((src, index) => (
+                        <img
+                          key={`${trainer.id}-${index}`}
+                          src={src}
+                          alt={
+                            cardPhotos.length > 1
+                              ? `${displayName}, photo ${index + 1} of ${cardPhotos.length}`
+                              : displayName
+                          }
+                          width={240}
+                          height={320}
+                          className="explore-bottom-card__photo"
+                          decoding="async"
+                          fetchPriority={index === 0 ? "high" : "low"}
+                          draggable={false}
+                        />
+                      ))}
+                    </div>
                   ) : (
                     <div
                       className="explore-bottom-card__photo-fallback"
@@ -411,7 +460,6 @@ export function ExploreMapBottomCard({
                       {getInitials(displayName)}
                     </div>
                   )}
-
                   {/* Top tags on image */}
                   <div className="explore-bottom-card__photo-badges">
                     {verified ? (
@@ -422,6 +470,23 @@ export function ExploreMapBottomCard({
                     ) : null}
                   </div>
                 </div>
+                {photoScrollable ? (
+                  <div
+                    className="explore-bottom-card__photo-dots"
+                    aria-hidden="true"
+                  >
+                    {cardPhotos.map((src, index) => (
+                      <span
+                        key={`${src}-${index}`}
+                        className={cn(
+                          "explore-bottom-card__photo-dot",
+                          index === photoIndex &&
+                            "explore-bottom-card__photo-dot--active"
+                        )}
+                      />
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               {/* Right Content Column */}

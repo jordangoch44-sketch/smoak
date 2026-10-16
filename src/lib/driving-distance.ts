@@ -2,11 +2,8 @@ import type { UserGeoPoint } from "@/lib/trainer-proximity-sort";
 
 const METERS_PER_MILE = 1609.344;
 
-export type DrivingDistanceSource = "route" | "eta";
-
 type DrivingDistanceEntry = {
   miles: number;
-  source: DrivingDistanceSource;
 };
 
 export type DrivingDistanceSnapshot = {
@@ -30,7 +27,7 @@ export function drivingOriginKey(origin: UserGeoPoint): string {
   return `${origin.latitude.toFixed(4)},${origin.longitude.toFixed(4)}`;
 }
 
-/** Same rounding on the route pill and on specialist cards. */
+/** Rounded miles shown on specialist cards. */
 export function formatDistanceMiles(miles: number): string {
   const value = miles < 20 ? miles.toFixed(1) : String(Math.round(miles));
   return `${value} miles`;
@@ -67,8 +64,7 @@ export function getDrivingMiles(
 export function publishDrivingMiles(
   origin: UserGeoPoint,
   trainerIds: readonly string[],
-  miles: number,
-  source: DrivingDistanceSource
+  miles: number
 ): void {
   if (!Number.isFinite(miles) || miles < 0 || trainerIds.length === 0) return;
   const originKey = drivingOriginKey(origin);
@@ -77,9 +73,8 @@ export function publishDrivingMiles(
   let changed = snapshot.originKey !== originKey;
   for (const trainerId of trainerIds) {
     const current = byTrainerId[trainerId];
-    if (current?.source === "route" && source === "eta") continue;
-    if (current && current.miles === miles && current.source === source) continue;
-    byTrainerId[trainerId] = { miles, source };
+    if (current && current.miles === miles) continue;
+    byTrainerId[trainerId] = { miles };
     changed = true;
   }
   if (!changed) return;

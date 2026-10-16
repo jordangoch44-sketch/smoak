@@ -1710,9 +1710,15 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
 }
 
 /* Selected / open callout */
+.explore-map-pin-frame--selected {
+  position: relative;
+  z-index: 5;
+}
+
 .explore-map-pin--selected {
   transform: scale(1.12) !important;
   z-index: 100 !important;
+  transition: none;
 }
 
 .explore-map-pin--selected .explore-map-pin__hub-pill {
@@ -1739,8 +1745,9 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
 .explore-map-pin--selected .explore-map-pin__avatar-ring {
   border-color: #ffffff;
   box-shadow:
-    0 0 0 2.5px #9b5cff,
-    0 0 16px rgba(155, 92, 255, 0.6);
+    0 0 0 3px #9b5cff,
+    0 0 16px rgba(155, 92, 255, 0.7);
+  transition: none;
 }
 
 .explore-map-pin--selected .explore-map-pin__dot,
@@ -1780,27 +1787,6 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
   text-transform: uppercase;
   user-select: none;
   pointer-events: none;
-}
-
-.explore-map-route-miles {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 100%;
-  height: 100%;
-  padding: 0 0.7rem;
-  border-radius: 999px;
-  background: #0a84ff;
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 750;
-  letter-spacing: 0.01em;
-  line-height: 1;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
-  pointer-events: auto;
-  user-select: none;
-  white-space: nowrap;
 }
 
 .explore-map-me__dot::before {
@@ -2502,15 +2488,152 @@ body.location-selector-open .explore-map__recenter--hero {
   }
 }
 
+/* One specialist: the photo fills the left side and the card grows with it.
+   A multi-specialist hub keeps the compact card above. */
+.explore-bottom-card-dock--solo .explore-bottom-card-slide {
+  position: static;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__drag-handle-hit {
+  position: absolute;
+  top: 0;
+  left: 9.75rem;
+  right: 0;
+  z-index: 5;
+  width: auto;
+  padding-top: 0.45rem;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card {
+  min-height: 12.5rem;
+  padding: 1.15rem 0.15rem 1.15rem 0;
+  gap: 0;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__photo-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  width: 9.75rem;
+  align-items: stretch;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__photo-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 12.5rem;
+  border: none;
+  border-radius: 0;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.1);
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__info-col {
+  margin-left: 9.75rem;
+  padding: 0.2rem 2.15rem 0.15rem 0.95rem;
+  gap: 0.34rem;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__trainer-name {
+  font-size: 1.08rem;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__profession {
+  font-size: 0.84rem;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__meta-row {
+  font-size: 0.78rem;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__price-val {
+  font-size: 0.98rem;
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__specialty-pill {
+  font-size: 0.6875rem;
+  padding: 0.16rem 0.5rem;
+}
+
 .explore-bottom-card__photo {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center;
   transition: transform 300ms ease;
 }
 
 .explore-bottom-card:hover .explore-bottom-card__photo {
   transform: scale(1.05);
+}
+
+.explore-bottom-card__photo-strip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  overflow: hidden;
+  scrollbar-width: none;
+  touch-action: manipulation;
+}
+
+.explore-bottom-card__photo-strip--scroll {
+  z-index: 0;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
+  pointer-events: auto;
+}
+
+.explore-bottom-card__photo-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.explore-bottom-card__photo-strip .explore-bottom-card__photo {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.explore-bottom-card:hover .explore-bottom-card__photo-strip .explore-bottom-card__photo {
+  transform: none;
+}
+
+.explore-bottom-card__photo-dots {
+  position: absolute;
+  left: 50%;
+  bottom: 0.7rem;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.38rem;
+  margin: 0;
+  padding: 0.32rem 0.48rem;
+  border-radius: 999px;
+  background: rgba(8, 6, 14, 0.62);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transform: translate3d(-50%, 0, 0);
+  pointer-events: none;
+}
+
+.explore-bottom-card__photo-dot {
+  display: block;
+  flex: 0 0 auto;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.explore-bottom-card__photo-dot--active {
+  background: #fff;
 }
 
 .explore-bottom-card__photo-fallback {
@@ -2708,8 +2831,22 @@ body.location-selector-open .explore-map__recenter--hero {
   align-items: center;
   gap: 0.3rem;
   margin-top: 0.2rem;
-  overflow: hidden;
+  /* The name column keeps a gap for the heart. Chips sit lower, so they can use that width and scroll the rest. */
+  margin-right: -2.2rem;
+  padding-right: 0.85rem;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-x;
+  pointer-events: auto;
   white-space: nowrap;
+}
+
+.explore-bottom-card__specialties-row::-webkit-scrollbar {
+  display: none;
 }
 
 .explore-bottom-card__specialty-pill {

@@ -243,7 +243,11 @@ function trainerFromProfileData(
     galleryImages[0] ||
     gallery[0]?.src ||
     asString(profileData.image);
-  const image = asString(profileData.image) || heroImage;
+  const storedProfilePhoto = asString(profileData.profilePhotoUrl).trim();
+  const image =
+    (/^(https?:\/\/|\/)/i.test(storedProfilePhoto) ? storedProfilePhoto : "") ||
+    asString(profileData.image) ||
+    heroImage;
 
   return {
     id,

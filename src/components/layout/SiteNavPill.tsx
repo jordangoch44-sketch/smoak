@@ -6,6 +6,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -23,6 +24,7 @@ import {
   UsersIcon,
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useClientNavAttention } from "@/hooks/useClientNavAttention";
 import { useMobileBottomNavProfilePhoto } from "@/hooks/useMobileBottomNavProfilePhoto";
@@ -148,6 +150,151 @@ const ProfileNavAvatar = memo(function ProfileNavAvatar({
   );
 });
 
+type TabGlassBox = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+/** Survives a tab-change remount so the glass can travel from the previous tab. */
+let lastNativeTabGlass: {
+  id: MobileBottomNavItemId;
+  box: TabGlassBox;
+} | null = null;
+
+function measureActiveTab(
+  list: HTMLElement,
+  activeId: MobileBottomNavItemId
+): TabGlassBox | null {
+  const item = list.querySelector<HTMLElement>(`[data-nav-id="${activeId}"]`);
+  if (!item) return null;
+  const listBox = list.getBoundingClientRect();
+  const itemBox = item.getBoundingClientRect();
+  return {
+    left: itemBox.left - listBox.left,
+    top: itemBox.top - listBox.top,
+    width: itemBox.width,
+    height: itemBox.height,
+  };
+}
+
+function paintTabGlass(glass: HTMLElement, box: TabGlassBox) {
+  glass.style.left = `${box.left}px`;
+  glass.style.top = `${box.top}px`;
+  glass.style.width = `${box.width}px`;
+  glass.style.height = `${box.height}px`;
+}
+
+/** Shrink in place, travel, then open on the next tab with a small overshoot. */
+function playTabGlassBounce(
+  glass: HTMLElement,
+  from: TabGlassBox,
+  to: TabGlassBox
+) {
+  const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+  const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+  glass.getAnimations().forEach((animation) => animation.cancel());
+  paintTabGlass(glass, to);
+  glass.animate(
+    [
+      { transform: `translate(${dx}px, ${dy}px) scale(1)` },
+      {
+        transform: `translate(${dx}px, ${dy}px) scale(0.78)`,
+        offset: 0.28,
+      },
+      { transform: "translate(0, 0) scale(0.78)", offset: 0.56 },
+      { transform: "translate(0, 0) scale(1.06)", offset: 0.8 },
+      { transform: "translate(0, 0) scale(1)" },
+    ],
+    { duration: 480, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards" }
+  );
+}
+
+const NativeTabSelection = memo(function NativeTabSelection({
+  activeId,
+}: {
+  activeId: MobileBottomNavItemId | null;
+}) {
+  const glassRef = useRef<HTMLSpanElement>(null);
+  const reducedMotion = usePrefersReducedMotion();
+
+  const syncGlass = useCallback(
+    (animate: boolean) => {
+      const glass = glassRef.current;
+      const list = glass?.parentElement;
+      if (!glass || !list || !activeId) return;
+      if (!document.documentElement.classList.contains("native-app")) return;
+
+      const next = measureActiveTab(list, activeId);
+      if (!next || next.width < 1) return;
+
+      const running = glass
+        .getAnimations()
+        .some((animation) => animation.playState === "running");
+      let from =
+        lastNativeTabGlass && lastNativeTabGlass.id !== activeId
+          ? lastNativeTabGlass.box
+          : null;
+      if (running) {
+        const listBox = list.getBoundingClientRect();
+        const live = glass.getBoundingClientRect();
+        from = {
+          left: live.left - listBox.left,
+          top: live.top - listBox.top,
+          width: live.width,
+          height: live.height,
+        };
+        glass.getAnimations().forEach((animation) => animation.cancel());
+      }
+
+      lastNativeTabGlass = { id: activeId, box: next };
+      glass.classList.add("is-ready");
+
+      const moved =
+        from != null &&
+        (Math.abs(from.left - next.left) > 1 ||
+          Math.abs(from.top - next.top) > 1);
+
+      if (!animate || reducedMotion || !moved || !from) {
+        glass.getAnimations().forEach((animation) => animation.cancel());
+        glass.style.transform = "translate(0, 0) scale(1)";
+        paintTabGlass(glass, next);
+        return;
+      }
+
+      playTabGlassBounce(glass, from, next);
+    },
+    [activeId, reducedMotion]
+  );
+
+  useLayoutEffect(() => {
+    syncGlass(true);
+  }, [syncGlass]);
+
+  useEffect(() => {
+    const list = glassRef.current?.parentElement;
+    if (!list || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      const glass = glassRef.current;
+      if (glass?.getAnimations().some((animation) => animation.playState === "running")) {
+        return;
+      }
+      syncGlass(false);
+    });
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [syncGlass]);
+
+  return (
+    <span
+      ref={glassRef}
+      className="mobile-bottom-nav__selection"
+      aria-hidden
+    />
+  );
+});
+
 const SavedNavBadge = memo(function SavedNavBadge({
   count,
 }: {
@@ -258,6 +405,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       )}
       aria-label={ariaLabel}
       aria-current={active ? "page" : undefined}
+      data-nav-id={item.id}
       data-tour={
         item.id === "clients"
           ? "clients-tab"
@@ -316,6 +464,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
 
 const SiteNavPillItems = memo(function SiteNavPillItems({
   items,
+  activeId,
   activeById,
   profileAuthState,
   profilePresentation,
@@ -328,6 +477,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   onPointerCancelActivate,
 }: {
   items: MobileBottomNavItem[];
+  activeId: MobileBottomNavItemId | null;
   activeById: Record<MobileBottomNavItemId, boolean>;
   profileAuthState: MobileBottomNavProfileAuthState;
   profilePresentation: MobileBottomNavProfilePresentation;
@@ -350,6 +500,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
 }) {
   return (
     <ul className="mobile-bottom-nav__list">
+      <NativeTabSelection activeId={activeId} />
       {items.map((item) => (
         <li key={item.id} className="mobile-bottom-nav__item-wrap">
           <BottomNavItemLink
@@ -427,6 +578,13 @@ function SiteNavPillShell({
     setPendingId(null);
     startedByPointerRef.current = null;
   }, [pathname, routeSearch]);
+
+  const activeId =
+    items.find((item) =>
+      pendingId != null
+        ? pendingId === item.id
+        : isActiveNavItem(item.id, pathname, routeSearch)
+    )?.id ?? null;
 
   const activeById = useMemo(() => {
     const map = {} as Record<MobileBottomNavItemId, boolean>;
@@ -534,6 +692,7 @@ function SiteNavPillShell({
 
       <SiteNavPillItems
         items={items}
+        activeId={activeId}
         activeById={activeById}
         profileAuthState={profileAuthState}
         profilePresentation={profilePresentation}
