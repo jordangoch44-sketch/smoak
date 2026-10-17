@@ -1,19 +1,15 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { AnalyticsMetricIcon } from "@/components/dashboard/specialist/AnalyticsMetricIcon";
 import { GoogleReviewsCard } from "@/components/dashboard/specialist/cards/GoogleReviewsCard";
 import { ReviewsCard } from "@/components/dashboard/specialist/cards/ReviewsCard";
 import { VisibilityRankingCard } from "@/components/dashboard/specialist/cards/VisibilityRankingCard";
 import { PremiumLockedValues } from "@/components/dashboard/shared";
-import { BookmarkIcon, EyeIcon, TrophyIcon } from "@/components/ui/icons";
 import { formatAnalyticsMetricValue } from "@/lib/specialist-dashboard-stats";
 import { cn } from "@/lib/utils";
 import type { Trainer } from "@/types";
 import type {
   AnalyticsMetricTrend,
   AnalyticsTrendDirection,
-  SpecialistAnalyticsMetric,
   SpecialistProfileAnalytics,
 } from "@/types/specialist-analytics";
 import type { SpecialistDashboardRanking } from "@/types/specialist-dashboard";
@@ -32,16 +28,6 @@ interface SpecialistOverviewBoardProps {
   onUpgrade?: () => void;
 }
 
-type KpiTone = "cyan" | "violet" | "pink" | "green" | "amber" | "blue";
-
-const METRIC_TONE: Record<string, KpiTone> = {
-  "profile-views": "cyan",
-  "search-appearances": "violet",
-  "saved-by-clients": "pink",
-  "contact-clicks": "green",
-  "booking-clicks": "amber",
-};
-
 const METRIC_LABEL: Record<string, string> = {
   "profile-views": "Profile Views",
   "search-appearances": "Search Appearances",
@@ -49,6 +35,21 @@ const METRIC_LABEL: Record<string, string> = {
   "contact-clicks": "Contact Clicks",
   "booking-clicks": "Booking Clicks",
 };
+
+function formatConversionRate(analytics: SpecialistProfileAnalytics): string {
+  const funnelRate = analytics.funnel?.viewToInquiryRate;
+  const rate =
+    funnelRate != null
+      ? funnelRate
+      : analytics.profileViews > 0
+        ? ((analytics.contactClicks + analytics.bookingClicks) /
+            analytics.profileViews) *
+          100
+        : 0;
+  if (!Number.isFinite(rate) || rate <= 0) return "0%";
+  const rounded = rate >= 10 ? Math.round(rate) : Math.round(rate * 10) / 10;
+  return `${rounded}%`;
+}
 
 function trendParts(trend: AnalyticsMetricTrend): {
   arrow: string;
@@ -62,16 +63,6 @@ function trendParts(trend: AnalyticsMetricTrend): {
       ? "0%"
       : `${trend.direction === "up" ? "+" : "-"}${Math.abs(trend.percentChange)}%`;
   return { arrow, pct, direction: trend.direction };
-}
-
-function metricIcon(metric: SpecialistAnalyticsMetric): ReactNode {
-  if (metric.id === "profile-views") {
-    return <EyeIcon className="overview-kpi__glyph" />;
-  }
-  if (metric.id === "saved-by-clients") {
-    return <BookmarkIcon className="overview-kpi__glyph" />;
-  }
-  return <AnalyticsMetricIcon id={metric.icon} className="overview-kpi__glyph" />;
 }
 
 export function OverviewPeriodChip({ label }: { label: string }) {
@@ -92,6 +83,8 @@ export function SpecialistOverviewBoard({
   onUpgrade,
 }: SpecialistOverviewBoardProps) {
   const cityLabel = city?.trim() || "";
+  const conversionValue = formatConversionRate(analytics);
+  const conversionIsZero = conversionValue === "0%";
   const rankValue = ranking ? `#${ranking.rank}` : "—";
   const rankDetail = ranking
     ? cityLabel
@@ -105,27 +98,42 @@ export function SpecialistOverviewBoard({
         {analytics.coreMetrics.map((metric) => (
           <KpiTile
             key={metric.id}
-            tone={METRIC_TONE[metric.id] ?? "cyan"}
             label={METRIC_LABEL[metric.id] ?? metric.label}
             value={formatAnalyticsMetricValue(metric.value)}
             trend={metric.trend}
             locked={!isPremium}
-            icon={metricIcon(metric)}
           />
         ))}
-        <li>
+        <KpiTile
+          label="Conversion Rate"
+          value={conversionValue}
+          trend={{
+            direction: "flat",
+            percentChange: 0,
+            comparisonLabel: conversionIsZero
+              ? "vs last week"
+              : "of profile views",
+          }}
+          locked={!isPremium}
+          quietTrend={!conversionIsZero}
+        />
+        <li className="overview-kpis__feature">
           <article
-            className="overview-kpi overview-kpi--blue"
+            className="overview-kpi overview-kpi--rank"
             aria-label={`City ranking ${rankValue}${cityLabel ? `, ${rankDetail}` : ""}`}
           >
-            <span className="overview-kpi__icon" aria-hidden>
-              <TrophyIcon className="overview-kpi__glyph" />
-            </span>
             <p className="overview-kpi__label">City Ranking</p>
-            <PremiumLockedValues locked={!isPremium}>
-              <p className="overview-kpi__value">{rankValue}</p>
-              <p className="overview-kpi__detail">{rankDetail}</p>
-            </PremiumLockedValues>
+            <div className="overview-kpi__rank-row">
+              <PremiumLockedValues locked={!isPremium}>
+                <div className="overview-kpi__rank-copy">
+                  <p className="overview-kpi__value">{rankValue}</p>
+                  <p className="overview-kpi__detail">{rankDetail}</p>
+                </div>
+              </PremiumLockedValues>
+              {isPremium && ranking?.rank === 1 ? (
+                <span className="overview-kpi__badge">Top in city</span>
+              ) : null}
+            </div>
           </article>
         </li>
       </ul>
@@ -157,42 +165,43 @@ export function SpecialistOverviewBoard({
 }
 
 function KpiTile({
-  tone,
   label,
   value,
   trend,
   locked,
-  icon,
+  quietTrend = false,
 }: {
-  tone: KpiTone;
   label: string;
   value: string;
   trend: AnalyticsMetricTrend;
   locked: boolean;
-  icon: ReactNode;
+  /** Rate has no week-over-week delta — show the comparison line only. */
+  quietTrend?: boolean;
 }) {
   const parts = trendParts(trend);
+  const trendLabel = quietTrend
+    ? `${value} ${trend.comparisonLabel}`
+    : `${parts.arrow} ${parts.pct} ${trend.comparisonLabel}`;
   return (
     <li>
       <article
-        className={cn("overview-kpi", `overview-kpi--${tone}`)}
-        aria-label={`${label} ${value}, ${parts.arrow} ${parts.pct} ${trend.comparisonLabel}`}
+        className="overview-kpi"
+        aria-label={`${label} ${value}, ${trendLabel}`}
       >
-        <span className="overview-kpi__icon" aria-hidden>
-          {icon}
-        </span>
         <p className="overview-kpi__label">{label}</p>
         <PremiumLockedValues locked={locked}>
           <p className="overview-kpi__value">{value}</p>
           <p
             className={cn(
               "overview-kpi__trend",
-              `overview-kpi__trend--${parts.direction}`
+              !quietTrend && `overview-kpi__trend--${parts.direction}`
             )}
           >
-            <span className="overview-kpi__trend-change">
-              {parts.arrow} {parts.pct}
-            </span>
+            {quietTrend ? null : (
+              <span className="overview-kpi__trend-change">
+                {parts.arrow} {parts.pct}
+              </span>
+            )}
             <span className="overview-kpi__trend-period">
               {trend.comparisonLabel}
             </span>

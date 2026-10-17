@@ -361,6 +361,13 @@ export async function verifySpecialistEmailOtp(params: {
   }
 
   /* Session builder requires user_roles — set it as soon as email is verified. */
+  const { data: existingRole } = await service
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const alreadySpecialist = existingRole?.role === "specialist";
+
   const { error: roleError } = await service.from("user_roles").upsert(
     {
       user_id: user.id,
@@ -371,6 +378,16 @@ export async function verifySpecialistEmailOtp(params: {
   );
   if (roleError) {
     console.warn("[SMOAC OTP] user_roles upsert failed:", roleError.message);
+  } else if (!alreadySpecialist) {
+    /* Next-100 Pro offer. The database trigger also claims; this covers a
+       signup if that trigger is not installed yet. Never block verification. */
+    const { error: offerError } = await service.rpc(
+      "claim_pro_trial_signup_offer",
+      { p_user_id: user.id }
+    );
+    if (offerError) {
+      console.warn("[SMOAC OTP] pro trial offer claim skipped:", offerError.message);
+    }
   }
 
   const firstName =

@@ -94,7 +94,8 @@ SMOAC`;
 }
 
 function buildSpecialistApprovalEmail(
-  application: SpecialistApplication
+  application: SpecialistApplication,
+  trialDays?: number
 ): ConfirmationEmailPayload {
   const profileUrl = emailAbsoluteUrl(
     trainerProfilePath({
@@ -112,7 +113,7 @@ function buildSpecialistApprovalEmail(
       role: "specialist",
       next: SPECIALIST_EDIT_PROFILE_PATH,
     }),
-    trialLine: specialistApprovalTrialLine(isFounding),
+    trialLine: specialistApprovalTrialLine({ isFounding, trialDays }),
   };
 
   return {
@@ -195,10 +196,11 @@ export async function sendSpecialistApplicationConfirmationEmail(
 
 /** Notify specialist that their application was approved — invite them back to log in. */
 export async function sendSpecialistApplicationApprovedEmail(
-  application: SpecialistApplication
+  application: SpecialistApplication,
+  options?: { trialDays?: number }
 ): Promise<ConfirmationEmailResult> {
   try {
-    const payload = buildSpecialistApprovalEmail(application);
+    const payload = buildSpecialistApprovalEmail(application, options?.trialDays);
     return await dispatchTransactionalEmail({
       to: payload.to,
       subject: payload.subject,

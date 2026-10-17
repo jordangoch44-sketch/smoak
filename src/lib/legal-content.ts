@@ -310,7 +310,7 @@ export const PRICING_SECTIONS: LegalSection[] = [
   {
     title: "For specialists — membership",
     paragraphs: [
-      "Approved specialists can list on the marketplace on the Free plan. New approved specialists may receive a complimentary 30-day Pro trial (no card required).",
+      "Approved specialists can list on the marketplace on the Free plan. New approved specialists may receive a complimentary Pro trial (no card required). The standard trial is 30 days. Founding 100 members, and a limited run of new signups, receive 90 days.",
       "SMOAC Pro is $19.99 per month. It unlocks specialist analytics and related Pro listing perks shown in the dashboard.",
       "SMOAC PRO+ is $29.99 per month. It includes Pro, plus up to 5 short profile videos, client results, and 20% off Boost campaigns.",
       "Membership is billed through Stripe and renews until you cancel. When a trial ends without a paid plan, the account returns to Free.",

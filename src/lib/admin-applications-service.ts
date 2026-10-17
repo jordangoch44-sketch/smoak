@@ -311,8 +311,9 @@ export async function activateSpecialistFromApplicationAsync(
     );
   }
 
-  /* Go live → one-time Pro trial (30 days, or 60 for Founding 100). */
+  /* Go live → one-time Pro trial (30 days, 90 for Founding 100 and the next-100 signup offer). */
   const userId = approved.userId?.trim() || "";
+  let grantedTrialDays: number | undefined;
   if (userId && typeof window !== "undefined") {
     try {
       const trialRes = await fetch(
@@ -330,8 +331,16 @@ export async function activateSpecialistFromApplicationAsync(
       const trialPayload = (await trialRes.json().catch(() => null)) as {
         ok?: boolean;
         granted?: boolean;
+        trialDays?: number;
         message?: string;
       } | null;
+      if (
+        trialRes.ok &&
+        trialPayload?.ok &&
+        typeof trialPayload.trialDays === "number"
+      ) {
+        grantedTrialDays = trialPayload.trialDays;
+      }
       if (!trialRes.ok || !trialPayload?.ok) {
         console.warn(
           "[SMOAC admin] Pro trial grant on activate failed:",
@@ -347,7 +356,9 @@ export async function activateSpecialistFromApplicationAsync(
     const { sendSpecialistApplicationApprovedEmail } = await import(
       "@/lib/email/confirmation-email-service"
     );
-    void sendSpecialistApplicationApprovedEmail(approved).then((result) => {
+    void sendSpecialistApplicationApprovedEmail(approved, {
+      trialDays: grantedTrialDays,
+    }).then((result) => {
       if (!result.success) {
         console.warn("[SMOAC EMAIL] Approval email did not send", {
           applicationId: approved.id,

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useSearchParams } from "next/navigation";
-import { useMemo } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import {
   AnimatePresence,
   motion,
@@ -65,6 +65,66 @@ function buildSavedDesktopVariants(): Variants {
     animate: { opacity: 1, y: 0, scale: 1, filter: "none" },
     exit: { opacity: 0, y: -12, scale: 0.998, filter: "blur(5px)" },
   };
+}
+
+const TOOLBAR_FADE_MS = 760;
+
+/** Last toolbar route. Survives the Suspense remount around page changes. */
+let committedToolbarRouteKey: string | null = null;
+/** Route that should fade, kept through React strict mode's extra mount. */
+let toolbarFadeRouteKey: string | null = null;
+/** When the current fade began, so a remount continues it instead of blinking back to blank. */
+let toolbarFadeStartedAt = 0;
+
+/** Enter-only fade. No exit layer, so the arriving page can take the next tap. */
+function ToolbarPageFade({
+  routeKey,
+  children,
+}: {
+  routeKey: string;
+  children: React.ReactNode;
+}) {
+  const reducedMotion = useReducedMotion();
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const playedRouteRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    const node = nodeRef.current;
+    if (committedToolbarRouteKey !== routeKey) {
+      if (committedToolbarRouteKey !== null && !reducedMotion) {
+        toolbarFadeRouteKey = routeKey;
+        toolbarFadeStartedAt = performance.now();
+      }
+      committedToolbarRouteKey = routeKey;
+    }
+    if (!node || toolbarFadeRouteKey !== routeKey || playedRouteRef.current === routeKey) {
+      return;
+    }
+    playedRouteRef.current = routeKey;
+    const fadeKey = routeKey;
+    const elapsed = toolbarFadeStartedAt > 0 ? performance.now() - toolbarFadeStartedAt : 0;
+    node.getAnimations().forEach((animation) => animation.cancel());
+    const fade = node.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: TOOLBAR_FADE_MS,
+      easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+      fill: "backwards",
+    });
+    if (elapsed > 0 && elapsed < TOOLBAR_FADE_MS) {
+      fade.currentTime = elapsed;
+    }
+    window.setTimeout(() => {
+      if (toolbarFadeRouteKey === fadeKey) {
+        toolbarFadeRouteKey = null;
+        toolbarFadeStartedAt = 0;
+      }
+    }, 480);
+  }, [reducedMotion, routeKey]);
+
+  return (
+    <div ref={nodeRef} className="page-transition__content">
+      {children}
+    </div>
+  );
 }
 
 function buildDesktopVariants(profileReveal: boolean): Variants {
@@ -136,7 +196,16 @@ export function PageTransition({ children }: PageTransitionProps) {
     isProfileNavPath(pathname) ||
     isSpecialistDashboardPath(pathname);
 
-  /* Phone/tablet, and desktop toolbar tabs: no exit layer — tab clicks must be instant. */
+  /* Phone/tablet toolbar taps: fade the new page in. No exiting layer. */
+  if (isTabletViewport && toolbarTab) {
+    return (
+      <div className="page-transition">
+        <ToolbarPageFade routeKey={routeKey}>{children}</ToolbarPageFade>
+      </div>
+    );
+  }
+
+  /* Other phone/tablet routes, and desktop toolbar tabs: no exit layer. */
   if (isTabletViewport || toolbarTab) {
     return (
       <div className="page-transition">

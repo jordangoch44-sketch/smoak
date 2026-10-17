@@ -11,8 +11,9 @@ interface Body {
 
 /**
  * Admin: start the one-time Pro trial when a specialist goes live.
- * Founding 100 get 60 days; everyone else gets 30. Idempotent — skips if
- * already claimed, and extends an active shorter founding trial to 60 days.
+ * Founding 100 and the next-100 signup offer get 90 days; everyone else gets
+ * 30. Idempotent — skips if already claimed, and extends an active shorter
+ * trial to the longer length.
  */
 export async function POST(request: Request) {
   const supabase = await createSupabaseServerClient();

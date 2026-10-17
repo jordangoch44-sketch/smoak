@@ -1,6 +1,7 @@
 /**
  * SMOAC Pro — pricing + upgrade copy.
- * Going live includes a complimentary 30-day Pro trial; after that, $19.99/mo via Stripe.
+ * Going live includes a complimentary Pro trial (30 days, or 90 for Founding 100
+ * and the next-100 signup offer). After that, $19.99/mo via Stripe.
  */
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 

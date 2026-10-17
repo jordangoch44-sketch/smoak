@@ -213,8 +213,14 @@ function playTabGlassBounce(
 
 const NativeTabSelection = memo(function NativeTabSelection({
   activeId,
+  layoutKey,
+  settled,
 }: {
   activeId: MobileBottomNavItemId | null;
+  /** Tab set. Changes when the specialist bar replaces the signed-out bar. */
+  layoutKey: string;
+  /** Auth has finished hydrating, so the tab set will not jump again. */
+  settled: boolean;
 }) {
   const glassRef = useRef<HTMLSpanElement>(null);
   const reducedMotion = usePrefersReducedMotion();
@@ -225,6 +231,10 @@ const NativeTabSelection = memo(function NativeTabSelection({
       const list = glass?.parentElement;
       if (!glass || !list || !activeId) return;
       if (!document.documentElement.classList.contains("native-app")) return;
+      if (!settled) {
+        glass.classList.remove("is-ready");
+        return;
+      }
 
       const next = measureActiveTab(list, activeId);
       if (!next || next.width < 1) return;
@@ -265,26 +275,45 @@ const NativeTabSelection = memo(function NativeTabSelection({
 
       playTabGlassBounce(glass, from, next);
     },
-    [activeId, reducedMotion]
+    [activeId, reducedMotion, settled]
   );
 
   useLayoutEffect(() => {
     syncGlass(true);
-  }, [syncGlass]);
+  }, [syncGlass, layoutKey]);
 
   useEffect(() => {
     const list = glassRef.current?.parentElement;
-    if (!list || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => {
+    if (!list || !settled) return;
+
+    const measure = () => {
       const glass = glassRef.current;
       if (glass?.getAnimations().some((animation) => animation.playState === "running")) {
         return;
       }
       syncGlass(false);
+    };
+
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(list);
+    const item = activeId
+      ? list.querySelector<HTMLElement>(`[data-nav-id="${activeId}"]`)
+      : null;
+    if (item) observer?.observe(item);
+
+    let cancelled = false;
+    void document.fonts?.ready.then(() => {
+      if (!cancelled) measure();
     });
-    observer.observe(list);
-    return () => observer.disconnect();
-  }, [syncGlass]);
+    window.addEventListener("resize", measure);
+
+    return () => {
+      cancelled = true;
+      observer?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [activeId, layoutKey, settled, syncGlass]);
 
   return (
     <span
@@ -471,6 +500,8 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   showSaveBadge,
   savedCount,
   showClientAttention,
+  layoutKey,
+  settled,
   onNavClick,
   onPointerDown,
   onPointerCommit,
@@ -484,6 +515,8 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   showSaveBadge: boolean;
   savedCount: number;
   showClientAttention: boolean;
+  layoutKey: string;
+  settled: boolean;
   onNavClick: (
     item: MobileBottomNavItem,
     event: MouseEvent<HTMLAnchorElement>
@@ -500,7 +533,11 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
 }) {
   return (
     <ul className="mobile-bottom-nav__list">
-      <NativeTabSelection activeId={activeId} />
+      <NativeTabSelection
+        activeId={activeId}
+        layoutKey={layoutKey}
+        settled={settled}
+      />
       {items.map((item) => (
         <li key={item.id} className="mobile-bottom-nav__item-wrap">
           <BottomNavItemLink
@@ -699,6 +736,8 @@ function SiteNavPillShell({
         showSaveBadge={showSaveBadge}
         savedCount={savedCount}
         showClientAttention={showClientAttention}
+        layoutKey={items.map((item) => item.id).join("|")}
+        settled={clientReady && isReady}
         onNavClick={handleNavClick}
         onPointerDown={handlePointerDown}
         onPointerCommit={handlePointerCommit}

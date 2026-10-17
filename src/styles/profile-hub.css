@@ -14,15 +14,18 @@
 @media (max-width: 1023px) {
   .profile-hub {
     box-sizing: border-box;
-    /* Fill the screen so the site footer starts below the fold, not under the tab bar. */
-    min-height: calc(100svh - var(--site-header-total-height, 0px));
-    padding-bottom: 1.5rem;
+    align-items: stretch;
+    justify-content: flex-start;
+    /* Fill the space between the header and the tab bar. */
+    min-height: calc(
+      100svh - var(--site-header-total-height, 0px) - var(--mobile-bottom-nav-offset, 0px)
+    );
+    padding: 0.85rem 1.35rem 0.15rem;
   }
 }
 
 html.native-app .profile-hub {
-  min-height: 100svh;
-  padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+  min-height: calc(100svh - var(--mobile-bottom-nav-offset, 0px));
 }
 
 .profile-hub__canvas,
@@ -438,7 +441,7 @@ body:has(.profile-hub) .site-footer__glow {
   }
 }
 
-@media (min-width: 640px) {
+@media (min-width: 1024px) {
   .profile-hub {
     padding-top: 2.75rem;
     padding-bottom: 4rem;
@@ -447,6 +450,92 @@ body:has(.profile-hub) .site-footer__glow {
   .profile-hub__card {
     padding: 2rem 1.65rem 1.7rem;
   }
+}
+
+@media (max-width: 1023px) {
+  .profile-hub__shell {
+    flex: 1;
+    max-width: 26rem;
+    min-height: 100%;
+    justify-content: space-between;
+    gap: clamp(1.15rem, 2.8vh, 1.75rem);
+  }
+
+  .profile-hub__card {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding: 0.35rem 0 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .profile-hub__hero-badge {
+    margin-top: 2.75rem;
+    margin-bottom: 0.95rem;
+  }
+
+  .profile-hub__divider {
+    margin: 0.4rem 0 0;
+  }
+
+  .profile-hub__features {
+    gap: clamp(1.15rem, 2.4vh, 1.5rem);
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .profile-hub__feature {
+    align-items: center;
+    gap: 0.95rem;
+  }
+
+  .profile-hub__feature-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 0.95rem;
+  }
+
+  .profile-hub__feature-glyph {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .profile-hub__feature-copy {
+    gap: 0.28rem;
+    padding-top: 0;
+  }
+
+  .profile-hub__feature-title {
+    font-size: 1.05rem;
+    line-height: 1.25;
+  }
+
+  .profile-hub__feature-desc {
+    font-size: 0.92rem;
+    line-height: 1.35;
+  }
+
+  .profile-hub__actions {
+    margin-top: auto;
+    padding-top: 0.65rem;
+  }
+
+  .profile-hub__footer-brand {
+    padding-top: 0.35rem;
+  }
+
+  body:has(.profile-hub) .site-footer {
+    display: none;
+  }
+}
+
+/* App draws under the clock. A fixed inset clears the island even when safe-area is 0. */
+html.native-app .profile-hub {
+  padding-top: 6.5rem;
 }
 
 @media (prefers-reduced-motion: reduce) {

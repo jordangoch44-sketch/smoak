@@ -64,7 +64,6 @@ html {
   #site-header.site-header,
   .mobile-bottom-nav__pill {
     contain: layout style;
-    backface-visibility: hidden;
   }
 
   /*

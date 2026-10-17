@@ -253,7 +253,8 @@
 }
 
 /* Native cold start — hidden on the website. The phone app class is set
-   before first paint, so this covers the black gap until Marketplace. */
+   by a blocking head script before first paint. Critical cover styles are
+   also inlined in the root layout so Marketplace cannot flash first. */
 #app-boot-splash {
   display: none;
 }

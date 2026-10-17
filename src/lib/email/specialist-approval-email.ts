@@ -66,11 +66,20 @@ export interface SpecialistApprovalEmailInput {
   trialLine?: string;
 }
 
-/** Every approval grants a Pro trial; Founding 100 get the longer one. */
-export function specialistApprovalTrialLine(isFounding: boolean): string {
-  return isFounding
-    ? `Founding 100: ${FOUNDING_PREMIUM_TRIAL_DAYS} days of SMOAC Pro, free — no card required.`
-    : `Your first ${PREMIUM_TRIAL_DAYS} days of SMOAC Pro are free — no card required.`;
+/** Every approval grants a Pro trial; Founding 100 and the signup offer get 90 days. */
+export function specialistApprovalTrialLine(input: {
+  isFounding: boolean;
+  trialDays?: number;
+}): string {
+  const days =
+    input.trialDays && input.trialDays > 0
+      ? input.trialDays
+      : input.isFounding
+        ? FOUNDING_PREMIUM_TRIAL_DAYS
+        : PREMIUM_TRIAL_DAYS;
+  return input.isFounding
+    ? `Founding 100: ${days} days of SMOAC Pro, free — no card required.`
+    : `Your first ${days} days of SMOAC Pro are free — no card required.`;
 }
 
 function asset(name: string): string {

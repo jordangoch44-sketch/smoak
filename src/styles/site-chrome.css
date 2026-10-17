@@ -86,8 +86,6 @@ html.native-app .explore-page--map-shell {
   pointer-events: auto;
   padding-top: env(safe-area-inset-top, 0px);
   background: transparent;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
 }
 
 @supports (-webkit-touch-callout: none) {
@@ -529,7 +527,6 @@ html.native-app .explore-page--map-shell {
 
   .site-header--desktop .navbar-brand .brand-logo__wordmark.smoac-wordmark--primary {
     height: 0.95rem;
-    transform: translateY(0.5px);
   }
 
   .site-header__toolbar--desktop .site-header__utility-end {

@@ -132,7 +132,7 @@ export function Founding50InvitePage({
               You&apos;ve been invited to join the {FOUNDING_50_LABEL} on SMOAC —
               one of the first specialists on the marketplace. Apply now, and
               when you go live you get {FOUNDING_PREMIUM_TRIAL_DAYS} days of
-              complimentary Pro — double the trial every other specialist gets.
+              complimentary Pro — no card required.
             </p>
 
             <dl className="founding-invite-page__dossier">

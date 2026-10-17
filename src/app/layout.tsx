@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { AppBootSplash } from "@/components/brand/AppBootSplash";
 
 export const metadata: Metadata = {
@@ -51,6 +50,16 @@ export const viewport = {
 };
 
 
+/**
+ * Parser-blocking on purpose. `next/script` beforeInteractive only queues
+ * onto `__next_s` and runs after the first paint, which let Marketplace
+ * flash before the S. This runs while the head is parsed, before the body.
+ */
+const NATIVE_APP_BOOT_SCRIPT = `try{var c=window.Capacitor;if(c&&typeof c.isNativePlatform==="function"&&c.isNativePlatform()){var h=document.documentElement;h.classList.add("native-app");h.dataset.smoacBoot=String(performance.now())}}catch(e){}`;
+
+/** Cover the viewport before smoac-loader.css arrives. Animation stays in that file. */
+const NATIVE_APP_BOOT_CSS = `#app-boot-splash{display:none}html.native-app #app-boot-splash{display:flex;position:fixed;inset:0;z-index:2000000;align-items:center;justify-content:center;background:#020203;pointer-events:auto}html.native-app #app-boot-splash .app-boot-splash__mark,html.native-app #app-boot-splash svg{width:148px;height:124px;display:block}`;
+
 /** Root shell — no global CSS, providers, or chrome (see (site)/layout and (diagnostics)/tap-test) */
 export default function RootLayout({
   children,
@@ -58,11 +67,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth">
+    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NATIVE_APP_BOOT_SCRIPT }} />
+        <style dangerouslySetInnerHTML={{ __html: NATIVE_APP_BOOT_CSS }} />
+      </head>
       <body style={{ margin: 0, background: "#020203" }}>
-        <Script id="native-app-class" strategy="beforeInteractive">
-          {`try{var c=window.Capacitor;if(c&&typeof c.isNativePlatform==="function"&&c.isNativePlatform()){document.documentElement.classList.add("native-app")}}catch(e){}`}
-        </Script>
         <AppBootSplash />
         {children}
       </body>

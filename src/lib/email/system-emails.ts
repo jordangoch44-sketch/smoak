@@ -32,7 +32,7 @@ function approvalSample(isFounding: boolean): SystemEmailRendered {
       role: "specialist",
       next: "/specialist-dashboard/edit-profile",
     }),
-    trialLine: specialistApprovalTrialLine(isFounding),
+    trialLine: specialistApprovalTrialLine({ isFounding }),
   };
   return {
     subject: SPECIALIST_APPROVAL_SUBJECT,
@@ -53,7 +53,7 @@ export const SYSTEM_EMAILS: SystemEmailDefinition[] = [
     id: "specialist-approved-founding",
     name: "Specialist approved — Founding 100 version",
     subject: SPECIALIST_APPROVAL_SUBJECT,
-    trigger: "Same email; trial line shows 60 days for Founding 100",
+    trigger: "Same email; trial line shows 90 days for Founding 100",
     render: () => approvalSample(true),
   },
 ];

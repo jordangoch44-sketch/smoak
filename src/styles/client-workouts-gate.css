@@ -101,7 +101,11 @@ body:has(.client-workouts-gate) .site-footer__glow {
 .client-workouts-gate__phone {
   position: absolute;
   top: auto;
-  bottom: 0.55rem;
+  /* Phones are bottom-anchored in a stage that is taller than they are.
+     Lift them by half the leftover space so the title-to-phone gap is cut in half. */
+  bottom: calc(
+    (100cqh + 0.55rem - min(100cqh - 1rem, 44cqw * 19.5 / 9)) / 2
+  );
   z-index: 1;
   width: min(44cqw, calc((100cqh - 1rem) * 9 / 19.5));
   height: min(calc(100cqh - 1rem), calc(44cqw * 19.5 / 9));

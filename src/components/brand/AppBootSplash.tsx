@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import "@/styles/smoac-loader.css";
 
 import {
@@ -14,13 +17,23 @@ import {
 import { AppBootSplashController } from "./AppBootSplashController";
 
 /**
- * First paint of a cold start in the iPhone app. The S keeps drawing until
- * Marketplace is on screen, then zooms in and clears. The website never
- * shows it — `html.native-app` is set before paint.
+ * First paint of a cold start in the iPhone app. A blocking head script
+ * adds `html.native-app` before the body, so this cover is up before
+ * Marketplace. The S draws twice, then stays until the page is ready and
+ * zooms off. The website never shows it.
  */
 export function AppBootSplash() {
+  const [phase, setPhase] = useState<"hold" | "zoom" | "done">("hold");
+  if (phase === "done") return null;
+
   return (
-    <div id="app-boot-splash" role="status" aria-label="Loading">
+    <div
+      id="app-boot-splash"
+      className={phase === "zoom" ? "is-zoom" : undefined}
+      role="status"
+      aria-label="Loading"
+      aria-busy={phase === "hold"}
+    >
       <div className="app-boot-splash__mark smoac-loader smoac-loader--boot">
         <svg
           className="smoac-loader__svg"
@@ -78,7 +91,10 @@ export function AppBootSplash() {
           </g>
         </svg>
       </div>
-      <AppBootSplashController />
+      <AppBootSplashController
+        onZoom={() => setPhase("zoom")}
+        onDone={() => setPhase("done")}
+      />
     </div>
   );
 }

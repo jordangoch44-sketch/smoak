@@ -1,9 +1,10 @@
 /**
  * SMOAC Pro complimentary trial — 30 days free when a specialist goes live
- * (admin activate / approve). Founding 100 get 60 days. After that, free tier
- * unless they subscribe via Stripe ($19.99/mo, no second free month). Idempotent;
- * safe to call on every activate. Manual Plan-tab claim remains for older
- * accounts that never got one.
+ * (admin activate / approve). Founding 100 get 90 days. The next 100 specialist
+ * signups after 2026-10-17 also get 90 days. After that, free tier unless they
+ * subscribe via Stripe ($19.99/mo, no second free month). Idempotent; safe to
+ * call on every activate. Manual Plan-tab claim remains for older accounts
+ * that never got one.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { readActiveAdminOverride } from "@/lib/admin-plan-override";
@@ -45,6 +46,32 @@ function emptyGrantResult(
 
 export function premiumTrialDaysForFounding(founding: boolean): number {
   return founding ? FOUNDING_PREMIUM_TRIAL_DAYS : PREMIUM_TRIAL_DAYS;
+}
+
+/** Longer of the default, Founding 100, and a claimed signup-offer trial. */
+export function resolveComplimentaryTrialDays(input: {
+  founding: boolean;
+  promoTrialDays?: number | null;
+}): number {
+  const promo =
+    input.promoTrialDays && input.promoTrialDays > 0 ? input.promoTrialDays : 0;
+  return Math.max(premiumTrialDaysForFounding(input.founding), promo);
+}
+
+async function readSignupPromoTrialDays(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number | null> {
+  const trimmed = userId.trim();
+  if (!trimmed) return null;
+  const { data, error } = await supabase
+    .from("pro_trial_signup_claims")
+    .select("trial_days")
+    .eq("user_id", trimmed)
+    .maybeSingle();
+  if (error || !data) return null;
+  const days = Number(data.trial_days);
+  return Number.isFinite(days) && days > 0 ? days : null;
 }
 
 function applicationDataIsFounding(data: unknown): boolean {
@@ -125,7 +152,7 @@ export function isComplimentaryProTrialWindowOpen(
   return Number.isFinite(ms) && ms > now;
 }
 
-/** Complimentary 30/60-day Pro trial — not Stripe, not an admin grant. */
+/** Complimentary Pro trial — not Stripe, not an admin grant. */
 export function isComplimentaryProTrialActive(
   signals: ComplimentaryProTrialSignals | null | undefined,
   now = Date.now()
@@ -159,9 +186,9 @@ async function hasActiveStripeSubscription(
 
 /**
  * Start the one-time Pro trial if this specialist has never had one.
- * Founding 100 get 60 days; everyone else gets 30. If a founding specialist
- * already started a shorter trial that is still active, extend to 60 days
- * from the original start. Idempotent — safe to call on every go-live activate.
+ * Founding 100 and the next-100 signup offer get 90 days; everyone else gets
+ * 30. If a shorter trial is still active, extend it to the longer length from
+ * the original start. Idempotent — safe to call on every go-live activate.
  */
 export async function grantSpecialistPremiumTrialIfNeeded(
   supabase: SupabaseClient,
@@ -173,7 +200,8 @@ export async function grantSpecialistPremiumTrialIfNeeded(
     userId,
     specialistProfileId
   );
-  const trialDays = premiumTrialDaysForFounding(founding);
+  const promoTrialDays = await readSignupPromoTrialDays(supabase, userId);
+  const trialDays = resolveComplimentaryTrialDays({ founding, promoTrialDays });
 
   const { data: role, error } = await supabase
     .from("user_roles")

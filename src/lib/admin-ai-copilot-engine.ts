@@ -114,7 +114,7 @@ export function generateCopilotTelemetryResponse(
   ) {
     let reply = `### Marketplace Growth Strategy\n\n`;
     reply += `With **${specialistsTotal} active specialists**, **${clientsTotal} clients**, and **${uniqueVisitors.toLocaleString()} weekly visitors**, here are your highest-leverage growth actions:\n\n`;
-    reply += `1. **Founding 100 Campaign**: Invite elite regional trainers via \`/founding-100\` with complimentary 60-day Pro trials to rapidly deepen local catalog density.\n`;
+    reply += `1. **Founding 100 Campaign**: Invite elite regional trainers via \`/founding-100\` with complimentary 90-day Pro trials to rapidly deepen local catalog density.\n`;
     if (topSource && topSource !== "Direct") {
       reply += `2. **Channel Amplification**: ${topSource} drives **${topSourceShare}%** of your traffic. Distribute specialist results spotlights directly on this channel.\n`;
     } else {
