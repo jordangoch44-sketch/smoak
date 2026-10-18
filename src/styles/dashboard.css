@@ -6122,6 +6122,20 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   text-align: center;
 }
 
+.stripe-pay-handoff {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.stripe-pay-handoff__copy {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+
 .dashboard-ad-spend {
   margin-top: 1rem;
   padding-top: 0.9rem;

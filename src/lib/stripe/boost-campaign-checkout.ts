@@ -1,3 +1,4 @@
+import { nativeBillingHandoff } from "@/lib/native-billing";
 import {
   BOOST_CAMPAIGN_ALL,
   BOOST_CAMPAIGN_LABEL,
@@ -26,8 +27,11 @@ export async function createBoostCampaignCheckout(input: {
   dailyCents: number;
 }): Promise<
   | { ok: true; checkout: BoostCampaignCheckout }
-  | { ok: false; error: string }
+  | { ok: false; error: string; handoff?: true }
 > {
+  const handoff = nativeBillingHandoff();
+  if (handoff) return handoff;
+
   try {
     const res = await fetch("/api/stripe/boost-campaign-intent", {
       method: "POST",

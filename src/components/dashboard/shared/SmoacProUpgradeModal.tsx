@@ -530,6 +530,8 @@ export function SmoacProUpgradeModal({
   const checkoutProduct = isMembershipUpgradeOffer(offer)
     ? offer.product
     : null;
+  const handoffLabel = isMembershipUpgradeOffer(offer) ? offer.title : "Pro";
+  const handoffPrice = isMembershipUpgradeOffer(offer) ? offer.price : "";
 
   useEffect(() => {
     if (!open || offersBoost) return;
@@ -554,6 +556,17 @@ export function SmoacProUpgradeModal({
       await waitAtLeast(startedAt, 420);
       if (cancelled) return;
       if (!result.ok) {
+        if (result.handoff) {
+          setCheckout({
+            clientSecret: "",
+            product: checkoutProduct,
+            label: handoffLabel,
+            priceLabel: handoffPrice,
+          });
+          setStep("checkout");
+          setBusy(false);
+          return;
+        }
         setError(result.error);
         setBusy(false);
         return;
@@ -581,7 +594,7 @@ export function SmoacProUpgradeModal({
       document.documentElement.classList.remove(MODAL_OPEN_BODY_CLASS);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, onClose, offersBoost, skipPick, checkoutProduct, product]);
+  }, [open, onClose, offersBoost, skipPick, checkoutProduct, product, handoffLabel, handoffPrice]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -597,6 +610,17 @@ export function SmoacProUpgradeModal({
     const result = await createEmbeddedSubscriptionCheckout(offer.product);
     await waitAtLeast(startedAt, UNLOCK_COLLAPSE_MS);
     if (!result.ok) {
+      if (result.handoff) {
+        setCheckout({
+          clientSecret: "",
+          product: offer.product,
+          label: offer.title,
+          priceLabel: offer.price,
+        });
+        setStep("checkout");
+        setBusy(false);
+        return;
+      }
       setError(result.error);
       setBusy(false);
       return;

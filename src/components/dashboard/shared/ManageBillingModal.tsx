@@ -145,6 +145,12 @@ export function ManageBillingModal({
     setBusy(true);
     setError(null);
     const result = await postManageBilling({ action: "setup-intent" });
+    if (!result.ok && result.handoff) {
+      setSetupSecret("native");
+      setStep("update-card");
+      setBusy(false);
+      return;
+    }
     if (!result.ok || !result.clientSecret) {
       setError(result.ok ? "Could not start card update." : result.error);
       setBusy(false);
@@ -217,6 +223,20 @@ export function ManageBillingModal({
     setError(null);
     const result = await createEmbeddedSubscriptionCheckout(product);
     if (!result.ok) {
+      if (result.handoff) {
+        setCheckout({
+          clientSecret: "",
+          product,
+          label: product === "platinum" ? "Pro Plus" : "Pro",
+          priceLabel:
+            product === "platinum"
+              ? SMOAC_PRO_PLUS_PRICE_LABEL
+              : SMOAC_PRO_PRICE_LABEL,
+        });
+        setStep("checkout");
+        setBusy(false);
+        return;
+      }
       setError(result.error);
       setBusy(false);
       return;

@@ -27,10 +27,12 @@
     "verify:reviews": "node scripts/verify-specialist-reviews.mjs",
     "setup:stripe": "node scripts/setup-stripe-products.mjs",
     "ios:sync": "cap sync ios",
+    "ios:dev": "cap sync ios",
     "ios:open": "cap open ios"
   },
   "dependencies": {
     "@apple/mapkit-loader": "^1.0.0",
+    "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.5.3",
     "@capacitor/ios": "^8.5.3",
     "@stripe/react-stripe-js": "^6.8.0",

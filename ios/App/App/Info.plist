@@ -29,8 +29,16 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>SMOAC uses the camera when you take a profile photo or video.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>SMOAC uses your location to show specialists near you.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SMOAC uses the microphone when you record a profile video.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SMOAC uses your photo library when you choose a profile photo or video.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

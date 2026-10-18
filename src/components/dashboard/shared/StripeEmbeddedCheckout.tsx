@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  NATIVE_BILLING_NOTE,
+  isNativeShell,
+  openBillingOnWebsite,
+} from "@/lib/native-billing";
+import {
   Elements,
   ExpressCheckoutElement,
   PaymentElement,
@@ -282,7 +287,32 @@ interface StripeEmbeddedCheckoutProps {
   onError: (message: string) => void;
 }
 
-export function StripeEmbeddedCheckout({
+function NativeBillingHandoffPanel() {
+  useEffect(() => {
+    void openBillingOnWebsite();
+  }, []);
+
+  return (
+    <div className="stripe-pay-handoff">
+      <p className="stripe-pay-handoff__copy">{NATIVE_BILLING_NOTE}</p>
+      <DashboardButton
+        className="stripe-pay__submit"
+        onClick={() => void openBillingOnWebsite()}
+      >
+        Continue on smoac.com
+      </DashboardButton>
+    </div>
+  );
+}
+
+export function StripeEmbeddedCheckout(props: StripeEmbeddedCheckoutProps) {
+  if (isNativeShell()) {
+    return <NativeBillingHandoffPanel />;
+  }
+  return <StripeEmbeddedCheckoutLive {...props} />;
+}
+
+function StripeEmbeddedCheckoutLive({
   clientSecret,
   productLabel,
   priceLabel,

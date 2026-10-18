@@ -183,6 +183,17 @@ export function BoostVisibilityModal({
       dailyCents: summary.dailyCents,
     });
     if (!result.ok) {
+      if (result.handoff) {
+        setCheckout({
+          clientSecret: "",
+          label: boostCampaignLabel(BOOST_CAMPAIGN_ALL),
+          priceLabel: summary.payLabel,
+          days: summary.days,
+        });
+        setStep("checkout");
+        setBusy(false);
+        return;
+      }
       setError(result.error);
       setBusy(false);
       return;

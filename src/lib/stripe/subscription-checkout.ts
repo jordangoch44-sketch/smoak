@@ -1,3 +1,4 @@
+import { nativeBillingHandoff } from "@/lib/native-billing";
 import type { SmoacStripeProductKey } from "@/lib/stripe/products";
 
 export type EmbeddedSubscriptionCheckout = {
@@ -16,8 +17,11 @@ export async function createEmbeddedSubscriptionCheckout(
   product: SmoacStripeProductKey
 ): Promise<
   | { ok: true; checkout: EmbeddedSubscriptionCheckout }
-  | { ok: false; error: string }
+  | { ok: false; error: string; handoff?: true }
 > {
+  const handoff = nativeBillingHandoff();
+  if (handoff) return handoff;
+
   try {
     const res = await fetch("/api/stripe/subscription-intent", {
       method: "POST",

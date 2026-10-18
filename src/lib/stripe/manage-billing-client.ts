@@ -1,3 +1,4 @@
+import { nativeBillingHandoff } from "@/lib/native-billing";
 import type { ManageBillingPayload } from "@/lib/stripe/manage-billing-types";
 
 export type ManageBillingResponse = ManageBillingPayload & {
@@ -39,8 +40,13 @@ export async function postManageBilling(
   body: Record<string, string>
 ): Promise<
   | { ok: true; billing?: ManageBillingPayload; clientSecret?: string }
-  | { ok: false; error: string }
+  | { ok: false; error: string; handoff?: true }
 > {
+  if (body.action === "setup-intent") {
+    const handoff = nativeBillingHandoff();
+    if (handoff) return handoff;
+  }
+
   try {
     const res = await fetch("/api/stripe/billing", {
       method: "POST",
