@@ -59,15 +59,19 @@
  */
 html.native-app {
   --mobile-bottom-nav-pill-height: 4rem;
+  --mobile-bottom-nav-safe-bottom: max(
+    env(safe-area-inset-bottom, 0px),
+    var(--native-safe-bottom, 0px)
+  );
   --mobile-bottom-nav-offset: calc(
-    var(--mobile-bottom-nav-pill-height) + env(safe-area-inset-bottom, 0px) + 0.85rem
+    var(--mobile-bottom-nav-pill-height) + var(--mobile-bottom-nav-safe-bottom) + 0.85rem
   );
 }
 
 html.native-app .mobile-bottom-nav {
   padding-inline: max(1rem, env(safe-area-inset-left, 0px))
     max(1rem, env(safe-area-inset-right, 0px));
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  padding-bottom: calc(var(--mobile-bottom-nav-safe-bottom) + 0.5rem);
 }
 
 html.native-app .mobile-bottom-nav__pill::before {

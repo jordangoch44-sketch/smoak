@@ -1824,6 +1824,11 @@ button.profile-hero__free-session:active {
   --profile-toolbar-top: calc(env(safe-area-inset-top, 0px) + 2.85rem);
 }
 
+html.native-app .profile-toolbar,
+html.native-app .profile-toolbar--in-sheet {
+  --profile-toolbar-top: calc(var(--site-header-total-height, 0px) + 0.65rem);
+}
+
 .profile-toolbar__close,
 .profile-toolbar__actions {
   pointer-events: auto;

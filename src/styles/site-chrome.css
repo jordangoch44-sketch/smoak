@@ -19,10 +19,14 @@
   );
 }
 
-/* iPhone app: bottom tabs replace the header. The page paints under the clock. */
+/* iPhone app: bottom tabs replace the header. The top inset is the clock,
+   including when the WebView reports env(safe-area-inset-top) as 0. */
 html.native-app {
   --site-navbar-height: 0px;
-  --site-header-total-height: env(safe-area-inset-top, 0px);
+  --site-header-total-height: max(
+    env(safe-area-inset-top, 0px),
+    var(--native-safe-top, 0px)
+  );
 }
 
 html.native-app #site-header {
@@ -35,12 +39,12 @@ html.native-app .app-shell {
 }
 
 html.native-app .dashboard-page {
-  padding-top: env(safe-area-inset-top, 0px);
+  padding-top: 0;
 }
 
 html.native-app .explore-page--map-shell {
-  height: 100dvh;
-  height: 100svh;
+  height: calc(100dvh - var(--mobile-bottom-nav-offset, 0px));
+  height: calc(100svh - var(--mobile-bottom-nav-offset, 0px));
 }
 
 /* ═══ Decorative layers NEVER receive pointer events ═══ */

@@ -44,6 +44,10 @@ export interface ClientWorkoutDay {
   cardio?: ClientWorkoutCardio;
   /** A planned day off. Cardio and a workout are not logged on this day. */
   rest?: boolean;
+  /** When the duration clock started. Own workouts: first exercise. Coach workouts: first checked set. */
+  startedAt?: string;
+  /** Set when the client finishes, so the chip stops on the total. */
+  endedAt?: string;
 }
 
 export interface ClientWorkoutLog {

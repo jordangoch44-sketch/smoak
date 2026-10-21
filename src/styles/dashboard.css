@@ -13430,3 +13430,16 @@ a.ig-profile-edit__row {
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     var(--smoac-color-glow-strong);
 }
+
+/* iPhone app has no site header. Keep the status-bar inset and drop the
+   header allowance the website content padding still uses. */
+html.native-app .dashboard-page--client .dashboard-page__content,
+html.native-app .dashboard-page--specialist .dashboard-page__content {
+  padding-top: calc(var(--site-header-total-height, 0px) + 1.5rem);
+}
+
+html.native-app
+  .dashboard-page--specialist
+  .dashboard-page__content:not(:has(> .dashboard-page__utility-bar)) {
+  padding-top: calc(var(--site-header-total-height, 0px) + 1.15rem);
+}

@@ -93,6 +93,7 @@ import {
 } from "@/lib/specialist-public-listing";
 import { getApprovedSpecialistProfileById } from "@/lib/approved-specialist-profiles-store";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
+import { inquiryThreadHref } from "@/lib/inquiry/inquiry-paths";
 import { trainerMatchesPublicKey } from "@/lib/trainer-profile-path";
 import { updatePassword } from "@/lib/auth/marketplace-auth";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -1590,10 +1591,7 @@ export function SpecialistDashboardProfilePreview({
           isPremium={isPremium}
           onUpgrade={onUpgrade}
           onOpenConversation={(conversationId) =>
-            router.push(
-              `${SPECIALIST_DASHBOARD_PATH}?tab=profile&c=${encodeURIComponent(conversationId)}`,
-              { scroll: false }
-            )
+            router.push(inquiryThreadHref("specialist", conversationId), { scroll: false })
           }
         />
       </div>

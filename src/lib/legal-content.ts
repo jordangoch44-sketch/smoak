@@ -64,6 +64,14 @@ export const PRIVACY_SECTIONS: LegalSection[] = [
     ],
   },
   {
+    title: "Apple Health",
+    paragraphs: [
+      "On the SMOAC iPhone app, you can choose to connect Apple Health. If you do, the app reads completed workouts and the active calories Apple recorded for those workouts, and shows them on your training calendar.",
+      "That information stays on your iPhone. SMOAC does not upload it to your account, share it with specialists, or use it for advertising. The workout journal still works if you never connect Apple Health.",
+      "You can turn this off in the Health app under Sharing → Apps → SMOAC. The SMOAC website cannot read Apple Health.",
+    ],
+  },
+  {
     title: "Payments",
     paragraphs: [
       "Client browsing and inquiries do not require a card. Session fees, if any, are arranged between you and the specialist outside SMOAC.",

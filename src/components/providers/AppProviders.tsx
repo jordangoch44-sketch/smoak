@@ -10,6 +10,8 @@ import { UserLocationProvider } from "@/contexts/UserLocationContext";
 import { InquiryAutoSendBridge } from "@/components/inquiry";
 import { PendingSaveResumeBridge } from "@/components/auth/PendingSaveResumeBridge";
 import { CoachingInviteClaimBridge } from "@/components/coaching/CoachingInviteClaimBridge";
+import { NativePushBridge } from "@/components/native/NativePushBridge";
+import { NativeWorkoutLiveBridge } from "@/components/native/NativeWorkoutLiveBridge";
 
 export function AppProviders({
   children,
@@ -29,6 +31,8 @@ export function AppProviders({
                   <InquiryAutoSendBridge />
                   <PendingSaveResumeBridge />
                   <CoachingInviteClaimBridge />
+                  <NativePushBridge />
+                  <NativeWorkoutLiveBridge />
                 </Suspense>
                 {children}
               </MobileBottomNavTransitionProvider>

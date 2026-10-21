@@ -17,6 +17,7 @@ import {
   sanitizeWorkoutExercises,
   sanitizeWorkoutTitle,
   clampGoalDaysPerWeek,
+  workoutClockFields,
 } from "@/lib/workouts/client-workout";
 import {
   fetchClientWorkoutLog,
@@ -122,16 +123,29 @@ function logsEqual(left: ClientWorkoutLog, right: ClientWorkoutLog): boolean {
   return true;
 }
 
-/** Account row wins on the same day. Days that exist only on this device are kept. */
+/**
+ * Account row wins on the same day. Days that exist only on this device are kept.
+ * A timer that is still running on this phone stays running. The account copy often
+ * does not have that clock yet, and replacing the day was taking the lock screen down
+ * while the duration chip kept counting.
+ */
 function mergeLogs(
   local: ClientWorkoutLog,
   remote: ClientWorkoutLog
 ): ClientWorkoutLog {
+  const days = { ...local.days, ...remote.days };
+  for (const dateKey of Object.keys(days)) {
+    const localDay = local.days[dateKey];
+    const day = days[dateKey];
+    if (!localDay?.startedAt || localDay.endedAt || !day) continue;
+    const { endedAt: _remoteEnd, ...running } = day;
+    days[dateKey] = { ...running, startedAt: localDay.startedAt };
+  }
   return withDeviceTimeZone(
     sanitizeClientWorkoutLog({
       goalDaysPerWeek: remote.goalDaysPerWeek,
       cardioGoalDaysPerWeek: remote.cardioGoalDaysPerWeek,
-      days: { ...local.days, ...remote.days },
+      days,
       bodyWeights: { ...local.bodyWeights, ...remote.bodyWeights },
       timeZone: remote.timeZone ?? local.timeZone,
     })
@@ -287,7 +301,8 @@ export function saveClientWorkoutDay(
   exercises: readonly ClientWorkoutExercise[],
   title = "",
   cardio?: ClientWorkoutCardio | null,
-  rest = false
+  rest = false,
+  clock?: { startedAt?: string | null; endedAt?: string | null } | null
 ): boolean {
   const nextExercises = rest ? [] : sanitizeWorkoutExercises(exercises);
   const nextTitle = rest ? "" : sanitizeWorkoutTitle(title);
@@ -295,6 +310,7 @@ export function saveClientWorkoutDay(
   const nextRest = rest && nextExercises.length === 0 && !nextTitle && !nextCardio;
   if (!nextRest && nextExercises.length === 0 && !nextCardio) return false;
   const current = getClientWorkoutLog(userId);
+  const previous = current.days[dateKey];
   persistLog(userId, {
     ...current,
     days: {
@@ -305,6 +321,7 @@ export function saveClientWorkoutDay(
         exercises: nextExercises,
         ...(nextCardio ? { cardio: nextCardio } : {}),
         ...(nextRest ? { rest: true } : {}),
+        ...(nextRest ? {} : workoutClockFields(previous, clock)),
       },
     },
   });

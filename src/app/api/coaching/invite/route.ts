@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { mapCoachingRelationship } from "@/lib/coaching/coach-workout";
 import { sendRosterInviteEmail } from "@/lib/email/coaching-email-service";
+import { sendRosterInvitePush } from "@/lib/push/coaching-push";
 import type { CoachingRelationshipRow } from "@/types/coaching";
 
 export const runtime = "nodejs";
@@ -56,6 +57,11 @@ export async function POST(request: Request) {
         specialistName: relationship.specialistName,
       });
     }
+    await sendRosterInvitePush({
+      clientUserId: relationship.clientUserId,
+      specialistName: relationship.specialistName,
+      relationshipId: relationship.id,
+    });
   }
 
   return NextResponse.json({ ok: true, data: relationship });

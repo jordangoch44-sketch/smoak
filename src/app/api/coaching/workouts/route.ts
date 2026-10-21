@@ -8,6 +8,7 @@ import {
   sanitizeCoachNote,
 } from "@/lib/coaching/coach-workout";
 import { sendCoachWorkoutEmail } from "@/lib/email/coaching-email-service";
+import { sendCoachWorkoutPush } from "@/lib/push/coaching-push";
 import {
   createWorkoutExerciseId,
   isWorkoutDateKey,
@@ -116,6 +117,11 @@ export async function POST(request: Request) {
         exerciseCount: workout.exercises.length,
       });
     }
+    await sendCoachWorkoutPush({
+      clientUserId: relationship.clientUserId,
+      specialistName: relationship.specialistName,
+      workoutId: workout.id,
+    });
   }
 
   return NextResponse.json({ ok: true, data: workout });

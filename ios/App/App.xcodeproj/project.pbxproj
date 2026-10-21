@@ -17,6 +17,10 @@
 		7A91C4E22FEA11000072D4E8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 7A91C4E12FEA11000072D4E8 /* PrivacyInfo.xcprivacy */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9582B6822FE993A50072D4E8 /* SceneDelegate.swift */; };
+		WLA1A0062FEA3300A1B2C306 /* WorkoutLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = WLA1A0022FEA3300A1B2C302 /* WorkoutLiveActivity.swift */; };
+		WLA1B0012FEA3300A1B2C401 /* WorkoutLiveAttributes in Frameworks */ = {isa = PBXBuildFile; productRef = WLA1B0022FEA3300A1B2C402 /* WorkoutLiveAttributes */; };
+		WLA1C0012FEA4400A1B2C501 /* thumbs in Resources */ = {isa = PBXBuildFile; fileRef = WLA1C0022FEA4400A1B2C502 /* thumbs */; };
+		WLA1A0072FEA3300A1B2C307 /* WorkoutLiveActivity.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = WLA1A0042FEA3300A1B2C304 /* WorkoutLiveActivity.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,7 +35,12 @@
 		7A91C4E12FEA11000072D4E8 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
 		9582B6822FE993A50072D4E8 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		9F3A1C8E2FEA22000072D4E1 /* App.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		958DCC722DB07C7200EA8C5F /* debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = debug.xcconfig; path = ../debug.xcconfig; sourceTree = SOURCE_ROOT; };
+		WLA1A0022FEA3300A1B2C302 /* WorkoutLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutLiveActivity.swift; sourceTree = "<group>"; };
+		WLA1A0032FEA3300A1B2C303 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		WLA1A0042FEA3300A1B2C304 /* WorkoutLiveActivity.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WorkoutLiveActivity.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		WLA1C0022FEA4400A1B2C502 /* thumbs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = thumbs; path = ../../public/exercises/thumbs; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -43,6 +52,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		WLA1A00A2FEA3300A1B2C30A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				WLA1B0012FEA3300A1B2C401 /* WorkoutLiveAttributes in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -51,6 +68,7 @@
 			children = (
 				958DCC722DB07C7200EA8C5F /* debug.xcconfig */,
 				504EC3061FED79650016851F /* App */,
+				WLA1A00F2FEA3300A1B2C30F /* WorkoutLiveActivity */,
 				504EC3051FED79650016851F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -59,6 +77,7 @@
 			isa = PBXGroup;
 			children = (
 				504EC3041FED79650016851F /* App.app */,
+				WLA1A0042FEA3300A1B2C304 /* WorkoutLiveActivity.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -67,6 +86,7 @@
 			isa = PBXGroup;
 			children = (
 				9582B6822FE993A50072D4E8 /* SceneDelegate.swift */,
+				9F3A1C8E2FEA22000072D4E1 /* App.entitlements */,
 				50379B222058CBB4000EE86E /* capacitor.config.json */,
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -80,6 +100,16 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		WLA1A00F2FEA3300A1B2C30F /* WorkoutLiveActivity */ = {
+			isa = PBXGroup;
+			children = (
+				WLA1A0022FEA3300A1B2C302 /* WorkoutLiveActivity.swift */,
+				WLA1A0032FEA3300A1B2C303 /* Info.plist */,
+				WLA1C0022FEA4400A1B2C502 /* thumbs */,
+			);
+			path = WorkoutLiveActivity;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -90,10 +120,12 @@
 				504EC3001FED79650016851F /* Sources */,
 				504EC3011FED79650016851F /* Frameworks */,
 				504EC3021FED79650016851F /* Resources */,
+				WLA1A00C2FEA3300A1B2C30C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				WLA1A00E2FEA3300A1B2C30E /* PBXTargetDependency */,
 			);
 			name = App;
 			packageProductDependencies = (
@@ -102,6 +134,26 @@
 			productName = App;
 			productReference = 504EC3041FED79650016851F /* App.app */;
 			productType = "com.apple.product-type.application";
+		};
+		WLA1A0082FEA3300A1B2C308 /* WorkoutLiveActivity */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = WLA1A0122FEA3300A1B2C312 /* Build configuration list for PBXNativeTarget "WorkoutLiveActivity" */;
+			buildPhases = (
+				WLA1A0092FEA3300A1B2C309 /* Sources */,
+				WLA1A00A2FEA3300A1B2C30A /* Frameworks */,
+				WLA1A00B2FEA3300A1B2C30B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WorkoutLiveActivity;
+			packageProductDependencies = (
+				WLA1B0022FEA3300A1B2C402 /* WorkoutLiveAttributes */,
+			);
+			productName = WorkoutLiveActivity;
+			productReference = WLA1A0042FEA3300A1B2C304 /* WorkoutLiveActivity.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -117,6 +169,10 @@
 						LastSwiftMigration = 1100;
 						ProvisioningStyle = Automatic;
 					};
+					WLA1A0082FEA3300A1B2C308 = {
+						CreatedOnToolsVersion = 16.0;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = 504EC2FF1FED79650016851F /* Build configuration list for PBXProject "App" */;
@@ -130,12 +186,14 @@
 			mainGroup = 504EC2FB1FED79650016851F;
 			packageReferences = (
 				D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */,
+				WLA1B0032FEA3300A1B2C403 /* XCLocalSwiftPackageReference "capacitor-workout-live" */,
 			);
 			productRefGroup = 504EC3051FED79650016851F /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				504EC3031FED79650016851F /* App */,
+				WLA1A0082FEA3300A1B2C308 /* WorkoutLiveActivity */,
 			);
 		};
 /* End PBXProject section */
@@ -155,6 +213,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		WLA1A00B2FEA3300A1B2C30B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				WLA1C0012FEA4400A1B2C501 /* thumbs in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -164,6 +230,14 @@
 			files = (
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				9582B6832FE993A70072D4E8 /* SceneDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		WLA1A0092FEA3300A1B2C309 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				WLA1A0062FEA3300A1B2C306 /* WorkoutLiveActivity.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -187,6 +261,38 @@
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
+
+/* Begin PBXContainerItemProxy section */
+		WLA1A00D2FEA3300A1B2C30D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = WLA1A0082FEA3300A1B2C308;
+			remoteInfo = WorkoutLiveActivity;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		WLA1A00C2FEA3300A1B2C30C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				WLA1A0072FEA3300A1B2C307 /* WorkoutLiveActivity.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		WLA1A00E2FEA3300A1B2C30E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = WLA1A0082FEA3300A1B2C308 /* WorkoutLiveActivity */;
+			targetProxy = WLA1A00D2FEA3300A1B2C30D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		504EC3141FED79650016851F /* Debug */ = {
@@ -302,7 +408,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 958DCC722DB07C7200EA8C5F /* debug.xcconfig */;
 			buildSettings = {
+				APS_ENVIRONMENT = development;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2TKGS8R8MJ;
@@ -325,7 +433,9 @@
 		504EC3181FED79650016851F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				APS_ENVIRONMENT = production;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 2TKGS8R8MJ;
@@ -341,6 +451,58 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		WLA1A0102FEA3300A1B2C310 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = WorkoutLiveActivity/WorkoutLiveActivity.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2TKGS8R8MJ;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WorkoutLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.smoac.app.WorkoutLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		WLA1A0112FEA3300A1B2C311 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = WorkoutLiveActivity/WorkoutLiveActivity.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 2TKGS8R8MJ;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = WorkoutLiveActivity/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.smoac.app.WorkoutLiveActivity;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
 		};
@@ -365,12 +527,25 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		WLA1A0122FEA3300A1B2C312 /* Build configuration list for PBXNativeTarget "WorkoutLiveActivity" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				WLA1A0102FEA3300A1B2C310 /* Debug */,
+				WLA1A0112FEA3300A1B2C311 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
 		D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "CapApp-SPM";
+		};
+		WLA1B0032FEA3300A1B2C403 /* XCLocalSwiftPackageReference "capacitor-workout-live" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "../../native/capacitor-workout-live";
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -379,6 +554,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D4C12C0A2AAA248700AAC8A2 /* XCLocalSwiftPackageReference "CapApp-SPM" */;
 			productName = "CapApp-SPM";
+		};
+		WLA1B0022FEA3300A1B2C402 /* WorkoutLiveAttributes */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = WLA1B0032FEA3300A1B2C403 /* XCLocalSwiftPackageReference "capacitor-workout-live" */;
+			productName = WorkoutLiveAttributes;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

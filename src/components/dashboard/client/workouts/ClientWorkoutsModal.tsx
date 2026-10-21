@@ -193,10 +193,11 @@ export function ClientWorkoutsModal({
     exercises: ClientWorkoutExercise[],
     title: string,
     cardio?: ClientWorkoutCardio,
-    rest = false
+    rest = false,
+    clock?: { startedAt?: string | null; endedAt?: string | null } | null
   ) {
     if (!selectedDateKey) return false;
-    return saveDay(selectedDateKey, exercises, title, cardio, rest);
+    return saveDay(selectedDateKey, exercises, title, cardio, rest, clock);
   }
 
   const selectedCoachWorkouts = selectedDateKey

@@ -345,7 +345,7 @@
 
 html.native-app .saved-page-auth-stage {
   min-height: 100svh;
-  padding-top: max(1rem, calc(env(safe-area-inset-top, 0px) + 0.5rem));
+  padding-top: calc(var(--site-header-total-height, 0px) + 0.5rem);
   padding-bottom: calc(var(--mobile-bottom-nav-offset, 5.5rem) + 0.5rem);
 }
 

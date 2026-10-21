@@ -22,13 +22,14 @@ Wellness marketplace (smoac.com). Clients discover independent specialists and s
 | Traffic analytics | Random `smoac_visitor_key`, path, referrer, UTM | First-party `/api/analytics/*` then DB | Internal admin |
 | Marketing email (admin) | Recipient email, open/click/unsubscribe | Admin email tables + `/email/unsubscribe` | Internal admin |
 | Maps / address | ZIP, place search, map view | Google Places (server), Apple Maps or OpenFreeMap (browser) | Those vendors as needed to render the feature |
+| Apple Health (iPhone app only) | Completed workouts, active calories, duration, type, time | Read on the device for the open calendar. Not uploaded. | The person using that iPhone. Specialists do not see it. The website cannot read it. |
 | Google review connect | Place details the specialist chooses to attach | Google Places API (server) | Public profile if connected |
 | Internal admin copilot | Operational prompts | OpenAI when `OPENAI_API_KEY` is set | Internal only — confirm whether any end-user PII is sent |
 
 ## Browser storage (not just cookies)
 
 - Auth session cookies (Supabase)
-- `localStorage`: visitor key, location/ZIP, recent searches, pending inquiry, save/inquiry flags, some dashboard drafts
+- `localStorage`: visitor key, location/ZIP, recent searches, pending inquiry, save/inquiry flags, some dashboard drafts, and (on the iPhone app) whether Apple Health was connected or dismissed. Apple Health workout samples are not written to storage.
 - No third-party ad pixel in the app as of this inventory
 - No cookie-consent banner
 

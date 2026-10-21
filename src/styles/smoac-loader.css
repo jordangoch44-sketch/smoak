@@ -28,9 +28,7 @@
   width: var(--smoac-loader-size);
   height: calc(var(--smoac-loader-size) * 0.841237);
   overflow: visible;
-  filter:
-    drop-shadow(0 0 0.6px rgba(16, 8, 28, 0.85))
-    drop-shadow(0 0 3px rgba(168, 85, 247, 0.32));
+  filter: drop-shadow(0 0 0.6px rgba(16, 8, 28, 0.85));
 }
 
 .smoac-loader__cycle {
@@ -48,6 +46,10 @@
   stroke: #ffffff;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.smoac-loader__draw {
+  filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.32));
 }
 
 .smoac-loader__draw--upper {
@@ -228,27 +230,27 @@
   58% {
     opacity: 0;
     transform: scale(0.62);
-    filter: drop-shadow(0 0 0 rgba(168, 85, 247, 0));
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
   }
   70% {
     opacity: 1;
     transform: scale(1.12);
-    filter: drop-shadow(0 0 2px rgba(233, 213, 255, 0.95));
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
   }
   78% {
     opacity: 0.92;
     transform: scale(0.98);
-    filter: drop-shadow(0 0 1.5px rgba(168, 85, 247, 0.75));
+    filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.55));
   }
   86% {
     opacity: 1;
     transform: scale(1);
-    filter: drop-shadow(0 0 1px rgba(168, 85, 247, 0.45));
+    filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
   }
   100% {
     opacity: 0;
     transform: scale(0.9);
-    filter: drop-shadow(0 0 0 rgba(168, 85, 247, 0));
+    filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
   }
 }
 

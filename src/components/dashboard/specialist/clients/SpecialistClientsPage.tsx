@@ -16,6 +16,7 @@ import {
 import { useCoachingRoster } from "@/hooks/useCoachingRoster";
 import { useRosterClientAvatars } from "@/hooks/useRosterClientAvatars";
 import { useSpecialistInquiryContacts } from "@/hooks/useSpecialistInquiryContacts";
+import { forgetHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
 import {
   summarizeRosterClient,
   type RosterClientState,
@@ -132,6 +133,7 @@ export function SpecialistClientsPage({
     loaded,
     roster,
     workoutsFor,
+    openThread,
     invite,
     createInviteLink,
     sendWorkout,
@@ -148,6 +150,8 @@ export function SpecialistClientsPage({
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const [requestBusyId, setRequestBusyId] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<{ id: string; message: string } | null>(null);
+  const [messageBusyId, setMessageBusyId] = useState<string | null>(null);
+  const [messageError, setMessageError] = useState<{ id: string; message: string } | null>(null);
   const closeSheet = useCallback(() => setSheet(null), []);
 
   const profileAvatars = useRosterClientAvatars(specialistId);
@@ -207,6 +211,21 @@ export function SpecialistClientsPage({
     if (!window.confirm(question)) return;
     const ok = await removeClient(relationship.id);
     if (ok) setSheet(null);
+  }
+
+  async function handleMessage(relationship: CoachingRelationship) {
+    if (messageBusyId) return;
+    setMessageBusyId(relationship.id);
+    setMessageError(null);
+    const result = await openThread(relationship.id);
+    setMessageBusyId(null);
+    if (!result.ok) {
+      setMessageError({ id: relationship.id, message: result.message });
+      return;
+    }
+    forgetHiddenInquiryIds(specialistId, [result.data.conversationId]);
+    window.dispatchEvent(new Event("smoac:inquiry-updated"));
+    onOpenConversation(result.data.conversationId);
   }
 
   async function handleRequest(relationship: CoachingRelationship, accept: boolean) {
@@ -322,16 +341,17 @@ export function SpecialistClientsPage({
           <ChevronRightIcon className="roster-card__chevron" />
         </FastActivateButton>
 
+        {messageError?.id === relationship.id ? (
+          <p className="coaching-error">{messageError.message}</p>
+        ) : null}
         <div className="roster-card__actions">
           <FastActivateButton
             className="roster-card__action"
-            disabled={!relationship.conversationId}
-            onActivate={() => {
-              if (relationship.conversationId) onOpenConversation(relationship.conversationId);
-            }}
+            disabled={messageBusyId === relationship.id}
+            onActivate={() => void handleMessage(relationship)}
           >
             <MessageBubbleIcon className="roster-card__action-icon" />
-            Message
+            {messageBusyId === relationship.id ? "Opening…" : "Message"}
           </FastActivateButton>
           {invited ? (
             <FastActivateButton

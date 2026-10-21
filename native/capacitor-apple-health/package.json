@@ -1,0 +1,11 @@
+{
+  "name": "capacitor-apple-health",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reads completed Apple Health workouts for the SMOAC iPhone calendar.",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  }
+}

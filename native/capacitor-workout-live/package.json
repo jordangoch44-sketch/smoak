@@ -1,0 +1,11 @@
+{
+  "name": "capacitor-workout-live",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shows the in-progress SMOAC workout on the iPhone lock screen.",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  }
+}

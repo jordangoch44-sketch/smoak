@@ -114,6 +114,8 @@ export function InquiryInboxPanel({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const sendingRef = useRef(false);
   const previewRequestId = useRef(0);
+  /** Conversation id last seen in the list. A deep link stays open until it was listed and then removed. */
+  const listedOpenIdRef = useRef<string | null>(null);
 
   const swipeActions =
     viewer === "specialist" && Boolean(onHideConversation) && !selecting;
@@ -244,12 +246,20 @@ export function InquiryInboxPanel({
   }
 
   useEffect(() => {
-    if (openId && !rows.some((row) => row.id === openId)) {
-      setOpenId(null);
-      setThread(null);
-      setError(null);
-      onCloseThread?.();
+    if (!openId) {
+      listedOpenIdRef.current = null;
+      return;
     }
+    if (rows.some((row) => row.id === openId)) {
+      listedOpenIdRef.current = openId;
+      return;
+    }
+    if (listedOpenIdRef.current !== openId) return;
+    listedOpenIdRef.current = null;
+    setOpenId(null);
+    setThread(null);
+    setError(null);
+    onCloseThread?.();
   }, [openId, onCloseThread, rows]);
 
   useEffect(() => {

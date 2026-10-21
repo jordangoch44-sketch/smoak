@@ -12,6 +12,7 @@ import {
   readCoachingInviteToken,
 } from "@/lib/coaching/invite-token";
 import { sendRosterJoinedEmail, sendRosterWelcomeEmail } from "@/lib/email/coaching-email-service";
+import { sendRosterJoinedPush } from "@/lib/push/coaching-push";
 import type { CoachingRelationship, CoachingRelationshipRow } from "@/types/coaching";
 
 const CLAIM_COPY = {
@@ -190,6 +191,15 @@ async function sendAcceptedEmails(relationship: CoachingRelationship, clientEmai
     );
   }
   const service = createSupabaseServiceClient();
+  if (relationship.specialistUserId) {
+    sends.push(
+      sendRosterJoinedPush({
+        specialistUserId: relationship.specialistUserId,
+        clientFirstName: relationship.clientFirstName,
+        relationshipId: relationship.id,
+      })
+    );
+  }
   if (service && relationship.specialistUserId) {
     const { data } = await service.auth.admin.getUserById(relationship.specialistUserId);
     const to = data.user?.email?.trim();

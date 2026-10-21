@@ -533,9 +533,8 @@ body:has(.profile-hub) .site-footer__glow {
   }
 }
 
-/* App draws under the clock. A fixed inset clears the island even when safe-area is 0. */
 html.native-app .profile-hub {
-  padding-top: 6.5rem;
+  padding-top: calc(var(--site-header-total-height, 0px) + 0.85rem);
 }
 
 @media (prefers-reduced-motion: reduce) {

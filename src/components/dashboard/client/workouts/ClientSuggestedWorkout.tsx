@@ -81,11 +81,14 @@ export function ClientSuggestedWorkout({
       id: createWorkoutExerciseId(),
       ...exercise,
     }));
+    const hadNamed = (existing?.exercises ?? []).some((exercise) => exercise.name.trim());
     const saved = saveDay(
       dateKey,
       [...(existing?.exercises ?? []), ...added],
       existing?.title || suggestedFocusLabel(focus),
-      existing?.cardio ?? null
+      existing?.cardio ?? null,
+      false,
+      hadNamed ? undefined : { startedAt: new Date().toISOString() }
     );
     if (saved) setOpenDateKey(dateKey);
   }

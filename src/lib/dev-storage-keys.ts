@@ -40,6 +40,9 @@ export const PROFILE_WELCOME_LOGIN_COUNT_KEY = "smoac_profile_welcome_logins";
 export { RECENT_SEARCHES_STORAGE_KEY } from "@/lib/recent-searches-storage";
 /** Per-client workout calendar (local until synced) */
 export const CLIENT_WORKOUTS_STORAGE_PREFIX = "smoac_client_workouts_";
+/** iPhone-only choice to read Apple Health. The workouts themselves are not stored. */
+export const APPLE_HEALTH_CONNECTED_KEY = "smoac_apple_health_connected";
+export const APPLE_HEALTH_DISMISS_KEY = "smoac_apple_health_dismiss_until";
 
 /** @deprecated DEV migration source */
 export const LEGACY_AUTH_STORAGE_KEY = "smoac-auth-session";

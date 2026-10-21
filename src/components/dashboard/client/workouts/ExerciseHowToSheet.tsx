@@ -7,12 +7,8 @@ import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon } from "@/components/ui/icons";
 import { exerciseLabel, storedExerciseName } from "@/data/exercise-display";
 import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
-import {
-  bundledExerciseMedia,
-  cachedExerciseGuide,
-  loadExerciseGuide,
-  type ExerciseGuide,
-} from "@/lib/workouts/exercise-media-client";
+import { exerciseSteps } from "@/lib/workouts/exercise-steps";
+import { bundledExerciseMedia, loadExerciseGuide } from "@/lib/workouts/exercise-media-client";
 
 /** Full-screen clip and numbered steps for one exercise. */
 export function ExerciseHowToSheet({
@@ -34,12 +30,8 @@ export function ExerciseHowToSheet({
   const label = exerciseLabel(name);
   const library = isKnownExercise(lookupName);
   const bundled = library ? bundledExerciseMedia(lookupName) : null;
-  const [guide, setGuide] = useState<ExerciseGuide | null>(() => {
-    if (bundled) {
-      return { gifUrl: bundled.gifUrl, overview: null, instructions: [...bundled.instructions] };
-    }
-    return library ? cachedExerciseGuide(lookupName) : null;
-  });
+  const steps = exerciseSteps(lookupName);
+  const [gifUrl, setGifUrl] = useState(bundled?.gifUrl ?? "");
   const titleId = "exercise-howto-title";
 
   useEffect(() => {
@@ -48,22 +40,15 @@ export function ExerciseHowToSheet({
   }, []);
 
   useEffect(() => {
-    if (!library) {
-      setGuide(null);
+    if (bundled?.gifUrl) {
+      setGifUrl(bundled.gifUrl);
       return;
     }
-    if (bundled?.instructions.length) {
-      setGuide({ gifUrl: bundled.gifUrl, overview: null, instructions: [...bundled.instructions] });
-      return;
-    }
-    const cached = cachedExerciseGuide(lookupName);
-    if (cached) {
-      setGuide(cached);
-      return;
-    }
+    setGifUrl("");
+    if (!library) return;
     let cancelled = false;
     void loadExerciseGuide(lookupName).then((next) => {
-      if (!cancelled) setGuide(next);
+      if (!cancelled && next.gifUrl) setGifUrl(next.gifUrl);
     });
     return () => {
       cancelled = true;
@@ -80,8 +65,6 @@ export function ExerciseHowToSheet({
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [onClose]);
-
-  const steps = guide?.instructions ?? [];
 
   return createPortal(
     <div className="exercise-howto" role="dialog" aria-modal="true" aria-labelledby={titleId}>
@@ -100,7 +83,7 @@ export function ExerciseHowToSheet({
           <ExerciseAvatar
             name={lookupName}
             imageUrl={imageUrl}
-            gifUrl={guide?.gifUrl || undefined}
+            gifUrl={gifUrl || undefined}
             logoWhenEmpty={logoWhenEmpty}
             animated
             className="exercise-howto__media"
@@ -109,17 +92,11 @@ export function ExerciseHowToSheet({
 
         <div className="exercise-howto__body">
           <h3 className="exercise-howto__name">{label}</h3>
-          {library && guide ? (
-            steps.length > 0 ? (
-              <ol className="exercise-howto__steps">
-                {steps.map((step, index) => (
-                  <li key={`${index}-${step}`}>{step}</li>
-                ))}
-              </ol>
-            ) : (
-              <p className="exercise-howto__empty">No steps for this exercise yet.</p>
-            )
-          ) : null}
+          <ol className="exercise-howto__steps">
+            {steps.map((step, index) => (
+              <li key={`${index}-${step}`}>{step}</li>
+            ))}
+          </ol>
           {actionLabel && onAction ? (
             <FastActivateButton className="exercise-howto__add" onActivate={onAction}>
               {actionLabel}

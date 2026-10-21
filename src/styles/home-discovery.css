@@ -216,13 +216,14 @@ html.native-app .home-native-zip {
   justify-content: flex-end;
   position: absolute;
   z-index: 4;
-  top: calc(env(safe-area-inset-top, 0px) + 0.2rem);
+  top: calc(var(--site-header-total-height, 0px) + 0.35rem);
   right: 1rem;
   pointer-events: auto;
 }
 
 html.native-app .home-page--discovery > .home-hero.home-hero--discovery {
-  padding-top: calc(env(safe-area-inset-top, 0px) + clamp(2.35rem, 7.5vw, 4rem));
+  /* Clear the clock, then the 2.75rem location control, then a gap. */
+  padding-top: calc(var(--site-header-total-height, 0px) + 0.35rem + 2.75rem + 0.85rem);
 }
 
 .home-page--discovery .home-hero--discovery {

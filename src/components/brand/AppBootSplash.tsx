@@ -8,6 +8,11 @@ import {
   SMOAC_LOADER_LOWER_LINE,
   SMOAC_LOADER_LOWER_OUTLINE,
   SMOAC_LOADER_STAR,
+  SMOAC_LOADER_STAR_HEIGHT,
+  SMOAC_LOADER_STAR_SRC,
+  SMOAC_LOADER_STAR_WIDTH,
+  SMOAC_LOADER_STAR_X,
+  SMOAC_LOADER_STAR_Y,
   SMOAC_LOADER_STROKE_WIDTH,
   SMOAC_LOADER_UPPER_LENGTH,
   SMOAC_LOADER_UPPER_LINE,
@@ -48,11 +53,9 @@ export function AppBootSplash() {
             <clipPath id="app-boot-lower">
               <path d={SMOAC_LOADER_LOWER_OUTLINE} />
             </clipPath>
-            <linearGradient id="app-boot-star" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#f5f3ff" />
-              <stop offset="42%" stopColor="#c4b5fd" />
-              <stop offset="100%" stopColor="#a855f7" />
-            </linearGradient>
+            <clipPath id="app-boot-star">
+              <path d={SMOAC_LOADER_STAR} />
+            </clipPath>
           </defs>
           <g className="smoac-loader__cycle">
             <path className="smoac-loader__ghost" d={SMOAC_LOADER_UPPER_OUTLINE} />
@@ -86,7 +89,14 @@ export function AppBootSplash() {
               />
             </g>
             <g className="smoac-loader__star">
-              <path d={SMOAC_LOADER_STAR} fill="url(#app-boot-star)" />
+              <image
+                href={SMOAC_LOADER_STAR_SRC}
+                x={SMOAC_LOADER_STAR_X}
+                y={SMOAC_LOADER_STAR_Y}
+                width={SMOAC_LOADER_STAR_WIDTH}
+                height={SMOAC_LOADER_STAR_HEIGHT}
+                clipPath="url(#app-boot-star)"
+              />
             </g>
           </g>
         </svg>

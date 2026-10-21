@@ -1,6 +1,3 @@
-/** Status-bar height when the iPhone shell does not report a safe-area inset. */
-const NATIVE_STATUS_FALLBACK_PX = 54;
-
 let cachedInset: number | null = null;
 
 export function isNativeAppDocument(): boolean {
@@ -11,8 +8,10 @@ export function isNativeAppDocument(): boolean {
 }
 
 /**
- * Top inset for screens that pin under the site header.
- * In the iPhone app that header is hidden, so the pin must clear the clock.
+ * Top inset for screens that pin under the status bar.
+ * Uses the clock inset published by the iPhone shell, or the WebView inset
+ * when that is the larger value. Does not cache 0 — the shell may publish
+ * the inset after the first read.
  */
 export function nativeStatusBarInset(): number {
   if (!isNativeAppDocument()) return 0;
@@ -20,11 +19,11 @@ export function nativeStatusBarInset(): number {
 
   const probe = document.createElement("div");
   probe.style.cssText =
-    "position:fixed;visibility:hidden;pointer-events:none;padding-top:env(safe-area-inset-top,0px)";
+    "position:fixed;visibility:hidden;pointer-events:none;padding-top:max(env(safe-area-inset-top,0px),var(--native-safe-top,0px))";
   document.body.appendChild(probe);
   const measured = Number.parseFloat(getComputedStyle(probe).paddingTop) || 0;
   probe.remove();
 
-  cachedInset = Math.max(measured, NATIVE_STATUS_FALLBACK_PX);
-  return cachedInset;
+  if (measured > 0) cachedInset = measured;
+  return measured;
 }

@@ -103,6 +103,14 @@ export function useClientCoaching(userId: string | null) {
       if (!userId || !supabase) return false;
       const result = await updateCoachWorkoutProgress(supabase, workoutId, status, clientLog);
       if (!result.ok) return false;
+      if (status === "completed" && result.data.status === "completed") {
+        void fetch("/api/coaching/workouts/finished", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workoutId }),
+        });
+      }
       patchCoaching("client", userId, (current) => ({
         ...current,
         workouts: current.workouts.some((item) => item.id === result.data.id)

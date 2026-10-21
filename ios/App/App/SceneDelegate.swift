@@ -30,15 +30,30 @@ final class SmoacGeolocationUIDelegate: NSObject, WKUIDelegate {
 final class SmoacBridgeViewController: CAPBridgeViewController {
     private let geolocationDelegate = SmoacGeolocationUIDelegate()
     private var didInstallGeolocation = false
+    private var loadingObserver: NSKeyValueObservation?
+    private var appliedSafeTop: CGFloat = -1
+    private var appliedSafeBottom: CGFloat = -1
 
     override func capacitorDidLoad() {
         super.capacitorDidLoad()
         installGeolocationPermission()
+        observePageLoads()
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         installGeolocationPermission()
+        publishSafeAreaInsets(force: true)
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        publishSafeAreaInsets(force: false)
+    }
+
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        publishSafeAreaInsets(force: true)
     }
 
     private func installGeolocationPermission() {
@@ -46,6 +61,48 @@ final class SmoacBridgeViewController: CAPBridgeViewController {
         geolocationDelegate.forward = webView.uiDelegate
         webView.uiDelegate = geolocationDelegate
         didInstallGeolocation = true
+    }
+
+    /// WKWebView often reports `env(safe-area-inset-*)` as 0. Publish the
+    /// view's real insets so app-only CSS can clear the clock and home indicator.
+    private func observePageLoads() {
+        guard let webView, loadingObserver == nil else { return }
+        loadingObserver = webView.observe(\.isLoading, options: [.new]) { [weak self] webView, _ in
+            guard webView.isLoading == false else { return }
+            DispatchQueue.main.async {
+                self?.publishSafeAreaInsets(force: true)
+            }
+        }
+    }
+
+    private func publishSafeAreaInsets(force: Bool) {
+        guard let webView else { return }
+        let top = view.safeAreaInsets.top
+        let bottom = view.safeAreaInsets.bottom
+        if !force, top == appliedSafeTop, bottom == appliedSafeBottom { return }
+
+        let topPx = String(format: "%.2fpx", top)
+        let bottomPx = String(format: "%.2fpx", bottom)
+        #if DEBUG
+        let apnsEnvironment = "sandbox"
+        #else
+        let apnsEnvironment = "production"
+        #endif
+        let js = """
+        document.documentElement.dataset.apnsEnvironment='\(apnsEnvironment)';
+        document.documentElement.style.setProperty('--native-safe-top','\(topPx)');
+        document.documentElement.style.setProperty('--native-safe-bottom','\(bottomPx)');
+        """
+        webView.evaluateJavaScript(js) { [weak self] _, error in
+            guard error == nil else { return }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                if self.view.safeAreaInsets.top == top, self.view.safeAreaInsets.bottom == bottom {
+                    self.appliedSafeTop = top
+                    self.appliedSafeBottom = bottom
+                }
+            }
+        }
     }
 }
 

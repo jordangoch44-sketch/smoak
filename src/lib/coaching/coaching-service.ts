@@ -300,6 +300,17 @@ export async function requestRosterInvite(
   );
 }
 
+/** Open this client's text thread, creating one when they have never messaged. */
+export async function requestOpenRosterThread(
+  relationshipId: string
+): Promise<CoachingResult<{ conversationId: string }>> {
+  return postJson<{ conversationId: string }>(
+    "/api/coaching/message",
+    { relationshipId },
+    "Could not open the conversation."
+  );
+}
+
 export interface SpecialistConnectMatch {
   id: string;
   slug: string;

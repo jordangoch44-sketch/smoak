@@ -374,18 +374,25 @@ export async function persistInquiryReply(
     };
   }
 
-  const conversationPatch: Record<string, string> = {
+  const conversationPatch: Record<string, string | null> = {
     last_message_at: now,
     updated_at: now,
   };
+  if (input.senderRole === "specialist") {
+    conversationPatch.client_hidden_at = null;
+  }
   if (input.senderRole === "specialist" && !row.specialist_user_id) {
     conversationPatch.specialist_user_id = input.senderUserId;
   }
 
-  await supabase
+  const updated = await supabase
     .from("inquiry_conversations")
     .update(conversationPatch)
     .eq("id", row.id);
+  if (updated.error && /client_hidden_at/i.test(updated.error.message)) {
+    const { client_hidden_at: _omit, ...withoutHide } = conversationPatch;
+    await supabase.from("inquiry_conversations").update(withoutHide).eq("id", row.id);
+  }
 
   let emailMode: "resend" | "console" = "console";
   if (input.senderRole === "client") {

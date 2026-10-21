@@ -103,7 +103,7 @@ body:has(.login-page) main {
 html.native-app .login-page:not(.login-page--wizard) {
   box-sizing: border-box;
   min-height: 100svh;
-  padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 0.75rem));
+  padding-top: calc(var(--site-header-total-height, 0px) + 0.75rem);
   padding-bottom: calc(var(--mobile-bottom-nav-offset, 0px) + 1rem);
 }
 

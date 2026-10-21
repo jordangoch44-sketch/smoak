@@ -392,6 +392,153 @@ export function cloneWorkoutExercises(
   });
 }
 
+export interface WorkoutClock {
+  startedAt?: string | null;
+  endedAt?: string | null;
+}
+
+export function sanitizeWorkoutInstant(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) return undefined;
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return undefined;
+  return new Date(time).toISOString();
+}
+
+/** Keep a start that already happened. Otherwise start on the first exercise, or the first checked set for a coach workout. */
+export function nextWorkoutStartedAt(input: {
+  fromCoach: boolean;
+  send: boolean;
+  startedAt: string | null;
+  hadNamedExercise: boolean;
+  hasNamedExercise: boolean;
+  hadCheckedSet: boolean;
+  hasCheckedSet: boolean;
+  now: string;
+}): string | null {
+  if (input.send) return input.startedAt;
+  if (input.startedAt) return input.startedAt;
+  const now = sanitizeWorkoutInstant(input.now);
+  if (!now) return null;
+  if (input.fromCoach) {
+    return !input.hadCheckedSet && input.hasCheckedSet ? now : null;
+  }
+  return !input.hadNamedExercise && input.hasNamedExercise ? now : null;
+}
+
+export function workoutHasCheckedSet(exercises: readonly ClientWorkoutExercise[]): boolean {
+  return exercises.some((exercise) =>
+    exercise.setLogs?.some((set) => set.completed === true)
+  );
+}
+
+export function workoutHasNamedExercise(exercises: readonly ClientWorkoutExercise[]): boolean {
+  return exercises.some((exercise) => exercise.name.trim());
+}
+
+/** `m:ss` until an hour, then `h:mm:ss`. */
+export function formatWorkoutDuration(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  const ss = String(seconds).padStart(2, "0");
+  if (hours > 0) return `${hours}:${String(minutes).padStart(2, "0")}:${ss}`;
+  return `${minutes}:${ss}`;
+}
+
+export interface WorkoutLivePosition {
+  exerciseName: string;
+  setNumber: number;
+  setCount: number;
+  setLabel: string;
+  /** Current set, ready for the lock screen. "—" when that number is blank. */
+  weightLabel: string;
+  repsLabel: string;
+  setsLabel: string;
+  /** Custom photo, when the exercise has one. Library stills are resolved separately. */
+  imageUrl: string;
+}
+
+export interface ActiveWorkoutLive {
+  startedAt: string;
+  exercises: readonly ClientWorkoutExercise[];
+}
+
+function exerciseSetsFinished(exercise: ClientWorkoutExercise): boolean {
+  const logs = exercise.setLogs;
+  if (logs && logs.length > 0) return logs.every((set) => set.completed === true);
+  return exercise.completed === true;
+}
+
+/** The exercise and set still ahead. Finished exercises are skipped. */
+export function currentWorkoutPosition(
+  exercises: readonly ClientWorkoutExercise[]
+): WorkoutLivePosition | null {
+  const named = exercises.filter((exercise) => exercise.name.trim());
+  if (named.length === 0) return null;
+  const current = named.find((exercise) => !exerciseSetsFinished(exercise)) ?? named[named.length - 1]!;
+  const logs = current.setLogs ?? [];
+  const parsed = parseWorkoutSetCount(current.sets);
+  const setCount = Math.max(logs.length, parsed ?? 0, 1);
+  const openIndex = logs.findIndex((set) => set.completed !== true);
+  const setNumber = logs.length === 0 ? 1 : openIndex === -1 ? logs.length : openIndex + 1;
+  const exerciseName = current.name.trim().replace(/\s+/g, " ").slice(0, 48);
+  const openLog = logs[setNumber - 1];
+  const weight = openLog?.weight?.trim() ?? "";
+  const reps = openLog?.reps?.trim() || current.reps.trim();
+  return {
+    exerciseName,
+    setNumber,
+    setCount,
+    setLabel: `Set ${setNumber} of ${setCount}`,
+    weightLabel: liveWeightLabel(weight),
+    repsLabel: liveRepsLabel(reps),
+    setsLabel: liveSetsLabel(setCount),
+    imageUrl: current.imageUrl?.trim() ?? "",
+  };
+}
+
+export function liveWeightLabel(weight: string): string {
+  const trimmed = weight.trim();
+  if (!trimmed) return "—";
+  return /lb/i.test(trimmed) ? trimmed : `${trimmed} lb`;
+}
+
+export function liveRepsLabel(reps: string): string {
+  const trimmed = reps.trim();
+  if (!trimmed) return "—";
+  return /rep/i.test(trimmed) ? trimmed : `${trimmed} reps`;
+}
+
+export function liveSetsLabel(count: number): string {
+  const sets = Math.max(1, Math.floor(count));
+  return sets === 1 ? "1 set" : `${sets} sets`;
+}
+
+/** The newest workout whose clock is still running. */
+export function activeWorkoutForLiveActivity(log: ClientWorkoutLog): ActiveWorkoutLive | null {
+  let best: ActiveWorkoutLive | null = null;
+  for (const day of Object.values(log.days)) {
+    if (!day.startedAt || day.endedAt) continue;
+    if (!best || day.startedAt > best.startedAt) {
+      best = { startedAt: day.startedAt, exercises: day.exercises };
+    }
+  }
+  return best;
+}
+
+export function workoutClockFields(
+  previous: { startedAt?: string; endedAt?: string } | undefined,
+  clock?: WorkoutClock | null
+): { startedAt?: string; endedAt?: string } {
+  if (clock === null) return {};
+  const startedAt = sanitizeWorkoutInstant(clock?.startedAt ?? previous?.startedAt);
+  const endedAt = sanitizeWorkoutInstant(clock?.endedAt ?? previous?.endedAt);
+  if (!startedAt) return {};
+  if (!endedAt || Date.parse(endedAt) < Date.parse(startedAt)) return { startedAt };
+  return { startedAt, endedAt };
+}
+
 export function sanitizeWorkoutExercises(
   exercises: readonly ClientWorkoutExercise[]
 ): ClientWorkoutExercise[] {
@@ -420,12 +567,14 @@ export function sanitizeClientWorkoutLog(value: unknown): ClientWorkoutLog {
       const rest =
         day.rest === true && exercises.length === 0 && !title && !cardio;
       if (exercises.length === 0 && !cardio && !rest) continue;
+      const clock = rest ? {} : workoutClockFields(day);
       days[dateKey] = {
         date: dateKey,
         title,
         exercises,
         ...(cardio ? { cardio } : {}),
         ...(rest ? { rest: true } : {}),
+        ...clock,
       };
     }
   }

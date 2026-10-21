@@ -8,6 +8,7 @@ import {
   endCoaching,
   markCoachWorkoutCompletionSeen,
   requestRespondCoachingConnection,
+  requestOpenRosterThread,
   requestRosterInvite,
   requestSendCoachWorkout,
   requestUpdateCoachWorkout,
@@ -47,6 +48,24 @@ export function useCoachingRoster(specialistId: string | null) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, [specialistId]);
+
+  const openThread = useCallback(
+    async (relationshipId: string): Promise<CoachingResult<{ conversationId: string }>> => {
+      const result = await requestOpenRosterThread(relationshipId);
+      if (result.ok && specialistId) {
+        patchCoaching("specialist", specialistId, (current) => ({
+          ...current,
+          relationships: current.relationships.map((item) =>
+            item.id === relationshipId
+              ? { ...item, conversationId: result.data.conversationId }
+              : item
+          ),
+        }));
+      }
+      return result;
+    },
+    [specialistId]
+  );
 
   const invite = useCallback(
     async (conversationId: string): Promise<CoachingResult<CoachingRelationship>> => {
@@ -178,6 +197,7 @@ export function useCoachingRoster(specialistId: string | null) {
         snapshot.relationships.find((item) => item.conversationId === conversationId) ?? null,
       workoutsFor: (relationshipId: string) =>
         snapshot.workouts.filter((item) => item.relationshipId === relationshipId),
+      openThread,
       invite,
       createInviteLink,
       sendWorkout,
@@ -187,6 +207,6 @@ export function useCoachingRoster(specialistId: string | null) {
       respondToRequest,
       dismissFinished,
     }),
-    [snapshot, invite, createInviteLink, sendWorkout, updateWorkout, removeWorkout, removeClient, respondToRequest, dismissFinished]
+    [snapshot, openThread, invite, createInviteLink, sendWorkout, updateWorkout, removeWorkout, removeClient, respondToRequest, dismissFinished]
   );
 }

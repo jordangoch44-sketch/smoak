@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { mapCoachingRelationship } from "@/lib/coaching/coach-workout";
 import { sendCoachingRequestEmail } from "@/lib/email/coaching-email-service";
+import { sendCoachingRequestPush } from "@/lib/push/coaching-push";
 import type { CoachingRelationshipRow } from "@/types/coaching";
 
 export const runtime = "nodejs";
@@ -74,6 +75,11 @@ export async function POST(request: Request) {
         });
       }
     }
+    await sendCoachingRequestPush({
+      specialistUserId: relationship.specialistUserId,
+      clientFirstName: relationship.clientFirstName,
+      relationshipId: relationship.id,
+    });
   }
 
   return NextResponse.json({ ok: true, data: relationship });

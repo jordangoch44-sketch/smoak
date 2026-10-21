@@ -188,6 +188,8 @@ export function coachDayForSheet(
     title: day?.title.trim() || open.find((workout) => workout.title.trim())?.title || "",
     exercises,
     ...(day?.cardio ? { cardio: day.cardio } : {}),
+    ...(day?.startedAt ? { startedAt: day.startedAt } : {}),
+    ...(day?.endedAt ? { endedAt: day.endedAt } : {}),
   };
 }
 

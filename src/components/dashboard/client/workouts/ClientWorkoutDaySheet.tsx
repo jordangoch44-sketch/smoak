@@ -5,6 +5,7 @@ import { flushSync } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { CheckIcon, ChevronLeftIcon, PlusIcon, SendIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
+import { ClientAppleHealthDayNote } from "@/components/dashboard/client/workouts/ClientAppleHealthWeek";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { exerciseLabel } from "@/data/exercise-display";
 import { ExerciseOptionsSheet } from "@/components/dashboard/client/workouts/ExerciseOptionsSheet";
@@ -17,21 +18,53 @@ import {
   exerciseWithSetLogs,
   formatCardioLine,
   formatWorkoutDayHeading,
+  formatWorkoutDuration,
   formatWorkoutShareText,
   freshExerciseBlock,
+  nextWorkoutStartedAt,
   parseWorkoutSetCount,
   shareOrCopyWorkoutText,
   sanitizeWorkoutCardio,
   sanitizeWorkoutTitle,
+  workoutHasCheckedSet,
+  workoutHasNamedExercise,
   type ExerciseSetMemory,
+  type WorkoutClock,
 } from "@/lib/workouts/client-workout";
 import { customExerciseFields, type CustomExercise } from "@/lib/workouts/custom-exercises";
+import { presentWorkoutOnLockScreen } from "@/lib/workouts/workout-live-activity";
 import { cn } from "@/lib/utils";
 import type {
   ClientWorkoutCardio,
   ClientWorkoutDay,
   ClientWorkoutExercise,
 } from "@/types/client-workout";
+
+function WorkoutDurationChip({
+  startedAt,
+  endedAt,
+}: {
+  startedAt: string;
+  endedAt: string | null;
+}) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (endedAt) return;
+    const tick = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(tick);
+  }, [endedAt, startedAt]);
+
+  const start = Date.parse(startedAt);
+  const end = endedAt ? Date.parse(endedAt) : now;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+  const label = formatWorkoutDuration(end - start);
+  return (
+    <span className="client-workouts-day__duration" aria-label={`Workout duration ${label}`}>
+      {label}
+    </span>
+  );
+}
 
 function isWorkoutField(target: EventTarget | null): target is HTMLInputElement {
   return target instanceof HTMLInputElement;
@@ -131,7 +164,8 @@ interface ClientWorkoutDaySheetProps {
     exercises: ClientWorkoutExercise[],
     title: string,
     cardio?: ClientWorkoutCardio,
-    rest?: boolean
+    rest?: boolean,
+    clock?: WorkoutClock | null
   ) => boolean;
   onRemove: () => void;
   /** Drop a saved rest day without closing the sheet, so the calendar updates. */
@@ -213,11 +247,19 @@ export function ClientWorkoutDaySheet({
   const [closing, setClosing] = useState(false);
   const [typing, setTyping] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [startedAt, setStartedAt] = useState<string | null>(() =>
+    send ? null : (workout?.startedAt ?? null)
+  );
+  const [endedAt, setEndedAt] = useState<string | null>(() =>
+    send ? null : (workout?.endedAt ?? null)
+  );
   const rootRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const checkKeyboardClosedRef = useRef<(() => void) | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const exercisesRef = useRef(exercises);
+  const startedAtRef = useRef(startedAt);
+  const endedAtRef = useRef(endedAt);
   const actionsOpenRef = useRef(false);
   const afterCloseRef = useRef<(() => void) | null>(null);
   const onFinishRef = useRef(onFinish);
@@ -304,6 +346,12 @@ export function ClientWorkoutDaySheet({
         : "pick"
     );
     setError(null);
+    const nextStarted = send ? null : (workout?.startedAt ?? null);
+    const nextEnded = send ? null : (workout?.endedAt ?? null);
+    startedAtRef.current = nextStarted;
+    endedAtRef.current = nextEnded;
+    setStartedAt(nextStarted);
+    setEndedAt(nextEnded);
     // Only reset when the selected day changes — not after each save.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateKey]);
@@ -514,7 +562,47 @@ export function ClientWorkoutDaySheet({
     const cleanedCardio = sanitizeWorkoutCardio(nextCardio);
     if (!send && named.length === 0 && !cleanedCardio) return false;
     if (named.length === 0 && !cleanedTitle && !cleanedCardio) return false;
-    return onSave(named, cleanedTitle, cleanedCardio);
+    return onSave(named, cleanedTitle, cleanedCardio, false, {
+      startedAt: startedAtRef.current,
+      endedAt: endedAtRef.current,
+    });
+  }
+
+  useEffect(() => {
+    if (send) return;
+    void presentWorkoutOnLockScreen({
+      dateKey,
+      startedAt,
+      endedAt,
+      exercises,
+    });
+  }, [send, dateKey, startedAt, endedAt, exercises]);
+
+  useEffect(() => {
+    if (send || !startedAt || endedAt) return;
+    if (workout?.startedAt === startedAt) return;
+    persist(exercisesRef.current);
+  }, [send, startedAt, endedAt, workout?.startedAt]);
+
+  function syncClock(previous: readonly ClientWorkoutExercise[], next: readonly ClientWorkoutExercise[]) {
+    const started = nextWorkoutStartedAt({
+      fromCoach: Boolean(fromCoach),
+      send: Boolean(send),
+      startedAt: startedAtRef.current,
+      hadNamedExercise: workoutHasNamedExercise(previous),
+      hasNamedExercise: workoutHasNamedExercise(next),
+      hadCheckedSet: workoutHasCheckedSet(previous),
+      hasCheckedSet: workoutHasCheckedSet(next),
+      now: new Date().toISOString(),
+    });
+    if (!started || started === startedAtRef.current) return;
+    startedAtRef.current = started;
+    setStartedAt(started);
+  }
+
+  function stopClock() {
+    if (!startedAtRef.current || endedAtRef.current) return;
+    endedAtRef.current = new Date().toISOString();
   }
 
   function applyTitle(next: string) {
@@ -533,9 +621,11 @@ export function ClientWorkoutDaySheet({
   }
 
   function replaceExercise(next: ClientWorkoutExercise, commit: boolean) {
-    const list = exercisesRef.current.map((item) => (item.id === next.id ? next : item));
+    const previous = exercisesRef.current;
+    const list = previous.map((item) => (item.id === next.id ? next : item));
     exercisesRef.current = list;
     setExercises(list);
+    if (commit) syncClock(previous, list);
     if (commit && next.name.trim()) persist(list);
     setError(null);
   }
@@ -559,9 +649,11 @@ export function ClientWorkoutDaySheet({
       });
     }
     if (additions.length === 0) return;
-    const list = [...exercisesRef.current, ...additions];
+    const previous = exercisesRef.current;
+    const list = [...previous, ...additions];
     exercisesRef.current = list;
     setExercises(list);
+    syncClock(previous, list);
     persist(list);
     setPickerOpen(false);
   }
@@ -602,10 +694,14 @@ export function ClientWorkoutDaySheet({
   function handleFinish() {
     if (!onFinish || finishing) return;
     const next = exercisesRef.current;
+    const previousEnded = endedAtRef.current;
+    stopClock();
     if (!persist(next)) {
+      endedAtRef.current = previousEnded;
       setError("Couldn’t save the workout.");
       return;
     }
+    setEndedAt(endedAtRef.current);
     const named = next.filter((exercise) => exercise.name.trim());
     const finish = onFinishRef.current;
     setError(null);
@@ -625,10 +721,14 @@ export function ClientWorkoutDaySheet({
     if (finishing || send) return;
     const next = exercisesRef.current;
     if (!next.some((exercise) => exercise.name.trim())) return;
+    const previousEnded = endedAtRef.current;
+    stopClock();
     if (!persist(next)) {
+      endedAtRef.current = previousEnded;
       setError("Couldn’t save the workout.");
       return;
     }
+    setEndedAt(endedAtRef.current);
     setError(null);
     setFinishing(true);
     const day = finishedDay();
@@ -645,10 +745,14 @@ export function ClientWorkoutDaySheet({
       setError("Add at least one exercise to finish.");
       return;
     }
+    const previousEnded = endedAtRef.current;
+    stopClock();
     if (!persist(next)) {
+      endedAtRef.current = previousEnded;
       setError("Couldn’t save the workout.");
       return;
     }
+    setEndedAt(endedAtRef.current);
     setError(null);
     setFinishing(true);
     const day = finishedDay();
@@ -670,6 +774,8 @@ export function ClientWorkoutDaySheet({
           setLogs: exercise.setLogs?.map((log) => ({ ...log })),
         })),
       ...(cleaned ? { cardio: cleaned } : {}),
+      ...(startedAtRef.current ? { startedAt: startedAtRef.current } : {}),
+      ...(endedAtRef.current ? { endedAt: endedAtRef.current } : {}),
     };
   }
 
@@ -903,6 +1009,9 @@ export function ClientWorkoutDaySheet({
               className="client-workouts-day__heading"
             >
               {send ? `For ${send.clientName}` : heading}
+              {!send && startedAt ? (
+                <WorkoutDurationChip startedAt={startedAt} endedAt={endedAt} />
+              ) : null}
               {hasLoggedDay && !send && !(fromCoach && onFinish) ? " ✓" : ""}
               {title.trim() ? (
                 <span className="client-workouts-day__title-chip">{title.trim()}</span>
@@ -913,6 +1022,7 @@ export function ClientWorkoutDaySheet({
                 </span>
               ) : null}
             </h3>
+            {!send ? <ClientAppleHealthDayNote dateKey={dateKey} /> : null}
             {!send && !fromCoach && (step === "cardio" || step === "workout") ? (
               <p
                 className={cn(

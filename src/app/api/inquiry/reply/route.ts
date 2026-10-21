@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { persistInquiryReply } from "@/lib/inquiry/inquiry-persist";
+import { sendInquiryMessagePush } from "@/lib/push/inquiry-push";
 import { validateThreadMessage } from "@/lib/inquiry/inquiry-message-body";
 import { resolveSpecialistUserId } from "@/lib/specialist-notify-email";
 import type { InquiryConversationRow, SubmitInquiryReplyResult } from "@/types/inquiry";
@@ -112,6 +113,20 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return NextResponse.json(result, { status: 502 });
   }
+
+  const recipientId =
+    senderRole === "client"
+      ? (row.specialist_user_id ??
+        (await resolveSpecialistUserId(supabase, row.specialist_id)))
+      : row.client_user_id;
+  await sendInquiryMessagePush({
+    userId: recipientId,
+    senderName:
+      senderRole === "client" ? row.client_first_name : row.specialist_name,
+    message: validation.message,
+    viewer: senderRole === "client" ? "specialist" : "client",
+    conversationId: row.id,
+  });
 
   return NextResponse.json(result);
 }

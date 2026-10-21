@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { persistSpecialistInquiry } from "@/lib/inquiry/inquiry-persist";
+import { sendNewInquiryPush } from "@/lib/push/inquiry-push";
 import {
   sanitizeInquiryMessage,
   validateInquiryDraft,
@@ -158,6 +159,13 @@ export async function POST(request: Request) {
   if (!result.ok) {
     return NextResponse.json(result, { status: 502 });
   }
+
+  await sendNewInquiryPush(supabase, {
+    specialistId,
+    senderName: clientFirstName,
+    message,
+    conversationId: result.conversationId,
+  });
 
   return NextResponse.json(result);
 }

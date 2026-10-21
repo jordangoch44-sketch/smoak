@@ -14,6 +14,7 @@ import {
   subscribeClientWorkouts,
 } from "@/lib/workouts/client-workout-store";
 import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
+import type { WorkoutClock } from "@/lib/workouts/client-workout";
 
 export function useClientWorkouts(userId: string | null) {
   useEffect(() => {
@@ -56,10 +57,11 @@ export function useClientWorkouts(userId: string | null) {
       exercises: readonly ClientWorkoutExercise[],
       title = "",
       cardio?: ClientWorkoutCardio | null,
-      rest = false
+      rest = false,
+      clock?: WorkoutClock | null
     ) => {
       if (!userId) return false;
-      return saveClientWorkoutDay(userId, dateKey, exercises, title, cardio, rest);
+      return saveClientWorkoutDay(userId, dateKey, exercises, title, cardio, rest, clock);
     },
     [userId]
   );

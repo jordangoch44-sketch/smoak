@@ -13,6 +13,7 @@
 }
 
 .client-workouts-page > .client-workouts-entry,
+.client-workouts-page > .client-apple-health,
 .client-workouts-page > .client-suggested {
   margin: 0;
 }
@@ -1566,6 +1567,21 @@
   font-weight: 500;
   letter-spacing: -0.02em;
   color: #fff;
+}
+
+.client-workouts-day__duration {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.48rem;
+  border-radius: 999px;
+  border: 1px solid rgba(196, 181, 253, 0.4);
+  background: rgba(124, 92, 255, 0.2);
+  color: #ddd6fe;
+  font-size: 0.75rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
 }
 
 .client-workouts-day__title-chip {
@@ -3333,12 +3349,6 @@ span.exercise-picker__star {
   font-weight: 650;
 }
 
-.exercise-howto__empty {
-  margin: 0;
-  font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.55);
-}
-
 .exercise-howto__add {
   width: 100%;
   min-height: 2.85rem;
@@ -3750,4 +3760,221 @@ span.exercise-picker__star {
   .workout-share__sheet {
     animation: none;
   }
+}
+
+.client-apple-health {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.95rem 0.9rem 0.8rem;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--client-frost-bg);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: var(--client-frost-shadow);
+  color: inherit;
+}
+
+.client-apple-health__head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.client-apple-health__mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.7rem;
+  height: 2.7rem;
+  border-radius: 0.72rem;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
+
+.client-apple-health__heart {
+  width: 1.35rem;
+  height: 1.35rem;
+  color: #ff3b5c;
+}
+
+.client-apple-health__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.08rem;
+}
+
+.client-apple-health__eyebrow {
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 650;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(196, 181, 253, 0.78);
+}
+
+.client-apple-health__title {
+  margin: 0;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.client-apple-health__body,
+.client-apple-health__summary,
+.client-apple-health__note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.client-apple-health__summary {
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.client-apple-health__note {
+  margin-top: 0.2rem;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.client-apple-health__connect {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  min-height: 2.15rem;
+  padding: 0.42rem 0.62rem 0.42rem 0.85rem;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(100deg, #6d5efc 0%, #b06bff 50%, #f472b6 100%);
+  box-shadow: 0 8px 18px rgba(124, 92, 255, 0.28);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.client-apple-health__connect svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.client-apple-health__connect:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.client-apple-health__perks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0.45rem 0 0;
+  padding: 0.7rem 0 0.05rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  list-style: none;
+}
+
+.client-apple-health__perk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.32rem;
+  min-width: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.client-apple-health__perk + .client-apple-health__perk {
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.client-apple-health__perk svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  flex: 0 0 auto;
+}
+
+.client-apple-health__perk--calories svg {
+  color: #ff5a36;
+}
+
+.client-apple-health__perk--sync svg {
+  color: #60a5fa;
+}
+
+.client-apple-health__perk--week svg {
+  color: #a78bfa;
+}
+
+.client-apple-health__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.client-apple-health__row {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.28rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+div.client-apple-health__row {
+  cursor: default;
+}
+
+.client-apple-health__day {
+  flex: 0 0 2.15rem;
+  font-weight: 650;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.client-apple-health__name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.client-apple-health__detail {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.client-workouts-day__health {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  color: rgba(196, 181, 253, 0.92);
 }

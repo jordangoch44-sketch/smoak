@@ -31,6 +31,7 @@ import {
   WEEKDAY_LABELS,
   type WeekGoalLine,
 } from "@/lib/workouts/client-workout";
+import { ClientAppleHealthWeek } from "./ClientAppleHealthWeek";
 import { CoachDayMark } from "./CoachDayMark";
 import { ClientWorkoutsModal } from "./ClientWorkoutsModal";
 import type { ClientWorkoutLog } from "@/types/client-workout";
@@ -257,6 +258,11 @@ export function ClientWorkoutsEntry({
           ) : null}
         </div>
       </div>
+      <ClientAppleHealthWeek
+        month={month}
+        today={today}
+        onOpenDay={pasteFrom ? undefined : openDay}
+      />
 
       {month ? (
         <div className="client-workouts-page-cal">

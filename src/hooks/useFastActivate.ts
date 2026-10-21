@@ -74,6 +74,8 @@ export function useFastActivate(
     if (isModifiedNavActivation(event)) return;
     const origin = originRef.current;
     originRef.current = null;
+    /* A pointerup that started on a different control is not this button's tap. */
+    if (!origin) return;
     /* Swallow the trailing click whether this was a tap or a scroll. */
     openedByPointerRef.current = true;
     swallowTrailingClick(() => {
