@@ -10,6 +10,8 @@ import { formatExerciseName } from "@/data/workout-exercise-library";
 import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
 import {
   createWorkoutExerciseId,
+  exerciseAssistsWithMachine,
+  exerciseLogsWeight,
   exerciseWithSetLogs,
   EXERCISE_NOTE_MAX_LENGTH,
   formatPreviousSet,
@@ -19,6 +21,7 @@ import {
   sanitizeExerciseNote,
   sanitizeWorkoutCount,
   sanitizeWorkoutWeight,
+  signAssistanceWeight,
   type ExerciseSetMemory,
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
@@ -58,14 +61,17 @@ export function ExerciseSetBlock({
   prior = [],
   autoFocus = false,
   inSuperset = false,
+  supersetAlt = false,
   onChange,
   onOpenMenu,
 }: {
   exercise: ClientWorkoutExercise;
-  /** Earlier sessions, newest first. Previous shows the last logged sets. */
+  /** Earlier sessions, newest first. Last Time shows the last logged sets. */
   prior?: readonly ExerciseSetMemory[];
   autoFocus?: boolean;
   inSuperset?: boolean;
+  /** Second paired group on the day. Uses the warm side line. */
+  supersetAlt?: boolean;
   /** `commit` writes the day. Name keystrokes stay local until the field blurs. */
   onChange: (exercise: ClientWorkoutExercise, commit: boolean) => void;
   onOpenMenu: () => void;
@@ -73,6 +79,8 @@ export function ExerciseSetBlock({
   const setIds = useRef<string[]>([]);
   const logs = logsOf(exercise);
   const previous = previousSetsForExercise(prior, exercise.name);
+  const logsWeight = exerciseLogsWeight(exercise);
+  const assisted = logsWeight && exerciseAssistsWithMachine(exercise);
   const [howToOpen, setHowToOpen] = useState(false);
   const named = exerciseLabel(exercise.name);
   const fromLibrary = Boolean(exercise.name.trim() && isKnownExercise(exercise.name));
@@ -96,7 +104,10 @@ export function ExerciseSetBlock({
   }
 
   function writeLogs(next: ClientWorkoutSetLog[], commit: boolean) {
-    onChange(exerciseWithSetLogs(exercise, next), commit && Boolean(exercise.name.trim()));
+    const rows = assisted
+      ? next.map((log) => ({ ...log, weight: signAssistanceWeight(log.weight) }))
+      : next;
+    onChange(exerciseWithSetLogs(exercise, rows), commit && Boolean(exercise.name.trim()));
   }
 
   function patchLog(index: number, patch: Partial<ClientWorkoutSetLog>) {
@@ -118,7 +129,14 @@ export function ExerciseSetBlock({
   }
 
   return (
-    <article className={cn("exercise-block", inSuperset && "exercise-block--superset")}>
+    <article
+      className={cn(
+        "exercise-block",
+        !logsWeight && "exercise-block--bodyweight",
+        inSuperset && "exercise-block--superset",
+        inSuperset && supersetAlt && "exercise-block--superset-alt"
+      )}
+    >
       <div className="exercise-block__name-wrap">
         {inSuperset ? <p className="exercise-block__superset">Superset</p> : null}
         <div className="exercise-block__title">
@@ -205,8 +223,8 @@ export function ExerciseSetBlock({
       <div className="exercise-block__table">
         <div className="exercise-block__head" aria-hidden>
           <span>Set</span>
-          <span className="exercise-block__head-previous">Previous</span>
-          <span>Lbs</span>
+          <span className="exercise-block__head-previous">Last Time</span>
+          {logsWeight ? <span>Lbs</span> : null}
           <span>Reps</span>
           <CheckIcon className="exercise-block__head-check" />
         </div>
@@ -215,24 +233,44 @@ export function ExerciseSetBlock({
             <div className={cn("exercise-block__row", log.completed && "exercise-block__row--done")}>
               <span className="exercise-block__set">{index + 1}</span>
               <span className="exercise-block__previous">
-                {formatPreviousSet(previous[index])}
+                {logsWeight
+                  ? formatPreviousSet(
+                      assisted && previous[index]
+                        ? { ...previous[index], weight: signAssistanceWeight(previous[index].weight) }
+                        : previous[index]
+                    )
+                  : previous[index]?.reps.trim() || "–"}
               </span>
-              <input
-                className="exercise-block__input"
-                inputMode="decimal"
-                enterKeyHint="done"
-                autoComplete="off"
-                value={log.weight}
-                placeholder="0"
-                aria-label={`Set ${index + 1} weight in pounds`}
-                onChange={(event) =>
-                  patchLog(index, { weight: sanitizeWorkoutWeight(event.target.value) })
-                }
-                onBlur={(event) => {
-                  const next = sanitizeWorkoutWeight(event.currentTarget.value).replace(/\.$/, "");
-                  if (next !== log.weight) patchLog(index, { weight: next });
-                }}
-              />
+              {logsWeight ? (
+                <input
+                  className="exercise-block__input"
+                  inputMode="decimal"
+                  enterKeyHint="done"
+                  autoComplete="off"
+                  value={assisted ? signAssistanceWeight(log.weight) : log.weight}
+                  placeholder={assisted ? "-0" : "0"}
+                  aria-label={
+                    assisted
+                      ? `Set ${index + 1} assistance in pounds`
+                      : `Set ${index + 1} weight in pounds`
+                  }
+                  onChange={(event) =>
+                    patchLog(index, {
+                      weight: assisted
+                        ? signAssistanceWeight(event.target.value)
+                        : sanitizeWorkoutWeight(event.target.value),
+                    })
+                  }
+                  onBlur={(event) => {
+                    const next = (
+                      assisted
+                        ? signAssistanceWeight(event.currentTarget.value)
+                        : sanitizeWorkoutWeight(event.currentTarget.value)
+                    ).replace(/\.$/, "");
+                    if (next !== log.weight) patchLog(index, { weight: next });
+                  }}
+                />
+              ) : null}
               <input
                 className="exercise-block__input"
                 inputMode="decimal"
@@ -293,7 +331,20 @@ export function ExerciseSetBlock({
             onPointerDown={(event) => event.preventDefault()}
             onClick={() => {
               const last = logs[logs.length - 1] ?? { reps: "", weight: "" };
-              writeLogs([...logs, { reps: last.reps, weight: last.weight }], true);
+              writeLogs(
+                [
+                  ...logs,
+                  {
+                    reps: last.reps,
+                    weight: !logsWeight
+                      ? ""
+                      : assisted
+                        ? signAssistanceWeight(last.weight)
+                        : last.weight,
+                  },
+                ],
+                true
+              );
             }}
           >
             <PlusIcon className="h-4 w-4" />

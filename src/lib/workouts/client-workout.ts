@@ -5,8 +5,14 @@ import type {
   ClientWorkoutLog,
   ClientWorkoutSetLog,
 } from "@/types/client-workout";
+import {
+  catalogExerciseEquipment,
+  catalogExerciseIsAssistedMachine,
+  catalogExerciseUsesAddedWeight,
+} from "@/data/exercise-db-catalog";
 import { storedExerciseName } from "@/data/exercise-display";
 import { customExerciseFields } from "@/lib/workouts/custom-exercises";
+import { equipmentForExercise } from "@/lib/workouts/exercise-catalog";
 
 export const DEFAULT_GOAL_DAYS_PER_WEEK = 4;
 export const DEFAULT_CARDIO_GOAL_DAYS_PER_WEEK = 3;
@@ -160,6 +166,29 @@ export function sanitizeWorkoutWeight(value: unknown): string {
   return `${whole}.${fraction}`.slice(0, 6);
 }
 
+/** Machine assistance is stored below zero. "40" and "-40" both become "-40". */
+export function signAssistanceWeight(value: unknown): string {
+  const magnitude = sanitizeWorkoutWeight(value);
+  if (!magnitude || magnitude === ".") return "";
+  return `-${magnitude}`;
+}
+
+/** Assisted pull-up and dip machines. The stack helps, so the load is negative. */
+export function exerciseAssistsWithMachine(
+  exercise: Pick<ClientWorkoutExercise, "name">
+): boolean {
+  const name = exercise.name.trim().toLowerCase();
+  if (!name || name.includes("band")) return false;
+  if (catalogExerciseIsAssistedMachine(name)) return true;
+  if (!/\bassisted\b/.test(name)) return false;
+  return (
+    name.includes("machine") ||
+    /\bpull[-\s]?ups?\b/.test(name) ||
+    /\bchin[-\s]?ups?\b/.test(name) ||
+    /\bdips?\b/.test(name)
+  );
+}
+
 export const EXERCISE_NOTE_MAX_LENGTH = 160;
 
 /** One line. Empty after trim is dropped when the exercise is saved. */
@@ -199,6 +228,32 @@ export function formatPreviousSet(log: ClientWorkoutSetLog | undefined): string 
   return "–";
 }
 
+/** Added load still gets a pounds field. A plain bodyweight movement does not. */
+function nameCarriesLoad(name: string): boolean {
+  return /\b(weighted|assisted)\b/.test(name) || name.includes("medicine ball");
+}
+
+function unloadedBodyweightName(name: string): boolean {
+  const n = name.trim().toLowerCase();
+  if (!n || nameCarriesLoad(n)) return false;
+  if (n.includes("bodyweight") || n.includes("body weight")) return true;
+  const catalog = catalogExerciseEquipment(n);
+  if (catalog === "bodyweight") return true;
+  if (catalog) return false;
+  return equipmentForExercise(n) === "bodyweight";
+}
+
+/** False for a bodyweight exercise, so the set table has reps and no pounds. */
+export function exerciseLogsWeight(
+  exercise: Pick<ClientWorkoutExercise, "name" | "equipment" | "exerciseType">
+): boolean {
+  const name = exercise.name.trim().toLowerCase();
+  if (name && (nameCarriesLoad(name) || catalogExerciseUsesAddedWeight(exercise.name))) return true;
+  if (exercise.exerciseType === "bodyweight" || exercise.equipment === "bodyweight") return false;
+  if (exercise.exerciseType === "strength" || exercise.equipment) return true;
+  return !unloadedBodyweightName(exercise.name);
+}
+
 /** Positive set count, capped so the phone flow stays short. */
 export function parseWorkoutSetCount(value: string): number | null {
   const digits = sanitizeWorkoutCount(value, 2);
@@ -231,6 +286,10 @@ export function sanitizeWorkoutExercise(
   const name = storedExerciseName(exercise.name);
   if (!name) return null;
   const setLogs = sanitizeWorkoutSetLogs(exercise.setLogs);
+  const signedLogs =
+    setLogs && exerciseAssistsWithMachine({ name })
+      ? setLogs.map((log) => ({ ...log, weight: signAssistanceWeight(log.weight) }))
+      : setLogs;
   const sets = setLogs
     ? String(setLogs.length)
     : exercise.sets.replace(/\s+/g, " ").trim().slice(0, 8);
@@ -241,7 +300,7 @@ export function sanitizeWorkoutExercise(
     name,
     sets,
     reps: setLogs ? "" : exercise.reps.replace(/\s+/g, " ").trim().slice(0, 16),
-    ...(setLogs ? { setLogs } : {}),
+    ...(signedLogs ? { setLogs: signedLogs } : {}),
     ...(note ? { note } : {}),
     ...(exercise.completed === true ? { completed: true } : {}),
     ...(supersetId ? { supersetId } : {}),
@@ -484,7 +543,8 @@ export function currentWorkoutPosition(
   const setNumber = logs.length === 0 ? 1 : openIndex === -1 ? logs.length : openIndex + 1;
   const exerciseName = current.name.trim().replace(/\s+/g, " ").slice(0, 48);
   const openLog = logs[setNumber - 1];
-  const weight = openLog?.weight?.trim() ?? "";
+  const rawWeight = openLog?.weight?.trim() ?? "";
+  const weight = exerciseAssistsWithMachine(current) ? signAssistanceWeight(rawWeight) : rawWeight;
   const reps = openLog?.reps?.trim() || current.reps.trim();
   return {
     exerciseName,

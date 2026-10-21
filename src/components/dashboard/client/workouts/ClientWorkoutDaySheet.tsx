@@ -155,6 +155,24 @@ function liftFieldIntoView(field: HTMLElement, body: HTMLElement): number {
 
 type DaySheetStep = "pick" | "cardio" | "workout";
 
+/** Order of paired groups on the day. The second group uses the alternate side line. */
+function supersetTones(exercises: readonly ClientWorkoutExercise[]): Map<string, 0 | 1> {
+  const counts = new Map<string, number>();
+  for (const item of exercises) {
+    if (!item.supersetId) continue;
+    counts.set(item.supersetId, (counts.get(item.supersetId) ?? 0) + 1);
+  }
+  const tones = new Map<string, 0 | 1>();
+  let index = 0;
+  for (const item of exercises) {
+    const id = item.supersetId;
+    if (!id || tones.has(id) || (counts.get(id) ?? 0) < 2) continue;
+    tones.set(id, index % 2 === 0 ? 0 : 1);
+    index += 1;
+  }
+  return tones;
+}
+
 interface ClientWorkoutDaySheetProps {
   dateKey: string;
   workout: ClientWorkoutDay | undefined;
@@ -684,6 +702,7 @@ export function ClientWorkoutDaySheet({
   }
 
   const namedExercises = exercises.some((exercise) => exercise.name.trim());
+  const pairedTones = supersetTones(exercises);
   const setsComplete =
     exercises.length > 0 &&
     exercises.every((exercise) => exercise.name.trim() && exercise.completed === true);
@@ -1372,7 +1391,7 @@ export function ClientWorkoutDaySheet({
                   <div className="exercise-block__table">
                     <div className="exercise-block__head">
                       <span>Set</span>
-                      <span className="exercise-block__head-previous">Previous</span>
+                      <span className="exercise-block__head-previous">Last Time</span>
                       <span>Lbs</span>
                       <span>Reps</span>
                       <CheckIcon className="exercise-block__head-check" />
@@ -1394,29 +1413,27 @@ export function ClientWorkoutDaySheet({
                 </div>
               ) : null}
 
-              {exercises.map((exercise) => (
-                <SwipeToRemove
-                  key={exercise.id}
-                  className="exercise-block-swipe"
-                  label={`Remove ${exerciseLabel(exercise.name) || "exercise"}`}
-                  onRemove={() => removeExercise(exercise.id)}
-                >
-                  <ExerciseSetBlock
-                    exercise={exercise}
-                    prior={priorSets}
-                    autoFocus={exercise.id === focusExerciseId}
-                    inSuperset={
-                      Boolean(exercise.supersetId) &&
-                      exercises.some(
-                        (item) =>
-                          item.id !== exercise.id && item.supersetId === exercise.supersetId
-                      )
-                    }
-                    onChange={replaceExercise}
-                    onOpenMenu={() => setMenuExerciseId(exercise.id)}
-                  />
-                </SwipeToRemove>
-              ))}
+              {exercises.map((exercise) => {
+                const tone = exercise.supersetId ? pairedTones.get(exercise.supersetId) : undefined;
+                return (
+                  <SwipeToRemove
+                    key={exercise.id}
+                    className="exercise-block-swipe"
+                    label={`Remove ${exerciseLabel(exercise.name) || "exercise"}`}
+                    onRemove={() => removeExercise(exercise.id)}
+                  >
+                    <ExerciseSetBlock
+                      exercise={exercise}
+                      prior={priorSets}
+                      autoFocus={exercise.id === focusExerciseId}
+                      inSuperset={tone !== undefined}
+                      supersetAlt={tone === 1}
+                      onChange={replaceExercise}
+                      onOpenMenu={() => setMenuExerciseId(exercise.id)}
+                    />
+                  </SwipeToRemove>
+                );
+              })}
               <FastActivateButton
                 className="exercise-block__add client-workouts-add-exercise"
                 disabled={sending}

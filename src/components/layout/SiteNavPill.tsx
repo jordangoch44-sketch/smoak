@@ -163,19 +163,41 @@ let lastNativeTabGlass: {
   box: TabGlassBox;
 } | null = null;
 
+/** Frosted capsule padding around the glyph and its label. */
+const TAB_GLASS_PAD_X = 12;
+const TAB_GLASS_PAD_TOP = 10;
+const TAB_GLASS_PAD_BOTTOM = 7;
+
 function measureActiveTab(
   list: HTMLElement,
   activeId: MobileBottomNavItemId
 ): TabGlassBox | null {
   const item = list.querySelector<HTMLElement>(`[data-nav-id="${activeId}"]`);
   if (!item) return null;
+  const glyph = item.querySelector<HTMLElement>(
+    ".mobile-bottom-nav__icon, .mobile-bottom-nav__avatar, .mobile-bottom-nav__avatar-fallback"
+  );
+  const label = item.querySelector<HTMLElement>(".mobile-bottom-nav__label");
   const listBox = list.getBoundingClientRect();
-  const itemBox = item.getBoundingClientRect();
+  const anchor = glyph ?? item;
+  const anchorBox = anchor.getBoundingClientRect();
+  const labelBox = label?.getBoundingClientRect();
+  const top = anchorBox.top - TAB_GLASS_PAD_TOP;
+  const bottom =
+    Math.max(anchorBox.bottom, labelBox?.bottom ?? anchorBox.bottom) +
+    TAB_GLASS_PAD_BOTTOM;
+  const left =
+    Math.min(anchorBox.left, labelBox?.left ?? anchorBox.left) -
+    TAB_GLASS_PAD_X;
+  const right =
+    Math.max(anchorBox.right, labelBox?.right ?? anchorBox.right) +
+    TAB_GLASS_PAD_X;
+  if (right - left < 1 || bottom - top < 1) return null;
   return {
-    left: itemBox.left - listBox.left,
-    top: itemBox.top - listBox.top,
-    width: itemBox.width,
-    height: itemBox.height,
+    left: left - listBox.left,
+    top: top - listBox.top,
+    width: right - left,
+    height: bottom - top,
   };
 }
 
@@ -230,7 +252,6 @@ const NativeTabSelection = memo(function NativeTabSelection({
       const glass = glassRef.current;
       const list = glass?.parentElement;
       if (!glass || !list || !activeId) return;
-      if (!document.documentElement.classList.contains("native-app")) return;
       if (!settled) {
         glass.classList.remove("is-ready");
         return;
@@ -300,7 +321,13 @@ const NativeTabSelection = memo(function NativeTabSelection({
     const item = activeId
       ? list.querySelector<HTMLElement>(`[data-nav-id="${activeId}"]`)
       : null;
-    if (item) observer?.observe(item);
+    if (item) {
+      observer?.observe(item);
+      const glyph = item.querySelector<HTMLElement>(
+        ".mobile-bottom-nav__icon, .mobile-bottom-nav__avatar, .mobile-bottom-nav__avatar-fallback"
+      );
+      if (glyph) observer?.observe(glyph);
+    }
 
     let cancelled = false;
     void document.fonts?.ready.then(() => {

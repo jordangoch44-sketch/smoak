@@ -2281,6 +2281,10 @@ body.client-workouts-keyboard {
   border-left: 2px solid #8eb6ff;
 }
 
+.exercise-block--superset-alt {
+  border-left-color: #f0b56a;
+}
+
 .exercise-block__superset {
   margin: 0 0 0.15rem;
   font-size: 0.6875rem;
@@ -2288,6 +2292,10 @@ body.client-workouts-keyboard {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #8eb6ff;
+}
+
+.exercise-block--superset-alt .exercise-block__superset {
+  color: #f0b56a;
 }
 
 .exercise-block__name-wrap {
@@ -2425,6 +2433,11 @@ button.exercise-block__name {
   gap: 0.35rem;
 }
 
+.exercise-block--bodyweight .exercise-block__head,
+.exercise-block--bodyweight .exercise-block__row {
+  grid-template-columns: 2.1rem minmax(3.35rem, 0.95fr) minmax(0, 1fr) 2.1rem;
+}
+
 .exercise-block__head {
   padding: 0 0.1rem;
   font-size: 0.6875rem;
@@ -2443,6 +2456,7 @@ button.exercise-block__name {
 .exercise-block__head-previous {
   font-size: 0.625rem;
   letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 .exercise-block__note {
@@ -3269,10 +3283,12 @@ span.exercise-picker__star {
 }
 
 .workout-nice__text {
+  max-width: min(18rem, calc(100% - 2.5rem));
   font-size: 2.15rem;
   font-weight: 750;
   letter-spacing: -0.04em;
-  line-height: 1;
+  line-height: 1.05;
+  text-align: center;
   animation: workout-nice-pop 0.62s cubic-bezier(0.2, 1.45, 0.32, 1) 0.08s both;
 }
 

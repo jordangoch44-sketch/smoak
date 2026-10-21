@@ -119,6 +119,12 @@ const exercises: CatalogExercise[] = (catalog as RawCatalogExercise[]).map((item
 }));
 
 const byName = new Map(exercises.map((item) => [item.name.toLowerCase(), item]));
+const rawEquipmentByName = new Map(
+  (catalog as RawCatalogExercise[]).map((item) => [
+    formatExerciseName(item.name).toLowerCase(),
+    item.equipments.map((value) => value.toLowerCase()),
+  ])
+);
 
 export function catalogExercises(): readonly CatalogExercise[] {
   return exercises;
@@ -130,4 +136,21 @@ export function catalogExerciseId(name: string): string | undefined {
 
 export function catalogExerciseImage(name: string): string {
   return byName.get(name.trim().toLowerCase())?.imageUrl ?? "";
+}
+
+export function catalogExerciseEquipment(name: string): ExerciseEquipment | null {
+  return byName.get(name.trim().toLowerCase())?.equipment ?? null;
+}
+
+/** A plate, vest, or medicine ball. The set table still asks for pounds. */
+export function catalogExerciseUsesAddedWeight(name: string): boolean {
+  const gear = rawEquipmentByName.get(name.trim().toLowerCase()) ?? [];
+  return gear.some((value) => value === "weighted" || value === "medicine ball");
+}
+
+/** Weight-stack assistance, such as an assisted pull-up or dip machine. */
+export function catalogExerciseIsAssistedMachine(name: string): boolean {
+  const key = name.trim().toLowerCase();
+  const gear = rawEquipmentByName.get(key) ?? [];
+  return gear.includes("leverage machine") && key.includes("assisted");
 }
