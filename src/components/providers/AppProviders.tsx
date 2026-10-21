@@ -11,6 +11,7 @@ import { InquiryAutoSendBridge } from "@/components/inquiry";
 import { PendingSaveResumeBridge } from "@/components/auth/PendingSaveResumeBridge";
 import { CoachingInviteClaimBridge } from "@/components/coaching/CoachingInviteClaimBridge";
 import { NativePushBridge } from "@/components/native/NativePushBridge";
+import { NativeWorkoutLinkBridge } from "@/components/native/NativeWorkoutLinkBridge";
 import { NativeWorkoutLiveBridge } from "@/components/native/NativeWorkoutLiveBridge";
 
 export function AppProviders({
@@ -32,6 +33,7 @@ export function AppProviders({
                   <PendingSaveResumeBridge />
                   <CoachingInviteClaimBridge />
                   <NativePushBridge />
+                  <NativeWorkoutLinkBridge />
                   <NativeWorkoutLiveBridge />
                 </Suspense>
                 {children}

@@ -670,10 +670,17 @@ export function SpecialistDashboardProfilePreview({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [billingOpen, setBillingOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
-  const conversationParam = searchParams.get("c")?.trim() || "";
+  // Opens the thread on the next paint. The clients tab ignores `view` until
+  // the URL catches up, which made Message look like a no-op.
+  const [pendingThreadId, setPendingThreadId] = useState<string | null>(null);
+  const urlConversationId = searchParams.get("c")?.trim() || "";
+  const conversationParam = pendingThreadId || urlConversationId;
   // Clients is its own bottom-nav tab but renders inside the profile surface.
-  const viewParam =
-    searchParams.get("tab") === "clients" ? "clients" : searchParams.get("view")?.trim() || "";
+  const viewParam = pendingThreadId
+    ? "inquiries"
+    : searchParams.get("tab") === "clients"
+      ? "clients"
+      : searchParams.get("view")?.trim() || "";
   const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
     previewModeFromSearch(viewParam, conversationParam)
   );
@@ -695,6 +702,18 @@ export function SpecialistDashboardProfilePreview({
   useEffect(() => {
     setPreviewMode(previewModeFromSearch(viewParam, conversationParam));
   }, [conversationParam, viewParam]);
+
+  useEffect(() => {
+    if (!pendingThreadId) return;
+    if (urlConversationId === pendingThreadId) setPendingThreadId(null);
+  }, [pendingThreadId, urlConversationId]);
+
+  function openRosterConversation(conversationId: string) {
+    const id = conversationId.trim();
+    if (!id) return;
+    setPendingThreadId(id);
+    router.push(inquiryThreadHref("specialist", id), { scroll: false });
+  }
 
   useEffect(() => {
     if (previewMode !== "edit") {
@@ -1565,12 +1584,18 @@ export function SpecialistDashboardProfilePreview({
           leads={inquiryLeads}
           senderUserId={inquirySenderUserId}
           onOpenLead={onOpenInquiryLead}
-          initialConversationId={initialConversationId}
-          onCloseThread={onCloseInquiryThread}
+          initialConversationId={conversationParam || initialConversationId}
+          onCloseThread={() => {
+            setPendingThreadId(null);
+            onCloseInquiryThread?.();
+          }}
           onHideLead={onHideInquiryLead}
           onMarkRead={onMarkInquiryLeadsRead}
           onMarkUnread={onMarkInquiryLeadsUnread}
-          onBack={() => replacePreviewMode("live")}
+          onBack={() => {
+            setPendingThreadId(null);
+            replacePreviewMode("live");
+          }}
           specialistId={trainerId}
           isPremium={isPremium}
           onUpgrade={onUpgrade}
@@ -1590,9 +1615,7 @@ export function SpecialistDashboardProfilePreview({
           specialistName={trainer.name}
           isPremium={isPremium}
           onUpgrade={onUpgrade}
-          onOpenConversation={(conversationId) =>
-            router.push(inquiryThreadHref("specialist", conversationId), { scroll: false })
-          }
+          onOpenConversation={openRosterConversation}
         />
       </div>
     );

@@ -254,13 +254,16 @@ export function InquiryInboxPanel({
       listedOpenIdRef.current = openId;
       return;
     }
+    // A roster deep link is not in the inbox yet. A lead refresh must not
+    // dismiss it before the new or unhidden thread shows up.
+    if (initialConversationId?.trim() === openId) return;
     if (listedOpenIdRef.current !== openId) return;
     listedOpenIdRef.current = null;
     setOpenId(null);
     setThread(null);
     setError(null);
     onCloseThread?.();
-  }, [openId, onCloseThread, rows]);
+  }, [initialConversationId, openId, onCloseThread, rows]);
 
   useEffect(() => {
     const ids = new Set(rows.map((row) => row.id));

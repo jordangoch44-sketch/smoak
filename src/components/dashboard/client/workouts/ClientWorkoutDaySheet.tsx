@@ -3,7 +3,15 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { CheckIcon, ChevronLeftIcon, PlusIcon, SendIcon } from "@/components/ui/icons";
+import {
+  BatteryChargingIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  DumbbellIcon,
+  PlusIcon,
+  RunningShoeIcon,
+  SendIcon,
+} from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { ClientAppleHealthDayNote } from "@/components/dashboard/client/workouts/ClientAppleHealthWeek";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
@@ -19,11 +27,9 @@ import {
   formatCardioLine,
   formatWorkoutDayHeading,
   formatWorkoutDuration,
-  formatWorkoutShareText,
   freshExerciseBlock,
   nextWorkoutStartedAt,
   parseWorkoutSetCount,
-  shareOrCopyWorkoutText,
   sanitizeWorkoutCardio,
   sanitizeWorkoutTitle,
   workoutHasCheckedSet,
@@ -33,6 +39,11 @@ import {
 } from "@/lib/workouts/client-workout";
 import { customExerciseFields, type CustomExercise } from "@/lib/workouts/custom-exercises";
 import { presentWorkoutOnLockScreen } from "@/lib/workouts/workout-live-activity";
+import {
+  openPreparedWorkoutText,
+  prefetchSharedWorkoutText,
+  textSharedWorkout,
+} from "@/lib/workouts/shared-workout-service";
 import { cn } from "@/lib/utils";
 import type {
   ClientWorkoutCardio,
@@ -173,10 +184,42 @@ function supersetTones(exercises: readonly ClientWorkoutExercise[]): Map<string,
   return tones;
 }
 
+function DayKindMark({
+  cardio,
+  workout,
+  rest,
+}: {
+  cardio: boolean;
+  workout: boolean;
+  rest: boolean;
+}) {
+  if (rest) {
+    return (
+      <div className="client-workouts-day__mark client-workouts-day__mark--rest" aria-hidden>
+        <BatteryChargingIcon />
+      </div>
+    );
+  }
+  if (!cardio && !workout) return null;
+  return (
+    <div className="client-workouts-day__mark" aria-hidden>
+      {cardio ? (
+        <span className="client-workouts-day__mark-icon client-workouts-day__mark-icon--cardio">
+          <RunningShoeIcon />
+        </span>
+      ) : null}
+      {workout ? (
+        <span className="client-workouts-day__mark-icon client-workouts-day__mark-icon--workout">
+          <DumbbellIcon />
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
 interface ClientWorkoutDaySheetProps {
   dateKey: string;
   workout: ClientWorkoutDay | undefined;
-  weekLabel: string;
   onClose: () => void;
   onSave: (
     exercises: ClientWorkoutExercise[],
@@ -218,7 +261,6 @@ interface ClientWorkoutDaySheetProps {
 export function ClientWorkoutDaySheet({
   dateKey,
   workout,
-  weekLabel,
   onClose,
   onSave,
   onRemove,
@@ -261,6 +303,7 @@ export function ClientWorkoutDaySheet({
   const [menuExerciseId, setMenuExerciseId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
   const [typing, setTyping] = useState(false);
@@ -965,20 +1008,32 @@ export function ClientWorkoutDaySheet({
     persist(next);
   }
 
+  useEffect(() => {
+    if (!actionsOpen || send) return;
+    prefetchSharedWorkoutText({ title, exercises });
+  }, [actionsOpen, exercises, send, title]);
+
   async function handleShare() {
-    if (!workout) return;
-    try {
-      const result = await shareOrCopyWorkoutText(formatWorkoutShareText(workout));
-      if (result === "copied") {
-        showToast({ type: "success", message: "Workout copied." });
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      showToast({ type: "info", message: "Could not share this workout." });
+    if (sharing) return;
+    const day = { title, exercises };
+    if (openPreparedWorkoutText(day)) return;
+    setSharing(true);
+    const result = await textSharedWorkout(day);
+    setSharing(false);
+    if (!result.ok) {
+      showToast({ type: "info", message: result.message });
+      return;
+    }
+    if (result.copied) {
+      showToast({ type: "success", message: "Link copied. Text it from your phone." });
     }
   }
 
   const hasCardio = Boolean(sanitizeWorkoutCardio(cardio));
+  const hasWorkout =
+    wantWorkout ||
+    Boolean(title.trim()) ||
+    exercises.some((exercise) => exercise.name.trim());
   const heading = formatWorkoutDayHeading(dateKey);
   const hasLoggedDay =
     exercises.some((exercise) => exercise.name.trim()) || hasCardio;
@@ -1022,25 +1077,45 @@ export function ClientWorkoutDaySheet({
           >
             <ChevronLeftIcon className="h-5 w-5" />
           </FastActivateButton>
-          <div>
+          <div className={cn(!send && "client-workouts-day__identity")}>
+            {!send ? (
+              <DayKindMark
+                cardio={wantCardio || hasCardio}
+                workout={hasWorkout}
+                rest={wantRest}
+              />
+            ) : null}
             <h3
               id={`client-workout-day-${dateKey}`}
-              className="client-workouts-day__heading"
+              className={cn(
+                "client-workouts-day__heading",
+                !send && "client-workouts-day__heading--date"
+              )}
             >
-              {send ? `For ${send.clientName}` : heading}
-              {!send && startedAt ? (
-                <WorkoutDurationChip startedAt={startedAt} endedAt={endedAt} />
-              ) : null}
-              {hasLoggedDay && !send && !(fromCoach && onFinish) ? " ✓" : ""}
-              {title.trim() ? (
-                <span className="client-workouts-day__title-chip">{title.trim()}</span>
-              ) : null}
-              {hasCardio ? (
-                <span className="client-workouts-day__title-chip client-workouts-day__title-chip--cardio">
-                  {formatCardioLine(cardio)}
+              {send ? (
+                `For ${send.clientName}`
+              ) : (
+                <span className="client-workouts-day__date">
+                  {heading}
+                  {hasLoggedDay && !(fromCoach && onFinish) ? " ✓" : ""}
                 </span>
-              ) : null}
+              )}
             </h3>
+            {!send && (startedAt || title.trim() || hasCardio) ? (
+              <div className="client-workouts-day__meta">
+                {startedAt ? (
+                  <WorkoutDurationChip startedAt={startedAt} endedAt={endedAt} />
+                ) : null}
+                {title.trim() ? (
+                  <span className="client-workouts-day__title-chip">{title.trim()}</span>
+                ) : null}
+                {hasCardio ? (
+                  <span className="client-workouts-day__title-chip client-workouts-day__title-chip--cardio">
+                    {formatCardioLine(cardio)}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
             {!send ? <ClientAppleHealthDayNote dateKey={dateKey} /> : null}
             {!send && !fromCoach && (step === "cardio" || step === "workout") ? (
               <p
@@ -1071,9 +1146,7 @@ export function ClientWorkoutDaySheet({
               </div>
             ) : send ? (
               send.dateControl
-            ) : (
-              <p className="client-workouts-day__sub">{weekLabel}</p>
-            )}
+            ) : null}
           </div>
           {send ? (
             <FastActivateButton
@@ -1114,7 +1187,9 @@ export function ClientWorkoutDaySheet({
                 <circle cx="12" cy="18.5" r="1.7" />
               </svg>
             </FastActivateButton>
-          ) : null}
+          ) : (
+            <span className="client-workouts-day__side" aria-hidden />
+          )}
           {actionsOpen && step === "workout" && !send ? (
             <div
               id="client-workout-actions"
@@ -1147,16 +1222,17 @@ export function ClientWorkoutDaySheet({
                   Copy to another day
                 </FastActivateButton>
               ) : null}
-              {workout ? (
+              {exercises.some((exercise) => exercise.name.trim()) ? (
                 <FastActivateButton
                   className="client-workouts-btn"
                   role="menuitem"
+                  disabled={sharing}
                   onActivate={() => {
                     setActionsOpen(false);
                     void handleShare();
                   }}
                 >
-                  Share
+                  {sharing ? "Sharing…" : "Share"}
                 </FastActivateButton>
               ) : null}
               {hasLoggedDay ? (
@@ -1187,9 +1263,6 @@ export function ClientWorkoutDaySheet({
           {coachSlot}
           {step === "pick" ? (
             <>
-              <p className="client-workouts-pick__hint">
-                Cardio, workout, both, or a rest day.
-              </p>
               <div className="client-workouts-pick" role="group" aria-label="Session type">
                 <FastActivateButton
                   className={cn(

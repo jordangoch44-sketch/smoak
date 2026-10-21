@@ -6,6 +6,12 @@
 	<string>$(APS_ENVIRONMENT)</string>
 	<key>com.apple.developer.healthkit</key>
 	<true/>
+	<key>com.apple.developer.healthkit.access</key>
+	<array/>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:smoac.com</string>
+	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.smoac.app</string>

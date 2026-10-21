@@ -20,7 +20,6 @@ import {
   currentWeekProgress,
   currentWeekStreak,
   formatMonthTitle,
-  formatWeekProgressLabel,
   formatWorkoutDayAriaLabel,
   formatWorkoutDayHeading,
   hasCardioOnDay,
@@ -35,8 +34,14 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
 import type { ClientWorkoutCardio, ClientWorkoutDay, ClientWorkoutExercise } from "@/types/client-workout";
+import { useToast } from "@/components/ui/toast";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
 import { warmExerciseLibraryThumbs } from "@/lib/workouts/exercise-media-client";
+import {
+  openPreparedWorkoutText,
+  prefetchSharedWorkoutText,
+  textSharedWorkout,
+} from "@/lib/workouts/shared-workout-service";
 import {
   coachDayForSheet,
   coachDayMark,
@@ -45,7 +50,6 @@ import {
 } from "@/lib/coaching/coach-workout";
 import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
 import { WorkoutNiceOverlay } from "./WorkoutNiceOverlay";
-import { WorkoutShareSheet } from "./WorkoutShareSheet";
 import { CoachDayMark } from "./CoachDayMark";
 import "@/styles/client-workouts.css";
 
@@ -73,16 +77,29 @@ export function ClientWorkoutsModal({
   const [pasteSourceKey, setPasteSourceKey] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const [shareWorkout, setShareWorkout] = useState<ClientWorkoutDay | null>(null);
-  const [shareOpen, setShareOpen] = useState(false);
   const [finishError, setFinishError] = useState<string | null>(null);
+  const shareOnce = useRef(false);
+  const { showToast } = useToast();
   const dismissNice = useCallback(() => {
     setCelebrate(false);
-    setShareOpen((openShare) => openShare || Boolean(shareWorkout));
-  }, [shareWorkout]);
-  const dismissShare = useCallback(() => {
-    setShareOpen(false);
-    setShareWorkout(null);
-  }, []);
+    const day = shareWorkout;
+    if (!day || shareOnce.current) return;
+    shareOnce.current = true;
+    if (openPreparedWorkoutText(day)) {
+      setShareWorkout(null);
+      return;
+    }
+    void textSharedWorkout(day).then((result) => {
+      setShareWorkout(null);
+      if (!result.ok) {
+        showToast({ type: "info", message: result.message });
+        return;
+      }
+      if (result.copied) {
+        showToast({ type: "success", message: "Link copied. Text it from your phone." });
+      }
+    });
+  }, [shareWorkout, showToast]);
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
   const ignoreDayTapUntilRef = useRef(0);
@@ -158,8 +175,6 @@ export function ClientWorkoutsModal({
   const today = parseLocalDateKey(todayKey);
   const progress = currentWeekProgress(log, today);
   const streak = currentWeekStreak(log, today);
-  const weekLabel = formatWeekProgressLabel(progress, streak);
-
   const openedOnDay = Boolean(
     initialDateKey && isWorkoutDateKey(initialDateKey)
   );
@@ -234,19 +249,20 @@ export function ClientWorkoutsModal({
     if (message) {
       setFinishError(message);
       setCelebrate(false);
-      setShareOpen(false);
       setShareWorkout(null);
       return;
     }
     setFinishError(null);
-    setShareWorkout(
-      workout && workout.exercises.some((exercise) => exercise.name.trim()) ? workout : null
-    );
+    shareOnce.current = false;
+    const finished =
+      workout && workout.exercises.some((exercise) => exercise.name.trim()) ? workout : null;
+    if (finished) prefetchSharedWorkoutText(finished);
+    setShareWorkout(finished);
     setCelebrate(true);
   }
 
   if (!mounted || typeof document === "undefined") return null;
-  if (!open && !celebrate && !shareOpen && !finishError) return null;
+  if (!open && !celebrate && !finishError) return null;
 
   const workouts = open ? createPortal(
     <div className="client-workouts-root" role="presentation">
@@ -454,7 +470,6 @@ export function ClientWorkoutsModal({
             ],
             selectedDateKey
           )}
-          weekLabel={weekLabel}
           onClose={closeSelectedDay}
           onSave={handleSave}
           onRemove={() => {
@@ -483,13 +498,6 @@ export function ClientWorkoutsModal({
     <>
       {workouts}
       {celebrate ? <WorkoutNiceOverlay onDone={dismissNice} /> : null}
-      {shareOpen && shareWorkout ? (
-        <WorkoutShareSheet
-          workout={shareWorkout}
-          streakWeeks={streak}
-          onClose={dismissShare}
-        />
-      ) : null}
       {finishError
         ? createPortal(
             <button

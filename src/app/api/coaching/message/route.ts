@@ -89,12 +89,8 @@ export async function POST(request: Request) {
   }
 
   const relationship = data as CoachingRelationshipRow;
-  if (relationship.specialist_user_id !== user.id) {
-    return NextResponse.json(
-      { ok: false, message: "You can only message your own clients." },
-      { status: 403 }
-    );
-  }
+  // RLS already limited this read to the client, the specialist who owns the
+  // listing, or an admin. specialist_user_id can lag the signed-in owner.
   if (!OPENABLE.has(relationship.status)) {
     return NextResponse.json(
       { ok: false, message: "You can message this client once they’re connected." },
@@ -172,6 +168,7 @@ export async function POST(request: Request) {
         relationship.specialist_id
       );
     } else if (created.error || !created.data?.id) {
+      console.error("[coaching/message] insert failed", created.error?.message);
       return NextResponse.json(
         { ok: false, message: "Could not start a conversation." },
         { status: 502 }
@@ -188,20 +185,22 @@ export async function POST(request: Request) {
     );
   }
 
-  if (service) {
+  const writer = service ?? supabase;
+  const { error: unhideError } = await writer
+    .from("inquiry_conversations")
+    .update({
+      specialist_hidden_at: null,
+      specialist_user_id: relationship.specialist_user_id,
+    })
+    .eq("id", conversationId);
+  if (unhideError) {
+    console.error("[coaching/message] unhide failed", unhideError.message);
+  }
+  if (service && relationship.conversation_id !== conversationId) {
     await service
-      .from("inquiry_conversations")
-      .update({
-        specialist_hidden_at: null,
-        specialist_user_id: relationship.specialist_user_id,
-      })
-      .eq("id", conversationId);
-    if (relationship.conversation_id !== conversationId) {
-      await service
-        .from("coaching_relationships")
-        .update({ conversation_id: conversationId, updated_at: new Date().toISOString() })
-        .eq("id", relationship.id);
-    }
+      .from("coaching_relationships")
+      .update({ conversation_id: conversationId, updated_at: new Date().toISOString() })
+      .eq("id", relationship.id);
   }
 
   return NextResponse.json({ ok: true, data: { conversationId } });

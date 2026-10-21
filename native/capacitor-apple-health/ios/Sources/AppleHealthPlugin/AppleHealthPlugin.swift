@@ -24,28 +24,29 @@ public class AppleHealthPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /// Read-only. Workouts and the active energy attached to them.
-    /// The system sheet only appears from the main thread, and the promise
-    /// has to settle there too.
+    /// Ask on the next turn of the main run loop. Requesting during the web
+    /// click, or passing nil for the share set, leaves the sheet unshown and
+    /// the completion never arrives, so Connect stays on Opening.
     @objc func requestAccess(_ call: CAPPluginCall) {
         guard HKHealthStore.isHealthDataAvailable() else {
             call.resolve(["ok": false])
             return
         }
-        let request = {
-            self.store.requestAuthorization(toShare: nil, read: Self.readTypes) { success, error in
+        DispatchQueue.main.async { [weak self] in
+            guard let self else {
+                call.reject("Couldn’t open Apple Health.")
+                return
+            }
+            self.bridge?.viewController?.view.window?.makeKeyAndVisible()
+            self.store.requestAuthorization(toShare: Set<HKSampleType>(), read: Self.readTypes) { success, error in
                 DispatchQueue.main.async {
-                    if let error = error {
+                    if let error {
                         call.reject(error.localizedDescription)
                         return
                     }
                     call.resolve(["ok": success])
                 }
             }
-        }
-        if Thread.isMainThread {
-            request()
-        } else {
-            DispatchQueue.main.async(execute: request)
         }
     }
 

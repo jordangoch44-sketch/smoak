@@ -17,6 +17,7 @@ import { useCoachingRoster } from "@/hooks/useCoachingRoster";
 import { useRosterClientAvatars } from "@/hooks/useRosterClientAvatars";
 import { useSpecialistInquiryContacts } from "@/hooks/useSpecialistInquiryContacts";
 import { forgetHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
+import { showToast } from "@/lib/toast-store";
 import {
   summarizeRosterClient,
   type RosterClientState,
@@ -213,19 +214,59 @@ export function SpecialistClientsPage({
     if (ok) setSheet(null);
   }
 
+  function revealThread(conversationId: string) {
+    const id = conversationId.trim();
+    if (!id) return;
+    forgetHiddenInquiryIds(specialistId, [id]);
+    window.dispatchEvent(new Event("smoac:inquiry-updated"));
+    onOpenConversation(id);
+  }
+
   async function handleMessage(relationship: CoachingRelationship) {
     if (messageBusyId) return;
-    setMessageBusyId(relationship.id);
-    setMessageError(null);
-    const result = await openThread(relationship.id);
-    setMessageBusyId(null);
-    if (!result.ok) {
-      setMessageError({ id: relationship.id, message: result.message });
+    const known = relationship.conversationId?.trim() || "";
+    // Continue a thread that already exists without waiting on the network.
+    if (known) {
+      revealThread(known);
+      void openThread(relationship.id).then((result) => {
+        if (!result.ok) return;
+        const id = result.data.conversationId?.trim() || "";
+        if (!id || id === known) {
+          if (id) {
+            forgetHiddenInquiryIds(specialistId, [id]);
+            window.dispatchEvent(new Event("smoac:inquiry-updated"));
+          }
+          return;
+        }
+        revealThread(id);
+      });
       return;
     }
-    forgetHiddenInquiryIds(specialistId, [result.data.conversationId]);
-    window.dispatchEvent(new Event("smoac:inquiry-updated"));
-    onOpenConversation(result.data.conversationId);
+
+    setMessageBusyId(relationship.id);
+    setMessageError(null);
+    try {
+      const result = await openThread(relationship.id);
+      if (!result.ok) {
+        setMessageError({ id: relationship.id, message: result.message });
+        showToast({ type: "info", message: result.message });
+        return;
+      }
+      const id = result.data.conversationId?.trim() || "";
+      if (!id) {
+        const message = "Could not open the conversation.";
+        setMessageError({ id: relationship.id, message });
+        showToast({ type: "info", message });
+        return;
+      }
+      revealThread(id);
+    } catch {
+      const message = "Could not open the conversation.";
+      setMessageError({ id: relationship.id, message });
+      showToast({ type: "info", message });
+    } finally {
+      setMessageBusyId(null);
+    }
   }
 
   async function handleRequest(relationship: CoachingRelationship, accept: boolean) {

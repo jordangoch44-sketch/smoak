@@ -116,7 +116,6 @@ export function SendWorkoutSheet({
       <ClientWorkoutDaySheet
         dateKey={dateKey}
         workout={draft}
-        weekLabel=""
         onClose={onClose}
         onSave={(exercises, title, cardio) => {
           setDraft({ date: dateKey, title, exercises, cardio });

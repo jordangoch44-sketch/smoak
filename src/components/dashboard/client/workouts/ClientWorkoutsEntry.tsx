@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   BatteryChargingIcon,
@@ -24,6 +25,7 @@ import {
   hasCardioOnDay,
   hasRestOnDay,
   hasStrengthOnDay,
+  isWorkoutDateKey,
   parseLocalDateKey,
   startOfMonth,
   toLocalDateKey,
@@ -130,6 +132,8 @@ export function ClientWorkoutsEntry({
   const [openDateKey, setOpenDateKey] = useState<string | null>(null);
   const [today, setToday] = useState<Date | null>(null);
   const [month, setMonth] = useState<Date | null>(null);
+  const searchParams = useSearchParams();
+  const openedFromLink = useRef<string | null>(null);
   const { log, copyDayTo } = useClientWorkouts(userId);
   const { loaded: coachingLoaded, coaches, invites, workouts, workoutsByDate, respond } =
     useClientCoaching(userId);
@@ -139,6 +143,15 @@ export function ClientWorkoutsEntry({
     setToday(now);
     setMonth(startOfMonth(now));
   }, []);
+
+  useEffect(() => {
+    const day = searchParams.get("day");
+    if (!day || !isWorkoutDateKey(day) || openedFromLink.current === day) return;
+    openedFromLink.current = day;
+    setMonth(startOfMonth(parseLocalDateKey(day)));
+    setOpenDateKey(day);
+    setOpen(true);
+  }, [searchParams]);
 
   useEffect(() => {
     warmExerciseLibraryThumbs();

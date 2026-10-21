@@ -715,25 +715,39 @@ body.bottom-nav-panel-active .mobile-bottom-nav__pill {
   transform: none;
 }
 
-.mobile-bottom-nav__icon-shell--active::before,
-.mobile-bottom-nav__icon-shell--avatar.mobile-bottom-nav__icon-shell--active::before {
-  content: none;
-}
-
-.mobile-bottom-nav__icon-shell--avatar {
+/* Signed-in photo uses the same slot as the line icons, selected or not.
+   The older 2.75rem active ring was taller than the other tabs, so the
+   Profile label dropped and the pill grew. */
+.mobile-bottom-nav__icon-shell--avatar,
+.mobile-bottom-nav__icon-shell--avatar.mobile-bottom-nav__icon-shell--active {
   width: 1.65rem;
   height: 1.65rem;
+  min-width: 1.65rem;
+  min-height: 1.65rem;
+  max-width: 1.65rem;
+  max-height: 1.65rem;
+  overflow: hidden;
   border: none;
   background: transparent;
   box-shadow: none;
   transform: none;
 }
 
+.mobile-bottom-nav__icon-shell--active::before,
+.mobile-bottom-nav__icon-shell--avatar.mobile-bottom-nav__icon-shell--active::before {
+  content: none;
+}
+
 .mobile-bottom-nav__avatar,
 .mobile-bottom-nav__avatar-fallback {
   box-sizing: border-box;
+  flex: none;
   width: 1.35rem;
   height: 1.35rem;
+  min-width: 1.35rem;
+  min-height: 1.35rem;
+  max-width: 1.35rem;
+  max-height: 1.35rem;
   border: 1.5px solid rgba(255, 255, 255, 0.78);
 }
 
