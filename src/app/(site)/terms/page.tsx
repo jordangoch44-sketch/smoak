@@ -1,9 +1,5 @@
 import { LegalDocumentPage } from "@/components/legal/LegalDocumentPage";
-import {
-  LEGAL_COUNSEL_NOTICE,
-  LEGAL_EFFECTIVE_DATE,
-  TERMS_SECTIONS,
-} from "@/lib/legal-content";
+import { LEGAL_EFFECTIVE_DATE, TERMS_SECTIONS } from "@/lib/legal-content";
 import { SITE_ROUTES } from "@/lib/navigation";
 
 export const metadata = {
@@ -17,7 +13,6 @@ export default function TermsPage() {
       title="Terms of Service"
       description="The rules for using SMOAC as a client or specialist on our marketplace."
       effectiveDate={LEGAL_EFFECTIVE_DATE}
-      notice={LEGAL_COUNSEL_NOTICE}
       sections={TERMS_SECTIONS}
       related={[
         { label: "Privacy Policy", href: SITE_ROUTES.privacy },

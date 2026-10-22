@@ -1,9 +1,5 @@
 import { LegalDocumentPage } from "@/components/legal/LegalDocumentPage";
-import {
-  COOKIE_SECTIONS,
-  LEGAL_COUNSEL_NOTICE,
-  LEGAL_EFFECTIVE_DATE,
-} from "@/lib/legal-content";
+import { COOKIE_SECTIONS, LEGAL_EFFECTIVE_DATE } from "@/lib/legal-content";
 import { SITE_ROUTES } from "@/lib/navigation";
 import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
@@ -18,7 +14,6 @@ export default function CookiesPage() {
       title="Cookie Policy"
       description="How cookies and similar technologies support sign-in, preferences, and product improvement."
       effectiveDate={LEGAL_EFFECTIVE_DATE}
-      notice={LEGAL_COUNSEL_NOTICE}
       sections={COOKIE_SECTIONS}
       related={[
         { label: "Privacy Policy", href: SITE_ROUTES.privacy },

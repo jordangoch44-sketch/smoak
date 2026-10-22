@@ -22,7 +22,6 @@ interface LegalDocumentPageProps {
 
 /**
  * Reusable informational / legal page shell for footer destinations.
- * TODO: Have legal counsel review page copy before public launch.
  */
 export function LegalDocumentPage({
   title,

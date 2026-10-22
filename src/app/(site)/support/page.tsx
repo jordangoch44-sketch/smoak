@@ -5,14 +5,14 @@ import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 export const metadata = {
   title: "Help Center",
-  description: "Get help with your SMOAC account, inquiries, and listings.",
+  description: "Get help with your SMOAC account, workouts, inquiries, and listings.",
 };
 
 export default function SupportPage() {
   return (
     <LegalDocumentPage
       title="Help Center"
-      description="Account help, inquiry questions, and how to reach the SMOAC team."
+      description="Account help, the workout journal, inquiries, and how to reach the SMOAC team."
       effectiveDate={LEGAL_EFFECTIVE_DATE}
       sections={SUPPORT_SECTIONS}
       related={[
