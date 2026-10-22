@@ -4,6 +4,8 @@ import type {
   ClientWorkoutExercise,
   ClientWorkoutLog,
   ClientWorkoutSetLog,
+  WorkoutEffort,
+  WorkoutLoad,
 } from "@/types/client-workout";
 import {
   catalogExerciseEquipment,
@@ -219,11 +221,50 @@ export function previousSetsForExercise(
   return Array.from({ length: count }, () => ({ reps, weight: "" }));
 }
 
+/** A run logs distance in the reps column until someone switches it back. */
+export function exerciseUsesDistance(name: string): boolean {
+  return /\b(runs?|running|jogs?|jogging|sprints?|sprinting|treadmill)\b/.test(
+    name.trim().toLowerCase()
+  );
+}
+
+export function exerciseEffort(
+  exercise: Pick<ClientWorkoutExercise, "name" | "effort">
+): WorkoutEffort {
+  if (exercise.effort === "reps" || exercise.effort === "distance") return exercise.effort;
+  return exerciseUsesDistance(exercise.name) ? "distance" : "reps";
+}
+
+/** Null when this exercise has no load column. */
+export function exerciseLoad(
+  exercise: Pick<ClientWorkoutExercise, "name" | "equipment" | "exerciseType" | "load">
+): WorkoutLoad | null {
+  if (exercise.load === "lb" || exercise.load === "kg" || exercise.load === "bodyweight") {
+    return exercise.load;
+  }
+  return exerciseLogsWeight(exercise) ? "lb" : null;
+}
+
+export function nextExerciseEffort(effort: WorkoutEffort): WorkoutEffort {
+  return effort === "reps" ? "distance" : "reps";
+}
+
+export function nextExerciseLoad(load: WorkoutLoad): WorkoutLoad {
+  if (load === "lb") return "kg";
+  if (load === "kg") return "bodyweight";
+  return "lb";
+}
+
 /** "135 lbs", or a dash when that set wasn't logged. */
-export function formatPreviousSet(log: ClientWorkoutSetLog | undefined): string {
+export function formatPreviousSet(
+  log: ClientWorkoutSetLog | undefined,
+  load: WorkoutLoad | null = "lb"
+): string {
   const weight = log?.weight?.trim() ?? "";
   const reps = log?.reps?.trim() ?? "";
-  if (weight) return `${weight} lbs`;
+  if (weight && load !== "bodyweight") {
+    return load === "kg" ? `${weight} kg` : `${weight} lbs`;
+  }
   if (reps) return reps;
   return "–";
 }
@@ -295,6 +336,11 @@ export function sanitizeWorkoutExercise(
     : exercise.sets.replace(/\s+/g, " ").trim().slice(0, 8);
   const supersetId = sanitizeSupersetId(exercise.supersetId);
   const note = sanitizeExerciseNote(exercise.note).trim();
+  const effort = exercise.effort === "reps" || exercise.effort === "distance" ? exercise.effort : undefined;
+  const load =
+    exercise.load === "lb" || exercise.load === "kg" || exercise.load === "bodyweight"
+      ? exercise.load
+      : undefined;
   return {
     id: exercise.id.trim() || createWorkoutExerciseId(),
     name,
@@ -304,6 +350,8 @@ export function sanitizeWorkoutExercise(
     ...(note ? { note } : {}),
     ...(exercise.completed === true ? { completed: true } : {}),
     ...(supersetId ? { supersetId } : {}),
+    ...(effort ? { effort } : {}),
+    ...(load ? { load } : {}),
     ...customExerciseFields(exercise),
   };
 }
@@ -463,37 +511,6 @@ export function sanitizeWorkoutInstant(value: unknown): string | undefined {
   return new Date(time).toISOString();
 }
 
-/** Keep a start that already happened. Otherwise start on the first exercise, or the first checked set for a coach workout. */
-export function nextWorkoutStartedAt(input: {
-  fromCoach: boolean;
-  send: boolean;
-  startedAt: string | null;
-  hadNamedExercise: boolean;
-  hasNamedExercise: boolean;
-  hadCheckedSet: boolean;
-  hasCheckedSet: boolean;
-  now: string;
-}): string | null {
-  if (input.send) return input.startedAt;
-  if (input.startedAt) return input.startedAt;
-  const now = sanitizeWorkoutInstant(input.now);
-  if (!now) return null;
-  if (input.fromCoach) {
-    return !input.hadCheckedSet && input.hasCheckedSet ? now : null;
-  }
-  return !input.hadNamedExercise && input.hasNamedExercise ? now : null;
-}
-
-export function workoutHasCheckedSet(exercises: readonly ClientWorkoutExercise[]): boolean {
-  return exercises.some((exercise) =>
-    exercise.setLogs?.some((set) => set.completed === true)
-  );
-}
-
-export function workoutHasNamedExercise(exercises: readonly ClientWorkoutExercise[]): boolean {
-  return exercises.some((exercise) => exercise.name.trim());
-}
-
 /** `m:ss` until an hour, then `h:mm:ss`. */
 export function formatWorkoutDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -546,21 +563,25 @@ export function currentWorkoutPosition(
   const rawWeight = openLog?.weight?.trim() ?? "";
   const weight = exerciseAssistsWithMachine(current) ? signAssistanceWeight(rawWeight) : rawWeight;
   const reps = openLog?.reps?.trim() || current.reps.trim();
+  const load = exerciseLoad(current);
+  const effort = exerciseEffort(current);
   return {
     exerciseName,
     setNumber,
     setCount,
     setLabel: `Set ${setNumber} of ${setCount}`,
-    weightLabel: liveWeightLabel(weight),
-    repsLabel: liveRepsLabel(reps),
+    weightLabel:
+      load === "lb" || load === "kg" ? liveWeightLabel(weight, load) : "—",
+    repsLabel: effort === "distance" ? (reps.trim() ? reps.trim() : "—") : liveRepsLabel(reps),
     setsLabel: liveSetsLabel(setCount),
     imageUrl: current.imageUrl?.trim() ?? "",
   };
 }
 
-export function liveWeightLabel(weight: string): string {
+export function liveWeightLabel(weight: string, load: "lb" | "kg" = "lb"): string {
   const trimmed = weight.trim();
   if (!trimmed) return "—";
+  if (load === "kg") return /kg/i.test(trimmed) ? trimmed : `${trimmed} kg`;
   return /lb/i.test(trimmed) ? trimmed : `${trimmed} lb`;
 }
 

@@ -33,6 +33,8 @@
 	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>SMOAC uses the camera when you take a profile photo or video.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>SMOAC connects to the development server on your Wi-Fi while you test the app.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>SMOAC uses your location to show specialists near you.</string>
 	<key>NSMicrophoneUsageDescription</key>

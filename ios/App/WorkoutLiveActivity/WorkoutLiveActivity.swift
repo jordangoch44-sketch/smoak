@@ -29,10 +29,11 @@ struct WorkoutLiveActivityWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(context.attributes.startedAt, style: .timer)
-                        .font(.title3.monospacedDigit().weight(.semibold))
+                    ElapsedClock(startedAt: context.attributes.startedAt)
+                        .font(.title3.weight(.semibold))
                         .foregroundStyle(Color(red: 0.88, green: 0.84, blue: 1))
-                        .frame(maxWidth: 96, alignment: .trailing)
+                        .frame(width: 100, alignment: .trailing)
+                        .minimumScaleFactor(0.7)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -54,14 +55,34 @@ struct WorkoutLiveActivityWidget: Widget {
                     .font(.caption2.weight(.semibold))
                     .lineLimit(1)
             } compactTrailing: {
-                Text(context.attributes.startedAt, style: .timer)
-                    .font(.caption2.monospacedDigit().weight(.semibold))
+                ElapsedClock(startedAt: context.attributes.startedAt)
+                    .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color(red: 0.88, green: 0.84, blue: 1))
-                    .frame(maxWidth: 54)
+                    .minimumScaleFactor(0.7)
             } minimal: {
                 Image(systemName: "figure.strengthtraining.traditional")
             }
         }
+    }
+}
+
+/// Elapsed time the system draws after SMOAC is suspended.
+/// A plain `.timer` label turns into “1 minute” once the phone locks.
+/// The range has to stay finite — an open end never renders — and it has to
+/// include an hour field. Without one, an 18-hour range is measured as
+/// `1080:00`. `.fixedSize()` then reserves that width, the clock overflows
+/// the lock-screen card, and the duration is clipped away.
+private struct ElapsedClock: View {
+    let startedAt: Date
+
+    private var interval: ClosedRange<Date> {
+        startedAt...startedAt.addingTimeInterval(18 * 60 * 60)
+    }
+
+    var body: some View {
+        Text(timerInterval: interval, countsDown: false, showsHours: true)
+            .monospacedDigit()
+            .multilineTextAlignment(.trailing)
     }
 }
 
@@ -93,15 +114,15 @@ private struct WorkoutLockScreen: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .trailing, spacing: 0) {
-                    Text(context.attributes.startedAt, style: .timer)
-                        .font(.system(size: 22, weight: .semibold, design: .rounded).monospacedDigit())
+                    ElapsedClock(startedAt: context.attributes.startedAt)
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
-                        .lineLimit(1)
+                        .frame(width: 108, alignment: .trailing)
+                        .minimumScaleFactor(0.75)
                     Text("Total")
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.white.opacity(0.45))
                 }
-                .fixedSize(horizontal: true, vertical: false)
             }
             SetProgress(fraction: context.state.progress, tint: accent)
             HStack(spacing: 0) {
@@ -112,8 +133,10 @@ private struct WorkoutLockScreen: View {
                 LiveStat(systemImage: "list.bullet", value: context.state.setsLabel, label: "TOTAL")
             }
         }
-        .padding(.horizontal, 2)
-        .padding(.vertical, 2)
+        // The lock screen masks this card with a large corner. A couple of
+        // points of padding puts the photo and the clock into that curve.
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .activityBackgroundTint(Color(red: 0.07, green: 0.05, blue: 0.11))
         .activitySystemActionForegroundColor(.white)
     }

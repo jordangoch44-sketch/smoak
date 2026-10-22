@@ -3,87 +3,10 @@ import { describe, it } from "node:test";
 import {
   currentWorkoutPosition,
   formatWorkoutDuration,
-  nextWorkoutStartedAt,
   workoutClockFields,
 } from "@/lib/workouts/client-workout";
 
-const NOW = "2026-10-19T18:00:00.000Z";
-
 describe("workout duration clock", () => {
-  it("starts an own workout when the first exercise is added", () => {
-    assert.equal(
-      nextWorkoutStartedAt({
-        fromCoach: false,
-        send: false,
-        startedAt: null,
-        hadNamedExercise: false,
-        hasNamedExercise: true,
-        hadCheckedSet: false,
-        hasCheckedSet: false,
-        now: NOW,
-      }),
-      NOW
-    );
-  });
-
-  it("waits for the first checked set on a coach workout", () => {
-    assert.equal(
-      nextWorkoutStartedAt({
-        fromCoach: true,
-        send: false,
-        startedAt: null,
-        hadNamedExercise: true,
-        hasNamedExercise: true,
-        hadCheckedSet: false,
-        hasCheckedSet: false,
-        now: NOW,
-      }),
-      null
-    );
-    assert.equal(
-      nextWorkoutStartedAt({
-        fromCoach: true,
-        send: false,
-        startedAt: null,
-        hadNamedExercise: true,
-        hasNamedExercise: true,
-        hadCheckedSet: false,
-        hasCheckedSet: true,
-        now: NOW,
-      }),
-      NOW
-    );
-  });
-
-  it("keeps the original start and ignores a specialist send", () => {
-    assert.equal(
-      nextWorkoutStartedAt({
-        fromCoach: false,
-        send: false,
-        startedAt: "2026-10-19T17:00:00.000Z",
-        hadNamedExercise: true,
-        hasNamedExercise: true,
-        hadCheckedSet: false,
-        hasCheckedSet: true,
-        now: NOW,
-      }),
-      "2026-10-19T17:00:00.000Z"
-    );
-    assert.equal(
-      nextWorkoutStartedAt({
-        fromCoach: false,
-        send: true,
-        startedAt: null,
-        hadNamedExercise: false,
-        hasNamedExercise: true,
-        hadCheckedSet: false,
-        hasCheckedSet: false,
-        now: NOW,
-      }),
-      null
-    );
-  });
-
   it("formats the live chip", () => {
     assert.equal(formatWorkoutDuration(0), "0:00");
     assert.equal(formatWorkoutDuration(4 * 60 * 1000 + 2 * 1000), "4:02");

@@ -173,7 +173,11 @@ private final class WorkoutLiveSession {
             return true
         }
         for existing in Activity<WorkoutActivityAttributes>.activities {
-            await existing.end(nil, dismissalPolicy: .immediate)
+            let finalState = existing.content.state
+            await existing.end(
+                ActivityContent(state: finalState, staleDate: Date()),
+                dismissalPolicy: .immediate
+            )
         }
         activity = nil
         do {
@@ -199,7 +203,13 @@ private final class WorkoutLiveSession {
 
     func end() async {
         for existing in Activity<WorkoutActivityAttributes>.activities {
-            await existing.end(nil, dismissalPolicy: .immediate)
+            // nil content leaves the compact island up, frozen at the timer's
+            // upper bound (18:00:00). Hand iOS the current state and drop it now.
+            let finalState = existing.content.state
+            await existing.end(
+                ActivityContent(state: finalState, staleDate: Date()),
+                dismissalPolicy: .immediate
+            )
         }
         activity = nil
         cachedImageUrl = ""

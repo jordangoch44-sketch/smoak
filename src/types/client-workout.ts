@@ -1,5 +1,11 @@
 /** Client dashboard workout log — one saved day is a completed training day. */
 
+/** What the reps column is counting. Distance is for a run. */
+export type WorkoutEffort = "reps" | "distance";
+
+/** What the load column is measuring. Bodyweight hides the number. */
+export type WorkoutLoad = "lb" | "kg" | "bodyweight";
+
 /** Reps and weight for one set. Empty strings mean that number was skipped. */
 export interface ClientWorkoutSetLog {
   reps: string;
@@ -14,6 +20,10 @@ export interface ClientWorkoutExercise {
   sets: string;
   /** Legacy single rep range. Empty when `setLogs` holds per-set numbers. */
   reps: string;
+  /** Reps, unless this exercise is logged as a distance. */
+  effort?: WorkoutEffort;
+  /** Pounds, unless this exercise is logged in kilograms or as bodyweight. */
+  load?: WorkoutLoad;
   /** Per-set reps and weight, in set order. Missing entries were skipped. */
   setLogs?: ClientWorkoutSetLog[];
   /** Short note the specialist or the client can edit on this exercise. */
@@ -44,7 +54,7 @@ export interface ClientWorkoutDay {
   cardio?: ClientWorkoutCardio;
   /** A planned day off. Cardio and a workout are not logged on this day. */
   rest?: boolean;
-  /** When the duration clock started. Own workouts: first exercise. Coach workouts: first checked set. */
+  /** When the duration clock started. The client taps the duration chip. */
   startedAt?: string;
   /** Set when the client finishes, so the chip stops on the total. */
   endedAt?: string;

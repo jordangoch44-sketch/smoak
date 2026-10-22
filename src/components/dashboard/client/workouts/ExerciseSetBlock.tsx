@@ -11,8 +11,11 @@ import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
 import {
   createWorkoutExerciseId,
   exerciseAssistsWithMachine,
-  exerciseLogsWeight,
   exerciseWithSetLogs,
+  exerciseEffort,
+  exerciseLoad,
+  nextExerciseEffort,
+  nextExerciseLoad,
   EXERCISE_NOTE_MAX_LENGTH,
   formatPreviousSet,
   MAX_WORKOUT_SETS,
@@ -55,6 +58,28 @@ function DotsIcon() {
   );
 }
 
+function UnitSwitch({
+  label,
+  next,
+  onPress,
+}: {
+  label: string;
+  next: string;
+  onPress: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="exercise-block__unit"
+      aria-label={`${label}. Change to ${next}.`}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={onPress}
+    >
+      {label}
+    </button>
+  );
+}
+
 /** Set table: name, notes, then set / previous / lbs / reps / check. */
 export function ExerciseSetBlock({
   exercise,
@@ -79,8 +104,11 @@ export function ExerciseSetBlock({
   const setIds = useRef<string[]>([]);
   const logs = logsOf(exercise);
   const previous = previousSetsForExercise(prior, exercise.name);
-  const logsWeight = exerciseLogsWeight(exercise);
-  const assisted = logsWeight && exerciseAssistsWithMachine(exercise);
+  const effort = exerciseEffort(exercise);
+  const load = exerciseLoad(exercise);
+  const showLoad = load !== null;
+  const loadIsWeight = load === "lb" || load === "kg";
+  const assisted = load === "lb" && exerciseAssistsWithMachine(exercise);
   const [howToOpen, setHowToOpen] = useState(false);
   const named = exerciseLabel(exercise.name);
   const fromLibrary = Boolean(exercise.name.trim() && isKnownExercise(exercise.name));
@@ -132,7 +160,7 @@ export function ExerciseSetBlock({
     <article
       className={cn(
         "exercise-block",
-        !logsWeight && "exercise-block--bodyweight",
+        !showLoad && "exercise-block--bodyweight",
         inSuperset && "exercise-block--superset",
         inSuperset && supersetAlt && "exercise-block--superset-alt"
       )}
@@ -221,11 +249,33 @@ export function ExerciseSetBlock({
       </div>
 
       <div className="exercise-block__table">
-        <div className="exercise-block__head" aria-hidden>
+        <div className="exercise-block__head">
           <span>Set</span>
           <span className="exercise-block__head-previous">Last Time</span>
-          {logsWeight ? <span>Lbs</span> : null}
-          <span>Reps</span>
+          {showLoad ? (
+            <UnitSwitch
+              label={load === "kg" ? "Kg" : load === "bodyweight" ? "BW" : "Lbs"}
+              next={
+                load === "lb" ? "kilograms" : load === "kg" ? "bodyweight" : "pounds"
+              }
+              onPress={() =>
+                onChange(
+                  { ...exercise, load: nextExerciseLoad(load ?? "lb") },
+                  Boolean(exercise.name.trim())
+                )
+              }
+            />
+          ) : null}
+          <UnitSwitch
+            label={effort === "distance" ? "Distance" : "Reps"}
+            next={effort === "distance" ? "reps" : "distance"}
+            onPress={() =>
+              onChange(
+                { ...exercise, effort: nextExerciseEffort(effort) },
+                Boolean(exercise.name.trim())
+              )
+            }
+          />
           <CheckIcon className="exercise-block__head-check" />
         </div>
         {logs.map((log, index) => {
@@ -233,15 +283,17 @@ export function ExerciseSetBlock({
             <div className={cn("exercise-block__row", log.completed && "exercise-block__row--done")}>
               <span className="exercise-block__set">{index + 1}</span>
               <span className="exercise-block__previous">
-                {logsWeight
+                {showLoad
                   ? formatPreviousSet(
                       assisted && previous[index]
                         ? { ...previous[index], weight: signAssistanceWeight(previous[index].weight) }
-                        : previous[index]
+                        : previous[index],
+                      load
                     )
                   : previous[index]?.reps.trim() || "–"}
               </span>
-              {logsWeight ? (
+              {showLoad ? (
+                loadIsWeight ? (
                 <input
                   className="exercise-block__input"
                   inputMode="decimal"
@@ -252,7 +304,9 @@ export function ExerciseSetBlock({
                   aria-label={
                     assisted
                       ? `Set ${index + 1} assistance in pounds`
-                      : `Set ${index + 1} weight in pounds`
+                      : load === "kg"
+                        ? `Set ${index + 1} weight in kilograms`
+                        : `Set ${index + 1} weight in pounds`
                   }
                   onChange={(event) =>
                     patchLog(index, {
@@ -270,6 +324,11 @@ export function ExerciseSetBlock({
                     if (next !== log.weight) patchLog(index, { weight: next });
                   }}
                 />
+                ) : (
+                  <span className="exercise-block__body" aria-hidden>
+                    —
+                  </span>
+                )
               ) : null}
               <input
                 className="exercise-block__input"
@@ -278,9 +337,18 @@ export function ExerciseSetBlock({
                 autoComplete="off"
                 value={log.reps}
                 placeholder="0"
-                aria-label={`Set ${index + 1} reps`}
+                aria-label={
+                  effort === "distance"
+                    ? `Set ${index + 1} distance`
+                    : `Set ${index + 1} reps`
+                }
                 onChange={(event) =>
-                  patchLog(index, { reps: sanitizeWorkoutCount(event.target.value, 4) })
+                  patchLog(index, {
+                    reps:
+                      effort === "distance"
+                        ? sanitizeWorkoutWeight(event.target.value)
+                        : sanitizeWorkoutCount(event.target.value, 4),
+                  })
                 }
               />
               <button
@@ -336,7 +404,7 @@ export function ExerciseSetBlock({
                   ...logs,
                   {
                     reps: last.reps,
-                    weight: !logsWeight
+                    weight: !showLoad || !loadIsWeight
                       ? ""
                       : assisted
                         ? signAssistanceWeight(last.weight)

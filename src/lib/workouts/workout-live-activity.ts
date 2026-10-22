@@ -33,6 +33,8 @@ let inflightKey = "";
 let generation = 0;
 /** The open workout sheet is showing a running duration chip. */
 let chipIsRunning = false;
+/** True only while that sheet wants the island up. Closing it must not leave 18:00:00 behind. */
+let presented = false;
 
 /** The plugin proxy is thenable. Returning it from an async function makes Capacitor call `.then()`. */
 function ensurePlugin(): Promise<boolean> {
@@ -57,7 +59,14 @@ function ensurePlugin(): Promise<boolean> {
 /**
  * The duration chip is the source of truth while that sheet is open.
  * The saved log can lag behind it, and that was ending the lock screen card.
+ * Closing the sheet takes the island down, and a later log sync must not put it back.
  */
+export function dismissWorkoutLiveActivity(): Promise<void> {
+  presented = false;
+  chipIsRunning = false;
+  return endLiveActivity(true);
+}
+
 export function presentWorkoutOnLockScreen(input: {
   dateKey: string;
   startedAt: string | null;
@@ -65,15 +74,26 @@ export function presentWorkoutOnLockScreen(input: {
   exercises: readonly ClientWorkoutExercise[];
 }): Promise<void> {
   if (!input.startedAt || input.endedAt) {
-    chipIsRunning = false;
-    return syncWorkoutLiveActivity(emptyClientWorkoutLog());
+    return dismissWorkoutLiveActivity();
   }
+  presented = true;
   chipIsRunning = true;
+  const named = input.exercises.some((exercise) => exercise.name.trim());
+  const exercises = named
+    ? input.exercises.map((exercise) => ({ ...exercise }))
+    : [
+        {
+          id: "live-start",
+          name: "Workout",
+          sets: "1",
+          reps: "",
+        },
+      ];
   const log = emptyClientWorkoutLog();
   log.days[input.dateKey] = {
     date: input.dateKey,
     title: "",
-    exercises: input.exercises.map((exercise) => ({ ...exercise })),
+    exercises,
     startedAt: input.startedAt,
   };
   return syncWorkoutLiveActivity(log);
@@ -88,6 +108,9 @@ export async function syncWorkoutLiveActivity(
   options?: { force?: boolean }
 ): Promise<void> {
   if (!isIosApp()) return;
+  if (!presented) {
+    return endLiveActivity(options?.force === true);
+  }
   const active = activeWorkoutForLiveActivity(log);
   const position = active ? currentWorkoutPosition(active.exercises) : null;
   const key = liveKey(active, position?.exerciseName ?? "", position?.setLabel ?? "");
@@ -100,7 +123,7 @@ export async function syncWorkoutLiveActivity(
     const ready = await ensurePlugin();
     if (ticket !== generation || !ready || !plugin) return;
     if (!active || !position) {
-      if (chipIsRunning || lastKey === "idle") return;
+      if (chipIsRunning) return;
       await plugin.end();
       if (ticket !== generation) return;
       lastKey = "idle";
@@ -127,7 +150,10 @@ export async function syncWorkoutLiveActivity(
       thumbSlug: exerciseThumbSlug(position.exerciseName),
       startedAt,
     });
-    if (ticket !== generation) return;
+    if (ticket !== generation) {
+      if (!presented) await plugin.end();
+      return;
+    }
     if (result?.ok) {
       lastKey = key;
       return;
@@ -137,6 +163,24 @@ export async function syncWorkoutLiveActivity(
     );
   } catch (error) {
     console.warn("[SMOAC live] Lock screen sync failed", error);
+  } finally {
+    if (inflightKey === key) inflightKey = "";
+  }
+}
+
+async function endLiveActivity(force = false): Promise<void> {
+  if (!force && lastKey === "idle" && inflightKey === "") return;
+  const ticket = ++generation;
+  const key = "idle";
+  inflightKey = key;
+  try {
+    const ready = await ensurePlugin();
+    if (ticket !== generation || !ready || !plugin) return;
+    await plugin.end();
+    if (ticket !== generation) return;
+    lastKey = "idle";
+  } catch (error) {
+    console.warn("[SMOAC live] Lock screen did not end", error);
   } finally {
     if (inflightKey === key) inflightKey = "";
   }

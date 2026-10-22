@@ -1667,11 +1667,19 @@
   border: 1px solid rgba(196, 181, 253, 0.4);
   background: rgba(124, 92, 255, 0.2);
   color: #ddd6fe;
+  font-family: inherit;
   font-size: 0.75rem;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.03em;
   line-height: 1.2;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+button.client-workouts-day__duration {
+  cursor: pointer;
 }
 
 .client-workouts-day__title-chip {
@@ -2552,6 +2560,41 @@ button.exercise-block__name {
   font-size: 0.625rem;
   letter-spacing: 0.04em;
   white-space: nowrap;
+}
+
+.exercise-block__unit {
+  justify-self: center;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  padding: 0.12rem 0.38rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 0.35rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.625rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.exercise-block__unit:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.7);
+  outline-offset: 2px;
+}
+
+.exercise-block__body {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.28);
 }
 
 .exercise-block__note {

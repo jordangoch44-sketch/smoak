@@ -28,17 +28,17 @@ import {
   formatWorkoutDayHeading,
   formatWorkoutDuration,
   freshExerciseBlock,
-  nextWorkoutStartedAt,
   parseWorkoutSetCount,
   sanitizeWorkoutCardio,
   sanitizeWorkoutTitle,
-  workoutHasCheckedSet,
-  workoutHasNamedExercise,
   type ExerciseSetMemory,
   type WorkoutClock,
 } from "@/lib/workouts/client-workout";
 import { customExerciseFields, type CustomExercise } from "@/lib/workouts/custom-exercises";
-import { presentWorkoutOnLockScreen } from "@/lib/workouts/workout-live-activity";
+import {
+  dismissWorkoutLiveActivity,
+  presentWorkoutOnLockScreen,
+} from "@/lib/workouts/workout-live-activity";
 import {
   openPreparedWorkoutText,
   prefetchSharedWorkoutText,
@@ -640,23 +640,21 @@ export function ClientWorkoutDaySheet({
   }, [send, dateKey, startedAt, endedAt, exercises]);
 
   useEffect(() => {
+    if (send) return;
+    return () => {
+      void dismissWorkoutLiveActivity();
+    };
+  }, [send]);
+
+  useEffect(() => {
     if (send || !startedAt || endedAt) return;
     if (workout?.startedAt === startedAt) return;
     persist(exercisesRef.current);
   }, [send, startedAt, endedAt, workout?.startedAt]);
 
-  function syncClock(previous: readonly ClientWorkoutExercise[], next: readonly ClientWorkoutExercise[]) {
-    const started = nextWorkoutStartedAt({
-      fromCoach: Boolean(fromCoach),
-      send: Boolean(send),
-      startedAt: startedAtRef.current,
-      hadNamedExercise: workoutHasNamedExercise(previous),
-      hasNamedExercise: workoutHasNamedExercise(next),
-      hadCheckedSet: workoutHasCheckedSet(previous),
-      hasCheckedSet: workoutHasCheckedSet(next),
-      now: new Date().toISOString(),
-    });
-    if (!started || started === startedAtRef.current) return;
+  function startClock() {
+    if (send || startedAtRef.current || endedAtRef.current) return;
+    const started = new Date().toISOString();
     startedAtRef.current = started;
     setStartedAt(started);
   }
@@ -686,7 +684,6 @@ export function ClientWorkoutDaySheet({
     const list = previous.map((item) => (item.id === next.id ? next : item));
     exercisesRef.current = list;
     setExercises(list);
-    if (commit) syncClock(previous, list);
     if (commit && next.name.trim()) persist(list);
     setError(null);
   }
@@ -710,11 +707,9 @@ export function ClientWorkoutDaySheet({
       });
     }
     if (additions.length === 0) return;
-    const previous = exercisesRef.current;
-    const list = [...previous, ...additions];
+    const list = [...exercisesRef.current, ...additions];
     exercisesRef.current = list;
     setExercises(list);
-    syncClock(previous, list);
     persist(list);
     setPickerOpen(false);
   }
@@ -1101,10 +1096,18 @@ export function ClientWorkoutDaySheet({
                 </span>
               )}
             </h3>
-            {!send && (startedAt || title.trim() || hasCardio) ? (
+            {!send && (startedAt || step === "workout" || title.trim() || hasCardio) ? (
               <div className="client-workouts-day__meta">
                 {startedAt ? (
                   <WorkoutDurationChip startedAt={startedAt} endedAt={endedAt} />
+                ) : !endedAt && step === "workout" ? (
+                  <FastActivateButton
+                    className="client-workouts-day__duration"
+                    aria-label="Tap to start workout"
+                    onActivate={startClock}
+                  >
+                    Tap to start workout
+                  </FastActivateButton>
                 ) : null}
                 {title.trim() ? (
                   <span className="client-workouts-day__title-chip">{title.trim()}</span>
@@ -1465,8 +1468,8 @@ export function ClientWorkoutDaySheet({
                     <div className="exercise-block__head">
                       <span>Set</span>
                       <span className="exercise-block__head-previous">Last Time</span>
-                      <span>Lbs</span>
-                      <span>Reps</span>
+                      <span className="exercise-block__unit" aria-hidden>Lbs</span>
+                      <span className="exercise-block__unit" aria-hidden>Reps</span>
                       <CheckIcon className="exercise-block__head-check" />
                     </div>
                     <div className="exercise-block__row">
