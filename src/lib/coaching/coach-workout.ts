@@ -113,6 +113,9 @@ export function rememberLocalFinishedSeen(ids: readonly string[]) {
   window.dispatchEvent(new Event("smoac:coach-finished-seen"));
 }
 
+/** View on a finished-workout notice. Clients listens even when the URL does not change. */
+export const VIEW_FINISHED_WORKOUT_EVENT = "smoac:view-finished-workout";
+
 /** Completed coach workouts the specialist has not dismissed, from the last two weeks. */
 export function unseenCoachCompletions(
   workouts: readonly CoachWorkout[],
@@ -127,13 +130,29 @@ export function unseenCoachCompletions(
 
 /** Planned sets for one exercise, without the client's check marks. */
 function plannedCoachExercise(exercise: ClientWorkoutExercise): ClientWorkoutExercise {
-  const { id, name, sets, reps, setLogs, note, supersetId, imageUrl, equipment, muscle, otherMuscles, exerciseType } =
-    exercise;
+  const {
+    id,
+    name,
+    sets,
+    reps,
+    setLogs,
+    note,
+    supersetId,
+    imageUrl,
+    equipment,
+    muscle,
+    otherMuscles,
+    exerciseType,
+    effort,
+    load,
+  } = exercise;
   return {
     id,
     name,
     sets,
     reps,
+    ...(effort ? { effort } : {}),
+    ...(load ? { load } : {}),
     ...(note?.trim() ? { note: note.trim() } : {}),
     ...(setLogs?.length
       ? { setLogs: setLogs.map((set) => ({ reps: set.reps, weight: set.weight })) }
@@ -238,11 +257,13 @@ export function appendCoachExercises(
   const have = new Set(existing.map((exercise) => exercise.id));
   const added = workout.exercises
     .filter((exercise) => !have.has(exercise.id))
-    .map(({ id, name, sets, reps, setLogs, note }) => ({
+    .map(({ id, name, sets, reps, setLogs, note, effort, load }) => ({
       id,
       name,
       sets,
       reps,
+      ...(effort ? { effort } : {}),
+      ...(load ? { load } : {}),
       ...(note?.trim() ? { note: note.trim() } : {}),
       ...(setLogs?.length
         ? {
@@ -343,11 +364,25 @@ export type RosterClientState = "invited" | "new" | "active" | "inactive";
 /** Colour of the dot on the avatar: trained lately, slipping, or quiet. */
 export type RosterActivity = "recent" | "slipping" | "idle";
 
+/** The workout shown under a roster name, and in the expanded card. */
+export interface RosterLatestWorkout {
+  id: string;
+  title: string;
+  /** "Oct 22" */
+  shortWhen: string;
+  /** "Oct 22, 2026" */
+  longWhen: string;
+  /** Rough session length from planned sets. Null when the workout has no sets. */
+  minutes: number | null;
+  status: CoachWorkoutStatus;
+}
+
 export interface RosterClientSummary {
   state: RosterClientState;
   activity: RosterActivity;
-  /** "Last workout 2 days ago", "No workouts yet", or "Invite sent Sep 30". */
+  /** "Lower Body Strength · Oct 22", "No workouts yet", or "Invite sent Sep 30". */
   lastLine: string;
+  latest: RosterLatestWorkout | null;
   /** Finished coach workouts per week over the last 4 weeks, e.g. "3/wk". */
   perWeekLabel: string;
   /** Weeks since the client accepted, e.g. "8 weeks". */
@@ -362,10 +397,58 @@ function workoutFinishedAt(workout: CoachWorkout): number | null {
   return Number.isFinite(stamp) ? stamp : parseLocalDateKey(workout.dateKey).getTime();
 }
 
-function daysAgoLabel(days: number): string {
-  if (days <= 0) return "today";
-  if (days === 1) return "1 day ago";
-  return `${days} days ago`;
+/** Matches the workout summary: about five minutes of work and rest per set. */
+const MINUTES_PER_SET = 5;
+
+function rosterDayLabel(dateKey: string, withYear: boolean): string {
+  const date = parseLocalDateKey(dateKey);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(withYear ? { year: "numeric" } : {}),
+  });
+}
+
+function exerciseSetCount(exercise: ClientWorkoutExercise): number {
+  if (exercise.setLogs && exercise.setLogs.length > 0) return exercise.setLogs.length;
+  const sets = exercise.sets.trim();
+  return /^\d+$/.test(sets) ? Number(sets) : 0;
+}
+
+function estimateWorkoutMinutes(workout: CoachWorkout): number | null {
+  const sets = workout.exercises.reduce((sum, exercise) => sum + exerciseSetCount(exercise), 0);
+  return sets > 0 ? sets * MINUTES_PER_SET : null;
+}
+
+/** Most recently finished workout, or the latest one sent if none are finished. */
+function pickLatestWorkout(workouts: readonly CoachWorkout[]): CoachWorkout | null {
+  const completed = workouts.filter((item) => item.status === "completed");
+  const pool = completed.length > 0 ? completed : workouts;
+  if (pool.length === 0) return null;
+  return [...pool].sort((a, b) => {
+    const aTime =
+      a.status === "completed" && a.completedAt
+        ? Date.parse(a.completedAt)
+        : parseLocalDateKey(a.dateKey).getTime();
+    const bTime =
+      b.status === "completed" && b.completedAt
+        ? Date.parse(b.completedAt)
+        : parseLocalDateKey(b.dateKey).getTime();
+    return (Number.isFinite(bTime) ? bTime : 0) - (Number.isFinite(aTime) ? aTime : 0);
+  })[0] ?? null;
+}
+
+function toRosterLatest(workout: CoachWorkout): RosterLatestWorkout {
+  const title = workout.title.trim() || "Workout";
+  return {
+    id: workout.id,
+    title,
+    shortWhen: rosterDayLabel(workout.dateKey, false),
+    longWhen: rosterDayLabel(workout.dateKey, true),
+    minutes: estimateWorkoutMinutes(workout),
+    status: workout.status,
+  };
 }
 
 export function summarizeRosterClient(
@@ -405,12 +488,16 @@ export function summarizeRosterClient(
       state: "invited",
       activity: "idle",
       lastLine: `Invite sent ${sent}`,
+      latest: null,
       perWeekLabel: "0/wk",
       weeksLabel: "0 weeks",
       completedCount: 0,
       nextWorkout: null,
     };
   }
+
+  const latestWorkout = pickLatestWorkout(workouts);
+  const latest = latestWorkout ? toRosterLatest(latestWorkout) : null;
 
   const state: RosterClientState =
     daysSince !== null && daysSince <= INACTIVE_AFTER_DAYS
@@ -424,7 +511,10 @@ export function summarizeRosterClient(
   return {
     state,
     activity,
-    lastLine: daysSince === null ? "No workouts yet" : `Last workout ${daysAgoLabel(daysSince)}`,
+    lastLine: latest
+      ? `${latest.title}${latest.shortWhen ? ` · ${latest.shortWhen}` : ""}`
+      : "No workouts yet",
+    latest,
     perWeekLabel: `${perWeek}/wk`,
     weeksLabel: `${weeks} ${weeks === 1 ? "week" : "weeks"}`,
     completedCount: finished.length,

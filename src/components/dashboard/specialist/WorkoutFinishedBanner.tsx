@@ -1,6 +1,7 @@
 "use client";
 
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { BellIcon, CloseIcon } from "@/components/ui/icons";
 
 export interface WorkoutFinishedNotice {
   id: string;
@@ -14,7 +15,7 @@ interface WorkoutFinishedBannerProps {
   onDismiss: () => void;
 }
 
-/** Small portal notice once a client presses Finish workout. */
+/** One-line notice once a client presses Finish workout. */
 export function WorkoutFinishedBanner({
   notices,
   onView,
@@ -22,35 +23,30 @@ export function WorkoutFinishedBanner({
 }: WorkoutFinishedBannerProps) {
   const latest = notices[0];
   if (!latest) return null;
-  const extra = notices.length - 1;
   const client = latest.clientFirstName.trim() || "Your client";
   const title = latest.title.trim() || "their workout";
 
   return (
-    <aside className="specialist-inquiry-banner" role="status" aria-live="polite">
-      <div className="specialist-inquiry-banner__copy">
-        <p className="specialist-inquiry-banner__eyebrow">Notification</p>
-        <p className="specialist-inquiry-banner__title">
-          {client} finished {title}
-        </p>
-        <p className="specialist-inquiry-banner__body">
-          {extra > 0
-            ? `${extra} more finished workout${extra === 1 ? "" : "s"}. Open Clients to see the sets they logged.`
-            : "Open Clients to see the sets they logged."}
-        </p>
-      </div>
-      <div className="specialist-inquiry-banner__actions">
+    <aside className="workout-finished-banner" role="status" aria-live="polite">
+      <p className="workout-finished-banner__line">
+        <BellIcon className="workout-finished-banner__bell" />
+        <span className="workout-finished-banner__text">
+          {client} has finished {title}
+        </span>
+      </p>
+      <div className="workout-finished-banner__actions">
         <FastActivateButton
-          className="smoac-control specialist-inquiry-banner__primary"
+          className="smoac-control workout-finished-banner__view"
           onActivate={onView}
         >
           View
         </FastActivateButton>
         <FastActivateButton
-          className="smoac-control specialist-inquiry-banner__secondary"
+          className="smoac-control workout-finished-banner__dismiss"
+          aria-label="Dismiss notification"
           onActivate={onDismiss}
         >
-          Not now
+          <CloseIcon className="h-4 w-4" />
         </FastActivateButton>
       </div>
     </aside>

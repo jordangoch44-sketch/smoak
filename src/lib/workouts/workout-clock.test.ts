@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  cardioChipLabel,
   currentWorkoutPosition,
+  formatCardioLine,
+  exerciseEffort,
+  exerciseLoad,
+  formatExerciseRange,
   formatWorkoutDuration,
+  sanitizeWorkoutExercise,
   workoutClockFields,
 } from "@/lib/workouts/client-workout";
 
@@ -39,6 +45,35 @@ describe("workout duration clock", () => {
       setsLabel: "3 sets",
       imageUrl: "",
     });
+  });
+
+  it("logs a run in miles per hour and miles", () => {
+    const run = { id: "run", name: "Run", sets: "1", reps: "" };
+    assert.equal(exerciseEffort(run), "distance");
+    assert.equal(exerciseLoad(run), "speed");
+    assert.equal(exerciseLoad({ ...run, name: "Smith Sprint Lunge" }), "lb");
+    assert.equal(exerciseEffort({ ...run, name: "Wind Sprints" }), "reps");
+
+    const saved = sanitizeWorkoutExercise({
+      ...run,
+      setLogs: [{ reps: "3.1", weight: "6.5" }],
+    });
+    assert.equal(saved?.setLogs?.[0]?.reps, "3.1");
+    assert.equal(saved?.setLogs?.[0]?.weight, "6.5");
+    assert.equal(formatExerciseRange({ ...run, setLogs: [{ reps: "3.1", weight: "6.5" }] }), "1 × 3.1 mi × 6.5 mph");
+
+    const position = currentWorkoutPosition([
+      { ...run, setLogs: [{ reps: "3.1", weight: "6.5" }] },
+    ]);
+    assert.equal(position?.weightLabel, "6.5 mph");
+    assert.equal(position?.repsLabel, "3.1 mi");
+  });
+
+  it("keeps the cardio chip to the first word", () => {
+    const cardio = { type: "Zone 2 easy run", duration: "45 minutes easy" };
+    assert.equal(cardioChipLabel(cardio), "Zone");
+    assert.equal(formatCardioLine(cardio), "Zone 2 easy run · 45 minutes easy");
+    assert.equal(cardioChipLabel({ type: "", duration: "30 min" }), "30");
   });
 
   it("drops an end that falls before the start", () => {

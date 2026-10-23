@@ -14,6 +14,7 @@ import {
   exerciseWithSetLogs,
   exerciseEffort,
   exerciseLoad,
+  exerciseUsesDistance,
   nextExerciseEffort,
   nextExerciseLoad,
   EXERCISE_NOTE_MAX_LENGTH,
@@ -58,6 +59,31 @@ function DotsIcon() {
   );
 }
 
+export function UnitSwitchIcon() {
+  return (
+    <svg className="exercise-block__unit-icon" viewBox="0 0 24 24" aria-hidden>
+      <path
+        d="M6.2 13.2a7 7 0 0 1 9.2-7.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+      />
+      <path fill="currentColor" d="M13.2 1.8 19.2 7.4 12.4 7.8Z" />
+      <g transform="rotate(180 12 12)">
+        <path
+          d="M6.2 13.2a7 7 0 0 1 9.2-7.4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
+        <path fill="currentColor" d="M13.2 1.8 19.2 7.4 12.4 7.8Z" />
+      </g>
+    </svg>
+  );
+}
+
 function UnitSwitch({
   label,
   next,
@@ -76,6 +102,7 @@ function UnitSwitch({
       onClick={onPress}
     >
       {label}
+      <UnitSwitchIcon />
     </button>
   );
 }
@@ -107,7 +134,8 @@ export function ExerciseSetBlock({
   const effort = exerciseEffort(exercise);
   const load = exerciseLoad(exercise);
   const showLoad = load !== null;
-  const loadIsWeight = load === "lb" || load === "kg";
+  const run = exerciseUsesDistance(exercise.name);
+  const loadIsWeight = load === "lb" || load === "kg" || load === "speed";
   const assisted = load === "lb" && exerciseAssistsWithMachine(exercise);
   const [howToOpen, setHowToOpen] = useState(false);
   const named = exerciseLabel(exercise.name);
@@ -254,21 +282,31 @@ export function ExerciseSetBlock({
           <span className="exercise-block__head-previous">Last Time</span>
           {showLoad ? (
             <UnitSwitch
-              label={load === "kg" ? "Kg" : load === "bodyweight" ? "BW" : "Lbs"}
+              label={
+                load === "kg" ? "Kg" : load === "bodyweight" ? "BW" : load === "speed" ? "Mph" : "Lbs"
+              }
               next={
-                load === "lb" ? "kilograms" : load === "kg" ? "bodyweight" : "pounds"
+                load === "speed"
+                  ? "pounds"
+                  : load === "lb"
+                    ? "kilograms"
+                    : load === "kg"
+                      ? "bodyweight"
+                      : run
+                        ? "miles per hour"
+                        : "pounds"
               }
               onPress={() =>
                 onChange(
-                  { ...exercise, load: nextExerciseLoad(load ?? "lb") },
+                  { ...exercise, load: nextExerciseLoad(load ?? "lb", run) },
                   Boolean(exercise.name.trim())
                 )
               }
             />
           ) : null}
           <UnitSwitch
-            label={effort === "distance" ? "Distance" : "Reps"}
-            next={effort === "distance" ? "reps" : "distance"}
+            label={effort === "distance" ? "Miles" : "Reps"}
+            next={effort === "distance" ? "reps" : "miles"}
             onPress={() =>
               onChange(
                 { ...exercise, effort: nextExerciseEffort(effort) },
@@ -288,9 +326,14 @@ export function ExerciseSetBlock({
                       assisted && previous[index]
                         ? { ...previous[index], weight: signAssistanceWeight(previous[index].weight) }
                         : previous[index],
-                      load
+                      load,
+                      effort
                     )
-                  : previous[index]?.reps.trim() || "–"}
+                  : effort === "distance"
+                    ? previous[index]?.reps.trim()
+                      ? `${previous[index].reps.trim()} mi`
+                      : "–"
+                    : previous[index]?.reps.trim() || "–"}
               </span>
               {showLoad ? (
                 loadIsWeight ? (
@@ -302,11 +345,13 @@ export function ExerciseSetBlock({
                   value={assisted ? signAssistanceWeight(log.weight) : log.weight}
                   placeholder={assisted ? "-0" : "0"}
                   aria-label={
-                    assisted
-                      ? `Set ${index + 1} assistance in pounds`
-                      : load === "kg"
-                        ? `Set ${index + 1} weight in kilograms`
-                        : `Set ${index + 1} weight in pounds`
+                    load === "speed"
+                      ? `Set ${index + 1} speed in miles per hour`
+                      : assisted
+                        ? `Set ${index + 1} assistance in pounds`
+                        : load === "kg"
+                          ? `Set ${index + 1} weight in kilograms`
+                          : `Set ${index + 1} weight in pounds`
                   }
                   onChange={(event) =>
                     patchLog(index, {
@@ -339,7 +384,7 @@ export function ExerciseSetBlock({
                 placeholder="0"
                 aria-label={
                   effort === "distance"
-                    ? `Set ${index + 1} distance`
+                    ? `Set ${index + 1} distance in miles`
                     : `Set ${index + 1} reps`
                 }
                 onChange={(event) =>

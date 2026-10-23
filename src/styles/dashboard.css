@@ -7382,6 +7382,98 @@ body.profile-edit-keyboard-open .mobile-bottom-nav {
   color: rgba(255, 255, 255, 0.78);
 }
 
+/* Finished-workout notice: one line, translucent red. */
+.workout-finished-banner {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.3rem 0.3rem 0.7rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(255, 120, 112, 0.55);
+  background: rgba(255, 59, 48, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.workout-finished-banner__line {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.workout-finished-banner__bell {
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  color: rgba(255, 214, 214, 0.96);
+}
+
+.workout-finished-banner__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.workout-finished-banner__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.workout-finished-banner__view,
+.workout-finished-banner__dismiss {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+.workout-finished-banner__view {
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #6b1520;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+.workout-finished-banner__view:active {
+  transform: scale(0.97);
+}
+
+.workout-finished-banner__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  box-shadow: none;
+}
+
+.workout-finished-banner__dismiss:active {
+  background: rgba(255, 255, 255, 0.24);
+}
+
 /* Final-day Pro trial — LAST CHANCE */
 .specialist-last-chance-banner {
   display: flex;
@@ -10515,6 +10607,11 @@ body:has(.specialist-overview-gate) .site-footer {
 
 .dashboard-page--specialist:has(.specialist-profile-mode--clients) .specialist-dash-layout {
   gap: 0;
+}
+
+.dashboard-page--specialist:has(.specialist-profile-mode--clients) .workout-finished-banner {
+  margin: 0.15rem max(0.85rem, env(safe-area-inset-right, 0px)) 0
+    max(0.85rem, env(safe-area-inset-left, 0px));
 }
 
 @media (min-width: 768px) {

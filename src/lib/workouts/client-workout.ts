@@ -8,6 +8,7 @@ import type {
   WorkoutLoad,
 } from "@/types/client-workout";
 import {
+  catalogExerciseBodyParts,
   catalogExerciseEquipment,
   catalogExerciseIsAssistedMachine,
   catalogExerciseUsesAddedWeight,
@@ -22,8 +23,8 @@ export const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_STREAK_WEEKS = 520;
 const MAX_TITLE_LENGTH = 24;
-const MAX_CARDIO_TYPE_LENGTH = 32;
-const MAX_CARDIO_DURATION_LENGTH = 16;
+export const MAX_CARDIO_TYPE_LENGTH = 80;
+export const MAX_CARDIO_DURATION_LENGTH = 48;
 export const MAX_WORKOUT_SETS = 10;
 
 export function emptyClientWorkoutLog(): ClientWorkoutLog {
@@ -221,11 +222,17 @@ export function previousSetsForExercise(
   return Array.from({ length: count }, () => ({ reps, weight: "" }));
 }
 
-/** A run logs distance in the reps column until someone switches it back. */
+const RUN_NAME = /\b(runs?|running|jogs?|jogging|sprints?|sprinting|treadmill)\b/;
+
+/**
+ * A run, jog, sprint, or treadmill from the library, or a custom name that says so.
+ * Strength moves that only mention a sprint stay on pounds and reps.
+ */
 export function exerciseUsesDistance(name: string): boolean {
-  return /\b(runs?|running|jogs?|jogging|sprints?|sprinting|treadmill)\b/.test(
-    name.trim().toLowerCase()
-  );
+  const key = name.trim().toLowerCase();
+  if (!RUN_NAME.test(key)) return false;
+  const parts = catalogExerciseBodyParts(key);
+  return parts.length === 0 || parts.includes("cardio");
 }
 
 export function exerciseEffort(
@@ -235,13 +242,19 @@ export function exerciseEffort(
   return exerciseUsesDistance(exercise.name) ? "distance" : "reps";
 }
 
-/** Null when this exercise has no load column. */
+/** Null when this exercise has no load column. A run uses miles per hour. */
 export function exerciseLoad(
   exercise: Pick<ClientWorkoutExercise, "name" | "equipment" | "exerciseType" | "load">
 ): WorkoutLoad | null {
-  if (exercise.load === "lb" || exercise.load === "kg" || exercise.load === "bodyweight") {
+  if (
+    exercise.load === "lb" ||
+    exercise.load === "kg" ||
+    exercise.load === "bodyweight" ||
+    exercise.load === "speed"
+  ) {
     return exercise.load;
   }
+  if (exerciseUsesDistance(exercise.name)) return "speed";
   return exerciseLogsWeight(exercise) ? "lb" : null;
 }
 
@@ -249,23 +262,31 @@ export function nextExerciseEffort(effort: WorkoutEffort): WorkoutEffort {
   return effort === "reps" ? "distance" : "reps";
 }
 
-export function nextExerciseLoad(load: WorkoutLoad): WorkoutLoad {
+/** `speed` keeps miles per hour in the cycle for a run. */
+export function nextExerciseLoad(load: WorkoutLoad, speed = false): WorkoutLoad {
+  if (load === "speed") return "lb";
   if (load === "lb") return "kg";
   if (load === "kg") return "bodyweight";
-  return "lb";
+  return speed ? "speed" : "lb";
 }
 
-/** "135 lbs", or a dash when that set wasn't logged. */
+/** "135 lbs", "6.5 mph", or a dash when that set wasn't logged. */
 export function formatPreviousSet(
   log: ClientWorkoutSetLog | undefined,
-  load: WorkoutLoad | null = "lb"
+  load: WorkoutLoad | null = "lb",
+  effort: WorkoutEffort = "reps"
 ): string {
   const weight = log?.weight?.trim() ?? "";
   const reps = log?.reps?.trim() ?? "";
+  if (load === "speed") {
+    if (weight) return `${weight} mph`;
+    if (reps) return `${reps} mi`;
+    return "–";
+  }
   if (weight && load !== "bodyweight") {
     return load === "kg" ? `${weight} kg` : `${weight} lbs`;
   }
-  if (reps) return reps;
+  if (reps) return effort === "distance" ? `${reps} mi` : reps;
   return "–";
 }
 
@@ -305,14 +326,18 @@ export function parseWorkoutSetCount(value: string): number | null {
 }
 
 export function sanitizeWorkoutSetLogs(
-  value: unknown
+  value: unknown,
+  effort: WorkoutEffort = "reps"
 ): ClientWorkoutSetLog[] | undefined {
   if (!Array.isArray(value) || value.length === 0) return undefined;
   const logs = value.slice(0, MAX_WORKOUT_SETS).map((item) => {
     if (!item || typeof item !== "object") return { reps: "", weight: "" };
     const raw = item as Partial<ClientWorkoutSetLog>;
     const log: ClientWorkoutSetLog = {
-      reps: sanitizeWorkoutCount(raw.reps, 4),
+      reps:
+        effort === "distance"
+          ? sanitizeWorkoutWeight(raw.reps)
+          : sanitizeWorkoutCount(raw.reps, 4),
       weight: sanitizeWorkoutWeight(raw.weight),
     };
     if (raw.completed === true) log.completed = true;
@@ -326,7 +351,13 @@ export function sanitizeWorkoutExercise(
 ): ClientWorkoutExercise | null {
   const name = storedExerciseName(exercise.name);
   if (!name) return null;
-  const setLogs = sanitizeWorkoutSetLogs(exercise.setLogs);
+  const resolvedEffort =
+    exercise.effort === "reps" || exercise.effort === "distance"
+      ? exercise.effort
+      : exerciseUsesDistance(name)
+        ? "distance"
+        : "reps";
+  const setLogs = sanitizeWorkoutSetLogs(exercise.setLogs, resolvedEffort);
   const signedLogs =
     setLogs && exerciseAssistsWithMachine({ name })
       ? setLogs.map((log) => ({ ...log, weight: signAssistanceWeight(log.weight) }))
@@ -338,14 +369,22 @@ export function sanitizeWorkoutExercise(
   const note = sanitizeExerciseNote(exercise.note).trim();
   const effort = exercise.effort === "reps" || exercise.effort === "distance" ? exercise.effort : undefined;
   const load =
-    exercise.load === "lb" || exercise.load === "kg" || exercise.load === "bodyweight"
+    exercise.load === "lb" ||
+    exercise.load === "kg" ||
+    exercise.load === "bodyweight" ||
+    exercise.load === "speed"
       ? exercise.load
       : undefined;
+  const reps = setLogs
+    ? ""
+    : resolvedEffort === "distance"
+      ? sanitizeWorkoutWeight(exercise.reps).replace(/\.$/, "")
+      : exercise.reps.replace(/\s+/g, " ").trim().slice(0, 16);
   return {
     id: exercise.id.trim() || createWorkoutExerciseId(),
     name,
     sets,
-    reps: setLogs ? "" : exercise.reps.replace(/\s+/g, " ").trim().slice(0, 16),
+    reps,
     ...(signedLogs ? { setLogs: signedLogs } : {}),
     ...(note ? { note } : {}),
     ...(exercise.completed === true ? { completed: true } : {}),
@@ -452,6 +491,12 @@ export function formatCardioLine(cardio: ClientWorkoutCardio): string {
   const duration = cardio.duration.trim();
   if (type && duration) return `${type} · ${duration}`;
   return type || duration;
+}
+
+/** First word of the activity. The day chip stays short; the full line lives on the workout. */
+export function cardioChipLabel(cardio: ClientWorkoutCardio): string {
+  const source = cardio.type.trim() || cardio.duration.trim();
+  return source.split(/\s+/)[0] ?? "";
 }
 
 export function hasExercisesOnDay(
@@ -571,8 +616,15 @@ export function currentWorkoutPosition(
     setCount,
     setLabel: `Set ${setNumber} of ${setCount}`,
     weightLabel:
-      load === "lb" || load === "kg" ? liveWeightLabel(weight, load) : "—",
-    repsLabel: effort === "distance" ? (reps.trim() ? reps.trim() : "—") : liveRepsLabel(reps),
+      load === "speed"
+        ? weight.trim()
+          ? `${weight.trim()} mph`
+          : "—"
+        : load === "lb" || load === "kg"
+          ? liveWeightLabel(weight, load)
+          : "—",
+    repsLabel:
+      effort === "distance" ? (reps.trim() ? `${reps.trim()} mi` : "—") : liveRepsLabel(reps),
     setsLabel: liveSetsLabel(setCount),
     imageUrl: current.imageUrl?.trim() ?? "",
   };
@@ -914,20 +966,46 @@ export function formatSetCount(count: number): string {
   return count === 1 ? "1 set" : `${count} sets`;
 }
 
-export function formatSetLogLine(index: number, log: ClientWorkoutSetLog): string {
+function measuredSet(
+  log: Pick<ClientWorkoutSetLog, "reps" | "weight">,
+  effort: WorkoutEffort,
+  load: WorkoutLoad | null
+): { reps: string; weight: string } {
   const reps = log.reps.trim();
   const weight = log.weight.trim();
-  if (reps && weight) return `${index} · ${reps} × ${weight} lb`;
-  if (reps) return `${index} · ${reps} reps`;
-  return `${index} · ${weight} lb`;
+  return {
+    reps: reps ? (effort === "distance" ? `${reps} mi` : reps) : "",
+    weight:
+      weight && load !== "bodyweight" && load !== null
+        ? `${weight} ${load === "kg" ? "kg" : load === "speed" ? "mph" : "lb"}`
+        : "",
+  };
 }
 
-function formatUniformSets(count: number, log: ClientWorkoutSetLog): string {
-  const reps = log.reps.trim();
-  const weight = log.weight.trim();
-  if (reps && weight) return `${count} × ${reps} × ${weight} lb`;
-  if (reps) return `${count} × ${reps}`;
-  return `${count} × ${weight} lb`;
+export function formatSetLogLine(
+  index: number,
+  log: ClientWorkoutSetLog,
+  exercise?: Pick<ClientWorkoutExercise, "name" | "effort" | "equipment" | "exerciseType" | "load">
+): string {
+  const effort = exercise ? exerciseEffort(exercise) : "reps";
+  const load = exercise ? exerciseLoad(exercise) : "lb";
+  const measured = measuredSet(log, effort, load);
+  if (measured.reps && measured.weight) return `${index} · ${measured.reps} × ${measured.weight}`;
+  if (measured.reps) {
+    return effort === "distance" ? `${index} · ${measured.reps}` : `${index} · ${log.reps.trim()} reps`;
+  }
+  return `${index} · ${measured.weight}`;
+}
+
+function formatUniformSets(
+  count: number,
+  log: ClientWorkoutSetLog,
+  exercise: Pick<ClientWorkoutExercise, "name" | "effort" | "equipment" | "exerciseType" | "load">
+): string {
+  const measured = measuredSet(log, exerciseEffort(exercise), exerciseLoad(exercise));
+  if (measured.reps && measured.weight) return `${count} × ${measured.reps} × ${measured.weight}`;
+  if (measured.reps) return `${count} × ${measured.reps}`;
+  return `${count} × ${measured.weight}`;
 }
 
 /** Lines under an exercise name. One compact line when every set matches. */
@@ -946,16 +1024,18 @@ export function formatExerciseDetailLines(exercise: ClientWorkoutExercise): stri
     const uniform =
       filled.length === logs.length &&
       filled.every((log) => log.reps === first.reps && log.weight === first.weight);
-    if (uniform) return [formatUniformSets(logs.length, first)];
+    if (uniform) return [formatUniformSets(logs.length, first, exercise)];
     const lines = [formatSetCount(logs.length)];
     logs.forEach((log, index) => {
       if (!log.reps && !log.weight) return;
-      lines.push(formatSetLogLine(index + 1, log));
+      lines.push(formatSetLogLine(index + 1, log, exercise));
     });
     return lines;
   }
 
-  if (sets && reps) return [`${sets} × ${reps}`];
+  if (sets && reps) {
+    return [exerciseEffort(exercise) === "distance" ? `${sets} × ${reps} mi` : `${sets} × ${reps}`];
+  }
   if (/^\d+$/.test(sets)) return [formatSetCount(Number(sets))];
   if (sets || reps) return [sets || reps];
   return [];

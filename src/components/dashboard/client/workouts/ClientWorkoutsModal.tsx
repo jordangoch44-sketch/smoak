@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
@@ -33,15 +33,9 @@ import {
   workoutTitleOnDay,
   WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
-import type { ClientWorkoutCardio, ClientWorkoutDay, ClientWorkoutExercise } from "@/types/client-workout";
-import { useToast } from "@/components/ui/toast";
+import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
 import { warmExerciseLibraryThumbs } from "@/lib/workouts/exercise-media-client";
-import {
-  openPreparedWorkoutText,
-  prefetchSharedWorkoutText,
-  textSharedWorkout,
-} from "@/lib/workouts/shared-workout-service";
 import {
   coachDayForSheet,
   coachDayMark,
@@ -76,30 +70,7 @@ export function ClientWorkoutsModal({
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [pasteSourceKey, setPasteSourceKey] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
-  const [shareWorkout, setShareWorkout] = useState<ClientWorkoutDay | null>(null);
   const [finishError, setFinishError] = useState<string | null>(null);
-  const shareOnce = useRef(false);
-  const { showToast } = useToast();
-  const dismissNice = useCallback(() => {
-    setCelebrate(false);
-    const day = shareWorkout;
-    if (!day || shareOnce.current) return;
-    shareOnce.current = true;
-    if (openPreparedWorkoutText(day)) {
-      setShareWorkout(null);
-      return;
-    }
-    void textSharedWorkout(day).then((result) => {
-      setShareWorkout(null);
-      if (!result.ok) {
-        showToast({ type: "info", message: result.message });
-        return;
-      }
-      if (result.copied) {
-        showToast({ type: "success", message: "Link copied. Text it from your phone." });
-      }
-    });
-  }, [shareWorkout, showToast]);
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
   const ignoreDayTapUntilRef = useRef(0);
@@ -245,19 +216,13 @@ export function ClientWorkoutsModal({
     return null;
   }
 
-  function handleWorkoutFinished(message: string | null, workout?: ClientWorkoutDay) {
+  function handleWorkoutFinished(message: string | null) {
     if (message) {
       setFinishError(message);
       setCelebrate(false);
-      setShareWorkout(null);
       return;
     }
     setFinishError(null);
-    shareOnce.current = false;
-    const finished =
-      workout && workout.exercises.some((exercise) => exercise.name.trim()) ? workout : null;
-    if (finished) prefetchSharedWorkoutText(finished);
-    setShareWorkout(finished);
     setCelebrate(true);
   }
 
@@ -497,7 +462,7 @@ export function ClientWorkoutsModal({
   return (
     <>
       {workouts}
-      {celebrate ? <WorkoutNiceOverlay onDone={dismissNice} /> : null}
+      {celebrate ? <WorkoutNiceOverlay onDone={() => setCelebrate(false)} /> : null}
       {finishError
         ? createPortal(
             <button

@@ -18,13 +18,16 @@ import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseA
 import { exerciseLabel } from "@/data/exercise-display";
 import { ExerciseOptionsSheet } from "@/components/dashboard/client/workouts/ExerciseOptionsSheet";
 import { ExercisePickerSheet } from "@/components/dashboard/client/workouts/ExercisePickerSheet";
-import { ExerciseSetBlock } from "@/components/dashboard/client/workouts/ExerciseSetBlock";
+import { ExerciseSetBlock, UnitSwitchIcon } from "@/components/dashboard/client/workouts/ExerciseSetBlock";
 import { SwipeToRemove } from "@/components/dashboard/client/workouts/SwipeToRemove";
 import {
   createWorkoutExerciseId,
   emptyWorkoutCardio,
   exerciseWithSetLogs,
+  cardioChipLabel,
   formatCardioLine,
+  MAX_CARDIO_DURATION_LENGTH,
+  MAX_CARDIO_TYPE_LENGTH,
   formatWorkoutDayHeading,
   formatWorkoutDuration,
   freshExerciseBlock,
@@ -744,9 +747,19 @@ export function ClientWorkoutDaySheet({
   const setsComplete =
     exercises.length > 0 &&
     exercises.every((exercise) => exercise.name.trim() && exercise.completed === true);
-  const readyToFinish = Boolean(fromCoach && onFinish) && setsComplete;
   /** Coach day that is already reported done, so Finish only opens sharing. */
   const coachAlreadyDone = Boolean(fromCoach) && !onFinish && !send && namedExercises;
+
+  function handleSaveUnfinished() {
+    if (finishing) return;
+    const next = exercisesRef.current;
+    if (!persist(next)) {
+      setError("Couldn’t save the workout.");
+      return;
+    }
+    setError(null);
+    requestClose();
+  }
 
   function handleFinish() {
     if (!onFinish || finishing) return;
@@ -888,9 +901,17 @@ export function ClientWorkoutDaySheet({
       setError("Add a cardio type or duration.");
       return;
     }
-    persist(exercises);
+    const saved = persist(exercises);
+    if (!saved) {
+      setError("Couldn’t save the cardio.");
+      return;
+    }
     setError(null);
-    setStep("workout");
+    if (wantWorkout) {
+      setStep("workout");
+      return;
+    }
+    requestClose();
   }
 
   function handleRemoveCardio() {
@@ -1112,9 +1133,12 @@ export function ClientWorkoutDaySheet({
                 {title.trim() ? (
                   <span className="client-workouts-day__title-chip">{title.trim()}</span>
                 ) : null}
-                {hasCardio ? (
-                  <span className="client-workouts-day__title-chip client-workouts-day__title-chip--cardio">
-                    {formatCardioLine(cardio)}
+                {hasCardio && cardioChipLabel(cardio) ? (
+                  <span
+                    className="client-workouts-day__title-chip client-workouts-day__title-chip--cardio"
+                    aria-label={formatCardioLine(cardio)}
+                  >
+                    {cardioChipLabel(cardio)}
                   </span>
                 ) : null}
               </div>
@@ -1144,7 +1168,7 @@ export function ClientWorkoutDaySheet({
                   <span className="client-workouts-day__from-coach-chip">{fromCoach}</span>
                 </p>
                 <p className="client-workouts-day__from-coach-hint">
-                  ( Please Checkmark all sets to finish workout )
+                  ( Save it unfinished, or check every set to finish. )
                 </p>
               </div>
             ) : send ? (
@@ -1338,13 +1362,13 @@ export function ClientWorkoutDaySheet({
                 value={cardio.type}
                 autoComplete="off"
                 autoCorrect="off"
-                maxLength={32}
+                maxLength={MAX_CARDIO_TYPE_LENGTH}
                 placeholder="Type (run, bike, walk…)"
                 aria-label="Cardio type"
                 onChange={(event) => {
                   setCardio((current) => ({
                     ...current,
-                    type: event.target.value.slice(0, 32),
+                    type: event.target.value.slice(0, MAX_CARDIO_TYPE_LENGTH),
                   }));
                   setError(null);
                 }}
@@ -1354,13 +1378,13 @@ export function ClientWorkoutDaySheet({
                 value={cardio.duration}
                 autoComplete="off"
                 autoCorrect="off"
-                maxLength={16}
+                maxLength={MAX_CARDIO_DURATION_LENGTH}
                 placeholder="Duration (30 min)"
                 aria-label="Cardio duration"
                 onChange={(event) => {
                   setCardio((current) => ({
                     ...current,
-                    duration: event.target.value.slice(0, 16),
+                    duration: event.target.value.slice(0, MAX_CARDIO_DURATION_LENGTH),
                   }));
                   setError(null);
                 }}
@@ -1468,8 +1492,14 @@ export function ClientWorkoutDaySheet({
                     <div className="exercise-block__head">
                       <span>Set</span>
                       <span className="exercise-block__head-previous">Last Time</span>
-                      <span className="exercise-block__unit" aria-hidden>Lbs</span>
-                      <span className="exercise-block__unit" aria-hidden>Reps</span>
+                      <span className="exercise-block__unit" aria-hidden>
+                        Lbs
+                        <UnitSwitchIcon />
+                      </span>
+                      <span className="exercise-block__unit" aria-hidden>
+                        Reps
+                        <UnitSwitchIcon />
+                      </span>
                       <CheckIcon className="exercise-block__head-check" />
                     </div>
                     <div className="exercise-block__row">
@@ -1537,14 +1567,27 @@ export function ClientWorkoutDaySheet({
           <div className="client-workouts-day__footer">
             <div className="client-workouts-day__footer-inner">
               <FastActivateButton
-                className="client-workouts-btn client-workouts-btn--coach"
-                disabled={finishing || (Boolean(onFinish) && !setsComplete)}
+                className={cn(
+                  "client-workouts-btn client-workouts-btn--coach",
+                  onFinish && !setsComplete && "client-workouts-btn--coach-open"
+                )}
+                disabled={finishing}
                 onActivate={() => {
+                  if (onFinish && !setsComplete) {
+                    handleSaveUnfinished();
+                    return;
+                  }
                   if (onFinish) void handleFinish();
                   else handleShareFinished();
                 }}
               >
-                {finishing ? "Finishing…" : "Finish workout"}
+                {finishing
+                  ? "Finishing…"
+                  : onFinish && !setsComplete
+                    ? "Save as unfinished"
+                    : onFinish
+                      ? "Finished workout"
+                      : "Finish workout"}
               </FastActivateButton>
             </div>
           </div>
@@ -1568,7 +1611,7 @@ export function ClientWorkoutDaySheet({
                   className="client-workouts-btn client-workouts-btn--primary"
                   onActivate={handleCardioContinue}
                 >
-                  Continue to workout
+                  {wantWorkout ? "Continue to workout" : "Save"}
                 </FastActivateButton>
                 <FastActivateButton
                   className="client-workouts-btn client-workouts-btn--ghost"

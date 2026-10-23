@@ -2,6 +2,7 @@ import { storedExerciseName } from "@/data/exercise-display";
 import { absoluteUrl } from "@/lib/seo/site-url";
 import {
   createWorkoutExerciseId,
+  exerciseUsesDistance,
   hasCardioOnDay,
   hasRestOnDay,
   hasStrengthOnDay,
@@ -69,6 +70,7 @@ export function formatSharedExerciseLine(exercise: SharedWorkoutExercise): strin
   const sets = count === 1 ? "1 set" : `${count} sets`;
   const reps = exercise.reps.trim();
   if (!reps) return sets;
+  if (exerciseUsesDistance(exercise.name)) return `${sets} · ${reps} mi`;
   return `${sets} · ${reps} reps`;
 }
 

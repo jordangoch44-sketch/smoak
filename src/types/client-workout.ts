@@ -1,10 +1,10 @@
 /** Client dashboard workout log — one saved day is a completed training day. */
 
-/** What the reps column is counting. Distance is for a run. */
+/** What the reps column is counting. Distance is miles for a run. */
 export type WorkoutEffort = "reps" | "distance";
 
-/** What the load column is measuring. Bodyweight hides the number. */
-export type WorkoutLoad = "lb" | "kg" | "bodyweight";
+/** What the load column is measuring. Speed is miles per hour for a run. Bodyweight hides the number. */
+export type WorkoutLoad = "lb" | "kg" | "bodyweight" | "speed";
 
 /** Reps and weight for one set. Empty strings mean that number was skipped. */
 export interface ClientWorkoutSetLog {

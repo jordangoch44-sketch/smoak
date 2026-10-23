@@ -79,7 +79,7 @@ export async function fetchSharedWorkout(
   };
 }
 
-/** Start the link while the celebration is on screen, so Share can open Messages immediately. */
+/** Start the link while the workout menu is open, so Share can open Messages immediately. */
 export function prefetchSharedWorkoutText(day: Pick<ClientWorkoutDay, "title" | "exercises">): void {
   const plan = sharedWorkoutPlan(day);
   if (plan.exercises.length === 0) return;

@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
-  CalendarIcon,
   ChartIcon,
   CheckCircleIcon,
-  ChevronRightIcon,
-  DumbbellIcon,
+  ChevronDownIcon,
   MessageBubbleIcon,
   PlusIcon,
   SearchIcon,
+  SendIcon,
   UserIcon,
 } from "@/components/ui/icons";
 import { useCoachingRoster } from "@/hooks/useCoachingRoster";
@@ -20,9 +20,14 @@ import { forgetHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
 import { showToast } from "@/lib/toast-store";
 import {
   summarizeRosterClient,
+  VIEW_FINISHED_WORKOUT_EVENT,
   type RosterClientState,
   type RosterClientSummary,
 } from "@/lib/coaching/coach-workout";
+import {
+  SPECIALIST_DASHBOARD_PATH,
+  SPECIALIST_FINISHED_WORKOUT_PARAM,
+} from "@/lib/auth-routes";
 import { cn } from "@/lib/utils";
 import { toLocalDateKey } from "@/lib/workouts/client-workout";
 import type { CoachingRelationship } from "@/types/coaching";
@@ -73,36 +78,9 @@ function SampleClientCard() {
             <span className="roster-card__name">Your first client</span>
             <span className="roster-card__badge">Example</span>
           </span>
-          <span className="roster-card__last">Last workout —</span>
-          <span className="roster-card__meta">
-            <span>
-              <CalendarIcon className="roster-card__meta-icon" />
-              0/wk
-            </span>
-            <span>
-              <ChartIcon className="roster-card__meta-icon" />
-              0 weeks
-            </span>
-            <span>
-              <CheckCircleIcon className="roster-card__meta-icon" />0 done
-            </span>
-          </span>
+          <span className="roster-card__last">No workouts yet</span>
         </span>
-        <ChevronRightIcon className="roster-card__chevron" />
-      </div>
-      <div className="roster-card__actions">
-        <span className="roster-card__action">
-          <MessageBubbleIcon className="roster-card__action-icon" />
-          Message
-        </span>
-        <span className="roster-card__action roster-card__action--send">
-          <DumbbellIcon className="roster-card__action-icon" />
-          Send Workout
-        </span>
-        <span className="roster-card__action">
-          <CalendarIcon className="roster-card__action-icon" />
-          View Calendar
-        </span>
+        <ChevronDownIcon className="roster-card__chevron" />
       </div>
     </li>
   );
@@ -111,7 +89,7 @@ function SampleClientCard() {
 type OpenSheet =
   | { kind: "add" }
   | { kind: "send"; relationshipId: string }
-  | { kind: "plan"; relationshipId: string }
+  | { kind: "plan"; relationshipId: string; workoutId?: string }
   | { kind: "edit"; relationshipId: string; workoutId: string }
   | null;
 
@@ -133,6 +111,7 @@ export function SpecialistClientsPage({
   const {
     loaded,
     roster,
+    workouts,
     workoutsFor,
     openThread,
     invite,
@@ -143,17 +122,76 @@ export function SpecialistClientsPage({
     removeClient,
     respondToRequest,
   } = useCoachingRoster(specialistId);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const ignoreFinishedId = useRef<string | null>(null);
+  const openedFinishedId = useRef<string | null>(null);
   const inquiries = useSpecialistInquiryContacts(isPremium ? specialistId : null);
   // Activity depends on today’s date; build only in the browser.
   const inBrowser = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<RosterFilter>("all");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<OpenSheet>(null);
   const [requestBusyId, setRequestBusyId] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<{ id: string; message: string } | null>(null);
   const [messageBusyId, setMessageBusyId] = useState<string | null>(null);
   const [messageError, setMessageError] = useState<{ id: string; message: string } | null>(null);
-  const closeSheet = useCallback(() => setSheet(null), []);
+  const closeSheet = useCallback(() => {
+    setSheet(null);
+    const workoutId = searchParams.get(SPECIALIST_FINISHED_WORKOUT_PARAM);
+    if (!workoutId) return;
+    ignoreFinishedId.current = workoutId;
+    openedFinishedId.current = workoutId;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(SPECIALIST_FINISHED_WORKOUT_PARAM);
+    const qs = params.toString();
+    router.replace(qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH, {
+      scroll: false,
+    });
+  }, [router, searchParams]);
+
+  const openFinishedWorkout = useCallback(
+    (workoutId: string) => {
+      const workout = workouts.find((item) => item.id === workoutId);
+      if (!workout) return false;
+      setSheet({
+        kind: "plan",
+        relationshipId: workout.relationshipId,
+        workoutId: workout.id,
+      });
+      return true;
+    },
+    [workouts]
+  );
+
+  useEffect(() => {
+    function onViewFinished(event: Event) {
+      const workoutId = (event as CustomEvent<string>).detail;
+      if (typeof workoutId !== "string" || !workoutId) return;
+      ignoreFinishedId.current = null;
+      if (openFinishedWorkout(workoutId)) openedFinishedId.current = workoutId;
+    }
+    window.addEventListener(VIEW_FINISHED_WORKOUT_EVENT, onViewFinished);
+    return () => window.removeEventListener(VIEW_FINISHED_WORKOUT_EVENT, onViewFinished);
+  }, [openFinishedWorkout]);
+
+  useEffect(() => {
+    const workoutId = searchParams.get(SPECIALIST_FINISHED_WORKOUT_PARAM);
+    if (!workoutId) {
+      ignoreFinishedId.current = null;
+      openedFinishedId.current = null;
+      return;
+    }
+    if (
+      !loaded ||
+      ignoreFinishedId.current === workoutId ||
+      openedFinishedId.current === workoutId
+    ) {
+      return;
+    }
+    if (openFinishedWorkout(workoutId)) openedFinishedId.current = workoutId;
+  }, [loaded, openFinishedWorkout, searchParams]);
 
   const profileAvatars = useRosterClientAvatars(specialistId);
   const avatarByClient = useMemo(() => {
@@ -211,7 +249,7 @@ export function SpecialistClientsPage({
         : `Remove ${name} from your roster? Workouts you sent stay in their calendar.`;
     if (!window.confirm(question)) return;
     const ok = await removeClient(relationship.id);
-    if (ok) setSheet(null);
+    if (ok) closeSheet();
   }
 
   function revealThread(conversationId: string) {
@@ -338,12 +376,17 @@ export function SpecialistClientsPage({
   function renderCard(relationship: CoachingRelationship, summary: RosterClientSummary) {
     const name = relationship.clientFirstName.trim() || "Client";
     const invited = summary.state === "invited";
+    const open = expandedId === relationship.id;
+    const panelId = `roster-card-${relationship.id}`;
+    const latest = summary.latest;
     return (
-      <li key={relationship.id} className="roster-card">
+      <li key={relationship.id} className={cn("roster-card", open && "roster-card--open")}>
         <FastActivateButton
           className="roster-card__main"
-          aria-label={`${name}, ${STATE_LABEL[summary.state]}. View workouts`}
-          onActivate={() => setSheet({ kind: "plan", relationshipId: relationship.id })}
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={`${name}, ${STATE_LABEL[summary.state]}. ${open ? "Hide actions" : "Show actions"}`}
+          onActivate={() => setExpandedId(open ? null : relationship.id)}
         >
           <RosterAvatar
             name={name}
@@ -358,68 +401,84 @@ export function SpecialistClientsPage({
               </span>
             </span>
             <span className="roster-card__last">{summary.lastLine}</span>
-            {invited ? (
-              <span className="roster-card__meta">
-                <span>Waiting for them to accept</span>
-              </span>
-            ) : (
-              <span className="roster-card__meta">
-                <span>
-                  <CalendarIcon className="roster-card__meta-icon" />
-                  {summary.perWeekLabel}
-                </span>
-                <span>
-                  <ChartIcon className="roster-card__meta-icon" />
-                  {summary.weeksLabel}
-                </span>
-                <span>
-                  <CheckCircleIcon className="roster-card__meta-icon" />
-                  {summary.completedCount} done
-                </span>
-              </span>
-            )}
           </span>
-          <ChevronRightIcon className="roster-card__chevron" />
+          <ChevronDownIcon className="roster-card__chevron" />
         </FastActivateButton>
 
-        {messageError?.id === relationship.id ? (
-          <p className="coaching-error">{messageError.message}</p>
-        ) : null}
-        <div className="roster-card__actions">
-          <FastActivateButton
-            className="roster-card__action"
-            disabled={messageBusyId === relationship.id}
-            onActivate={() => void handleMessage(relationship)}
-          >
-            <MessageBubbleIcon className="roster-card__action-icon" />
-            {messageBusyId === relationship.id ? "Opening…" : "Message"}
-          </FastActivateButton>
-          {invited ? (
-            <FastActivateButton
-              className="roster-card__action roster-card__action--wide"
-              onActivate={() => void handleRemoveClient(relationship)}
-            >
-              Cancel invite
-            </FastActivateButton>
-          ) : (
-            <>
-              <FastActivateButton
-                className="roster-card__action roster-card__action--send"
-                onActivate={() => setSheet({ kind: "send", relationshipId: relationship.id })}
-              >
-                <DumbbellIcon className="roster-card__action-icon" />
-                Send Workout
-              </FastActivateButton>
+        {open ? (
+          <div className="roster-card__panel" id={panelId}>
+            {latest ? (
+              <div className="roster-card__latest">
+                <div className="roster-card__latest-head">
+                  <p className="roster-card__latest-label">Latest workout</p>
+                  <span
+                    className={cn(
+                      "roster-card__status",
+                      latest.status === "completed" && "roster-card__status--done"
+                    )}
+                  >
+                    {latest.status === "completed" ? (
+                      <CheckCircleIcon className="roster-card__status-icon" />
+                    ) : null}
+                    {latest.status === "completed"
+                      ? "Completed"
+                      : latest.status === "started"
+                        ? "In progress"
+                        : "Sent"}
+                  </span>
+                </div>
+                <p className="roster-card__latest-title">{latest.title}</p>
+                <p className="roster-card__latest-meta">
+                  {latest.longWhen}
+                  {latest.minutes != null ? ` · ~${latest.minutes} min` : ""}
+                </p>
+              </div>
+            ) : null}
+            {messageError?.id === relationship.id ? (
+              <p className="coaching-error">{messageError.message}</p>
+            ) : null}
+            <div className="roster-card__actions">
               <FastActivateButton
                 className="roster-card__action"
-                onActivate={() => setSheet({ kind: "plan", relationshipId: relationship.id })}
+                disabled={messageBusyId === relationship.id}
+                onActivate={() => void handleMessage(relationship)}
               >
-                <CalendarIcon className="roster-card__action-icon" />
-                View Calendar
+                <MessageBubbleIcon className="roster-card__action-icon" />
+                {messageBusyId === relationship.id ? "Opening…" : "Message"}
               </FastActivateButton>
-            </>
-          )}
-        </div>
+              {invited ? (
+                <FastActivateButton
+                  className="roster-card__action roster-card__action--wide"
+                  onActivate={() => void handleRemoveClient(relationship)}
+                >
+                  Cancel invite
+                </FastActivateButton>
+              ) : (
+                <>
+                  <FastActivateButton
+                    className="roster-card__action roster-card__action--send"
+                    onActivate={() => setSheet({ kind: "send", relationshipId: relationship.id })}
+                  >
+                    <SendIcon className="roster-card__action-icon" />
+                    Send Workout
+                  </FastActivateButton>
+                  <FastActivateButton
+                    className="roster-card__action"
+                    onActivate={() => setSheet({ kind: "plan", relationshipId: relationship.id })}
+                  >
+                    <ChartIcon className="roster-card__action-icon" />
+                    Results
+                  </FastActivateButton>
+                </>
+              )}
+            </div>
+            {invited ? null : (
+              <p className="roster-card__hint">
+                Tap Results to view full workout details and past workouts.
+              </p>
+            )}
+          </div>
+        ) : null}
       </li>
     );
   }
@@ -430,7 +489,7 @@ export function SpecialistClientsPage({
         <div className="roster-page__intro">
           <h1 className="roster-page__title">Clients</h1>
           <p className="roster-page__subtitle">
-            Invite clients, accept connection requests, and see when workouts are finished.
+            Manage your clients, send workouts, message, and view their progress.
           </p>
         </div>
         <FastActivateButton
@@ -568,8 +627,10 @@ export function SpecialistClientsPage({
       ) : null}
       {sheet?.kind === "plan" && sheetRelationship ? (
         <ClientPlanSheet
+          key={sheet.workoutId ? `finished-${sheet.workoutId}` : sheetRelationship.id}
           relationship={sheetRelationship}
           workouts={workoutsFor(sheetRelationship.id)}
+          initialWorkoutId={sheet.workoutId ?? null}
           onSendWorkout={() => setSheet({ kind: "send", relationshipId: sheetRelationship.id })}
           onEditWorkout={(workout) =>
             setSheet({ kind: "edit", relationshipId: sheetRelationship.id, workoutId: workout.id })

@@ -7,6 +7,8 @@ import {
   addDays,
   bestWeekStreak,
   currentWeekStreak,
+  exerciseEffort,
+  exerciseLoad,
   formatBodyWeight,
   hasStrengthOnDay,
   isWorkoutDateKey,
@@ -123,6 +125,7 @@ export function exerciseSetCount(exercise: ClientWorkoutExercise): number {
 }
 
 export function exerciseTopWeight(exercise: ClientWorkoutExercise): number {
+  if (exerciseLoad(exercise) === "speed") return 0;
   return (exercise.setLogs ?? []).reduce(
     (best, log) => Math.max(best, toNumber(log.weight)),
     0
@@ -130,6 +133,7 @@ export function exerciseTopWeight(exercise: ClientWorkoutExercise): number {
 }
 
 function exerciseReps(exercise: ClientWorkoutExercise): number {
+  if (exerciseEffort(exercise) === "distance") return 0;
   if (exercise.setLogs?.length) {
     return exercise.setLogs.reduce((sum, log) => {
       const reps = Number.parseInt(log.reps, 10);

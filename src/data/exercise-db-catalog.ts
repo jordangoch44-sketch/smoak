@@ -125,6 +125,12 @@ const rawEquipmentByName = new Map(
     item.equipments.map((value) => value.toLowerCase()),
   ])
 );
+const bodyPartsByName = new Map(
+  (catalog as RawCatalogExercise[]).map((item) => [
+    formatExerciseName(item.name).toLowerCase(),
+    item.bodyParts.map((value) => value.toLowerCase()),
+  ])
+);
 
 export function catalogExercises(): readonly CatalogExercise[] {
   return exercises;
@@ -140,6 +146,11 @@ export function catalogExerciseImage(name: string): string {
 
 export function catalogExerciseEquipment(name: string): ExerciseEquipment | null {
   return byName.get(name.trim().toLowerCase())?.equipment ?? null;
+}
+
+/** ExerciseDB body parts, such as "cardio" or "upper legs". Empty when the name is not in the catalog. */
+export function catalogExerciseBodyParts(name: string): readonly string[] {
+  return bodyPartsByName.get(name.trim().toLowerCase()) ?? [];
 }
 
 /** A plate, vest, or medicine ball. The set table still asks for pounds. */

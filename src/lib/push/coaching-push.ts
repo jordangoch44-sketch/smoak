@@ -2,6 +2,7 @@ import {
   CLIENT_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_CLIENTS_HREF,
   WORKOUTS_PATH,
+  specialistFinishedWorkoutHref,
 } from "@/lib/auth-routes";
 import { sendUserPush } from "@/lib/push/send-user-push";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
@@ -122,7 +123,7 @@ export async function sendCoachWorkoutFinishedPush(input: {
     userId: specialistUserId,
     title: "Workout finished",
     body: `${client} finished ${title}`,
-    path: SPECIALIST_DASHBOARD_CLIENTS_HREF,
+    path: specialistFinishedWorkoutHref(workoutId),
     collapseId: workoutId,
   });
 }

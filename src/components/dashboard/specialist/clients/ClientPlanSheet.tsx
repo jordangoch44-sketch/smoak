@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Logo } from "@/components/ui/Logo";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
@@ -13,7 +13,13 @@ import {
   DumbbellIcon,
 } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
-import { formatSetCount, formatWorkoutDayHeading, toLocalDateKey } from "@/lib/workouts/client-workout";
+import {
+  exerciseEffort,
+  exerciseLoad,
+  formatSetCount,
+  formatWorkoutDayHeading,
+  toLocalDateKey,
+} from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
 import type { ClientWorkoutExercise } from "@/types/client-workout";
 import type { CoachingRelationship, CoachWorkout } from "@/types/coaching";
@@ -34,9 +40,10 @@ type SummaryRow = {
   sets: SummarySet[] | null;
 };
 
-function repsPhrase(reps: string): string {
+function repsPhrase(reps: string, distance = false): string {
   const value = reps.trim();
   if (!value) return "";
+  if (distance) return `${value} mi`;
   if (/rep/i.test(value)) return value;
   const range = value.match(/^(\d+)\s*[-–]\s*(\d+)$/);
   if (range) return `${range[1]}–${range[2]} reps`;
@@ -44,15 +51,16 @@ function repsPhrase(reps: string): string {
   return value;
 }
 
-function weightPhrase(weight: string): string {
+function weightPhrase(weight: string, speed = false): string {
   const value = weight.trim();
   if (!value) return "";
+  if (speed) return `${value} mph`;
   if (/[a-z]/i.test(value)) return value;
   return `${value} lb`;
 }
 
-function setDetail(reps: string, weight: string): string {
-  return [repsPhrase(reps), weightPhrase(weight)].filter(Boolean).join(" · ");
+function setDetail(reps: string, weight: string, distance = false, speed = false): string {
+  return [repsPhrase(reps, distance), weightPhrase(weight, speed)].filter(Boolean).join(" · ");
 }
 
 function titleCase(value: string): string {
@@ -83,10 +91,16 @@ function loggedExercise(workout: CoachWorkout, exercise: ClientWorkoutExercise) 
   return filled ? log : undefined;
 }
 
-function repsLine(reps: string, weight: string, cue: string | null): string {
-  const repsText = repsPhrase(reps);
+function repsLine(
+  reps: string,
+  weight: string,
+  cue: string | null,
+  distance = false,
+  speed = false
+): string {
+  const repsText = repsPhrase(reps, distance);
   const withCue = cue && repsText ? `${repsText} (${cue})` : repsText;
-  const weightText = weightPhrase(weight);
+  const weightText = weightPhrase(weight, speed);
   return [withCue, weightText].filter(Boolean).join(" · ");
 }
 
@@ -99,6 +113,8 @@ function summaryRow(exercise: ClientWorkoutExercise, source: ClientWorkoutExerci
     reps: log.reps.trim(),
     weight: log.weight.trim(),
   }));
+  const distance = exerciseEffort(exercise) === "distance";
+  const speed = exerciseLoad(exercise) === "speed";
   const filled = logs.filter((log) => log.reps || log.weight);
   const first = filled[0];
   const uniform =
@@ -111,12 +127,12 @@ function summaryRow(exercise: ClientWorkoutExercise, source: ClientWorkoutExerci
   if (filled.length > 0 && !uniform) {
     sets = filled.map((log) => ({
       label: `Set ${log.index + 1}`,
-      detail: setDetail(log.reps, log.weight),
+      detail: setDetail(log.reps, log.weight, distance, speed),
     }));
   } else if (first) {
-    pill = repsLine(first.reps, first.weight, cue);
+    pill = repsLine(first.reps, first.weight, cue, distance, speed);
   } else if (source.reps.trim() || exercise.reps.trim()) {
-    pill = repsLine(source.reps.trim() || exercise.reps.trim(), "", cue);
+    pill = repsLine(source.reps.trim() || exercise.reps.trim(), "", cue, distance, speed);
   }
 
   return {
@@ -305,6 +321,7 @@ function SentWorkoutSummary({
 export function ClientPlanSheet({
   relationship,
   workouts,
+  initialWorkoutId = null,
   onSendWorkout,
   onEditWorkout,
   onRemoveWorkout,
@@ -313,6 +330,8 @@ export function ClientPlanSheet({
 }: {
   relationship: CoachingRelationship;
   workouts: readonly CoachWorkout[];
+  /** Opens this workout's logged sets as soon as the sheet is shown. */
+  initialWorkoutId?: string | null;
   onSendWorkout: () => void;
   onEditWorkout: (workout: CoachWorkout) => void;
   onRemoveWorkout: (workoutId: string) => Promise<boolean>;
@@ -321,7 +340,10 @@ export function ClientPlanSheet({
 }) {
   const [todayKey] = useState(() => toLocalDateKey(new Date()));
   const [error, setError] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(initialWorkoutId);
+  useEffect(() => {
+    if (initialWorkoutId) setSelectedId(initialWorkoutId);
+  }, [initialWorkoutId]);
   const selectedIdRef = useRef(selectedId);
   selectedIdRef.current = selectedId;
   const name = relationship.clientFirstName.trim() || "Client";

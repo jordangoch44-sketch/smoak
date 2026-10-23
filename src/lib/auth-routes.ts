@@ -10,6 +10,14 @@ export const SPECIALIST_DASHBOARD_WELCOME_HREF = `${SPECIALIST_DASHBOARD_PROFILE
 export const SPECIALIST_DASHBOARD_EDIT_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=edit`;
 export const SPECIALIST_DASHBOARD_INQUIRIES_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=inquiries`;
 export const SPECIALIST_DASHBOARD_CLIENTS_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=clients`;
+/** Opens the logged sets for one finished coach workout on the Clients tab. */
+export const SPECIALIST_FINISHED_WORKOUT_PARAM = "finishedWorkout";
+
+export function specialistFinishedWorkoutHref(workoutId: string): string {
+  const id = workoutId.trim();
+  if (!id) return SPECIALIST_DASHBOARD_CLIENTS_HREF;
+  return `${SPECIALIST_DASHBOARD_CLIENTS_HREF}&${SPECIALIST_FINISHED_WORKOUT_PARAM}=${encodeURIComponent(id)}`;
+}
 export const LOGIN_PATH = "/login";
 
 export function getDashboardPathForRole(role: PublicAuthRole): string {

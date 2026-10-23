@@ -35,15 +35,16 @@ import {
   rememberLocalFinishedSeen,
   readLocalFinishedSeen,
   unseenCoachCompletions,
+  VIEW_FINISHED_WORKOUT_EVENT,
 } from "@/lib/coaching/coach-workout";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import {
-  SPECIALIST_DASHBOARD_CLIENTS_HREF,
   SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
   SPECIALIST_DASHBOARD_WELCOME_HREF,
+  SPECIALIST_FINISHED_WORKOUT_PARAM,
 } from "@/lib/auth-routes";
 import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import {
@@ -756,7 +757,21 @@ export function SpecialistDashboardPageClient() {
                   ?.clientFirstName ?? "Your client",
               title: workout.title.trim() || "their workout",
             }))}
-            onView={() => router.push(SPECIALIST_DASHBOARD_CLIENTS_HREF)}
+            onView={() => {
+              const workout = finishedNotices[0];
+              if (!workout) return;
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("tab", "clients");
+              params.delete("view");
+              params.delete("c");
+              params.set(SPECIALIST_FINISHED_WORKOUT_PARAM, workout.id);
+              router.push(`${SPECIALIST_DASHBOARD_PATH}?${params.toString()}`, {
+                scroll: false,
+              });
+              window.dispatchEvent(
+                new CustomEvent(VIEW_FINISHED_WORKOUT_EVENT, { detail: workout.id })
+              );
+            }}
             onDismiss={() => {
               const ids = finishedNotices.map((workout) => workout.id);
               rememberLocalFinishedSeen(ids);
