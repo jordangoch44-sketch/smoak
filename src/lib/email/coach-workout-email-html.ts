@@ -6,6 +6,7 @@ import { buildLoginHref } from "@/lib/auth-return";
 import { WORKOUTS_PATH } from "@/lib/auth-routes";
 import {
   emailAbsoluteUrl,
+  emailDarkModeLock,
   emailPublicAssetUrl,
   emailSiteOrigin,
   escapeEmailHtml,
@@ -15,6 +16,9 @@ import { parseLocalDateKey } from "@/lib/workouts/client-workout";
 
 const FONT =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif";
+
+const PAGE = "#070b16";
+const CARD = "#10141f";
 
 const SPECTRUM = `linear-gradient(90deg,${SMOAC_COLOR.rose} 0%,${SMOAC_COLOR.violet} 52%,${SMOAC_COLOR.cool} 100%)`;
 
@@ -80,15 +84,14 @@ export function renderCoachWorkoutEmailHtml(input: {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="color-scheme" content="dark"/>
-  <meta name="supported-color-schemes" content="dark"/>
+  ${emailDarkModeLock()}
   <title>Your workout is ready</title>
 </head>
-<body style="margin:0;padding:0;background:#050506;">
+<body class="email-canvas" bgcolor="${PAGE}" style="margin:0;padding:0;background-color:${PAGE};">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeEmailHtml(workout)} is on your Workouts calendar.</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#050506;border-collapse:collapse;">
+  <table class="email-canvas" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${PAGE}" style="background-color:${PAGE};border-collapse:collapse;">
     <tr>
-      <td align="center" style="padding:28px 16px 36px;">
+      <td class="email-canvas" align="center" bgcolor="${PAGE}" style="padding:28px 16px 36px;background-color:${PAGE};">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;border-collapse:collapse;">
           <tr>
             <td align="center" style="padding:0 0 28px;">
@@ -102,13 +105,13 @@ export function renderCoachWorkoutEmailHtml(input: {
           <tr>
             <td>
               <p style="margin:0 0 10px;font-family:${FONT};font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:${SMOAC_COLOR.rose};">New workout assigned</p>
-              <h1 style="margin:0 0 16px;font-family:${FONT};font-size:40px;line-height:1.02;font-weight:700;letter-spacing:-0.035em;color:#ffffff;">Your workout<br/><span style="color:${SMOAC_COLOR.rose};">is </span><span style="color:${SMOAC_COLOR.indigo};">ready.</span></h1>
-              <p style="margin:0 0 8px;font-family:${FONT};font-size:18px;line-height:1.4;font-weight:600;color:#f4f4f5;">Hey ${escapeEmailHtml(first)},</p>
-              <p style="margin:0 0 22px;font-family:${FONT};font-size:16px;line-height:1.5;color:#d4d4d8;">Your coach just sent you a new workout. It’s on your Workouts calendar and ready to go.</p>
+              <h1 class="email-title" style="margin:0 0 16px;font-family:${FONT};font-size:40px;line-height:1.02;font-weight:700;letter-spacing:-0.035em;color:#ffffff;">Your workout<br/><span style="color:${SMOAC_COLOR.rose};">is </span><span style="color:${SMOAC_COLOR.indigo};">ready.</span></h1>
+              <p class="email-title" style="margin:0 0 8px;font-family:${FONT};font-size:18px;line-height:1.4;font-weight:600;color:#f4f4f5;">Hey ${escapeEmailHtml(first)},</p>
+              <p class="email-copy" style="margin:0 0 22px;font-family:${FONT};font-size:16px;line-height:1.5;color:#d4d4d8;">Your coach just sent you a new workout. It’s on your Workouts calendar and ready to go.</p>
             </td>
           </tr>
           <tr>
-            <td style="padding:18px 18px 16px;border:1px solid #2a2a32;border-radius:18px;background:#121218;">
+            <td class="email-card" bgcolor="${CARD}" style="padding:18px 18px 16px;border:1px solid #2a3144;border-radius:18px;background-color:${CARD};">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                 <tr>
                   <td width="52" valign="top" style="width:52px;padding:0 12px 0 0;">
@@ -150,7 +153,7 @@ export function renderCoachWorkoutEmailHtml(input: {
             <td style="padding:18px 0 8px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                 <tr>
-                  <td align="center" style="border-radius:14px;background-color:${SMOAC_COLOR.violet};background-image:${SPECTRUM};">
+                  <td class="email-cta" align="center" bgcolor="${SMOAC_COLOR.violet}" style="border-radius:14px;background-color:${SMOAC_COLOR.violet};background-image:${SPECTRUM};">
                     <a href="${href}" style="display:block;padding:16px 18px;font-family:${FONT};font-size:15px;font-weight:700;letter-spacing:0.08em;color:#ffffff;text-decoration:none;text-align:center;">VIEW MY WORKOUT &rarr;</a>
                   </td>
                 </tr>

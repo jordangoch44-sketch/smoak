@@ -7,6 +7,10 @@ import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { setAuthSession } from "@/lib/auth-session-store";
 import type { AuthSession } from "@/types/auth";
+import {
+  AGE_CONFIRMATION_ERROR,
+  LegalAgreementNotice,
+} from "@/components/legal/LegalAgreementNotice";
 import { SITE_ROUTES } from "@/lib/navigation";
 import {
   ensureInquiryClientProfileAfterAuth,
@@ -43,6 +47,7 @@ export function ReviewAccountGate({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [ofAge, setOfAge] = useState(false);
   const backdropDismiss = useOwnPointerDismiss(() => {
     if (submittingRef.current) return;
     onClose();
@@ -92,6 +97,10 @@ export function ReviewAccountGate({
     }
     if (password !== confirmPassword) {
       setError("Passwords don’t match.");
+      return;
+    }
+    if (!ofAge) {
+      setError(AGE_CONFIRMATION_ERROR);
       return;
     }
 
@@ -341,9 +350,13 @@ export function ReviewAccountGate({
               </p>
             ) : null}
 
+            {view === "signup" ? (
+              <LegalAgreementNotice ofAge={ofAge} onOfAgeChange={setOfAge} />
+            ) : null}
+
             <FastActivateButton
               className="smoac-control review-modal__submit review-account-gate__submit"
-              disabled={sending}
+              disabled={sending || (view === "signup" && !ofAge)}
               onActivate={() => {
                 if (view === "signup") void handleSignup();
                 else void handleSignIn();

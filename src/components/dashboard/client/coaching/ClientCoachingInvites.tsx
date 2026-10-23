@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import { useCoachWorkoutSync } from "@/hooks/useCoachWorkoutSync";
-import { formatCoachName, isCoachWorkoutInLog } from "@/lib/coaching/coach-workout";
+import { formatCoachName, pendingCoachWorkoutNotices } from "@/lib/coaching/coach-workout";
+import { acknowledgeWorkoutNav } from "@/lib/coaching/workout-nav-seen";
 import {
   formatWorkoutDayHeading,
   parseLocalDateKey,
@@ -16,8 +17,6 @@ import { ClientWorkoutsModal } from "../workouts/ClientWorkoutsModal";
 import "@/styles/coaching.css";
 
 const noopSubscribe = () => () => {};
-/** Missed coach workouts stay on the dashboard this many days before dropping off. */
-const NOTICE_GRACE_DAYS = 3;
 
 /**
  * Coaching on the client dashboard: roster invites, new workouts from a coach,
@@ -48,22 +47,18 @@ function NewCoachWorkoutsNotice({ userId }: { userId: string }) {
 
   const notice = useMemo(() => {
     if (!inBrowser) return null;
-    const today = new Date();
-    const todayKey = toLocalDateKey(today);
-    const cutoff = toLocalDateKey(
-      new Date(today.getFullYear(), today.getMonth(), today.getDate() - NOTICE_GRACE_DAYS)
-    );
-    const pending = workouts
-      .filter(
-        (workout) =>
-          workout.status === "sent" &&
-          workout.dateKey >= cutoff &&
-          !isCoachWorkoutInLog(workout, log.days)
-      )
-      .sort((a, b) => (a.dateKey < b.dateKey ? -1 : 1));
+    const pending = pendingCoachWorkoutNotices(workouts, log.days);
     if (pending.length === 0) return null;
-    return { todayKey, pending };
+    return { todayKey: toLocalDateKey(new Date()), pending };
   }, [inBrowser, workouts, log.days]);
+
+  useEffect(() => {
+    if (!openDateKey || !notice) return;
+    const ids = notice.pending
+      .filter((workout) => workout.dateKey === openDateKey)
+      .map((workout) => workout.id);
+    acknowledgeWorkoutNav(userId, ids);
+  }, [openDateKey, notice, userId]);
 
   if (!notice) return null;
   const next = notice.pending[0]!;

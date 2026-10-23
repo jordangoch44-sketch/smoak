@@ -34,6 +34,8 @@ export const SPECIALIST_INQUIRY_NOTIFICATIONS_KEY =
   "smoac_specialist_inquiry_notifications";
 /** Clients tab dot — roster joins and finished workouts already opened */
 export const CLIENT_NAV_SEEN_KEY = "smoac_client_nav_seen";
+/** Workouts tab badge — coach-sent workouts the client has already opened */
+export const WORKOUT_NAV_SEEN_KEY = "smoac_workout_nav_seen";
 /** Specialist welcome modal — login count per user, shown every third login */
 export const PROFILE_WELCOME_LOGIN_COUNT_KEY = "smoac_profile_welcome_logins";
 /** Explore search history (write-only until recent-search chips ship) */

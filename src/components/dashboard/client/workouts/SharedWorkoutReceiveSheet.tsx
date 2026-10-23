@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import {
+  AGE_CONFIRMATION_ERROR,
+  LegalAgreementNotice,
+} from "@/components/legal/LegalAgreementNotice";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "@/components/ui/icons";
 import { useAuthSession } from "@/hooks/useAuthSession";
@@ -57,6 +61,7 @@ export function SharedWorkoutReceiveSheet({
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [ofAge, setOfAge] = useState(false);
   const [busy, setBusy] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
@@ -124,6 +129,10 @@ export function SharedWorkoutReceiveSheet({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (mode === "signup" && !ofAge) {
+      setAuthError(AGE_CONFIRMATION_ERROR);
+      return;
+    }
     setBusy(true);
     setAuthError(null);
     const result =
@@ -291,8 +300,15 @@ export function SharedWorkoutReceiveSheet({
                 onChange={(event) => setPassword(event.target.value)}
               />
             </label>
+            {mode === "signup" ? (
+              <LegalAgreementNotice ofAge={ofAge} onOfAgeChange={setOfAge} />
+            ) : null}
             {authError ? <p className="shared-workout-sheet__note">{authError}</p> : null}
-            <button type="submit" className="client-workouts-btn client-workouts-btn--primary shared-workout-sheet__add" disabled={busy}>
+            <button
+              type="submit"
+              className="client-workouts-btn client-workouts-btn--primary shared-workout-sheet__add"
+              disabled={busy || (mode === "signup" && !ofAge)}
+            >
               {busy ? "Please wait…" : mode === "signup" ? "Create account" : "Sign in"}
             </button>
             <button

@@ -7,10 +7,12 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
 import { useClientNavAttention } from "@/hooks/useClientNavAttention";
+import { useWorkoutNavAttention } from "@/hooks/useWorkoutNavAttention";
 import {
   getMobileBottomNavItems,
   isActiveNavItem,
   isSpecialistDashboardClientsTab,
+  isWorkoutsNavPath,
   type MobileBottomNavItemId,
 } from "@/lib/mobile-bottom-nav";
 import { isSameBottomNavDestination } from "@/lib/mobile-bottom-nav-transition";
@@ -68,6 +70,10 @@ function SiteHeaderDesktopNavInner({
   const viewingClients = isSpecialistDashboardClientsTab(pathname, searchParams);
   const showClientAttention =
     useClientNavAttention(viewingClients) && pendingId !== "clients";
+  const viewingWorkouts = isWorkoutsNavPath(pathname);
+  const unseenWorkouts = useWorkoutNavAttention(viewingWorkouts);
+  const workoutAlertCount =
+    clientReady && unseenWorkouts > 0 && pendingId !== "saved" ? unseenWorkouts : 0;
 
   return (
     <nav className="site-header-desktop-nav" aria-label="Main">
@@ -94,7 +100,9 @@ function SiteHeaderDesktopNavInner({
                 aria-label={
                   item.id === "clients" && showClientAttention
                     ? "Clients, new activity"
-                    : undefined
+                    : item.glyph === "dumbbell" && workoutAlertCount > 0
+                      ? `Workouts, ${workoutAlertCount} new`
+                      : undefined
                 }
                 onClick={(event) => {
                   if (!isActiveNavItem(item.id, pathname, searchParams)) {
@@ -113,6 +121,11 @@ function SiteHeaderDesktopNavInner({
                 {label}
                 {item.id === "clients" && showClientAttention ? (
                   <span className="site-header-desktop-nav__attention" aria-hidden />
+                ) : null}
+                {item.glyph === "dumbbell" && workoutAlertCount > 0 ? (
+                  <span className="site-header-desktop-nav__badge site-header-desktop-nav__badge--alert" aria-hidden>
+                    {workoutAlertCount > 9 ? "9+" : workoutAlertCount}
+                  </span>
                 ) : null}
                 {item.id === "saved" &&
                 item.href === SITE_ROUTES.saved &&

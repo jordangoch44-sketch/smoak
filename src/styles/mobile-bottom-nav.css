@@ -422,6 +422,14 @@ body.bottom-nav-panel-active .mobile-bottom-nav__pill {
   pointer-events: none;
 }
 
+.mobile-bottom-nav__badge--alert {
+  background: #ff3b30;
+  border-color: #0c0a12;
+  box-shadow:
+    0 0 0 1.5px #0c0a12,
+    0 0 8px rgba(255, 59, 48, 0.7);
+}
+
 /* Profile tab — inactive tint only; active uses shared aurora shell */
 .mobile-bottom-nav__item--profile-signed-out:not(.mobile-bottom-nav__item--active)
   .mobile-bottom-nav__icon--profile {

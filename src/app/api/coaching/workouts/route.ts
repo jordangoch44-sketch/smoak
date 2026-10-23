@@ -16,7 +16,7 @@ import {
   sanitizeWorkoutTitle,
 } from "@/lib/workouts/client-workout";
 import type { ClientWorkoutExercise } from "@/types/client-workout";
-import type { CoachingRelationshipRow, CoachWorkoutRow } from "@/types/coaching";
+import type { CoachingRelationship, CoachingRelationshipRow, CoachWorkoutRow } from "@/types/coaching";
 
 export const runtime = "nodejs";
 
@@ -34,6 +34,49 @@ interface UpdateBody {
   title?: unknown;
   note?: unknown;
   exercises?: unknown;
+}
+
+function asEmail(value: unknown): string {
+  return typeof value === "string" && value.trim().includes("@") ? value.trim() : "";
+}
+
+/**
+ * Account email for the client on this roster row.
+ * Invite-link clients have no inquiry conversation, and a specialist session
+ * cannot read another user's profile under RLS, so this uses the service role.
+ */
+async function resolveClientWorkoutEmail(
+  supabase: SupabaseClient,
+  relationship: CoachingRelationship
+): Promise<string> {
+  const service = createSupabaseServiceClient();
+  const lookup = service ?? supabase;
+  const clientUserId = relationship.clientUserId.trim();
+
+  if (clientUserId) {
+    const { data: profile } = await lookup
+      .from("profiles")
+      .select("email")
+      .eq("user_id", clientUserId)
+      .maybeSingle();
+    const fromProfile = asEmail(profile?.email);
+    if (fromProfile) return fromProfile;
+
+    if (service) {
+      const { data: authUser } = await service.auth.admin.getUserById(clientUserId);
+      const fromAuth = asEmail(authUser.user?.email);
+      if (fromAuth) return fromAuth;
+    }
+  }
+
+  const conversationId = relationship.conversationId?.trim() ?? "";
+  if (!conversationId) return "";
+  const { data: conversation } = await lookup
+    .from("inquiry_conversations")
+    .select("client_email")
+    .eq("id", conversationId)
+    .maybeSingle();
+  return asEmail(conversation?.client_email);
 }
 
 /** Specialist sends a workout to an active roster client. RPC enforces ownership + Pro. */
@@ -98,24 +141,26 @@ export async function POST(request: Request) {
     .maybeSingle();
   if (relRow) {
     const relationship = mapCoachingRelationship(relRow as CoachingRelationshipRow);
-    const { data: conversation } = relationship.conversationId
-      ? await supabase
-          .from("inquiry_conversations")
-          .select("client_email")
-          .eq("id", relationship.conversationId)
-          .maybeSingle()
-      : { data: null };
-    const to = String(conversation?.client_email ?? "").trim();
-    if (to) {
-      await sendCoachWorkoutEmail({
-        to,
-        clientFirstName: relationship.clientFirstName,
-        specialistName: relationship.specialistName,
-        dateKey: workout.dateKey,
-        title: workout.title,
-        note: workout.note,
-        exerciseCount: workout.exercises.length,
-      });
+    try {
+      const to = await resolveClientWorkoutEmail(supabase, relationship);
+      if (to) {
+        await sendCoachWorkoutEmail({
+          to,
+          clientFirstName: relationship.clientFirstName,
+          specialistName: relationship.specialistName,
+          dateKey: workout.dateKey,
+          title: workout.title,
+          note: workout.note,
+          exerciseCount: workout.exercises.length,
+        });
+      } else {
+        console.warn("[SMOAC EMAIL] Workout sent email skipped — no client address", {
+          relationshipId: relationship.id,
+          clientUserId: relationship.clientUserId,
+        });
+      }
+    } catch (error) {
+      console.warn("[SMOAC EMAIL] Workout sent email failed", error);
     }
     await sendCoachWorkoutPush({
       clientUserId: relationship.clientUserId,

@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
+import {
+  AGE_CONFIRMATION_ERROR,
+  LegalAgreementNotice,
+} from "@/components/legal/LegalAgreementNotice";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useToast } from "@/components/ui/toast";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
@@ -158,6 +161,7 @@ export function SpecialistOnboardingWizard({
   const credentialsRef = useRef({ email: "", password: "" });
   const abandonTimerRef = useRef<number | null>(null);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [ofAge, setOfAge] = useState(false);
   const [stackMotion, setStackMotion] = useState<"forward" | "back">("forward");
   const [cardPhase, setCardPhase] = useState<"idle" | "enter-pop" | "from-back">(
     "idle"
@@ -640,6 +644,10 @@ export function SpecialistOnboardingWizard({
   }
 
   async function verifyEmailBeforeContinue(): Promise<boolean> {
+    if (!ofAge) {
+      setError(AGE_CONFIRMATION_ERROR);
+      return false;
+    }
     const trimmedEmail = state.email.trim().toLowerCase();
     const firstName = state.fullName.trim().split(/\s+/)[0] ?? "";
 
@@ -1196,7 +1204,14 @@ export function SpecialistOnboardingWizard({
                 <FastActivateButton
                   type="button"
                   className="interview-continue smoac-control"
-                  disabled={submitting}
+                  disabled={
+                    submitting ||
+                    Boolean(
+                      beat &&
+                        isLastAccountInterviewBeat(beat.id, interviewContext) &&
+                        !ofAge
+                    )
+                  }
                   onPointerDown={holdCompactThroughAdvance}
                   onActivate={() => void handleContinue()}
                 >
@@ -1229,7 +1244,11 @@ export function SpecialistOnboardingWizard({
                 </FastActivateButton>
               ) : null}
               {accountAlreadyCreated ? null : (
-                <LegalAgreementNotice className="interview-legal" />
+                <LegalAgreementNotice
+                  className="interview-legal"
+                  ofAge={ofAge}
+                  onOfAgeChange={setOfAge}
+                />
               )}
             </div>
           </form>

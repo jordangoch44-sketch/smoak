@@ -631,6 +631,15 @@ html.native-app .explore-page--map-shell {
     color: rgba(255, 255, 255, 0.95);
   }
 
+  .site-header-desktop-nav__badge--alert {
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 0.28rem;
+    background: #ff3b30;
+    color: #fff;
+    line-height: 1;
+  }
+
   .site-header-desktop-nav__attention {
     width: 0.4375rem;
     height: 0.4375rem;

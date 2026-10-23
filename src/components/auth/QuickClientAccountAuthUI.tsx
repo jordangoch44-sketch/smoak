@@ -62,6 +62,8 @@ export interface QuickClientAccountSignupFieldsProps {
   onEmailChange: (value: string) => void;
   /** Inquiry sheet — paragraph above fields */
   supportText?: string;
+  ofAge: boolean;
+  onOfAgeChange: (value: boolean) => void;
 }
 
 export function QuickClientAccountSignupFields({
@@ -72,6 +74,8 @@ export function QuickClientAccountSignupFields({
   onFirstNameChange,
   onEmailChange,
   supportText,
+  ofAge,
+  onOfAgeChange,
 }: QuickClientAccountSignupFieldsProps) {
   const classes = authClasses(variant);
 
@@ -112,6 +116,8 @@ export function QuickClientAccountSignupFields({
       )}
       <LegalAgreementNotice
         className={variant === "inquiry-sheet" ? "auth-legal-notice--start" : undefined}
+        ofAge={ofAge}
+        onOfAgeChange={onOfAgeChange}
       />
     </>
   );
@@ -210,6 +216,7 @@ export interface QuickClientAccountAuthActionsProps {
   onOpenFullLogin?: (event?: React.MouseEvent) => void;
   /** Inquiry: "Already have an account? Sign in" vs modal: "Log in" */
   switchToSigninLabel?: string;
+  signupDisabled?: boolean;
 }
 
 export function QuickClientAccountAuthActions({
@@ -224,6 +231,7 @@ export function QuickClientAccountAuthActions({
   onSwitchToSignup,
   onOpenFullLogin,
   switchToSigninLabel,
+  signupDisabled = false,
 }: QuickClientAccountAuthActionsProps) {
   const classes = authClasses(variant);
   const signinSwitchLabel =
@@ -237,7 +245,7 @@ export function QuickClientAccountAuthActions({
       <>
         <FastActivateButton
           className={classes.primaryBtn}
-          disabled={sending}
+          disabled={sending || signupDisabled}
           onActivate={onSignup}
         >
           {sending ? "Continuing…" : signupCta}

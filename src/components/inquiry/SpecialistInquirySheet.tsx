@@ -52,6 +52,7 @@ import {
   writePendingInquiryDraft,
   type PendingInquiryDraft,
 } from "@/lib/pending-inquiry-storage";
+import { AGE_CONFIRMATION_ERROR } from "@/components/legal/LegalAgreementNotice";
 import { cn } from "@/lib/utils";
 
 const DISMISS_OFFSET_PX = 110;
@@ -166,6 +167,7 @@ export function SpecialistInquirySheet({
   const [emailMode, setEmailMode] = useState<"resend" | "console" | null>(null);
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
+  const [ofAge, setOfAge] = useState(false);
   const [password, setPassword] = useState("");
   const [syncedOpenKey, setSyncedOpenKey] = useState("");
   const submittingRef = useRef(false);
@@ -321,6 +323,10 @@ export function SpecialistInquirySheet({
 
   const handleQuickSignup = async () => {
     if (submittingRef.current) return;
+    if (!ofAge) {
+      setError(AGE_CONFIRMATION_ERROR);
+      return;
+    }
     const validation = validateInquiryDraft(draft);
     if (!validation.ok) {
       setError(validation.message);
@@ -610,6 +616,8 @@ export function SpecialistInquirySheet({
                   email={email}
                   onFirstNameChange={setFirstName}
                   onEmailChange={setEmail}
+                  ofAge={ofAge}
+                  onOfAgeChange={setOfAge}
                   supportText={`Your message is ready. Enter your name and email so we can send it to ${specialistName}.`}
                 />
               ) : null}
@@ -758,6 +766,7 @@ export function SpecialistInquirySheet({
                     sending={sending}
                     signupCta="Continue & Send"
                     signInCta="Sign in & Send"
+                    signupDisabled={!ofAge}
                     onSignup={() => void handleQuickSignup()}
                     onSignIn={() => void handleSignIn()}
                     onSwitchToSignin={() => {

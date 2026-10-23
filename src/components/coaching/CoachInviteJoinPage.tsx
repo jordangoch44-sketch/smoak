@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import {
+  AGE_CONFIRMATION_ERROR,
+  LegalAgreementNotice,
+} from "@/components/legal/LegalAgreementNotice";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { CLIENT_DASHBOARD_PATH } from "@/lib/auth-routes";
@@ -36,6 +40,7 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
   const [firstName, setFirstName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [ofAge, setOfAge] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmEmail, setConfirmEmail] = useState<string | null>(null);
@@ -89,6 +94,10 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (mode === "signup" && !ofAge) {
+      setError(AGE_CONFIRMATION_ERROR);
+      return;
+    }
     setBusy(true);
     setError(null);
     const result =
@@ -238,11 +247,14 @@ export function CoachInviteJoinPage({ token }: { token: string }) {
         {mode === "signup" ? (
           <p className="coach-join__muted">At least 8 characters.</p>
         ) : null}
+        {mode === "signup" ? (
+          <LegalAgreementNotice ofAge={ofAge} onOfAgeChange={setOfAge} />
+        ) : null}
         {error ? <p className="coaching-error">{error}</p> : null}
         <button
           type="submit"
           className="coaching-btn coaching-btn--primary coach-join__cta"
-          disabled={busy}
+          disabled={busy || (mode === "signup" && !ofAge)}
         >
           {busy
             ? "One moment…"

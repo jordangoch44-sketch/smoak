@@ -256,6 +256,30 @@ export function appendCoachExercises(
   return [...existing, ...added];
 }
 
+/** How long a sent workout stays a dashboard notice before it drops off. */
+export const COACH_WORKOUT_NOTICE_GRACE_DAYS = 3;
+
+/**
+ * Workouts a coach sent that still belong on the client notice:
+ * not started, and not older than the grace window.
+ */
+export function pendingCoachWorkoutNotices(
+  workouts: readonly CoachWorkout[],
+  days: Readonly<Record<string, ClientWorkoutDay>>,
+  today = new Date()
+): CoachWorkout[] {
+  const cutoff = toLocalDateKey(addDays(today, -COACH_WORKOUT_NOTICE_GRACE_DAYS));
+  return workouts
+    .filter(
+      (workout) =>
+        workout.status === "sent" &&
+        workout.dateKey >= cutoff &&
+        !isCoachWorkoutInLog(workout, days)
+    )
+    .slice()
+    .sort((a, b) => (a.dateKey < b.dateKey ? -1 : a.dateKey > b.dateKey ? 1 : 0));
+}
+
 /** True once any of the coach workout's exercises are in the client's log. */
 export function isCoachWorkoutInLog(
   workout: CoachWorkout,

@@ -3,7 +3,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
+import {
+  AGE_CONFIRMATION_ERROR,
+  LegalAgreementNotice,
+} from "@/components/legal/LegalAgreementNotice";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -84,6 +87,7 @@ export function QuickClientAccountModal({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [ofAge, setOfAge] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [syncedKey, setSyncedKey] = useState("");
@@ -301,6 +305,10 @@ export function QuickClientAccountModal({
     }
     if (password !== confirmPassword) {
       setError("Passwords don’t match.");
+      return;
+    }
+    if (!ofAge) {
+      setError(AGE_CONFIRMATION_ERROR);
       return;
     }
 
@@ -566,7 +574,7 @@ export function QuickClientAccountModal({
 
               <FastActivateButton
                 className="smoac-control login-gate__btn login-gate__btn--aurora"
-                disabled={sending}
+                disabled={sending || (signupStep === "password" && !ofAge)}
                 onActivate={handleSignupPrimary}
               >
                 <span className="login-gate__cta-label">
@@ -577,7 +585,7 @@ export function QuickClientAccountModal({
                 </span>
               </FastActivateButton>
 
-              <LegalAgreementNotice />
+              <LegalAgreementNotice ofAge={ofAge} onOfAgeChange={setOfAge} />
 
               <p className="login-gate__footnote">
                 Already have an account?{" "}

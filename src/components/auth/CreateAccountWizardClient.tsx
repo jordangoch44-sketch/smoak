@@ -4,7 +4,10 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CreateAccountPageSkeleton } from "@/components/auth/CreateAccountPageSkeleton";
-import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
+import {
+  AGE_CONFIRMATION_ERROR,
+  LegalAgreementNotice,
+} from "@/components/legal/LegalAgreementNotice";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { useToast } from "@/components/ui/toast";
@@ -192,6 +195,7 @@ export function CreateAccountWizardClient({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [ofAge, setOfAge] = useState(false);
   const [showSpecialistOnboarding, setShowSpecialistOnboarding] = useState(
     () => initialAccountType === "specialist"
   );
@@ -320,6 +324,10 @@ export function CreateAccountWizardClient({
     }
     if (state.password !== confirmPassword) {
       setError("Passwords do not match.");
+      return;
+    }
+    if (!ofAge) {
+      setError(AGE_CONFIRMATION_ERROR);
       return;
     }
 
@@ -611,7 +619,11 @@ export function CreateAccountWizardClient({
                 <FastActivateButton
                   type="button"
                   className="interview-continue"
-                  disabled={submitting || (step === 1 && state.accountType == null)}
+                  disabled={
+                    submitting ||
+                    (step === 1 && state.accountType == null) ||
+                    (step === 2 && !ofAge)
+                  }
                   onActivate={handleContinue}
                 >
                   <span>
@@ -637,7 +649,11 @@ export function CreateAccountWizardClient({
                 <Link href={LOGIN_PATH}>Sign in</Link>
               </p>
               {step === 2 ? (
-                <LegalAgreementNotice className="interview-legal" />
+                <LegalAgreementNotice
+                  className="interview-legal"
+                  ofAge={ofAge}
+                  onOfAgeChange={setOfAge}
+                />
               ) : null}
             </div>
           </form>

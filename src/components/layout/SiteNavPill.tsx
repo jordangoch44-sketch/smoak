@@ -27,6 +27,7 @@ import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitio
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useClientNavAttention } from "@/hooks/useClientNavAttention";
+import { useWorkoutNavAttention } from "@/hooks/useWorkoutNavAttention";
 import { useMobileBottomNavProfilePhoto } from "@/hooks/useMobileBottomNavProfilePhoto";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
@@ -37,6 +38,7 @@ import {
   getMobileBottomNavProfilePresentation,
   isActiveNavItem,
   isSpecialistDashboardClientsTab,
+  isWorkoutsNavPath,
   type MobileBottomNavItem,
   type MobileBottomNavItemId,
   type MobileBottomNavProfileAuthState,
@@ -371,6 +373,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   showSaveBadge,
   savedCount,
   showClientAttention,
+  workoutAlertCount,
   onNavigate,
   onPointerDown,
   onPointerCommit,
@@ -383,6 +386,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   showSaveBadge: boolean;
   savedCount: number;
   showClientAttention: boolean;
+  workoutAlertCount: number;
   onNavigate: (
     item: MobileBottomNavItem,
     event: MouseEvent<HTMLAnchorElement>
@@ -413,7 +417,9 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       ? "Clients, new activity"
       : item.id === "saved" && item.href === "/saved" && showSaveBadge
         ? `${item.label}, ${savedCount} saved`
-        : item.label;
+        : item.glyph === "dumbbell" && workoutAlertCount > 0
+          ? `Workouts, ${workoutAlertCount} new`
+          : item.label;
 
   const handleClick = useCallback(
     (event: MouseEvent<HTMLAnchorElement>) => {
@@ -502,6 +508,11 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
         {item.id === "saved" && item.href === "/saved" && showSaveBadge ? (
           <SavedNavBadge count={savedCount} />
         ) : null}
+        {item.glyph === "dumbbell" && workoutAlertCount > 0 ? (
+          <span className="mobile-bottom-nav__badge mobile-bottom-nav__badge--alert" aria-hidden>
+            {workoutAlertCount > 9 ? "9+" : workoutAlertCount}
+          </span>
+        ) : null}
         {item.id === "clients" && showClientAttention ? (
           <span className="mobile-bottom-nav__attention" aria-hidden />
         ) : null}
@@ -527,6 +538,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   showSaveBadge,
   savedCount,
   showClientAttention,
+  workoutAlertCount,
   layoutKey,
   settled,
   onNavClick,
@@ -542,6 +554,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   showSaveBadge: boolean;
   savedCount: number;
   showClientAttention: boolean;
+  workoutAlertCount: number;
   layoutKey: string;
   settled: boolean;
   onNavClick: (
@@ -579,6 +592,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
             showClientAttention={showClientAttention}
+            workoutAlertCount={workoutAlertCount}
             onNavigate={onNavClick}
             onPointerDown={onPointerDown}
             onPointerCommit={onPointerCommit}
@@ -633,6 +647,10 @@ function SiteNavPillShell({
   const viewingClients = isSpecialistDashboardClientsTab(pathname, routeSearch);
   const showClientAttention =
     useClientNavAttention(viewingClients) && pendingId !== "clients";
+  const viewingWorkouts = isWorkoutsNavPath(pathname);
+  const unseenWorkouts = useWorkoutNavAttention(viewingWorkouts);
+  const workoutAlertCount =
+    clientReady && unseenWorkouts > 0 && pendingId !== "saved" ? unseenWorkouts : 0;
   const items = useMemo(
     () => getMobileBottomNavItems(session),
     [session]
@@ -763,6 +781,7 @@ function SiteNavPillShell({
         showSaveBadge={showSaveBadge}
         savedCount={savedCount}
         showClientAttention={showClientAttention}
+        workoutAlertCount={workoutAlertCount}
         layoutKey={items.map((item) => item.id).join("|")}
         settled={clientReady && isReady}
         onNavClick={handleNavClick}

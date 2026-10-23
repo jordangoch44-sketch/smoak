@@ -5,7 +5,10 @@ import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
-import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
+import {
+  AGE_CONFIRMATION_ERROR,
+  LegalAgreementNotice,
+} from "@/components/legal/LegalAgreementNotice";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { Logo } from "@/components/ui/Logo";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -94,6 +97,7 @@ export function CompleteAccountPageClient() {
   const [confirm, setConfirm] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ofAge, setOfAge] = useState(false);
   const settledRef = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -103,7 +107,7 @@ export function CompleteAccountPageClient() {
   const passwordsMatch =
     password.length > 0 && confirm.length > 0 && password === confirm;
   const passwordValid = password.trim().length >= MIN_PASSWORD_LENGTH;
-  const canSubmit = passwordValid && passwordsMatch && !submitting;
+  const canSubmit = passwordValid && passwordsMatch && ofAge && !submitting;
 
   useEffect(() => {
     setMounted(true);
@@ -211,6 +215,10 @@ export function CompleteAccountPageClient() {
     }
     if (!passwordsMatch) {
       setError("Passwords do not match.");
+      return;
+    }
+    if (!ofAge) {
+      setError(AGE_CONFIRMATION_ERROR);
       return;
     }
     if (submitting) return;
@@ -521,7 +529,7 @@ export function CompleteAccountPageClient() {
                   "Create password"
                 )}
               </FastActivateButton>
-              <LegalAgreementNotice />
+              <LegalAgreementNotice ofAge={ofAge} onOfAgeChange={setOfAge} />
             </div>
           </form>
         </>

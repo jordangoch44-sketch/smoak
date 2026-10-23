@@ -6,18 +6,19 @@ import { BRAND_NAME, SMOAC_COLOR } from "@/lib/brand";
 import { SUPPORT_EMAIL, supportMailto } from "@/lib/site-contact";
 
 const COLORS = {
-  page: "#050506",
-  card: "#0c0c0e",
-  cardBorder: "#2c2c2e",
-  hairline: "#3a3a3c",
+  /** Navy charcoal — same family as the weekly recap canvas. */
+  page: "#070b16",
+  card: "#10141f",
+  cardBorder: "#2a3144",
+  hairline: "#2a3144",
   title: "#f5f5f7",
   body: "#c7c7cc",
   muted: "#8e8e93",
   accent: SMOAC_COLOR.violet,
   accentSoft: "#c4b5fd",
   ctaText: "#ffffff",
-  quoteBg: "#141416",
-  panelBg: "#121216",
+  quoteBg: "#14182a",
+  panelBg: "#14182a",
 } as const;
 
 const FONT_SANS =
@@ -131,7 +132,7 @@ export function renderEmailParagraphs(paragraphs: string[]): string {
     .filter(Boolean)
     .map(
       (p) =>
-        `<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${COLORS.body};">${escapeEmailHtml(p).replace(/\n/g, "<br/>")}</p>`
+        `<p class="email-copy" style="margin:0 0 16px;font-size:15px;line-height:1.65;color:${COLORS.body};">${escapeEmailHtml(p).replace(/\n/g, "<br/>")}</p>`
     )
     .join("");
 }
@@ -300,7 +301,7 @@ export function renderEmailCta(cta: EmailCta): string {
   const label = escapeEmailHtml(cta.label);
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:10px 0 8px;border-collapse:collapse;">
   <tr>
-    <td style="border-radius:999px;background:${COLORS.accent};background-image:${SMOAC_SPECTRUM};">
+    <td class="email-cta" bgcolor="${COLORS.accent}" style="border-radius:999px;background-color:${COLORS.accent};background-image:${SMOAC_SPECTRUM};">
       <a href="${href}" style="display:inline-block;padding:14px 28px;font-family:${FONT_SANS};font-size:14px;font-weight:600;letter-spacing:0.01em;color:${COLORS.ctaText};text-decoration:none;">${label}</a>
     </td>
   </tr>
@@ -335,6 +336,36 @@ export interface WrapTransactionalEmailOptions {
 }
 
 /**
+ * iPhone Mail inverts an already-dark email to white when color-scheme is
+ * `dark` and the navy is only a CSS background. `light only` plus bgcolor
+ * keeps the authored navy charcoal in both appearances.
+ */
+export function emailDarkModeLock(): string {
+  return `<meta name="color-scheme" content="light only"/>
+  <meta name="supported-color-schemes" content="light only"/>
+  <style>
+    :root { color-scheme: light only; supported-color-schemes: light only; }
+    body.email-canvas, table.email-canvas, td.email-canvas { background-color:${COLORS.page} !important; }
+    td.email-card { background-color:${COLORS.card} !important; }
+    td.email-rim { background-color:${COLORS.accent} !important; background-image:${SMOAC_SPECTRUM} !important; }
+    td.email-cta { background-color:${COLORS.accent} !important; background-image:${SMOAC_SPECTRUM} !important; }
+    td.email-cta a { color:${COLORS.ctaText} !important; }
+    @media (prefers-color-scheme: dark) {
+      body.email-canvas, table.email-canvas, td.email-canvas { background-color:${COLORS.page} !important; }
+      td.email-card { background-color:${COLORS.card} !important; }
+      td.email-rim { background-color:${COLORS.accent} !important; background-image:${SMOAC_SPECTRUM} !important; }
+      td.email-cta { background-color:${COLORS.accent} !important; background-image:${SMOAC_SPECTRUM} !important; }
+      td.email-cta a { color:${COLORS.ctaText} !important; }
+      .email-title { color:${COLORS.title} !important; }
+      p.email-copy { color:${COLORS.body} !important; }
+      .email-eyebrow { color:${COLORS.accentSoft} !important; }
+      .email-muted { color:${COLORS.muted} !important; }
+      .email-link { color:${COLORS.accentSoft} !important; }
+    }
+  </style>`;
+}
+
+/**
  * Full HTML document for transactional mail — brand-first dark shell.
  */
 export function wrapTransactionalEmailHtml(
@@ -360,7 +391,7 @@ export function wrapTransactionalEmailHtml(
 
   const heading = options.titleHtml
     ? options.titleHtml
-    : `<h1 style="margin:0 0 18px;font-family:${FONT_SANS};font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.02em;color:${COLORS.title};">${title}</h1>`;
+    : `<h1 class="email-title" style="margin:0 0 18px;font-family:${FONT_SANS};font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.02em;color:${COLORS.title};">${title}</h1>`;
 
   const ctaHtml = options.cta ? renderEmailCta(options.cta) : "";
   const secondaryHtml = options.secondaryLink
@@ -380,15 +411,14 @@ export function wrapTransactionalEmailHtml(
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="color-scheme" content="dark"/>
-  <meta name="supported-color-schemes" content="dark"/>
+  ${emailDarkModeLock()}
   <title>${title}</title>
 </head>
-<body style="margin:0;padding:0;background:${COLORS.page};">
+<body class="email-canvas" bgcolor="${COLORS.page}" style="margin:0;padding:0;background-color:${COLORS.page};">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${preheader}</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${COLORS.page};border-collapse:collapse;">
+  <table class="email-canvas" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${COLORS.page}" style="background-color:${COLORS.page};border-collapse:collapse;">
     <tr>
-      <td align="center" style="padding:32px 16px;">
+      <td class="email-canvas" align="center" bgcolor="${COLORS.page}" style="padding:32px 16px;background-color:${COLORS.page};">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:${maxWidth}px;border-collapse:collapse;">
           <tr>
             <td align="center" style="padding:0 0 24px;">
@@ -399,13 +429,13 @@ export function wrapTransactionalEmailHtml(
             </td>
           </tr>
           <tr>
-            <td style="padding:2px;border-radius:18px;background:${SMOAC_SPECTRUM};box-shadow:0 18px 48px rgba(0,0,0,0.45);">
+            <td class="email-rim" bgcolor="${COLORS.accent}" style="padding:2px;border-radius:18px;background-color:${COLORS.accent};background-image:${SMOAC_SPECTRUM};box-shadow:0 18px 48px rgba(0,0,0,0.45);">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                 <tr>
-                  <td style="padding:28px 28px 24px;border-radius:16px;background:${COLORS.card};">
-                    <p style="margin:0 0 10px;font-family:${FONT_SANS};font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.accentSoft};">${eyebrow}</p>
+                  <td class="email-card" bgcolor="${COLORS.card}" style="padding:28px 28px 24px;border-radius:16px;background-color:${COLORS.card};">
+                    <p class="email-eyebrow" style="margin:0 0 10px;font-family:${FONT_SANS};font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.accentSoft};">${eyebrow}</p>
                     ${heading}
-                    <div style="font-family:${FONT_SANS};">
+                    <div class="email-copy" style="font-family:${FONT_SANS};">
                       ${options.bodyHtml}
                       ${ctaHtml}
                       ${secondaryHtml}
@@ -416,15 +446,15 @@ export function wrapTransactionalEmailHtml(
             </td>
           </tr>
           <tr>
-            <td align="center" style="padding:22px 12px 0;font-family:${FONT_SANS};">
+            <td class="email-muted" align="center" style="padding:22px 12px 0;font-family:${FONT_SANS};">
               <p style="margin:0 0 6px;font-size:12px;line-height:1.5;color:${COLORS.muted};">${footerNote}</p>
               ${unsubscribeHtml}
               <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
                 Questions?
-                <a href="${escapeEmailHtml(supportMailto())}" style="color:${COLORS.accentSoft};text-decoration:underline;">${escapeEmailHtml(SUPPORT_EMAIL)}</a>
+                <a class="email-link" href="${escapeEmailHtml(supportMailto())}" style="color:${COLORS.accentSoft};text-decoration:underline;">${escapeEmailHtml(SUPPORT_EMAIL)}</a>
               </p>
               <p style="margin:8px 0 0;font-size:12px;line-height:1.5;color:${COLORS.muted};">
-                <a href="${escapeEmailHtml(origin)}" style="color:${COLORS.accentSoft};text-decoration:none;">${escapeEmailHtml(origin.replace(/^https?:\/\//, ""))}</a>
+                <a class="email-link" href="${escapeEmailHtml(origin)}" style="color:${COLORS.accentSoft};text-decoration:none;">${escapeEmailHtml(origin.replace(/^https?:\/\//, ""))}</a>
                 · © ${year} ${BRAND_NAME}
               </p>
             </td>
