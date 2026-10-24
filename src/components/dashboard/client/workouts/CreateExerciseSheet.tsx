@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { formatExerciseName } from "@/data/workout-exercise-library";
+import { autoCapWords } from "@/lib/workouts/client-workout";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import {
@@ -161,7 +162,7 @@ export function CreateExerciseSheet({
               enterKeyHint="done"
               maxLength={80}
               placeholder="Name"
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) => setName(autoCapWords(event.target.value))}
               onKeyDown={(event) => {
                 if (event.key !== "Enter") return;
                 event.preventDefault();

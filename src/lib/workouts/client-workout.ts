@@ -451,6 +451,14 @@ export function clampCardioGoalDaysPerWeek(value: unknown): number {
   return Math.min(7, Math.max(0, Math.round(count)));
 }
 
+/** Capitalize the first letter, and the first letter after each space. Keeps a trailing space while typing. */
+export function autoCapWords(value: string): string {
+  return value.replace(
+    /(^|\s)([a-z])/g,
+    (_match, boundary: string, letter: string) => boundary + letter.toUpperCase()
+  );
+}
+
 export function sanitizeWorkoutTitle(value: unknown): string {
   if (typeof value !== "string") return "";
   return value.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE_LENGTH);

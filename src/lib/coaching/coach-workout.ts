@@ -377,12 +377,25 @@ export interface RosterLatestWorkout {
   status: CoachWorkoutStatus;
 }
 
+/** How a workout the specialist sent sits in the current week. */
+export type RosterWeekMark = "completed" | "upcoming" | "missed";
+
+export interface RosterWeekChip {
+  id: string;
+  title: string;
+  /** "Oct 22" */
+  when: string;
+  mark: RosterWeekMark;
+}
+
 export interface RosterClientSummary {
   state: RosterClientState;
   activity: RosterActivity;
   /** "Lower Body Strength · Oct 22", "No workouts yet", or "Invite sent Sep 30". */
   lastLine: string;
   latest: RosterLatestWorkout | null;
+  /** Workouts this specialist sent for the current Sunday–Saturday week. */
+  weekChips: readonly RosterWeekChip[];
   /** Finished coach workouts per week over the last 4 weeks, e.g. "3/wk". */
   perWeekLabel: string;
   /** Weeks since the client accepted, e.g. "8 weeks". */
@@ -439,6 +452,49 @@ function pickLatestWorkout(workouts: readonly CoachWorkout[]): CoachWorkout | nu
   })[0] ?? null;
 }
 
+const WEEK_MARK_LABEL: Record<RosterWeekMark, string> = {
+  completed: "Completed",
+  upcoming: "Upcoming",
+  missed: "Missed",
+};
+
+export function rosterWeekMarkLabel(mark: RosterWeekMark): string {
+  return WEEK_MARK_LABEL[mark];
+}
+
+/**
+ * Workouts scheduled Sunday through Saturday of the week containing `today`.
+ * Finished ones are completed. A day still ahead, including today, is upcoming.
+ * A past day that was not finished is missed.
+ */
+export function rosterWeekChips(
+  workouts: readonly CoachWorkout[],
+  today = new Date()
+): RosterWeekChip[] {
+  const todayKey = toLocalDateKey(today);
+  const weekStart = startOfWeekSunday(today);
+  const startKey = toLocalDateKey(weekStart);
+  const endKey = toLocalDateKey(addDays(weekStart, 6));
+  return workouts
+    .filter((workout) => workout.dateKey >= startKey && workout.dateKey <= endKey)
+    .slice()
+    .sort((a, b) => {
+      if (a.dateKey !== b.dateKey) return a.dateKey < b.dateKey ? -1 : 1;
+      return a.title.localeCompare(b.title);
+    })
+    .map((workout) => ({
+      id: workout.id,
+      title: workout.title.trim() || "Workout",
+      when: rosterDayLabel(workout.dateKey, false),
+      mark:
+        workout.status === "completed"
+          ? "completed"
+          : workout.dateKey < todayKey
+            ? "missed"
+            : "upcoming",
+    }));
+}
+
 function toRosterLatest(workout: CoachWorkout): RosterLatestWorkout {
   const title = workout.title.trim() || "Workout";
   return {
@@ -489,6 +545,7 @@ export function summarizeRosterClient(
       activity: "idle",
       lastLine: `Invite sent ${sent}`,
       latest: null,
+      weekChips: [],
       perWeekLabel: "0/wk",
       weeksLabel: "0 weeks",
       completedCount: 0,
@@ -515,6 +572,7 @@ export function summarizeRosterClient(
       ? `${latest.title}${latest.shortWhen ? ` · ${latest.shortWhen}` : ""}`
       : "No workouts yet",
     latest,
+    weekChips: rosterWeekChips(workouts, now),
     perWeekLabel: `${perWeek}/wk`,
     weeksLabel: `${weeks} ${weeks === 1 ? "week" : "weeks"}`,
     completedCount: finished.length,

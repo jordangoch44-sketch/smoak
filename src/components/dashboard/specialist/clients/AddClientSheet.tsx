@@ -108,14 +108,14 @@ export function AddClientSheet({
             onActivate={() => setView("messages")}
           >
             <MessageBubbleIcon className="h-5 w-5" />
-            Add from messages
+            Add from SMOAC messages
           </FastActivateButton>
           <FastActivateButton
             className="coaching-btn coaching-btn--primary roster-add__choice"
             onActivate={() => void startLink()}
           >
             <SendIcon className="h-5 w-5" />
-            Share link
+            Share URL Link
           </FastActivateButton>
         </div>
       ) : view === "messages" ? (

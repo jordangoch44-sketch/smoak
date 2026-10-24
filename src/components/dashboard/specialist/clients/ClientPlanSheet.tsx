@@ -1,89 +1,34 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Logo } from "@/components/ui/Logo";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { exerciseLabel } from "@/data/exercise-display";
-import {
-  CalendarIcon,
-  ChartIcon,
-  ChevronRightIcon,
-  CloseIcon,
-  DumbbellIcon,
-} from "@/components/ui/icons";
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "@/components/ui/icons";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
+import { CoachDayMark } from "@/components/dashboard/client/workouts/CoachDayMark";
+import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
+import { coachDayMark } from "@/lib/coaching/coach-workout";
 import {
+  addMonths,
+  buildMonthGrid,
+  exerciseAssistsWithMachine,
   exerciseEffort,
   exerciseLoad,
-  formatSetCount,
+  formatMonthTitle,
+  formatWorkoutDayAriaLabel,
   formatWorkoutDayHeading,
+  parseLocalDateKey,
+  parseWorkoutSetCount,
+  signAssistanceWeight,
+  startOfMonth,
   toLocalDateKey,
+  WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
-import type { ClientWorkoutExercise } from "@/types/client-workout";
+import type { ClientWorkoutExercise, ClientWorkoutSetLog } from "@/types/client-workout";
 import type { CoachingRelationship, CoachWorkout } from "@/types/coaching";
 import { RosterSheet } from "./RosterSheet";
-
-/** Matches the summary card: about five minutes of work and rest per set. */
-const MINUTES_PER_SET = 5;
-
-type SummarySet = { label: string; detail: string };
-
-type SummaryRow = {
-  id: string;
-  name: string;
-  setCount: number;
-  setLabel: string | null;
-  cue: string | null;
-  pill: string | null;
-  sets: SummarySet[] | null;
-};
-
-function repsPhrase(reps: string, distance = false): string {
-  const value = reps.trim();
-  if (!value) return "";
-  if (distance) return `${value} mi`;
-  if (/rep/i.test(value)) return value;
-  const range = value.match(/^(\d+)\s*[-–]\s*(\d+)$/);
-  if (range) return `${range[1]}–${range[2]} reps`;
-  if (/^\d+$/.test(value)) return `${value} reps`;
-  return value;
-}
-
-function weightPhrase(weight: string, speed = false): string {
-  const value = weight.trim();
-  if (!value) return "";
-  if (speed) return `${value} mph`;
-  if (/[a-z]/i.test(value)) return value;
-  return `${value} lb`;
-}
-
-function setDetail(reps: string, weight: string, distance = false, speed = false): string {
-  return [repsPhrase(reps, distance), weightPhrase(weight, speed)].filter(Boolean).join(" · ");
-}
-
-function titleCase(value: string): string {
-  return value
-    .trim()
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-/** "8 each leg" is a cue for the reps line, not a separate instruction. */
-function sideCue(note: string): string | null {
-  const match = note
-    .trim()
-    .match(/^(?:\d+\s+)?(each\s+leg|each\s+side|each\s+arm|per\s+leg|per\s+side|per\s+arm)$/i);
-  return match?.[1]?.toLowerCase() ?? null;
-}
-
-function setCountOf(exercise: ClientWorkoutExercise): number {
-  if (exercise.setLogs && exercise.setLogs.length > 0) return exercise.setLogs.length;
-  if (/^\d+$/.test(exercise.sets.trim())) return Number(exercise.sets.trim());
-  return 0;
-}
 
 function loggedExercise(workout: CoachWorkout, exercise: ClientWorkoutExercise) {
   const log = workout.clientLog?.find((entry) => entry.id === exercise.id);
@@ -91,127 +36,160 @@ function loggedExercise(workout: CoachWorkout, exercise: ClientWorkoutExercise) 
   return filled ? log : undefined;
 }
 
-function repsLine(
-  reps: string,
-  weight: string,
-  cue: string | null,
-  distance = false,
-  speed = false
-): string {
-  const repsText = repsPhrase(reps, distance);
-  const withCue = cue && repsText ? `${repsText} (${cue})` : repsText;
-  const weightText = weightPhrase(weight, speed);
-  return [withCue, weightText].filter(Boolean).join(" · ");
-}
-
-function summaryRow(exercise: ClientWorkoutExercise, source: ClientWorkoutExercise): SummaryRow {
-  const note = (exercise.note ?? "").trim();
-  const cue = sideCue(note);
-  const setCount = setCountOf(source) || setCountOf(exercise);
-  const logs = (source.setLogs ?? []).map((log, index) => ({
-    index,
-    reps: log.reps.trim(),
-    weight: log.weight.trim(),
-  }));
-  const distance = exerciseEffort(exercise) === "distance";
-  const speed = exerciseLoad(exercise) === "speed";
-  const filled = logs.filter((log) => log.reps || log.weight);
-  const first = filled[0];
-  const uniform =
-    first != null &&
-    filled.length === logs.length &&
-    filled.every((log) => log.reps === first.reps && log.weight === first.weight);
-
-  let pill: string | null = null;
-  let sets: SummarySet[] | null = null;
-  if (filled.length > 0 && !uniform) {
-    sets = filled.map((log) => ({
-      label: `Set ${log.index + 1}`,
-      detail: setDetail(log.reps, log.weight, distance, speed),
-    }));
-  } else if (first) {
-    pill = repsLine(first.reps, first.weight, cue, distance, speed);
-  } else if (source.reps.trim() || exercise.reps.trim()) {
-    pill = repsLine(source.reps.trim() || exercise.reps.trim(), "", cue, distance, speed);
-  }
-
+function shownExercise(workout: CoachWorkout, exercise: ClientWorkoutExercise): ClientWorkoutExercise {
+  const log = loggedExercise(workout, exercise);
+  if (!log) return exercise;
   return {
-    id: exercise.id,
-    name: exerciseLabel(exercise.name.trim()) || "Exercise",
-    setCount,
-    setLabel: setCount > 0 ? formatSetCount(setCount) : null,
-    cue: cue ? null : note ? titleCase(note) : null,
-    pill,
-    sets,
+    ...exercise,
+    sets: log.sets,
+    reps: log.reps,
+    setLogs: log.setLogs,
+    completed: log.completed ?? exercise.completed,
+    note: log.note?.trim() ? log.note : exercise.note,
   };
 }
 
-function focusLabel(workout: CoachWorkout): string {
-  const title = workout.title.trim();
-  if (/lower|\blegs?\b/i.test(title)) return "Lower Body";
-  if (/upper|push|pull|\bchest\b|\bback\b|\barms?\b/i.test(title)) return "Upper Body";
-  if (/full/i.test(title)) return "Full Body";
-  if (/core|\babs?\b/i.test(title)) return "Core";
-
-  let lower = 0;
-  let upper = 0;
-  let core = 0;
-  for (const exercise of workout.exercises) {
-    const blob = [exercise.name, exercise.muscle, ...(exercise.otherMuscles ?? [])]
-      .filter(Boolean)
-      .join(" ");
-    if (/quad|hamstring|glute|calf|\bleg\b|hip|lunge|squat|deadlift|step-up/i.test(blob)) lower += 1;
-    else if (/chest|back|shoulder|delt|bicep|tricep|\blat\b|pec|\barm\b/i.test(blob)) upper += 1;
-    else if (/core|abdomin|oblique/i.test(blob)) core += 1;
+/** Set rows the editor would show. A finished exercise shows every set checked. */
+function viewLogs(exercise: ClientWorkoutExercise): ClientWorkoutSetLog[] {
+  let rows: ClientWorkoutSetLog[];
+  if (exercise.setLogs && exercise.setLogs.length > 0) {
+    rows = exercise.setLogs.map((row) => ({ ...row }));
+  } else {
+    const count = parseWorkoutSetCount(exercise.sets);
+    const reps = exercise.reps.trim();
+    rows = count
+      ? Array.from({ length: count }, () => ({ reps, weight: "" }))
+      : [{ reps: "", weight: "" }];
   }
-  const kinds = [lower > 0, upper > 0, core > 0].filter(Boolean).length;
-  if (kinds > 1) return "Full Body";
-  if (lower) return "Lower Body";
-  if (upper) return "Upper Body";
-  if (core) return "Core";
-  return title ? titleCase(title) : "Workout";
+  if (exercise.completed && rows.every((row) => row.completed !== true)) {
+    return rows.map((row) => ({ ...row, completed: true }));
+  }
+  return rows;
 }
 
-function ClockIcon({ className }: { className?: string }) {
+/** Order of paired groups on the day. The second group uses the alternate side line. */
+function supersetTones(exercises: readonly ClientWorkoutExercise[]): Map<string, 0 | 1> {
+  const counts = new Map<string, number>();
+  for (const item of exercises) {
+    if (!item.supersetId) continue;
+    counts.set(item.supersetId, (counts.get(item.supersetId) ?? 0) + 1);
+  }
+  const tones = new Map<string, 0 | 1>();
+  let index = 0;
+  for (const item of exercises) {
+    const id = item.supersetId;
+    if (!id || tones.has(id) || (counts.get(id) ?? 0) < 2) continue;
+    tones.set(id, index % 2 === 0 ? 0 : 1);
+    index += 1;
+  }
+  return tones;
+}
+
+function SummaryExercise({
+  exercise,
+  inSuperset,
+  supersetAlt,
+}: {
+  exercise: ClientWorkoutExercise;
+  inSuperset: boolean;
+  supersetAlt: boolean;
+}) {
+  const logs = viewLogs(exercise);
+  const effort = exerciseEffort(exercise);
+  const load = exerciseLoad(exercise);
+  const showLoad = load !== null;
+  const loadIsWeight = load === "lb" || load === "kg" || load === "speed";
+  const assisted = load === "lb" && exerciseAssistsWithMachine(exercise);
+  const name = exerciseLabel(exercise.name.trim()) || "Exercise";
+  const note = (exercise.note ?? "").trim();
+  const loadLabel =
+    load === "kg" ? "Kg" : load === "bodyweight" ? "BW" : load === "speed" ? "Mph" : "Lbs";
+
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden>
-      <circle cx="12" cy="12" r="8.25" />
-      <path strokeLinecap="round" d="M12 7.5V12l3 2" />
-    </svg>
+    <article
+      className={cn(
+        "exercise-block",
+        !showLoad && "exercise-block--bodyweight",
+        inSuperset && "exercise-block--superset",
+        inSuperset && supersetAlt && "exercise-block--superset-alt"
+      )}
+    >
+      <div className="exercise-block__name-wrap">
+        {inSuperset ? <p className="exercise-block__superset">Superset</p> : null}
+        <div className="exercise-block__title">
+          <span className="exercise-block__thumb">
+            <ExerciseAvatar
+              name={exercise.name}
+              imageUrl={exercise.imageUrl}
+              className="exercise-block__mark"
+            />
+          </span>
+          <span className="exercise-block__name">{name}</span>
+        </div>
+        {note ? <p className="exercise-block__note">{note}</p> : null}
+      </div>
+      <div className="exercise-block__table">
+        <div className="exercise-block__head">
+          <span>Set</span>
+          {showLoad ? <span className="exercise-block__unit">{loadLabel}</span> : null}
+          <span className="exercise-block__unit">{effort === "distance" ? "Miles" : "Reps"}</span>
+          <CheckIcon className="exercise-block__head-check" />
+        </div>
+        {logs.map((log, index) => {
+          const weight = !loadIsWeight
+            ? "—"
+            : log.weight.trim()
+              ? assisted
+                ? signAssistanceWeight(log.weight) || log.weight.trim()
+                : log.weight.trim()
+              : assisted
+                ? "-0"
+                : "0";
+          return (
+            <div
+              key={`${exercise.id}-${index}`}
+              className={cn("exercise-block__row", log.completed && "exercise-block__row--done")}
+            >
+              <span className="exercise-block__set">{index + 1}</span>
+              {showLoad ? <span className="exercise-block__input">{weight}</span> : null}
+              <span className="exercise-block__input">{log.reps.trim() || "0"}</span>
+              <span
+                className={cn("exercise-block__check", log.completed && "exercise-block__check--on")}
+                aria-hidden
+              >
+                <CheckIcon className="h-3.5 w-3.5" />
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </article>
   );
 }
 
-function LayersIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} aria-hidden>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5 4.5 8.25 12 12l7.5-3.75L12 4.5Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12 12 15.75 19.5 12" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75 12 19.5l7.5-3.75" />
-    </svg>
-  );
-}
-
+/** Read-only workout, laid out like the editor at a smaller size. */
 function SentWorkoutSummary({
   workout,
   canEdit,
+  canRemove,
   onEdit,
+  onRemove,
   onClose,
 }: {
   workout: CoachWorkout;
   canEdit: boolean;
+  canRemove: boolean;
   onEdit: () => void;
+  onRemove: () => void;
   onClose: () => void;
 }) {
   const titleId = useId();
   const backdropDismiss = useOwnPointerDismiss(onClose);
-  const rows = workout.exercises.map((exercise) =>
-    summaryRow(exercise, loggedExercise(workout, exercise) ?? exercise)
-  );
-  const totalSets = rows.reduce((sum, row) => sum + row.setCount, 0);
-  const minutes = totalSets > 0 ? totalSets * MINUTES_PER_SET : null;
+  const exercises = workout.exercises.map((exercise) => shownExercise(workout, exercise));
+  const tones = supersetTones(exercises);
   const when = formatWorkoutDayHeading(workout.dateKey);
+  const title = workout.title.trim();
   const note = workout.note.trim();
-  const focus = focusLabel(workout);
 
   return createPortal(
     <div className="roster-summary" role="presentation">
@@ -223,101 +201,76 @@ function SentWorkoutSummary({
         onPointerUp={backdropDismiss.onPointerUp}
         onClick={backdropDismiss.onClick}
       />
-      <div className="roster-summary__card" role="dialog" aria-modal="true" aria-labelledby={titleId}>
-        <div className="roster-summary__brand">
-          <Logo href={null} size="sm" />
-          <div className="roster-summary__brand-actions">
-            {canEdit ? (
-              <FastActivateButton className="roster-summary__view" onActivate={onEdit}>
-                Edit Workout
-              </FastActivateButton>
-            ) : null}
-            <FastActivateButton className="roster-summary__close" aria-label="Close" onActivate={onClose}>
-              <CloseIcon className="h-3.5 w-3.5" />
-            </FastActivateButton>
+      <div
+        className="client-workouts-day roster-summary__sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <div className="client-workouts-day__top">
+          <FastActivateButton
+            className="client-workouts-day__back"
+            aria-label="Back to calendar"
+            onActivate={onClose}
+          >
+            <ChevronLeftIcon className="h-5 w-5" />
+          </FastActivateButton>
+          <div className="roster-summary__identity">
+            <span className="roster-summary__chip">Workout summary</span>
+            <h2 id={titleId} className="client-workouts-day__heading">
+              {when}
+            </h2>
           </div>
+          {canEdit || canRemove ? (
+            <div className="roster-summary__actions">
+              {canEdit ? (
+                <FastActivateButton
+                  className="client-workouts-day__send client-workouts-day__send--save"
+                  onActivate={onEdit}
+                >
+                  Edit
+                </FastActivateButton>
+              ) : null}
+              {canRemove ? (
+                <FastActivateButton className="roster-summary__remove" onActivate={onRemove}>
+                  Remove
+                </FastActivateButton>
+              ) : null}
+            </div>
+          ) : (
+            <span className="client-workouts-day__side" aria-hidden />
+          )}
         </div>
-        <div className="roster-summary__headline">
-          <h2 id={titleId} className="roster-summary__title">
-            Workout Summary
-          </h2>
-          {minutes != null ? (
-            <span className="roster-summary__time">
-              <ClockIcon className="h-3.5 w-3.5" />~{minutes} min
-            </span>
+        <div className="client-workouts-day__body">
+          {title ? (
+            <div className="client-workouts-titles__display">
+              <span className="client-workouts-titles__display-text">{title}</span>
+            </div>
           ) : null}
+          {note ? <p className="roster-summary__note">{note}</p> : null}
+          {exercises.length === 0 ? (
+            <p className="roster-sheet__empty">No exercises in this workout.</p>
+          ) : (
+            exercises.map((exercise) => {
+              const tone = exercise.supersetId ? tones.get(exercise.supersetId) : undefined;
+              return (
+                <SummaryExercise
+                  key={exercise.id}
+                  exercise={exercise}
+                  inSuperset={tone !== undefined}
+                  supersetAlt={tone === 1}
+                />
+              );
+            })
+          )}
         </div>
-        <p className="roster-summary__date">
-          <CalendarIcon className="h-3.5 w-3.5" />
-          {when}
-        </p>
-        {note ? <p className="roster-summary__workout-note">{note}</p> : null}
-        {rows.length === 0 ? (
-          <p className="roster-sheet__empty">No exercises in this workout.</p>
-        ) : (
-          <ol className="roster-summary__exercises">
-            {rows.map((row, index) => (
-              <li key={row.id} className="roster-summary__exercise">
-                <span className="roster-summary__index">{index + 1}</span>
-                <span className="roster-summary__bar" aria-hidden />
-                <span className="roster-summary__identity">
-                  <span className="roster-summary__name">{row.name}</span>
-                  {row.sets && row.cue ? (
-                    <span className="roster-summary__cue">{row.cue}</span>
-                  ) : (
-                    <>
-                      {row.setLabel ? <span className="roster-summary__sets-label">{row.setLabel}</span> : null}
-                      {row.cue ? <span className="roster-summary__cue">{row.cue}</span> : null}
-                    </>
-                  )}
-                </span>
-                {row.sets ? (
-                  <ul className="roster-summary__setbox">
-                    {row.sets.map((set) => (
-                      <li key={set.label}>
-                        <span>{set.label}</span>
-                        <span>{set.detail}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : row.pill ? (
-                  <span className="roster-summary__pill">{row.pill}</span>
-                ) : null}
-              </li>
-            ))}
-          </ol>
-        )}
-        {rows.length > 0 ? (
-          <dl className="roster-summary__stats">
-            <div>
-              <DumbbellIcon className="h-4 w-4" />
-              <dt>Total Exercises</dt>
-              <dd>{rows.length}</dd>
-            </div>
-            <div>
-              <LayersIcon className="h-4 w-4" />
-              <dt>Total Sets</dt>
-              <dd>{totalSets}</dd>
-            </div>
-            <div>
-              <ClockIcon className="h-4 w-4" />
-              <dt>Estimated Time</dt>
-              <dd>{minutes != null ? `~${minutes} min` : "—"}</dd>
-            </div>
-            <div>
-              <ChartIcon className="h-4 w-4" />
-              <dt>Focus</dt>
-              <dd>{focus}</dd>
-            </div>
-          </dl>
-        ) : null}
       </div>
     </div>,
     document.body
   );
 }
 
-/** Workouts sent to one client: title and day in the list, summary on tap. */
+/** Workouts sent to one client, on a month calendar. A day opens that workout. */
 export function ClientPlanSheet({
   relationship,
   workouts,
@@ -332,18 +285,28 @@ export function ClientPlanSheet({
   workouts: readonly CoachWorkout[];
   /** Opens this workout's logged sets as soon as the sheet is shown. */
   initialWorkoutId?: string | null;
-  onSendWorkout: () => void;
+  onSendWorkout: (dateKey?: string) => void;
   onEditWorkout: (workout: CoachWorkout) => void;
   onRemoveWorkout: (workoutId: string) => Promise<boolean>;
   onRemoveClient: () => void;
   onClose: () => void;
 }) {
   const [todayKey] = useState(() => toLocalDateKey(new Date()));
+  const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(initialWorkoutId);
+  const [pickedDay, setPickedDay] = useState<string | null>(null);
+  const [armedDay, setArmedDay] = useState<string | null>(null);
+  const armTimer = useRef<number | null>(null);
+  const openedWorkout = useRef<string | null>(null);
   useEffect(() => {
-    if (initialWorkoutId) setSelectedId(initialWorkoutId);
-  }, [initialWorkoutId]);
+    if (!initialWorkoutId || openedWorkout.current === initialWorkoutId) return;
+    const workout = workouts.find((item) => item.id === initialWorkoutId);
+    if (!workout) return;
+    openedWorkout.current = initialWorkoutId;
+    setSelectedId(initialWorkoutId);
+    setMonth(startOfMonth(parseLocalDateKey(workout.dateKey)));
+  }, [initialWorkoutId, workouts]);
   const selectedIdRef = useRef(selectedId);
   selectedIdRef.current = selectedId;
   const name = relationship.clientFirstName.trim() || "Client";
@@ -356,14 +319,61 @@ export function ClientPlanSheet({
     onClose();
   }, [onClose]);
 
-  const sorted = [...workouts].sort((a, b) => (a.dateKey < b.dateKey ? -1 : 1));
-  const upcoming = sorted.filter((item) => item.dateKey >= todayKey && item.status !== "completed");
-  const past = sorted.filter((item) => !upcoming.includes(item)).reverse();
+  const byDate = useMemo(() => {
+    const map = new Map<string, CoachWorkout[]>();
+    for (const workout of workouts) {
+      const list = map.get(workout.dateKey);
+      if (list) list.push(workout);
+      else map.set(workout.dateKey, [workout]);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    return map;
+  }, [workouts]);
+  const cells = useMemo(() => buildMonthGrid(month, todayKey), [month, todayKey]);
+  const monthCells = useMemo(() => {
+    const weeks: typeof cells[] = [];
+    for (let index = 0; index < cells.length; index += 7) {
+      weeks.push(cells.slice(index, index + 7));
+    }
+    return weeks.filter((week) => week.some((cell) => cell.inMonth)).flat();
+  }, [cells]);
+  const picked = pickedDay ? (byDate.get(pickedDay) ?? []) : [];
+
+  function openDay(dateKey: string) {
+    const dayWorkouts = byDate.get(dateKey) ?? [];
+    const canSchedule =
+      dayWorkouts.length === 0 && relationship.status === "active" && dateKey >= todayKey;
+    if (dayWorkouts.length === 0 && !canSchedule) return;
+    setArmedDay(dateKey);
+    if (armTimer.current) window.clearTimeout(armTimer.current);
+    armTimer.current = window.setTimeout(() => {
+      armTimer.current = null;
+      setArmedDay(null);
+      if (dayWorkouts.length === 0) {
+        onSendWorkout(dateKey);
+        return;
+      }
+      setPickedDay(dayWorkouts.length > 1 ? dateKey : null);
+      if (dayWorkouts.length === 1) setSelectedId(dayWorkouts[0]!.id);
+    }, 220);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (armTimer.current) window.clearTimeout(armTimer.current);
+    };
+  }, []);
 
   async function remove(workout: CoachWorkout) {
     setError(null);
     const ok = await onRemoveWorkout(workout.id);
-    if (!ok) setError("Only workouts they haven’t started can be removed.");
+    if (!ok) {
+      setError("Only workouts they haven’t started can be removed.");
+      return;
+    }
+    setSelectedId(null);
   }
 
   function renderWorkout(workout: CoachWorkout) {
@@ -398,25 +408,88 @@ export function ClientPlanSheet({
   }
 
   return (
-    <RosterSheet title={name} subtitle="Workouts you’ve sent" onClose={dismissSheet}>
-      {sorted.length === 0 ? (
-        <p className="roster-sheet__empty">No workouts sent yet.</p>
-      ) : (
-        <div className="roster-plan">
-          {upcoming.length > 0 ? (
-            <section>
-              <p className="roster-plan__heading">Upcoming</p>
-              <ul className="roster-plan__list">{upcoming.map(renderWorkout)}</ul>
-            </section>
-          ) : null}
-          {past.length > 0 ? (
-            <section>
-              <p className="roster-plan__heading">History</p>
-              <ul className="roster-plan__list">{past.map(renderWorkout)}</ul>
-            </section>
-          ) : null}
+    <RosterSheet title={`${name} workout calendar`} onClose={dismissSheet}>
+      <div className="client-workouts-page-cal">
+        <div className="client-workouts-month">
+          <FastActivateButton
+            className="client-workouts-month__nav"
+            aria-label="Previous month"
+            onActivate={() => {
+              setPickedDay(null);
+              setMonth((current) => addMonths(current, -1));
+            }}
+          >
+            <ChevronLeftIcon className="h-5 w-5" />
+          </FastActivateButton>
+          <h3 className="client-workouts-month__title">{formatMonthTitle(month)}</h3>
+          <FastActivateButton
+            className="client-workouts-month__nav"
+            aria-label="Next month"
+            onActivate={() => {
+              setPickedDay(null);
+              setMonth((current) => addMonths(current, 1));
+            }}
+          >
+            <ChevronRightIcon className="h-5 w-5" />
+          </FastActivateButton>
         </div>
-      )}
+        <div className="client-workouts-weekdays" aria-hidden>
+          {WEEKDAY_LABELS.map((label, index) => (
+            <span key={`${label}-${index}`}>{label}</span>
+          ))}
+        </div>
+        <div className="client-workouts-cal" role="grid" aria-label={`${name}'s workouts`}>
+          {monthCells.map((cell) => {
+            if (!cell.inMonth) {
+              return <span key={cell.dateKey} className="client-workouts-cal__day client-workouts-cal__day--blank" aria-hidden />;
+            }
+            const dayWorkouts = byDate.get(cell.dateKey) ?? [];
+            const mark = coachDayMark(dayWorkouts);
+            const titles = dayWorkouts.map((workout) => workout.title.trim() || "Workout").join(", ");
+            const when = formatWorkoutDayAriaLabel(cell.dateKey);
+            const canAdd =
+              dayWorkouts.length === 0 &&
+              relationship.status === "active" &&
+              cell.dateKey >= todayKey;
+            const label = titles
+              ? `${when}, ${titles}`
+              : canAdd
+                ? `Add a workout on ${when}`
+                : when;
+            return (
+              <FastActivateButton
+                key={cell.dateKey}
+                className={cn(
+                  "client-workouts-cal__day",
+                  cell.isToday && "client-workouts-cal__day--today",
+                  canAdd && !cell.isToday && "client-workouts-cal__day--open",
+                  armedDay === cell.dateKey && "client-workouts-cal__day--armed",
+                  pickedDay === cell.dateKey && "client-workouts-cal__day--selected"
+                )}
+                aria-label={label}
+                aria-current={cell.isToday ? "date" : undefined}
+                onActivate={() => openDay(cell.dateKey)}
+              >
+                <span className="client-workouts-cal__num">{cell.day}</span>
+                {mark ? (
+                  <span className="client-workouts-cal__marks" aria-hidden>
+                    <CoachDayMark done={mark === "done"} />
+                  </span>
+                ) : (
+                  <span className="client-workouts-cal__dot" aria-hidden />
+                )}
+              </FastActivateButton>
+            );
+          })}
+        </div>
+      </div>
+      {picked.length > 1 ? (
+        <div className="roster-plan">
+          <p className="roster-plan__heading">{formatWorkoutDayHeading(picked[0]!.dateKey)}</p>
+          <ul className="roster-plan__list">{picked.map(renderWorkout)}</ul>
+        </div>
+      ) : null}
+      {workouts.length === 0 ? <p className="roster-sheet__empty">No workouts sent yet.</p> : null}
       {error ? <p className="client-workouts-error">{error}</p> : null}
       {relationship.status === "active" ? (
         <FastActivateButton
@@ -433,7 +506,9 @@ export function ClientPlanSheet({
         <SentWorkoutSummary
           workout={selected}
           canEdit={selected.status === "sent" && selected.dateKey >= todayKey}
+          canRemove={selected.status === "sent"}
           onEdit={() => onEditWorkout(selected)}
+          onRemove={() => void remove(selected)}
           onClose={() => setSelectedId(null)}
         />
       ) : null}

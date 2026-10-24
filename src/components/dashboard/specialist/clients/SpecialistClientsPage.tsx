@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { useRouter, useSearchParams } from "next/navigation";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
-  ChartIcon,
+  AlertTriangleIcon,
+  CalendarIcon,
   CheckCircleIcon,
   ChevronDownIcon,
+  CloseIcon,
   MessageBubbleIcon,
   PlusIcon,
   SearchIcon,
@@ -19,10 +21,12 @@ import { useSpecialistInquiryContacts } from "@/hooks/useSpecialistInquiryContac
 import { forgetHiddenInquiryIds } from "@/lib/inquiry/inquiry-hidden-store";
 import { showToast } from "@/lib/toast-store";
 import {
+  rosterWeekMarkLabel,
   summarizeRosterClient,
   VIEW_FINISHED_WORKOUT_EVENT,
   type RosterClientState,
   type RosterClientSummary,
+  type RosterWeekMark,
 } from "@/lib/coaching/coach-workout";
 import {
   SPECIALIST_DASHBOARD_PATH,
@@ -54,6 +58,12 @@ const STATE_LABEL: Record<RosterClientState, string> = {
   active: "Active",
   inactive: "Inactive",
 };
+
+function WeekMark({ mark }: { mark: RosterWeekMark }) {
+  const Icon =
+    mark === "completed" ? CheckCircleIcon : mark === "missed" ? CloseIcon : AlertTriangleIcon;
+  return <Icon className="roster-card__chip-icon" />;
+}
 
 function matchesFilter(state: RosterClientState, filter: RosterFilter): boolean {
   if (filter === "all") return true;
@@ -88,7 +98,7 @@ function SampleClientCard() {
 
 type OpenSheet =
   | { kind: "add" }
-  | { kind: "send"; relationshipId: string }
+  | { kind: "send"; relationshipId: string; dateKey?: string }
   | { kind: "plan"; relationshipId: string; workoutId?: string }
   | { kind: "edit"; relationshipId: string; workoutId: string }
   | null;
@@ -133,11 +143,13 @@ export function SpecialistClientsPage({
   const [filter, setFilter] = useState<RosterFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<OpenSheet>(null);
+  const [composing, setComposing] = useState<{ dateKey: string | null } | null>(null);
   const [requestBusyId, setRequestBusyId] = useState<string | null>(null);
   const [requestError, setRequestError] = useState<{ id: string; message: string } | null>(null);
   const [messageBusyId, setMessageBusyId] = useState<string | null>(null);
   const [messageError, setMessageError] = useState<{ id: string; message: string } | null>(null);
   const closeSheet = useCallback(() => {
+    setComposing(null);
     setSheet(null);
     const workoutId = searchParams.get(SPECIALIST_FINISHED_WORKOUT_PARAM);
     if (!workoutId) return;
@@ -231,6 +243,21 @@ export function SpecialistClientsPage({
         (!needle || row.relationship.clientFirstName.toLowerCase().includes(needle))
     );
   }, [rows, query, filter]);
+
+  const filterCounts = useMemo(() => {
+    const counts: Record<RosterFilter, number> = {
+      all: rows.length,
+      active: 0,
+      inactive: 0,
+      invited: 0,
+    };
+    for (const row of rows) {
+      if (row.summary.state === "inactive") counts.inactive += 1;
+      else if (row.summary.state === "invited") counts.invited += 1;
+      else counts.active += 1;
+    }
+    return counts;
+  }, [rows]);
 
   const sheetRelationship =
     sheet && sheet.kind !== "add"
@@ -378,7 +405,6 @@ export function SpecialistClientsPage({
     const invited = summary.state === "invited";
     const open = expandedId === relationship.id;
     const panelId = `roster-card-${relationship.id}`;
-    const latest = summary.latest;
     return (
       <li key={relationship.id} className={cn("roster-card", open && "roster-card--open")}>
         <FastActivateButton
@@ -407,33 +433,28 @@ export function SpecialistClientsPage({
 
         {open ? (
           <div className="roster-card__panel" id={panelId}>
-            {latest ? (
-              <div className="roster-card__latest">
-                <div className="roster-card__latest-head">
-                  <p className="roster-card__latest-label">Latest workout</p>
-                  <span
-                    className={cn(
-                      "roster-card__status",
-                      latest.status === "completed" && "roster-card__status--done"
-                    )}
-                  >
-                    {latest.status === "completed" ? (
-                      <CheckCircleIcon className="roster-card__status-icon" />
-                    ) : null}
-                    {latest.status === "completed"
-                      ? "Completed"
-                      : latest.status === "started"
-                        ? "In progress"
-                        : "Sent"}
-                  </span>
-                </div>
-                <p className="roster-card__latest-title">{latest.title}</p>
-                <p className="roster-card__latest-meta">
-                  {latest.longWhen}
-                  {latest.minutes != null ? ` · ~${latest.minutes} min` : ""}
-                </p>
+            {invited ? null : (
+              <div className="roster-card__week">
+                <p className="roster-card__week-label">This week:</p>
+                {summary.weekChips.length > 0 ? (
+                  <ul className="roster-card__week-chips">
+                    {summary.weekChips.map((chip) => (
+                      <li
+                        key={chip.id}
+                        className={cn("roster-card__chip", `roster-card__chip--${chip.mark}`)}
+                        aria-label={`${chip.title}, ${chip.when}, ${rosterWeekMarkLabel(chip.mark)}`}
+                      >
+                        <span className="roster-card__chip-name">{chip.title}</span>
+                        <span className="roster-card__chip-date">{chip.when}</span>
+                        <WeekMark mark={chip.mark} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="roster-card__week-empty">Nothing scheduled</p>
+                )}
               </div>
-            ) : null}
+            )}
             {messageError?.id === relationship.id ? (
               <p className="coaching-error">{messageError.message}</p>
             ) : null}
@@ -466,15 +487,15 @@ export function SpecialistClientsPage({
                     className="roster-card__action"
                     onActivate={() => setSheet({ kind: "plan", relationshipId: relationship.id })}
                   >
-                    <ChartIcon className="roster-card__action-icon" />
-                    Results
+                    <CalendarIcon className="roster-card__action-icon" />
+                    Calendar
                   </FastActivateButton>
                 </>
               )}
             </div>
             {invited ? null : (
               <p className="roster-card__hint">
-                Tap Results to view full workout details and past workouts.
+                Tap Calendar to open their workout calendar.
               </p>
             )}
           </div>
@@ -580,7 +601,7 @@ export function SpecialistClientsPage({
                 )}
                 onActivate={() => setFilter(option.id)}
               >
-                {option.label}
+                {option.label} ({filterCounts[option.id]})
               </FastActivateButton>
             ))}
           </div>
@@ -612,6 +633,7 @@ export function SpecialistClientsPage({
         <SendWorkoutSheet
           relationship={sheetRelationship}
           workouts={workoutsFor(sheetRelationship.id)}
+          initialDateKey={sheet.dateKey}
           onSend={sendWorkout}
           onClose={closeSheet}
         />
@@ -626,19 +648,32 @@ export function SpecialistClientsPage({
         />
       ) : null}
       {sheet?.kind === "plan" && sheetRelationship ? (
-        <ClientPlanSheet
-          key={sheet.workoutId ? `finished-${sheet.workoutId}` : sheetRelationship.id}
-          relationship={sheetRelationship}
-          workouts={workoutsFor(sheetRelationship.id)}
-          initialWorkoutId={sheet.workoutId ?? null}
-          onSendWorkout={() => setSheet({ kind: "send", relationshipId: sheetRelationship.id })}
-          onEditWorkout={(workout) =>
-            setSheet({ kind: "edit", relationshipId: sheetRelationship.id, workoutId: workout.id })
-          }
-          onRemoveWorkout={removeWorkout}
-          onRemoveClient={() => void handleRemoveClient(sheetRelationship)}
-          onClose={closeSheet}
-        />
+        <>
+          <ClientPlanSheet
+            key={sheet.workoutId ? `finished-${sheet.workoutId}` : sheetRelationship.id}
+            relationship={sheetRelationship}
+            workouts={workoutsFor(sheetRelationship.id)}
+            initialWorkoutId={sheet.workoutId ?? null}
+            onSendWorkout={(dateKey) => setComposing({ dateKey: dateKey ?? null })}
+            onEditWorkout={(workout) => {
+              setComposing(null);
+              setSheet({ kind: "edit", relationshipId: sheetRelationship.id, workoutId: workout.id });
+            }}
+            onRemoveWorkout={removeWorkout}
+            onRemoveClient={() => void handleRemoveClient(sheetRelationship)}
+            onClose={closeSheet}
+          />
+          {composing ? (
+            <SendWorkoutSheet
+              nested
+              relationship={sheetRelationship}
+              workouts={workoutsFor(sheetRelationship.id)}
+              initialDateKey={composing.dateKey}
+              onSend={sendWorkout}
+              onClose={() => setComposing(null)}
+            />
+          ) : null}
+        </>
       ) : null}
     </div>
   );

@@ -1015,8 +1015,18 @@
   transition: opacity 0.34s ease;
 }
 
-.client-workouts-root--closing .client-workouts-root__backdrop {
-  opacity: 0;
+.client-workouts-root--nested {
+  z-index: 11100;
+  background: transparent;
+  pointer-events: none;
+}
+
+.client-workouts-root--nested .client-workouts-day-root {
+  pointer-events: none;
+}
+
+.client-workouts-root--nested .client-workouts-day {
+  pointer-events: auto;
 }
 
 
@@ -1291,9 +1301,27 @@
   color: rgba(255, 255, 255, 0.28);
 }
 
+.client-workouts-cal__day--blank {
+  pointer-events: none;
+  cursor: default;
+  background: transparent;
+  box-shadow: none;
+}
+
 .client-workouts-cal__day--today {
   background: rgba(250, 204, 21, 0.12);
   box-shadow: inset 0 0 0 1.5px #facc15;
+}
+
+.client-workouts-cal__day--open {
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.88);
+}
+
+.client-workouts-cal__day--armed,
+.client-workouts-cal__day--today.client-workouts-cal__day--armed,
+.client-workouts-cal__day--open.client-workouts-cal__day--armed {
+  background: rgba(74, 222, 128, 0.22);
+  box-shadow: inset 0 0 0 1.5px #4ade80;
 }
 
 .client-workouts-cal__day--selected {
@@ -1412,7 +1440,6 @@
 
 .client-workouts-day--closing {
   animation: client-workouts-day-down 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
-  will-change: transform;
   pointer-events: none;
 }
 

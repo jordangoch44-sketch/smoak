@@ -13,6 +13,7 @@ import {
   SendIcon,
 } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
+import { isNativeShell } from "@/lib/native-billing";
 import { ClientAppleHealthDayNote } from "@/components/dashboard/client/workouts/ClientAppleHealthWeek";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { exerciseLabel } from "@/data/exercise-display";
@@ -33,6 +34,7 @@ import {
   freshExerciseBlock,
   parseWorkoutSetCount,
   sanitizeWorkoutCardio,
+  autoCapWords,
   sanitizeWorkoutTitle,
   type ExerciseSetMemory,
   type WorkoutClock,
@@ -306,6 +308,7 @@ export function ClientWorkoutDaySheet({
   const [menuExerciseId, setMenuExerciseId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [canShareWorkout, setCanShareWorkout] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
@@ -334,7 +337,10 @@ export function ClientWorkoutDaySheet({
   onFinishRef.current = onFinish ?? onFinishRef.current;
   onFinishedRef.current = onFinished;
 
+  const closedRef = useRef(false);
   function finishClose() {
+    if (closedRef.current) return;
+    closedRef.current = true;
     const after = afterCloseRef.current;
     afterCloseRef.current = null;
     onClose();
@@ -362,7 +368,12 @@ export function ClientWorkoutDaySheet({
     }
     setWorkoutKeyboardChrome(false);
     swallowTrailingDismissTap();
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const shell = rootRef.current?.closest(".client-workouts-root");
+    const calendarBehindSheet =
+      shell instanceof HTMLElement && Boolean(shell.querySelector(".client-workouts-dialog"));
+    // The page calendar sits under this overlay. Sliding the sheet away only
+    // uncovers the dark scrim, then the calendar jumps back when the lock lifts.
+    if (!calendarBehindSheet || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       finishClose();
       return;
     }
@@ -370,9 +381,11 @@ export function ClientWorkoutDaySheet({
   }
 
   useEffect(() => {
-    const shell = rootRef.current?.closest(".client-workouts-root");
-    if (!(shell instanceof HTMLElement)) return;
-    shell.classList.toggle("client-workouts-root--closing", closing);
+    if (!closing) return;
+    const timer = window.setTimeout(() => finishClose(), 480);
+    return () => window.clearTimeout(timer);
+    // The timer only needs to fire once per close. finishClose ignores a second call.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [closing]);
 
   useEffect(() => {
@@ -1025,12 +1038,16 @@ export function ClientWorkoutDaySheet({
   }
 
   useEffect(() => {
-    if (!actionsOpen || send) return;
+    setCanShareWorkout(isNativeShell());
+  }, []);
+
+  useEffect(() => {
+    if (!canShareWorkout || !actionsOpen || send) return;
     prefetchSharedWorkoutText({ title, exercises });
-  }, [actionsOpen, exercises, send, title]);
+  }, [actionsOpen, canShareWorkout, exercises, send, title]);
 
   async function handleShare() {
-    if (sharing) return;
+    if (!canShareWorkout || sharing) return;
     const day = { title, exercises };
     if (openPreparedWorkoutText(day)) return;
     setSharing(true);
@@ -1249,7 +1266,7 @@ export function ClientWorkoutDaySheet({
                   Copy to another day
                 </FastActivateButton>
               ) : null}
-              {exercises.some((exercise) => exercise.name.trim()) ? (
+              {canShareWorkout && exercises.some((exercise) => exercise.name.trim()) ? (
                 <FastActivateButton
                   className="client-workouts-btn"
                   role="menuitem"
@@ -1362,13 +1379,14 @@ export function ClientWorkoutDaySheet({
                 value={cardio.type}
                 autoComplete="off"
                 autoCorrect="off"
+                autoCapitalize="words"
                 maxLength={MAX_CARDIO_TYPE_LENGTH}
                 placeholder="Type (run, bike, walk…)"
                 aria-label="Cardio type"
                 onChange={(event) => {
                   setCardio((current) => ({
                     ...current,
-                    type: event.target.value.slice(0, MAX_CARDIO_TYPE_LENGTH),
+                    type: autoCapWords(event.target.value).slice(0, MAX_CARDIO_TYPE_LENGTH),
                   }));
                   setError(null);
                 }}
@@ -1451,11 +1469,14 @@ export function ClientWorkoutDaySheet({
                     value={title}
                     autoComplete="off"
                     autoCorrect="off"
+                    autoCapitalize="words"
                     enterKeyHint="done"
                     maxLength={24}
                     placeholder=""
                     aria-label="Muscle group today? Push, pull, legs."
-                    onChange={(event) => setTitle(sanitizeWorkoutTitle(event.target.value))}
+                    onChange={(event) =>
+                      setTitle(autoCapWords(event.target.value).replace(/\s+/g, " ").slice(0, 24))
+                    }
                     onFocus={() => setEditingTitle(true)}
                     onBlur={() => confirmWorkoutTitle()}
                     onKeyDown={(event) => {

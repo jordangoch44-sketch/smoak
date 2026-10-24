@@ -24,6 +24,8 @@ export function SendWorkoutSheet({
   relationship,
   workouts = [],
   editing = null,
+  initialDateKey = null,
+  nested = false,
   onSend,
   onUpdate,
   onClose,
@@ -33,13 +35,21 @@ export function SendWorkoutSheet({
   workouts?: readonly CoachWorkout[];
   /** An upcoming workout the client has not started. */
   editing?: CoachWorkout | null;
+  /** Day chosen on the client calendar. Past days stay on today. */
+  initialDateKey?: string | null;
+  /** Drawn over the client calendar, which stays open underneath. */
+  nested?: boolean;
   onSend?: (input: SendCoachWorkoutInput) => Promise<CoachingResult<CoachWorkout>>;
   onUpdate?: (input: UpdateCoachWorkoutInput) => Promise<CoachingResult<CoachWorkout>>;
   onClose: () => void;
 }) {
   const { showToast } = useToast();
   const [todayKey] = useState(() => toLocalDateKey(new Date()));
-  const [dateKey, setDateKey] = useState(editing?.dateKey ?? todayKey);
+  const [dateKey, setDateKey] = useState(() => {
+    if (editing?.dateKey) return editing.dateKey;
+    if (initialDateKey && initialDateKey >= todayKey) return initialDateKey;
+    return todayKey;
+  });
   const [draft, setDraft] = useState<ClientWorkoutDay | undefined>(() =>
     editing
       ? {
@@ -63,6 +73,7 @@ export function SendWorkoutSheet({
   );
 
   useEffect(() => {
+    if (nested) return;
     document.body.classList.add(LOCK_CLASS);
     document.documentElement.classList.add(LOCK_CLASS);
     const unlock = lockOverlayDocumentScroll();
@@ -71,7 +82,7 @@ export function SendWorkoutSheet({
       document.body.classList.remove(LOCK_CLASS);
       document.documentElement.classList.remove(LOCK_CLASS);
     };
-  }, []);
+  }, [nested]);
 
   async function send(exercises: ClientWorkoutDay["exercises"], title: string) {
     if (editing) {
@@ -111,8 +122,11 @@ export function SendWorkoutSheet({
   );
 
   return createPortal(
-    <div className="client-workouts-root" role="presentation">
-      <div className="client-workouts-root__backdrop" aria-hidden />
+    <div
+      className={nested ? "client-workouts-root client-workouts-root--nested" : "client-workouts-root"}
+      role="presentation"
+    >
+      {nested ? null : <div className="client-workouts-root__backdrop" aria-hidden />}
       <ClientWorkoutDaySheet
         dateKey={dateKey}
         workout={draft}

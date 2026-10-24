@@ -9,6 +9,7 @@ import { exerciseLabel } from "@/data/exercise-display";
 import { formatExerciseName } from "@/data/workout-exercise-library";
 import { isKnownExercise } from "@/lib/workouts/exercise-catalog";
 import {
+  autoCapWords,
   createWorkoutExerciseId,
   exerciseAssistsWithMachine,
   exerciseWithSetLogs,
@@ -232,7 +233,9 @@ export function ExerciseSetBlock({
               placeholder="Exercise"
               aria-label="Exercise name"
               onPointerDown={(event) => event.stopPropagation()}
-              onChange={(event) => onChange({ ...exercise, name: event.target.value }, false)}
+              onChange={(event) =>
+                onChange({ ...exercise, name: autoCapWords(event.target.value) }, false)
+              }
               onBlur={(event) => commitName(event.currentTarget.value)}
               onKeyDown={(event) => {
                 if (event.key !== "Enter") return;
@@ -257,13 +260,14 @@ export function ExerciseSetBlock({
           maxLength={EXERCISE_NOTE_MAX_LENGTH}
           autoComplete="off"
           autoCorrect="on"
+          autoCapitalize="words"
           enterKeyHint="done"
           placeholder="Add notes..."
           aria-label={named ? `Notes for ${named}` : "Exercise notes"}
           onPointerDown={(event) => event.stopPropagation()}
           onChange={(event) =>
             onChange(
-              { ...exercise, note: sanitizeExerciseNote(event.target.value) },
+              { ...exercise, note: autoCapWords(sanitizeExerciseNote(event.target.value)) },
               Boolean(exercise.name.trim())
             )
           }

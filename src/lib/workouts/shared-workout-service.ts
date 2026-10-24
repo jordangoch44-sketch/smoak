@@ -79,8 +79,14 @@ export async function fetchSharedWorkout(
   };
 }
 
+/** Sharing a workout is an app action. The website only opens a link someone already sent. */
+function canShareWorkoutHere(): boolean {
+  return isNativeShell();
+}
+
 /** Start the link while the workout menu is open, so Share can open Messages immediately. */
 export function prefetchSharedWorkoutText(day: Pick<ClientWorkoutDay, "title" | "exercises">): void {
+  if (!canShareWorkoutHere()) return;
   const plan = sharedWorkoutPlan(day);
   if (plan.exercises.length === 0) return;
   const key = planKey(plan);
@@ -92,6 +98,7 @@ export function prefetchSharedWorkoutText(day: Pick<ClientWorkoutDay, "title" | 
 export function openPreparedWorkoutText(
   day: Pick<ClientWorkoutDay, "title" | "exercises">
 ): boolean {
+  if (!canShareWorkoutHere()) return false;
   const plan = sharedWorkoutPlan(day);
   const url = readyUrls.get(planKey(plan));
   if (!url) return false;
@@ -102,6 +109,9 @@ export function openPreparedWorkoutText(
 export async function textSharedWorkout(
   day: Pick<ClientWorkoutDay, "title" | "exercises">
 ): Promise<SharedWorkoutTextResult> {
+  if (!canShareWorkoutHere()) {
+    return { ok: false, message: "Open the SMOAC app to share this workout." };
+  }
   const plan = sharedWorkoutPlan(day);
   if (plan.exercises.length === 0) {
     return { ok: false, message: "Add an exercise before sharing." };

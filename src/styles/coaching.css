@@ -269,13 +269,14 @@
 
 .roster-page__filter {
   min-height: 2.2rem;
-  padding: 0 0.5rem;
+  padding: 0 0.25rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.03);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 550;
   color: rgba(255, 255, 255, 0.72);
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -501,20 +502,13 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.roster-card__latest {
+.roster-card__week {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.45rem;
 }
 
-.roster-card__latest-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.roster-card__latest-label {
+.roster-card__week-label {
   margin: 0;
   font-size: 0.625rem;
   font-weight: 700;
@@ -523,33 +517,79 @@
   color: rgba(255, 255, 255, 0.42);
 }
 
-.roster-card__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
+.roster-card__week-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.roster-card__status--done {
+.roster-card__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 1.85rem;
+  padding: 0.28rem 0.5rem 0.28rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.roster-card__chip-name {
+  overflow: hidden;
+  min-width: 0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster-card__chip-date {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.roster-card__chip-icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.roster-card__chip--completed {
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.roster-card__chip--completed .roster-card__chip-icon {
   color: rgb(74, 222, 128);
 }
 
-.roster-card__status-icon {
-  width: 0.95rem;
-  height: 0.95rem;
+.roster-card__chip--upcoming {
+  border-color: rgba(250, 204, 21, 0.4);
 }
 
-.roster-card__latest-title {
-  margin: 0.15rem 0 0;
-  font-size: 1.02rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  color: #fff;
+.roster-card__chip--upcoming .roster-card__chip-icon {
+  color: rgb(250, 204, 21);
 }
 
-.roster-card__latest-meta {
+.roster-card__chip--missed {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.roster-card__chip--missed .roster-card__chip-icon {
+  color: rgb(248, 113, 113);
+  stroke-width: 2.25;
+}
+
+.roster-card__week-empty {
   margin: 0;
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.5);
@@ -939,7 +979,6 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0.65rem 0.65rem max(0.65rem, env(safe-area-inset-bottom, 0px));
   pointer-events: auto;
 }
 
@@ -951,316 +990,190 @@
   cursor: pointer;
 }
 
-.roster-summary__card {
+/* Same sheet as the editor, shorter, with tighter set rows. */
+.client-workouts-day.roster-summary__sheet {
   position: relative;
-  z-index: 1;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
   width: 100%;
-  max-width: 26.5rem;
-  max-height: min(92svh, 46rem);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 1rem 0.9rem 0.95rem;
-  border-radius: 1.65rem;
-  border: 1px solid rgba(167, 139, 250, 0.28);
-  background:
-    radial-gradient(120% 55% at 100% 0%, rgba(139, 92, 246, 0.22), transparent 52%),
-    linear-gradient(180deg, #16141f 0%, #0e0c14 100%);
-  box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.55),
-    0 0 42px rgba(139, 92, 246, 0.16);
-  animation: client-workouts-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  max-width: 28rem;
+  height: auto;
+  max-height: min(72svh, 34rem);
 }
 
-.roster-summary__brand {
+.roster-summary__sheet .client-workouts-day__top > .roster-summary__identity {
   display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem;
+  gap: 0.28rem;
+  min-width: 0;
 }
 
-.roster-summary__brand .brand-logo__mark {
-  width: 1.35rem;
-  height: 1.35rem;
-}
-
-.roster-summary__brand .brand-logo__wordmark {
-  width: auto;
-  height: 0.85rem;
-}
-
-.roster-summary__brand-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.roster-summary__view {
+.roster-summary__chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  min-height: 2rem;
-  padding: 0.2rem 0.75rem;
+  max-width: 100%;
+  padding: 0.16rem 0.55rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: var(--smoac-color);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+
+.roster-summary__sheet .client-workouts-day__top {
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.7rem 0.75rem 0.35rem 0.7rem;
+}
+
+.roster-summary__sheet .client-workouts-day__heading {
+  justify-content: center;
+  width: 100%;
+  min-width: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.roster-summary__sheet .client-workouts-day__top > .roster-summary__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.roster-summary__remove {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.15rem;
+  padding: 0 0.7rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
   font: inherit;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 650;
   color: rgba(255, 255, 255, 0.88);
   white-space: nowrap;
   cursor: pointer;
 }
 
-.roster-summary__view-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.45rem;
-  height: 1.45rem;
-  border-radius: 999px;
-  background: rgba(139, 92, 246, 0.28);
-  color: #ddd6fe;
+.roster-summary__sheet .client-workouts-day__back {
+  width: 2.15rem;
+  height: 2.15rem;
 }
 
-.roster-summary__view-dot {
-  width: 0.4rem;
-  height: 0.4rem;
-  border-radius: 999px;
-  background: #a78bfa;
-  box-shadow: 0 0 8px rgba(167, 139, 250, 0.85);
+.roster-summary__sheet .client-workouts-day__send--save {
+  height: 2.15rem;
+  min-width: 0;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
 }
 
-.roster-summary__close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.75);
-  cursor: pointer;
+.roster-summary__sheet .client-workouts-day__body {
+  max-height: min(58svh, 28rem);
+  padding: 0.1rem 0.85rem max(0.9rem, env(safe-area-inset-bottom, 0px));
 }
 
-.roster-summary__headline {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+.roster-summary__sheet .client-workouts-titles__display {
+  min-height: 0;
+  margin: 0 0 0.45rem;
+  padding: 0.05rem 0.4rem 0.2rem;
+  cursor: default;
+  pointer-events: none;
 }
 
-.roster-summary__title {
-  margin: 0;
-  font-size: 1.65rem;
-  font-weight: 650;
-  letter-spacing: -0.035em;
-  line-height: 1.05;
-  color: #fff;
+.roster-summary__sheet .client-workouts-titles__display-text {
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
 }
 
-.roster-summary__time,
-.roster-summary__date {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.roster-summary__time {
-  flex-shrink: 0;
-  min-height: 2rem;
-  padding: 0 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.roster-summary__time svg,
-.roster-summary__date svg,
-.roster-summary__stats svg {
-  flex: none;
-  width: 1rem;
-  height: 1rem;
-  color: #c4b5fd;
-}
-
-.roster-summary__date {
-  margin: -0.35rem 0 0;
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.62);
-}
-
-.roster-summary__workout-note {
-  margin: -0.25rem 0 0;
-  font-size: 0.8125rem;
-  line-height: 1.4;
+.roster-summary__note {
+  margin: -0.1rem 0 0.7rem;
+  text-align: center;
+  font-size: 0.75rem;
+  line-height: 1.35;
   color: rgba(255, 255, 255, 0.55);
 }
 
-.roster-summary__exercises {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.roster-summary__sheet .exercise-block {
+  margin-bottom: 0.95rem;
 }
 
-.roster-summary__exercise {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.7rem 0.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.035);
+.roster-summary__sheet .exercise-block:last-child {
+  margin-bottom: 0.15rem;
 }
 
-.roster-summary__index {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 1.7rem;
-  height: 1.7rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.28);
-  font-size: 0.75rem;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.88);
+.roster-summary__sheet .exercise-block__name-wrap {
+  margin-bottom: 0.4rem;
 }
 
-.roster-summary__bar {
-  flex: none;
-  align-self: stretch;
-  width: 0.18rem;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #ddd6fe, #8b5cf6);
+.roster-summary__sheet .exercise-block__mark {
+  width: 1.85rem;
+  height: 1.85rem;
 }
 
-.roster-summary__identity {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.08rem;
-  min-width: 0;
+.roster-summary__sheet .exercise-block__thumb {
+  cursor: default;
 }
 
-.roster-summary__name {
-  font-size: 0.9rem;
-  font-weight: 650;
-  line-height: 1.25;
-  color: #fff;
-}
-
-.roster-summary__sets-label,
-.roster-summary__cue {
-  font-size: 0.75rem;
-  line-height: 1.3;
-  color: rgba(255, 255, 255, 0.48);
-}
-
-.roster-summary__pill,
-.roster-summary__setbox {
-  flex: none;
-  max-width: 48%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.8rem;
-  background: rgba(8, 7, 14, 0.45);
-}
-
-.roster-summary__pill {
-  padding: 0.45rem 0.7rem;
-  font-size: 0.8125rem;
-  font-weight: 650;
-  line-height: 1.25;
-  color: #fff;
-  text-align: center;
-}
-
-.roster-summary__setbox {
-  margin: 0;
-  padding: 0.35rem 0.55rem;
-  list-style: none;
-}
-
-.roster-summary__setbox li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.65rem;
-  padding: 0.12rem 0;
-  font-size: 0.75rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.roster-summary__setbox li span:first-child {
-  color: rgba(255, 255, 255, 0.45);
-}
-
-.roster-summary__setbox li span:last-child {
-  font-weight: 650;
-  color: #fff;
-  text-align: right;
-}
-
-.roster-summary__stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 0.15rem 0 0;
-  padding: 0.75rem 0.25rem 0.65rem;
-  border: 1px solid rgba(167, 139, 250, 0.35);
-  border-radius: 1rem;
-  background: rgba(18, 14, 32, 0.72);
-  box-shadow: inset 0 0 24px rgba(139, 92, 246, 0.08);
-}
-
-.roster-summary__stats > div {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  min-width: 0;
-  padding: 0 0.25rem;
-  text-align: center;
-}
-
-.roster-summary__stats > div + div {
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.roster-summary__stats dt {
-  margin: 0;
-  font-size: 0.625rem;
-  font-weight: 550;
-  line-height: 1.25;
-  color: rgba(255, 255, 255, 0.48);
-}
-
-.roster-summary__stats dd {
-  margin: 0;
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  color: #fff;
+.roster-summary__sheet .exercise-block__name {
+  overflow: hidden;
+  font-size: 0.92rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-@media (min-width: 640px) {
-  .roster-summary {
-    align-items: center;
-    padding: 1.5rem;
-  }
+.roster-summary__sheet .exercise-block__note {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+}
+
+.roster-summary__sheet .exercise-block__table {
+  gap: 0.28rem;
+}
+
+.roster-summary__sheet .exercise-block__head,
+.roster-summary__sheet .exercise-block__row {
+  grid-template-columns: 1.65rem minmax(0, 1fr) minmax(0, 1fr) 1.65rem;
+  gap: 0.28rem;
+}
+
+.roster-summary__sheet .exercise-block--bodyweight .exercise-block__head,
+.roster-summary__sheet .exercise-block--bodyweight .exercise-block__row {
+  grid-template-columns: 1.65rem minmax(0, 1fr) 1.65rem;
+}
+
+.roster-summary__sheet .exercise-block__set,
+.roster-summary__sheet .exercise-block__check {
+  width: 1.7rem;
+  height: 1.7rem;
+  font-size: 0.75rem;
+  cursor: default;
+}
+
+.roster-summary__sheet .exercise-block__input {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.85rem;
+  font-size: 0.8125rem;
+  pointer-events: none;
+}
+
+.roster-summary__sheet .exercise-block__unit {
+  cursor: default;
+  pointer-events: none;
 }
 
 .roster-plan__end {

@@ -116,9 +116,9 @@ export function ClientWorkoutsModal({
     document.documentElement.classList.add(LOCK_CLASS);
     const unlock = lockOverlayDocumentScroll();
     return () => {
-      unlock();
       document.body.classList.remove(LOCK_CLASS);
       document.documentElement.classList.remove(LOCK_CLASS);
+      unlock();
     };
   }, [open]);
 

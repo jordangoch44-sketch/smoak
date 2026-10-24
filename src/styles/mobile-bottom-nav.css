@@ -422,12 +422,20 @@ body.bottom-nav-panel-active .mobile-bottom-nav__pill {
   pointer-events: none;
 }
 
+/* Corner pip on the dumbbell. The shared save badge sits on the glyph and
+   its glow covers this smaller icon, so the workout count stays above it. */
 .mobile-bottom-nav__badge--alert {
+  top: -0.3rem;
+  right: -0.28rem;
+  z-index: 3;
+  min-width: 0.875rem;
+  height: 0.875rem;
+  padding-inline: 0.16rem;
+  border: none;
   background: #ff3b30;
-  border-color: #0c0a12;
-  box-shadow:
-    0 0 0 1.5px #0c0a12,
-    0 0 8px rgba(255, 59, 48, 0.7);
+  font-size: 0.5rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 1.5px #0c0a12;
 }
 
 /* Profile tab — inactive tint only; active uses shared aurora shell */
