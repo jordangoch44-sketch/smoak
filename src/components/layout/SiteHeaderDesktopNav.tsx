@@ -68,8 +68,8 @@ function SiteHeaderDesktopNavInner({
     canSaveSpecialists(session) &&
     savedCount > 0;
   const viewingClients = isSpecialistDashboardClientsTab(pathname, searchParams);
-  const showClientAttention =
-    useClientNavAttention(viewingClients) && pendingId !== "clients";
+  const clientAttention = useClientNavAttention(viewingClients);
+  const clientAttentionCount = pendingId === "clients" ? 0 : clientAttention;
   const viewingWorkouts = isWorkoutsNavPath(pathname);
   const unseenWorkouts = useWorkoutNavAttention(viewingWorkouts);
   const workoutAlertCount =
@@ -98,8 +98,8 @@ function SiteHeaderDesktopNavInner({
                 )}
                 aria-current={active ? "page" : undefined}
                 aria-label={
-                  item.id === "clients" && showClientAttention
-                    ? "Clients, new activity"
+                  item.id === "clients" && clientAttentionCount > 0
+                    ? `Clients, ${clientAttentionCount} new`
                     : item.glyph === "dumbbell" && workoutAlertCount > 0
                       ? `Workouts, ${workoutAlertCount} new`
                       : undefined
@@ -119,8 +119,10 @@ function SiteHeaderDesktopNavInner({
                 }}
               >
                 {label}
-                {item.id === "clients" && showClientAttention ? (
-                  <span className="site-header-desktop-nav__attention" aria-hidden />
+                {item.id === "clients" && clientAttentionCount > 0 ? (
+                  <span className="site-header-desktop-nav__badge site-header-desktop-nav__badge--alert" aria-hidden>
+                    {clientAttentionCount > 9 ? "9+" : clientAttentionCount}
+                  </span>
                 ) : null}
                 {item.glyph === "dumbbell" && workoutAlertCount > 0 ? (
                   <span className="site-header-desktop-nav__badge site-header-desktop-nav__badge--alert" aria-hidden>

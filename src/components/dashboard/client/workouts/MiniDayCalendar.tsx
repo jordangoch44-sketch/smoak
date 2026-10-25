@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
+import { useFastActivate } from "@/hooks/useFastActivate";
 import { cn } from "@/lib/utils";
 import {
   addMonths,
@@ -163,6 +164,7 @@ export function MiniDayCalendar({
     setVisible(startOfMonth(parseLocalDateKey(value)));
     setOpen(true);
   }
+  const activate = useFastActivate(toggle);
   const lead = startOfMonth(visible).getDay();
   const count = daysInMonth(visible);
   const prevMonth = addMonths(visible, -1);
@@ -183,8 +185,13 @@ export function MiniDayCalendar({
         className={cn("mini-day__trigger", triggerClassName)}
         aria-expanded={open}
         aria-label={open ? `${label}. Calendar open` : `${label}. Choose a day`}
-        onPointerDown={() => blurTextField()}
-        onClick={toggle}
+        onPointerDown={(event) => {
+          blurTextField();
+          activate.onPointerDown(event);
+        }}
+        onPointerUp={activate.onPointerUp}
+        onPointerCancel={activate.onPointerCancel}
+        onClick={activate.onClick}
       >
         <span>{label}</span>
         <ChevronDownIcon className={cn("mini-day__chevron", open && "mini-day__chevron--open")} />

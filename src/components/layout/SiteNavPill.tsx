@@ -372,7 +372,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   profilePresentation,
   showSaveBadge,
   savedCount,
-  showClientAttention,
+  clientAttentionCount,
   workoutAlertCount,
   onNavigate,
   onPointerDown,
@@ -385,7 +385,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
   profilePresentation?: MobileBottomNavProfilePresentation;
   showSaveBadge: boolean;
   savedCount: number;
-  showClientAttention: boolean;
+  clientAttentionCount: number;
   workoutAlertCount: number;
   onNavigate: (
     item: MobileBottomNavItem,
@@ -413,8 +413,8 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
     ? signedIn
       ? "Open My Profile"
       : "Open Profile"
-    : item.id === "clients" && showClientAttention
-      ? "Clients, new activity"
+    : item.id === "clients" && clientAttentionCount > 0
+      ? `Clients, ${clientAttentionCount} new`
       : item.id === "saved" && item.href === "/saved" && showSaveBadge
         ? `${item.label}, ${savedCount} saved`
         : item.glyph === "dumbbell" && workoutAlertCount > 0
@@ -513,8 +513,10 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
             {workoutAlertCount > 9 ? "9+" : workoutAlertCount}
           </span>
         ) : null}
-        {item.id === "clients" && showClientAttention ? (
-          <span className="mobile-bottom-nav__attention" aria-hidden />
+        {item.id === "clients" && clientAttentionCount > 0 ? (
+          <span className="mobile-bottom-nav__badge mobile-bottom-nav__badge--clients" aria-hidden>
+            {clientAttentionCount > 9 ? "9+" : clientAttentionCount}
+          </span>
         ) : null}
       </span>
       <span
@@ -537,7 +539,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   profilePresentation,
   showSaveBadge,
   savedCount,
-  showClientAttention,
+  clientAttentionCount,
   workoutAlertCount,
   layoutKey,
   settled,
@@ -553,7 +555,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
   profilePresentation: MobileBottomNavProfilePresentation;
   showSaveBadge: boolean;
   savedCount: number;
-  showClientAttention: boolean;
+  clientAttentionCount: number;
   workoutAlertCount: number;
   layoutKey: string;
   settled: boolean;
@@ -591,7 +593,7 @@ const SiteNavPillItems = memo(function SiteNavPillItems({
             }
             showSaveBadge={showSaveBadge}
             savedCount={savedCount}
-            showClientAttention={showClientAttention}
+            clientAttentionCount={clientAttentionCount}
             workoutAlertCount={workoutAlertCount}
             onNavigate={onNavClick}
             onPointerDown={onPointerDown}
@@ -645,8 +647,9 @@ function SiteNavPillShell({
     canSaveSpecialists(session) &&
     savedCount > 0;
   const viewingClients = isSpecialistDashboardClientsTab(pathname, routeSearch);
-  const showClientAttention =
-    useClientNavAttention(viewingClients) && pendingId !== "clients";
+  const clientAttention =
+    useClientNavAttention(viewingClients);
+  const clientAttentionCount = pendingId === "clients" ? 0 : clientAttention;
   const viewingWorkouts = isWorkoutsNavPath(pathname);
   const unseenWorkouts = useWorkoutNavAttention(viewingWorkouts);
   const workoutAlertCount =
@@ -780,7 +783,7 @@ function SiteNavPillShell({
         profilePresentation={profilePresentation}
         showSaveBadge={showSaveBadge}
         savedCount={savedCount}
-        showClientAttention={showClientAttention}
+        clientAttentionCount={clientAttentionCount}
         workoutAlertCount={workoutAlertCount}
         layoutKey={items.map((item) => item.id).join("|")}
         settled={clientReady && isReady}

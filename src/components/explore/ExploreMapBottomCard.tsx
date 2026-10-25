@@ -34,6 +34,49 @@ import { isTrainerSponsored, isTrainerVerified } from "@/lib/trainer-sponsorship
 import { getHomepageFeaturedSpecialties } from "@/lib/specialty-display";
 import { useProfileSheetOpen } from "@/hooks/useProfileSheetOpen";
 
+function SpecialtyChipRow({ specialties }: { specialties: readonly string[] }) {
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const specialtyKey = specialties.join("\0");
+
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const measure = () => {
+      setOverflow(row.scrollWidth > row.clientWidth + 1);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [specialtyKey]);
+
+  if (specialties.length === 0) return null;
+
+  return (
+    <div
+      ref={rowRef}
+      className={cn(
+        "explore-bottom-card__specialties-row",
+        overflow && "explore-bottom-card__specialties-row--more",
+        scrolled && "explore-bottom-card__specialties-row--scrolled"
+      )}
+      onScroll={(event) => {
+        const next = event.currentTarget.scrollLeft > 4;
+        setScrolled((current) => (current === next ? current : next));
+      }}
+    >
+      {specialties.map((spec) => (
+        <span key={spec} className="explore-bottom-card__specialty-pill">
+          {spec}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export interface ExploreMapBottomCardProps {
   cluster: ExploreMapCluster | null;
   onClose: () => void;
@@ -531,19 +574,7 @@ export function ExploreMapBottomCard({
                   </span>
                 </div>
 
-                {/* Specialties chips */}
-                {specialties.length > 0 ? (
-                  <div className="explore-bottom-card__specialties-row">
-                    {specialties.map((spec) => (
-                      <span
-                        key={spec}
-                        className="explore-bottom-card__specialty-pill"
-                      >
-                        {spec}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
+                <SpecialtyChipRow specialties={specialties} />
               </div>
             </ProfileSheetLink>
             <div

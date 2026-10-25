@@ -21,10 +21,10 @@ const POLL_MS = 60_000;
 const noopSubscribe = () => () => {};
 
 /**
- * Red dot on the Clients tab. True when a client joined or finished a sent
- * workout and the specialist is not already looking at Clients.
+ * Count on the Clients tab. Unopened joins plus finished sent workouts,
+ * or 0 when the specialist is already looking at Clients.
  */
-export function useClientNavAttention(viewingClients: boolean): boolean {
+export function useClientNavAttention(viewingClients: boolean): number {
   const { session } = useAuthSession();
   const isSpecialist = getUserRole(session) === "specialist";
   const email = session?.email;
@@ -85,5 +85,6 @@ export function useClientNavAttention(viewingClients: boolean): boolean {
     attentionKey,
   ]);
 
-  return attention.show && !viewingClients;
+  if (!attention.show || viewingClients) return 0;
+  return attention.relationshipIds.length + attention.workoutIds.length;
 }

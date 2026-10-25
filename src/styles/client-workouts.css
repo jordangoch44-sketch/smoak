@@ -362,6 +362,7 @@
   gap: 0.35rem;
   font-family: inherit;
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -383,14 +384,17 @@
 .mini-day__shield {
   position: fixed;
   inset: 0;
-  z-index: 11040;
+  /* Above the nested send sheet (11100) and below the exercise menu (11200). */
+  z-index: 11140;
   background: transparent;
   touch-action: none;
+  pointer-events: auto;
 }
 
 .mini-day__panel {
   position: fixed;
-  z-index: 11050;
+  z-index: 11150;
+  pointer-events: auto;
   margin: 0;
   padding: 0.55rem 0.55rem 0.65rem;
   border-radius: 1rem;
