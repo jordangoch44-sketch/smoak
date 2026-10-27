@@ -50,17 +50,20 @@
 
 .smoac-loader__draw {
   filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.32));
+  opacity: 0;
 }
 
+/* Gap is longer than the stroke (see smoac-loader-mark.ts) so a round cap
+   cannot sit on the bottom tip while this stroke is still waiting. */
 .smoac-loader__draw--upper {
-  stroke-dasharray: 957;
-  stroke-dashoffset: 957;
+  stroke-dasharray: 957 1217;
+  stroke-dashoffset: 1087;
   animation: smoac-loader-draw-upper 1.7s linear infinite;
 }
 
 .smoac-loader__draw--lower {
-  stroke-dasharray: 1106;
-  stroke-dashoffset: 1106;
+  stroke-dasharray: 1106 1366;
+  stroke-dashoffset: 1236;
   animation: smoac-loader-draw-lower 1.7s linear infinite;
 }
 
@@ -71,14 +74,18 @@
 }
 
 .smoac-loader__streak--upper {
-  stroke-dasharray: 80 877;
+  stroke-dasharray: 80 1400;
+  stroke-dashoffset: 40;
+  opacity: 0;
   animation:
     smoac-loader-streak-upper 1.7s linear infinite,
     smoac-loader-streak-upper-fade 1.7s linear infinite;
 }
 
 .smoac-loader__streak--lower {
-  stroke-dasharray: 80 1026;
+  stroke-dasharray: 80 1400;
+  stroke-dashoffset: 40;
+  opacity: 0;
   animation:
     smoac-loader-streak-lower 1.7s linear infinite,
     smoac-loader-streak-lower-fade 1.7s linear infinite;
@@ -89,6 +96,14 @@
   transform-origin: center;
   opacity: 0;
   animation: smoac-loader-star 1.7s linear infinite;
+}
+
+.smoac-loader__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  max-width: 18rem;
 }
 
 .smoac-loader__label {
@@ -104,23 +119,28 @@
   text-shadow: 0 0 16px rgba(168, 85, 247, 0.28);
 }
 
+.smoac-loader--small .smoac-loader__copy {
+  gap: 0.28rem;
+}
+
 .smoac-loader--small .smoac-loader__label {
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
 }
 
 .smoac-loader__percent {
-  margin: -0.45rem 0 0;
+  margin: 0;
   font-size: 0.9375rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
   line-height: 1;
+  text-align: center;
+  white-space: nowrap;
   color: #ffffff;
 }
 
 .smoac-loader--small .smoac-loader__percent {
-  margin-top: -0.15rem;
   font-size: 0.625rem;
 }
 
@@ -137,6 +157,10 @@
 }
 
 .smoac-loader--metered .smoac-loader__cycle {
+  opacity: 1;
+}
+
+.smoac-loader--metered .smoac-loader__draw {
   opacity: 1;
 }
 
@@ -169,58 +193,57 @@
 
 @keyframes smoac-loader-draw-upper {
   0% {
-    stroke-dashoffset: 957;
-    animation-timing-function: linear;
+    stroke-dashoffset: 1087;
+    opacity: 0;
   }
   8% {
-    stroke-dashoffset: 957;
+    stroke-dashoffset: 1087;
+    opacity: 1;
     animation-timing-function: cubic-bezier(0.42, 0, 0.2, 1);
   }
-  33% {
-    stroke-dashoffset: 0;
-    animation-timing-function: linear;
-  }
+  33%,
   100% {
     stroke-dashoffset: 0;
+    opacity: 1;
   }
 }
 
 @keyframes smoac-loader-draw-lower {
   0%,
   33% {
-    stroke-dashoffset: 1106;
+    stroke-dashoffset: 1236;
+    opacity: 0;
+  }
+  33.4% {
+    stroke-dashoffset: 1216;
+    opacity: 1;
     animation-timing-function: cubic-bezier(0.42, 0, 0.2, 1);
   }
-  62% {
-    stroke-dashoffset: 0;
-    animation-timing-function: linear;
-  }
+  62%,
   100% {
     stroke-dashoffset: 0;
+    opacity: 1;
   }
 }
 
 @keyframes smoac-loader-streak-upper {
   0%,
   8% {
-    stroke-dashoffset: 1037;
+    stroke-dashoffset: 40;
     animation-timing-function: cubic-bezier(0.42, 0, 0.2, 1);
   }
-  33% {
-    stroke-dashoffset: 80;
-    animation-timing-function: linear;
-  }
+  33%,
   100% {
-    stroke-dashoffset: 80;
+    stroke-dashoffset: -917;
   }
 }
 
 @keyframes smoac-loader-streak-upper-fade {
   0%,
-  10% {
+  12% {
     opacity: 0;
   }
-  16% {
+  18% {
     opacity: 1;
   }
   30% {
@@ -237,30 +260,27 @@
 @keyframes smoac-loader-streak-lower {
   0%,
   33% {
-    stroke-dashoffset: 1186;
+    stroke-dashoffset: 40;
     animation-timing-function: cubic-bezier(0.42, 0, 0.2, 1);
   }
-  62% {
-    stroke-dashoffset: 80;
-    animation-timing-function: linear;
-  }
+  62%,
   100% {
-    stroke-dashoffset: 80;
+    stroke-dashoffset: -1066;
   }
 }
 
 @keyframes smoac-loader-streak-lower-fade {
   0%,
-  35% {
+  38% {
     opacity: 0;
   }
-  40% {
+  46% {
     opacity: 1;
   }
-  56% {
+  58% {
     opacity: 1;
   }
-  64% {
+  66% {
     opacity: 0;
   }
   100% {
@@ -270,17 +290,17 @@
 
 @keyframes smoac-loader-star {
   0%,
-  58% {
+  64% {
     opacity: 0;
     transform: scale(0.62);
     filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0));
   }
-  70% {
+  74% {
     opacity: 1;
     transform: scale(1.12);
     filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
   }
-  78% {
+  80% {
     opacity: 0.92;
     transform: scale(0.98);
     filter: drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.55));
@@ -343,6 +363,7 @@ html.native-app #app-boot-splash.is-zoom .smoac-loader__cycle {
 html.native-app #app-boot-splash.is-zoom .smoac-loader__draw--upper,
 html.native-app #app-boot-splash.is-zoom .smoac-loader__draw--lower {
   stroke-dashoffset: 0;
+  opacity: 1;
 }
 
 html.native-app #app-boot-splash.is-zoom .smoac-loader__streak {
@@ -394,6 +415,11 @@ html.native-app #app-boot-splash.is-zoom .smoac-loader__star {
   .smoac-loader__draw--upper,
   .smoac-loader__draw--lower {
     stroke-dashoffset: 0;
+    opacity: 1;
+  }
+
+  .smoac-loader:not(.smoac-loader--metered) .smoac-loader__percent {
+    display: none;
   }
 
   .smoac-loader__streak--upper,

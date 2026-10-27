@@ -403,26 +403,11 @@ body.bottom-nav-panel-active .mobile-bottom-nav__pill {
   pointer-events: none;
 }
 
-/* Corner pip on the dumbbell. The shared save badge sits on the glyph and
-   its glow covers this smaller icon, so the workout count stays above it. */
-.mobile-bottom-nav__badge--alert {
-  top: -0.3rem;
-  right: -0.28rem;
-  z-index: 3;
-  min-width: 0.875rem;
-  height: 0.875rem;
-  padding-inline: 0.16rem;
-  border: none;
-  background: #ff3b30;
-  font-size: 0.5rem;
-  font-weight: 700;
-  box-shadow: 0 0 0 1.5px #0c0a12;
-}
-
-/* Count overlapping the Clients glyph, above the people icon. */
+/* Full red count on the glyph's top-right, like an iPhone app badge. */
+.mobile-bottom-nav__badge--alert,
 .mobile-bottom-nav__badge--clients {
-  top: 0.15rem;
-  right: 0.05rem;
+  top: -0.28rem;
+  right: -0.22rem;
   z-index: 4;
   min-width: 1rem;
   height: 1rem;

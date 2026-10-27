@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
+import { SmoacLoader } from "@/components/brand/SmoacLoader";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronRightIcon, HeartIcon } from "@/components/ui/icons";
+import { lockOverlayDocumentScroll } from "@/lib/lock-overlay-scroll";
 import {
   appleHealthQueryRange,
   appleHealthWorkoutsOnDate,
@@ -54,6 +57,22 @@ function HealthBarsIcon() {
       <rect x="9.8" y="7.2" width="4.4" height="13" rx="1.2" />
       <rect x="16.4" y="3.6" width="4.4" height="16.6" rx="1.2" />
     </svg>
+  );
+}
+
+function AppleHealthConnectingOverlay() {
+  useEffect(() => lockOverlayDocumentScroll(), []);
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div
+      className="client-apple-health-connecting"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <SmoacLoader size="large" label="Connecting to Apple Health" />
+    </div>,
+    document.body
   );
 }
 
@@ -125,7 +144,7 @@ export function ClientAppleHealthWeek({
               void connectAppleHealth().finally(() => setBusy(false));
             }}
           >
-            {opening ? "Opening…" : "Connect"}
+            Connect
             {opening ? null : <ChevronRightIcon />}
           </button>
         </div>
@@ -143,6 +162,7 @@ export function ClientAppleHealthWeek({
             Weekly Activity
           </li>
         </ul>
+        {opening ? <AppleHealthConnectingOverlay /> : null}
       </section>
     );
   }

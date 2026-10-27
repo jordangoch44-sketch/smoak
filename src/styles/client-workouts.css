@@ -3817,6 +3817,22 @@ span.exercise-picker__star {
 }
 
 
+.client-apple-health-connecting {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.82);
+  pointer-events: auto;
+}
+
+.client-apple-health-connecting .smoac-loader__label {
+  max-width: 18rem;
+}
+
 .client-apple-health {
   display: flex;
   flex-direction: column;

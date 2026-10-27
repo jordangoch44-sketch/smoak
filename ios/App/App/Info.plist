@@ -44,7 +44,7 @@
 	<key>NSHealthShareUsageDescription</key>
 	<string>SMOAC reads your completed workouts and active calories to show them on your training calendar.</string>
 	<key>NSHealthUpdateUsageDescription</key>
-	<string>SMOAC does not write workouts to Apple Health.</string>
+	<string>SMOAC does not save workouts into Apple Health. Allowing this opens the permission screen so your completed workouts can show on your calendar.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

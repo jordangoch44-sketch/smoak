@@ -36,3 +36,44 @@ export const SMOAC_LOADER_STAR_HEIGHT = 237;
 
 /** Wide enough to cover each stroke when clipped to that stroke's outline. */
 export const SMOAC_LOADER_STROKE_WIDTH = 180;
+
+/**
+ * Round caps stick out by half the stroke width. A gap equal to the path
+ * leaves that cap sitting on the far tip, so the bottom of the S paints
+ * before the top starts. These gaps are long enough that a parked offset
+ * hides both tips. The parked offsets were checked against that window.
+ */
+export const SMOAC_LOADER_UPPER_GAP = 1217;
+export const SMOAC_LOADER_LOWER_GAP = 1366;
+export const SMOAC_LOADER_UPPER_HIDDEN = 1087;
+export const SMOAC_LOADER_LOWER_HIDDEN = 1236;
+
+function drawnPortion(offset: number, length: number): number {
+  if (!Number.isFinite(offset) || length <= 0) return 0;
+  return Math.min(1, Math.max(0, 1 - offset / length));
+}
+
+/** How much of the S is painted, from the top tip through the bottom tip. */
+export function smoacLoaderStrokePercent(
+  upperOffset: number,
+  lowerOffset: number
+): number {
+  const total = SMOAC_LOADER_UPPER_LENGTH + SMOAC_LOADER_LOWER_LENGTH;
+  const drawn =
+    drawnPortion(upperOffset, SMOAC_LOADER_UPPER_LENGTH) *
+      SMOAC_LOADER_UPPER_LENGTH +
+    drawnPortion(lowerOffset, SMOAC_LOADER_LOWER_LENGTH) *
+      SMOAC_LOADER_LOWER_LENGTH;
+  return Math.round((drawn / total) * 100);
+}
+
+/** Dash offset for a measured fill. 0 stays blank; 1 paints the whole stroke. */
+export function smoacLoaderStrokeOffset(
+  length: number,
+  hidden: number,
+  done: number
+): number {
+  if (done <= 0) return hidden;
+  if (done >= 1) return 0;
+  return length * (1 - done);
+}

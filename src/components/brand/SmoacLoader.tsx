@@ -1,9 +1,13 @@
-import { useId } from "react";
+"use client";
+
+import { useEffect, useId, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 import "@/styles/smoac-loader.css";
 
 import {
+  SMOAC_LOADER_LOWER_GAP,
+  SMOAC_LOADER_LOWER_HIDDEN,
   SMOAC_LOADER_LOWER_LENGTH,
   SMOAC_LOADER_LOWER_LINE,
   SMOAC_LOADER_LOWER_OUTLINE,
@@ -14,10 +18,14 @@ import {
   SMOAC_LOADER_STAR_X,
   SMOAC_LOADER_STAR_Y,
   SMOAC_LOADER_STROKE_WIDTH,
+  SMOAC_LOADER_UPPER_GAP,
+  SMOAC_LOADER_UPPER_HIDDEN,
   SMOAC_LOADER_UPPER_LENGTH,
   SMOAC_LOADER_UPPER_LINE,
   SMOAC_LOADER_UPPER_OUTLINE,
   SMOAC_LOADER_VIEWBOX,
+  smoacLoaderStrokeOffset,
+  smoacLoaderStrokePercent,
 } from "./smoac-loader-mark";
 
 export type SmoacLoaderSize = "small" | "medium" | "large";
@@ -29,8 +37,9 @@ interface SmoacLoaderProps {
   /** Keep the accessible name without rendering the caption. */
   showLabel?: boolean;
   /**
-   * Measured share of the work, 0–100. Omit when the wait has no known total
-   * so the mark keeps drawing instead of inventing a number.
+   * Measured share of the work, 0–100. Omit when the wait has no known total.
+   * The caption still shows a percent: the measured value when it exists,
+   * otherwise how much of the S is painted right now.
    */
   progress?: number | null;
   className?: string;
@@ -48,6 +57,8 @@ export function SmoacLoader({
   className,
 }: SmoacLoaderProps) {
   const rawId = useId().replace(/:/g, "");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const percentRef = useRef<HTMLParagraphElement>(null);
   const upperClipId = `smoac-loader-upper-${rawId}`;
   const lowerClipId = `smoac-loader-lower-${rawId}`;
   const starId = `smoac-loader-star-${rawId}`;
@@ -61,10 +72,32 @@ export function SmoacLoader({
   const upperDone = Math.min(1, ratio / upperShare);
   const lowerDone =
     ratio <= upperShare ? 0 : (ratio - upperShare) / (1 - upperShare);
-  const percentLabel = meter == null ? null : `${Math.round(meter)}%`;
+  const percentLabel = meter == null ? "0%" : `${Math.round(meter)}%`;
+  const showCopy = showLabel && Boolean(label);
+
+  useEffect(() => {
+    if (!showCopy || meter != null) return;
+    const root = rootRef.current;
+    const percentEl = percentRef.current;
+    if (!root || !percentEl) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let frame = 0;
+    const tick = () => {
+      const next = `${smoacLoaderStrokePercent(
+        readDashOffset(root.querySelector(".smoac-loader__draw--upper")),
+        readDashOffset(root.querySelector(".smoac-loader__draw--lower"))
+      )}%`;
+      if (percentEl.textContent !== next) percentEl.textContent = next;
+      frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [showCopy, meter]);
 
   return (
     <div
+      ref={rootRef}
       className={cn(
         "smoac-loader",
         `smoac-loader--${size}`,
@@ -77,7 +110,9 @@ export function SmoacLoader({
       aria-valuemin={meter == null ? undefined : 0}
       aria-valuemax={meter == null ? undefined : 100}
       aria-valuenow={meter == null ? undefined : Math.round(meter)}
-      aria-label={percentLabel ? `${label}, ${percentLabel}` : label}
+      aria-label={
+        meter == null ? label : `${label}, ${Math.round(meter)}%`
+      }
     >
       <svg
         className="smoac-loader__svg"
@@ -109,9 +144,12 @@ export function SmoacLoader({
                 meter == null
                   ? undefined
                   : {
-                      strokeDasharray: SMOAC_LOADER_UPPER_LENGTH,
-                      strokeDashoffset:
-                        SMOAC_LOADER_UPPER_LENGTH * (1 - upperDone),
+                      strokeDasharray: `${SMOAC_LOADER_UPPER_LENGTH} ${SMOAC_LOADER_UPPER_GAP}`,
+                      strokeDashoffset: smoacLoaderStrokeOffset(
+                        SMOAC_LOADER_UPPER_LENGTH,
+                        SMOAC_LOADER_UPPER_HIDDEN,
+                        upperDone
+                      ),
                     }
               }
             />
@@ -132,9 +170,12 @@ export function SmoacLoader({
                 meter == null
                   ? undefined
                   : {
-                      strokeDasharray: SMOAC_LOADER_LOWER_LENGTH,
-                      strokeDashoffset:
-                        SMOAC_LOADER_LOWER_LENGTH * (1 - lowerDone),
+                      strokeDasharray: `${SMOAC_LOADER_LOWER_LENGTH} ${SMOAC_LOADER_LOWER_GAP}`,
+                      strokeDashoffset: smoacLoaderStrokeOffset(
+                        SMOAC_LOADER_LOWER_LENGTH,
+                        SMOAC_LOADER_LOWER_HIDDEN,
+                        lowerDone
+                      ),
                     }
               }
             />
@@ -162,12 +203,24 @@ export function SmoacLoader({
           </g>
         </g>
       </svg>
-      {showLabel && label ? (
-        <p className="smoac-loader__label">{label}</p>
-      ) : null}
-      {percentLabel ? (
-        <p className="smoac-loader__percent">{percentLabel}</p>
+      {showCopy ? (
+        <div className="smoac-loader__copy">
+          <p className="smoac-loader__label">{label}</p>
+          <p
+            className="smoac-loader__percent"
+            ref={percentRef}
+            aria-hidden="true"
+          >
+            {percentLabel}
+          </p>
+        </div>
       ) : null}
     </div>
   );
+}
+
+function readDashOffset(node: Element | null): number {
+  if (!node) return Number.POSITIVE_INFINITY;
+  const value = Number.parseFloat(getComputedStyle(node).strokeDashoffset);
+  return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
 }

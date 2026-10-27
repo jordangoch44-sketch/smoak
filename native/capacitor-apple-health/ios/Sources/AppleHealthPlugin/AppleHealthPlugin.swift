@@ -23,28 +23,32 @@ public class AppleHealthPlugin: CAPPlugin, CAPBridgedPlugin {
         call.resolve(["available": HKHealthStore.isHealthDataAvailable()])
     }
 
-    /// Read-only. Workouts and the active energy attached to them.
-    /// Ask on the next turn of the main run loop. Requesting during the web
-    /// click, or passing nil for the share set, leaves the sheet unshown and
-    /// the completion never arrives, so Connect stays on Opening.
+    /// Workouts and the active calories on them.
+    /// An empty write set never presents Apple's sheet on device, and the
+    /// callback never arrives, so the connecting screen spins forever.
+    /// Including workouts in the write set makes the sheet appear. SMOAC
+    /// still does not save anything into Apple Health.
     @objc func requestAccess(_ call: CAPPluginCall) {
         guard HKHealthStore.isHealthDataAvailable() else {
             call.resolve(["ok": false])
             return
         }
-        DispatchQueue.main.async { [weak self] in
+        call.keepAlive = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self else {
+                call.keepAlive = false
                 call.reject("Couldn’t open Apple Health.")
                 return
             }
-            self.bridge?.viewController?.view.window?.makeKeyAndVisible()
-            self.store.requestAuthorization(toShare: Set<HKSampleType>(), read: Self.readTypes) { success, error in
-                DispatchQueue.main.async {
-                    if let error {
-                        call.reject(error.localizedDescription)
-                        return
-                    }
-                    call.resolve(["ok": success])
+            self.bridge?.viewController?.view.endEditing(true)
+            Task { @MainActor in
+                do {
+                    try await self.store.requestAuthorization(toShare: Self.shareTypes, read: Self.readTypes)
+                    call.keepAlive = false
+                    call.resolve(["ok": true])
+                } catch {
+                    call.keepAlive = false
+                    call.reject(error.localizedDescription)
                 }
             }
         }
@@ -78,6 +82,11 @@ public class AppleHealthPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve(["workouts": workouts.map { self.payload(for: $0) }])
         }
         store.execute(query)
+    }
+
+    /// Needed so Apple presents the sheet. Nothing is written.
+    private static var shareTypes: Set<HKSampleType> {
+        [HKObjectType.workoutType()]
     }
 
     private static var readTypes: Set<HKObjectType> {
