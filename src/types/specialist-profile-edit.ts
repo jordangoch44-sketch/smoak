@@ -56,6 +56,8 @@ export interface SpecialistProfileOverrides {
   slideshowFramesJson?: string;
   /** Header / gallery videos (PRO+) — uploaded clips, one URL per line */
   videoNotes?: string;
+  /** Header slideshow order, photos and videos mixed, one URL per line */
+  headerMediaOrder?: string;
   /** JSON map of video URL → { posterUrl, duration, time } for pin thumbnails */
   videoPostersJson?: string;
   /** Pro / PRO+ intro clip URL — “Hi, I'm X” above the public bio */
@@ -117,6 +119,7 @@ export type SpecialistProfileEditForm = Required<
     | "photoNotes"
     | "slideshowFramesJson"
     | "videoNotes"
+    | "headerMediaOrder"
     | "videoPostersJson"
     | "introVideoUrl"
     | "introVideoPosterJson"

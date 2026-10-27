@@ -144,6 +144,7 @@ export function SpecialistEditProfilePageClient({
   const [sectionDraft, setSectionDraft] = useState<SpecialistProfileEditForm | null>(
     null
   );
+  const [editBaseline, setEditBaseline] = useState<string | null>(null);
   const [secondLocationOpen, setSecondLocationOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [modalMounted, setModalMounted] = useState(false);
@@ -291,11 +292,13 @@ export function SpecialistEditProfilePageClient({
         canonicalizeProfessionLabel(next.profession) ?? next.profession;
     }
     setSectionDraft(next);
+    setEditBaseline(JSON.stringify(next));
   }
 
   function cancelEdit() {
     setEditingSection(null);
     setSectionDraft(null);
+    setEditBaseline(null);
     setSecondLocationOpen(false);
   }
 
@@ -372,6 +375,11 @@ export function SpecialistEditProfilePageClient({
       onCancel: cancelEdit,
       onSave: saveSection,
       saving,
+      saveAttention:
+        editingSection === sectionId &&
+        editBaseline != null &&
+        sectionDraft != null &&
+        JSON.stringify(sectionDraft) !== editBaseline,
     };
   }
 
@@ -1392,6 +1400,7 @@ export function SpecialistEditProfilePageClient({
                   coverImageUrl={form.coverImageUrl}
                   photoNotes={form.photoNotes}
                   slideshowFramesJson={form.slideshowFramesJson}
+                  headerMediaOrder={form.headerMediaOrder}
                   videoNotes={form.videoNotes}
                   videoPostersJson={form.videoPostersJson}
                   pinnedPhotos={form.pinnedPhotos}

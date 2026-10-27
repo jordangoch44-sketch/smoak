@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DashboardLoadingState } from "@/components/dashboard";
+import { SmoacLoader } from "@/components/brand/SmoacLoader";
 import {
   AdminSectionNav,
   type AdminSectionId,
@@ -42,6 +44,9 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const ADMIN_REFRESH_OVERLAY_MS = 900;
+const ADMIN_REFRESH_TIMEOUT_MS = 15_000;
+
 function isNotifiableAdminSection(
   id: AdminSectionId
 ): id is AdminNotifiableSectionId {
@@ -77,12 +82,14 @@ export function AdminDashboardPageClient() {
     setSpecialistProtected,
     setSpecialistAccountKind,
     updateSpecialistBasics,
+    refreshRemoteData,
   } = useAdminDashboard();
   const access = useAdminPermissions(session);
 
   const [pulse, setPulse] = useState<AdminPlatformPulse | null>(null);
-  const [isPulseLoading, setIsPulseLoading] = useState(true);
-  const [pulseRefreshKey, setPulseRefreshKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [contentRefreshKey, setContentRefreshKey] = useState(0);
+  const refreshLock = useRef(false);
 
   const specialistKey = useMemo(
     () =>
@@ -95,29 +102,58 @@ export function AdminDashboardPageClient() {
     [specialists]
   );
 
-  const fetchPulse = useCallback(() => {
-    let cancelled = false;
-    setIsPulseLoading(true);
-    fetch("/api/admin/platform-pulse", { credentials: "include" })
-      .then((res) => res.json())
-      .then((body: { ok?: boolean; pulse?: AdminPlatformPulse }) => {
-        if (cancelled || !body?.ok || !body.pulse) return;
-        setPulse(body.pulse);
-      })
-      .catch(() => {
-        if (!cancelled) setPulse(null);
-      })
-      .finally(() => {
-        if (!cancelled) setIsPulseLoading(false);
+  const loadPulse = useCallback(async (isCancelled?: () => boolean) => {
+    try {
+      const res = await fetch("/api/admin/platform-pulse", {
+        credentials: "include",
       });
-    return () => {
-      cancelled = true;
-    };
+      const body = (await res.json()) as {
+        ok?: boolean;
+        pulse?: AdminPlatformPulse;
+      };
+      if (isCancelled?.()) return;
+      if (!body?.ok || !body.pulse) {
+        setPulse(null);
+        return;
+      }
+      setPulse(body.pulse);
+    } catch {
+      if (!isCancelled?.()) setPulse(null);
+    }
   }, []);
 
   useEffect(() => {
-    return fetchPulse();
-  }, [fetchPulse, specialistKey, pulseRefreshKey]);
+    let cancelled = false;
+    void loadPulse(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
+  }, [loadPulse, specialistKey]);
+
+  const handleRefresh = useCallback(async () => {
+    if (refreshLock.current) return;
+    refreshLock.current = true;
+    setRefreshing(true);
+    const started = Date.now();
+    try {
+      await Promise.race([
+        Promise.all([loadPulse(), refreshRemoteData()]),
+        new Promise<void>((resolve) => {
+          window.setTimeout(resolve, ADMIN_REFRESH_TIMEOUT_MS);
+        }),
+      ]);
+      setContentRefreshKey((key) => key + 1);
+    } finally {
+      const remaining = ADMIN_REFRESH_OVERLAY_MS - (Date.now() - started);
+      if (remaining > 0) {
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, remaining);
+        });
+      }
+      refreshLock.current = false;
+      setRefreshing(false);
+    }
+  }, [loadPulse, refreshRemoteData]);
 
   const billingById = useMemo(() => {
     if (!access?.isOwnerAdmin) return undefined;
@@ -264,9 +300,11 @@ export function AdminDashboardPageClient() {
             <button
               type="button"
               className="admin-apple-topbar__refresh-btn"
-              onClick={() => setPulseRefreshKey((k) => k + 1)}
-              title="Refresh live telemetry"
-              aria-label="Refresh live telemetry"
+              onClick={() => void handleRefresh()}
+              disabled={refreshing}
+              title="Refresh"
+              aria-label="Refresh"
+              aria-busy={refreshing}
             >
               <svg
                 className="admin-apple-topbar__refresh-icon"
@@ -329,7 +367,10 @@ export function AdminDashboardPageClient() {
           id={`admin-panel-${resolvedSection}`}
           aria-labelledby={`admin-tab-${resolvedSection}`}
         >
-          <div key={resolvedSection} className="admin-apple-panel-layer">
+          <div
+            key={`${resolvedSection}-${contentRefreshKey}`}
+            className="admin-apple-panel-layer"
+          >
             {resolvedSection === "overview" &&
             (permissions.canViewOverview || permissions.canViewRevenue) ? (
               <AdminExecutiveRevenueSnapshot
@@ -462,6 +503,15 @@ export function AdminDashboardPageClient() {
 
       {/* Floating Jarvis Assistant */}
       <AdminJarvisFloatingWidget pulse={pulse} adminName={adminDisplayName} />
+
+      {refreshing
+        ? createPortal(
+            <div className="admin-refresh-overlay">
+              <SmoacLoader size="large" label="Refreshing" />
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

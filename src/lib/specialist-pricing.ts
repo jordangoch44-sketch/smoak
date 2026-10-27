@@ -7,46 +7,54 @@ import {
 } from "@/types/specialist-pricing";
 
 export const MAX_PRICING_OFFERINGS = 8;
+export const PRICING_OFFERING_NAME_MAX = 60;
 
 export const SPECIALIST_PRICING_OFFERING_OPTIONS: ReadonlyArray<{
   value: SpecialistPricingOfferingType;
   label: string;
+  nameHint: string;
   priceHint: string;
   commitmentHint: string;
 }> = [
   {
     value: "one-on-one",
     label: "One-on-one session",
+    nameHint: "e.g. Private training",
     priceHint: "/ session",
     commitmentHint: "e.g. 8 weeks",
   },
   {
     value: "monthly-membership",
     label: "Monthly membership",
+    nameHint: "e.g. Unlimited membership",
     priceHint: "/ month",
     commitmentHint: "e.g. month-to-month",
   },
   {
     value: "package",
     label: "Package or class pack",
+    nameHint: "e.g. 10-session pack",
     priceHint: "",
     commitmentHint: "e.g. 10 sessions",
   },
   {
     value: "drop-in",
     label: "Drop-in",
+    nameHint: "e.g. Saturday class",
     priceHint: "/ class",
     commitmentHint: "e.g. no commitment",
   },
   {
     value: "online-coaching",
     label: "Online coaching",
+    nameHint: "e.g. Remote coaching",
     priceHint: "/ month",
     commitmentHint: "e.g. 12 weeks",
   },
   {
     value: "free-consult",
     label: "Free consult",
+    nameHint: "e.g. Intro call",
     priceHint: "",
     commitmentHint: "e.g. 15 minutes",
   },
@@ -75,6 +83,13 @@ export function pricingOfferingLabel(
   return pricingOfferingOption(type).label;
 }
 
+export function pricingOfferingDisplayName(
+  offering: Pick<SpecialistPricingOffering, "type" | "name">
+): string {
+  const name = offering.name?.trim() ?? "";
+  return name || pricingOfferingLabel(offering.type);
+}
+
 export function createPricingOfferingId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -88,6 +103,7 @@ export function createPricingOffering(
   return {
     id: createPricingOfferingId(),
     type,
+    name: "",
     price: 0,
     included: "",
     commitment: "",
@@ -106,9 +122,11 @@ function parseOffering(
       ? row.id.trim()
       : `off-${fallbackIndex}-${createPricingOfferingId()}`;
   const isFree = row.type === "free-consult";
+  const rawName = typeof row.name === "string" ? row.name.trim() : "";
   return {
     id,
     type: row.type,
+    name: rawName.slice(0, PRICING_OFFERING_NAME_MAX),
     price: isFree ? 0 : parseSessionPrice(row.price),
     included: typeof row.included === "string" ? row.included : "",
     commitment: typeof row.commitment === "string" ? row.commitment : "",
@@ -165,6 +183,26 @@ export function hasPublishedPricingOfferings(
   return publishedPricingOfferings(offerings).length > 0;
 }
 
+const INCLUDED_BULLET_PREFIX = /^(?:[-*•]\s+)/;
+
+/** What’s-included lines, without a trailing blank or a typed bullet marker. */
+export function pricingIncludedLines(value: string): string[] {
+  const lines = value
+    .replace(/\r\n/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(INCLUDED_BULLET_PREFIX, ""));
+  while (lines.length > 0 && lines[lines.length - 1] === "") {
+    lines.pop();
+  }
+  return lines;
+}
+
+export function pricingIncludedFromLines(lines: string[]): string {
+  const next = lines.slice();
+  while (next.length > 0 && next[next.length - 1] === "") next.pop();
+  return next.join("\n");
+}
+
 export function formatOfferingPrice(
   offering: Pick<SpecialistPricingOffering, "type" | "price">
 ): string {
@@ -187,9 +225,8 @@ export function formatOfferingsPreview(
   if (published.length === 1) {
     const offering = published[0];
     const price = formatOfferingPrice(offering);
-    return price
-      ? `${pricingOfferingLabel(offering.type)} · ${price}`
-      : pricingOfferingLabel(offering.type);
+    const title = pricingOfferingDisplayName(offering);
+    return price ? `${title} · ${price}` : title;
   }
   return `${published.length} offerings`;
 }

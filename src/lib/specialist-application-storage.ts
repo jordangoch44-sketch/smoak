@@ -141,12 +141,17 @@ function markHydratedAndNotify(): void {
 }
 
 async function hydrateFromSupabase(
-  scope: "own" | "queue" = "own"
+  scope: "own" | "queue" = "own",
+  force = false
 ): Promise<void> {
   if (typeof window === "undefined") return;
   const resolved: "own" | "queue" =
     scope === "queue" || viewerNeedsApplicationQueue() ? "queue" : "own";
-  if (hydratePromise && (resolved === "own" || activeHydrateScope === "queue")) {
+  if (
+    !force &&
+    hydratePromise &&
+    (resolved === "own" || activeHydrateScope === "queue")
+  ) {
     return hydratePromise;
   }
   activeHydrateScope = resolved;
@@ -467,7 +472,8 @@ export type SpecialistApplicationSaveResult =
   | { ok: false; message: string };
 
 export async function saveSpecialistApplicationAsync(
-  application: SpecialistApplication
+  application: SpecialistApplication,
+  onUploadProgress?: (percent: number) => void
 ): Promise<SpecialistApplicationSaveResult> {
   if (typeof window === "undefined") {
     return { ok: false, message: "Unavailable on server" };
@@ -485,7 +491,10 @@ export async function saveSpecialistApplicationAsync(
 
   /* Move inline photos to storage first — huge base64 blobs in
    * application_data time out the Postgres upsert. */
-  const prepared = await uploadApplicationMediaToStorage(nextApp);
+  const prepared = await uploadApplicationMediaToStorage(
+    nextApp,
+    onUploadProgress
+  );
   if (!prepared.ok) {
     return prepared;
   }
@@ -706,4 +715,12 @@ export async function deleteSiblingSpecialistApplicationsAsync(
 
 export function refreshSpecialistApplicationsFromRemote(): void {
   void hydrateFromSupabase(viewerNeedsApplicationQueue() ? "queue" : "own");
+}
+
+/** Manual refresh: always start a new queue fetch and resolve when it finishes. */
+export function refreshSpecialistApplicationsFromRemoteAsync(): Promise<void> {
+  return hydrateFromSupabase(
+    viewerNeedsApplicationQueue() ? "queue" : "own",
+    true
+  );
 }

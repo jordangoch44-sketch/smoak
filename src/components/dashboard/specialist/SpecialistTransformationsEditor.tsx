@@ -1,6 +1,8 @@
 "use client";
 
 import { useId, useState, type ChangeEvent } from "react";
+import { ProfilePhotoCropper } from "@/components/media/ProfilePhotoCropper";
+import { usePhotoGridDrag } from "@/hooks/usePhotoGridDrag";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
   rejectUnsupportedPhonePhoto,
@@ -12,8 +14,21 @@ import {
   parseMediaUrlList,
   serializeMediaUrlList,
 } from "@/lib/specialist-media-limits";
-import { LockIcon } from "@/components/ui/icons";
+import { CloseIcon, LockIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+
+/** Matches the client results slider on the public profile. */
+const CLIENT_RESULT_ASPECT = 5 / 4;
+
+interface CropQueueItem {
+  dataUrl: string;
+  replaceIndex?: number;
+}
+
+interface CropQueueState {
+  items: CropQueueItem[];
+  currentIndex: number;
+}
 
 interface SpecialistTransformationsEditorProps {
   transformationNotes: string;
@@ -32,14 +47,17 @@ export function SpecialistTransformationsEditor({
 }: SpecialistTransformationsEditorProps) {
   const inputId = useId();
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [cropQueue, setCropQueue] = useState<CropQueueState | null>(null);
   const urls = normalizeTransformationUrls(parseMediaUrlList(transformationNotes));
   const atLimit = urls.length >= CLIENT_TRANSFORMATIONS_MAX;
+  const canReorder = isProPlus && urls.length > 1;
 
   function setUrls(next: string[]) {
     onChange(serializeMediaUrlList(normalizeTransformationUrls(next)));
   }
+
+  const drag = usePhotoGridDrag(urls, canReorder, setUrls);
 
   async function handleAdd(event: ChangeEvent<HTMLInputElement>) {
     /* Snapshot first — FileList is live and empties when value is cleared. */
@@ -49,46 +67,91 @@ export function SpecialistTransformationsEditor({
 
     const remaining = CLIENT_TRANSFORMATIONS_MAX - urls.length;
     const files = selected.slice(0, remaining);
+    if (selected.length > remaining) {
+      setError(
+        `Selected ${selected.length} photos; only ${remaining} more allowed.`
+      );
+    } else {
+      setError(null);
+    }
+
     setBusy(true);
-    setError(null);
-    setProgress(null);
     try {
-      const uploaded: string[] = [];
-      for (let index = 0; index < files.length; index += 1) {
-        const file = files[index];
+      const items: CropQueueItem[] = [];
+      for (const file of files) {
         const phoneReject = rejectUnsupportedPhonePhoto(file);
         if (phoneReject) {
-          throw new Error(phoneReject);
+          setError(phoneReject);
+          continue;
         }
-        if (files.length > 1) {
-          setProgress(`${index + 1}/${files.length}`);
+        try {
+          items.push({
+            dataUrl: await prepareImageDataUrlForUpload(file, "gallery"),
+          });
+        } catch {
+          setError("Could not read one of the selected photos.");
         }
-        const dataUrl = await prepareImageDataUrlForUpload(file, "gallery");
-        uploaded.push(
-          await uploadSpecialistDashboardMedia(
-            specialistId,
-            dataUrl,
-            "transformation"
-          )
-        );
       }
-      if (uploaded.length > 0) {
-        setUrls([...urls, ...uploaded]);
-      } else {
-        setError("Could not add photos.");
-      }
-      if (selected.length > remaining) {
-        setError(
-          `Selected ${selected.length} photos; only ${remaining} more allowed.`
-        );
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not add photos.");
+      if (items.length === 0) return;
+      setCropQueue({ items, currentIndex: 0 });
     } finally {
       setBusy(false);
-      setProgress(null);
     }
   }
+
+  function editCrop(index: number) {
+    const url = urls[index];
+    if (!url || !isProPlus) {
+      onUpgrade?.();
+      return;
+    }
+    setCropQueue({
+      items: [{ dataUrl: url, replaceIndex: index }],
+      currentIndex: 0,
+    });
+  }
+
+  async function handleCropSave(
+    imageData: string,
+    _crop?: unknown,
+    _area?: unknown,
+    _rotation?: unknown,
+    reportProgress?: (percent: number) => void
+  ) {
+    if (!cropQueue) return;
+    const current = cropQueue.items[cropQueue.currentIndex];
+    if (!current) return;
+
+    const uploadedUrl = await uploadSpecialistDashboardMedia(
+      specialistId,
+      imageData,
+      "transformation",
+      reportProgress
+    );
+
+    if (current.replaceIndex != null) {
+      const next = [...urls];
+      next[current.replaceIndex] = uploadedUrl;
+      setUrls(next);
+      setCropQueue(null);
+      return;
+    }
+
+    setUrls([...urls, uploadedUrl]);
+    if (cropQueue.currentIndex < cropQueue.items.length - 1) {
+      setCropQueue({
+        ...cropQueue,
+        currentIndex: cropQueue.currentIndex + 1,
+      });
+      return;
+    }
+    setCropQueue(null);
+  }
+
+  const currentCrop =
+    cropQueue && cropQueue.items[cropQueue.currentIndex]
+      ? cropQueue.items[cropQueue.currentIndex]
+      : null;
 
   return (
     <div
@@ -107,39 +170,62 @@ export function SpecialistTransformationsEditor({
       </div>
       <p className="specialist-media-editor__hint">
         {isProPlus
-          ? "Multi-select photos. They appear as a slider under Specialties on your public profile."
+          ? "Crop each photo as you add it. Drag to reorder."
           : urls.length > 0
             ? "Saved from PRO+. Clients cannot see these until you restore PRO+."
-            : "Multi-select photos. They appear as a slider under Specialties on your public profile."}
+            : "Multi-select photos. Crop each one, then the next opens."}
       </p>
       <div
+        ref={drag.rowRef}
         className="specialist-media-editor__pin-row"
         aria-label="Client result photos"
       >
         {urls.map((url, index) => (
-          <button
-            key={`${url}-${index}`}
-            type="button"
-            className="specialist-media-editor__pin-tile"
-            onClick={() => {
-              if (!isProPlus) {
-                onUpgrade?.();
-                return;
-              }
-              setUrls(urls.filter((_, i) => i !== index));
-            }}
-            aria-label={
-              isProPlus
-                ? `Remove client result ${index + 1}`
-                : "Unlock client results with PRO+"
-            }
+          <div
+            key={url}
+            className={cn(
+              "specialist-transforms-editor__tile",
+              canReorder && "specialist-transforms-editor__tile--sortable",
+              drag.draggingUrl === url && "specialist-transforms-editor__tile--dragging"
+            )}
+            data-result-index={index}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt="" />
-            <span className="specialist-media-editor__pin-index">
-              {index + 1}
-            </span>
-          </button>
+            <button
+              type="button"
+              className="smoac-control specialist-media-editor__pin-tile"
+              onPointerDown={(event) => drag.onPointerDown(event, url)}
+              onPointerMove={drag.onPointerMove}
+              onPointerUp={drag.endDrag}
+              onPointerCancel={drag.endDrag}
+              onContextMenu={(event) => event.preventDefault()}
+              onDragStart={(event) => event.preventDefault()}
+              onClick={() => {
+                if (drag.consumeSuppressedClick()) return;
+                editCrop(index);
+              }}
+              aria-label={
+                isProPlus
+                  ? `Edit crop for client result ${index + 1}. Drag to reorder.`
+                  : "Unlock client results with PRO+"
+              }
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" draggable={false} />
+              <span className="specialist-media-editor__pin-index">
+                {index + 1}
+              </span>
+            </button>
+            {isProPlus ? (
+              <button
+                type="button"
+                className="smoac-control specialist-transforms-editor__remove"
+                aria-label={`Remove client result ${index + 1}`}
+                onClick={() => setUrls(urls.filter((_, i) => i !== index))}
+              >
+                <CloseIcon className="specialist-transforms-editor__remove-icon" />
+              </button>
+            ) : null}
+          </div>
         ))}
         {!atLimit ? (
           isProPlus ? (
@@ -150,7 +236,7 @@ export function SpecialistTransformationsEditor({
               )}
             >
               <span aria-hidden>+</span>
-              <span>{busy ? progress ?? "Uploading…" : "Add"}</span>
+              <span>{busy ? "Preparing…" : "Add"}</span>
               <input
                 id={inputId}
                 type="file"
@@ -178,6 +264,34 @@ export function SpecialistTransformationsEditor({
         <p className="dashboard-upload-error" role="alert">
           {error}
         </p>
+      ) : null}
+
+      {drag.ghost}
+
+      {currentCrop ? (
+        <ProfilePhotoCropper
+          imageSrc={currentCrop.dataUrl}
+          aspect={CLIENT_RESULT_ASPECT}
+          cropShape="rect"
+          title="Frame client result"
+          lead="Drag and zoom so this photo fits the client results slider."
+          stepBadge={
+            cropQueue && cropQueue.items.length > 1
+              ? `Photo ${cropQueue.currentIndex + 1} of ${cropQueue.items.length}`
+              : undefined
+          }
+          confirmLabel={
+            currentCrop.replaceIndex != null
+              ? "Save"
+              : cropQueue &&
+                  cropQueue.currentIndex < cropQueue.items.length - 1
+                ? "Save & Next →"
+                : "Add photo"
+          }
+          confirmingLabel="Saving…"
+          onCancel={() => setCropQueue(null)}
+          onSave={handleCropSave}
+        />
       ) : null}
     </div>
   );

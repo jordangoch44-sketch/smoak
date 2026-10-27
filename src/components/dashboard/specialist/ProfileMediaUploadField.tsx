@@ -72,14 +72,21 @@ export function ProfileMediaUploadField({
     }
   }
 
-  async function handleCropSave(croppedImageDataUrl: string) {
+  async function handleCropSave(
+    croppedImageDataUrl: string,
+    _crop?: unknown,
+    _area?: unknown,
+    _rotation?: unknown,
+    reportProgress?: (percent: number) => void
+  ) {
     setUploading(true);
     setUploadError(null);
     try {
       const publicUrl = await uploadSpecialistDashboardMedia(
         specialistId,
         croppedImageDataUrl,
-        "profile"
+        "profile",
+        reportProgress
       );
       onChange(publicUrl);
       setPendingCropSrc(null);

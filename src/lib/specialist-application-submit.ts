@@ -82,7 +82,10 @@ export type SubmitSpecialistApplicationResult = {
 /** Persist specialist application for admin review (Supabase when configured). */
 export async function submitSpecialistApplication(
   state: SpecialistOnboardingState,
-  options?: { userId?: string | null }
+  options?: {
+    userId?: string | null;
+    onUploadProgress?: (percent: number) => void;
+  }
 ): Promise<SubmitSpecialistApplicationResult> {
   const trimmedEmail = state.email.trim();
   const userId = await resolveSubmitUserId(options?.userId);
@@ -93,6 +96,7 @@ export async function submitSpecialistApplication(
   const flight = submitSpecialistApplicationOnce(state, {
     userId,
     trimmedEmail,
+    onUploadProgress: options?.onUploadProgress,
   }).finally(() => {
     if (submitInFlightByKey.get(key) === flight) {
       submitInFlightByKey.delete(key);
@@ -104,7 +108,11 @@ export async function submitSpecialistApplication(
 
 async function submitSpecialistApplicationOnce(
   state: SpecialistOnboardingState,
-  resolved: { userId: string | null; trimmedEmail: string }
+  resolved: {
+    userId: string | null;
+    trimmedEmail: string;
+    onUploadProgress?: (percent: number) => void;
+  }
 ): Promise<SubmitSpecialistApplicationResult> {
   const { trimmedEmail, userId } = resolved;
 
@@ -191,7 +199,10 @@ async function submitSpecialistApplicationOnce(
     },
   };
 
-  const result = await saveSpecialistApplicationAsync(application);
+  const result = await saveSpecialistApplicationAsync(
+    application,
+    resolved.onUploadProgress
+  );
   if (!result.ok) {
     throw new ApplicationSubmitError(
       result.message ||

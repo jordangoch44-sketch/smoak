@@ -7,6 +7,10 @@ import {
   uploadSpecialistDashboardVideo,
 } from "@/lib/media/specialist-media-upload";
 import {
+  dataUrlByteLength,
+  weightedUploadPercent,
+} from "@/lib/media/upload-progress";
+import {
   parseVideoPosterMap,
   pruneVideoPosterMap,
   resolveVideoPoster,
@@ -142,20 +146,45 @@ export function SpecialistVideosEditor({
     }
   }
 
-  async function handleFrameSave(posterDataUrl: string, time: number) {
+  async function handleFrameSave(
+    posterDataUrl: string,
+    time: number,
+    reportProgress?: (percent: number) => void
+  ) {
     const item = currentFrame;
     if (!item) return;
     setBusy(true);
     setProgress("Uploading…");
+    const posterWeight = Math.max(1, dataUrlByteLength(posterDataUrl));
+    const videoWeight = Math.max(1, item.file.size);
+    let posterPercent = 0;
+    let videoPercent = 0;
+    const reportUpload = () => {
+      const next = weightedUploadPercent([
+        { weight: posterWeight, percent: posterPercent },
+        { weight: videoWeight, percent: videoPercent },
+      ]);
+      if (next != null) reportProgress?.(next);
+    };
     try {
       const posterUrl = await uploadSpecialistDashboardMedia(
         specialistId,
         posterDataUrl,
-        "gallery"
+        "gallery",
+        (percent) => {
+          posterPercent = percent;
+          reportUpload();
+        }
       );
+      posterPercent = 100;
+      reportUpload();
       const videoUrl = await uploadSpecialistDashboardVideo(
         specialistId,
-        item.file
+        item.file,
+        (percent) => {
+          videoPercent = percent;
+          reportUpload();
+        }
       );
       const nextUrls = [...urls, videoUrl];
       const nextPosters: VideoPosterMap = {

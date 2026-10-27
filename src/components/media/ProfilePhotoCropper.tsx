@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Cropper, { type Area, type Point } from "react-easy-crop";
 import { createPortal } from "react-dom";
 import { SmoacSavingMark } from "@/components/brand/SmoacSavingMark";
@@ -25,6 +25,8 @@ export interface ProfilePhotoCropperProps {
   confirmingLabel?: string;
   /** Hide rotate / reset controls (slideshow framing). */
   hideToolbarExtras?: boolean;
+  /** Extra controls shown with the crop, such as cover and pin. */
+  actions?: ReactNode;
   onCancel: () => void;
   /**
    * Called after the crop is rendered.
@@ -35,7 +37,8 @@ export interface ProfilePhotoCropperProps {
     croppedImageData: string,
     cropSettings: ProfilePhotoCropSettings,
     croppedAreaPixels: Area,
-    rotation?: number
+    rotation?: number,
+    reportProgress?: (percent: number) => void
   ) => void | Promise<void>;
 }
 
@@ -52,6 +55,7 @@ export function ProfilePhotoCropper({
   confirmLabel = "Confirm Crop",
   confirmingLabel = "Processing…",
   hideToolbarExtras = false,
+  actions,
   onCancel,
   onSave,
 }: ProfilePhotoCropperProps) {
@@ -60,6 +64,7 @@ export function ProfilePhotoCropper({
   const [rotation, setRotation] = useState(initialRotation);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -88,6 +93,7 @@ export function ProfilePhotoCropper({
   async function handleConfirm() {
     if (!croppedAreaPixels || saving) return;
     setSaving(true);
+    setUploadProgress(null);
     setError(null);
     try {
       const croppedImageData = await getCroppedImageDataUrl(
@@ -101,7 +107,12 @@ export function ProfilePhotoCropper({
         croppedImageData,
         { x: crop.x, y: crop.y, zoom },
         croppedAreaPixels,
-        rotation
+        rotation,
+        (percent) => {
+          if (!Number.isFinite(percent)) return;
+          const next = Math.max(0, Math.min(100, Math.round(percent)));
+          setUploadProgress((current) => (current === next ? current : next));
+        }
       );
     } catch (saveError) {
       setError(
@@ -111,6 +122,7 @@ export function ProfilePhotoCropper({
       );
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -234,6 +246,17 @@ export function ProfilePhotoCropper({
           </p>
         ) : null}
 
+        {actions ? (
+          <div
+            className={cn(
+              "profile-photo-cropper__photo-actions",
+              saving && "profile-photo-cropper__photo-actions--busy"
+            )}
+          >
+            {actions}
+          </div>
+        ) : null}
+
         <footer
           className={cn(
             "profile-photo-cropper__footer",
@@ -261,7 +284,10 @@ export function ProfilePhotoCropper({
 
       {saving ? (
         <div className="profile-photo-cropper__saving">
-          <SmoacSavingMark label={confirmingLabel.replace("…", "")} />
+          <SmoacSavingMark
+            label={confirmingLabel.replace("…", "")}
+            progress={uploadProgress}
+          />
         </div>
       ) : null}
     </div>

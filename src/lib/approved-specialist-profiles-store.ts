@@ -175,13 +175,14 @@ async function syncModerationMirrorsFromRemote(
   await refreshAdminSpecialistDirectoryFromRemote();
 }
 
-async function hydrateFromSupabase(): Promise<void> {
+async function hydrateFromSupabase(force = false): Promise<void> {
   if (typeof window === "undefined") return;
-  if (hydratePromise) return hydratePromise;
-  hydratePromise = runCatalogHydrate().finally(() => {
-    hydratePromise = null;
+  if (!force && hydratePromise) return hydratePromise;
+  const run = runCatalogHydrate().finally(() => {
+    if (hydratePromise === run) hydratePromise = null;
   });
-  return hydratePromise;
+  hydratePromise = run;
+  return run;
 }
 
 async function runCatalogHydrate(): Promise<void> {
@@ -491,8 +492,10 @@ export function refreshApprovedSpecialistProfilesFromRemote(): void {
   void hydrateFromSupabase();
 }
 
-export async function refreshApprovedSpecialistProfilesFromRemoteAsync(): Promise<void> {
-  await hydrateFromSupabase();
+export async function refreshApprovedSpecialistProfilesFromRemoteAsync(
+  force = false
+): Promise<void> {
+  await hydrateFromSupabase(force);
 }
 
 /** Immediate in-memory patch so public cards/profiles update before the remote refetch lands. */

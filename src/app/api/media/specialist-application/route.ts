@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { path?: unknown; dataUrl?: unknown };
+  let body: { path?: unknown; dataUrl?: unknown; contentType?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -82,11 +82,49 @@ export async function POST(request: Request) {
 
   const path = typeof body.path === "string" ? body.path.trim() : "";
   const dataUrl = typeof body.dataUrl === "string" ? body.dataUrl : "";
+  const requestedType =
+    typeof body.contentType === "string" ? normalizeUploadMime(body.contentType) : "";
   if (!SAFE_PATH.test(path)) {
     return NextResponse.json(
       { ok: false, message: "Invalid media path." },
       { status: 400 }
     );
+  }
+
+  const service = createClient(config.url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  /* Browser uploads the file itself so the logo can show real byte progress.
+   * The signed URL is minted with the service role; storage RLS still blocks
+   * a plain client upload. */
+  if (!dataUrl && requestedType) {
+    if (!ALLOWED_MIME.has(requestedType)) {
+      return NextResponse.json(
+        { ok: false, message: `Unsupported file type: ${requestedType}` },
+        { status: 400 }
+      );
+    }
+    const fullPath = `${path}.${extensionForMime(requestedType)}`;
+    const { data, error } = await service.storage
+      .from(SPECIALIST_MEDIA_BUCKET)
+      .createSignedUploadUrl(fullPath, { upsert: true });
+    if (error || !data?.signedUrl) {
+      return NextResponse.json(
+        { ok: false, message: error?.message ?? "Could not start photo upload." },
+        { status: 502 }
+      );
+    }
+    const { data: publicData } = service.storage
+      .from(SPECIALIST_MEDIA_BUCKET)
+      .getPublicUrl(fullPath);
+    return NextResponse.json({
+      ok: true,
+      path: fullPath,
+      token: data.token,
+      signedUrl: data.signedUrl,
+      publicUrl: publicData.publicUrl,
+    });
   }
 
   const match = dataUrl.match(/^data:([a-z]+\/[a-z0-9+.-]+);base64,([\s\S]+)$/i);
@@ -111,10 +149,6 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-
-  const service = createClient(config.url, serviceKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   const fullPath = `${path}.${extensionForMime(mime)}`;
   const { error } = await service.storage

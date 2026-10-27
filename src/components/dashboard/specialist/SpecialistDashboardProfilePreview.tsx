@@ -276,6 +276,7 @@ function LiveEditSheet({
   isLiveListing = false,
   subtitle,
   saveLabel,
+  saveAttention = false,
 }: {
   title: string;
   saving: boolean;
@@ -286,6 +287,7 @@ function LiveEditSheet({
   isLiveListing?: boolean;
   subtitle?: string;
   saveLabel?: string;
+  saveAttention?: boolean;
 }) {
   const titleId = useId();
   const [mounted, setMounted] = useState(false);
@@ -387,22 +389,32 @@ function LiveEditSheet({
         </div>
         <div className="specialist-live-sheet__body">{children}</div>
         <div className="specialist-live-sheet__actions">
-          <button
-            type="button"
-            className="smoac-control specialist-live-sheet__save"
-            disabled={saving}
-            onClick={onSave}
+          <div
+            className={cn(
+              "specialist-live-sheet__save-wrap",
+              saveAttention &&
+                !saving &&
+                "specialist-live-sheet__save-wrap--attention"
+            )}
           >
-            {saving
-              ? variant === "intro"
-                ? "Saving…"
-                : "Publishing…"
-              : saveLabel
-                ? saveLabel
-                : variant === "photos"
-                  ? "Save"
-                  : "Save changes — goes live"}
-          </button>
+            <span className="specialist-live-sheet__save-glow" aria-hidden />
+            <button
+              type="button"
+              className="smoac-control specialist-live-sheet__save"
+              disabled={saving}
+              onClick={onSave}
+            >
+              {saving
+                ? variant === "intro"
+                  ? "Saving…"
+                  : "Publishing…"
+                : saveLabel
+                  ? saveLabel
+                  : variant === "photos"
+                    ? "Save"
+                    : "Save changes — goes live"}
+            </button>
+          </div>
           <button
             type="button"
             className="smoac-control specialist-live-sheet__cancel"
@@ -660,6 +672,7 @@ export function SpecialistDashboardProfilePreview({
       : undefined;
 
   const [editing, setEditing] = useState<SectionId | null>(null);
+  const [editBaseline, setEditBaseline] = useState<string | null>(null);
   const [draft, setDraft] = useState<SpecialistProfileEditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [secondLocationOpen, setSecondLocationOpen] = useState(false);
@@ -839,6 +852,7 @@ export function SpecialistDashboardProfilePreview({
     }
     setEditing(section);
     setDraft(next);
+    setEditBaseline(JSON.stringify(next));
     setSecondLocationOpen(false);
     setNewPassword("");
     setConfirmPassword("");
@@ -847,6 +861,7 @@ export function SpecialistDashboardProfilePreview({
 
   function cancelEdit() {
     setEditing(null);
+    setEditBaseline(null);
     setDraft(null);
     setSecondLocationOpen(false);
     setNewPassword("");
@@ -909,6 +924,10 @@ export function SpecialistDashboardProfilePreview({
   }
 
   const form = draft;
+  const profileDirty =
+    editBaseline != null &&
+    draft != null &&
+    JSON.stringify(draft) !== editBaseline;
   const pricingRange = form
     ? resolveTrainerSessionPriceRange({
         pricePerSession: form.pricePerSession,
@@ -928,6 +947,7 @@ export function SpecialistDashboardProfilePreview({
         isLiveListing={isLiveListing}
         onClose={cancelEdit}
         onSave={() => void publish()}
+        saveAttention={profileDirty}
         subtitle={
           editing === "intro-video"
             ? "Show clients who you are."
@@ -965,6 +985,7 @@ export function SpecialistDashboardProfilePreview({
               coverImageUrl={form.coverImageUrl}
               photoNotes={form.photoNotes}
               slideshowFramesJson={form.slideshowFramesJson}
+              headerMediaOrder={form.headerMediaOrder}
               videoNotes={form.videoNotes}
               videoPostersJson={form.videoPostersJson}
               pinnedPhotos={form.pinnedPhotos}

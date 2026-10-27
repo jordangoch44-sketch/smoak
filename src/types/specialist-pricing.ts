@@ -15,6 +15,8 @@ export type SpecialistPricingOfferingType =
 export interface SpecialistPricingOffering {
   id: string;
   type: SpecialistPricingOfferingType;
+  /** Public title. Blank falls back to the offering type. */
+  name: string;
   /** USD. Free consult is always 0. */
   price: number;
   included: string;

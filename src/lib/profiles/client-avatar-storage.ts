@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  sendWithUploadProgress,
+  signedStorageUploadBody,
+  type UploadProgressHandler,
+} from "@/lib/media/upload-progress";
+import {
   AVATARS_BUCKET,
   CLIENT_AVATAR_STORAGE_LIMITS,
 } from "@/lib/supabase/constants";
@@ -181,7 +186,8 @@ export function validateClientAvatarSourceFile(file: File): void {
 export async function uploadClientAvatar(
   client: SupabaseClient,
   userId: string,
-  file: File
+  file: File,
+  onProgress?: UploadProgressHandler
 ): Promise<{ path: string; publicUrl: string; version: number }> {
   const {
     data: { user: authUser },
@@ -235,13 +241,48 @@ export async function uploadClientAvatar(
     upsert: true,
   });
 
-  const { data, error } = await client.storage
+  const signed = await client.storage
     .from(AVATARS_BUCKET)
-    .upload(path, file, {
+    .createSignedUploadUrl(path, { upsert: true });
+
+  let data: { path: string } | null = null;
+  let error: { message: string; name?: string } | null = null;
+
+  if (!signed.error && signed.data?.signedUrl) {
+    try {
+      const put = await sendWithUploadProgress(signed.data.signedUrl, {
+        method: "PUT",
+        body: signedStorageUploadBody(file),
+        onProgress,
+      });
+      if (!put.ok) {
+        let message = "Could not upload image.";
+        try {
+          const payload = JSON.parse(put.text) as { message?: string; error?: string };
+          message = payload.message || payload.error || message;
+        } catch {
+          if (put.text.trim()) message = put.text.trim();
+        }
+        error = { message, name: "StorageError" };
+      } else {
+        data = { path };
+      }
+    } catch (putError) {
+      error = {
+        message:
+          putError instanceof Error ? putError.message : "Could not upload image.",
+        name: "StorageError",
+      };
+    }
+  } else {
+    const uploaded = await client.storage.from(AVATARS_BUCKET).upload(path, file, {
       contentType: mime,
       upsert: true,
       cacheControl: "3600",
     });
+    data = uploaded.data;
+    error = uploaded.error;
+  }
 
   logAvatarStage("storage_response", {
     bucket: AVATARS_BUCKET,

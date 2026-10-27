@@ -94,6 +94,9 @@ const PROFILE_SECTION_FIELDS: Record<
     "coverImageUrl",
     "photoNotes",
     "slideshowFramesJson",
+    "headerMediaOrder",
+    "videoNotes",
+    "videoPostersJson",
     "pinnedPhotos",
   ],
   avatar: ["profilePhotoUrl"],
@@ -163,6 +166,7 @@ const PROFILE_SECTION_FIELDS: Record<
     "coverImageUrl",
     "photoNotes",
     "slideshowFramesJson",
+    "headerMediaOrder",
     "videoNotes",
     "videoPostersJson",
     "introVideoUrl",
@@ -218,6 +222,23 @@ function parseCommaList(value: string): string[] {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function orderGalleryByHeaderMedia<T extends { src: string }>(
+  gallery: T[],
+  headerMediaOrder: string
+): T[] {
+  const order = parseLineList(headerMediaOrder).filter(Boolean);
+  if (order.length === 0 || gallery.length < 2) return gallery;
+  const rank = new Map(order.map((url, index) => [url, index]));
+  return gallery
+    .map((item, index) => ({ item, index }))
+    .sort((a, b) => {
+      const ar = rank.get(a.item.src) ?? order.length + a.index;
+      const br = rank.get(b.item.src) ?? order.length + b.index;
+      return ar - br;
+    })
+    .map(({ item }) => item);
 }
 
 function parseLineList(value: string): string[] {
@@ -540,6 +561,13 @@ export function applySpecialistProfileOverrides(
     merged.gallery = merged.gallery.filter((item) => item.type !== "video");
   }
 
+  if (overrides.headerMediaOrder?.trim()) {
+    merged.gallery = orderGalleryByHeaderMedia(
+      merged.gallery,
+      overrides.headerMediaOrder
+    );
+  }
+
   if (overrides.introVideoUrl !== undefined) {
     const intro = parseIntroVideoFromFields(
       overrides.introVideoUrl,
@@ -712,6 +740,7 @@ export function overridesFromTrainer(
     slideshowFramesJson:
       stored?.slideshowFramesJson?.trim() ??
       serializeSlideshowFrameMap(trainer.gallerySlideshowFrames ?? {}),
+    headerMediaOrder: stored?.headerMediaOrder?.trim() ?? "",
     videoNotes:
       stored?.videoNotes?.trim()
         ? stored.videoNotes
@@ -874,6 +903,7 @@ export function formToOverrides(form: SpecialistProfileEditForm): SpecialistProf
     bio: form.bio.trim(),
     photoNotes: form.photoNotes.trim(),
     slideshowFramesJson: form.slideshowFramesJson.trim(),
+    headerMediaOrder: form.headerMediaOrder.trim(),
     videoNotes: form.videoNotes.trim(),
     videoPostersJson: serializeVideoPosterMap(
       pruneVideoPosterMap(

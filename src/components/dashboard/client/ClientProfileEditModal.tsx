@@ -287,7 +287,9 @@ export function ClientProfileEditModal({
   async function handleCropConfirm(
     _croppedImageData: string,
     _cropSettings: { x: number; y: number; zoom: number },
-    croppedAreaPixels: Area
+    croppedAreaPixels: Area,
+    _rotation?: number,
+    reportProgress?: (percent: number) => void
   ) {
     if (!cropImageSrc) return;
 
@@ -328,7 +330,12 @@ export function ClientProfileEditModal({
         name: processed.name,
       });
 
-      const uploaded = await uploadClientAvatar(supabase, userId, processed);
+      const uploaded = await uploadClientAvatar(
+        supabase,
+        userId,
+        processed,
+        reportProgress
+      );
       uploadedPath = uploaded.path;
       storageSucceeded = true;
       const displayUrl = withAvatarCacheBust(

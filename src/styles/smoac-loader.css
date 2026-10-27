@@ -109,6 +109,49 @@
   letter-spacing: 0.12em;
 }
 
+.smoac-loader__percent {
+  margin: -0.45rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.smoac-loader--small .smoac-loader__percent {
+  margin-top: -0.15rem;
+  font-size: 0.625rem;
+}
+
+.smoac-loader--medium .smoac-loader__percent {
+  font-size: 0.8125rem;
+}
+
+/* Real progress fills the S instead of looping the draw. */
+.smoac-loader--metered .smoac-loader__cycle,
+.smoac-loader--metered .smoac-loader__draw,
+.smoac-loader--metered .smoac-loader__streak,
+.smoac-loader--metered .smoac-loader__star {
+  animation: none;
+}
+
+.smoac-loader--metered .smoac-loader__cycle {
+  opacity: 1;
+}
+
+.smoac-loader--metered .smoac-loader__streak {
+  display: none;
+}
+
+.smoac-loader--metered .smoac-loader__star {
+  opacity: 0;
+}
+
+.smoac-loader--metered .smoac-loader__star--on {
+  opacity: 1;
+}
+
 @keyframes smoac-loader-fade {
   0% {
     opacity: 0;

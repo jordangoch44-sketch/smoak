@@ -18,7 +18,11 @@ interface ProfileVideoFramePickerProps {
   duration: number;
   stepBadge?: string;
   onCancel: () => void;
-  onSave: (posterDataUrl: string, time: number) => void | Promise<void>;
+  onSave: (
+    posterDataUrl: string,
+    time: number,
+    reportProgress?: (percent: number) => void
+  ) => void | Promise<void>;
 }
 
 export function ProfileVideoFramePicker({
@@ -33,6 +37,7 @@ export function ProfileVideoFramePicker({
   const [time, setTime] = useState(0);
   const [previewReady, setPreviewReady] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const maxTime = Math.max(0, duration);
 
@@ -76,11 +81,16 @@ export function ProfileVideoFramePicker({
     const video = videoRef.current;
     if (!video || saving || !previewReady) return;
     setSaving(true);
+    setUploadProgress(null);
     setError(null);
     try {
       await seekVideoToTime(video, time);
       const posterDataUrl = await captureVideoFrameDataUrl(video);
-      await onSave(posterDataUrl, time);
+      await onSave(posterDataUrl, time, (percent) => {
+        if (!Number.isFinite(percent)) return;
+        const next = Math.max(0, Math.min(100, Math.round(percent)));
+        setUploadProgress((current) => (current === next ? current : next));
+      });
     } catch (saveError) {
       setError(
         saveError instanceof Error
@@ -89,6 +99,7 @@ export function ProfileVideoFramePicker({
       );
     } finally {
       setSaving(false);
+      setUploadProgress(null);
     }
   }
 
@@ -208,7 +219,7 @@ export function ProfileVideoFramePicker({
 
       {saving ? (
         <div className="profile-photo-cropper__saving">
-          <SmoacSavingMark label="Uploading" />
+          <SmoacSavingMark label="Uploading" progress={uploadProgress} />
         </div>
       ) : null}
     </div>

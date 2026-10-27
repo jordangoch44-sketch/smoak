@@ -40,6 +40,7 @@ import {
   getClientApplicationsServerSnapshot,
   getClientApplicationsSnapshot,
   refreshClientApplicationsFromRemote,
+  refreshClientApplicationsFromRemoteAsync,
   subscribeClientApplications,
 } from "@/lib/client-application-storage";
 import {
@@ -51,12 +52,14 @@ import {
   getSpecialistApplicationsServerSnapshot,
   getSpecialistApplicationsSnapshot,
   refreshSpecialistApplicationsFromRemote,
+  refreshSpecialistApplicationsFromRemoteAsync,
   subscribeSpecialistApplications,
 } from "@/lib/specialist-application-storage";
 import {
   getApprovedSpecialistProfilesServerSnapshot,
   getApprovedSpecialistProfilesSnapshot,
   refreshApprovedSpecialistProfilesFromRemote,
+  refreshApprovedSpecialistProfilesFromRemoteAsync,
   subscribeApprovedSpecialistProfiles,
 } from "@/lib/approved-specialist-profiles-store";
 import type { AdminApplicationStatusLabel } from "@/types/admin";
@@ -111,6 +114,15 @@ export function useAdminDashboard() {
     [applications, hiddenIds, specialistMeta, approvedProfiles, adminDirectory]
   );
 
+  const refreshRemoteData = useCallback(async () => {
+    await Promise.all([
+      refreshClientApplicationsFromRemoteAsync(),
+      refreshSpecialistApplicationsFromRemoteAsync(),
+      refreshApprovedSpecialistProfilesFromRemoteAsync(true),
+      refreshAdminSpecialistDirectoryFromRemote(),
+    ]);
+  }, []);
+
   const refreshKey = applications.length + clientApplications.length;
 
   const getApplications = useCallback(
@@ -142,6 +154,7 @@ export function useAdminDashboard() {
     setSpecialistProtected: setAdminSpecialistProtectedAsync,
     setSpecialistAccountKind: setAdminSpecialistAccountKindAsync,
     updateSpecialistBasics: updateAdminSpecialistBasicsAsync,
+    refreshRemoteData,
   };
 }
 

@@ -324,12 +324,27 @@
   gap: 0.75rem;
 }
 
+.profile-pricing-card__titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
 .profile-pricing-card__type {
   margin: 0;
   font-size: 0.9375rem;
   font-weight: 650;
   letter-spacing: -0.02em;
   color: rgba(255, 255, 255, 0.98);
+}
+
+.profile-pricing-card__kind {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.48);
 }
 
 .profile-pricing-card__price {
@@ -347,11 +362,32 @@
 }
 
 .profile-pricing-card__included {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
   margin: 0;
+  padding: 0;
   font-size: 0.75rem;
   font-weight: 450;
   line-height: 1.4;
   color: rgba(255, 255, 255, 0.58);
+}
+
+.profile-pricing-card__included li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.profile-pricing-card__included li::before {
+  content: "";
+  width: 0.32rem;
+  height: 0.32rem;
+  margin-top: 0.28rem;
+  flex: none;
+  border-radius: 999px;
+  background: #2563eb;
 }
 
 .profile-pricing-card__commitment {
@@ -1348,6 +1384,15 @@ button.profile-hero__free-session:active {
 
 .profile-hero-cover__slide img {
   object-fit: cover;
+}
+
+.profile-hero-cover__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #0a0a0a;
 }
 
 /* Collapsible bio under hero intro */

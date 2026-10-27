@@ -143,6 +143,7 @@ export function SpecialistOnboardingWizard({
   );
   const [draftReady, setDraftReady] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState<string | null>(
     null
@@ -908,6 +909,7 @@ export function SpecialistOnboardingWizard({
     }
 
     setSubmitting(true);
+    setSubmitProgress(null);
     setError(null);
 
     try {
@@ -967,7 +969,10 @@ export function SpecialistOnboardingWizard({
         }
       }
 
-      const submitResult = await submitSpecialistApplication(state, { userId });
+      const submitResult = await submitSpecialistApplication(state, {
+        userId,
+        onUploadProgress: setSubmitProgress,
+      });
 
       showToast({
         type: "success",
@@ -994,6 +999,7 @@ export function SpecialistOnboardingWizard({
       setError(message);
     } finally {
       setSubmitting(false);
+      setSubmitProgress(null);
     }
   }
 
@@ -1304,6 +1310,7 @@ export function SpecialistOnboardingWizard({
                         ? "Verifying your email"
                         : "Submitting profile to SMOAC admin"
                     }
+                    progress={verifyingEmail ? null : submitProgress}
                   />
                 </div>
               </div>,

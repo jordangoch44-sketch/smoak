@@ -200,7 +200,15 @@ export function ProfileHero({
       >
         <div className="profile-hero__stage relative w-full">
           <ProfileHeroCoverGallery
-            images={coverImages}
+            slides={galleryMedia.map((item) =>
+              item.type === "video"
+                ? {
+                    type: "video" as const,
+                    src: item.url,
+                    poster: item.thumbnail,
+                  }
+                : { type: "image" as const, src: item.url }
+            )}
             trainerName={trainer.name}
             fallbackHeroImage={trainer.heroImage}
             slideshowFrames={trainer.gallerySlideshowFrames}

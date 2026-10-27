@@ -222,6 +222,10 @@ export function getClientApplicationById(
 
 /** Force re-fetch from Supabase (e.g. after admin login). */
 export function refreshClientApplicationsFromRemote(): void {
+  void refreshClientApplicationsFromRemoteAsync();
+}
+
+export function refreshClientApplicationsFromRemoteAsync(): Promise<void> {
   hydrated = false;
-  void hydrateFromSupabase(true);
+  return hydrateFromSupabase(true);
 }

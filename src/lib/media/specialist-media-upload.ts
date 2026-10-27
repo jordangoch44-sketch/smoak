@@ -9,6 +9,16 @@ import {
   rejectUnsupportedPhoneVideo,
   resolveVideoContentType,
 } from "@/lib/media/video-file";
+import {
+  sendWithUploadProgress,
+  signedStorageUploadBody,
+  type UploadProgressHandler,
+} from "@/lib/media/upload-progress";
+
+/** Same ceiling as `/api/media/specialist-application`. */
+const APPLICATION_MEDIA_MAX_BYTES = 8 * 1024 * 1024;
+
+export type { UploadProgressHandler };
 
 /** Storage object prefix for `/api/media/specialist-application` SAFE_PATH. */
 function specialistMediaPathId(specialistId: string): string {
@@ -41,22 +51,52 @@ export function rejectUnsupportedPhonePhoto(file: File): string | null {
   return null;
 }
 
-/** POST a data URL to `/api/media/specialist-application` and cache-bust the public URL. */
+function storagePutError(
+  status: number,
+  text: string,
+  fallback = "Could not upload image."
+): string {
+  let message = "";
+  try {
+    const payload = JSON.parse(text) as { message?: string; error?: string };
+    message = payload.message || payload.error || "";
+  } catch {
+    message = text.trim();
+  }
+  if (!message && status === 413) return "payload too large";
+  return message || fallback;
+}
+
+/**
+ * Ask for a signed storage URL, then PUT the file from the browser.
+ * Progress is the share of bytes storage has received.
+ */
 export async function postSpecialistApplicationMedia(
   path: string,
-  dataUrl: string
+  dataUrl: string,
+  onProgress?: UploadProgressHandler
 ): Promise<string> {
   const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const fileResponse = await fetch(dataUrl);
+  if (!fileResponse.ok) {
+    throw new Error("Could not read that photo.");
+  }
+  const file = await fileResponse.blob();
+  const contentType = (file.type || "image/jpeg").toLowerCase();
+  if (file.size <= 0 || file.size > APPLICATION_MEDIA_MAX_BYTES) {
+    throw new Error("Photo is too large to upload.");
+  }
+
   const response = await fetch("/api/media/specialist-application", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ path, dataUrl }),
+    body: JSON.stringify({ path, contentType }),
   });
   const payload = (await response.json().catch(() => null)) as
-    | { ok: boolean; publicUrl?: string; message?: string }
+    | { ok: boolean; signedUrl?: string; publicUrl?: string; message?: string }
     | null;
-  if (!response.ok || !payload?.ok || !payload.publicUrl) {
+  if (!response.ok || !payload?.ok || !payload.signedUrl || !payload.publicUrl) {
     throw new Error(
       isObjectTooLargeMessage(payload?.message) || response.status === 413
         ? "Photo is too large to upload."
@@ -66,6 +106,21 @@ export async function postSpecialistApplicationMedia(
             : "Could not upload image."))
     );
   }
+
+  const put = await sendWithUploadProgress(payload.signedUrl, {
+    method: "PUT",
+    body: signedStorageUploadBody(file, "60"),
+    onProgress,
+  });
+  if (!put.ok) {
+    const message = storagePutError(put.status, put.text);
+    throw new Error(
+      isObjectTooLargeMessage(message) || put.status === 413
+        ? "Photo is too large to upload."
+        : message
+    );
+  }
+
   return payload.publicUrl.includes("?")
     ? `${payload.publicUrl}&v=${stamp}`
     : `${payload.publicUrl}?v=${stamp}`;
@@ -116,7 +171,8 @@ function videoUploadErrorMessage(message: string | undefined): string {
  */
 export async function uploadSpecialistDashboardVideo(
   specialistId: string | null | undefined,
-  file: File
+  file: File,
+  onProgress?: UploadProgressHandler
 ): Promise<string> {
   const id = specialistId?.trim();
   if (!id) {
@@ -173,8 +229,27 @@ export async function uploadSpecialistDashboardVideo(
     );
   }
 
-  const supabase = createSupabaseBrowserClient();
-  if (supabase && payload.token) {
+  if (payload.signedUrl) {
+    const put = await sendWithUploadProgress(payload.signedUrl, {
+      method: "PUT",
+      body: signedStorageUploadBody(file),
+      onProgress,
+    });
+    if (!put.ok) {
+      throw new Error(
+        videoUploadErrorMessage(
+          storagePutError(
+            put.status,
+            put.text ||
+              (put.status === 413 ? specialistVideoTooLargeMessage() : ""),
+            "Could not upload video."
+          )
+        )
+      );
+    }
+  } else if (payload.token) {
+    const supabase = createSupabaseBrowserClient();
+    if (!supabase) throw new Error("Could not start video upload.");
     const { error } = await supabase.storage
       .from(SPECIALIST_MEDIA_BUCKET)
       .uploadToSignedUrl(payload.path, payload.token, file, {
@@ -182,24 +257,6 @@ export async function uploadSpecialistDashboardVideo(
       });
     if (error) {
       throw new Error(videoUploadErrorMessage(error.message));
-    }
-  } else if (payload.signedUrl) {
-    const put = await fetch(payload.signedUrl, {
-      method: "PUT",
-      headers: { "Content-Type": contentType },
-      body: file,
-    });
-    if (!put.ok) {
-      const putPayload = (await put.json().catch(() => null)) as
-        | { message?: string; error?: string }
-        | null;
-      throw new Error(
-        videoUploadErrorMessage(
-          putPayload?.message ??
-            putPayload?.error ??
-            (put.status === 413 ? specialistVideoTooLargeMessage() : undefined)
-        )
-      );
     }
   } else {
     throw new Error("Could not start video upload.");
@@ -215,7 +272,8 @@ export async function uploadSpecialistDashboardVideo(
 export async function uploadSpecialistDashboardMedia(
   specialistId: string | null | undefined,
   dataUrl: string,
-  kind: SpecialistDashboardMediaKind
+  kind: SpecialistDashboardMediaKind,
+  onProgress?: UploadProgressHandler
 ): Promise<string> {
   const id = specialistId?.trim();
   if (!id) {
@@ -223,9 +281,13 @@ export async function uploadSpecialistDashboardMedia(
       "Could not upload — profile is not ready. Refresh and try again."
     );
   }
-  if (!isMarketplaceSupabaseActive()) return dataUrl;
+  if (!isMarketplaceSupabaseActive()) {
+    onProgress?.(100);
+    return dataUrl;
+  }
   return postSpecialistApplicationMedia(
     dashboardMediaPath(id, kind),
-    dataUrl
+    dataUrl,
+    onProgress
   );
 }

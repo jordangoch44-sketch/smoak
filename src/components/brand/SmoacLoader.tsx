@@ -28,6 +28,11 @@ interface SmoacLoaderProps {
   label?: string;
   /** Keep the accessible name without rendering the caption. */
   showLabel?: boolean;
+  /**
+   * Measured share of the work, 0–100. Omit when the wait has no known total
+   * so the mark keeps drawing instead of inventing a number.
+   */
+  progress?: number | null;
   className?: string;
 }
 
@@ -39,20 +44,40 @@ export function SmoacLoader({
   size = "large",
   label = "Loading",
   showLabel = true,
+  progress = null,
   className,
 }: SmoacLoaderProps) {
   const rawId = useId().replace(/:/g, "");
   const upperClipId = `smoac-loader-upper-${rawId}`;
   const lowerClipId = `smoac-loader-lower-${rawId}`;
   const starId = `smoac-loader-star-${rawId}`;
+  const meter =
+    progress == null || !Number.isFinite(progress)
+      ? null
+      : Math.max(0, Math.min(100, progress));
+  const ratio = meter == null ? 0 : meter / 100;
+  const strokeTotal = SMOAC_LOADER_UPPER_LENGTH + SMOAC_LOADER_LOWER_LENGTH;
+  const upperShare = SMOAC_LOADER_UPPER_LENGTH / strokeTotal;
+  const upperDone = Math.min(1, ratio / upperShare);
+  const lowerDone =
+    ratio <= upperShare ? 0 : (ratio - upperShare) / (1 - upperShare);
+  const percentLabel = meter == null ? null : `${Math.round(meter)}%`;
 
   return (
     <div
-      className={cn("smoac-loader", `smoac-loader--${size}`, className)}
-      role="status"
-      aria-live="polite"
+      className={cn(
+        "smoac-loader",
+        `smoac-loader--${size}`,
+        meter != null && "smoac-loader--metered",
+        className
+      )}
+      role={meter == null ? "status" : "progressbar"}
+      aria-live={meter == null ? "polite" : "off"}
       aria-busy="true"
-      aria-label={label}
+      aria-valuemin={meter == null ? undefined : 0}
+      aria-valuemax={meter == null ? undefined : 100}
+      aria-valuenow={meter == null ? undefined : Math.round(meter)}
+      aria-label={percentLabel ? `${label}, ${percentLabel}` : label}
     >
       <svg
         className="smoac-loader__svg"
@@ -80,6 +105,15 @@ export function SmoacLoader({
               d={SMOAC_LOADER_UPPER_LINE}
               pathLength={SMOAC_LOADER_UPPER_LENGTH}
               strokeWidth={SMOAC_LOADER_STROKE_WIDTH}
+              style={
+                meter == null
+                  ? undefined
+                  : {
+                      strokeDasharray: SMOAC_LOADER_UPPER_LENGTH,
+                      strokeDashoffset:
+                        SMOAC_LOADER_UPPER_LENGTH * (1 - upperDone),
+                    }
+              }
             />
             <path
               className="smoac-loader__streak smoac-loader__streak--upper"
@@ -94,6 +128,15 @@ export function SmoacLoader({
               d={SMOAC_LOADER_LOWER_LINE}
               pathLength={SMOAC_LOADER_LOWER_LENGTH}
               strokeWidth={SMOAC_LOADER_STROKE_WIDTH}
+              style={
+                meter == null
+                  ? undefined
+                  : {
+                      strokeDasharray: SMOAC_LOADER_LOWER_LENGTH,
+                      strokeDashoffset:
+                        SMOAC_LOADER_LOWER_LENGTH * (1 - lowerDone),
+                    }
+              }
             />
             <path
               className="smoac-loader__streak smoac-loader__streak--lower"
@@ -102,7 +145,12 @@ export function SmoacLoader({
               strokeWidth={SMOAC_LOADER_STROKE_WIDTH}
             />
           </g>
-          <g className="smoac-loader__star">
+          <g
+            className={cn(
+              "smoac-loader__star",
+              meter != null && meter >= 100 && "smoac-loader__star--on"
+            )}
+          >
             <image
               href={SMOAC_LOADER_STAR_SRC}
               x={SMOAC_LOADER_STAR_X}
@@ -116,6 +164,9 @@ export function SmoacLoader({
       </svg>
       {showLabel && label ? (
         <p className="smoac-loader__label">{label}</p>
+      ) : null}
+      {percentLabel ? (
+        <p className="smoac-loader__percent">{percentLabel}</p>
       ) : null}
     </div>
   );

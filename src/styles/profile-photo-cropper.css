@@ -243,6 +243,44 @@
   text-align: center;
 }
 
+.profile-photo-cropper__photo-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.profile-photo-cropper__photo-actions--busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.profile-photo-cropper__photo-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+  min-height: 2.5rem;
+  margin: 0;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.profile-photo-cropper__photo-action--on {
+  border-color: rgba(37, 99, 235, 0.85);
+  background: rgba(37, 99, 235, 0.22);
+  color: #fff;
+}
+
 .profile-photo-cropper__footer {
   display: flex;
   align-items: center;

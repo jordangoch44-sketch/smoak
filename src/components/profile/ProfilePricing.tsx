@@ -4,6 +4,7 @@ import {
   PRICING_PACKAGES_SECTION_TITLE,
   formatOfferingPrice,
   publishedPricingOfferings,
+  pricingOfferingDisplayName,
   pricingOfferingLabel,
 } from "@/lib/specialist-pricing";
 import { ProfileSection } from "./ProfileSection";
@@ -22,15 +23,20 @@ export function ProfilePricing({ trainer }: { trainer: Trainer }) {
         </p>
       ) : (
         <ul className="profile-section-body profile-pricing-list">
-          {offerings.map((offering) => (
-            <ProfilePricingOfferingCard
-              key={offering.id}
-              label={pricingOfferingLabel(offering.type)}
-              price={formatOfferingPrice(offering)}
-              included={offering.included.trim()}
-              commitment={offering.commitment.trim()}
-            />
-          ))}
+          {offerings.map((offering) => {
+            const typeLabel = pricingOfferingLabel(offering.type);
+            const named = (offering.name ?? "").trim().length > 0;
+            return (
+              <ProfilePricingOfferingCard
+                key={offering.id}
+                label={pricingOfferingDisplayName(offering)}
+                kind={named ? typeLabel : ""}
+                price={formatOfferingPrice(offering)}
+                included={offering.included.trim()}
+                commitment={offering.commitment.trim()}
+              />
+            );
+          })}
         </ul>
       )}
     </ProfileSection>

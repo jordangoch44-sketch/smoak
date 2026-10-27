@@ -34,7 +34,6 @@ const MUSCLE: Record<string, ExerciseMuscle> = {
   hamstrings: "hamstrings",
   glutes: "glutes",
   abductors: "glutes",
-  adductors: "glutes",
   calves: "calves",
   abdominals: "core",
 };
@@ -56,14 +55,75 @@ function muscleFor(item: RawCatalogExercise): ExerciseMuscle | null {
   ) {
     return "rear-delts";
   }
+  let mapped: ExerciseMuscle | null = null;
   for (const target of item.targetMuscles) {
-    const mapped = MUSCLE[target.toLowerCase()];
-    if (mapped) return mapped;
+    const muscle = MUSCLE[target.toLowerCase()];
+    if (muscle) {
+      mapped = muscle;
+      break;
+    }
   }
-  for (const part of item.bodyParts) {
-    const mapped = PART[part.toLowerCase()];
-    if (mapped) return mapped;
+  if (!mapped) {
+    for (const part of item.bodyParts) {
+      const muscle = PART[part.toLowerCase()];
+      if (muscle) {
+        mapped = muscle;
+        break;
+      }
+    }
   }
+  // ExerciseDB tags squats, lunges, deadlifts, and leg presses as glutes.
+  if (mapped === "glutes") return refineGluteTag(name);
+  return mapped;
+}
+
+/** Hip thrusts, bridges, and abductions. Squats and hinges are sorted out below. */
+function isGlutePrimary(name: string): boolean {
+  return (
+    /\b(glute|glutes|gluteus|piriformis)\b/.test(name) ||
+    /\bhip thrusts?\b/.test(name) ||
+    /\bhip extensions?\b/.test(name) ||
+    /\bhip lifts?\b/.test(name) ||
+    /\bpull[- ]throughs?\b/.test(name) ||
+    /\babduct/.test(name) ||
+    /reverse hyper/.test(name) ||
+    /\bmonster walks?\b/.test(name) ||
+    /\bbridges?\b/.test(name) ||
+    /pelvic tilt/.test(name) ||
+    /\bsumo\b/.test(name) ||
+    /curts(?:e|y)/.test(name) ||
+    /\bcossack/.test(name) ||
+    /lateral lunge/.test(name) ||
+    /lying lifting/.test(name) ||
+    /\bon hip\b/.test(name) ||
+    /\bfrogs?\b/.test(name) ||
+    /hip stretch/.test(name)
+  );
+}
+
+function refineGluteTag(name: string): ExerciseMuscle | null {
+  if (isGlutePrimary(name)) return "glutes";
+  if (/push-?up|push up/.test(name)) return "chest";
+  if (/flutter kicks?|swimmer kicks?/.test(name)) return "core";
+  if (/\brows?\b/.test(name)) return "back";
+  if (/\brack pulls?\b/.test(name)) return "back";
+  if (/\bget-?ups?\b|\bsnatches?\b|\bclean\b(?![- ]grip)|\btire flips?\b/.test(name)) return null;
+  if (
+    /\b(squats?|lunges?|pistols?)\b/.test(name) ||
+    /\bleg press\b|\bleg wide press\b|\bsingle-leg press\b/.test(name) ||
+    /\bstep-ups?\b|\bstep ups?\b/.test(name)
+  ) {
+    return "quads";
+  }
+  if (
+    /hamstring curl|\bleg curls?\b/.test(name) ||
+    /\bdeadlifts?\b|\bromanian\b|\bgood mornings?\b/.test(name) ||
+    /\bstiff[- ]leg\b|\bstraight[- ]leg\b|\bswings?\b/.test(name)
+  ) {
+    return "hamstrings";
+  }
+  if (/toe touch/.test(name)) return "hamstrings";
+  if (/\b(twists?|crunches?|planks?)\b/.test(name)) return "core";
   return null;
 }
 

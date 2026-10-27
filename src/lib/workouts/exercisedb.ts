@@ -1,8 +1,11 @@
 import { catalogExerciseId } from "@/data/exercise-db-catalog";
+import { storedExerciseName } from "@/data/exercise-display";
 import { WORKOUT_EXERCISE_LIBRARY } from "@/data/workout-exercise-library";
 
 const RAPID_HOST = "edb-with-gifs-and-images-by-ascendapi.p.rapidapi.com";
 const BASE = `https://${RAPID_HOST}`;
+/** Public clip search. The paid by-id route is not on the current RapidAPI gateway. */
+const OPEN_EXERCISE_DB = "https://oss.exercisedb.dev";
 
 export interface ExerciseDbMedia {
   exerciseId: string;
@@ -21,6 +24,8 @@ export interface ExerciseGuide {
 interface CacheEntry extends ExerciseDbMedia {
   /** Searched this week and nothing matched well enough to show. */
   miss?: boolean;
+  /** Public name search ran and no row had this exact title. */
+  clipMiss?: boolean;
 }
 
 interface MediaCache {
@@ -196,28 +201,82 @@ export async function libraryExerciseMedia(): Promise<Record<string, ExerciseDbM
   return media;
 }
 
+function clipNameKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Exact-name clip from a public ExerciseDB search. Near matches are ignored. */
+export function exerciseClipFromSearch(name: string, rows: readonly unknown[]): ExerciseDbMedia | null {
+  const wanted = clipNameKey(name);
+  if (!wanted) return null;
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as Record<string, unknown>;
+    const title = typeof record.name === "string" ? record.name : "";
+    if (clipNameKey(title) !== wanted) continue;
+    const media = readMedia(record);
+    if (media?.gifUrl) return media;
+  }
+  return null;
+}
+
+/** `undefined` means the search failed and should be tried again. */
+async function openExerciseClip(name: string): Promise<ExerciseDbMedia | null | undefined> {
+  const query = name.trim();
+  if (!query) return null;
+  const url = new URL("/api/v1/exercises/search", OPEN_EXERCISE_DB);
+  url.searchParams.set("search", query);
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (response.status === 429 || response.status >= 500) return undefined;
+    if (!response.ok) return null;
+    const body = (await response.json()) as { data?: unknown };
+    const rows = Array.isArray(body.data) ? body.data : [];
+    return exerciseClipFromSearch(query, rows);
+  } catch {
+    return undefined;
+  }
+}
+
 async function guideEntry(name: string): Promise<CacheEntry | null> {
-  if (!exerciseDbConfigured()) return null;
-  const key = nameKey(name);
+  const canonical = storedExerciseName(name);
+  const key = nameKey(canonical);
+  if (!key) return null;
   const store = cache();
   const cached = store.byName.get(key);
-  if (cached?.instructions?.length) return cached;
+  if (cached?.gifUrl || cached?.clipMiss) return cached.gifUrl ? cached : null;
+
   const exerciseId =
-    cached?.exerciseId ||
+    (cached?.exerciseId && !cached.miss ? cached.exerciseId : "") ||
     WORKOUT_EXERCISE_LIBRARY.find((item) => nameKey(item.name) === key)?.exerciseId ||
-    catalogExerciseId(name);
-  if (!exerciseId) return null;
-  try {
-    const fresh = await mediaForExercise(exerciseId);
-    if (!fresh) {
-      if (!cached) store.byName.set(key, { exerciseId, miss: true });
-      return cached && !cached.miss ? cached : null;
-    }
-    store.byName.set(key, fresh);
-    return fresh;
-  } catch {
-    return cached && !cached.miss ? cached : null;
+    catalogExerciseId(canonical) ||
+    "";
+
+  const paidPromise =
+    exerciseDbConfigured() && exerciseId
+      ? mediaForExercise(exerciseId).catch(() => null)
+      : Promise.resolve(null);
+  const [paid, clip] = await Promise.all([paidPromise, openExerciseClip(canonical)]);
+
+  if (!paid?.gifUrl && clip === undefined) return paid;
+
+  const fresh: ExerciseDbMedia | null = paid?.gifUrl
+    ? paid
+    : clip
+      ? {
+          ...clip,
+          ...(paid ?? {}),
+          gifUrl: clip.gifUrl,
+          exerciseId: paid?.exerciseId || clip.exerciseId,
+        }
+      : paid;
+
+  if (!fresh?.gifUrl) {
+    store.byName.set(key, { exerciseId: fresh?.exerciseId || exerciseId || "none", miss: true, clipMiss: true });
+    return null;
   }
+  store.byName.set(key, fresh);
+  return fresh;
 }
 
 export async function exerciseGifUrl(name: string): Promise<string | null> {

@@ -9,6 +9,7 @@
     "start": "next start",
     "start:lan": "node scripts/start-lan.mjs",
     "test:exercise-search": "node --experimental-strip-types --import ./scripts/register-test-alias.mjs --test src/lib/workouts/exercise-search.test.ts",
+    "test:exercise-muscle": "node --experimental-strip-types --import ./scripts/register-test-alias.mjs --test src/data/exercise-muscle.test.ts",
     "test:exercise-steps": "node --experimental-strip-types --import ./scripts/register-test-alias.mjs --test src/lib/workouts/exercise-steps.test.ts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

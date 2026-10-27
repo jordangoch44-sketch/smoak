@@ -1,14 +1,27 @@
 "use client";
 
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   MAX_PRICING_OFFERINGS,
+  PRICING_OFFERING_NAME_MAX,
   SPECIALIST_PRICING_OFFERING_OPTIONS,
   createPricingOffering,
+  formatOfferingPrice,
   isFreeConsultOffering,
   isSpecialistPricingOfferingType,
+  pricingIncludedFromLines,
+  pricingIncludedLines,
+  pricingOfferingDisplayName,
   pricingOfferingOption,
 } from "@/lib/specialist-pricing";
-import { EyeIcon, LayoutGridIcon } from "@/components/ui/icons";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  EyeIcon,
+  LayoutGridIcon,
+  PlusIcon,
+} from "@/components/ui/icons";
+import { cn } from "@/lib/utils";
 import type { SpecialistPricingOffering } from "@/types/specialist-pricing";
 
 export function SpecialistPricingFields({
@@ -72,8 +85,9 @@ export function SpecialistPricingFields({
         </div>
       </section>
 
-      <section
-        className="specialist-pricing-card"
+      <div
+        className="specialist-pricing-packages"
+        role="group"
         aria-labelledby="specialist-pricing-packages"
       >
         <header className="specialist-pricing-card__head">
@@ -97,7 +111,8 @@ export function SpecialistPricingFields({
           value={offerings}
           onChange={onOfferingsChange}
         />
-      </section>
+      </div>
+      <AddPricingOffering value={offerings} onChange={onOfferingsChange} />
     </div>
   );
 }
@@ -109,11 +124,18 @@ export function SpecialistPricingOfferingsFields({
   value: SpecialistPricingOffering[];
   onChange: (next: SpecialistPricingOffering[]) => void;
 }) {
-  const canAdd = value.length < MAX_PRICING_OFFERINGS;
+  const [openIds, setOpenIds] = useState<Set<string>>(() => new Set());
+  const [doneIds, setDoneIds] = useState<Set<string>>(() => new Set());
+  const knownIds = useRef(new Set(value.map((offering) => offering.id)));
 
-  function addOffering(type: SpecialistPricingOffering["type"]) {
-    onChange([...value, createPricingOffering(type)]);
-  }
+  useEffect(() => {
+    const fresh = value
+      .map((offering) => offering.id)
+      .filter((id) => !knownIds.current.has(id));
+    if (fresh.length === 0) return;
+    fresh.forEach((id) => knownIds.current.add(id));
+    setOpenIds(new Set(fresh));
+  }, [value]);
 
   function patchOffering(
     id: string,
@@ -124,10 +146,47 @@ export function SpecialistPricingOfferingsFields({
         offering.id === id ? { ...offering, ...patch } : offering
       )
     );
+    setDoneIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   }
 
   function removeOffering(id: string) {
     onChange(value.filter((offering) => offering.id !== id));
+    setDoneIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setOpenIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }
+
+  function toggleOpen(id: string) {
+    setOpenIds((prev) => (prev.has(id) ? new Set() : new Set([id])));
+  }
+
+  function finishOffering(id: string) {
+    setDoneIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    setOpenIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
   }
 
   return (
@@ -135,18 +194,65 @@ export function SpecialistPricingOfferingsFields({
       {value.map((offering) => {
         const option = pricingOfferingOption(offering.type);
         const isFree = isFreeConsultOffering(offering);
+        const named = (offering.name ?? "").trim().length > 0;
+        const open = openIds.has(offering.id);
+        const done = doneIds.has(offering.id);
+        const priceLabel = formatOfferingPrice(offering);
+        const detailsId = `pricing-offering-${offering.id}`;
         return (
-          <article key={offering.id} className="specialist-pricing-offering">
+          <article
+            key={offering.id}
+            className={cn(
+              "specialist-pricing-offering",
+              !open && "specialist-pricing-offering--shut"
+            )}
+          >
             <div className="specialist-pricing-offering__top">
-              <p className="specialist-pricing-offering__type">{option.label}</p>
               <button
                 type="button"
-                className="smoac-control specialist-pricing-offering__remove"
-                onClick={() => removeOffering(offering.id)}
+                className="smoac-control specialist-pricing-offering__toggle"
+                aria-expanded={open}
+                aria-controls={detailsId}
+                onClick={() => toggleOpen(offering.id)}
               >
-                Remove
+                <span className="specialist-pricing-offering__heading">
+                  <span className="specialist-pricing-offering__type">
+                    {pricingOfferingDisplayName(offering)}
+                  </span>
+                  {named ? (
+                    <span className="specialist-pricing-offering__kind">
+                      {option.label}
+                    </span>
+                  ) : null}
+                  {!open && priceLabel ? (
+                    <span className="specialist-pricing-offering__summary-price">
+                      {priceLabel}
+                    </span>
+                  ) : null}
+                </span>
+                <ChevronDownIcon
+                  className={cn(
+                    "specialist-pricing-offering__chevron",
+                    open && "specialist-pricing-offering__chevron--open"
+                  )}
+                />
               </button>
             </div>
+            {open ? (
+              <div id={detailsId} className="specialist-pricing-offering__body">
+
+            <label className="login-field">
+              <span className="login-field__label">Plan name</span>
+              <input
+                className="login-field__input profile-edit-input"
+                value={offering.name ?? ""}
+                maxLength={PRICING_OFFERING_NAME_MAX}
+                onChange={(event) =>
+                  patchOffering(offering.id, { name: event.target.value })
+                }
+                placeholder={option.nameHint}
+              />
+            </label>
 
             {isFree ? (
               <p className="specialist-pricing-offering__free">Free</p>
@@ -159,65 +265,204 @@ export function SpecialistPricingOfferingsFields({
               />
             )}
 
-            <label className="login-field">
-              <span className="login-field__label">What’s included</span>
-              <textarea
-                className="login-field__input profile-edit-input dashboard-edit-textarea"
-                rows={2}
-                value={offering.included}
-                onChange={(event) =>
-                  patchOffering(offering.id, { included: event.target.value })
-                }
-                placeholder="e.g. 60-minute session, program notes"
-              />
-            </label>
+            <IncludedBulletField
+              value={offering.included}
+              onChange={(included) => patchOffering(offering.id, { included })}
+            />
 
-            <label className="login-field">
+            <div className="login-field">
               <span className="login-field__label">
                 Commitment length{" "}
                 <span className="specialist-pricing-offering__optional">
                   optional
                 </span>
               </span>
-              <input
-                className="login-field__input profile-edit-input"
-                value={offering.commitment}
-                onChange={(event) =>
-                  patchOffering(offering.id, {
-                    commitment: event.target.value,
-                  })
-                }
-                placeholder={option.commitmentHint}
-              />
-            </label>
+              <div className="specialist-pricing-commit">
+                <input
+                  className="login-field__input profile-edit-input"
+                  value={offering.commitment}
+                  onChange={(event) =>
+                    patchOffering(offering.id, {
+                      commitment: event.target.value,
+                    })
+                  }
+                  placeholder={option.commitmentHint}
+                  aria-label="Commitment length"
+                />
+                <button
+                  type="button"
+                  className="smoac-control specialist-pricing-offering__done specialist-pricing-offering__done--on"
+                  aria-pressed={done}
+                  aria-label="Done, minimize this plan"
+                  onClick={() => finishOffering(offering.id)}
+                >
+                  <CheckIcon className="specialist-pricing-offering__done-icon" />
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              className="smoac-control specialist-pricing-offering__remove"
+              onClick={() => removeOffering(offering.id)}
+            >
+              Remove
+            </button>
+              </div>
+            ) : null}
           </article>
         );
       })}
+    </div>
+  );
+}
 
-      {canAdd ? (
-        <label className="login-field specialist-pricing-offerings__picker">
-          <span className="login-field__label">
-            {value.length === 0 ? "Add offering" : "Add another offering"}
-          </span>
-          <select
-            className="smoac-control login-field__input login-field__select dashboard-edit-select profile-edit-input"
-            value=""
-            aria-label="Offering type"
-            onChange={(event) => {
-              const type = event.target.value;
-              if (!isSpecialistPricingOfferingType(type)) return;
-              addOffering(type);
-            }}
-          >
-            <option value="">Select one</option>
-            {SPECIALIST_PRICING_OFFERING_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+function AddPricingOffering({
+  value,
+  onChange,
+}: {
+  value: SpecialistPricingOffering[];
+  onChange: (next: SpecialistPricingOffering[]) => void;
+}) {
+  if (value.length >= MAX_PRICING_OFFERINGS) return null;
+
+  return (
+    <label className="specialist-pricing-add">
+      <span className="specialist-pricing-add__plus" aria-hidden>
+        <PlusIcon className="specialist-pricing-add__icon" />
+      </span>
+      <span className="specialist-pricing-add__label">
+        {value.length === 0 ? "Add offering" : "Add another offering"}
+      </span>
+      <select
+        className="smoac-control specialist-pricing-add__select"
+        value=""
+        aria-label={
+          value.length === 0 ? "Add offering" : "Add another offering"
+        }
+        onChange={(event) => {
+          const type = event.target.value;
+          if (!isSpecialistPricingOfferingType(type)) return;
+          onChange([...value, createPricingOffering(type)]);
+        }}
+      >
+        <option value="">Select one</option>
+        {SPECIALIST_PRICING_OFFERING_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function IncludedBulletField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const lines = pricingIncludedLines(value);
+  const rows = [...lines, ""];
+  const refs = useRef<Array<HTMLInputElement | null>>([]);
+  const pendingFocus = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (pendingFocus.current == null) return;
+    const index = pendingFocus.current;
+    pendingFocus.current = null;
+    refs.current[index]?.focus();
+  }, [value]);
+
+  function commit(nextLines: string[], focus: number | null) {
+    pendingFocus.current = focus;
+    onChange(pricingIncludedFromLines(nextLines));
+  }
+
+  function changeLine(index: number, text: string) {
+    if (text.includes("\n")) {
+      const chunk = text.replace(/\r\n/g, "\n").split("\n");
+      const next = lines.slice();
+      if (index >= next.length) next.push(...chunk);
+      else next.splice(index, 1, ...chunk);
+      commit(next, null);
+      return;
+    }
+    if (index >= lines.length) {
+      if (text === "") return;
+      commit([...lines, text], null);
+      return;
+    }
+    const next = lines.slice();
+    next[index] = text;
+    commit(next, null);
+  }
+
+  function onKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (index >= lines.length) return;
+      if (index === lines.length - 1) {
+        refs.current[index + 1]?.focus();
+        return;
+      }
+      const next = lines.slice();
+      next.splice(index + 1, 0, "");
+      commit(next, index + 1);
+      return;
+    }
+    if (event.key !== "Backspace") return;
+    const text = index >= lines.length ? "" : lines[index];
+    if (text !== "" || index === 0) return;
+    event.preventDefault();
+    if (index >= lines.length) {
+      refs.current[lines.length - 1]?.focus();
+      return;
+    }
+    const next = lines.slice();
+    next.splice(index, 1);
+    commit(next, index - 1);
+  }
+
+  return (
+    <div className="login-field">
+      <span className="login-field__label">What’s included</span>
+      <div className="specialist-pricing-bullets">
+        {rows.map((line, index) => {
+          const filled = line.length > 0;
+          return (
+            <label
+              key={index}
+              className="specialist-pricing-bullet"
+            >
+              <span
+                className={cn(
+                  "specialist-pricing-bullet__mark",
+                  filled && "specialist-pricing-bullet__mark--filled"
+                )}
+                aria-hidden
+              />
+              <input
+                ref={(node) => {
+                  refs.current[index] = node;
+                }}
+                className="specialist-pricing-bullet__input"
+                value={line}
+                enterKeyHint={index === rows.length - 1 ? "done" : "next"}
+                aria-label={
+                  filled ? `Included point ${index + 1}` : "Next included point"
+                }
+                placeholder={
+                  lines.length === 0 ? "Add what’s included" : undefined
+                }
+                onChange={(event) => changeLine(index, event.target.value)}
+                onKeyDown={(event) => onKeyDown(index, event)}
+              />
+            </label>
+          );
+        })}
+      </div>
     </div>
   );
 }

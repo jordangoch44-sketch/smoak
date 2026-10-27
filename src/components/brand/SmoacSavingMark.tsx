@@ -11,6 +11,8 @@ interface SmoacSavingMarkProps {
   size?: "default" | "compact";
   /** Parent already shows the copy — keep the mark only. */
   hideLabel?: boolean;
+  /** 0–100 when the wait is a measured upload. Omit for an unknown wait. */
+  progress?: number | null;
 }
 
 /**
@@ -22,6 +24,7 @@ export function SmoacSavingMark({
   className,
   size = "default",
   hideLabel = false,
+  progress = null,
 }: SmoacSavingMarkProps) {
   return (
     <SmoacLoader
@@ -29,6 +32,7 @@ export function SmoacSavingMark({
       size={size === "compact" ? "small" : "large"}
       label={label}
       showLabel={!hideLabel}
+      progress={progress}
     />
   );
 }
@@ -36,12 +40,14 @@ export function SmoacSavingMark({
 interface SmoacSavingOverlayProps {
   label: string;
   className?: string;
+  progress?: number | null;
 }
 
 /** Dims a `position: relative` parent and centers the branded loader. */
 export function SmoacSavingOverlay({
   label,
   className,
+  progress = null,
 }: SmoacSavingOverlayProps) {
   return (
     <div
@@ -51,7 +57,7 @@ export function SmoacSavingOverlay({
       aria-busy="true"
       aria-label={label}
     >
-      <SmoacSavingMark label={label} />
+      <SmoacSavingMark label={label} progress={progress} />
     </div>
   );
 }

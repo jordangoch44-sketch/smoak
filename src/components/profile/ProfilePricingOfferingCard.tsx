@@ -3,22 +3,28 @@
 import { useId, useLayoutEffect, useState } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { ChevronDownIcon } from "@/components/ui/icons";
+import { pricingIncludedLines } from "@/lib/specialist-pricing";
 import { cn } from "@/lib/utils";
 
 export function ProfilePricingOfferingCard({
   label,
+  kind = "",
   price,
   included,
   commitment,
 }: {
   label: string;
+  kind?: string;
   price: string;
   included: string;
   commitment: string;
 }) {
   const detailsId = useId();
   const [open, setOpen] = useState(false);
-  const hasDetails = Boolean(included || commitment);
+  const points = pricingIncludedLines(included)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const hasDetails = points.length > 0 || Boolean(commitment);
 
   useLayoutEffect(() => {
     setOpen(false);
@@ -26,7 +32,12 @@ export function ProfilePricingOfferingCard({
 
   const heading = (
     <div className="profile-pricing-card__row">
-      <span className="profile-pricing-card__type">{label}</span>
+      <span className="profile-pricing-card__titles">
+        <span className="profile-pricing-card__type">{label}</span>
+        {kind ? (
+          <span className="profile-pricing-card__kind">{kind}</span>
+        ) : null}
+      </span>
       {price ? (
         <span className="profile-pricing-card__price">{price}</span>
       ) : null}
@@ -60,8 +71,12 @@ export function ProfilePricingOfferingCard({
       )}
       {hasDetails && open ? (
         <div id={detailsId} className="profile-pricing-card__details">
-          {included ? (
-            <p className="profile-pricing-card__included">{included}</p>
+          {points.length > 0 ? (
+            <ul className="profile-pricing-card__included">
+              {points.map((point, index) => (
+                <li key={`${index}-${point}`}>{point}</li>
+              ))}
+            </ul>
           ) : null}
           {commitment ? (
             <p className="profile-pricing-card__commitment">{commitment}</p>

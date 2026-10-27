@@ -17,6 +17,7 @@ export interface ProfileEditSectionProps {
   saving?: boolean;
   incomplete?: boolean;
   highlighted?: boolean;
+  saveAttention?: boolean;
 }
 
 export function ProfileEditSection({
@@ -32,6 +33,7 @@ export function ProfileEditSection({
   saving = false,
   incomplete,
   highlighted = false,
+  saveAttention = false,
 }: ProfileEditSectionProps) {
   return (
     <section
@@ -98,14 +100,24 @@ export function ProfileEditSection({
           >
             Cancel
           </button>
-          <button
-            type="button"
-            className="dashboard-primary-btn profile-edit-section__save-btn"
-            disabled={saving}
-            onClick={onSave}
+          <div
+            className={cn(
+              "profile-edit-section__save-wrap",
+              saveAttention &&
+                !saving &&
+                "profile-edit-section__save-wrap--attention"
+            )}
           >
-            {saving ? "Saving…" : "Save"}
-          </button>
+            <span className="profile-edit-section__save-glow" aria-hidden />
+            <button
+              type="button"
+              className="dashboard-primary-btn profile-edit-section__save-btn"
+              disabled={saving}
+              onClick={onSave}
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+          </div>
         </footer>
       ) : null}
     </section>

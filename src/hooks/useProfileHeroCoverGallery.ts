@@ -8,13 +8,18 @@ const INTERACTION_PAUSE_MS = 9000;
 
 interface UseProfileHeroCoverGalleryOptions {
   imageCount: number;
+  /** While true, the timer does not advance (a video is playing). */
+  holdAutoplay?: boolean;
 }
 
 export function useProfileHeroCoverGallery({
   imageCount,
+  holdAutoplay = false,
 }: UseProfileHeroCoverGalleryOptions) {
   const [index, setIndex] = useState(0);
   const pauseUntilRef = useRef(0);
+  const holdAutoplayRef = useRef(holdAutoplay);
+  holdAutoplayRef.current = holdAutoplay;
   const count = Math.max(imageCount, 0);
   const canSlide = count > 1;
 
@@ -38,6 +43,7 @@ export function useProfileHeroCoverGallery({
 
     const timer = window.setInterval(() => {
       if (Date.now() < pauseUntilRef.current) return;
+      if (holdAutoplayRef.current) return;
       const scale = window.visualViewport?.scale ?? 1;
       if (scale > 1.05) return;
       setIndex((current) => (current + 1) % count);

@@ -2,6 +2,7 @@
 
 import { useId, useState, type ChangeEvent } from "react";
 import { ProfilePhotoCropper } from "@/components/media/ProfilePhotoCropper";
+import { usePhotoGridDrag } from "@/hooks/usePhotoGridDrag";
 import { prepareImageDataUrlForUpload } from "@/lib/media/crop-image";
 import {
   rejectUnsupportedPhonePhoto,
@@ -26,11 +27,13 @@ import {
 } from "@/lib/specialist-media-limits";
 import {
   parseVideoPosterMap,
+  pruneVideoPosterMap,
   resolveVideoPoster,
+  serializeVideoPosterMap,
 } from "@/lib/media/video-poster";
 import { formatClipSecondsLabel } from "@/lib/media/video-file";
 import { SPECIALIST_STORAGE_ACCEPT } from "@/lib/supabase/constants";
-import { LockIcon } from "@/components/ui/icons";
+import { CloseIcon, LockIcon, PlayIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { ProfilePhotoCropSettings } from "@/types/specialist-application";
 
@@ -38,6 +41,7 @@ interface SpecialistProfileMediaEditorProps {
   coverImageUrl: string;
   photoNotes: string;
   slideshowFramesJson: string;
+  headerMediaOrder?: string;
   videoNotes: string;
   videoPostersJson?: string;
   pinnedPhotos: string[];
@@ -49,13 +53,18 @@ interface SpecialistProfileMediaEditorProps {
     coverImageUrl?: string;
     photoNotes?: string;
     slideshowFramesJson?: string;
+    headerMediaOrder?: string;
     pinnedPhotos?: string[];
+    videoNotes?: string;
+    videoPostersJson?: string;
   }) => void;
 }
 
 interface CropQueueItem {
   dataUrl: string;
   replaceIndex?: number;
+  /** Existing slideshow photo this crop replaces. */
+  sourceUrl?: string;
   initialFrame?: ProfilePhotoCropSettings;
 }
 
@@ -66,11 +75,35 @@ interface CropQueueState {
   uploadedFrames: SlideshowFrameMap;
 }
 
+function buildSlideshowOrder(
+  stored: string,
+  photos: readonly string[],
+  videos: readonly string[]
+): string[] {
+  const allowed = new Set([...photos, ...videos]);
+  const order = parseMediaUrlList(stored).filter((url) => allowed.has(url));
+  const seen = new Set(order);
+  for (const url of photos) {
+    if (!seen.has(url)) {
+      order.push(url);
+      seen.add(url);
+    }
+  }
+  for (const url of videos) {
+    if (!seen.has(url)) {
+      order.push(url);
+      seen.add(url);
+    }
+  }
+  return order;
+}
+
 /** Header slideshow and pins — short labels, multi-photo selection, in-browser crop. */
 export function SpecialistProfileMediaEditor({
   coverImageUrl,
   photoNotes,
   slideshowFramesJson,
+  headerMediaOrder = "",
   videoNotes,
   videoPostersJson = "",
   pinnedPhotos,
@@ -83,6 +116,11 @@ export function SpecialistProfileMediaEditor({
   const limits = specialistMediaLimitsForPlan(isPremium, isProPlus);
   const headerImages = parseMediaUrlList(photoNotes);
   const headerVideos = parseMediaUrlList(videoNotes);
+  const slideshowUrls = buildSlideshowOrder(
+    headerMediaOrder,
+    headerImages,
+    headerVideos
+  );
   const slideshowFrames = parseSlideshowFrameMap(slideshowFramesJson);
   const pins = normalizePinnedPhotos(
     pinnedPhotos,
@@ -107,15 +145,29 @@ export function SpecialistProfileMediaEditor({
     );
   }
 
-  function setHeaderImages(next: string[], nextPins?: string[], nextFrames?: SlideshowFrameMap) {
+  function setHeaderImages(
+    next: string[],
+    nextPins?: string[],
+    nextFrames?: SlideshowFrameMap,
+    coverOverride?: string,
+    nextOrder?: string[]
+  ) {
     const trimmed = next.map((url) => url.trim()).filter(Boolean);
     const nextCover =
-      cover && trimmed.includes(cover) ? cover : trimmed[0] || "";
+      coverOverride && trimmed.includes(coverOverride)
+        ? coverOverride
+        : cover && trimmed.includes(cover)
+          ? cover
+          : trimmed[0] || "";
     const frameBase = nextFrames ?? slideshowFrames;
+    const order =
+      nextOrder ??
+      buildSlideshowOrder(headerMediaOrder, trimmed, headerVideos);
     setBrokenHeaderUrls((prev) => prev.filter((url) => trimmed.includes(url)));
     onChange({
       photoNotes: serializeMediaUrlList(trimmed),
       coverImageUrl: nextCover,
+      headerMediaOrder: serializeMediaUrlList(order),
       pinnedPhotos: normalizePinnedPhotos(
         nextPins ?? pins,
         pinAllowList(trimmed, headerVideos)
@@ -131,6 +183,9 @@ export function SpecialistProfileMediaEditor({
     onChange({
       photoNotes: serializeMediaUrlList(promoted),
       coverImageUrl: url.trim(),
+      headerMediaOrder: serializeMediaUrlList(
+        promoteMediaUrl(slideshowUrls, url)
+      ),
       pinnedPhotos: normalizePinnedPhotos(
         pins,
         pinAllowList(promoted, headerVideos)
@@ -225,6 +280,7 @@ export function SpecialistProfileMediaEditor({
         {
           dataUrl: url,
           replaceIndex: index,
+          sourceUrl: url,
           initialFrame: resolveSlideshowFrame(slideshowFrames, url),
         },
       ],
@@ -236,7 +292,8 @@ export function SpecialistProfileMediaEditor({
 
   async function handleFrameSave(
     imageData: string,
-    frame: ProfilePhotoCropSettings
+    frame: ProfilePhotoCropSettings,
+    reportProgress?: (percent: number) => void
   ) {
     if (!cropQueue) return;
     const currentItem = cropQueue.items[cropQueue.currentIndex];
@@ -247,21 +304,40 @@ export function SpecialistProfileMediaEditor({
       const uploadedUrl = await uploadSpecialistDashboardMedia(
         specialistId,
         imageData,
-        "gallery"
+        "gallery",
+        reportProgress
       );
 
       const frameKey = normalizeSlideshowImageKey(uploadedUrl);
       const nextFrames: SlideshowFrameMap = { ...slideshowFrames };
 
-      if (currentItem.replaceIndex !== undefined) {
-        const previousUrl = headerImages[currentItem.replaceIndex];
-        if (previousUrl) {
-          delete nextFrames[normalizeSlideshowImageKey(previousUrl)];
+      const previousUrl =
+        currentItem.sourceUrl ??
+        (currentItem.replaceIndex !== undefined
+          ? headerImages[currentItem.replaceIndex]
+          : undefined);
+      if (previousUrl) {
+        delete nextFrames[normalizeSlideshowImageKey(previousUrl)];
+        const index = headerImages.indexOf(previousUrl);
+        if (index < 0) {
+          setCropQueue(null);
+          return;
         }
         const next = [...headerImages];
-        next[currentItem.replaceIndex] = uploadedUrl;
+        next[index] = uploadedUrl;
         nextFrames[frameKey] = frame;
-        setHeaderImages(next, pins, nextFrames);
+        const nextPins = pins.map((item) =>
+          item === previousUrl ? uploadedUrl : item
+        );
+        setHeaderImages(
+          next,
+          nextPins,
+          nextFrames,
+          cover === previousUrl ? uploadedUrl : undefined,
+          slideshowUrls.map((item) =>
+            item === previousUrl ? uploadedUrl : item
+          )
+        );
         setCropQueue(null);
         return;
       }
@@ -298,155 +374,233 @@ export function SpecialistProfileMediaEditor({
       ? cropQueue.items[cropQueue.currentIndex]
       : null;
 
+  function reorderSlideshow(next: string[]) {
+    const photoSet = new Set(headerImages);
+    const videoSet = new Set(headerVideos);
+    const photos = next.filter((url) => photoSet.has(url));
+    const videos = next.filter((url) => videoSet.has(url));
+    onChange({
+      photoNotes: serializeMediaUrlList(photos),
+      videoNotes: serializeMediaUrlList(videos),
+      headerMediaOrder: serializeMediaUrlList(next),
+      pinnedPhotos: normalizePinnedPhotos(pins, pinAllowList(photos, videos)),
+    });
+  }
+
+  function reorderPins(next: string[]) {
+    onChange({
+      pinnedPhotos: normalizePinnedPhotos(
+        next,
+        pinAllowList(headerImages, headerVideos)
+      ),
+    });
+  }
+
+  const headerDrag = usePhotoGridDrag(
+    slideshowUrls,
+    slideshowUrls.length > 1,
+    reorderSlideshow,
+    (url) =>
+      headerVideos.includes(url)
+        ? resolveVideoPoster(videoPosters, url)?.posterUrl || url
+        : url
+  );
+  const pinDrag = usePhotoGridDrag(
+    pins,
+    pins.length > 1,
+    reorderPins,
+    (url) => resolveVideoPoster(videoPosters, url)?.posterUrl || url
+  );
+
+  function openPhoto(url: string) {
+    const index = headerImages.indexOf(url);
+    if (index < 0) return;
+    handleAdjustExistingPhoto(index);
+  }
+
+  function removeHeaderPhoto(url: string) {
+    setHeaderImages(
+      headerImages.filter((item) => item !== url),
+      pins.filter((item) => item !== url)
+    );
+  }
+
+  function removeHeaderVideo(url: string) {
+    const nextUrls = headerVideos.filter((item) => item !== url);
+    onChange({
+      videoNotes: serializeMediaUrlList(nextUrls),
+      videoPostersJson: serializeVideoPosterMap(
+        pruneVideoPosterMap(parseVideoPosterMap(videoPostersJson), nextUrls)
+      ),
+      headerMediaOrder: serializeMediaUrlList(
+        slideshowUrls.filter((item) => item !== url)
+      ),
+      pinnedPhotos: pins.filter((item) => item !== url),
+    });
+  }
+
+  function unpin(url: string) {
+    if (!isPremium) {
+      onUpgrade?.();
+      return;
+    }
+    onChange({ pinnedPhotos: pins.filter((item) => item !== url) });
+  }
+
+  const editingUrl = currentCropItem?.sourceUrl ?? "";
+  const editingIsCover = Boolean(editingUrl) && editingUrl === cover;
+  const editingIsPinned = Boolean(editingUrl) && pins.includes(editingUrl);
+
   return (
     <div className="specialist-media-editor">
-      <div className="specialist-media-editor__header-block">
-        <div className="specialist-media-editor__header-top">
-          <p className="login-field__label">Header slideshow</p>
-          <p className="specialist-media-editor__limit">
-            {livePhotoCount}/{limits.images}
+      <div className="specialist-media-editor__pins">
+        <div className="specialist-media-editor__label-row">
+          <p className="login-field__label">
+            Header slideshow · {livePhotoCount}/{limits.images}
             {!isPremium ? " · Free live" : ""}
             {extraPhotoCount > 0
-              ? ` · ${extraPhotoCount} saved, not on Marketplace`
+              ? ` · ${extraPhotoCount} saved`
               : ""}
           </p>
         </div>
-
-        {headerImages.length === 0 ? (
-          <p className="specialist-media-editor__hint">
-            No slideshow photos. Clients see your profile photo in the header.
-          </p>
-        ) : null}
-
-        <div className="specialist-media-editor__thumbs">
-          {headerImages.map((url, index) => {
-            const isCover = url === cover;
-            const isPinned = pins.includes(url);
-            const isBroken = brokenHeaderUrls.includes(url);
-            const notLive = !isPremium && index >= limits.images;
+        <p className="specialist-media-editor__hint">
+          {headerImages.length === 0 && headerVideos.length === 0
+            ? "No slideshow photos. Clients see your profile photo in the header."
+            : "Drag to reorder. Tap a photo to crop, set the cover, or pin."}
+        </p>
+        <div
+          ref={headerDrag.rowRef}
+          className="specialist-media-editor__pin-row"
+          aria-label="Header slideshow photos"
+        >
+          {slideshowUrls.map((url, index) => {
+            const isVideo = headerVideos.includes(url);
+            const isBroken = !isVideo && brokenHeaderUrls.includes(url);
+            const photoIndex = headerImages.indexOf(url);
+            const notLive =
+              !isVideo && !isPremium && photoIndex >= limits.images;
+            const poster = isVideo
+              ? resolveVideoPoster(videoPosters, url)?.posterUrl || url
+              : url;
             return (
               <div
-                key={`${url}-${index}`}
+                key={`${isVideo ? "video" : "photo"}:${url}`}
                 className={cn(
-                  "specialist-media-editor__thumb",
-                  isCover && "specialist-media-editor__thumb--cover",
-                  isPinned && "specialist-media-editor__thumb--pinned",
-                  isBroken && "specialist-media-editor__thumb--broken",
-                  notLive && "specialist-media-editor__thumb--not-live"
+                  "specialist-transforms-editor__tile",
+                  slideshowUrls.length > 1 &&
+                    "specialist-transforms-editor__tile--sortable",
+                  headerDrag.draggingUrl === url &&
+                    "specialist-transforms-editor__tile--dragging"
                 )}
+                data-result-index={index}
               >
                 {isBroken ? (
                   <label
                     htmlFor={inputId}
-                    className="smoac-control specialist-media-editor__thumb-empty"
+                    className="smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add"
                   >
                     <span aria-hidden>+</span>
                     <span>Replace</span>
                   </label>
                 ) : (
-                  <>
+                  <button
+                    type="button"
+                    className={cn(
+                      "smoac-control specialist-media-editor__pin-tile",
+                      isVideo && "specialist-media-editor__pin-tile--video"
+                    )}
+                    onPointerDown={(event) => headerDrag.onPointerDown(event, url)}
+                    onPointerMove={headerDrag.onPointerMove}
+                    onPointerUp={headerDrag.endDrag}
+                    onPointerCancel={headerDrag.endDrag}
+                    onContextMenu={(event) => event.preventDefault()}
+                    onDragStart={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (headerDrag.consumeSuppressedClick()) return;
+                      if (isVideo) return;
+                      openPhoto(url);
+                    }}
+                    aria-label={
+                      isVideo
+                        ? `Slideshow video ${index + 1}. Drag to reorder.`
+                        : `Edit slideshow photo ${index + 1}. Drag to reorder.`
+                    }
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={url}
+                      src={poster}
                       alt=""
-                      className="specialist-media-editor__thumb-img"
-                      onError={() => markHeaderBroken(url)}
+                      draggable={false}
+                      onError={() => {
+                        if (!isVideo) markHeaderBroken(url);
+                      }}
                     />
-                    {notLive ? (
-                      <button
-                        type="button"
-                        className="specialist-media-editor__not-live"
-                        onClick={() => onUpgrade?.()}
-                      >
-                        <LockIcon className="specialist-media-editor__not-live-lock" />
-                        Not live
-                      </button>
+                    {isVideo ? (
+                      <span className="specialist-media-editor__pin-play" aria-hidden>
+                        <span className="specialist-media-editor__pin-play-badge">
+                          <PlayIcon className="specialist-media-editor__pin-play-icon" />
+                        </span>
+                      </span>
                     ) : null}
-                    <div className="specialist-media-editor__thumb-actions">
-                      <button
-                        type="button"
-                        className="smoac-control specialist-media-editor__thumb-btn"
-                        onClick={() => handleAdjustExistingPhoto(index)}
-                        title="Adjust slideshow framing"
-                      >
-                        Adjust
-                      </button>
-                      <button
-                        type="button"
-                        className="smoac-control specialist-media-editor__thumb-btn"
-                        onClick={() => makeCover(url)}
-                        disabled={isCover}
-                      >
-                        {isCover ? "Cover" : "Set cover"}
-                      </button>
-                      <button
-                        type="button"
-                        className={cn(
-                          "smoac-control specialist-media-editor__thumb-btn",
-                          isPinned &&
-                            "specialist-media-editor__thumb-btn--pinned",
-                          !isPremium &&
-                            "specialist-media-editor__thumb-btn--locked"
-                        )}
-                        onClick={() => togglePin(url)}
-                        disabled={isPremium ? !isPinned && atPinLimit : false}
-                      >
-                        {isPinned ? "Pinned" : "Pin"}
-                        {!isPremium ? (
-                          <LockIcon className="specialist-media-editor__btn-lock" />
-                        ) : null}
-                      </button>
-                      <button
-                        type="button"
-                        className="smoac-control specialist-media-editor__thumb-btn specialist-media-editor__thumb-btn--danger"
-                        onClick={() =>
-                          setHeaderImages(
-                            headerImages.filter((_, i) => i !== index),
-                            pins.filter((item) => item !== url)
-                          )
-                        }
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </>
+                    {notLive ? (
+                      <span className="specialist-media-editor__pin-not-live">
+                        Not live
+                      </span>
+                    ) : null}
+                    <span className="specialist-media-editor__pin-index">
+                      {index + 1}
+                    </span>
+                  </button>
                 )}
+                <button
+                  type="button"
+                  className="smoac-control specialist-transforms-editor__remove"
+                  aria-label={
+                    isVideo
+                      ? `Remove slideshow video ${index + 1}`
+                      : `Remove slideshow photo ${index + 1}`
+                  }
+                  onClick={() =>
+                    isVideo ? removeHeaderVideo(url) : removeHeaderPhoto(url)
+                  }
+                >
+                  <CloseIcon className="specialist-transforms-editor__remove-icon" />
+                </button>
               </div>
             );
           })}
 
           {!atImageLimit ? (
             <label
-              htmlFor={inputId}
               className={cn(
-                "smoac-control specialist-media-editor__add",
-                busy && "specialist-media-editor__add--busy"
+                "smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add",
+                busy && "specialist-media-editor__pin-tile--busy"
               )}
             >
               <span aria-hidden>+</span>
-              <span>{busy ? "Uploading…" : "Add photos"}</span>
+              <span>{busy ? "Preparing…" : "Add"}</span>
+              <input
+                id={inputId}
+                type="file"
+                multiple
+                accept={`${SPECIALIST_STORAGE_ACCEPT.galleryImage},.jpg,.jpeg,.png,.webp`}
+                className="specialist-media-editor__pin-file"
+                onChange={(event) => void handleAddHeaderImages(event)}
+                disabled={busy}
+              />
             </label>
           ) : !isPremium ? (
             <button
               type="button"
-              className="smoac-control specialist-media-editor__add specialist-media-editor__add--locked"
+              className="smoac-control specialist-media-editor__pin-tile specialist-media-editor__pin-tile--add specialist-media-editor__pin-tile--locked"
               onClick={() => onUpgrade?.()}
+              aria-label="Unlock more slideshow photos with Pro"
             >
               <LockIcon className="specialist-media-editor__add-lock" />
-              <span>More photos</span>
+              <span>Add</span>
             </button>
           ) : null}
         </div>
-
-        <input
-          id={inputId}
-          type="file"
-          multiple
-          accept={`${SPECIALIST_STORAGE_ACCEPT.galleryImage},.jpg,.jpeg,.png,.webp`}
-          className="dashboard-upload-zone__input"
-          onChange={(event) => void handleAddHeaderImages(event)}
-          disabled={busy || atImageLimit}
-        />
       </div>
 
       <div
@@ -463,8 +617,16 @@ export function SpecialistProfileMediaEditor({
             <LockIcon className="specialist-media-editor__label-lock" />
           ) : null}
         </div>
+        <p className="specialist-media-editor__hint">
+          {!isPremium && pins.length > 0
+            ? "Saved from Pro. Clients cannot see pins until you restore Pro."
+            : pins.length === 0
+              ? "Pin up to 3 photos or videos under your bio."
+              : "Drag to reorder. Tap a photo to crop, set the cover, or pin."}
+        </p>
         {pins.length > 0 ? (
           <div
+            ref={pinDrag.rowRef}
             className="specialist-media-editor__pin-row"
             aria-label="Pinned photos and videos"
           >
@@ -473,36 +635,59 @@ export function SpecialistProfileMediaEditor({
               const isVideo = headerVideos.includes(url);
               const preview = videoPoster?.posterUrl || url;
               return (
-              <button
-                key={url}
-                type="button"
-                className="specialist-media-editor__pin-tile"
-                onClick={() => togglePin(url)}
-                aria-label={`Unpin ${isVideo ? "video" : "photo"} ${index + 1}`}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={preview} alt="" />
-                {isVideo ? (
-                  <span className="specialist-media-editor__clip-seconds">
-                    {formatClipSecondsLabel(videoPoster?.duration ?? 0)}
-                  </span>
-                ) : null}
-                <span className="specialist-media-editor__pin-index">
-                  {index + 1}
-                </span>
-              </button>
+                <div
+                  key={url}
+                  className={cn(
+                    "specialist-transforms-editor__tile",
+                    pins.length > 1 && "specialist-transforms-editor__tile--sortable",
+                    pinDrag.draggingUrl === url &&
+                      "specialist-transforms-editor__tile--dragging"
+                  )}
+                  data-result-index={index}
+                >
+                  <button
+                    type="button"
+                    className="smoac-control specialist-media-editor__pin-tile"
+                    onPointerDown={(event) => pinDrag.onPointerDown(event, url)}
+                    onPointerMove={pinDrag.onPointerMove}
+                    onPointerUp={pinDrag.endDrag}
+                    onPointerCancel={pinDrag.endDrag}
+                    onContextMenu={(event) => event.preventDefault()}
+                    onDragStart={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (pinDrag.consumeSuppressedClick()) return;
+                      if (isVideo) return;
+                      openPhoto(url);
+                    }}
+                    aria-label={
+                      isVideo
+                        ? `Pinned video ${index + 1}. Drag to reorder.`
+                        : `Edit pinned photo ${index + 1}. Drag to reorder.`
+                    }
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={preview} alt="" draggable={false} />
+                    {isVideo ? (
+                      <span className="specialist-media-editor__clip-seconds">
+                        {formatClipSecondsLabel(videoPoster?.duration ?? 0)}
+                      </span>
+                    ) : null}
+                    <span className="specialist-media-editor__pin-index">
+                      {index + 1}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="smoac-control specialist-transforms-editor__remove"
+                    aria-label={`Unpin ${isVideo ? "video" : "photo"} ${index + 1}`}
+                    onClick={() => unpin(url)}
+                  >
+                    <CloseIcon className="specialist-transforms-editor__remove-icon" />
+                  </button>
+                </div>
               );
             })}
           </div>
-        ) : (
-          <p className="specialist-media-editor__hint">
-            Pin up to 3 photos or videos under your bio.
-          </p>
-        )}
-        {!isPremium && pins.length > 0 ? (
-          <p className="specialist-media-editor__hint">
-            Saved from Pro. Clients cannot see pins until you restore Pro.
-          </p>
         ) : null}
         {!isPremium ? (
           <button
@@ -518,6 +703,9 @@ export function SpecialistProfileMediaEditor({
         ) : null}
       </div>
 
+      {headerDrag.ghost}
+      {pinDrag.ghost}
+
       {error ? (
         <p className="dashboard-upload-error" role="alert">
           {error}
@@ -528,15 +716,14 @@ export function SpecialistProfileMediaEditor({
         <ProfilePhotoCropper
           imageSrc={currentCropItem.dataUrl}
           aspect={4 / 5}
-          hideToolbarExtras
           cropShape="rect"
           initialCrop={{
             x: currentCropItem.initialFrame?.x ?? 0,
             y: currentCropItem.initialFrame?.y ?? 0,
           }}
           initialZoom={currentCropItem.initialFrame?.zoom ?? 1}
-          title="Frame Slideshow Photo"
-          lead="Drag and zoom to set how this photo appears in the header. The framed photo is what clients see."
+          title="Crop photo"
+          lead="Drag and zoom so this photo fits the header. Set the cover or pin it from here."
           stepBadge={
             cropQueue && cropQueue.items.length > 1
               ? `Photo ${cropQueue.currentIndex + 1} of ${cropQueue.items.length}`
@@ -548,11 +735,44 @@ export function SpecialistProfileMediaEditor({
               : "Save"
           }
           confirmingLabel="Saving…"
+          actions={
+            editingUrl ? (
+              <>
+                <button
+                  type="button"
+                  className={cn(
+                    "smoac-control profile-photo-cropper__photo-action",
+                    editingIsCover && "profile-photo-cropper__photo-action--on"
+                  )}
+                  onClick={() => makeCover(editingUrl)}
+                  disabled={editingIsCover}
+                  aria-pressed={editingIsCover}
+                >
+                  {editingIsCover ? "Cover photo" : "Set as cover photo"}
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "smoac-control profile-photo-cropper__photo-action",
+                    editingIsPinned && "profile-photo-cropper__photo-action--on"
+                  )}
+                  onClick={() => togglePin(editingUrl)}
+                  disabled={isPremium ? !editingIsPinned && atPinLimit : false}
+                  aria-pressed={editingIsPinned}
+                >
+                  {editingIsPinned ? "PINNED" : "PIN"}
+                  {!isPremium ? (
+                    <LockIcon className="specialist-media-editor__btn-lock" />
+                  ) : null}
+                </button>
+              </>
+            ) : null
+          }
           onCancel={() => {
             setCropQueue(null);
           }}
-          onSave={async (imageData, frame) => {
-            await handleFrameSave(imageData, frame);
+          onSave={async (imageData, frame, _area, _rotation, reportProgress) => {
+            await handleFrameSave(imageData, frame, reportProgress);
           }}
         />
       ) : null}
