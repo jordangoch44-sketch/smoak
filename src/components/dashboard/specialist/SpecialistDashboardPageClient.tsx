@@ -7,6 +7,7 @@ import {
   DashboardLoadingState,
   DashboardPageShell,
   BoostVisibilityModal,
+  ManageBillingModal,
   PremiumTrialEndedModal,
   SpecialistProfileWelcomeModal,
   SmoacProUpgradeModal,
@@ -60,7 +61,14 @@ import {
   membershipBadgeToneForSession,
   showProTrialLastChance,
 } from "@/lib/specialist-premium";
-import { membershipPlanLabel } from "@/lib/stripe/products";
+import {
+  readAppBillingLaunch,
+  withoutAppBillingLaunch,
+} from "@/lib/billing-app-handoff";
+import {
+  membershipPlanLabel,
+  type SmoacMembershipProduct,
+} from "@/lib/stripe/products";
 import { cn } from "@/lib/utils";
 import {
   shouldShowSpecialistProfileWelcome,
@@ -84,6 +92,8 @@ type PremiumDashboardTab = "overview" | "profile";
 /** Survives Strict Mode remounts; cleared on full reload so login can show it again. */
 const welcomeOpenedThisRuntime = new Set<string>();
 const welcomeDismissedThisRuntime = new Set<string>();
+/** Checkout opened from the app. Don't cover it with the welcome or tour. */
+let appBillingLaunchThisRuntime = false;
 
 const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
   { id: "overview", label: "Overview" },
@@ -160,7 +170,15 @@ export function SpecialistDashboardPageClient() {
   const [tourStep, setTourStep] = useState(0);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeSkipPick, setUpgradeSkipPick] = useState(false);
+  const [upgradeProduct, setUpgradeProduct] = useState<
+    SmoacMembershipProduct | undefined
+  >(undefined);
   const [boostOpen, setBoostOpen] = useState(false);
+  const [boostSeed, setBoostSeed] = useState<{
+    days: number;
+    dailyCents: number;
+  } | null>(null);
+  const [manageBillingOpen, setManageBillingOpen] = useState(false);
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false);
   const [focusSection, setFocusSection] = useState<string | null>(() => {
     return searchParams.get("focus") || searchParams.get("section");
@@ -202,13 +220,41 @@ export function SpecialistDashboardPageClient() {
   );
 
   useEffect(() => {
+    if (appBillingLaunchThisRuntime || readAppBillingLaunch(searchParams)) return;
     if (session?.premiumTrialJustEnded) {
       setTrialEndedOpen(true);
     }
-  }, [session?.premiumTrialJustEnded]);
+  }, [session?.premiumTrialJustEnded, searchParams]);
+
+  useEffect(() => {
+    if (!isReady || !isHydrated) return;
+    const launch = readAppBillingLaunch(searchParams);
+    if (!launch) return;
+    appBillingLaunchThisRuntime = true;
+    if (session?.userId) welcomeDismissedThisRuntime.add(session.userId);
+
+    if (launch.kind === "billing") {
+      setManageBillingOpen(true);
+    } else if (launch.kind === "upgrade") {
+      setUpgradeProduct(launch.product);
+      setUpgradeSkipPick(true);
+      setUpgradeOpen(true);
+    } else if (canShowSpecialistGrowthAds(dashboardMode)) {
+      setBoostSeed({ days: launch.days, dailyCents: launch.dailyCents });
+      setBoostOpen(true);
+    }
+
+    const next = withoutAppBillingLaunch(searchParams);
+    const qs = next.toString();
+    router.replace(
+      qs ? `${SPECIALIST_DASHBOARD_PATH}?${qs}` : SPECIALIST_DASHBOARD_PATH,
+      { scroll: false }
+    );
+  }, [isReady, isHydrated, searchParams, dashboardMode, session?.userId, router]);
 
   useEffect(() => {
     if (!isReady || !session || !isHydrated) return;
+    if (appBillingLaunchThisRuntime) return;
     if (trialEndedOpen) return;
     if (
       shouldOfferSpecialistTour({
@@ -267,6 +313,7 @@ export function SpecialistDashboardPageClient() {
 
   useEffect(() => {
     if (!isReady || !session || !isHydrated) return;
+    if (appBillingLaunchThisRuntime) return;
     if (trialEndedOpen) return;
     if (tourClosedRef.current) {
       if (!tourForce) tourClosedRef.current = false;
@@ -349,6 +396,7 @@ export function SpecialistDashboardPageClient() {
   ]);
 
   useEffect(() => {
+    if (readAppBillingLaunch(searchParams)) return;
     const promo = searchParams.get("promo");
     if (promo === "pro") {
       openUpgrade();
@@ -577,7 +625,11 @@ export function SpecialistDashboardPageClient() {
     });
   }
 
-  function openUpgrade(options?: { skipPick?: boolean }) {
+  function openUpgrade(options?: {
+    skipPick?: boolean;
+    product?: SmoacMembershipProduct;
+  }) {
+    setUpgradeProduct(options?.product);
     setUpgradeSkipPick(Boolean(options?.skipPick));
     setUpgradeOpen(true);
   }
@@ -585,6 +637,7 @@ export function SpecialistDashboardPageClient() {
   function closeUpgrade() {
     setUpgradeOpen(false);
     setUpgradeSkipPick(false);
+    setUpgradeProduct(undefined);
   }
 
   function openWelcomeMembership(action: "join" | "upgrade" | "boost") {
@@ -1078,11 +1131,20 @@ export function SpecialistDashboardPageClient() {
     <SmoacProUpgradeModal
       open={upgradeOpen}
       skipPick={upgradeSkipPick}
+      product={upgradeProduct}
       onClose={closeUpgrade}
     />
     <BoostVisibilityModal
       open={boostOpen}
-      onClose={() => setBoostOpen(false)}
+      resume={boostSeed}
+      onClose={() => {
+        setBoostOpen(false);
+        setBoostSeed(null);
+      }}
+    />
+    <ManageBillingModal
+      open={manageBillingOpen}
+      onClose={() => setManageBillingOpen(false)}
     />
     <DashboardSignOutConfirmModal
       open={signOutConfirmOpen}

@@ -485,6 +485,7 @@ function MembershipCheckoutPage({
                   priceLabel={checkout.priceLabel}
                   submitLabel={`Subscribe · ${checkout.priceLabel}`}
                   walletMode="subscribe"
+                  handoff={{ kind: "upgrade", product: checkout.product }}
                   foldCard
                   onFoldChange={onFoldChange}
                   onPaid={onPaid}

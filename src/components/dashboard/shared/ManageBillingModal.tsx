@@ -556,6 +556,7 @@ export function ManageBillingModal({
                 submitLabel="Save card"
                 walletMode="setup"
                 intentMode="setup"
+                handoff={{ kind: "billing" }}
                 onPaid={(result) => void saveCard(result?.paymentMethodId)}
                 onError={(message) => setError(message || null)}
               />
@@ -624,6 +625,7 @@ export function ManageBillingModal({
                 clientSecret={checkout.clientSecret}
                 productLabel={checkout.label}
                 priceLabel={checkout.priceLabel}
+                handoff={{ kind: "upgrade", product: checkout.product }}
                 onPaid={() => void afterPaid()}
                 onError={(message) => setError(message || null)}
               />

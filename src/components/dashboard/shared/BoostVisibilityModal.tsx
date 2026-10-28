@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
@@ -39,6 +39,8 @@ import { isLikelyVideoUrl } from "@/lib/media/video-file";
 interface BoostVisibilityModalProps {
   open: boolean;
   onClose: () => void;
+  /** App handoff: open checkout for the budget they already chose. */
+  resume?: { days: number; dailyCents: number } | null;
 }
 
 type CheckoutPayload = {
@@ -62,6 +64,7 @@ const STEP_TITLE: Record<Step, string> = {
 export function BoostVisibilityModal({
   open,
   onClose,
+  resume = null,
 }: BoostVisibilityModalProps) {
   const { session } = useAuthSession();
   const { trainerId, trainer, formDefaults, application } =
@@ -130,6 +133,11 @@ export function BoostVisibilityModal({
   );
   const stepIndex = STEPS.indexOf(step);
 
+  const resumeKey =
+    resume != null ? `${resume.days}:${resume.dailyCents}` : "";
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!open) return;
 
@@ -140,21 +148,72 @@ export function BoostVisibilityModal({
     setBusy(false);
     setShowViewsHint(false);
     setPayingWithCard(false);
-    setDays(BOOST_CAMPAIGN_DEFAULT_DAYS);
-    setDailyCents(BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
-    setStep("place");
+
+    const seeded = resumeKey.length > 0;
+    const [daysPart, dailyPart] = resumeKey.split(":");
+    const seededSummary = seeded
+      ? boostCampaignSummary({
+          product: BOOST_CAMPAIGN_ALL,
+          days: Number(daysPart),
+          dailyCents: Number(dailyPart),
+          proPlus: isProPlus,
+        })
+      : null;
+    setDays(seededSummary?.days ?? BOOST_CAMPAIGN_DEFAULT_DAYS);
+    setDailyCents(seededSummary?.dailyCents ?? BOOST_CAMPAIGN_DEFAULT_DAILY_CENTS);
+    setStep(seededSummary ? "checkout" : "place");
+
+    let cancelled = false;
+    if (seededSummary && !canBoost) {
+      setError("Your profile must be approved before you can boost visibility.");
+    }
+    if (seededSummary && canBoost) {
+      const nextDays = seededSummary.days;
+      const nextDaily = seededSummary.dailyCents;
+      setBusy(true);
+      void (async () => {
+        const result = await createBoostCampaignCheckout({
+          days: nextDays,
+          dailyCents: nextDaily,
+        });
+        if (cancelled) return;
+        if (!result.ok) {
+          if (result.handoff) {
+            setCheckout({
+              clientSecret: "",
+              label: boostCampaignLabel(BOOST_CAMPAIGN_ALL),
+              priceLabel: seededSummary.payLabel,
+              days: nextDays,
+            });
+            setBusy(false);
+            return;
+          }
+          setError(result.error);
+          setBusy(false);
+          return;
+        }
+        setCheckout({
+          clientSecret: result.checkout.clientSecret,
+          label: result.checkout.label,
+          priceLabel: result.checkout.priceLabel,
+          days: result.checkout.days,
+        });
+        setBusy(false);
+      })();
+    }
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onCloseRef.current();
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => {
+      cancelled = true;
       document.body.classList.remove(MODAL_OPEN_BODY_CLASS);
       document.documentElement.classList.remove(MODAL_OPEN_BODY_CLASS);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [open, onClose]);
+  }, [open, resumeKey, canBoost, isProPlus]);
 
   function goBack() {
     setError(null);
@@ -386,6 +445,33 @@ export function BoostVisibilityModal({
             </>
           ) : null}
 
+          {step === "checkout" && !checkout ? (
+            <>
+              <div className="boost-ig-hero boost-ig-hero--compact">
+                <h3 className="boost-ig-hero__title">
+                  {busy ? "Opening checkout…" : "Checkout"}
+                </h3>
+                <p className="boost-ig-hero__sub">
+                  {summary.payLabel} · {summary.durationLabel}
+                </p>
+              </div>
+              {error ? (
+                <p className="dashboard-modal__error" role="alert">
+                  {error}
+                </p>
+              ) : null}
+              {error ? (
+                <FastActivateButton
+                  className="boost-ig-next"
+                  onActivate={() => void startCheckout()}
+                  disabled={busy}
+                >
+                  Try again
+                </FastActivateButton>
+              ) : null}
+            </>
+          ) : null}
+
           {step === "checkout" && checkout ? (
             <>
               <div className="boost-ig-hero boost-ig-hero--compact">
@@ -423,6 +509,11 @@ export function BoostVisibilityModal({
                   priceLabel={checkout.priceLabel}
                   submitLabel={`Pay · ${checkout.priceLabel}`}
                   walletMode="pay"
+                  handoff={{
+                    kind: "boost",
+                    days: checkout.days,
+                    dailyCents: summary.dailyCents,
+                  }}
                   foldCard
                   onFoldChange={setPayingWithCard}
                   onPaid={() => setStep("paid")}

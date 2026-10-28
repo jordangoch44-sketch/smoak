@@ -56,6 +56,7 @@ Safe to re-run — reuses products matched by `metadata.smoac_product`.
 2. `supabase/migrations/20260725190000_specialist_premium_trial.sql`
 3. `supabase/migrations/20260731020000_specialist_billing_products.sql`
 4. `supabase/migrations/20260905180000_boost_campaigns.sql`
+5. `supabase/migrations/20261028120000_billing_app_handoffs.sql`
 
 ## 4. Webhook
 
@@ -71,6 +72,7 @@ Safe to re-run — reuses products matched by `metadata.smoac_product`.
 
 - **Pro / Pro Plus** → in-dashboard checkout (`POST /api/stripe/subscription-intent`) — Apple Pay, Google Pay, Link, or card
 - **Boost modal** → preview where you'll be seen → days + budget → wallets / card (`POST /api/stripe/boost-campaign-intent`)
+- **iPhone app** → checkout stays on smoac.com. The app opens Safari with a one-time code (`POST /api/billing/app-handoff`, redeemed at `GET /auth/app-handoff`) so the specialist is already signed in on that Pro, PRO+, or Boost. The code lasts 90 seconds and works once. Apply `20261028120000_billing_app_handoffs.sql` or the app falls back to asking them to sign in.
 - **Ad spend** → Subscription / account settings via `GET /api/stripe/billing-summary`
 - **Manage billing** → `POST /api/stripe/portal`
 - **Hosted Checkout** (`POST /api/stripe/checkout`) remains as a fallback API; the dashboard no longer redirects off-site

@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { BillingHandoffIntent } from "@/lib/billing-app-handoff";
 import {
   NATIVE_BILLING_NOTE,
+  NATIVE_BILLING_SIGNED_IN_NOTE,
   isNativeShell,
   openBillingOnWebsite,
 } from "@/lib/native-billing";
@@ -282,22 +284,39 @@ interface StripeEmbeddedCheckoutProps {
   walletMode?: "subscribe" | "pay" | "setup";
   intentMode?: "payment" | "setup";
   foldCard?: boolean;
+  /** App only. Safari opens already signed in on this checkout. */
+  handoff?: BillingHandoffIntent;
   onFoldChange?: (open: boolean) => void;
   onPaid: (result?: { paymentMethodId?: string }) => void;
   onError: (message: string) => void;
 }
 
-function NativeBillingHandoffPanel() {
+function NativeBillingHandoffPanel({
+  handoff,
+}: {
+  handoff?: BillingHandoffIntent;
+}) {
+  const handoffRef = useRef(handoff);
+  handoffRef.current = handoff;
+  const [note, setNote] = useState("Opening checkout on smoac.com…");
+
   useEffect(() => {
-    void openBillingOnWebsite();
+    let cancelled = false;
+    void openBillingOnWebsite(handoffRef.current).then((signedIn) => {
+      if (cancelled) return;
+      setNote(signedIn ? NATIVE_BILLING_SIGNED_IN_NOTE : NATIVE_BILLING_NOTE);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <div className="stripe-pay-handoff">
-      <p className="stripe-pay-handoff__copy">{NATIVE_BILLING_NOTE}</p>
+      <p className="stripe-pay-handoff__copy">{note}</p>
       <DashboardButton
         className="stripe-pay__submit"
-        onClick={() => void openBillingOnWebsite()}
+        onClick={() => void openBillingOnWebsite(handoffRef.current)}
       >
         Continue on smoac.com
       </DashboardButton>
@@ -307,7 +326,7 @@ function NativeBillingHandoffPanel() {
 
 export function StripeEmbeddedCheckout(props: StripeEmbeddedCheckoutProps) {
   if (isNativeShell()) {
-    return <NativeBillingHandoffPanel />;
+    return <NativeBillingHandoffPanel handoff={props.handoff} />;
   }
   return <StripeEmbeddedCheckoutLive {...props} />;
 }

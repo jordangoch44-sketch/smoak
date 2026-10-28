@@ -156,10 +156,13 @@ export function LoginPageClient() {
   }, [isReady, session, returnToSaved, submitting, submitPressed, roleMismatch, roleMismatchActive, searchParams]);
 
   useEffect(() => {
-    if (searchParams.get("error") !== "auth_callback") return;
+    const errorCode = searchParams.get("error");
+    if (errorCode !== "auth_callback" && errorCode !== "billing_handoff") return;
     setRoleMismatch(null);
     setError(
-      "That email link is invalid or has expired. Sign in with your password, or use Forgot password."
+      errorCode === "billing_handoff"
+        ? "That checkout link expired. Open Pro or Boost from the app again, or sign in here."
+        : "That email link is invalid or has expired. Sign in with your password, or use Forgot password."
     );
     setErrorVisible(true);
     setFieldsError(true);
