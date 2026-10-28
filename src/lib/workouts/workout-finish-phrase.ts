@@ -1,55 +1,10 @@
 /** Shown once after a workout is finished. A new workout gets a different line. */
 const FINISH_PHRASES = [
-  "Awesome",
-  "Amazing",
-  "Great job",
-  "Excellent",
-  "Nice",
-  "Well done",
-  "Crushed it",
-  "Nailed it",
-  "Strong work",
-  "Beautiful",
-  "Impressive",
-  "Outstanding",
-  "Fantastic",
-  "Brilliant",
+  "Great job!",
+  "Way to go!",
+  "Superstar",
+  "Excellent!",
   "Superb",
-  "Solid",
-  "Powerful",
-  "Dialed in",
-  "On fire",
-  "Huge",
-  "Smooth",
-  "Clean work",
-  "Locked in",
-  "Unreal",
-  "Elite",
-  "You did it",
-  "Sharp",
-  "Fierce",
-  "Stellar",
-  "Incredible",
-  "Wonderful",
-  "Way to go",
-  "Big win",
-  "So good",
-  "Flawless",
-  "Respect",
-  "Earned it",
-  "All in",
-  "Let's go",
-  "Strong finish",
-  "Pure effort",
-  "That'll do",
-  "Yes",
-  "Bold",
-  "Steady",
-  "Proud",
-  "Golden",
-  "Clinched it",
-  "That's it",
-  "Kept going",
 ] as const;
 
 const STORAGE_KEY = "smoac.workout-finish-phrase";
@@ -84,5 +39,5 @@ export function nextWorkoutFinishPhrase(): string {
   let index = Math.floor(Math.random() * count);
   if (count > 1 && index === last) index = (index + 1) % count;
   rememberPhrase(index);
-  return FINISH_PHRASES[index] ?? "Nice";
+  return FINISH_PHRASES[index] ?? "Great job!";
 }

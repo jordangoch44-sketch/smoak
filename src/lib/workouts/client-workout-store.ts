@@ -17,7 +17,11 @@ import {
   sanitizeWorkoutExercises,
   sanitizeWorkoutTitle,
   clampGoalDaysPerWeek,
+  externalClockMatches,
+  pauseFromExternalClock,
   workoutClockFields,
+  type ExternalWorkoutClock,
+  type WorkoutClock,
 } from "@/lib/workouts/client-workout";
 import {
   fetchClientWorkoutLog,
@@ -138,8 +142,18 @@ function mergeLogs(
     const localDay = local.days[dateKey];
     const day = days[dateKey];
     if (!localDay?.startedAt || localDay.endedAt || !day) continue;
-    const { endedAt: _remoteEnd, ...running } = day;
-    days[dateKey] = { ...running, startedAt: localDay.startedAt };
+    const {
+      endedAt: _remoteEnd,
+      pausedAt: _remotePause,
+      pausedMs: _remotePausedMs,
+      ...running
+    } = day;
+    days[dateKey] = {
+      ...running,
+      startedAt: localDay.startedAt,
+      ...(localDay.pausedMs ? { pausedMs: localDay.pausedMs } : {}),
+      ...(localDay.pausedAt ? { pausedAt: localDay.pausedAt } : {}),
+    };
   }
   return withDeviceTimeZone(
     sanitizeClientWorkoutLog({
@@ -302,7 +316,7 @@ export function saveClientWorkoutDay(
   title = "",
   cardio?: ClientWorkoutCardio | null,
   rest = false,
-  clock?: { startedAt?: string | null; endedAt?: string | null } | null
+  clock?: WorkoutClock | null
 ): boolean {
   const nextExercises = rest ? [] : sanitizeWorkoutExercises(exercises);
   const nextTitle = rest ? "" : sanitizeWorkoutTitle(title);
@@ -326,6 +340,27 @@ export function saveClientWorkoutDay(
     },
   });
   return true;
+}
+
+/** A pause or resume from the lock screen, matched to the workout that is open. */
+export function applyExternalWorkoutClock(
+  userId: string,
+  command: ExternalWorkoutClock
+): boolean {
+  const current = getClientWorkoutLog(userId);
+  const match = Object.entries(current.days).find(
+    ([, day]) =>
+      Boolean(day.startedAt) && !day.endedAt && externalClockMatches(day.startedAt ?? "", command.startedAt)
+  );
+  if (!match) return false;
+  const [dateKey, day] = match;
+  const pause = pauseFromExternalClock(command);
+  return saveClientWorkoutDay(userId, dateKey, day.exercises, day.title, day.cardio, false, {
+    startedAt: day.startedAt,
+    endedAt: null,
+    pausedAt: pause.pausedAt,
+    pausedMs: pause.pausedMs,
+  });
 }
 
 export function removeClientWorkoutDay(userId: string, dateKey: string): void {

@@ -5,7 +5,7 @@ import { useAuthSession } from "@/hooks/useAuthSession";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import { subscribeIosApp } from "@/lib/health/apple-health";
 import { getClientWorkoutLog } from "@/lib/workouts/client-workout-store";
-import { syncWorkoutLiveActivity } from "@/lib/workouts/workout-live-activity";
+import { syncWorkoutLiveActivity, adoptLockScreenClock, subscribeLockScreenClock } from "@/lib/workouts/workout-live-activity";
 
 /**
  * Keeps the lock screen in step with an in-progress workout from any page.
@@ -27,19 +27,34 @@ function WorkoutLiveSync({ userId }: { userId: string | null }) {
   }, [log]);
 
   useEffect(() => {
-    const reopen = () => {
+    let stopListening = () => {};
+    let cancelled = false;
+    const catchUp = () => {
       if (document.visibilityState === "hidden") return;
-      void syncWorkoutLiveActivity(getClientWorkoutLog(userId), { force: true });
+      void adoptLockScreenClock(userId).finally(() => {
+        void syncWorkoutLiveActivity(getClientWorkoutLog(userId), { force: true });
+      });
     };
-    document.addEventListener("visibilitychange", reopen);
-    window.addEventListener("pageshow", reopen);
+    void subscribeLockScreenClock(() => {
+      void adoptLockScreenClock(userId);
+    }).then((unsubscribe) => {
+      if (cancelled) unsubscribe();
+      else stopListening = unsubscribe;
+    });
+    catchUp();
+    document.addEventListener("visibilitychange", catchUp);
+    window.addEventListener("pageshow", catchUp);
     const stopWatchingShell = subscribeIosApp(() => {
-      void syncWorkoutLiveActivity(getClientWorkoutLog(userId));
+      void adoptLockScreenClock(userId).finally(() => {
+        void syncWorkoutLiveActivity(getClientWorkoutLog(userId));
+      });
     });
     return () => {
+      cancelled = true;
+      stopListening();
       stopWatchingShell();
-      document.removeEventListener("visibilitychange", reopen);
-      window.removeEventListener("pageshow", reopen);
+      document.removeEventListener("visibilitychange", catchUp);
+      window.removeEventListener("pageshow", catchUp);
     };
   }, [userId]);
 

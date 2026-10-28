@@ -10,14 +10,43 @@ import WorkoutLiveAttributes
 
 private let liveLog = Logger(subsystem: "com.smoac.app", category: "WorkoutLiveActivity")
 
+private enum WorkoutLiveClockRelay {
+    static weak var plugin: WorkoutLiveActivityPlugin?
+}
+
+private func handleWorkoutClockNote(
+    _ center: CFNotificationCenter?,
+    _ observer: UnsafeMutableRawPointer?,
+    _ name: CFNotificationName?,
+    _ object: UnsafeRawPointer?,
+    _ userInfo: CFDictionary?
+) {
+    DispatchQueue.main.async {
+        WorkoutLiveClockRelay.plugin?.notifyListeners("clock", data: [:])
+    }
+}
+
 @objc(WorkoutLiveActivityPlugin)
 public class WorkoutLiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "WorkoutLiveActivityPlugin"
     public let jsName = "WorkoutLiveActivity"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "start", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "end", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "takeClockCommand", returnType: CAPPluginReturnPromise)
     ]
+
+    @objc override public func load() {
+        WorkoutLiveClockRelay.plugin = self
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            nil,
+            handleWorkoutClockNote,
+            WorkoutLiveFiles.clockNotification as CFString,
+            nil,
+            .deliverImmediately
+        )
+    }
 
     @objc func start(_ call: CAPPluginCall) {
         let exerciseName = (call.getString("exerciseName") ?? "Workout")
@@ -35,6 +64,11 @@ public class WorkoutLiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
         let progress = min(max(call.getDouble("progress") ?? 0, 0), 1)
         let startedMs = call.getDouble("startedAt") ?? Date().timeIntervalSince1970 * 1000
         let startedAt = Date(timeIntervalSince1970: startedMs / 1000)
+        let paused = call.getBool("paused") ?? false
+        let pausedSeconds = max(call.getDouble("pausedSeconds") ?? 0, 0)
+        let pausedSinceMs = call.getDouble("pausedSince") ?? 0
+        let pausedSince = pausedSinceMs > 0 ? pausedSinceMs / 1000 : 0
+        let elapsedSeconds = max(call.getInt("elapsedSeconds") ?? 0, 0)
         Task { @MainActor in
             let ok = await WorkoutLiveCenter.shared.sync(
                 exerciseName: exerciseName.isEmpty ? "Workout" : exerciseName,
@@ -47,7 +81,11 @@ public class WorkoutLiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
                 progress: progress,
                 imageUrl: imageUrl,
                 thumbSlug: thumbSlug,
-                startedAt: startedAt
+                startedAt: startedAt,
+                paused: paused,
+                pausedSeconds: pausedSeconds,
+                pausedSince: pausedSince,
+                elapsedSeconds: elapsedSeconds
             )
             call.resolve(["ok": ok])
         }
@@ -58,6 +96,23 @@ public class WorkoutLiveActivityPlugin: CAPPlugin, CAPBridgedPlugin {
             await WorkoutLiveCenter.shared.end()
             call.resolve(["ok": true])
         }
+    }
+
+    @objc func takeClockCommand(_ call: CAPPluginCall) {
+        guard let command = WorkoutLiveClock.take() else {
+            call.resolve([:])
+            return
+        }
+        var payload: [String: Any] = [
+            "startedAt": command.startedAt,
+            "paused": command.paused,
+            "pausedSeconds": command.pausedSeconds,
+            "elapsedSeconds": command.elapsedSeconds
+        ]
+        if let pausedSince = command.pausedSince {
+            payload["pausedSince"] = pausedSince
+        }
+        call.resolve(payload)
     }
 }
 
@@ -76,7 +131,11 @@ private final class WorkoutLiveCenter {
         progress: Double,
         imageUrl: String,
         thumbSlug: String,
-        startedAt: Date
+        startedAt: Date,
+        paused: Bool,
+        pausedSeconds: Double,
+        pausedSince: Double,
+        elapsedSeconds: Int
     ) async -> Bool {
         #if canImport(ActivityKit)
         if #available(iOS 16.2, *) {
@@ -91,7 +150,11 @@ private final class WorkoutLiveCenter {
                 progress: progress,
                 imageUrl: imageUrl,
                 thumbSlug: thumbSlug,
-                startedAt: startedAt
+                startedAt: startedAt,
+                paused: paused,
+                pausedSeconds: pausedSeconds,
+                pausedSince: pausedSince,
+                elapsedSeconds: elapsedSeconds
             )
         }
         #endif
@@ -126,7 +189,11 @@ private final class WorkoutLiveSession {
         progress: Double,
         imageUrl: String,
         thumbSlug: String,
-        startedAt: Date
+        startedAt: Date,
+        paused: Bool,
+        pausedSeconds: Double,
+        pausedSince: Double,
+        elapsedSeconds: Int
     ) async -> Bool {
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
             liveLog.error("Live Activities are off for SMOAC")
@@ -143,7 +210,11 @@ private final class WorkoutLiveSession {
             setsLabel: String(setsLabel.prefix(24)),
             progress: progress,
             hasThumb: false,
-            thumbSlug: slug
+            thumbSlug: slug,
+            pausedSeconds: pausedSeconds,
+            pausedSince: pausedSince,
+            paused: paused,
+            elapsedSeconds: elapsedSeconds
         )
         let started = await publish(state: state, startedAt: startedAt)
         guard started else { return false }

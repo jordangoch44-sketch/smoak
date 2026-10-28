@@ -1,8 +1,21 @@
 import ActivityKit
+import AppIntents
 import SwiftUI
 import UIKit
 import WidgetKit
 import WorkoutLiveAttributes
+
+@available(iOS 16.2, *)
+struct ToggleWorkoutClockIntent: AppIntent {
+    static var title: LocalizedStringResource = "Pause or resume workout"
+    static var openAppWhenRun = false
+    static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
+
+    func perform() async throws -> some IntentResult {
+        await WorkoutLiveClock.toggle()
+        return .result()
+    }
+}
 
 @main
 struct WorkoutLiveActivityBundle: WidgetBundle {
@@ -29,11 +42,14 @@ struct WorkoutLiveActivityWidget: Widget {
                     }
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    ElapsedClock(startedAt: context.attributes.startedAt)
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(Color(red: 0.88, green: 0.84, blue: 1))
-                        .frame(width: 100, alignment: .trailing)
-                        .minimumScaleFactor(0.7)
+                    VStack(alignment: .trailing, spacing: 6) {
+                        WorkoutClock(context: context)
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(Color(red: 0.88, green: 0.84, blue: 1))
+                            .frame(width: 100, alignment: .trailing)
+                            .minimumScaleFactor(0.7)
+                        PauseResumeMark(paused: context.state.paused)
+                    }
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     VStack(alignment: .leading, spacing: 6) {
@@ -55,7 +71,7 @@ struct WorkoutLiveActivityWidget: Widget {
                     .font(.caption2.weight(.semibold))
                     .lineLimit(1)
             } compactTrailing: {
-                ElapsedClock(startedAt: context.attributes.startedAt)
+                WorkoutClock(context: context)
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(Color(red: 0.88, green: 0.84, blue: 1))
                     .minimumScaleFactor(0.7)
@@ -63,6 +79,60 @@ struct WorkoutLiveActivityWidget: Widget {
                 Image(systemName: "figure.strengthtraining.traditional")
             }
         }
+    }
+}
+
+private struct WorkoutClock: View {
+    let context: ActivityViewContext<WorkoutActivityAttributes>
+
+    var body: some View {
+        if context.state.paused {
+            Text(Self.frozen(context.state.elapsedSeconds))
+                .monospacedDigit()
+                .multilineTextAlignment(.trailing)
+        } else {
+            ElapsedClock(
+                startedAt: context.attributes.startedAt.addingTimeInterval(max(context.state.pausedSeconds, 0))
+            )
+        }
+    }
+
+    /// Same hour field the system timer draws, so pausing does not resize the clock.
+    private static func frozen(_ seconds: Int) -> String {
+        let total = max(seconds, 0)
+        return String(format: "%d:%02d:%02d", total / 3600, (total % 3600) / 60, total % 60)
+    }
+}
+
+private struct PauseResumeButton: View {
+    let paused: Bool
+    private let accent = Color(red: 0.58, green: 0.36, blue: 0.98)
+
+    var body: some View {
+        Button(intent: ToggleWorkoutClockIntent()) {
+            Text(paused ? "Resume" : "Pause")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 7)
+                .background(accent, in: Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct PauseResumeMark: View {
+    let paused: Bool
+
+    var body: some View {
+        Button(intent: ToggleWorkoutClockIntent()) {
+            Image(systemName: paused ? "play.fill" : "pause.fill")
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(Color(red: 0.58, green: 0.36, blue: 0.98), in: Circle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -114,12 +184,12 @@ private struct WorkoutLockScreen: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 VStack(alignment: .trailing, spacing: 0) {
-                    ElapsedClock(startedAt: context.attributes.startedAt)
+                    WorkoutClock(context: context)
                         .font(.system(size: 22, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white)
                         .frame(width: 108, alignment: .trailing)
                         .minimumScaleFactor(0.75)
-                    Text("Total")
+                    Text(context.state.paused ? "Paused" : "Total")
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.white.opacity(0.45))
                 }
@@ -132,6 +202,7 @@ private struct WorkoutLockScreen: View {
                 statDivider
                 LiveStat(systemImage: "list.bullet", value: context.state.setsLabel, label: "TOTAL")
             }
+            PauseResumeButton(paused: context.state.paused)
         }
         // The lock screen masks this card with a large corner. A couple of
         // points of padding puts the photo and the clock into that curve.

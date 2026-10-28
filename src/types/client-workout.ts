@@ -58,6 +58,10 @@ export interface ClientWorkoutDay {
   startedAt?: string;
   /** Set when the client finishes, so the chip stops on the total. */
   endedAt?: string;
+  /** Set while the clock is paused. */
+  pausedAt?: string;
+  /** Milliseconds already spent paused, not counting the open pause. */
+  pausedMs?: number;
 }
 
 export interface ClientWorkoutLog {

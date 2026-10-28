@@ -1690,6 +1690,10 @@
   margin-top: 0.45rem;
 }
 
+.client-workouts-day__meta:empty {
+  display: none;
+}
+
 .client-workouts-day__duration {
   display: inline-flex;
   align-items: center;
@@ -1711,6 +1715,55 @@
 
 button.client-workouts-day__duration {
   cursor: pointer;
+  gap: 0.4rem;
+}
+
+.client-workouts-day__duration-action {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.client-workouts-day__duration--paused {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(237, 233, 254, 0.86);
+}
+
+.client-workouts-day__duration--locked {
+  border-color: #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+}
+
+.client-workouts-day__duration-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.client-workouts-day__duration-reset {
+  position: absolute;
+  z-index: 2;
+  top: -0.38rem;
+  left: -0.38rem;
+  display: grid;
+  place-items: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #e11d48;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px #0e0e14;
+}
+
+.client-workouts-day__duration-reset svg {
+  width: 0.62rem;
+  height: 0.62rem;
+  stroke-width: 2.6;
 }
 
 .client-workouts-day__title-chip {
@@ -2575,14 +2628,14 @@ button.exercise-block__name {
 .exercise-block__head,
 .exercise-block__row {
   display: grid;
-  grid-template-columns: 2.1rem minmax(3.35rem, 0.95fr) minmax(0, 1fr) minmax(0, 1fr) 2.1rem;
+  grid-template-columns: 2.1rem minmax(6.5rem, 1.25fr) minmax(0, 1fr) minmax(0, 1fr) 2.1rem;
   align-items: center;
   gap: 0.35rem;
 }
 
 .exercise-block--bodyweight .exercise-block__head,
 .exercise-block--bodyweight .exercise-block__row {
-  grid-template-columns: 2.1rem minmax(3.35rem, 0.95fr) minmax(0, 1fr) 2.1rem;
+  grid-template-columns: 2.1rem minmax(6.5rem, 1.25fr) minmax(0, 1fr) 2.1rem;
 }
 
 .exercise-block__head {
@@ -2704,6 +2757,93 @@ button.exercise-block__name {
   font-size: 0.875rem;
   font-weight: 650;
   color: rgba(255, 255, 255, 0.88);
+}
+
+.exercise-block__set--pr {
+  background: none;
+  color: #2a1c04;
+}
+
+.exercise-block__pr {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #f6c453;
+  filter: drop-shadow(0 0 6px rgba(246, 196, 83, 0.55));
+}
+
+.exercise-block__pr svg {
+  grid-area: 1 / 1;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.exercise-block__pr span {
+  grid-area: 1 / 1;
+  margin-top: 0.12rem;
+  font-size: 0.5rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: #2a1c04;
+}
+
+.workout-pr-flight {
+  position: fixed;
+  left: 50%;
+  top: 46%;
+  z-index: calc(var(--z-modal) + 8);
+  width: 9.5rem;
+  height: 9.5rem;
+  margin: 0;
+  pointer-events: none;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  animation: workout-pr-in 0.22s ease-out both;
+}
+
+html.client-workouts-keyboard .workout-pr-flight {
+  top: 42%;
+}
+
+@keyframes workout-pr-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.workout-pr-flight__star {
+  width: 9.5rem;
+  height: 9.5rem;
+  color: #f6c453;
+  transform-origin: center center;
+  filter: drop-shadow(0 0 22px rgba(246, 196, 83, 0.72));
+}
+
+.workout-pr-flight__star svg {
+  display: block;
+  width: 9.5rem;
+  height: 9.5rem;
+}
+
+.workout-pr-flight__label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.85rem);
+  margin: 0;
+  transform: translateX(-50%);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.72);
 }
 
 .exercise-block__input {

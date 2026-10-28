@@ -270,7 +270,54 @@ export function nextExerciseLoad(load: WorkoutLoad, speed = false): WorkoutLoad 
   return speed ? "speed" : "lb";
 }
 
-/** "135 lbs", "6.5 mph", or a dash when that set wasn't logged. */
+function loggedLoad(value: string | undefined): number | null {
+  if (!value) return null;
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed) || parsed === 0) return null;
+  return parsed;
+}
+
+/**
+ * A checked set whose weight beats every earlier log of this exercise.
+ * The first time a lift is recorded is not a record. Speed and bodyweight
+ * have no weight record.
+ */
+export function setIsWeightPersonalRecord(
+  prior: readonly ExerciseSetMemory[],
+  name: string,
+  logs: readonly Pick<ClientWorkoutSetLog, "weight" | "completed">[],
+  index: number,
+  load: WorkoutLoad | null
+): boolean {
+  if (load !== "lb" && load !== "kg") return false;
+  const log = logs[index];
+  if (!log?.completed) return false;
+  const weight = loggedLoad(log.weight);
+  const key = name.trim().toLowerCase();
+  if (weight === null || !key) return false;
+
+  let best: number | null = null;
+  const consider = (value: string | undefined) => {
+    const parsed = loggedLoad(value);
+    if (parsed === null) return;
+    best = best === null ? parsed : Math.max(best, parsed);
+  };
+
+  for (const item of prior) {
+    if (item.name.trim().toLowerCase() !== key) continue;
+    if (item.setLogs && item.setLogs.length > 0) {
+      for (const set of item.setLogs) consider(set.weight);
+      continue;
+    }
+  }
+  for (let other = 0; other < logs.length; other += 1) {
+    if (other === index || !logs[other]?.completed) continue;
+    consider(logs[other]?.weight);
+  }
+  return best !== null && weight > best;
+}
+
+/** "15lbs x 10", "6.5 mph", or a dash when that set wasn't logged. */
 export function formatPreviousSet(
   log: ClientWorkoutSetLog | undefined,
   load: WorkoutLoad | null = "lb",
@@ -284,7 +331,10 @@ export function formatPreviousSet(
     return "–";
   }
   if (weight && load !== "bodyweight") {
-    return load === "kg" ? `${weight} kg` : `${weight} lbs`;
+    const unit = load === "kg" ? "kg" : "lbs";
+    if (!reps) return `${weight}${unit}`;
+    const amount = effort === "distance" ? `${reps} mi` : reps;
+    return `${weight}${unit} x ${amount}`;
   }
   if (reps) return effort === "distance" ? `${reps} mi` : reps;
   return "–";
@@ -555,6 +605,133 @@ export function cloneWorkoutExercises(
 export interface WorkoutClock {
   startedAt?: string | null;
   endedAt?: string | null;
+  /** Set while the clock is paused. */
+  pausedAt?: string | null;
+  /** Milliseconds already spent paused, not counting the open pause. */
+  pausedMs?: number | null;
+}
+
+/** A pause or resume made on the lock screen, in unix milliseconds. */
+export interface ExternalWorkoutClock {
+  startedAt: number;
+  paused: boolean;
+  /** Closed pauses, in seconds. */
+  pausedSeconds: number;
+  /** When the open pause began. Null while the clock is running. */
+  pausedSince: number | null;
+}
+
+const MAX_WORKOUT_PAUSE_MS = 7 * 24 * 60 * 60 * 1000;
+/** Lock-screen start and the saved start can differ by a rounding millisecond. */
+export const WORKOUT_CLOCK_MATCH_MS = 2000;
+
+export function sanitizePausedMs(value: unknown): number | undefined {
+  const ms = typeof value === "number" ? value : NaN;
+  if (!Number.isFinite(ms) || ms <= 0) return undefined;
+  return Math.min(Math.round(ms), MAX_WORKOUT_PAUSE_MS);
+}
+
+/** Training time. Time spent paused is left out. */
+export function workoutElapsedMs(
+  clock: {
+    startedAt?: string | null;
+    endedAt?: string | null;
+    pausedAt?: string | null;
+    pausedMs?: number | null;
+  },
+  now = Date.now()
+): number {
+  const start = Date.parse(clock.startedAt ?? "");
+  if (!Number.isFinite(start)) return 0;
+  const pausedMs = sanitizePausedMs(clock.pausedMs) ?? 0;
+  const ended = Date.parse(clock.endedAt ?? "");
+  const pausedAt = Date.parse(clock.pausedAt ?? "");
+  const end = Number.isFinite(ended) ? ended : Number.isFinite(pausedAt) ? pausedAt : now;
+  return Math.max(0, end - start - pausedMs);
+}
+
+/** A workout length is kept only through three hours. Longer than that is not recorded. */
+export const MAX_RECORDED_WORKOUT_MS = 3 * 60 * 60 * 1000;
+
+/** Training time to show later. Null when the clock ran past three hours. */
+export function recordedWorkoutDuration(
+  clock: {
+    startedAt?: string | null;
+    endedAt?: string | null;
+    pausedAt?: string | null;
+    pausedMs?: number | null;
+  },
+  now = Date.now()
+): number | null {
+  if (!clock.startedAt) return null;
+  const elapsed = workoutElapsedMs(clock, now);
+  if (elapsed > MAX_RECORDED_WORKOUT_MS) return null;
+  return elapsed;
+}
+
+/** Pause a running clock, or continue a paused one. */
+export function toggleWorkoutClock(
+  clock: { startedAt: string; pausedAt?: string | null; pausedMs?: number | null },
+  now = Date.now()
+): { startedAt: string; pausedAt: string | null; pausedMs: number } {
+  const pausedMs = sanitizePausedMs(clock.pausedMs) ?? 0;
+  if (clock.pausedAt) {
+    const pausedFor = now - Date.parse(clock.pausedAt);
+    const extra = Number.isFinite(pausedFor) && pausedFor > 0 ? pausedFor : 0;
+    return {
+      startedAt: clock.startedAt,
+      pausedAt: null,
+      pausedMs: sanitizePausedMs(pausedMs + extra) ?? 0,
+    };
+  }
+  return {
+    startedAt: clock.startedAt,
+    pausedAt: new Date(now).toISOString(),
+    pausedMs,
+  };
+}
+
+/** Close an open pause, then stop the clock on the training time. */
+export function finishWorkoutClock(
+  clock: { startedAt: string; pausedAt?: string | null; pausedMs?: number | null },
+  now = Date.now()
+): { startedAt: string; pausedAt: null; pausedMs: number; endedAt: string } {
+  const closed = clock.pausedAt
+    ? toggleWorkoutClock(clock, now)
+    : {
+        startedAt: clock.startedAt,
+        pausedAt: null,
+        pausedMs: sanitizePausedMs(clock.pausedMs) ?? 0,
+      };
+  return {
+    startedAt: closed.startedAt,
+    pausedAt: null,
+    pausedMs: closed.pausedMs,
+    endedAt: new Date(now).toISOString(),
+  };
+}
+
+export function externalClockMatches(startedAt: string, commandStartedAt: number): boolean {
+  const start = Date.parse(startedAt);
+  return (
+    Number.isFinite(start) &&
+    Number.isFinite(commandStartedAt) &&
+    Math.abs(start - commandStartedAt) < WORKOUT_CLOCK_MATCH_MS
+  );
+}
+
+export function pauseFromExternalClock(command: ExternalWorkoutClock): {
+  pausedAt: string | null;
+  pausedMs: number;
+} {
+  const pausedAt =
+    command.paused && command.pausedSince != null && Number.isFinite(command.pausedSince)
+      ? (sanitizeWorkoutInstant(new Date(command.pausedSince).toISOString()) ?? null)
+      : null;
+  return {
+    pausedAt,
+    pausedMs: sanitizePausedMs(command.pausedSeconds * 1000) ?? 0,
+  };
 }
 
 export function sanitizeWorkoutInstant(value: unknown): string | undefined {
@@ -590,6 +767,8 @@ export interface WorkoutLivePosition {
 
 export interface ActiveWorkoutLive {
   startedAt: string;
+  pausedAt?: string;
+  pausedMs?: number;
   exercises: readonly ClientWorkoutExercise[];
 }
 
@@ -661,23 +840,46 @@ export function activeWorkoutForLiveActivity(log: ClientWorkoutLog): ActiveWorko
   let best: ActiveWorkoutLive | null = null;
   for (const day of Object.values(log.days)) {
     if (!day.startedAt || day.endedAt) continue;
+    if (recordedWorkoutDuration(day) === null) continue;
     if (!best || day.startedAt > best.startedAt) {
-      best = { startedAt: day.startedAt, exercises: day.exercises };
+      best = {
+        startedAt: day.startedAt,
+        exercises: day.exercises,
+        ...(day.pausedAt ? { pausedAt: day.pausedAt } : {}),
+        ...(day.pausedMs ? { pausedMs: day.pausedMs } : {}),
+      };
     }
   }
   return best;
 }
 
 export function workoutClockFields(
-  previous: { startedAt?: string; endedAt?: string } | undefined,
+  previous:
+    | { startedAt?: string; endedAt?: string; pausedAt?: string; pausedMs?: number }
+    | undefined,
   clock?: WorkoutClock | null
-): { startedAt?: string; endedAt?: string } {
+): { startedAt?: string; endedAt?: string; pausedAt?: string; pausedMs?: number } {
   if (clock === null) return {};
-  const startedAt = sanitizeWorkoutInstant(clock?.startedAt ?? previous?.startedAt);
+  // A clock object owns the start. Null clears it, which is how a paused timer restarts.
+  const startedAt = sanitizeWorkoutInstant(
+    clock === undefined ? previous?.startedAt : clock.startedAt
+  );
   const endedAt = sanitizeWorkoutInstant(clock?.endedAt ?? previous?.endedAt);
   if (!startedAt) return {};
-  if (!endedAt || Date.parse(endedAt) < Date.parse(startedAt)) return { startedAt };
-  return { startedAt, endedAt };
+  const endedMs = endedAt ? Date.parse(endedAt) : NaN;
+  const running = !Number.isFinite(endedMs) || endedMs < Date.parse(startedAt);
+  // A clock handed in owns the pause, so resume can clear a pause that was saved.
+  const pauseSource = clock === undefined ? previous : clock;
+  const pausedMs = sanitizePausedMs(pauseSource?.pausedMs);
+  const pausedAt = sanitizeWorkoutInstant(pauseSource?.pausedAt);
+  const open =
+    running && pausedAt && Date.parse(pausedAt) >= Date.parse(startedAt) ? pausedAt : undefined;
+  return {
+    startedAt,
+    ...(!running && endedAt ? { endedAt } : {}),
+    ...(pausedMs ? { pausedMs } : {}),
+    ...(open ? { pausedAt: open } : {}),
+  };
 }
 
 export function sanitizeWorkoutExercises(

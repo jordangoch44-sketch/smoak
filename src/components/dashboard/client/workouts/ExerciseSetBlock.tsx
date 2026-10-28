@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
 import { ExerciseHowToSheet } from "@/components/dashboard/client/workouts/ExerciseHowToSheet";
@@ -26,6 +27,7 @@ import {
   sanitizeExerciseNote,
   sanitizeWorkoutCount,
   sanitizeWorkoutWeight,
+  setIsWeightPersonalRecord,
   signAssistanceWeight,
   type ExerciseSetMemory,
 } from "@/lib/workouts/client-workout";
@@ -130,6 +132,9 @@ export function ExerciseSetBlock({
   onOpenMenu: () => void;
 }) {
   const setIds = useRef<string[]>([]);
+  const setAnchors = useRef<Array<HTMLSpanElement | null>>([]);
+  const knownPrs = useRef<Set<string>>(new Set());
+  const prReady = useRef(false);
   const logs = logsOf(exercise);
   const previous = previousSetsForExercise(prior, exercise.name);
   const effort = exerciseEffort(exercise);
@@ -139,6 +144,7 @@ export function ExerciseSetBlock({
   const loadIsWeight = load === "lb" || load === "kg" || load === "speed";
   const assisted = load === "lb" && exerciseAssistsWithMachine(exercise);
   const [howToOpen, setHowToOpen] = useState(false);
+  const [prFlight, setPrFlight] = useState<{ key: string; index: number } | null>(null);
   const named = exerciseLabel(exercise.name);
   const fromLibrary = Boolean(exercise.name.trim() && isKnownExercise(exercise.name));
 
@@ -184,6 +190,35 @@ export function ExerciseSetBlock({
   while (setIds.current.length < logs.length) {
     setIds.current.push(createWorkoutExerciseId());
   }
+
+  const prKeys = logs.map((log, index) =>
+    setIsWeightPersonalRecord(prior, exercise.name, logs, index, load)
+      ? `${setIds.current[index]}:${log.weight}`
+      : ""
+  );
+  const prSignature = prKeys.join("|");
+  const prKeysRef = useRef(prKeys);
+  prKeysRef.current = prKeys;
+
+  useEffect(() => {
+    const keys = prKeysRef.current;
+    if (!prReady.current) {
+      prReady.current = true;
+      for (const key of keys) {
+        if (key) knownPrs.current.add(key);
+      }
+      return;
+    }
+    for (const key of knownPrs.current) {
+      if (!keys.includes(key)) knownPrs.current.delete(key);
+    }
+    if (prFlight) return;
+    const index = keys.findIndex((key) => key && !knownPrs.current.has(key));
+    if (index < 0) return;
+    const key = keys[index];
+    knownPrs.current.add(key);
+    setPrFlight({ key, index });
+  }, [prSignature, prFlight]);
 
   return (
     <article
@@ -321,9 +356,25 @@ export function ExerciseSetBlock({
           <CheckIcon className="exercise-block__head-check" />
         </div>
         {logs.map((log, index) => {
+          const isPr = Boolean(prKeys[index]);
+          const flying = prFlight?.index === index;
           const row = (
             <div className={cn("exercise-block__row", log.completed && "exercise-block__row--done")}>
-              <span className="exercise-block__set">{index + 1}</span>
+              <span
+                ref={(node) => {
+                  setAnchors.current[index] = node;
+                }}
+                className={cn("exercise-block__set", isPr && !flying && "exercise-block__set--pr")}
+              >
+                {isPr && !flying ? (
+                  <SetPrStar />
+                ) : (
+                  index + 1
+                )}
+                {isPr ? (
+                  <span className="sr-only">{`Set ${index + 1}, personal record`}</span>
+                ) : null}
+              </span>
               <span className="exercise-block__previous">
                 {showLoad
                   ? formatPreviousSet(
@@ -476,6 +527,120 @@ export function ExerciseSetBlock({
           onClose={() => setHowToOpen(false)}
         />
       ) : null}
+      {prFlight ? (
+        <WorkoutPrFlight
+          getAnchor={() => setAnchors.current[prFlight.index] ?? null}
+          onDone={() => setPrFlight(null)}
+        />
+      ) : null}
     </article>
+  );
+}
+
+function PrStarGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 1.15 14.85 8.05 22.15 8.7 16.65 13.55 18.45 20.85 12 17.05 5.55 20.85 7.35 13.55 1.85 8.7 9.15 8.05Z"
+      />
+    </svg>
+  );
+}
+
+function SetPrStar() {
+  return (
+    <span className="exercise-block__pr" aria-hidden>
+      <PrStarGlyph />
+      <span>PR</span>
+    </span>
+  );
+}
+
+function WorkoutPrFlight({
+  getAnchor,
+  onDone,
+}: {
+  getAnchor: () => HTMLElement | null;
+  onDone: () => void;
+}) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const starRef = useRef<HTMLDivElement>(null);
+  const labelRef = useRef<HTMLParagraphElement>(null);
+  const onDoneRef = useRef(onDone);
+  const getAnchorRef = useRef(getAnchor);
+  onDoneRef.current = onDone;
+  getAnchorRef.current = getAnchor;
+
+  useEffect(() => {
+    const node = rootRef.current;
+    const star = starRef.current;
+    const label = labelRef.current;
+    if (!node || !star) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const holdMs = 1000;
+    const spinMs = reduce ? 0 : 500;
+    const shrinkMs = reduce ? 0 : 420;
+    let cancelled = false;
+    let motion: Animation | null = null;
+    const spin = reduce
+      ? null
+      : star.animate([{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }], {
+          duration: spinMs,
+          delay: holdMs,
+          easing: "cubic-bezier(0.55, 0.1, 0.25, 1)",
+          fill: "forwards",
+        });
+
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      const target = getAnchorRef.current();
+      if (!target?.isConnected || reduce) {
+        onDoneRef.current();
+        return;
+      }
+      const from = node.getBoundingClientRect();
+      const to = target.getBoundingClientRect();
+      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+      motion = node.animate(
+        [
+          { transform: "translate(-50%, -50%) scale(1)" },
+          {
+            transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.26)`,
+          },
+        ],
+        { duration: shrinkMs, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" }
+      );
+      label?.animate([{ opacity: 1 }, { opacity: 0 }], {
+        duration: Math.round(shrinkMs * 0.55),
+        easing: "ease-in",
+        fill: "forwards",
+      });
+      motion.onfinish = () => {
+        if (!cancelled) onDoneRef.current();
+      };
+    }, holdMs + spinMs);
+
+    return () => {
+      cancelled = true;
+      spin?.cancel();
+      if (motion) motion.onfinish = null;
+      motion?.cancel();
+      window.clearTimeout(timer);
+    };
+  }, []);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div ref={rootRef} className="workout-pr-flight" role="status" aria-label="New personal record">
+      <div ref={starRef} className="workout-pr-flight__star">
+        <PrStarGlyph />
+      </div>
+      <p ref={labelRef} className="workout-pr-flight__label" aria-hidden>
+        New PR
+      </p>
+    </div>,
+    document.body
   );
 }

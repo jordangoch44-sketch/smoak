@@ -4,9 +4,13 @@ import {
   activeWorkoutForLiveActivity,
   currentWorkoutPosition,
   emptyClientWorkoutLog,
+  recordedWorkoutDuration,
+  workoutElapsedMs,
   type ActiveWorkoutLive,
+  type ExternalWorkoutClock,
   type WorkoutLivePosition,
 } from "@/lib/workouts/client-workout";
+import { applyExternalWorkoutClock } from "@/lib/workouts/client-workout-store";
 import type { ClientWorkoutExercise, ClientWorkoutLog } from "@/types/client-workout";
 
 interface WorkoutLiveBridge {
@@ -22,8 +26,17 @@ interface WorkoutLiveBridge {
     imageUrl: string;
     thumbSlug: string;
     startedAt: number;
+    paused: boolean;
+    pausedSeconds: number;
+    pausedSince: number;
+    elapsedSeconds: number;
   }): Promise<{ ok: boolean }>;
   end(): Promise<{ ok: boolean }>;
+  takeClockCommand(): Promise<Record<string, unknown>>;
+  addListener(
+    eventName: "clock",
+    listenerFunc: () => void
+  ): Promise<{ remove: () => Promise<void> }>;
 }
 
 let plugin: WorkoutLiveBridge | null = null;
@@ -35,6 +48,8 @@ let generation = 0;
 let chipIsRunning = false;
 /** True only while that sheet wants the island up. Closing it must not leave 18:00:00 behind. */
 let presented = false;
+/** The open workout sheet adopts a lock-screen pause before the saved log does. */
+let clockApplier: ((command: ExternalWorkoutClock) => void) | null = null;
 
 /** The plugin proxy is thenable. Returning it from an async function makes Capacitor call `.then()`. */
 function ensurePlugin(): Promise<boolean> {
@@ -67,13 +82,61 @@ export function dismissWorkoutLiveActivity(): Promise<void> {
   return endLiveActivity(true);
 }
 
+export function registerWorkoutClockApplier(
+  apply: (command: ExternalWorkoutClock) => void
+): () => void {
+  clockApplier = apply;
+  return () => {
+    if (clockApplier === apply) clockApplier = null;
+  };
+}
+
+/**
+ * Pull a pause or resume made on the lock screen into the open sheet and the saved log.
+ * No command is the usual case. The website has no lock screen.
+ */
+export async function adoptLockScreenClock(userId: string | null): Promise<void> {
+  if (!userId || !isIosApp()) return;
+  const ready = await ensurePlugin();
+  if (!ready || !plugin) return;
+  const command = readClockCommand(await plugin.takeClockCommand());
+  if (!command) return;
+  clockApplier?.(command);
+  applyExternalWorkoutClock(userId, command);
+}
+
+/** Listen while the app is open so a Dynamic Island pause lands without a relaunch. */
+export async function subscribeLockScreenClock(onClock: () => void): Promise<() => void> {
+  if (!isIosApp()) return () => {};
+  const ready = await ensurePlugin();
+  if (!ready || !plugin) return () => {};
+  const handle = await plugin.addListener("clock", onClock);
+  return () => {
+    void handle.remove();
+  };
+}
+
+function readClockCommand(raw: Record<string, unknown> | null | undefined): ExternalWorkoutClock | null {
+  const startedAt = raw?.startedAt;
+  if (typeof startedAt !== "number" || !Number.isFinite(startedAt)) return null;
+  const pausedSince = raw?.pausedSince;
+  return {
+    startedAt,
+    paused: raw?.paused === true,
+    pausedSeconds: typeof raw?.pausedSeconds === "number" ? raw.pausedSeconds : 0,
+    pausedSince: typeof pausedSince === "number" ? pausedSince : null,
+  };
+}
+
 export function presentWorkoutOnLockScreen(input: {
   dateKey: string;
   startedAt: string | null;
   endedAt: string | null;
+  pausedAt?: string | null;
+  pausedMs?: number | null;
   exercises: readonly ClientWorkoutExercise[];
 }): Promise<void> {
-  if (!input.startedAt || input.endedAt) {
+  if (!input.startedAt || input.endedAt || recordedWorkoutDuration(input) === null) {
     return dismissWorkoutLiveActivity();
   }
   presented = true;
@@ -95,6 +158,8 @@ export function presentWorkoutOnLockScreen(input: {
     title: "",
     exercises,
     startedAt: input.startedAt,
+    ...(input.pausedAt ? { pausedAt: input.pausedAt } : {}),
+    ...(input.pausedMs ? { pausedMs: input.pausedMs } : {}),
   };
   return syncWorkoutLiveActivity(log);
 }
@@ -114,7 +179,15 @@ export async function syncWorkoutLiveActivity(
   const active = activeWorkoutForLiveActivity(log);
   const position = active ? currentWorkoutPosition(active.exercises) : null;
   const key = liveKey(active, position?.exerciseName ?? "", position?.setLabel ?? "");
-  if ((!active || !position) && chipIsRunning) return;
+  if ((!active || !position) && chipIsRunning) {
+    const pastLimit = Object.values(log.days).some(
+      (day) => Boolean(day.startedAt) && !day.endedAt && recordedWorkoutDuration(day) === null
+    );
+    if (!pastLimit) return;
+    presented = false;
+    chipIsRunning = false;
+    return endLiveActivity(true);
+  }
   if (key === inflightKey) return;
   if (!options?.force && key === lastKey) return;
   const ticket = ++generation;
@@ -137,6 +210,7 @@ export async function syncWorkoutLiveActivity(
       lastKey = "idle";
       return;
     }
+    const elapsedMs = workoutElapsedMs(active);
     const result = await plugin.start({
       exerciseName: position.exerciseName,
       setLabel: position.setLabel,
@@ -149,6 +223,10 @@ export async function syncWorkoutLiveActivity(
       imageUrl: absoluteExerciseThumb(position),
       thumbSlug: exerciseThumbSlug(position.exerciseName),
       startedAt,
+      paused: Boolean(active.pausedAt),
+      pausedSeconds: Math.max(0, (active.pausedMs ?? 0) / 1000),
+      pausedSince: active.pausedAt ? Date.parse(active.pausedAt) : 0,
+      elapsedSeconds: Math.max(0, Math.floor(elapsedMs / 1000)),
     });
     if (ticket !== generation) {
       if (!presented) await plugin.end();
@@ -192,7 +270,8 @@ function liveKey(
   setLabel: string
 ): string {
   if (!active) return "idle";
-  return `${active.startedAt}|${exerciseName}|${setLabel}|${positionKey(active)}`;
+  const pause = active.pausedAt ? `p:${active.pausedAt}:${active.pausedMs ?? 0}` : `r:${active.pausedMs ?? 0}`;
+  return `${active.startedAt}|${pause}|${exerciseName}|${setLabel}|${positionKey(active)}`;
 }
 
 function positionKey(active: ActiveWorkoutLive): string {

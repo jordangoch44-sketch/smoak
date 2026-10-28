@@ -209,6 +209,8 @@ export function coachDayForSheet(
     ...(day?.cardio ? { cardio: day.cardio } : {}),
     ...(day?.startedAt ? { startedAt: day.startedAt } : {}),
     ...(day?.endedAt ? { endedAt: day.endedAt } : {}),
+    ...(day?.pausedAt ? { pausedAt: day.pausedAt } : {}),
+    ...(day?.pausedMs ? { pausedMs: day.pausedMs } : {}),
   };
 }
 

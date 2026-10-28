@@ -1,15 +1,23 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  activeWorkoutForLiveActivity,
   cardioChipLabel,
   currentWorkoutPosition,
+  emptyClientWorkoutLog,
   formatCardioLine,
   exerciseEffort,
   exerciseLoad,
   formatExerciseRange,
+  externalClockMatches,
+  finishWorkoutClock,
   formatWorkoutDuration,
+  pauseFromExternalClock,
+  recordedWorkoutDuration,
   sanitizeWorkoutExercise,
+  toggleWorkoutClock,
   workoutClockFields,
+  workoutElapsedMs,
 } from "@/lib/workouts/client-workout";
 
 describe("workout duration clock", () => {
@@ -83,6 +91,132 @@ describe("workout duration clock", () => {
         undefined
       ),
       { startedAt: "2026-10-19T18:10:00.000Z" }
+    );
+  });
+
+  it("leaves paused time out of the duration", () => {
+    const startedAt = "2026-10-19T18:00:00.000Z";
+    const pausedAt = "2026-10-19T18:05:00.000Z";
+    assert.equal(
+      workoutElapsedMs(
+        { startedAt, pausedAt, pausedMs: 0 },
+        Date.parse("2026-10-19T18:20:00.000Z")
+      ),
+      5 * 60 * 1000
+    );
+    assert.equal(
+      workoutElapsedMs({ startedAt, pausedMs: 3 * 60 * 1000 }, Date.parse("2026-10-19T18:10:00.000Z")),
+      7 * 60 * 1000
+    );
+
+    const finished = finishWorkoutClock(
+      { startedAt, pausedAt, pausedMs: 0 },
+      Date.parse("2026-10-19T18:08:00.000Z")
+    );
+    assert.equal(finished.pausedAt, null);
+    assert.equal(finished.pausedMs, 3 * 60 * 1000);
+    assert.equal(workoutElapsedMs(finished), 5 * 60 * 1000);
+  });
+
+  it("pauses and resumes without counting the gap", () => {
+    const startedAt = "2026-10-19T18:00:00.000Z";
+    const paused = toggleWorkoutClock({ startedAt, pausedMs: 0 }, Date.parse("2026-10-19T18:04:00.000Z"));
+    assert.equal(paused.pausedAt, "2026-10-19T18:04:00.000Z");
+    const resumed = toggleWorkoutClock(paused, Date.parse("2026-10-19T18:07:00.000Z"));
+    assert.equal(resumed.pausedAt, null);
+    assert.equal(resumed.pausedMs, 3 * 60 * 1000);
+    assert.equal(
+      workoutElapsedMs(resumed, Date.parse("2026-10-19T18:09:00.000Z")),
+      6 * 60 * 1000
+    );
+  });
+
+  it("keeps a pause on the clock and clears it on resume", () => {
+    const startedAt = "2026-10-19T18:00:00.000Z";
+    assert.deepEqual(
+      workoutClockFields(undefined, { startedAt, pausedAt: "2026-10-19T18:05:00.000Z", pausedMs: 0 }),
+      { startedAt, pausedAt: "2026-10-19T18:05:00.000Z" }
+    );
+    assert.deepEqual(
+      workoutClockFields(
+        { startedAt, pausedAt: "2026-10-19T18:05:00.000Z" },
+        { startedAt, pausedAt: null, pausedMs: 120000 }
+      ),
+      { startedAt, pausedMs: 120000 }
+    );
+    assert.deepEqual(
+      workoutClockFields(undefined, {
+        startedAt,
+        endedAt: "2026-10-19T18:20:00.000Z",
+        pausedAt: "2026-10-19T18:05:00.000Z",
+        pausedMs: 120000,
+      }),
+      { startedAt, endedAt: "2026-10-19T18:20:00.000Z", pausedMs: 120000 }
+    );
+  });
+
+  it("reads a lock-screen pause back onto the same workout", () => {
+    const startedAt = Date.parse("2026-10-19T18:00:00.000Z");
+    assert.equal(externalClockMatches("2026-10-19T18:00:00.000Z", startedAt + 500), true);
+    assert.equal(externalClockMatches("2026-10-19T18:00:00.000Z", startedAt + 5000), false);
+    assert.deepEqual(
+      pauseFromExternalClock({
+        startedAt,
+        paused: true,
+        pausedSeconds: 30,
+        pausedSince: Date.parse("2026-10-19T18:06:00.000Z"),
+      }),
+      { pausedAt: "2026-10-19T18:06:00.000Z", pausedMs: 30000 }
+    );
+    assert.deepEqual(
+      pauseFromExternalClock({ startedAt, paused: false, pausedSeconds: 90, pausedSince: null }),
+      { pausedAt: null, pausedMs: 90000 }
+    );
+  });
+
+  it("keeps a finished length only through three hours", () => {
+    const startedAt = "2026-10-19T18:00:00.000Z";
+    const threeHours = Date.parse(startedAt) + 3 * 60 * 60 * 1000;
+    assert.equal(recordedWorkoutDuration({ startedAt, endedAt: new Date(threeHours).toISOString() }), threeHours - Date.parse(startedAt));
+    assert.equal(
+      recordedWorkoutDuration({
+        startedAt,
+        endedAt: new Date(threeHours + 1000).toISOString(),
+      }),
+      null
+    );
+    assert.equal(
+      recordedWorkoutDuration(
+        { startedAt, pausedMs: 2 * 60 * 60 * 1000 },
+        Date.parse(startedAt) + 4 * 60 * 60 * 1000
+      ),
+      2 * 60 * 60 * 1000
+    );
+    assert.equal(
+      recordedWorkoutDuration({ startedAt }, Date.parse(startedAt) + 3 * 60 * 60 * 1000 + 1),
+      null
+    );
+    const log = emptyClientWorkoutLog();
+    log.days["2026-10-19"] = {
+      date: "2026-10-19",
+      title: "",
+      exercises: [],
+      startedAt,
+    };
+    assert.equal(activeWorkoutForLiveActivity(log), null);
+  });
+
+  it("clears a paused clock when the timer restarts", () => {
+    assert.deepEqual(
+      workoutClockFields(
+        {
+          startedAt: "2026-10-19T18:00:00.000Z",
+          pausedAt: "2026-10-19T18:05:00.000Z",
+          pausedMs: 1000,
+        },
+        { startedAt: null, endedAt: null, pausedAt: null, pausedMs: 0 }
+      ),
+      {}
     );
   });
 });

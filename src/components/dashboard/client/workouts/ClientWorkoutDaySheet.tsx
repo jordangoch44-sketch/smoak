@@ -7,6 +7,7 @@ import {
   BatteryChargingIcon,
   CheckIcon,
   ChevronLeftIcon,
+  CloseIcon,
   DumbbellIcon,
   PlusIcon,
   RunningShoeIcon,
@@ -32,10 +33,17 @@ import {
   formatWorkoutDayHeading,
   formatWorkoutDuration,
   freshExerciseBlock,
+  finishWorkoutClock,
   parseWorkoutSetCount,
+  pauseFromExternalClock,
+  recordedWorkoutDuration,
+  MAX_RECORDED_WORKOUT_MS,
   sanitizeWorkoutCardio,
   autoCapWords,
   sanitizeWorkoutTitle,
+  toggleWorkoutClock,
+  externalClockMatches,
+  workoutElapsedMs,
   type ExerciseSetMemory,
   type WorkoutClock,
 } from "@/lib/workouts/client-workout";
@@ -43,6 +51,7 @@ import { customExerciseFields, type CustomExercise } from "@/lib/workouts/custom
 import {
   dismissWorkoutLiveActivity,
   presentWorkoutOnLockScreen,
+  registerWorkoutClockApplier,
 } from "@/lib/workouts/workout-live-activity";
 import {
   openPreparedWorkoutText,
@@ -59,25 +68,67 @@ import type {
 function WorkoutDurationChip({
   startedAt,
   endedAt,
+  pausedAt,
+  pausedMs,
+  onToggle,
+  onRestart,
 }: {
   startedAt: string;
   endedAt: string | null;
+  pausedAt: string | null;
+  pausedMs: number;
+  onToggle?: () => void;
+  onRestart?: () => void;
 }) {
-  const [now, setNow] = useState(() => Date.now());
+  const paused = Boolean(pausedAt) && !endedAt;
+  const locked = Boolean(endedAt);
+  const [, setTick] = useState(0);
+  const recorded = recordedWorkoutDuration({ startedAt, endedAt, pausedAt, pausedMs });
+  const withinCap = recorded !== null;
 
   useEffect(() => {
-    if (endedAt) return;
-    const tick = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(tick);
-  }, [endedAt, startedAt]);
+    if (locked || paused || !withinCap) return;
+    const timer = window.setInterval(() => setTick((tick) => tick + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [locked, paused, withinCap, startedAt]);
 
-  const start = Date.parse(startedAt);
-  const end = endedAt ? Date.parse(endedAt) : now;
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-  const label = formatWorkoutDuration(end - start);
+  if (recorded === null) return null;
+  const label = formatWorkoutDuration(recorded);
+  const chip =
+    locked || !onToggle ? (
+      <span
+        className={cn(
+          "client-workouts-day__duration",
+          locked && "client-workouts-day__duration--locked"
+        )}
+        aria-label={`Workout duration ${label}`}
+      >
+        {label}
+      </span>
+    ) : (
+      <FastActivateButton
+        className={cn(
+          "client-workouts-day__duration",
+          paused && "client-workouts-day__duration--paused"
+        )}
+        aria-label={paused ? `Resume workout, ${label}` : `Pause workout, ${label}`}
+        onActivate={onToggle}
+      >
+        <span>{label}</span>
+        <span className="client-workouts-day__duration-action">{paused ? "Resume" : "Pause"}</span>
+      </FastActivateButton>
+    );
+  if (!paused || locked || !onRestart) return chip;
   return (
-    <span className="client-workouts-day__duration" aria-label={`Workout duration ${label}`}>
-      {label}
+    <span className="client-workouts-day__duration-wrap">
+      <FastActivateButton
+        className="client-workouts-day__duration-reset"
+        aria-label="Restart workout timer"
+        onActivate={onRestart}
+      >
+        <CloseIcon />
+      </FastActivateButton>
+      {chip}
     </span>
   );
 }
@@ -320,6 +371,10 @@ export function ClientWorkoutDaySheet({
   const [endedAt, setEndedAt] = useState<string | null>(() =>
     send ? null : (workout?.endedAt ?? null)
   );
+  const [pausedAt, setPausedAt] = useState<string | null>(() =>
+    send ? null : (workout?.pausedAt ?? null)
+  );
+  const [pausedMs, setPausedMs] = useState(() => (send ? 0 : (workout?.pausedMs ?? 0)));
   const rootRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const checkKeyboardClosedRef = useRef<(() => void) | null>(null);
@@ -327,6 +382,8 @@ export function ClientWorkoutDaySheet({
   const exercisesRef = useRef(exercises);
   const startedAtRef = useRef(startedAt);
   const endedAtRef = useRef(endedAt);
+  const pausedAtRef = useRef(pausedAt);
+  const pausedMsRef = useRef(pausedMs);
   const actionsOpenRef = useRef(false);
   const afterCloseRef = useRef<(() => void) | null>(null);
   const onFinishRef = useRef(onFinish);
@@ -425,10 +482,16 @@ export function ClientWorkoutDaySheet({
     setError(null);
     const nextStarted = send ? null : (workout?.startedAt ?? null);
     const nextEnded = send ? null : (workout?.endedAt ?? null);
+    const nextPaused = send ? null : (workout?.pausedAt ?? null);
+    const nextPausedMs = send ? 0 : (workout?.pausedMs ?? 0);
     startedAtRef.current = nextStarted;
     endedAtRef.current = nextEnded;
+    pausedAtRef.current = nextPaused;
+    pausedMsRef.current = nextPausedMs;
     setStartedAt(nextStarted);
     setEndedAt(nextEnded);
+    setPausedAt(nextPaused);
+    setPausedMs(nextPausedMs);
     // Only reset when the selected day changes — not after each save.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateKey]);
@@ -642,6 +705,8 @@ export function ClientWorkoutDaySheet({
     return onSave(named, cleanedTitle, cleanedCardio, false, {
       startedAt: startedAtRef.current,
       endedAt: endedAtRef.current,
+      pausedAt: pausedAtRef.current,
+      pausedMs: pausedMsRef.current,
     });
   }
 
@@ -651,9 +716,11 @@ export function ClientWorkoutDaySheet({
       dateKey,
       startedAt,
       endedAt,
+      pausedAt,
+      pausedMs,
       exercises,
     });
-  }, [send, dateKey, startedAt, endedAt, exercises]);
+  }, [send, dateKey, startedAt, endedAt, pausedAt, pausedMs, exercises]);
 
   useEffect(() => {
     if (send) return;
@@ -664,9 +731,51 @@ export function ClientWorkoutDaySheet({
 
   useEffect(() => {
     if (send || !startedAt || endedAt) return;
-    if (workout?.startedAt === startedAt) return;
+    const elapsed = workoutElapsedMs({ startedAt, endedAt, pausedAt, pausedMs });
+    if (elapsed > MAX_RECORDED_WORKOUT_MS) {
+      void dismissWorkoutLiveActivity();
+      return;
+    }
+    if (pausedAt) return;
+    const timer = window.setTimeout(() => {
+      void dismissWorkoutLiveActivity();
+    }, MAX_RECORDED_WORKOUT_MS - elapsed + 250);
+    return () => window.clearTimeout(timer);
+  }, [send, startedAt, endedAt, pausedAt, pausedMs]);
+
+  useEffect(() => {
+    if (send || !startedAt || endedAt) return;
+    if (
+      (workout?.startedAt ?? null) === startedAt &&
+      (workout?.pausedAt ?? null) === pausedAt &&
+      (workout?.pausedMs ?? 0) === pausedMs
+    ) {
+      return;
+    }
     persist(exercisesRef.current);
-  }, [send, startedAt, endedAt, workout?.startedAt]);
+  }, [send, startedAt, endedAt, pausedAt, pausedMs, workout?.startedAt, workout?.pausedAt, workout?.pausedMs]);
+
+  useEffect(() => {
+    if (send) return;
+    return registerWorkoutClockApplier((command) => {
+      const started = startedAtRef.current;
+      if (!started || endedAtRef.current || !externalClockMatches(started, command.startedAt)) return;
+      if (
+        recordedWorkoutDuration({
+          startedAt: started,
+          pausedAt: pausedAtRef.current,
+          pausedMs: pausedMsRef.current,
+        }) === null
+      ) {
+        return;
+      }
+      const pause = pauseFromExternalClock(command);
+      pausedAtRef.current = pause.pausedAt;
+      pausedMsRef.current = pause.pausedMs;
+      setPausedAt(pause.pausedAt);
+      setPausedMs(pause.pausedMs);
+    });
+  }, [send]);
 
   function startClock() {
     if (send || startedAtRef.current || endedAtRef.current) return;
@@ -675,9 +784,59 @@ export function ClientWorkoutDaySheet({
     setStartedAt(started);
   }
 
+  function restartClock() {
+    if (send || !startedAtRef.current || !pausedAtRef.current || endedAtRef.current) return;
+    startedAtRef.current = null;
+    pausedAtRef.current = null;
+    pausedMsRef.current = 0;
+    setStartedAt(null);
+    setPausedAt(null);
+    setPausedMs(0);
+    persist(exercisesRef.current);
+  }
+
+  function toggleClock() {
+    const started = startedAtRef.current;
+    if (send || !started || endedAtRef.current) return;
+    const next = toggleWorkoutClock({
+      startedAt: started,
+      pausedAt: pausedAtRef.current,
+      pausedMs: pausedMsRef.current,
+    });
+    pausedAtRef.current = next.pausedAt;
+    pausedMsRef.current = next.pausedMs;
+    setPausedAt(next.pausedAt);
+    setPausedMs(next.pausedMs);
+  }
+
   function stopClock() {
-    if (!startedAtRef.current || endedAtRef.current) return;
-    endedAtRef.current = new Date().toISOString();
+    const started = startedAtRef.current;
+    if (!started || endedAtRef.current) return;
+    const next = finishWorkoutClock({
+      startedAt: started,
+      pausedAt: pausedAtRef.current,
+      pausedMs: pausedMsRef.current,
+    });
+    pausedAtRef.current = null;
+    pausedMsRef.current = next.pausedMs;
+    endedAtRef.current = next.endedAt;
+  }
+
+  function endClockForFinish(): boolean {
+    const previousEnded = endedAtRef.current;
+    const previousPausedAt = pausedAtRef.current;
+    const previousPausedMs = pausedMsRef.current;
+    stopClock();
+    if (!persist(exercisesRef.current)) {
+      endedAtRef.current = previousEnded;
+      pausedAtRef.current = previousPausedAt;
+      pausedMsRef.current = previousPausedMs;
+      return false;
+    }
+    setEndedAt(endedAtRef.current);
+    setPausedAt(pausedAtRef.current);
+    setPausedMs(pausedMsRef.current);
+    return true;
   }
 
   function applyTitle(next: string) {
@@ -777,14 +936,10 @@ export function ClientWorkoutDaySheet({
   function handleFinish() {
     if (!onFinish || finishing) return;
     const next = exercisesRef.current;
-    const previousEnded = endedAtRef.current;
-    stopClock();
-    if (!persist(next)) {
-      endedAtRef.current = previousEnded;
+    if (!endClockForFinish()) {
       setError("Couldn’t save the workout.");
       return;
     }
-    setEndedAt(endedAtRef.current);
     const named = next.filter((exercise) => exercise.name.trim());
     const finish = onFinishRef.current;
     setError(null);
@@ -804,14 +959,10 @@ export function ClientWorkoutDaySheet({
     if (finishing || send) return;
     const next = exercisesRef.current;
     if (!next.some((exercise) => exercise.name.trim())) return;
-    const previousEnded = endedAtRef.current;
-    stopClock();
-    if (!persist(next)) {
-      endedAtRef.current = previousEnded;
+    if (!endClockForFinish()) {
       setError("Couldn’t save the workout.");
       return;
     }
-    setEndedAt(endedAtRef.current);
     setError(null);
     setFinishing(true);
     const day = finishedDay();
@@ -828,14 +979,10 @@ export function ClientWorkoutDaySheet({
       setError("Add at least one exercise to finish.");
       return;
     }
-    const previousEnded = endedAtRef.current;
-    stopClock();
-    if (!persist(next)) {
-      endedAtRef.current = previousEnded;
+    if (!endClockForFinish()) {
       setError("Couldn’t save the workout.");
       return;
     }
-    setEndedAt(endedAtRef.current);
     setError(null);
     setFinishing(true);
     const day = finishedDay();
@@ -859,6 +1006,7 @@ export function ClientWorkoutDaySheet({
       ...(cleaned ? { cardio: cleaned } : {}),
       ...(startedAtRef.current ? { startedAt: startedAtRef.current } : {}),
       ...(endedAtRef.current ? { endedAt: endedAtRef.current } : {}),
+      ...(pausedMsRef.current > 0 ? { pausedMs: pausedMsRef.current } : {}),
     };
   }
 
@@ -1137,7 +1285,14 @@ export function ClientWorkoutDaySheet({
             {!send && (startedAt || step === "workout" || title.trim() || hasCardio) ? (
               <div className="client-workouts-day__meta">
                 {startedAt ? (
-                  <WorkoutDurationChip startedAt={startedAt} endedAt={endedAt} />
+                  <WorkoutDurationChip
+                    startedAt={startedAt}
+                    endedAt={endedAt}
+                    pausedAt={pausedAt}
+                    pausedMs={pausedMs}
+                    onToggle={endedAt ? undefined : toggleClock}
+                    onRestart={endedAt ? undefined : restartClock}
+                  />
                 ) : !endedAt && step === "workout" ? (
                   <FastActivateButton
                     className="client-workouts-day__duration"
