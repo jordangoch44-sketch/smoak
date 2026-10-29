@@ -14,6 +14,7 @@ import { ExploreSuggestedSpecialists } from "./ExploreSuggestedSpecialists";
 
 interface ExploreResultsProps {
   trainers: Trainer[];
+  pinFaceSeed?: number;
   suggestedTrainers?: Trainer[];
   areaCenter?: UserGeoPoint | null;
   /** Precise GPS only — “ME” map dot; null when ZIP-only / no device location */
@@ -107,6 +108,7 @@ function ExploreTrainerGroups({
 
 export const ExploreResults = memo(function ExploreResults({
   trainers,
+  pinFaceSeed = 0,
   suggestedTrainers = [],
   areaCenter = null,
   userLocationDot = null,
@@ -277,6 +279,7 @@ export const ExploreResults = memo(function ExploreResults({
       {viewMode === "map" ? (
         <ExploreMap
           trainers={trainers}
+          pinFaceSeed={pinFaceSeed}
           areaCenter={areaCenter}
           userLocationDot={userLocationDot}
           locked

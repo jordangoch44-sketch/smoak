@@ -138,12 +138,153 @@ export function getClusterHeaderInfo(cluster: {
   };
 }
 
+const STREET_SUFFIXES: Record<string, string> = {
+  street: "st",
+  st: "st",
+  avenue: "ave",
+  ave: "ave",
+  av: "ave",
+  boulevard: "blvd",
+  blvd: "blvd",
+  drive: "dr",
+  dr: "dr",
+  road: "rd",
+  rd: "rd",
+  lane: "ln",
+  ln: "ln",
+  court: "ct",
+  ct: "ct",
+  place: "pl",
+  pl: "pl",
+  way: "way",
+  wy: "way",
+  circle: "cir",
+  cir: "cir",
+  terrace: "ter",
+  ter: "ter",
+  highway: "hwy",
+  hwy: "hwy",
+  parkway: "pkwy",
+  pkwy: "pkwy",
+};
+
+const STATE_NAMES: Record<string, string> = {
+  alabama: "al",
+  alaska: "ak",
+  arizona: "az",
+  arkansas: "ar",
+  california: "ca",
+  colorado: "co",
+  connecticut: "ct",
+  delaware: "de",
+  florida: "fl",
+  georgia: "ga",
+  hawaii: "hi",
+  idaho: "id",
+  illinois: "il",
+  indiana: "in",
+  iowa: "ia",
+  kansas: "ks",
+  kentucky: "ky",
+  louisiana: "la",
+  maine: "me",
+  maryland: "md",
+  massachusetts: "ma",
+  michigan: "mi",
+  minnesota: "mn",
+  mississippi: "ms",
+  missouri: "mo",
+  montana: "mt",
+  nebraska: "ne",
+  nevada: "nv",
+  "new hampshire": "nh",
+  "new jersey": "nj",
+  "new mexico": "nm",
+  "new york": "ny",
+  "north carolina": "nc",
+  "north dakota": "nd",
+  ohio: "oh",
+  oklahoma: "ok",
+  oregon: "or",
+  pennsylvania: "pa",
+  "rhode island": "ri",
+  "south carolina": "sc",
+  "south dakota": "sd",
+  tennessee: "tn",
+  texas: "tx",
+  utah: "ut",
+  vermont: "vt",
+  virginia: "va",
+  washington: "wa",
+  "west virginia": "wv",
+  wisconsin: "wi",
+  wyoming: "wy",
+};
+
+const UNIT_LABELS = new Set(["suite", "ste", "unit", "apt", "apartment"]);
+
+/**
+ * One key for the same street address written two ways
+ * ("Mira Lee Way, California" and "Mira Lee Wy, CA").
+ * Returns null when there is no street number, so a city-only string
+ * cannot group unrelated specialists.
+ */
+function facilityAddressKey(raw: string | undefined): string | null {
+  const trimmed = raw?.trim();
+  if (!trimmed) return null;
+
+  let text = trimmed
+    .toLowerCase()
+    .replace(/[#,.]/g, " ")
+    .replace(/\bunited states\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  for (const [name, abbr] of Object.entries(STATE_NAMES)) {
+    if (name.includes(" ")) {
+      text = text.replaceAll(name, abbr);
+    }
+  }
+
+  const tokens = text.split(" ").filter(Boolean);
+  const out: string[] = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (!token || token === "usa" || token === "us") continue;
+    if (UNIT_LABELS.has(token)) {
+      const next = tokens[i + 1];
+      if (next && /^[a-z0-9-]+$/.test(next)) i += 1;
+      continue;
+    }
+    out.push(STREET_SUFFIXES[token] ?? STATE_NAMES[token] ?? token);
+  }
+
+  const hasStreetNumber = out.some((token) => /^\d/.test(token));
+  const hasStreetName = out.some(
+    (token) => /[a-z]/.test(token) && token.length > 2 && !Object.values(STATE_NAMES).includes(token)
+  );
+  if (!hasStreetNumber || !hasStreetName) return null;
+  return out.join(" ");
+}
+
+function sameFacilityAddress(
+  left: string | undefined,
+  right: string | undefined
+): boolean {
+  const a = facilityAddressKey(left);
+  const b = facilityAddressKey(right);
+  return Boolean(a && b && a === b);
+}
+
 /**
  * Group marketplace specialists into geographical clusters for map pins.
  * Multiple specialists with identical or near-identical coordinates (< 80m)
- * or matching work address/facility are grouped into a single cluster.
+ * or the same street address are grouped into a single cluster.
  */
-export function clusterTrainersForMap(trainers: Trainer[]): ExploreMapCluster[] {
+export function clusterTrainersForMap(
+  trainers: Trainer[],
+  faceSeed = 0
+): ExploreMapCluster[] {
   const mappable: Array<{ trainer: Trainer; lat: number; lng: number }> = [];
 
   for (const trainer of trainers) {
@@ -174,18 +315,10 @@ export function clusterTrainersForMap(trainers: Trainer[]): ExploreMapCluster[] 
         break;
       }
 
-      // 2. Same facility or work address if available
-      const clusterWorkAddress = cluster.trainers
-        .find((t) => t.workAddress?.trim())
-        ?.workAddress?.trim()
-        ?.toLowerCase();
-      const itemWorkAddress = item.trainer.workAddress?.trim()?.toLowerCase();
-
-      if (
-        clusterWorkAddress &&
-        itemWorkAddress &&
-        clusterWorkAddress === itemWorkAddress
-      ) {
+      // 2. Same building, even when the saved address wording differs
+      const clusterWorkAddress = cluster.trainers.find((t) => t.workAddress?.trim())
+        ?.workAddress;
+      if (sameFacilityAddress(clusterWorkAddress, item.trainer.workAddress)) {
         matchedCluster = cluster;
         break;
       }
@@ -203,28 +336,52 @@ export function clusterTrainersForMap(trainers: Trainer[]): ExploreMapCluster[] 
   }
 
   return clusters.map((c, index) => {
-    // Sort trainers within cluster by prominence
-    const sorted = [...c.trainers].sort(
-      (a, b) => getTrainerProminenceScore(b) - getTrainerProminenceScore(a)
-    );
-    const primaryTrainer = sorted[0];
-    const secondaryTrainer = sorted.length > 1 ? sorted[1] : undefined;
-    const { locationLabel, facilityName } = resolveClusterLocationLabel(sorted);
+    const ordered = orderClusterTrainers(c.trainers, faceSeed);
+    const primaryTrainer = ordered[0];
+    const secondaryTrainer = ordered.length > 1 ? ordered[1] : undefined;
+    const { locationLabel, facilityName } = resolveClusterLocationLabel(ordered);
     const id = `cluster-${index}-${c.latitude.toFixed(4)}-${c.longitude.toFixed(4)}`;
 
     return {
       id,
       latitude: c.latitude,
       longitude: c.longitude,
-      trainers: sorted,
+      trainers: ordered,
       primaryTrainer,
       secondaryTrainer,
-      count: sorted.length,
-      isMulti: sorted.length > 1,
+      count: ordered.length,
+      isMulti: ordered.length > 1,
       locationLabel,
       facilityName,
     };
   });
+}
+
+/**
+ * Front face is chosen from `faceSeed` (a new seed on each search).
+ * The rest stay in a stable prominence order so paging does not reshuffle.
+ */
+function orderClusterTrainers(trainers: Trainer[], faceSeed: number): Trainer[] {
+  if (trainers.length <= 1) return trainers;
+  const ids = trainers.map((trainer) => trainer.id).sort();
+  const pickedId = ids[hashToIndex(faceSeed, ids)];
+  const frontIndex = trainers.findIndex((trainer) => trainer.id === pickedId);
+  const safeFront = frontIndex >= 0 ? frontIndex : 0;
+  const front = trainers[safeFront];
+  const rest = trainers
+    .filter((_, index) => index !== safeFront)
+    .sort((a, b) => getTrainerProminenceScore(b) - getTrainerProminenceScore(a));
+  return front ? [front, ...rest] : trainers;
+}
+
+function hashToIndex(seed: number, ids: string[]): number {
+  const key = `${seed.toString(36)}:${ids.join("|")}`;
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) % ids.length;
 }
 
 /**
@@ -244,7 +401,8 @@ export function buildTrainerAvatarHtml(
 
 /** Leaflet / MapKit hit box for a single specialist pin (photo circle + caret). */
 export const EXPLORE_MAP_SINGLE_PIN_SIZE = { width: 36, height: 40 } as const;
-export const EXPLORE_MAP_CLUSTER_PIN_SIZE = { width: 88, height: 56 } as const;
+/** Front pin + shadow disc + count chip. Matches `.explore-map-pin--stack`. */
+export const EXPLORE_MAP_CLUSTER_PIN_SIZE = { width: 50, height: 48 } as const;
 
 /** Finger taps wander. Treat anything inside this radius as a pin tap. */
 export const PIN_TAP_SLOP_PX = 36;
@@ -255,7 +413,7 @@ export function clustersPinSignature(clusters: ExploreMapCluster[]): string {
   return clusters
     .map(
       (cluster) =>
-        `${cluster.id}:${cluster.count}:${cluster.latitude.toFixed(5)}:${cluster.longitude.toFixed(5)}`
+        `${cluster.id}:${cluster.primaryTrainer.id}:${cluster.count}:${cluster.latitude.toFixed(5)}:${cluster.longitude.toFixed(5)}`
     )
     .join("|");
 }
@@ -288,10 +446,15 @@ export function bindExploreMapPinSelect(
 }
 
 /**
- * Option B Map Pin HTML:
- * - Single trainer: Circular avatar + location caret
- * - Multi-trainer (2+): Overlapping avatar stack + count badge (+1, +2, etc.) + pulsing hub ring + count pill
+ * Map pin HTML:
+ * - Single trainer: circular avatar + location caret
+ * - Several at one place: that same avatar, a shadow pin behind, and +x
  */
+export interface ExploreMapCardSlide {
+  trainer: Trainer;
+  clusterId: string;
+}
+
 export function buildExploreMapPinHtml(
   cluster: ExploreMapCluster,
   isSelected = false
@@ -312,41 +475,18 @@ export function buildExploreMapPinHtml(
     </div>`;
   }
 
-  // Multi-trainer cluster (Option B)
-  const primaryAvatar = buildTrainerAvatarHtml(
-    cluster.primaryTrainer,
-    "explore-map-pin__avatar-img explore-map-pin__avatar-img--primary"
-  );
-  const secondaryAvatar = cluster.secondaryTrainer
-    ? buildTrainerAvatarHtml(
-        cluster.secondaryTrainer,
-        "explore-map-pin__avatar-img explore-map-pin__avatar-img--secondary"
-      )
-    : "";
-  const remainingCount = cluster.count - 1;
-  const badgeText = remainingCount > 0 ? `+${remainingCount}` : `${cluster.count}`;
+  const trainer = cluster.primaryTrainer;
+  const avatarHtml = buildTrainerAvatarHtml(trainer, "explore-map-pin__avatar-img");
+  const moreCount = cluster.count - 1;
 
-  return `<div class="explore-map-pin explore-map-pin--cluster ${selectedClass}" data-cluster-id="${escapeExploreMapHtml(cluster.id)}" data-count="${cluster.count}">
-    <span class="explore-map-pin__glow" aria-hidden="true"></span>
-    <div class="explore-map-pin__cluster-body">
-      <div class="explore-map-pin__avatar-stack">
-        <div class="explore-map-pin__avatar-ring explore-map-pin__avatar-ring--primary">
-          ${primaryAvatar}
-        </div>
-        ${
-          secondaryAvatar
-            ? `<div class="explore-map-pin__avatar-ring explore-map-pin__avatar-ring--secondary">
-                ${secondaryAvatar}
-              </div>`
-            : ""
-        }
-        <span class="explore-map-pin__badge" aria-label="${cluster.count} specialists at this location">${badgeText}</span>
+  return `<div class="explore-map-pin explore-map-pin--stack ${selectedClass}" data-cluster-id="${escapeExploreMapHtml(cluster.id)}" data-trainer-id="${escapeExploreMapHtml(trainer.id)}" data-count="${cluster.count}">
+    <div class="explore-map-pin__stack-body">
+      <span class="explore-map-pin__shadow" aria-hidden="true"></span>
+      <div class="explore-map-pin__avatar-ring">
+        ${avatarHtml}
       </div>
-      <div class="explore-map-pin__hub-pill">
-        <span class="explore-map-pin__hub-dot" aria-hidden="true"></span>
-        <span class="explore-map-pin__hub-label">${cluster.count} Specialists</span>
-        <span class="explore-map-pin__caret" aria-hidden="true"></span>
-      </div>
+      <span class="explore-map-pin__badge" aria-label="${moreCount} more specialists at this location">+${moreCount}</span>
+      <span class="explore-map-pin__caret" aria-hidden="true"></span>
     </div>
   </div>`;
 }

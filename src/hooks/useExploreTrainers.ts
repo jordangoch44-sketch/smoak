@@ -579,6 +579,21 @@ export function useExploreTrainers({
     [filters, searchQuery]
   );
 
+  const pinFaceSearchKey = mapSearchArea
+    ? `${filterKey}|map:${mapSearchArea.latitude.toFixed(3)},${mapSearchArea.longitude.toFixed(3)},${mapSearchArea.radiusMiles}`
+    : `${filterKey}|default`;
+  const pinFaceSeedRef = useRef<{ key: string; seed: number } | null>(null);
+  if (
+    !pinFaceSeedRef.current ||
+    pinFaceSeedRef.current.key !== pinFaceSearchKey
+  ) {
+    pinFaceSeedRef.current = {
+      key: pinFaceSearchKey,
+      seed: Math.random(),
+    };
+  }
+  const pinFaceSeed = pinFaceSeedRef.current.seed;
+
   useEffect(() => {
     setNearbyExpanded(false);
   }, [filterKey]);
@@ -806,6 +821,7 @@ export function useExploreTrainers({
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
+    pinFaceSeed,
     areaEmpty,
     nearbyExpanded,
     suggestedTrainers,

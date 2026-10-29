@@ -1,6 +1,6 @@
 "use client";
 
-import { isAppleMapsConfigured } from "@/lib/apple-maps";
+import { isAppleMapsConfigured, loadAppleMapKit } from "@/lib/apple-maps";
 import {
   ExploreMapLeaflet,
   type ExploreMapArea,
@@ -13,6 +13,11 @@ export {
   clusterTrainersForMap,
   type ExploreMapCluster,
 } from "@/lib/explore-map-clusters";
+
+/** Start MapKit while the Search page hydrates, so pins are not waiting on the script. */
+if (typeof window !== "undefined" && isAppleMapsConfigured()) {
+  void loadAppleMapKit();
+}
 
 /**
  * Explore map — Apple Maps (MapKit JS, dark) when

@@ -1460,59 +1460,47 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
   letter-spacing: -0.01em;
 }
 
-/* Multi-Trainer Facility / Hub Cluster (Option B) */
-.explore-map-pin--cluster {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
+/* Several specialists at one place: one face, a shadow pin behind, +x chip.
+   Box size matches EXPLORE_MAP_CLUSTER_PIN_SIZE (50×48). */
+.explore-map-pin--stack {
+  width: 50px;
+  height: 48px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   position: relative;
   transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.explore-map-pin__cluster-body {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
+.explore-map-pin__stack-body {
   position: relative;
-  z-index: 2;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 6px;
 }
 
-.explore-map-pin__avatar-stack {
-  display: inline-flex;
-  align-items: center;
-  position: relative;
-  padding-right: 2px;
-}
-
-.explore-map-pin__avatar-ring--primary {
-  width: 30px;
-  height: 30px;
+.explore-map-pin__shadow {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  left: -7px;
+  top: -6px;
   border-radius: 9999px;
-  border: 2px solid rgba(255, 255, 255, 0.98);
-  box-shadow:
-    0 3px 12px rgba(0, 0, 0, 0.55),
-    0 0 0 1px rgba(155, 92, 255, 0.4);
-  z-index: 2;
-  position: relative;
+  background: rgba(18, 16, 24, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  z-index: 0;
+  pointer-events: none;
 }
 
-.explore-map-pin__avatar-ring--secondary {
-  width: 26px;
-  height: 26px;
-  border-radius: 9999px;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  margin-left: -12px;
+.explore-map-pin--stack .explore-map-pin__avatar-ring {
   z-index: 1;
-  position: relative;
-  opacity: 0.95;
-  filter: brightness(0.92);
 }
 
 .explore-map-pin__badge {
   position: absolute;
-  top: -4px;
-  right: -8px;
+  top: -6px;
+  right: -12px;
   z-index: 4;
   background: linear-gradient(135deg, #a855f7, #7c3aed);
   color: #ffffff;
@@ -1526,45 +1514,7 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
     0 2px 8px rgba(0, 0, 0, 0.5),
     0 0 10px rgba(168, 85, 247, 0.7);
   letter-spacing: -0.02em;
-}
-
-.explore-map-pin__hub-pill {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: rgba(14, 12, 22, 0.92);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 9999px;
-  padding: 2px 7px 2px 5px;
-  box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  white-space: nowrap;
-}
-
-.explore-map-pin__hub-dot {
-  position: relative;
-  z-index: 1;
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: #10b981;
-  box-shadow: 0 0 6px #10b981;
-  animation: smoac-dot-blink 2.2s infinite ease-in-out;
-  flex-shrink: 0;
-}
-
-.explore-map-pin__hub-label {
-  position: relative;
-  z-index: 1;
-  font-size: 0.625rem;
-  font-weight: 700;
-  color: #f5f5f7;
-  letter-spacing: -0.01em;
-  line-height: 1;
+  pointer-events: none;
 }
 
 /* Downward caret indicator / pointer tail at bottom-center of pins */
@@ -1588,17 +1538,8 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
     box-shadow 160ms ease;
 }
 
-.explore-map-pin__hub-pill .explore-map-pin__caret {
-  width: 7px;
-  height: 7px;
-  bottom: -4px;
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  border-bottom-right-radius: 1px;
-  background: rgba(14, 12, 22, 0.93);
-}
-
-.explore-map-pin--single .explore-map-pin__caret {
+.explore-map-pin--single .explore-map-pin__caret,
+.explore-map-pin--stack .explore-map-pin__caret {
   bottom: -5px;
   background: rgba(14, 12, 22, 0.96);
   border-right: 1.5px solid rgba(255, 255, 255, 0.92);
@@ -1606,23 +1547,16 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
 }
 
 /* Hover refinement */
-.explore-map-pin:hover .explore-map-pin__hub-pill {
-  border-color: rgba(255, 255, 255, 0.32);
-}
-
-.explore-map-pin--single:hover .explore-map-pin__avatar-ring {
+.explore-map-pin--single:hover .explore-map-pin__avatar-ring,
+.explore-map-pin--stack:hover .explore-map-pin__avatar-ring {
   border-color: #ffffff;
   box-shadow:
     0 3px 12px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
-.explore-map-pin:hover .explore-map-pin__hub-pill .explore-map-pin__caret {
-  border-right-color: rgba(255, 255, 255, 0.32);
-  border-bottom-color: rgba(255, 255, 255, 0.32);
-}
-
-.explore-map-pin--single:hover .explore-map-pin__caret {
+.explore-map-pin--single:hover .explore-map-pin__caret,
+.explore-map-pin--stack:hover .explore-map-pin__caret {
   border-right-color: #ffffff;
   border-bottom-color: #ffffff;
 }
@@ -1644,58 +1578,6 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
   box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.45);
   pointer-events: none;
   z-index: 0;
-}
-
-.explore-map-pin__hub-pill:not(:has(.explore-map-pin__caret))::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: -4px;
-  width: 7px;
-  height: 7px;
-  transform: translateX(-50%) rotate(45deg);
-  background: rgba(14, 12, 22, 0.93);
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  border-bottom-right-radius: 1px;
-  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.45);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Pulsing luxury hub glow behind multi-trainer pins */
-.explore-map-pin__glow {
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  top: -8px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    rgba(168, 85, 247, 0.45) 0%,
-    rgba(124, 58, 237, 0.2) 45%,
-    rgba(124, 58, 237, 0) 70%
-  );
-  pointer-events: none;
-  animation: smoac-hub-pulse 3s infinite ease-in-out;
-  z-index: 0;
-}
-
-@keyframes smoac-hub-pulse {
-  0% {
-    transform: translateX(-50%) scale(0.9);
-    opacity: 0.5;
-  }
-  50% {
-    transform: translateX(-50%) scale(1.22);
-    opacity: 0.9;
-  }
-  100% {
-    transform: translateX(-50%) scale(0.9);
-    opacity: 0.5;
-  }
 }
 
 @keyframes smoac-dot-blink {
@@ -1721,18 +1603,8 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
   transition: none;
 }
 
-.explore-map-pin--selected .explore-map-pin__hub-pill {
-  border-color: rgba(196, 161, 255, 0.85);
-  background: rgba(26, 20, 38, 0.98);
-  box-shadow:
-    0 0 0 3px rgba(155, 92, 255, 0.45),
-    0 0 20px rgba(155, 92, 255, 0.55),
-    0 6px 18px rgba(0, 0, 0, 0.55);
-}
-
 .explore-map-pin--selected .explore-map-pin__caret,
-.explore-map-pin--selected .explore-map-pin__single-body::after,
-.explore-map-pin--selected .explore-map-pin__hub-pill::after {
+.explore-map-pin--selected .explore-map-pin__single-body::after {
   border-right-color: rgba(196, 161, 255, 0.85);
   border-bottom-color: rgba(196, 161, 255, 0.85);
   background: rgba(26, 20, 38, 0.98);
@@ -1741,7 +1613,6 @@ body.profile-sheet-open.profile-sheet-covered .explore-page--map-shell .leaflet-
     0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
-.explore-map-pin--selected .explore-map-pin__avatar-ring--primary,
 .explore-map-pin--selected .explore-map-pin__avatar-ring {
   border-color: #ffffff;
   box-shadow:
@@ -2198,9 +2069,51 @@ body.location-selector-open .explore-map__recenter--hero {
   bottom: 0.85rem;
 }
 
+@keyframes explore-bottom-card-enter-row {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.explore-bottom-card-dock--row,
+.explore-map--column .explore-bottom-card-dock--row {
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  border-radius: 0;
+  pointer-events: none;
+  animation-name: explore-bottom-card-enter-row;
+  transform: none;
+}
+
+@media (min-width: 768px) {
+  .explore-bottom-card-dock--row,
+  .explore-map--column .explore-bottom-card-dock--row {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: none;
+    transform: none;
+    animation-name: explore-bottom-card-enter-row;
+  }
+}
+
 .explore-bottom-card-dock--dragging {
   animation: none !important;
   transition: none !important;
+}
+
+.explore-bottom-card-dock--live {
+  animation: none !important;
 }
 
 /* Drag Handle */
@@ -2223,173 +2136,6 @@ body.location-selector-open .explore-map__recenter--hero {
 
 .explore-bottom-card__drag-handle-hit:hover .explore-bottom-card__drag-handle {
   background: rgba(255, 255, 255, 0.45);
-}
-
-/* Hub Header */
-.explore-bottom-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.2rem 0.95rem 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.explore-bottom-card__header-left {
-  min-width: 0;
-  flex: 1 1 auto;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.explore-bottom-card__hub-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 9999px;
-  background: rgba(16, 185, 129, 0.12);
-  border: 1px solid rgba(16, 185, 129, 0.28);
-}
-
-.explore-bottom-card__pulse-dot {
-  width: 6.5px;
-  height: 6.5px;
-  border-radius: 9999px;
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
-  animation: smoac-dot-blink 2s infinite ease-in-out;
-  flex-shrink: 0;
-}
-
-.explore-bottom-card__hub-label {
-  font-size: 0.6875rem;
-  font-weight: 750;
-  letter-spacing: -0.01em;
-  color: #6ee7b7;
-  line-height: 1.1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 14rem;
-}
-
-.explore-bottom-card__header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-
-.explore-bottom-card__counter-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem 0.45rem;
-  border-radius: 9999px;
-  background: rgba(168, 85, 247, 0.16);
-  border: 1px solid rgba(168, 85, 247, 0.35);
-  font-size: 0.625rem;
-  font-weight: 750;
-  color: #e9d5ff;
-  line-height: 1;
-}
-
-/* Pagination Dots */
-.explore-bottom-card__dots {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin: 0 0.2rem;
-}
-
-.explore-bottom-card__dot {
-  width: 6px;
-  height: 6px;
-  padding: 0;
-  border: none;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.22);
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.explore-bottom-card__dot--active {
-  width: 16px;
-  background: linear-gradient(90deg, #a855f7, #6366f1);
-  box-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
-}
-
-/* Nav Arrows */
-.explore-bottom-card__nav-arrows {
-  display: none;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-@media (min-width: 768px) {
-  .explore-bottom-card__nav-arrows {
-    display: flex;
-  }
-}
-
-.explore-bottom-card__nav-arrow {
-  width: 1.65rem;
-  height: 1.65rem;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.explore-bottom-card__nav-arrow:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: scale(1.06);
-}
-
-.explore-bottom-card__nav-arrow:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-/* Close Button */
-.explore-bottom-card__close-btn {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.explore-bottom-card__close-btn--floating {
-  position: absolute;
-  top: 0.65rem;
-  right: 0.65rem;
-  z-index: 20;
-}
-
-.explore-bottom-card__close-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.25);
-  transform: scale(1.05);
-}
-
-.explore-bottom-card__close-btn:active {
-  transform: scale(0.95);
 }
 
 /* Carousel */
@@ -2488,13 +2234,75 @@ body.location-selector-open .explore-map__recenter--hero {
   }
 }
 
-/* One specialist: the photo fills the left side and the card grows with it.
-   A multi-specialist hub keeps the compact card above. */
+/* Photo fills the left side and the card stays the same height for one
+   specialist or several at the same place. */
 .explore-bottom-card-dock--solo .explore-bottom-card-slide {
   position: static;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__drag-handle-hit {
+.explore-bottom-card-dock--row .explore-bottom-card-slide {
+  position: relative;
+  min-height: 12.5rem;
+}
+
+.explore-bottom-card-dock--row .explore-bottom-card__carousel {
+  position: relative;
+  display: block;
+  container-type: inline-size;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  pointer-events: auto;
+  /* Horizontal paging is driven from the fixed info area so photos and
+     specialties can keep their own gestures. */
+  touch-action: pan-y;
+  scroll-snap-type: none;
+}
+
+.explore-bottom-card__film {
+  display: contents;
+}
+
+.explore-bottom-card-dock--row .explore-bottom-card__film {
+  display: flex;
+  gap: 0.55rem;
+  width: max-content;
+  min-width: 100%;
+}
+
+.app-main .explore-bottom-card-dock--row a.explore-bottom-card {
+  touch-action: pan-y !important;
+}
+
+/* Side spacers let the first and last card sit in the center with a neighbor peeking. */
+.explore-bottom-card-dock--row .explore-bottom-card__film::before,
+.explore-bottom-card-dock--row .explore-bottom-card__film::after {
+  content: "";
+  flex: 0 0 calc((4.6rem - 0.55rem) / 2);
+}
+
+.explore-bottom-card-dock--row .explore-bottom-card-slide {
+  flex: 0 0 calc(100cqw - 4.6rem);
+  width: calc(100cqw - 4.6rem);
+  min-width: 0;
+  max-width: calc(100cqw - 4.6rem);
+  pointer-events: auto;
+  border-radius: 1.35rem;
+  overflow: hidden;
+  background: linear-gradient(
+    170deg,
+    rgba(22, 20, 32, 0.98) 0%,
+    rgba(14, 13, 22, 0.99) 55%,
+    rgba(10, 9, 16, 1) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 64px -8px rgba(0, 0, 0, 0.78),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 0 36px -4px rgba(168, 85, 247, 0.22);
+}
+
+.explore-bottom-card-dock--solo .explore-bottom-card__drag-handle-hit,
+.explore-bottom-card-dock--row .explore-bottom-card__drag-handle-hit {
   position: absolute;
   top: 0;
   left: 9.75rem;
@@ -2504,13 +2312,15 @@ body.location-selector-open .explore-map__recenter--hero {
   padding-top: 0.45rem;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card {
+.explore-bottom-card-dock--solo .explore-bottom-card,
+.explore-bottom-card-dock--row .explore-bottom-card {
   min-height: 12.5rem;
   padding: 1.15rem 0.15rem 1.15rem 0;
   gap: 0;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__photo-col {
+.explore-bottom-card-dock--solo .explore-bottom-card__photo-col,
+.explore-bottom-card-dock--row .explore-bottom-card__photo-col {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -2520,7 +2330,8 @@ body.location-selector-open .explore-map__recenter--hero {
   align-items: stretch;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__photo-wrap {
+.explore-bottom-card-dock--solo .explore-bottom-card__photo-wrap,
+.explore-bottom-card-dock--row .explore-bottom-card__photo-wrap {
   width: 100%;
   height: 100%;
   min-height: 12.5rem;
@@ -2529,31 +2340,51 @@ body.location-selector-open .explore-map__recenter--hero {
   box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.1);
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__info-col {
+.explore-bottom-card-dock--solo .explore-bottom-card__info-col,
+.explore-bottom-card-dock--row .explore-bottom-card__info-col {
   margin-left: 9.75rem;
   padding: 0.2rem 2.15rem 0.15rem 0.95rem;
   gap: 0.34rem;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__trainer-name {
+.explore-bottom-card-dock--solo .explore-bottom-card__trainer-name,
+.explore-bottom-card-dock--row .explore-bottom-card__trainer-name {
   font-size: 1.08rem;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__profession {
+.explore-bottom-card-dock--solo .explore-bottom-card__profession,
+.explore-bottom-card-dock--row .explore-bottom-card__profession {
   font-size: 0.84rem;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__meta-row {
+.explore-bottom-card-dock--solo .explore-bottom-card__meta-row,
+.explore-bottom-card-dock--row .explore-bottom-card__meta-row {
   font-size: 0.78rem;
 }
 
-.explore-bottom-card-dock--solo .explore-bottom-card__price-val {
+.explore-bottom-card-dock--solo .explore-bottom-card__price-val,
+.explore-bottom-card-dock--row .explore-bottom-card__price-val {
   font-size: 0.98rem;
 }
 
 .explore-bottom-card-dock--solo .explore-bottom-card__specialty-pill {
   font-size: 1rem;
   padding: 0.5rem 0.95rem;
+}
+
+.explore-bottom-card-dock--row .explore-bottom-card__specialties-row {
+  gap: 0.28rem;
+  margin-top: 0.2rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x pan-y;
+  overscroll-behavior-x: contain;
+}
+
+.explore-bottom-card-dock--row .explore-bottom-card__specialty-pill {
+  font-size: 0.75rem;
+  padding: 0.22rem 0.5rem;
+  line-height: 1.15;
 }
 
 .explore-bottom-card__photo {
@@ -2582,7 +2413,7 @@ body.location-selector-open .explore-map__recenter--hero {
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   pointer-events: auto;
 }
 
@@ -2692,6 +2523,19 @@ body.location-selector-open .explore-map__recenter--hero {
   gap: 0.18rem;
   position: relative;
   padding-right: 2.2rem;
+}
+
+.explore-bottom-card__swipe-zone {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: inherit;
+  min-width: 0;
+  flex: 1 1 auto;
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+  touch-action: pan-y;
 }
 
 .explore-bottom-card__save-slot {
@@ -2840,7 +2684,7 @@ body.location-selector-open .explore-map__recenter--hero {
   overscroll-behavior-x: contain;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  touch-action: pan-x;
+  touch-action: pan-x pan-y;
   pointer-events: auto;
   white-space: nowrap;
 }

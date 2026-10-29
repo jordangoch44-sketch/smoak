@@ -10,6 +10,8 @@ import {
   useSiteLocationGateOpen,
 } from "@/hooks/useProfileSheetOpen";
 import { useExploreMapLayoutEpoch } from "@/hooks/useExploreMapLayoutEpoch";
+import { useExploreMapSwipeRoster } from "@/hooks/useExploreMapSwipeRoster";
+import { findExploreMapSlide } from "@/lib/explore-map-visible";
 import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import { defaultMarketplaceCenter } from "@/lib/marketplace-city-centers";
@@ -22,11 +24,7 @@ import {
   warmExploreMapCluster,
 } from "@/lib/warm-trainer-profile-navigation";
 import { bindExploreMapPopupProfileNav } from "@/lib/explore-map-profile-nav";
-import {
-  cameraShiftToClearPin,
-  selectedPinClearBox,
-  syncExploreMapPinSelection,
-} from "@/lib/explore-map-pin-frame";
+import { syncExploreMapPinSelection } from "@/lib/explore-map-pin-frame";
 import { getExploreMapBasemap } from "@/lib/explore-map-tiles";
 import {
   clusterTrainersForMap,
@@ -66,6 +64,11 @@ export interface ExploreMapProps {
   onPendingSearchAreaChange?: (area: ExploreSearchArea | null) => void;
   /** Recenter camera + reset results to default 12-mile frame */
   onRecenterSearch?: () => void;
+  /**
+   * New value on each search. Picks which specialist is the front pin
+   * when several share a location. Stays put until the next search.
+   */
+  pinFaceSeed?: number;
   /** Display-only: no drag / zoom (default true) */
   locked?: boolean;
   /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header; `column` = desktop split rail */
@@ -103,38 +106,6 @@ function clustersFrameKey(clusters: ExploreMapCluster[]): string {
   const first = clusters[0];
   const last = clusters[clusters.length - 1];
   return `clusters:${clusters.length}:${first.latitude.toFixed(3)},${first.longitude.toFixed(3)}:${last.latitude.toFixed(3)},${last.longitude.toFixed(3)}`;
-}
-
-function revealLeafletPin(
-  map: import("leaflet").Map,
-  container: HTMLElement,
-  cluster: ExploreMapCluster,
-  pinEl: HTMLElement | null
-): void {
-  const box = selectedPinClearBox(container);
-  let pinX: number | null = null;
-  let pinY: number | null = null;
-  if (pinEl) {
-    const rect = pinEl.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      pinX = rect.left + rect.width / 2;
-      pinY = rect.top + rect.height / 2;
-    }
-  }
-  if (pinX === null || pinY === null) {
-    const point = map.latLngToContainerPoint([
-      cluster.latitude,
-      cluster.longitude,
-    ]);
-    const origin = container.getBoundingClientRect();
-    pinX = origin.left + point.x;
-    pinY = origin.top + point.y;
-  }
-  const shift = cameraShiftToClearPin(pinX, pinY, box);
-  if (!shift) return;
-  const center = map.latLngToContainerPoint(map.getCenter());
-  const next = map.containerPointToLatLng([center.x + shift.x, center.y + shift.y]);
-  map.panTo(next, { animate: false });
 }
 
 function safeInvalidateMapSize(map: import("leaflet").Map | null | undefined): boolean {
@@ -187,6 +158,7 @@ export function ExploreMapLeaflet({
   onMapSearchStart,
   searchLoading = false,
   onRecenterSearch,
+  pinFaceSeed = 0,
   locked = true,
   variant = "panel",
   showNotes = true,
@@ -211,8 +183,13 @@ export function ExploreMapLeaflet({
   /** Ignore moveend until this timestamp (programmatic camera moves) */
   const suppressUntilRef = useRef(0);
   const [mapEpoch, setMapEpoch] = useState(0);
-  const [selectedCluster, setSelectedCluster] = useState<ExploreMapCluster | null>(null);
+  const [selectedTrainerId, setSelectedTrainerId] = useState<string | null>(null);
+  const selectedTrainerIdRef = useRef<string | null>(null);
+  selectedTrainerIdRef.current = selectedTrainerId;
   const selectedClusterIdRef = useRef<string | null>(null);
+  const userMapGestureRef = useRef(false);
+  const rosterSettleTimerRef = useRef(0);
+  const rosterSettleUserRef = useRef(false);
   const pinsSignatureRef = useRef("");
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
@@ -220,53 +197,83 @@ export function ExploreMapLeaflet({
   const layoutEpoch = useExploreMapLayoutEpoch();
   const wasPausedRef = useRef(false);
 
-  const revealSelectedPin = useCallback((cluster: ExploreMapCluster) => {
-    if (selectedClusterIdRef.current !== cluster.id) return;
-    const map = mapRef.current;
-    const container = containerRef.current;
-    if (!map || !container) return;
-    const pin = syncExploreMapPinSelection(container, cluster.id);
-    revealLeafletPin(map, container, cluster, pin);
-  }, []);
-
   const clearSelection = useCallback(() => {
     selectedClusterIdRef.current = null;
-    setSelectedCluster(null);
+    setSelectedTrainerId(null);
     syncExploreMapPinSelection(containerRef.current, null);
   }, []);
 
   const selectCluster = useCallback(
-    (cluster: ExploreMapCluster) => {
-      const alreadySelected = selectedClusterIdRef.current === cluster.id;
-      suppressUntilRef.current = Date.now() + 1800;
-
-      if (!alreadySelected) {
-        selectedClusterIdRef.current = cluster.id;
-        setSelectedCluster(cluster);
+    (cluster: ExploreMapCluster, trainerId?: string) => {
+      const nextTrainerId = trainerId ?? cluster.primaryTrainer.id;
+      const clusterChanged = selectedClusterIdRef.current !== cluster.id;
+      if (selectedTrainerIdRef.current !== nextTrainerId) {
+        selectedTrainerIdRef.current = nextTrainerId;
+        setSelectedTrainerId(nextTrainerId);
+      }
+      selectedClusterIdRef.current = cluster.id;
+      if (clusterChanged) {
         warmExploreMapCluster(cluster, routerRef.current);
       }
-
       mapRef.current?.closePopup();
-      revealSelectedPin(cluster);
+      syncExploreMapPinSelection(containerRef.current, cluster.id);
     },
-    [revealSelectedPin]
+    []
+  );
+
+  const clusters = useMemo(() => {
+    return clusterTrainersForMap(trainers, pinFaceSeed);
+  }, [trainers, pinFaceSeed]);
+  const clustersRef = useRef(clusters);
+  clustersRef.current = clusters;
+
+  const readViewport = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return null;
+    const bounds = map.getBounds();
+    const center = map.getCenter();
+    return {
+      north: bounds.getNorth(),
+      south: bounds.getSouth(),
+      east: bounds.getEast(),
+      west: bounds.getWest(),
+      centerLatitude: center.lat,
+      centerLongitude: center.lng,
+    };
+  }, []);
+
+  const { slides: visibleSlides, noteUserMoveEnd, noteProgrammaticMoveEnd } =
+    useExploreMapSwipeRoster({
+      clusters,
+      readViewport,
+      suppressUntilRef,
+    });
+  const noteUserMoveEndRef = useRef(noteUserMoveEnd);
+  noteUserMoveEndRef.current = noteUserMoveEnd;
+  const noteProgrammaticMoveEndRef = useRef(noteProgrammaticMoveEnd);
+  noteProgrammaticMoveEndRef.current = noteProgrammaticMoveEnd;
+  const selectedSlide = useMemo(
+    () => findExploreMapSlide(clusters, selectedTrainerId),
+    [clusters, selectedTrainerId]
   );
 
   useEffect(() => {
-    if (!selectedCluster) return;
-    revealSelectedPin(selectedCluster);
-    const timer = window.setTimeout(
-      () => revealSelectedPin(selectedCluster),
-      240
-    );
-    return () => window.clearTimeout(timer);
-  }, [selectedCluster, revealSelectedPin, mapEpoch]);
-
-  const clusters = useMemo(() => {
-    return clusterTrainersForMap(trainers);
-  }, [trainers]);
-  const clustersRef = useRef(clusters);
-  clustersRef.current = clusters;
+    const trainerId = selectedTrainerIdRef.current;
+    if (!trainerId && !selectedClusterIdRef.current) return;
+    const home = trainerId
+      ? clusters.find((cluster) =>
+          cluster.trainers.some((trainer) => trainer.id === trainerId)
+        )
+      : clusters.find((cluster) => cluster.id === selectedClusterIdRef.current);
+    if (!home) {
+      clearSelection();
+      return;
+    }
+    if (selectedClusterIdRef.current !== home.id) {
+      selectedClusterIdRef.current = home.id;
+      syncExploreMapPinSelection(containerRef.current, home.id);
+    }
+  }, [clusters, clearSelection]);
 
   const trainersRef = useRef(trainers);
   trainersRef.current = trainers;
@@ -421,12 +428,31 @@ export function ExploreMapLeaflet({
       setMapEpoch((value) => value + 1);
 
       const onMoveEnd = () => {
+        const userMoved = userMapGestureRef.current;
+        userMapGestureRef.current = false;
+        if (userMoved) rosterSettleUserRef.current = true;
+        window.clearTimeout(rosterSettleTimerRef.current);
+        rosterSettleTimerRef.current = window.setTimeout(() => {
+          const wasUser = rosterSettleUserRef.current;
+          rosterSettleUserRef.current = false;
+          if (wasUser) noteUserMoveEndRef.current();
+          else noteProgrammaticMoveEndRef.current();
+        }, 180);
         emitPendingFromMap(map!);
       };
       const onMoveStart = () => {
-        if (Date.now() < suppressUntilRef.current) return;
-        clearSelection();
+        if (Date.now() < suppressUntilRef.current && !userMapGestureRef.current) {
+          return;
+        }
         onMapSearchStartRef.current?.();
+      };
+      const onDragStart = () => {
+        userMapGestureRef.current = true;
+      };
+      const onZoomStart = () => {
+        if (Date.now() >= suppressUntilRef.current) {
+          userMapGestureRef.current = true;
+        }
       };
       const onMapClick = () => {
         if (Date.now() < suppressUntilRef.current) return;
@@ -435,7 +461,8 @@ export function ExploreMapLeaflet({
 
       map.on("moveend", onMoveEnd);
       map.on("movestart", onMoveStart);
-      map.on("dragstart", onMoveStart);
+      map.on("dragstart", onDragStart);
+      map.on("zoomstart", onZoomStart);
       map.on("click", onMapClick);
 
       invalidateTimeouts.push(
@@ -467,6 +494,7 @@ export function ExploreMapLeaflet({
       markersLayerRef.current = null;
       areaDotRef.current = null;
       leafletRef.current = null;
+      window.clearTimeout(rosterSettleTimerRef.current);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -601,7 +629,7 @@ export function ExploreMapLeaflet({
       });
 
       const title = isMulti
-        ? `${cluster.count} Specialists · ${cluster.locationLabel}`
+        ? `${cluster.primaryTrainer.name}, plus ${cluster.count - 1} more`
         : cluster.primaryTrainer.name;
 
       const marker = L.marker([cluster.latitude, cluster.longitude], {
@@ -681,7 +709,15 @@ export function ExploreMapLeaflet({
           aria-label="Map of specialists in this search area"
         />
         <ExploreMapBottomCard
-          cluster={selectedCluster}
+          visibleSlides={visibleSlides}
+          selectedTrainerId={selectedTrainerId}
+          selectedSlide={selectedSlide}
+          onSelectTrainer={(trainerId) => {
+            const cluster = clustersRef.current.find((item) =>
+              item.trainers.some((trainer) => trainer.id === trainerId)
+            );
+            if (cluster) selectCluster(cluster, trainerId);
+          }}
           onClose={clearSelection}
         />
         {searchLoading ? <ExploreMapSearchRing /> : null}

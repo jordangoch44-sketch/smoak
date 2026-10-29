@@ -43,6 +43,7 @@ export function ExplorePageClient() {
     mobileFiltersOpen,
     setMobileFiltersOpen,
     filtered,
+    pinFaceSeed,
     nearbyExpanded,
     areaEmpty,
     suggestedTrainers,
@@ -175,6 +176,7 @@ export function ExplorePageClient() {
 
       <ExploreResults
         trainers={filtered}
+        pinFaceSeed={pinFaceSeed}
         suggestedTrainers={suggestedTrainers}
         areaCenter={searchOrigin}
         userLocationDot={preciseUserLocation}
@@ -217,6 +219,7 @@ export function ExplorePageClient() {
           <section className="explore-map-hero" aria-label="Search map">
             <ExploreMap
               trainers={filtered}
+              pinFaceSeed={pinFaceSeed}
               areaCenter={searchOrigin}
               userLocationDot={preciseUserLocation}
               activeSearchArea={activeSearchArea}
@@ -249,6 +252,7 @@ export function ExplorePageClient() {
               <div className="explore-page__map-rail-inner">
                 <ExploreMap
                   trainers={filtered}
+                  pinFaceSeed={pinFaceSeed}
                   areaCenter={searchOrigin}
                   userLocationDot={preciseUserLocation}
                   activeSearchArea={activeSearchArea}

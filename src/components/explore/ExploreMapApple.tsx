@@ -8,6 +8,8 @@ import {
   useSiteLocationGateOpen,
 } from "@/hooks/useProfileSheetOpen";
 import { useExploreMapLayoutEpoch } from "@/hooks/useExploreMapLayoutEpoch";
+import { useExploreMapSwipeRoster } from "@/hooks/useExploreMapSwipeRoster";
+import { findExploreMapSlide } from "@/lib/explore-map-visible";
 import { notifyExploreMapLayout } from "@/lib/explore-map-layout";
 import { DEFAULT_EXPLORE_RADIUS_MILES } from "@/lib/explore";
 import { defaultMarketplaceCenter } from "@/lib/marketplace-city-centers";
@@ -19,11 +21,7 @@ import {
   warmExploreMapCluster,
 } from "@/lib/warm-trainer-profile-navigation";
 import { bindExploreMapPopupProfileNav } from "@/lib/explore-map-profile-nav";
-import {
-  cameraShiftToClearPin,
-  selectedPinClearBox,
-  syncExploreMapPinSelection,
-} from "@/lib/explore-map-pin-frame";
+import { syncExploreMapPinSelection } from "@/lib/explore-map-pin-frame";
 import {
   loadAppleMapKit,
   regionForRadiusMiles,
@@ -81,66 +79,7 @@ function clustersFrameKey(clusters: ExploreMapCluster[]): string {
   return `clusters:${clusters.length}:${first.latitude.toFixed(3)},${first.longitude.toFixed(3)}:${last.latitude.toFixed(3)},${last.longitude.toFixed(3)}`;
 }
 
-const SELECTION_HOLD_MS = 1800;
-
-/** Slide the map so the selected pin sits above the card, ring included. */
-function revealApplePin(
-  map: MapKitMap,
-  mapkit: AppleMapKit,
-  container: HTMLElement,
-  cluster: ExploreMapCluster,
-  pinEl: HTMLElement | null
-): void {
-  const box = selectedPinClearBox(container);
-  let pinX: number | null = null;
-  let pinY: number | null = null;
-
-  if (pinEl) {
-    const rect = pinEl.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      pinX = rect.left + rect.width / 2;
-      pinY = rect.top + rect.height / 2;
-    }
-  }
-
-  if (pinX === null || pinY === null) {
-    try {
-      if (typeof map.convertCoordinateToPointOnPage === "function") {
-        const pagePoint = map.convertCoordinateToPointOnPage(
-          new mapkit.Coordinate(cluster.latitude, cluster.longitude)
-        );
-        if (
-          pagePoint &&
-          typeof pagePoint.x === "number" &&
-          typeof pagePoint.y === "number"
-        ) {
-          pinX = pagePoint.x - window.scrollX;
-          pinY = pagePoint.y - window.scrollY;
-        }
-      }
-    } catch {
-      /* leave the camera where it is */
-    }
-  }
-
-  if (pinX === null || pinY === null) return;
-  const shift = cameraShiftToClearPin(pinX, pinY, box);
-  if (!shift) return;
-
-  const region = map.region;
-  const span = region?.span;
-  const height = Math.max(container.clientHeight, 1);
-  const width = Math.max(container.clientWidth, 1);
-  if (!region?.center || !span) return;
-
-  map.setCenterAnimated(
-    new mapkit.Coordinate(
-      region.center.latitude - shift.y * (span.latitudeDelta / height),
-      region.center.longitude + shift.x * (span.longitudeDelta / width)
-    ),
-    false
-  );
-}
+const SELECTION_HOLD_MS = 400;
 
 function applyAppleCamera(
   mapkit: AppleMapKit,
@@ -148,20 +87,22 @@ function applyAppleCamera(
   origin: ExploreMapArea | null | undefined,
   clusters: ExploreMapCluster[],
   radiusMiles: number,
-  pinAnnotations: MapKitAnnotation[]
+  pinAnnotations: MapKitAnnotation[],
+  immediate = false
 ) {
+  const place = (region: ReturnType<typeof regionForRadiusMiles>) => {
+    if (immediate) {
+      map.region = region;
+      return;
+    }
+    map.setRegionAnimated(region, false);
+  };
   if (origin) {
-    map.setRegionAnimated(
-      regionForRadiusMiles(mapkit, origin, radiusMiles),
-      false
-    );
+    place(regionForRadiusMiles(mapkit, origin, radiusMiles));
     return;
   }
   if (clusters.length === 1) {
-    map.setRegionAnimated(
-      regionForRadiusMiles(mapkit, clusters[0], 4),
-      false
-    );
+    place(regionForRadiusMiles(mapkit, clusters[0], 4));
     return;
   }
   if (pinAnnotations.length > 0) {
@@ -172,9 +113,8 @@ function applyAppleCamera(
     });
     return;
   }
-  map.setRegionAnimated(
-    regionForRadiusMiles(mapkit, FALLBACK_CENTER, DEFAULT_EXPLORE_RADIUS_MILES),
-    false
+  place(
+    regionForRadiusMiles(mapkit, FALLBACK_CENTER, DEFAULT_EXPLORE_RADIUS_MILES)
   );
 }
 
@@ -229,6 +169,7 @@ export function ExploreMapApple({
   onMapSearchStart,
   searchLoading = false,
   onRecenterSearch,
+  pinFaceSeed = 0,
   locked = true,
   variant = "panel",
   showNotes = true,
@@ -250,6 +191,7 @@ export function ExploreMapApple({
   const selectedClusterIdRef = useRef<string | null>(null);
   const pinSelectGuardRef = useRef(0);
   const selectingRef = useRef(false);
+  const mapTapRef = useRef<{ x: number; y: number } | null>(null);
   const pinPressRef = useRef<{
     x: number;
     y: number;
@@ -266,8 +208,30 @@ export function ExploreMapApple({
   const suppressUntilRef = useRef(0);
   const [mapEpoch, setMapEpoch] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selectedCluster, setSelectedCluster] = useState<ExploreMapCluster | null>(null);
+  const [selectedTrainerId, setSelectedTrainerId] = useState<string | null>(null);
+  const selectedTrainerIdRef = useRef<string | null>(null);
+  selectedTrainerIdRef.current = selectedTrainerId;
+  const frozenCameraRef = useRef<{
+    latitude: number;
+    longitude: number;
+    latitudeDelta: number;
+    longitudeDelta: number;
+    until: number;
+  } | null>(null);
+  const restoringCameraRef = useRef(false);
+  const userMapGestureRef = useRef(false);
+  const userRegionRef = useRef(false);
+  const mapPressRef = useRef<{ x: number; y: number } | null>(null);
+  const rosterSettleTimerRef = useRef(0);
+  const rosterSettleUserRef = useRef(false);
   const pinsSignatureRef = useRef("");
+  const placeApplePinsRef = useRef<() => void>(() => {});
+  const selectClusterRef = useRef<
+    (cluster: ExploreMapCluster, trainerId?: string) => void
+  >(() => {});
+  const clearSelectionRef = useRef<() => void>(() => {});
+  const userLocationDotRef = useRef(userLocationDot);
+  userLocationDotRef.current = userLocationDot;
   const profileSheetOpen = useProfileSheetOpen();
   const locationGateOpen = useSiteLocationGateOpen();
   const mapPaused = profileSheetOpen || locationGateOpen;
@@ -276,88 +240,177 @@ export function ExploreMapApple({
   const mapSizeKeyRef = useRef("");
 
   const clusters = useMemo(() => {
-    return clusterTrainersForMap(trainers);
-  }, [trainers]);
+    return clusterTrainersForMap(trainers, pinFaceSeed);
+  }, [trainers, pinFaceSeed]);
   const clustersRef = useRef(clusters);
   clustersRef.current = clusters;
+
+  const readViewport = useCallback(() => {
+    const map = mapRef.current;
+    const region = map?.region;
+    const center = region?.center;
+    if (!map || !region || !center) return null;
+    const bounds = region.toBoundingRegion();
+    return {
+      north: bounds.northLatitude,
+      south: bounds.southLatitude,
+      east: bounds.eastLongitude,
+      west: bounds.westLongitude,
+      centerLatitude: center.latitude,
+      centerLongitude: center.longitude,
+    };
+  }, []);
+
+  const { slides: visibleSlides, noteUserMoveEnd, noteProgrammaticMoveEnd } =
+    useExploreMapSwipeRoster({
+      clusters,
+      readViewport,
+      suppressUntilRef,
+    });
+  const noteUserMoveEndRef = useRef(noteUserMoveEnd);
+  noteUserMoveEndRef.current = noteUserMoveEnd;
+  const noteProgrammaticMoveEndRef = useRef(noteProgrammaticMoveEnd);
+  noteProgrammaticMoveEndRef.current = noteProgrammaticMoveEnd;
+  const selectedSlide = useMemo(
+    () => findExploreMapSlide(clusters, selectedTrainerId),
+    [clusters, selectedTrainerId]
+  );
+
+  const rememberCamera = useCallback(() => {
+    if (frozenCameraRef.current && Date.now() < frozenCameraRef.current.until) {
+      return;
+    }
+    const map = mapRef.current;
+    const region = map?.region;
+    const center = region?.center;
+    const span = region?.span;
+    if (!center || !span) return;
+    const until = Date.now() + 500;
+    frozenCameraRef.current = {
+      latitude: center.latitude,
+      longitude: center.longitude,
+      latitudeDelta: span.latitudeDelta,
+      longitudeDelta: span.longitudeDelta,
+      until,
+    };
+    if (until > suppressUntilRef.current) suppressUntilRef.current = until;
+  }, []);
+  const rememberCameraRef = useRef(rememberCamera);
+  rememberCameraRef.current = rememberCamera;
+
+  const restoreFrozenCamera = useCallback(() => {
+    const lock = frozenCameraRef.current;
+    const map = mapRef.current;
+    const mapkit = mapkitRef.current;
+    if (!lock || !map || !mapkit || Date.now() > lock.until) return;
+    if (restoringCameraRef.current) return;
+    const center = map.region?.center;
+    const span = map.region?.span;
+    if (!center || !span) return;
+    const drifted =
+      Math.abs(center.latitude - lock.latitude) > 1e-7 ||
+      Math.abs(center.longitude - lock.longitude) > 1e-7 ||
+      Math.abs(span.latitudeDelta - lock.latitudeDelta) > 1e-7 ||
+      Math.abs(span.longitudeDelta - lock.longitudeDelta) > 1e-7;
+    if (!drifted) return;
+    restoringCameraRef.current = true;
+    try {
+      map.region = new mapkit.CoordinateRegion(
+        new mapkit.Coordinate(lock.latitude, lock.longitude),
+        new mapkit.CoordinateSpan(lock.latitudeDelta, lock.longitudeDelta)
+      );
+    } catch {
+      /* map is tearing down */
+    } finally {
+      restoringCameraRef.current = false;
+    }
+  }, []);
+  const restoreFrozenCameraRef = useRef(restoreFrozenCamera);
+  restoreFrozenCameraRef.current = restoreFrozenCamera;
+
+  const scheduleRosterSettle = useCallback((userMoved: boolean) => {
+    if (userMoved) rosterSettleUserRef.current = true;
+    window.clearTimeout(rosterSettleTimerRef.current);
+    rosterSettleTimerRef.current = window.setTimeout(() => {
+      const wasUser = rosterSettleUserRef.current;
+      rosterSettleUserRef.current = false;
+      userRegionRef.current = false;
+      if (wasUser) noteUserMoveEndRef.current();
+      else noteProgrammaticMoveEndRef.current();
+    }, 180);
+  }, []);
+  const scheduleRosterSettleRef = useRef(scheduleRosterSettle);
+  scheduleRosterSettleRef.current = scheduleRosterSettle;
 
   const trainersRef = useRef(trainers);
   trainersRef.current = trainers;
 
-  const holdSelection = useCallback(() => {
-    const until = Date.now() + SELECTION_HOLD_MS;
-    pinSelectGuardRef.current = until;
-    suppressUntilRef.current = until;
-  }, []);
-
-  const revealSelectedPin = useCallback((cluster: ExploreMapCluster) => {
-    if (selectedClusterIdRef.current !== cluster.id) return;
-    const map = mapRef.current;
-    const mapkit = mapkitRef.current;
-    const container = containerRef.current;
-    if (!map || !mapkit || !container) return;
-    const pin = syncExploreMapPinSelection(stageRef.current, cluster.id);
-    revealApplePin(map, mapkit, container, cluster, pin);
-  }, []);
-
   const clearSelection = useCallback(() => {
     selectedCoordRef.current = null;
     selectedClusterIdRef.current = null;
-    setSelectedCluster(null);
-    const map = mapRef.current;
-    if (map) map.selectedAnnotation = null;
+    frozenCameraRef.current = null;
+    setSelectedTrainerId(null);
     syncExploreMapPinSelection(stageRef.current, null);
   }, []);
 
   const selectCluster = useCallback(
-    (cluster: ExploreMapCluster) => {
+    (cluster: ExploreMapCluster, trainerId?: string) => {
       if (selectingRef.current) return;
       selectingRef.current = true;
       try {
-        const alreadySelected = selectedClusterIdRef.current === cluster.id;
-        holdSelection();
-
-        if (!alreadySelected) {
+        rememberCamera();
+        const nextTrainerId = trainerId ?? cluster.primaryTrainer.id;
+        const clusterChanged = selectedClusterIdRef.current !== cluster.id;
+        pinSelectGuardRef.current = Date.now() + SELECTION_HOLD_MS;
+        if (selectedTrainerIdRef.current !== nextTrainerId) {
+          selectedTrainerIdRef.current = nextTrainerId;
+          setSelectedTrainerId(nextTrainerId);
+        }
+        selectedClusterIdRef.current = cluster.id;
+        if (clusterChanged) {
           selectedCoordRef.current = {
             latitude: cluster.latitude,
             longitude: cluster.longitude,
           };
-          selectedClusterIdRef.current = cluster.id;
-          setSelectedCluster(cluster);
           warmExploreMapCluster(cluster, routerRef.current);
         }
-
-        const mapkit = mapkitRef.current;
-        for (const annotation of pinAnnotationsRef.current) {
-          const id = (annotation.data as { clusterId?: string } | undefined)
-            ?.clusterId;
-          const on = id === cluster.id;
-          if (mapkit) {
-            annotation.displayPriority = on
-              ? mapkit.AnnotationDisplayPriority.Required
-              : mapkit.AnnotationDisplayPriority.High;
-          }
-          if (annotation.selected !== on) annotation.selected = on;
-        }
-
-        revealSelectedPin(cluster);
+        syncExploreMapPinSelection(stageRef.current, cluster.id);
       } finally {
         selectingRef.current = false;
       }
     },
-    [holdSelection, revealSelectedPin]
+    [rememberCamera]
   );
+  selectClusterRef.current = selectCluster;
+  clearSelectionRef.current = clearSelection;
 
   useEffect(() => {
-    if (!selectedCluster) return;
-    holdSelection();
-    revealSelectedPin(selectedCluster);
+    const trainerId = selectedTrainerIdRef.current;
+    if (!trainerId && !selectedClusterIdRef.current) return;
+    const home = trainerId
+      ? clusters.find((cluster) =>
+          cluster.trainers.some((trainer) => trainer.id === trainerId)
+        )
+      : clusters.find((cluster) => cluster.id === selectedClusterIdRef.current);
+    if (!home) {
+      clearSelection();
+      return;
+    }
+    if (selectedClusterIdRef.current !== home.id) {
+      selectedClusterIdRef.current = home.id;
+      syncExploreMapPinSelection(stageRef.current, home.id);
+    }
+  }, [clusters, clearSelection]);
+
+  useEffect(() => {
+    if (!selectedTrainerId) return;
+    const apply = () => {
+      if (!selectedClusterIdRef.current) return;
+      syncExploreMapPinSelection(stageRef.current, selectedClusterIdRef.current);
+    };
+    apply();
     const root = stageRef.current;
     const container = root?.querySelector(".mk-annotation-container") ?? root;
-    const apply = () => {
-      if (selectedClusterIdRef.current !== selectedCluster.id) return;
-      syncExploreMapPinSelection(stageRef.current, selectedCluster.id);
-    };
     const observer =
       container instanceof HTMLElement
         ? new MutationObserver(apply)
@@ -366,15 +419,8 @@ export function ExploreMapApple({
       childList: true,
       subtree: true,
     });
-    const timer = window.setTimeout(() => {
-      holdSelection();
-      revealSelectedPin(selectedCluster);
-    }, 240);
-    return () => {
-      observer?.disconnect();
-      window.clearTimeout(timer);
-    };
-  }, [selectedCluster, revealSelectedPin, holdSelection, mapEpoch]);
+    return () => observer?.disconnect();
+  }, [selectedTrainerId, mapEpoch]);
 
   useEffect(() => {
     const root = stageRef.current;
@@ -451,6 +497,7 @@ export function ExploreMapApple({
         const pinEl = pressedPin;
         const clusterId = pinEl?.getAttribute("data-cluster-id");
         if (clusterId) {
+          rememberCameraRef.current();
           pinPressRef.current = {
             x: event.clientX,
             y: event.clientY,
@@ -469,7 +516,24 @@ export function ExploreMapApple({
       ) {
         return;
       }
-      // Let MapKit annotation select / click win if this was actually a pin hit
+      mapPressRef.current = { x: event.clientX, y: event.clientY };
+      mapTapRef.current = { x: event.clientX, y: event.clientY };
+    }
+
+    function onMapPointerMove(event: PointerEvent) {
+      const press = mapPressRef.current;
+      if (!press) return;
+      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) > 8) {
+        userMapGestureRef.current = true;
+      }
+    }
+
+    function onMapPointerUp(event: PointerEvent) {
+      mapPressRef.current = null;
+      const tap = mapTapRef.current;
+      mapTapRef.current = null;
+      if (!tap) return;
+      if (Math.hypot(event.clientX - tap.x, event.clientY - tap.y) > 12) return;
       window.setTimeout(() => {
         if (Date.now() < pinSelectGuardRef.current) return;
         clearSelection();
@@ -482,12 +546,22 @@ export function ExploreMapApple({
       router,
       clearSelection
     );
+    const onMapPointerCancel = () => {
+      mapTapRef.current = null;
+      mapPressRef.current = null;
+    };
     root.addEventListener("pointerup", onPinActivate, true);
     root.addEventListener("pointerdown", onPointerDown, true);
+    root.addEventListener("pointermove", onMapPointerMove, true);
+    root.addEventListener("pointerup", onMapPointerUp, true);
+    root.addEventListener("pointercancel", onMapPointerCancel, true);
     return () => {
       unbindPopupNav();
       root.removeEventListener("pointerup", onPinActivate, true);
       root.removeEventListener("pointerdown", onPointerDown, true);
+      root.removeEventListener("pointermove", onMapPointerMove, true);
+      root.removeEventListener("pointerup", onMapPointerUp, true);
+      root.removeEventListener("pointercancel", onMapPointerCancel, true);
     };
   }, [router, clearSelection, selectCluster, mapEpoch]);
 
@@ -521,7 +595,7 @@ export function ExploreMapApple({
     notify(viewport);
   }, []);
 
-  const applyLiveCamera = useCallback(() => {
+  const applyLiveCamera = useCallback((immediate = false) => {
     const mapkit = mapkitRef.current;
     const map = mapRef.current;
     if (!mapkit || !map) return;
@@ -529,7 +603,7 @@ export function ExploreMapApple({
     const currentClusters = clustersRef.current;
     const radius =
       activeSearchAreaRef.current?.radiusMiles ?? DEFAULT_EXPLORE_RADIUS_MILES;
-    const cameraHold = Date.now() + 1000;
+    const cameraHold = Date.now() + (immediate ? 400 : 1000);
     if (cameraHold > suppressUntilRef.current) {
       suppressUntilRef.current = cameraHold;
     }
@@ -539,7 +613,8 @@ export function ExploreMapApple({
       origin,
       currentClusters,
       radius,
-      pinAnnotationsRef.current
+      pinAnnotationsRef.current,
+      immediate
     );
     if (origin) {
       framedOriginRef.current = `${origin.latitude.toFixed(4)},${origin.longitude.toFixed(4)}`;
@@ -574,6 +649,7 @@ export function ExploreMapApple({
         pinAnnotationsRef.current = [];
         meAnnotationRef.current = null;
         framedOriginRef.current = "";
+        pinsSignatureRef.current = "";
         clearSelection();
 
         const origin = areaCenterRef.current;
@@ -600,16 +676,39 @@ export function ExploreMapApple({
 
         mapRef.current = map;
         mapSizeKeyRef.current = "";
+        placeApplePinsRef.current();
         suppressUntilRef.current = Date.now() + 400;
-        applyLiveCamera();
+        applyLiveCamera(true);
         recaptureAppleMapSize(map, el, mapSizeKeyRef, suppressUntilRef);
         setMapEpoch((value) => value + 1);
 
-        // User pan/zoom → dismiss callout (don't let it follow the map)
         const onRegionChangeStart = () => {
+          const userGesture =
+            userMapGestureRef.current || userRegionRef.current;
+          if (userGesture) {
+            userMapGestureRef.current = false;
+            frozenCameraRef.current = null;
+            if (!userRegionRef.current) {
+              userRegionRef.current = true;
+              if (
+                Date.now() >= suppressUntilRef.current &&
+                Date.now() >= pinSelectGuardRef.current
+              ) {
+                onMapSearchStartRef.current?.();
+              }
+            }
+            return;
+          }
+          if (
+            frozenCameraRef.current &&
+            Date.now() < frozenCameraRef.current.until
+          ) {
+            restoreFrozenCameraRef.current();
+            return;
+          }
           if (Date.now() < suppressUntilRef.current) return;
           if (Date.now() < pinSelectGuardRef.current) return;
-          clearSelection();
+          userRegionRef.current = true;
           onMapSearchStartRef.current?.();
         };
         const onRegionChangeEnd = () => {
@@ -618,6 +717,8 @@ export function ExploreMapApple({
             stageRef.current,
             selectedClusterIdRef.current
           );
+          const userMoved = userRegionRef.current;
+          scheduleRosterSettleRef.current(userMoved);
           emitPendingFromMap(mapRef.current);
         };
         map.addEventListener("region-change-start", onRegionChangeStart);
@@ -640,6 +741,7 @@ export function ExploreMapApple({
       mapkitRef.current = null;
       selectedCoordRef.current = null;
       selectedClusterIdRef.current = null;
+      window.clearTimeout(rosterSettleTimerRef.current);
       if (mapRef.current) {
         mapRef.current.destroy();
         mapRef.current = null;
@@ -717,15 +819,17 @@ export function ExploreMapApple({
     suppressMoves,
   ]);
 
-  useEffect(() => {
+  placeApplePinsRef.current = () => {
     const map = mapRef.current;
     const mapkit = mapkitRef.current;
     if (!map || !mapkit) return;
 
-    const meKey = userLocationDot
-      ? `me:${userLocationDot.latitude.toFixed(4)},${userLocationDot.longitude.toFixed(4)}`
+    const pinClusters = clustersRef.current;
+    const meDot = userLocationDotRef.current;
+    const meKey = meDot
+      ? `me:${meDot.latitude.toFixed(4)},${meDot.longitude.toFixed(4)}`
       : "me:none";
-    const signature = `${mapEpoch}|${clustersPinSignature(clusters)}|${meKey}`;
+    const signature = `${clustersPinSignature(pinClusters)}|${meKey}`;
     if (pinsSignatureRef.current === signature) return;
     pinsSignatureRef.current = signature;
 
@@ -738,12 +842,9 @@ export function ExploreMapApple({
       meAnnotationRef.current = null;
     }
 
-    if (userLocationDot) {
+    if (meDot) {
       const me = new mapkit.Annotation(
-        new mapkit.Coordinate(
-          userLocationDot.latitude,
-          userLocationDot.longitude
-        ),
+        new mapkit.Coordinate(meDot.latitude, meDot.longitude),
         () => {
           const el = document.createElement("div");
           el.className = "explore-map-me";
@@ -764,7 +865,7 @@ export function ExploreMapApple({
     }
 
     const nextPins: MapKitAnnotation[] = [];
-    for (const cluster of clusters) {
+    for (const cluster of pinClusters) {
       const isMulti = cluster.isMulti;
 
       const annotation = new mapkit.Annotation(
@@ -777,7 +878,7 @@ export function ExploreMapApple({
 
           bindExploreMapPinSelect(
             el,
-            () => selectCluster(cluster),
+            () => selectClusterRef.current(cluster),
             () => {
               pinSelectGuardRef.current = Date.now() + SELECTION_HOLD_MS;
               warmExploreMapCluster(cluster, routerRef.current);
@@ -788,10 +889,10 @@ export function ExploreMapApple({
         },
         {
           title: isMulti
-            ? `${cluster.count} Specialists · ${cluster.locationLabel}`
+            ? `${cluster.primaryTrainer.name}, plus ${cluster.count - 1} more`
             : cluster.primaryTrainer.name,
           accessibilityLabel: isMulti
-            ? `${cluster.count} Specialists at ${cluster.locationLabel}`
+            ? `${cluster.primaryTrainer.name}, plus ${cluster.count - 1} more at ${cluster.locationLabel}`
             : cluster.primaryTrainer.name,
           data: { clusterId: cluster.id },
           animates: false,
@@ -803,15 +904,18 @@ export function ExploreMapApple({
             : new DOMPoint(0, -EXPLORE_MAP_SINGLE_PIN_SIZE.height / 2),
           calloutEnabled: false,
           collisionMode: mapkit.AnnotationCollisionMode.None,
-          displayPriority:
-            selectedClusterIdRef.current === cluster.id
-              ? mapkit.AnnotationDisplayPriority.Required
-              : mapkit.AnnotationDisplayPriority.High,
+          displayPriority: mapkit.AnnotationDisplayPriority.Required,
         }
       );
 
       annotation.addEventListener("select", () => {
-        selectCluster(cluster);
+        rememberCameraRef.current();
+        try {
+          annotation.selected = false;
+        } catch {
+          /* MapKit already dropped the annotation */
+        }
+        selectClusterRef.current(cluster);
       });
 
       nextPins.push(annotation);
@@ -823,19 +927,26 @@ export function ExploreMapApple({
     pinAnnotationsRef.current = nextPins;
     syncExploreMapPinSelection(stageRef.current, selectedClusterIdRef.current);
 
-    if (
-      selectedClusterIdRef.current &&
-      !clusters.some((c) => c.id === selectedClusterIdRef.current)
-    ) {
-      clearSelection();
+    const selectedTrainerIdNow = selectedTrainerIdRef.current;
+    const selectedClusterNow = pinClusters.find(
+      (cluster) => cluster.id === selectedClusterIdRef.current
+    );
+    const selectedByTrainer = selectedTrainerIdNow
+      ? pinClusters.find((cluster) =>
+          cluster.trainers.some((trainer) => trainer.id === selectedTrainerIdNow)
+        )
+      : undefined;
+    if (selectedClusterIdRef.current && !selectedClusterNow && !selectedByTrainer) {
+      clearSelectionRef.current();
+    } else if (selectedByTrainer && selectedClusterIdRef.current !== selectedByTrainer.id) {
+      selectedClusterIdRef.current = selectedByTrainer.id;
+      syncExploreMapPinSelection(stageRef.current, selectedByTrainer.id);
     }
-  }, [
-    clusters,
-    userLocationDot,
-    mapEpoch,
-    selectCluster,
-    clearSelection,
-  ]);
+  };
+
+  useEffect(() => {
+    placeApplePinsRef.current();
+  }, [clusters, userLocationDot, mapEpoch]);
 
   const handleRecenter = useCallback(() => {
     if (mapPaused) return;
@@ -873,7 +984,15 @@ export function ExploreMapApple({
           aria-label="Map of specialists in this search area"
         />
         <ExploreMapBottomCard
-          cluster={selectedCluster}
+          visibleSlides={visibleSlides}
+          selectedTrainerId={selectedTrainerId}
+          selectedSlide={selectedSlide}
+          onSelectTrainer={(trainerId) => {
+            const cluster = clustersRef.current.find((item) =>
+              item.trainers.some((trainer) => trainer.id === trainerId)
+            );
+            if (cluster) selectCluster(cluster, trainerId);
+          }}
           onClose={clearSelection}
         />
         {searchLoading ? <ExploreMapSearchRing /> : null}
