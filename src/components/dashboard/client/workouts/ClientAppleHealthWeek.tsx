@@ -173,7 +173,7 @@ export function ClientAppleHealthWeek({
       {health.status === "loading" && health.workouts.length === 0 ? (
         <p className="client-apple-health__note">Reading workouts…</p>
       ) : null}
-      {health.status === "error" && health.error ? (
+      {health.error ? (
         <p className="client-apple-health__note">{health.error}</p>
       ) : null}
       {week && week.workoutCount === 0 && health.status === "ready" ? (

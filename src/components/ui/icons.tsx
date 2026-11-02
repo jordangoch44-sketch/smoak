@@ -652,6 +652,30 @@ export function MenuPencilIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+/** Person flexing one arm, shown on a finished workout goal. */
+export function MuscleIcon({ className = "h-5 w-5" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="10.2" cy="5.2" r="1.7" fill="currentColor" stroke="none" />
+      <path d="M10.2 7.2v5.8" />
+      <path d="M10.2 9.4h5.4" />
+      <path d="M15.6 9.4 14.2 5.4" />
+      <circle cx="13.7" cy="4.5" r="1.15" fill="currentColor" stroke="none" />
+      <path d="M10.2 10 7 13.2" />
+      <path d="M10.2 13 8 18.8M10.2 13l2.6 5.8" />
+    </svg>
+  );
+}
+
 /** Explore browse category — Personal Trainer */
 export function DumbbellIcon({ className = "h-5 w-5" }: IconProps) {
   return (

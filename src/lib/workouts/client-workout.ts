@@ -25,6 +25,7 @@ const MAX_STREAK_WEEKS = 520;
 const MAX_TITLE_LENGTH = 24;
 export const MAX_CARDIO_TYPE_LENGTH = 80;
 export const MAX_CARDIO_DURATION_LENGTH = 48;
+export const MAX_CARDIO_MEASURE_LENGTH = 48;
 export const MAX_WORKOUT_SETS = 10;
 
 export function emptyClientWorkoutLog(): ClientWorkoutLog {
@@ -526,6 +527,13 @@ export function sanitizeCardioField(
   return value.replace(/\s+/g, " ").trim().slice(0, maxLength);
 }
 
+/** A number, or a number with a unit such as miles or meters. */
+function sanitizeCardioMeasure(value: unknown): string {
+  const text = sanitizeCardioField(value, MAX_CARDIO_MEASURE_LENGTH);
+  if (!text || /[a-z]/i.test(text)) return text;
+  return text.replace(/\.$/, "");
+}
+
 export function sanitizeWorkoutCardio(
   value: unknown
 ): ClientWorkoutCardio | undefined {
@@ -537,18 +545,33 @@ export function sanitizeWorkoutCardio(
     MAX_CARDIO_DURATION_LENGTH
   );
   if (!type && !duration) return undefined;
+  const distance = sanitizeCardioMeasure(raw.distance);
+  const speed = sanitizeCardioMeasure(raw.speed);
   return {
     type,
     duration,
+    ...(distance ? { distance } : {}),
+    ...(speed ? { speed } : {}),
     ...(raw.completed === true ? { completed: true } : {}),
   };
 }
 
+function cardioMeasure(value: string | undefined, unit: string): string {
+  const amount = value?.trim() ?? "";
+  if (!amount) return "";
+  if (/[a-z]/i.test(amount)) return amount;
+  return `${amount} ${unit}`;
+}
+
 export function formatCardioLine(cardio: ClientWorkoutCardio): string {
-  const type = cardio.type.trim();
-  const duration = cardio.duration.trim();
-  if (type && duration) return `${type} · ${duration}`;
-  return type || duration;
+  return [
+    cardio.type.trim(),
+    cardio.duration.trim(),
+    cardioMeasure(cardio.distance, "mi"),
+    cardioMeasure(cardio.speed, "mph"),
+  ]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 /** First word of the activity. The day chip stays short; the full line lives on the workout. */
@@ -1008,6 +1031,35 @@ export function currentWeekProgress(
   today: Date = new Date()
 ): WeekProgress {
   return weekProgress(log, startOfWeekSunday(today));
+}
+
+export function weekProgressForDate(
+  log: ClientWorkoutLog,
+  dateKey: string
+): WeekProgress {
+  return weekProgress(log, startOfWeekSunday(parseLocalDateKey(dateKey)));
+}
+
+export type GoalKind = "workout" | "cardio";
+
+/** Goals that were short before this save and are met after it. */
+export function goalKindsJustMet(
+  before: WeekProgress,
+  after: WeekProgress,
+  saved: { cardio: boolean; workout: boolean }
+): GoalKind[] {
+  const kinds: GoalKind[] = [];
+  if (saved.workout && !before.workout.met && after.workout.met) kinds.push("workout");
+  if (
+    saved.cardio &&
+    before.cardio &&
+    after.cardio &&
+    !before.cardio.met &&
+    after.cardio.met
+  ) {
+    kinds.push("cardio");
+  }
+  return kinds;
 }
 
 export interface WeekDayStatus {

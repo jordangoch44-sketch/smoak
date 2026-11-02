@@ -24,33 +24,65 @@ public class AppleHealthPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     /// Workouts and the active calories on them.
-    /// An empty write set never presents Apple's sheet on device, and the
-    /// callback never arrives, so the connecting screen spins forever.
-    /// Including workouts in the write set makes the sheet appear. SMOAC
-    /// still does not save anything into Apple Health.
+    /// HealthKit only presents the sheet from the main thread. A background
+    /// call, or a delayed Swift task, never shows it and never calls back,
+    /// so the connecting screen spins forever.
+    /// Workouts are included in the write set so the sheet has something to
+    /// show. SMOAC still does not save anything into Apple Health.
     @objc func requestAccess(_ call: CAPPluginCall) {
         guard HKHealthStore.isHealthDataAvailable() else {
-            call.resolve(["ok": false])
+            call.resolve(["ok": false, "prompted": false])
             return
         }
         call.keepAlive = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+        let ask = { [weak self] in
             guard let self else {
-                call.keepAlive = false
-                call.reject("Couldn’t open Apple Health.")
+                DispatchQueue.main.async {
+                    call.keepAlive = false
+                    call.reject("Couldn’t open Apple Health.")
+                }
                 return
             }
-            self.bridge?.viewController?.view.endEditing(true)
-            Task { @MainActor in
-                do {
-                    try await self.store.requestAuthorization(toShare: Self.shareTypes, read: Self.readTypes)
-                    call.keepAlive = false
-                    call.resolve(["ok": true])
-                } catch {
-                    call.keepAlive = false
-                    call.reject(error.localizedDescription)
+            self.store.getRequestStatusForAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { status, error in
+                DispatchQueue.main.async {
+                    if let error {
+                        self.finish(call, ok: false, prompted: false, message: error.localizedDescription)
+                        return
+                    }
+                    if status == .unnecessary {
+                        self.finish(call, ok: true, prompted: false, message: nil)
+                        return
+                    }
+                    self.store.requestAuthorization(toShare: Self.shareTypes, read: Self.readTypes) { success, authError in
+                        if let authError {
+                            self.finish(call, ok: false, prompted: true, message: authError.localizedDescription)
+                            return
+                        }
+                        self.finish(
+                            call,
+                            ok: success,
+                            prompted: true,
+                            message: success ? nil : "The Apple Health permission screen was closed."
+                        )
+                    }
                 }
             }
+        }
+        if Thread.isMainThread {
+            ask()
+        } else {
+            DispatchQueue.main.async(execute: ask)
+        }
+    }
+
+    private func finish(_ call: CAPPluginCall, ok: Bool, prompted: Bool, message: String?) {
+        DispatchQueue.main.async {
+            call.keepAlive = false
+            if let message {
+                call.reject(message)
+                return
+            }
+            call.resolve(["ok": ok, "prompted": prompted])
         }
     }
 

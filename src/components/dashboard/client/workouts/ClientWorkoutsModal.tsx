@@ -19,22 +19,28 @@ import {
   buildMonthGrid,
   currentWeekProgress,
   currentWeekStreak,
+  goalKindsJustMet,
+  hasCardioOnDay,
+  hasStrengthOnDay,
+  weekProgressForDate,
+  type GoalKind,
+  type WeekProgress,
   formatMonthTitle,
   formatWorkoutDayAriaLabel,
   formatWorkoutDayHeading,
-  hasCardioOnDay,
   hasRestOnDay,
-  hasStrengthOnDay,
   exerciseMemoryBefore,
   isWorkoutDateKey,
   parseLocalDateKey,
   startOfMonth,
+  startOfWeekSunday,
   toLocalDateKey,
   workoutTitleOnDay,
   WEEKDAY_LABELS,
 } from "@/lib/workouts/client-workout";
-import type { ClientWorkoutCardio, ClientWorkoutExercise } from "@/types/client-workout";
+import type { ClientWorkoutCardio, ClientWorkoutDay, ClientWorkoutExercise } from "@/types/client-workout";
 import { useClientCoaching } from "@/hooks/useClientCoaching";
+import { getClientWorkoutLog } from "@/lib/workouts/client-workout-store";
 import { warmExerciseLibraryThumbs } from "@/lib/workouts/exercise-media-client";
 import {
   coachDayForSheet,
@@ -43,11 +49,46 @@ import {
   coachWorkoutProgress,
 } from "@/lib/coaching/coach-workout";
 import { ClientWorkoutDaySheet } from "./ClientWorkoutDaySheet";
+import { GoalAchievedOverlay } from "./GoalAchievedOverlay";
 import { WorkoutNiceOverlay } from "./WorkoutNiceOverlay";
 import { CoachDayMark } from "./CoachDayMark";
 import "@/styles/client-workouts.css";
 
 const LOCK_CLASS = "client-workouts-open";
+const celebratedGoals = new Set<string>();
+
+function celebratedGoalId(userId: string, kind: GoalKind, weekStart: string): string {
+  return `${userId}:${weekStart}:${kind}`;
+}
+
+function hasCelebratedGoal(userId: string, kind: GoalKind, weekStart: string): boolean {
+  const id = celebratedGoalId(userId, kind, weekStart);
+  if (celebratedGoals.has(id)) return true;
+  try {
+    return window.localStorage.getItem(`smoac-goal-celebrated:${id}`) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markCelebratedGoal(userId: string, kind: GoalKind, weekStart: string): void {
+  const id = celebratedGoalId(userId, kind, weekStart);
+  celebratedGoals.add(id);
+  try {
+    window.localStorage.setItem(`smoac-goal-celebrated:${id}`, "1");
+  } catch {
+    /* private mode */
+  }
+}
+
+function mergeGoalKinds(current: GoalKind[], kinds: GoalKind[]): GoalKind[] {
+  if (current.length === 0) return kinds;
+  const next = [...current];
+  for (const kind of kinds) {
+    if (!next.includes(kind)) next.push(kind);
+  }
+  return next.length === current.length ? current : next;
+}
 
 export function ClientWorkoutsModal({
   userId,
@@ -70,6 +111,15 @@ export function ClientWorkoutsModal({
   const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null);
   const [pasteSourceKey, setPasteSourceKey] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [achieved, setAchieved] = useState<GoalKind[]>([]);
+  const openedGoalRef = useRef<{
+    dateKey: string;
+    cardio: boolean;
+    workout: boolean;
+    progress: WeekProgress;
+  } | null>(null);
+  /** Progress from just before the latest save, so a sync cannot hide the flip. */
+  const goalBeforeRef = useRef<WeekProgress | null>(null);
   const [finishError, setFinishError] = useState<string | null>(null);
   const selectedDateKeyRef = useRef<string | null>(null);
   const pasteSourceKeyRef = useRef<string | null>(null);
@@ -93,6 +143,32 @@ export function ClientWorkoutsModal({
     if (!open) return;
     warmExerciseLibraryThumbs();
   }, [open]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const cardio = currentWeekProgress(log).cardio;
+    if (!cardio?.met) return;
+    const weekStart = toLocalDateKey(startOfWeekSunday(new Date()));
+    if (hasCelebratedGoal(userId, "cardio", weekStart)) return;
+    markCelebratedGoal(userId, "cardio", weekStart);
+    setAchieved((current) => mergeGoalKinds(current, ["cardio"]));
+  }, [mounted, log, userId]);
+
+  useEffect(() => {
+    if (!selectedDateKey) return;
+    const cardio = hasCardioOnDay(log, selectedDateKey);
+    const workout = hasStrengthOnDay(log, selectedDateKey);
+    const progress = weekProgressForDate(log, selectedDateKey);
+    const opened = openedGoalRef.current;
+    if (!opened || opened.dateKey !== selectedDateKey) {
+      openedGoalRef.current = { dateKey: selectedDateKey, cardio, workout, progress };
+      return;
+    }
+    // This day still counts the same way. A late sync should move the baseline.
+    if (opened.cardio === cardio && opened.workout === workout) {
+      openedGoalRef.current = { ...opened, progress };
+    }
+  }, [log, selectedDateKey]);
 
   useEffect(() => {
     if (!open) return;
@@ -175,6 +251,14 @@ export function ClientWorkoutsModal({
     setSelectedDateKey(dateKey);
   }
 
+  function rememberGoal(kinds: GoalKind[], dateKey: string) {
+    if (kinds.length === 0) return;
+    const weekStart = toLocalDateKey(startOfWeekSunday(parseLocalDateKey(dateKey)));
+    for (const kind of kinds) markCelebratedGoal(userId, kind, weekStart);
+    setCelebrate(false);
+    setAchieved((current) => mergeGoalKinds(current, kinds));
+  }
+
   function handleSave(
     exercises: ClientWorkoutExercise[],
     title: string,
@@ -183,7 +267,20 @@ export function ClientWorkoutsModal({
     clock?: { startedAt?: string | null; endedAt?: string | null } | null
   ) {
     if (!selectedDateKey) return false;
-    return saveDay(selectedDateKey, exercises, title, cardio, rest, clock);
+    const before = weekProgressForDate(getClientWorkoutLog(userId), selectedDateKey);
+    goalBeforeRef.current = before;
+    const saved = saveDay(selectedDateKey, exercises, title, cardio, rest, clock);
+    if (!saved) return false;
+    const afterLog = getClientWorkoutLog(userId);
+    const after = weekProgressForDate(afterLog, selectedDateKey);
+    rememberGoal(
+      goalKindsJustMet(before, after, {
+        cardio: hasCardioOnDay(afterLog, selectedDateKey),
+        workout: false,
+      }),
+      selectedDateKey
+    );
+    return true;
   }
 
   const selectedCoachWorkouts = selectedDateKey
@@ -216,18 +313,41 @@ export function ClientWorkoutsModal({
     return null;
   }
 
-  function handleWorkoutFinished(message: string | null) {
+  function handleWorkoutFinished(
+    message: string | null,
+    day?: ClientWorkoutDay,
+    source?: "cardio" | "workout"
+  ) {
     if (message) {
       setFinishError(message);
       setCelebrate(false);
+      setAchieved([]);
       return;
     }
     setFinishError(null);
-    setCelebrate(true);
+    const opened = openedGoalRef.current;
+    const before = goalBeforeRef.current ?? opened?.progress ?? null;
+    const dateKey = opened?.dateKey ?? null;
+    const afterLog = getClientWorkoutLog(userId);
+    const after = dateKey ? weekProgressForDate(afterLog, dateKey) : null;
+    const savedCardio = Boolean(day?.cardio?.type.trim() || day?.cardio?.duration.trim());
+    const savedWorkout = Boolean(day?.exercises.some((exercise) => exercise.name.trim()));
+    const kinds =
+      before && after && dateKey
+        ? goalKindsJustMet(before, after, {
+            cardio: savedCardio && (source === "cardio" || source === "workout"),
+            workout: source === "workout" && savedWorkout,
+          })
+        : [];
+    if (dateKey && kinds.length > 0) {
+      rememberGoal(kinds, dateKey);
+      return;
+    }
+    if (source === "workout" && savedWorkout) setCelebrate(true);
   }
 
   if (!mounted || typeof document === "undefined") return null;
-  if (!open && !celebrate && !finishError) return null;
+  if (!open && !celebrate && !finishError && achieved.length === 0) return null;
 
   const workouts = open ? createPortal(
     <div className="client-workouts-root" role="presentation">
@@ -277,7 +397,12 @@ export function ClientWorkoutsModal({
             </p>
             {progress.cardio ? (
               <p className="client-workouts-dialog__stat client-workouts-dialog__stat--cardio">
-                Cardio{" "}
+                Cardio
+                {progress.cardio.met ? (
+                  <span className="client-workouts-dialog__goal-check" aria-label="Cardio goal achieved">
+                    <CheckIcon className="h-3.5 w-3.5" />
+                  </span>
+                ) : null}{" "}
                 <strong>
                   {progress.cardio.done} / {progress.cardio.goal}
                 </strong>
@@ -462,6 +587,13 @@ export function ClientWorkoutsModal({
   return (
     <>
       {workouts}
+      {achieved[0] ? (
+        <GoalAchievedOverlay
+          key={`${achieved[0]}-${achieved.length}`}
+          kind={achieved[0]}
+          onDone={() => setAchieved((current) => current.slice(1))}
+        />
+      ) : null}
       {celebrate ? <WorkoutNiceOverlay onDone={() => setCelebrate(false)} /> : null}
       {finishError
         ? createPortal(

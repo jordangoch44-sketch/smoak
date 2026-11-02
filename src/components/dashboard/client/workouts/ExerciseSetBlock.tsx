@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { ExerciseAvatar } from "@/components/dashboard/client/workouts/ExerciseAvatar";
@@ -33,6 +33,13 @@ import {
 } from "@/lib/workouts/client-workout";
 import { cn } from "@/lib/utils";
 import type { ClientWorkoutExercise, ClientWorkoutSetLog } from "@/types/client-workout";
+
+/** A typed number, including 0. An empty box or a lone decimal is not filled. */
+function setEntryFilled(value: string | undefined): boolean {
+  const trimmed = (value ?? "").trim();
+  if (!trimmed || !/\d/.test(trimmed)) return false;
+  return Number.isFinite(Number.parseFloat(trimmed));
+}
 
 /** Set rows to show. Legacy "3 × 8" becomes three rows. A finished exercise shows every set checked. */
 function logsOf(exercise: ClientWorkoutExercise): ClientWorkoutSetLog[] {
@@ -133,9 +140,11 @@ export function ExerciseSetBlock({
 }) {
   const setIds = useRef<string[]>([]);
   const setAnchors = useRef<Array<HTMLSpanElement | null>>([]);
-  const knownPrs = useRef<Set<string>>(new Set());
-  const prReady = useRef(false);
+  const weightInputs = useRef<Array<HTMLInputElement | null>>([]);
+  const repsInputs = useRef<Array<HTMLInputElement | null>>([]);
   const logs = logsOf(exercise);
+  const logsRef = useRef(logs);
+  logsRef.current = logs;
   const previous = previousSetsForExercise(prior, exercise.name);
   const effort = exerciseEffort(exercise);
   const load = exerciseLoad(exercise);
@@ -145,6 +154,7 @@ export function ExerciseSetBlock({
   const assisted = load === "lb" && exerciseAssistsWithMachine(exercise);
   const [howToOpen, setHowToOpen] = useState(false);
   const [prFlight, setPrFlight] = useState<{ key: string; index: number } | null>(null);
+  const [gaps, setGaps] = useState<ReadonlySet<string>>(() => new Set());
   const named = exerciseLabel(exercise.name);
   const fromLibrary = Boolean(exercise.name.trim() && isKnownExercise(exercise.name));
 
@@ -170,21 +180,98 @@ export function ExerciseSetBlock({
     const rows = assisted
       ? next.map((log) => ({ ...log, weight: signAssistanceWeight(log.weight) }))
       : next;
+    logsRef.current = rows;
     onChange(exerciseWithSetLogs(exercise, rows), commit && Boolean(exercise.name.trim()));
   }
 
   function patchLog(index: number, patch: Partial<ClientWorkoutSetLog>) {
-    const next = logs.map((log, i) => (i === index ? { ...log, ...patch } : log));
+    const next = logsRef.current.map((log, i) => (i === index ? { ...log, ...patch } : log));
     writeLogs(next, true);
   }
 
   function removeSet(index: number) {
     if (logs.length < 2) return;
     setIds.current.splice(index, 1);
+    weightInputs.current.splice(index, 1);
+    repsInputs.current.splice(index, 1);
     writeLogs(
       logs.filter((_, i) => i !== index),
       true
     );
+  }
+
+  /** Next set's pounds box. Never adds a set. Bodyweight moves to the next reps box. */
+  function nextSetBox(index: number): HTMLInputElement | null {
+    const pounds = weightInputs.current[index + 1];
+    if (pounds?.isConnected) return pounds;
+    if (showLoad && loadIsWeight) return null;
+    const reps = repsInputs.current[index + 1];
+    return reps?.isConnected ? reps : null;
+  }
+
+  function focusNextSetBox(index: number) {
+    const next = nextSetBox(index);
+    if (!next) return;
+    next.focus({ preventScroll: true });
+  }
+
+  function onBoxKeyDown(index: number, event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== "Enter") return;
+    const next = nextSetBox(index);
+    if (!next) return;
+    event.preventDefault();
+    next.focus({ preventScroll: true });
+  }
+
+  function gapKey(index: number, field: "weight" | "reps") {
+    return `${setIds.current[index] ?? index}:${field}`;
+  }
+
+  function clearGap(index: number, field: "weight" | "reps") {
+    const key = gapKey(index, field);
+    setGaps((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  }
+
+  function toggleSet(index: number) {
+    const log = logsRef.current[index];
+    if (!log) return;
+    const completing = log.completed !== true;
+    if (!completing) {
+      patchLog(index, { completed: false });
+      setPrFlight((current) => (current?.index === index ? null : current));
+      return;
+    }
+    const weightMissing = showLoad && loadIsWeight && !setEntryFilled(log.weight);
+    const repsMissing = !setEntryFilled(log.reps);
+    if (weightMissing || repsMissing) {
+      const weightKey = gapKey(index, "weight");
+      const repsKey = gapKey(index, "reps");
+      setGaps((prev) => {
+        const next = new Set(prev);
+        if (weightMissing) next.add(weightKey);
+        else next.delete(weightKey);
+        if (repsMissing) next.add(repsKey);
+        else next.delete(repsKey);
+        return next;
+      });
+      return;
+    }
+    clearGap(index, "weight");
+    clearGap(index, "reps");
+    patchLog(index, { completed: true });
+    if (setIsWeightPersonalRecord(prior, exercise.name, logsRef.current, index, load)) {
+      setPrFlight({
+        key: `${setIds.current[index]}:${logsRef.current[index]?.weight ?? ""}`,
+        index,
+      });
+    }
+    // Same tap as the check, so iOS keeps the keyboard and moves it to the next pounds box.
+    focusNextSetBox(index);
   }
 
   while (setIds.current.length < logs.length) {
@@ -196,29 +283,6 @@ export function ExerciseSetBlock({
       ? `${setIds.current[index]}:${log.weight}`
       : ""
   );
-  const prSignature = prKeys.join("|");
-  const prKeysRef = useRef(prKeys);
-  prKeysRef.current = prKeys;
-
-  useEffect(() => {
-    const keys = prKeysRef.current;
-    if (!prReady.current) {
-      prReady.current = true;
-      for (const key of keys) {
-        if (key) knownPrs.current.add(key);
-      }
-      return;
-    }
-    for (const key of knownPrs.current) {
-      if (!keys.includes(key)) knownPrs.current.delete(key);
-    }
-    if (prFlight) return;
-    const index = keys.findIndex((key) => key && !knownPrs.current.has(key));
-    if (index < 0) return;
-    const key = keys[index];
-    knownPrs.current.add(key);
-    setPrFlight({ key, index });
-  }, [prSignature, prFlight]);
 
   return (
     <article
@@ -393,10 +457,17 @@ export function ExerciseSetBlock({
               {showLoad ? (
                 loadIsWeight ? (
                 <input
-                  className="exercise-block__input"
+                  ref={(node) => {
+                    weightInputs.current[index] = node;
+                  }}
+                  className={cn(
+                    "exercise-block__input",
+                    gaps.has(gapKey(index, "weight")) && "exercise-block__input--missing"
+                  )}
                   inputMode="decimal"
                   enterKeyHint="done"
                   autoComplete="off"
+                  aria-invalid={gaps.has(gapKey(index, "weight")) || undefined}
                   value={assisted ? signAssistanceWeight(log.weight) : log.weight}
                   placeholder={assisted ? "-0" : "0"}
                   aria-label={
@@ -408,13 +479,13 @@ export function ExerciseSetBlock({
                           ? `Set ${index + 1} weight in kilograms`
                           : `Set ${index + 1} weight in pounds`
                   }
-                  onChange={(event) =>
-                    patchLog(index, {
-                      weight: assisted
-                        ? signAssistanceWeight(event.target.value)
-                        : sanitizeWorkoutWeight(event.target.value),
-                    })
-                  }
+                  onChange={(event) => {
+                    const weight = assisted
+                      ? signAssistanceWeight(event.target.value)
+                      : sanitizeWorkoutWeight(event.target.value);
+                    patchLog(index, { weight });
+                    if (setEntryFilled(weight)) clearGap(index, "weight");
+                  }}
                   onBlur={(event) => {
                     const next = (
                       assisted
@@ -423,6 +494,7 @@ export function ExerciseSetBlock({
                     ).replace(/\.$/, "");
                     if (next !== log.weight) patchLog(index, { weight: next });
                   }}
+                  onKeyDown={(event) => onBoxKeyDown(index, event)}
                 />
                 ) : (
                   <span className="exercise-block__body" aria-hidden>
@@ -431,10 +503,17 @@ export function ExerciseSetBlock({
                 )
               ) : null}
               <input
-                className="exercise-block__input"
+                ref={(node) => {
+                  repsInputs.current[index] = node;
+                }}
+                className={cn(
+                  "exercise-block__input",
+                  gaps.has(gapKey(index, "reps")) && "exercise-block__input--missing"
+                )}
                 inputMode="decimal"
                 enterKeyHint="done"
                 autoComplete="off"
+                aria-invalid={gaps.has(gapKey(index, "reps")) || undefined}
                 value={log.reps}
                 placeholder="0"
                 aria-label={
@@ -442,14 +521,15 @@ export function ExerciseSetBlock({
                     ? `Set ${index + 1} distance in miles`
                     : `Set ${index + 1} reps`
                 }
-                onChange={(event) =>
-                  patchLog(index, {
-                    reps:
-                      effort === "distance"
-                        ? sanitizeWorkoutWeight(event.target.value)
-                        : sanitizeWorkoutCount(event.target.value, 4),
-                  })
-                }
+                onChange={(event) => {
+                  const reps =
+                    effort === "distance"
+                      ? sanitizeWorkoutWeight(event.target.value)
+                      : sanitizeWorkoutCount(event.target.value, 4);
+                  patchLog(index, { reps });
+                  if (setEntryFilled(reps)) clearGap(index, "reps");
+                }}
+                onKeyDown={(event) => onBoxKeyDown(index, event)}
               />
               <button
                 type="button"
@@ -464,7 +544,7 @@ export function ExerciseSetBlock({
                     : `Mark set ${index + 1} complete`
                 }
                 onPointerDown={(event) => event.preventDefault()}
-                onClick={() => patchLog(index, { completed: !log.completed })}
+                onClick={() => toggleSet(index)}
               >
                 <CheckIcon className="h-4 w-4" />
               </button>
@@ -529,6 +609,7 @@ export function ExerciseSetBlock({
       ) : null}
       {prFlight ? (
         <WorkoutPrFlight
+          key={prFlight.key}
           getAnchor={() => setAnchors.current[prFlight.index] ?? null}
           onDone={() => setPrFlight(null)}
         />

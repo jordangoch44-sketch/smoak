@@ -43,6 +43,10 @@ export interface ClientWorkoutExercise {
 export interface ClientWorkoutCardio {
   type: string;
   duration: string;
+  /** Miles. Omitted when the client leaves it blank. */
+  distance?: string;
+  /** Miles per hour. Omitted when the client leaves it blank. */
+  speed?: string;
   /** Checked off while the client is doing the workout. */
   completed?: boolean;
 }

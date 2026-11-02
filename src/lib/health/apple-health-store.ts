@@ -20,7 +20,7 @@ export interface AppleHealthSnapshot {
 
 interface AppleHealthBridge {
   isAvailable(): Promise<{ available: boolean }>;
-  requestAccess(): Promise<{ ok: boolean }>;
+  requestAccess(): Promise<{ ok: boolean; prompted?: boolean }>;
   queryWorkouts(options: { start: number; end: number }): Promise<{ workouts?: unknown[] }>;
 }
 
@@ -138,18 +138,13 @@ export async function connectAppleHealth(): Promise<void> {
   patch({ status: "loading", error: null });
   try {
     const bridge = await loadBridge();
-    const available = await bridge.isAvailable();
-    if (!available?.available) {
+    const access = await bridge.requestAccess();
+    if (!access?.ok) {
       patch({
         status: "error",
         connected: false,
         error: "Apple Health isn’t available on this iPhone.",
       });
-      return;
-    }
-    const access = await bridge.requestAccess();
-    if (!access?.ok) {
-      patch({ status: "error", connected: false, error: "Couldn’t open Apple Health." });
       return;
     }
     writeFlag(APPLE_HEALTH_CONNECTED_KEY, "1");
@@ -158,7 +153,15 @@ export async function connectAppleHealth(): Promise<void> {
     } catch {
       // The connected flag is enough for the next visit.
     }
-    patch({ connected: true, dismissed: false, status: "loading", error: null });
+    patch({
+      connected: true,
+      dismissed: false,
+      status: "loading",
+      error:
+        access.prompted === false
+          ? "Apple already has an answer for SMOAC, so the permission screen will not open again. In the Health app, open Sharing, then Apps, then SMOAC, and turn on Workouts."
+          : null,
+    });
   } catch (error) {
     patch({ status: "error", connected: false, error: connectError(error) });
   }
@@ -178,7 +181,11 @@ export async function refreshAppleHealth(startMs: number, endMs: number): Promis
         .map((item) => sanitizeAppleHealthWorkout(item))
         .filter((item): item is AppleHealthWorkout => item !== null)
     );
-    patch({ status: "ready", workouts, error: null });
+    patch({
+      status: "ready",
+      workouts,
+      error: workouts.length === 0 ? snapshot.error : null,
+    });
   } catch {
     if (seq !== requestSeq) return;
     patch({

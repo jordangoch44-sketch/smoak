@@ -109,15 +109,20 @@ private struct PauseResumeButton: View {
     private let accent = Color(red: 0.58, green: 0.36, blue: 0.98)
 
     var body: some View {
-        Button(intent: ToggleWorkoutClockIntent()) {
-            Text(paused ? "Resume" : "Pause")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 7)
-                .background(accent, in: Capsule())
+        if #available(iOS 17.0, *) {
+            LiveActivityIntentButton(label: label)
+        } else {
+            label
         }
-        .buttonStyle(.plain)
+    }
+
+    private var label: some View {
+        Text(paused ? "Resume" : "Pause")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 7)
+            .background(accent, in: Capsule())
     }
 }
 
@@ -125,12 +130,31 @@ private struct PauseResumeMark: View {
     let paused: Bool
 
     var body: some View {
+        if #available(iOS 17.0, *) {
+            LiveActivityIntentButton(label: mark)
+        } else {
+            mark
+        }
+    }
+
+    private var mark: some View {
+        Image(systemName: paused ? "play.fill" : "pause.fill")
+            .font(.caption.weight(.bold))
+            .foregroundStyle(.white)
+            .frame(width: 28, height: 28)
+            .background(Color(red: 0.58, green: 0.36, blue: 0.98), in: Circle())
+    }
+}
+
+/// `Button(intent:)` is iOS 17. Keeping it in this view is what lets the
+/// extension stay available on iOS 16.2.
+@available(iOS 17.0, *)
+private struct LiveActivityIntentButton<Label: View>: View {
+    let label: Label
+
+    var body: some View {
         Button(intent: ToggleWorkoutClockIntent()) {
-            Image(systemName: paused ? "play.fill" : "pause.fill")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(Color(red: 0.58, green: 0.36, blue: 0.98), in: Circle())
+            label
         }
         .buttonStyle(.plain)
     }

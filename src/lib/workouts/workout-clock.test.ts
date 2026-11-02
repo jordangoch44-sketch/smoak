@@ -6,6 +6,8 @@ import {
   currentWorkoutPosition,
   emptyClientWorkoutLog,
   formatCardioLine,
+  goalKindsJustMet,
+  weekProgressForDate,
   exerciseEffort,
   exerciseLoad,
   formatExerciseRange,
@@ -14,6 +16,7 @@ import {
   formatWorkoutDuration,
   pauseFromExternalClock,
   recordedWorkoutDuration,
+  sanitizeWorkoutCardio,
   sanitizeWorkoutExercise,
   toggleWorkoutClock,
   workoutClockFields,
@@ -82,6 +85,43 @@ describe("workout duration clock", () => {
     assert.equal(cardioChipLabel(cardio), "Zone");
     assert.equal(formatCardioLine(cardio), "Zone 2 easy run · 45 minutes easy");
     assert.equal(cardioChipLabel({ type: "", duration: "30 min" }), "30");
+    assert.equal(
+      formatCardioLine({
+        type: "Zone 2 easy run",
+        duration: "45 minutes easy",
+        distance: "3.1",
+        speed: "6.5",
+      }),
+      "Zone 2 easy run · 45 minutes easy · 3.1 mi · 6.5 mph"
+    );
+    assert.equal(
+      formatCardioLine({ type: "Bike", duration: "", distance: "12" }),
+      "Bike · 12 mi"
+    );
+    assert.equal(
+      formatCardioLine({ type: "Walk", duration: "", distance: "2 miles", speed: "90 rpm" }),
+      "Walk · 2 miles · 90 rpm"
+    );
+    assert.deepEqual(
+      sanitizeWorkoutCardio({
+        type: "Run",
+        duration: "30 min",
+        distance: "5.0 mph",
+        speed: "8.",
+        completed: true,
+      }),
+      {
+        type: "Run",
+        duration: "30 min",
+        distance: "5.0 mph",
+        speed: "8",
+        completed: true,
+      }
+    );
+    assert.equal(
+      sanitizeWorkoutCardio({ type: "", duration: "", distance: "3", speed: "6" }),
+      undefined
+    );
   });
 
   it("drops an end that falls before the start", () => {
@@ -204,6 +244,67 @@ describe("workout duration clock", () => {
       startedAt,
     };
     assert.equal(activeWorkoutForLiveActivity(log), null);
+  });
+
+  it("celebrates a goal only on the save that meets it", () => {
+    const workoutDay = (date: string) => ({
+      date,
+      title: "Push",
+      exercises: [{ id: "1", name: "Squat", sets: "1", reps: "5" }],
+    });
+    const cardioDay = (date: string) => ({
+      date,
+      title: "",
+      exercises: [],
+      cardio: { type: "Run", duration: "20 min" },
+    });
+    const before = emptyClientWorkoutLog();
+    before.days = {
+      "2026-11-01": workoutDay("2026-11-01"),
+      "2026-11-02": workoutDay("2026-11-02"),
+      "2026-11-03": workoutDay("2026-11-03"),
+      "2026-11-04": cardioDay("2026-11-04"),
+      "2026-11-05": cardioDay("2026-11-05"),
+    };
+    const after = emptyClientWorkoutLog();
+    after.days = {
+      ...before.days,
+      "2026-11-06": {
+        date: "2026-11-06",
+        title: "Pull",
+        exercises: [{ id: "2", name: "Row", sets: "1", reps: "8" }],
+        cardio: { type: "Bike", duration: "30 min" },
+      },
+    };
+    const opened = weekProgressForDate(before, "2026-11-06");
+    const saved = weekProgressForDate(after, "2026-11-06");
+    assert.equal(opened.workout.met, false);
+    assert.equal(opened.cardio?.met, false);
+    assert.deepEqual(
+      goalKindsJustMet(opened, saved, { cardio: true, workout: true }),
+      ["workout", "cardio"]
+    );
+    assert.deepEqual(
+      goalKindsJustMet(opened, saved, { cardio: true, workout: false }),
+      ["cardio"]
+    );
+    assert.deepEqual(
+      goalKindsJustMet(saved, saved, { cardio: true, workout: true }),
+      []
+    );
+    const noCardioGoal = emptyClientWorkoutLog();
+    noCardioGoal.cardioGoalDaysPerWeek = 0;
+    const withCardio = emptyClientWorkoutLog();
+    withCardio.cardioGoalDaysPerWeek = 0;
+    withCardio.days["2026-11-01"] = cardioDay("2026-11-01");
+    assert.deepEqual(
+      goalKindsJustMet(
+        weekProgressForDate(noCardioGoal, "2026-11-01"),
+        weekProgressForDate(withCardio, "2026-11-01"),
+        { cardio: true, workout: false }
+      ),
+      []
+    );
   });
 
   it("clears a paused clock when the timer restarts", () => {

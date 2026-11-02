@@ -214,6 +214,11 @@ export function ClientWorkoutsEntry({
             >
               <span className="client-workouts-entry__goal-label">
                 {line.label}
+                {line.id === "cardio" && line.met ? (
+                  <span className="client-workouts-entry__goal-check" aria-label="Cardio goal achieved">
+                    <CheckIcon className="h-3.5 w-3.5" />
+                  </span>
+                ) : null}
               </span>
               <div
                 className="client-workouts-entry__track"

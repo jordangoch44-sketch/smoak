@@ -849,10 +849,19 @@
 }
 
 .client-workouts-entry__goal-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.01em;
   color: rgba(255, 255, 255, 0.62);
+}
+
+.client-workouts-entry__goal-check {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: #fbbf24;
 }
 
 .client-workouts-entry__goal-count {
@@ -1130,9 +1139,17 @@
 }
 
 .client-workouts-dialog__stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
   margin: 0;
   font-size: 0.8125rem;
   color: rgba(255, 255, 255, 0.62);
+}
+
+.client-workouts-dialog__goal-check {
+  display: inline-flex;
+  color: #fbbf24;
 }
 
 .client-workouts-dialog__stat strong {
@@ -1571,6 +1588,23 @@
   text-align: center;
 }
 
+/* The icon row grows open so the date eases down instead of jumping. */
+.client-workouts-day__mark-slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  width: 100%;
+  transition: grid-template-rows 0.64s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.client-workouts-day__mark-slot--open {
+  grid-template-rows: 1fr;
+}
+
+.client-workouts-day__mark-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
 .client-workouts-day__mark {
   display: flex;
   align-items: center;
@@ -1578,6 +1612,19 @@
   gap: 0.45rem;
   margin-bottom: 0.2rem;
   color: #fff;
+  opacity: 0;
+  transform: translate3d(0, -0.28rem, 0);
+  transition:
+    opacity 0.2s ease,
+    transform 0.36s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.client-workouts-day__mark-slot--open .client-workouts-day__mark {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 0.48s ease 0.04s,
+    transform 0.64s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .client-workouts-day__mark-icon {
@@ -1680,6 +1727,24 @@
   line-height: 1.05;
 }
 
+/* Grows only as tall as the chip. A 1fr row was stretching into a blank gap on iOS. */
+.client-workouts-day__meta-slot {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 100%;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.client-workouts-day__meta-slot--open {
+  max-height: 3.25rem;
+}
+
+.client-workouts-day__meta-clip {
+  overflow: visible;
+}
+
 .client-workouts-day__meta {
   display: flex;
   flex-wrap: wrap;
@@ -1688,6 +1753,21 @@
   gap: 0.35rem;
   width: 100%;
   margin-top: 0.45rem;
+}
+
+.client-workouts-day__meta-slot--open .client-workouts-day__title-chip {
+  animation: client-workouts-chip-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes client-workouts-chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .client-workouts-day__meta:empty {
@@ -2287,8 +2367,8 @@ button.client-workouts-day__duration {
   flex-shrink: 0;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   transition:
-    grid-template-rows 0.34s cubic-bezier(0.32, 0.72, 0, 1) 0.04s,
-    border-color 0.34s ease 0.04s;
+    grid-template-rows 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+    border-color 0.5s ease;
 }
 
 .client-workouts-day__footer-inner {
@@ -2301,12 +2381,12 @@ button.client-workouts-day__duration {
   opacity: 1;
   transform: translate3d(0, 0, 0);
   transition:
-    opacity 0.26s ease 0.1s,
-    transform 0.36s cubic-bezier(0.32, 0.72, 0, 1) 0.04s,
-    padding 0.34s cubic-bezier(0.32, 0.72, 0, 1) 0.04s;
+    opacity 0.2s ease,
+    transform 0.5s cubic-bezier(0.32, 0.72, 0, 1),
+    padding 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Keyboard up: fields get the room. Keyboard ✓ blurs the field and the actions return. */
+/* Keyboard up: fields get the room. After ✓, the actions rise from the bottom. */
 .client-workouts-day--typing .client-workouts-day__footer {
   grid-template-rows: 0fr;
   border-top-color: transparent;
@@ -2317,8 +2397,8 @@ button.client-workouts-day__duration {
 
 .client-workouts-day--typing .client-workouts-day__footer-inner {
   padding-block: 0;
-  opacity: 0;
-  transform: translate3d(0, 0.75rem, 0);
+  opacity: 1;
+  transform: translate3d(0, 100%, 0);
   transition:
     opacity 0.12s ease,
     transform 0.24s cubic-bezier(0.32, 0.72, 0, 1),
@@ -2426,8 +2506,14 @@ button.client-workouts-day__duration {
   .client-workouts-dialog__chrome,
   .client-workouts-body,
   .client-workouts-day__footer,
-  .client-workouts-day__footer-inner {
+  .client-workouts-day__footer-inner,
+  .client-workouts-day__mark-slot,
+  .client-workouts-day__mark,
+  .client-workouts-day__meta-slot,
+  .client-workouts-day__meta,
+  .client-workouts-day__title-chip {
     transition: none;
+    animation: none;
   }
 }
 
@@ -2870,6 +2956,13 @@ html.client-workouts-keyboard .workout-pr-flight {
 .exercise-block__input:focus {
   outline: none;
   border-color: rgba(142, 182, 255, 0.55);
+}
+
+.exercise-block__input--missing,
+.exercise-block__input--missing:focus {
+  border-color: rgba(255, 107, 122, 0.95);
+  background: rgba(255, 80, 96, 0.16);
+  box-shadow: 0 0 0 1px rgba(255, 90, 105, 0.28);
 }
 
 .exercise-block__row--done .exercise-block__input {
@@ -3660,6 +3753,152 @@ span.exercise-picker__star {
   .workout-nice__mark,
   .workout-nice__text {
     animation: none;
+  }
+}
+
+.goal-achieved {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  background: rgba(4, 4, 8, 0.78);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.goal-achieved__confetti {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  pointer-events: none;
+}
+
+.goal-achieved__confetti--left {
+  left: 0;
+}
+
+.goal-achieved__confetti--right {
+  right: 0;
+}
+
+.goal-achieved__piece {
+  position: absolute;
+  left: 0;
+  width: 0.48rem;
+  height: 0.85rem;
+  opacity: 0;
+  animation: goal-confetti-pop 0.95s cubic-bezier(0.16, 0.84, 0.32, 1) both;
+}
+
+.goal-achieved__confetti--right .goal-achieved__piece {
+  left: auto;
+  right: 0;
+}
+
+.goal-achieved__stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.goal-achieved__trophy {
+  position: relative;
+  display: block;
+  width: 9.25rem;
+  height: 9.85rem;
+  filter: drop-shadow(0 12px 28px rgba(245, 196, 81, 0.38));
+  animation: goal-trophy-in 2.35s cubic-bezier(0.16, 0.72, 0.2, 1) 0.28s both;
+}
+
+.goal-achieved__trophy-shape {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.goal-achieved__trophy-icon {
+  position: absolute;
+  top: 32%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.85rem;
+  height: 2.85rem;
+  border-radius: 999px;
+  background: #fff6df;
+  color: #6a3412;
+  transform: translate(-50%, -50%);
+}
+
+.goal-achieved__text {
+  max-width: min(18rem, calc(100vw - 2.5rem));
+  font-size: 1.7rem;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  text-align: center;
+  animation: goal-text-in 0.5s ease 1.15s both;
+}
+
+@keyframes goal-confetti-pop {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(0.35);
+  }
+  16% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--spin)) scale(1);
+  }
+}
+
+@keyframes goal-trophy-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.18) rotate(-30deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(360deg);
+  }
+}
+
+@keyframes goal-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.45rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-achieved__piece {
+    animation: none;
+    opacity: 0;
+  }
+
+  .goal-achieved__trophy,
+  .goal-achieved__text {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }
 

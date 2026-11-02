@@ -29,6 +29,7 @@ import {
   cardioChipLabel,
   formatCardioLine,
   MAX_CARDIO_DURATION_LENGTH,
+  MAX_CARDIO_MEASURE_LENGTH,
   MAX_CARDIO_TYPE_LENGTH,
   formatWorkoutDayHeading,
   formatWorkoutDuration,
@@ -249,26 +250,40 @@ function DayKindMark({
   workout: boolean;
   rest: boolean;
 }) {
-  if (rest) {
-    return (
-      <div className="client-workouts-day__mark client-workouts-day__mark--rest" aria-hidden>
-        <BatteryChargingIcon />
-      </div>
-    );
-  }
-  if (!cardio && !workout) return null;
+  const open = rest || cardio || workout;
   return (
-    <div className="client-workouts-day__mark" aria-hidden>
-      {cardio ? (
-        <span className="client-workouts-day__mark-icon client-workouts-day__mark-icon--cardio">
-          <RunningShoeIcon />
-        </span>
-      ) : null}
-      {workout ? (
-        <span className="client-workouts-day__mark-icon client-workouts-day__mark-icon--workout">
-          <DumbbellIcon />
-        </span>
-      ) : null}
+    <div
+      className={cn(
+        "client-workouts-day__mark-slot",
+        open && "client-workouts-day__mark-slot--open"
+      )}
+    >
+      <div className="client-workouts-day__mark-clip">
+        <div
+          className={cn(
+            "client-workouts-day__mark",
+            rest && "client-workouts-day__mark--rest"
+          )}
+          aria-hidden
+        >
+          {rest ? (
+            <BatteryChargingIcon />
+          ) : (
+            <>
+              {cardio ? (
+                <span className="client-workouts-day__mark-icon client-workouts-day__mark-icon--cardio">
+                  <RunningShoeIcon />
+                </span>
+              ) : null}
+              {workout ? (
+                <span className="client-workouts-day__mark-icon client-workouts-day__mark-icon--workout">
+                  <DumbbellIcon />
+                </span>
+              ) : null}
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -297,7 +312,11 @@ interface ClientWorkoutDaySheetProps {
   /** Shown once every set is checked. Resolves to an error message, or null once finished. */
   onFinish?: (exercises: ClientWorkoutExercise[]) => Promise<string | null>;
   /** Called after the sheet has slid away. A saved day is included when finish succeeded. */
-  onFinished?: (message: string | null, workout?: ClientWorkoutDay) => void;
+  onFinished?: (
+    message: string | null,
+    workout?: ClientWorkoutDay,
+    source?: "cardio" | "workout"
+  ) => void;
   /**
    * Earlier exercises, newest first. Naming a new exercise copies that
    * session's sets, weights, and reps into the rows.
@@ -512,6 +531,8 @@ export function ClientWorkoutDaySheet({
     let handoff = false;
     let blurTimer = 0;
     let settleTimer = 0;
+    let revealTimer = 0;
+    let revealStarted = 0;
     let focusedField: HTMLElement | null = null;
 
     function apply(px: number) {
@@ -600,10 +621,32 @@ export function ClientWorkoutDaySheet({
       if (field instanceof HTMLElement && sheet.contains(field)) handoff = true;
     }
 
+    function stopFooterReveal() {
+      window.clearTimeout(revealTimer);
+      revealTimer = 0;
+    }
+
+    /** The Save row stays tucked until the keyboard has left, then rises from the bottom. */
+    function revealFooter() {
+      if (!keyboardDismissed) return;
+      const inset = readInset();
+      const waited = performance.now() - revealStarted;
+      if (inset > 12 && waited < 560) {
+        revealTimer = window.setTimeout(revealFooter, 32);
+        return;
+      }
+      displayed = 0;
+      target = 0;
+      apply(0);
+      clearWorkoutSheetKeyboardPad(sheet);
+      setTyping(false);
+    }
+
     function onFocusIn(event: FocusEvent) {
       if (!isWorkoutField(event.target)) return;
       if (!sheet.contains(event.target)) return;
       window.clearTimeout(blurTimer);
+      stopFooterReveal();
       handoff = false;
       keyboardDismissed = false;
       focusedField = event.target;
@@ -629,15 +672,9 @@ export function ClientWorkoutDaySheet({
       focusedField = null;
       window.clearTimeout(settleTimer);
       if (touch) {
-        setTyping(false);
         setWorkoutKeyboardChrome(false);
-        window.setTimeout(() => {
-          if (!keyboardDismissed) return;
-          displayed = 0;
-          target = 0;
-          apply(0);
-          clearWorkoutSheetKeyboardPad(sheet);
-        }, 420);
+        revealStarted = performance.now();
+        revealFooter();
         return;
       }
       stopEase();
@@ -670,6 +707,7 @@ export function ClientWorkoutDaySheet({
       stopEase();
       window.clearTimeout(settleTimer);
       window.clearTimeout(blurTimer);
+      stopFooterReveal();
       clearWorkoutSheetKeyboardPad(sheet);
       setWorkoutKeyboardChrome(false);
       root.style.removeProperty("--workout-keyboard-inset");
@@ -947,7 +985,7 @@ export function ClientWorkoutDaySheet({
     const day = finishedDay();
     afterCloseRef.current = () => {
       if (!finish) return;
-      onFinishedRef.current?.(null, day);
+      onFinishedRef.current?.(null, day, "workout");
       void finish(named).then((message) => {
         if (message) onFinishedRef.current?.(message);
       });
@@ -967,7 +1005,7 @@ export function ClientWorkoutDaySheet({
     setFinishing(true);
     const day = finishedDay();
     afterCloseRef.current = () => {
-      onFinishedRef.current?.(null, day);
+      onFinishedRef.current?.(null, day, "workout");
     };
     requestClose();
   }
@@ -987,7 +1025,7 @@ export function ClientWorkoutDaySheet({
     setFinishing(true);
     const day = finishedDay();
     afterCloseRef.current = () => {
-      onFinishedRef.current?.(null, day);
+      onFinishedRef.current?.(null, day, "workout");
     };
     requestClose();
   }
@@ -1062,7 +1100,9 @@ export function ClientWorkoutDaySheet({
       setError("Add a cardio type or duration.");
       return;
     }
-    const saved = persist(exercises);
+    const cleaned = sanitizeWorkoutCardio(cardio);
+    if (cleaned) setCardio(cleaned);
+    const saved = persist(exercises, title, cleaned);
     if (!saved) {
       setError("Couldn’t save the cardio.");
       return;
@@ -1072,6 +1112,10 @@ export function ClientWorkoutDaySheet({
       setStep("workout");
       return;
     }
+    const day = finishedDay();
+    afterCloseRef.current = () => {
+      onFinishedRef.current?.(null, day, "cardio");
+    };
     requestClose();
   }
 
@@ -1282,37 +1326,47 @@ export function ClientWorkoutDaySheet({
                 </span>
               )}
             </h3>
-            {!send && (startedAt || step === "workout" || title.trim() || hasCardio) ? (
-              <div className="client-workouts-day__meta">
-                {startedAt ? (
-                  <WorkoutDurationChip
-                    startedAt={startedAt}
-                    endedAt={endedAt}
-                    pausedAt={pausedAt}
-                    pausedMs={pausedMs}
-                    onToggle={endedAt ? undefined : toggleClock}
-                    onRestart={endedAt ? undefined : restartClock}
-                  />
-                ) : !endedAt && step === "workout" ? (
-                  <FastActivateButton
-                    className="client-workouts-day__duration"
-                    aria-label="Tap to start workout"
-                    onActivate={startClock}
-                  >
-                    Tap to start workout
-                  </FastActivateButton>
-                ) : null}
-                {title.trim() ? (
-                  <span className="client-workouts-day__title-chip">{title.trim()}</span>
-                ) : null}
-                {hasCardio && cardioChipLabel(cardio) ? (
-                  <span
-                    className="client-workouts-day__title-chip client-workouts-day__title-chip--cardio"
-                    aria-label={formatCardioLine(cardio)}
-                  >
-                    {cardioChipLabel(cardio)}
-                  </span>
-                ) : null}
+            {!send ? (
+              <div
+                className={cn(
+                  "client-workouts-day__meta-slot",
+                  (startedAt || step === "workout" || title.trim() || hasCardio) &&
+                    "client-workouts-day__meta-slot--open"
+                )}
+              >
+                <div className="client-workouts-day__meta-clip">
+                  <div className="client-workouts-day__meta">
+                    {startedAt ? (
+                      <WorkoutDurationChip
+                        startedAt={startedAt}
+                        endedAt={endedAt}
+                        pausedAt={pausedAt}
+                        pausedMs={pausedMs}
+                        onToggle={endedAt ? undefined : toggleClock}
+                        onRestart={endedAt ? undefined : restartClock}
+                      />
+                    ) : !endedAt && step === "workout" ? (
+                      <FastActivateButton
+                        className="client-workouts-day__duration"
+                        aria-label="Tap to start workout"
+                        onActivate={startClock}
+                      >
+                        Tap to start workout
+                      </FastActivateButton>
+                    ) : null}
+                    {title.trim() ? (
+                      <span className="client-workouts-day__title-chip">{title.trim()}</span>
+                    ) : null}
+                    {hasCardio && cardioChipLabel(cardio) ? (
+                      <span
+                        className="client-workouts-day__title-chip client-workouts-day__title-chip--cardio"
+                        aria-label={formatCardioLine(cardio)}
+                      >
+                        {cardioChipLabel(cardio)}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             ) : null}
             {!send ? <ClientAppleHealthDayNote dateKey={dateKey} /> : null}
@@ -1558,6 +1612,44 @@ export function ClientWorkoutDaySheet({
                   setCardio((current) => ({
                     ...current,
                     duration: event.target.value.slice(0, MAX_CARDIO_DURATION_LENGTH),
+                  }));
+                  setError(null);
+                }}
+              />
+              <input
+                className="client-workouts-ex__name"
+                value={cardio.distance ?? ""}
+                enterKeyHint="done"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                maxLength={MAX_CARDIO_MEASURE_LENGTH}
+                placeholder="Distance (Miles, Meters…)"
+                aria-label="Cardio distance, such as miles or meters, optional"
+                onChange={(event) => {
+                  setCardio((current) => ({
+                    ...current,
+                    distance: event.target.value.slice(0, MAX_CARDIO_MEASURE_LENGTH),
+                  }));
+                  setError(null);
+                }}
+              />
+              <input
+                className="client-workouts-ex__name"
+                value={cardio.speed ?? ""}
+                enterKeyHint="done"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                maxLength={MAX_CARDIO_MEASURE_LENGTH}
+                placeholder="Speed (Mph, RPM…)"
+                aria-label="Cardio speed, such as mph or RPM, optional"
+                onChange={(event) => {
+                  setCardio((current) => ({
+                    ...current,
+                    speed: event.target.value.slice(0, MAX_CARDIO_MEASURE_LENGTH),
                   }));
                   setError(null);
                 }}

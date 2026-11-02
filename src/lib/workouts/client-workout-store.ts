@@ -384,7 +384,12 @@ export function copyClientWorkoutDay(
   const title = sanitizeWorkoutTitle(source.title);
   const copiedCardio = sanitizeWorkoutCardio(source.cardio);
   const cardio = copiedCardio
-    ? { type: copiedCardio.type, duration: copiedCardio.duration }
+    ? {
+        type: copiedCardio.type,
+        duration: copiedCardio.duration,
+        ...(copiedCardio.distance ? { distance: copiedCardio.distance } : {}),
+        ...(copiedCardio.speed ? { speed: copiedCardio.speed } : {}),
+      }
     : undefined;
   const rest = source.rest === true && exercises.length === 0 && !title && !cardio;
   if (!rest && exercises.length === 0 && !cardio) return false;

@@ -48,25 +48,6 @@ export const SMOAC_LOADER_LOWER_GAP = 1366;
 export const SMOAC_LOADER_UPPER_HIDDEN = 1087;
 export const SMOAC_LOADER_LOWER_HIDDEN = 1236;
 
-function drawnPortion(offset: number, length: number): number {
-  if (!Number.isFinite(offset) || length <= 0) return 0;
-  return Math.min(1, Math.max(0, 1 - offset / length));
-}
-
-/** How much of the S is painted, from the top tip through the bottom tip. */
-export function smoacLoaderStrokePercent(
-  upperOffset: number,
-  lowerOffset: number
-): number {
-  const total = SMOAC_LOADER_UPPER_LENGTH + SMOAC_LOADER_LOWER_LENGTH;
-  const drawn =
-    drawnPortion(upperOffset, SMOAC_LOADER_UPPER_LENGTH) *
-      SMOAC_LOADER_UPPER_LENGTH +
-    drawnPortion(lowerOffset, SMOAC_LOADER_LOWER_LENGTH) *
-      SMOAC_LOADER_LOWER_LENGTH;
-  return Math.round((drawn / total) * 100);
-}
-
 /** Dash offset for a measured fill. 0 stays blank; 1 paints the whole stroke. */
 export function smoacLoaderStrokeOffset(
   length: number,
