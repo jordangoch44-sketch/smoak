@@ -94,7 +94,16 @@ body:has(.home-page--discovery) .site-page-backdrop__vignette {
   z-index: 0;
   border-radius: inherit;
   padding: 1.5px;
-  background: var(--smoac-color);
+  background: linear-gradient(
+    90deg,
+    var(--smoac-color-warm) 0%,
+    var(--smoac-color-rose) 18%,
+    var(--smoac-color-violet) 36%,
+    rgba(129, 140, 248, 0.82) 54%,
+    rgba(125, 211, 252, 0.34) 72%,
+    rgba(255, 255, 255, 0.22) 88%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
   -webkit-mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
@@ -111,7 +120,16 @@ body:has(.home-page--discovery) .site-page-backdrop__vignette {
 
 .home-page--discovery .home-hero-search__field:focus-within::before {
   padding: 1.75px;
-  background: var(--smoac-color-bright);
+  background: linear-gradient(
+    90deg,
+    #ff7a5c 0%,
+    var(--smoac-color-rose) 18%,
+    #c084fc 36%,
+    rgba(147, 197, 253, 0.82) 54%,
+    rgba(165, 243, 252, 0.34) 72%,
+    rgba(255, 255, 255, 0.26) 88%,
+    rgba(255, 255, 255, 0.12) 100%
+  );
 }
 
 @media (min-width: 1024px) {
@@ -159,13 +177,11 @@ body:has(.home-page--discovery) .site-page-backdrop__vignette {
 }
 
 .home-page--discovery .home-section__subtitle,
-.home-page--discovery .home-section__link,
-.home-page--discovery .home-specialty__view-all {
+.home-page--discovery .home-section__link {
   color: rgba(255, 255, 255, 0.55);
 }
 
-.home-page--discovery .home-section__link:hover,
-.home-page--discovery .home-specialty__view-all:hover {
+.home-page--discovery .home-section__link:hover {
   color: #fff;
 }
 
@@ -187,28 +203,66 @@ body:has(.home-page--discovery) .site-page-backdrop__vignette {
   color: transparent;
 }
 
-/* Category tiles — same hairline language as admin metric cards */
+/* Category tiles — glass rounded square, label sits outside the control */
 .home-page--discovery .home-specialty-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.home-page--discovery .home-specialty-card__icon {
+  position: relative;
+  color: #c4b0f5;
+  border: none;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.055) 0%,
     rgba(255, 255, 255, 0.02) 100%
   );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.06),
-    0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.home-page--discovery .home-specialty-card:hover,
-.home-page--discovery .home-specialty-card:active {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.05);
+.home-page--discovery .home-specialty-card__icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    90deg,
+    var(--smoac-color-warm) 0%,
+    var(--smoac-color-rose) 18%,
+    var(--smoac-color-violet) 36%,
+    rgba(129, 140, 248, 0.82) 54%,
+    rgba(125, 211, 252, 0.34) 72%,
+    rgba(255, 255, 255, 0.22) 88%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
 }
 
-.home-page--discovery .home-specialty-card__icon,
-.home-page--discovery .home-specialty-card__chevron {
-  color: rgba(167, 139, 250, 0.9);
+.home-page--discovery .home-specialty-card__svg {
+  position: relative;
+  z-index: 1;
+}
+
+.home-page--discovery .home-specialty-card:active .home-specialty-card__icon::before {
+  background: linear-gradient(
+    90deg,
+    #ff7a5c 0%,
+    var(--smoac-color-rose) 18%,
+    #c084fc 36%,
+    rgba(147, 197, 253, 0.82) 54%,
+    rgba(165, 243, 252, 0.34) 72%,
+    rgba(255, 255, 255, 0.26) 88%,
+    rgba(255, 255, 255, 0.12) 100%
+  );
 }
 
 /* Specialist cards on Marketplace only */
@@ -225,13 +279,31 @@ body:has(.home-page--discovery) .site-page-backdrop__vignette {
 }
 
 @media (hover: hover) {
-  .home-page--discovery .trainer-card > a:hover > article,
-  .home-page--discovery .home-specialty-card:hover {
+  .home-page--discovery .trainer-card > a:hover > article {
     transform: none;
     border-color: rgba(255, 255, 255, 0.14) !important;
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.08),
       0 8px 24px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .home-page--discovery .home-specialty-card:hover .home-specialty-card__icon {
+    border-color: rgba(196, 176, 245, 0.45);
+    color: #ddd0ff;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+
+  .home-page--discovery .home-specialty-card:hover .home-specialty-card__icon::before {
+    background: linear-gradient(
+      90deg,
+      #ff7a5c 0%,
+      var(--smoac-color-rose) 18%,
+      #c084fc 36%,
+      rgba(147, 197, 253, 0.82) 54%,
+      rgba(165, 243, 252, 0.34) 72%,
+      rgba(255, 255, 255, 0.26) 88%,
+      rgba(255, 255, 255, 0.12) 100%
+    );
   }
 }
 

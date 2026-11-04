@@ -711,26 +711,6 @@ html.native-app .explore-page--map-shell {
       0 10px 28px rgba(0, 0, 0, 0.28);
   }
 
-  .site-header__aurora {
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none !important;
-    background:
-      radial-gradient(
-        ellipse 80% 120% at 12% -20%,
-        rgba(var(--aurora-lavender-rgb), 0.12) 0%,
-        transparent 55%
-      ),
-      radial-gradient(
-        ellipse 60% 90% at 88% 110%,
-        rgba(var(--aurora-violet-rgb), 0.08) 0%,
-        transparent 58%
-      );
-    opacity: 0.85;
-    transition: opacity 0.4s ease;
-  }
-
   .site-header--utility[data-scrolled="true"] .site-header__aurora,
   .site-header--utility.site-header--panel-open .site-header__aurora {
     opacity: 1;

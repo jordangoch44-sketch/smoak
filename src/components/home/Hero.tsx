@@ -1,4 +1,5 @@
 import { SiteLocationPill } from "@/components/location/SiteLocationPill";
+import { AuroraLight } from "@/components/ui/AuroraLight";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
 import { HomeBoostRibbon } from "./HomeBoostRibbon";
 import { HomeSearchBar } from "./HomeSearchBar";
@@ -33,11 +34,13 @@ export function Hero() {
       </div>
       <div className="home-hero__content home-hero__content--discovery">
         <div className="home-hero__headline">
+          <AuroraLight className="home-hero__aurora-light" />
           <RotatingSpecialistHeadline />
           <p className="home-hero__lede">
             Discover the highest-rated health &amp; wellness professionals in
             your area.
           </p>
+          <span className="home-hero__rule" aria-hidden />
         </div>
         <HomeSearchBar />
         <HomeBoostRibbon />

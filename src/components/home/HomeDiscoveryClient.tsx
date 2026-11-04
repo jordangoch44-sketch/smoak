@@ -8,6 +8,7 @@ import {
   NewSpecialists,
   HomeCalorieCalculatorCta,
 } from "@/components/home";
+import { HomeRankingsCta } from "@/components/home/HomeRankingsCta";
 import { HomeRailsLoading } from "@/components/home/HomeRouteLoading";
 import { useHydrated } from "@/hooks/useHydrated";
 import { usePublicCatalog } from "@/hooks/usePublicCatalog";
@@ -17,11 +18,10 @@ import type { Trainer } from "@/types/trainer";
 
 /**
  * Marketplace discovery rails — catalog from the session store.
- * Categories (and the city-rankings CTA) sit above. The lead rail is
- * Sponsored when anyone is paying for a boost; otherwise New Specialists
- * takes that slot. The calorie calculator sits under the lead rail, then
- * Free 1st session. New stays below Free 1st session only while Sponsored
- * is showing, so the two rails never repeat. Featured follows.
+ * Categories sit above. New Specialists is the next rail, so the sliding
+ * cards sit directly under the category row. City rankings follows those
+ * cards. Sponsored follows only when someone is paying for a boost. Then
+ * Free 1st session, the calorie calculator, and Featured.
  */
 export function HomeDiscoveryClient({
   initialCatalog,
@@ -56,28 +56,29 @@ export function HomeDiscoveryClient({
 
   return (
     <>
+      <NewSpecialists
+        initialCatalog={resolvedCatalog}
+        catalogMode={resolvedMode}
+      />
+      <section className="home-rankings-slot" aria-label="City rankings">
+        <div className="home-section__inner mx-auto max-w-7xl px-4 sm:px-6">
+          <HomeRankingsCta
+            initialCatalog={resolvedCatalog}
+            catalogMode={resolvedMode}
+          />
+        </div>
+      </section>
       {hasSponsored ? (
         <SponsoredSpecialists
           initialCatalog={resolvedCatalog}
           catalogMode={resolvedMode}
         />
-      ) : (
-        <NewSpecialists
-          initialCatalog={resolvedCatalog}
-          catalogMode={resolvedMode}
-        />
-      )}
-      <HomeCalorieCalculatorCta />
+      ) : null}
       <FreeFirstSessionSpecialists
         initialCatalog={resolvedCatalog}
         catalogMode={resolvedMode}
       />
-      {hasSponsored ? (
-        <NewSpecialists
-          initialCatalog={resolvedCatalog}
-          catalogMode={resolvedMode}
-        />
-      ) : null}
+      <HomeCalorieCalculatorCta />
       <FeaturedSpotlightSpecialists
         initialCatalog={resolvedCatalog}
         catalogMode={resolvedMode}
