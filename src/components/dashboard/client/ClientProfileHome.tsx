@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
+  CalendarIcon,
   ChartIcon,
   ChevronRightIcon,
   DumbbellIcon,
@@ -11,8 +12,10 @@ import {
   LogOutIcon,
   MessageBubbleIcon,
   PencilIcon,
+  PhotosStackIcon,
   PlusIcon,
 } from "@/components/ui/icons";
+import { AuroraPageHeader } from "@/components/ui/AuroraPageHeader";
 import { CLIENT_SESSION_FORMAT_OPTIONS } from "@/constants/client-profile-options";
 import { useClientWorkouts } from "@/hooks/useClientWorkouts";
 import type { ClientProfileEditorFocus } from "./ClientProfileEditModal";
@@ -77,7 +80,8 @@ export function ClientProfileHome({
 
   return (
     <div className="client-profile-home">
-      <header className="client-profile-home__hero">
+      <AuroraPageHeader className="aurora-page-header--profile">
+        <div className="client-profile-home__hero">
         <FastActivateButton
           className="client-profile-home__avatar"
           aria-label={avatarUrl ? `${name || "Profile"}. Edit photo` : "Add a profile photo"}
@@ -143,7 +147,8 @@ export function ClientProfileHome({
             />
           </div>
         </div>
-      </header>
+        </div>
+      </AuroraPageHeader>
 
       {notices}
 
@@ -196,10 +201,30 @@ export function ClientProfileHome({
           </FastActivateButton>
         </div>
         <div className="client-profile-home__facts">
-          <Fact label="Training" value={style} onOpen={() => onEditProfile("specialties")} />
-          <Fact label="Format" value={format} onOpen={() => onEditProfile("format")} />
-          <Fact label="Frequency" value={frequency} onOpen={() => onEditProfile("frequency")} />
-          <Fact label="Location" value={place} onOpen={() => onEditProfile("location")} />
+          <Fact
+            label="Training"
+            value={style}
+            icon={<DumbbellIcon className="h-4 w-4" />}
+            onOpen={() => onEditProfile("specialties")}
+          />
+          <Fact
+            label="Format"
+            value={format}
+            icon={<PhotosStackIcon className="h-4 w-4" />}
+            onOpen={() => onEditProfile("format")}
+          />
+          <Fact
+            label="Frequency"
+            value={frequency}
+            icon={<CalendarIcon className="h-4 w-4" />}
+            onOpen={() => onEditProfile("frequency")}
+          />
+          <Fact
+            label="Location"
+            value={place}
+            icon={<LocationMarkIcon className="h-4 w-4" />}
+            onOpen={() => onEditProfile("location")}
+          />
         </div>
       </section>
 
@@ -278,10 +303,12 @@ function ProfileChip({
 function Fact({
   label,
   value,
+  icon,
   onOpen,
 }: {
   label: string;
   value: string;
+  icon: ReactNode;
   onOpen: () => void;
 }) {
   if (!value) {
@@ -291,7 +318,10 @@ function Fact({
         aria-label={`Add ${label}`}
         onActivate={onOpen}
       >
-        <PlusIcon className="h-4 w-4" />
+        <span className="client-profile-home__fact-icon" aria-hidden>
+          {icon}
+        </span>
+        <PlusIcon className="h-3.5 w-3.5" />
         <span>{label}</span>
       </FastActivateButton>
     );
@@ -302,6 +332,9 @@ function Fact({
       aria-label={`Edit ${label}`}
       onActivate={onOpen}
     >
+      <span className="client-profile-home__fact-icon" aria-hidden>
+        {icon}
+      </span>
       <span className="client-profile-home__fact-label">{label}</span>
       <span className="client-profile-home__fact-value">{value}</span>
     </FastActivateButton>

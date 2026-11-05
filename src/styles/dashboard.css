@@ -513,7 +513,7 @@
 }
 
 .dashboard-page--client {
-  background: #080b10;
+  background: #050609;
 }
 
 .dashboard-page__specialist-cosmos {
@@ -577,6 +577,12 @@
 .dashboard-page--specialist .dashboard-page__specialist-aurora .aurora-atmosphere__starfield,
 .dashboard-page--client .dashboard-page__specialist-aurora .aurora-atmosphere__starfield {
   opacity: 1;
+}
+
+.dashboard-page--client .dashboard-page__header-glow,
+.dashboard-page--client .atmosphere-vignette,
+.dashboard-page--client .atmosphere-grain {
+  display: none;
 }
 
 .dashboard-page--specialist .dashboard-page__header-glow,

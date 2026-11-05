@@ -8,6 +8,7 @@ import { DashboardPageShell } from "@/components/dashboard/shared/DashboardPageS
 import { ClientSuggestedWorkout } from "@/components/dashboard/client/workouts/ClientSuggestedWorkout";
 import { ClientWorkoutsEntry } from "@/components/dashboard/client/workouts/ClientWorkoutsEntry";
 import { ClientWorkoutsGate } from "@/components/dashboard/client/workouts/ClientWorkoutsGate";
+import { AuroraPageHeader } from "@/components/ui/AuroraPageHeader";
 import { SPECIALIST_DASHBOARD_PATH } from "@/lib/auth-routes";
 import { INTERNAL_DASHBOARD_PATH } from "@/lib/internal-routes";
 
@@ -37,20 +38,22 @@ export function ClientWorkoutsPageClient() {
   const userId = session.userId;
 
   return (
-    <DashboardPageShell
-      variant="client"
-      eyebrow="Workouts"
-      title="Your training"
-      headerClassName="client-workouts-header"
-    >
-      <section className="client-workouts-page">
-        <ClientWorkoutsEntry
-          userId={userId}
-          pasteFrom={pasteFrom}
-          onPasteFromChange={setPasteFrom}
+    <DashboardPageShell variant="client" hideHeader>
+      <div className="client-training-screen">
+        <AuroraPageHeader
+          eyebrow="Workouts"
+          title="Your Training"
+          subtitle="Programs, progress, and everything for your training."
         />
-        <ClientSuggestedWorkout userId={userId} onPaste={setPasteFrom} />
-      </section>
+        <section className="client-workouts-page">
+          <ClientWorkoutsEntry
+            userId={userId}
+            pasteFrom={pasteFrom}
+            onPasteFromChange={setPasteFrom}
+          />
+          <ClientSuggestedWorkout userId={userId} onPaste={setPasteFrom} />
+        </section>
+      </div>
     </DashboardPageShell>
   );
 }

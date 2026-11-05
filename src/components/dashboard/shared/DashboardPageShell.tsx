@@ -67,7 +67,7 @@ export function DashboardPageShell({
       data-admin-section={isAdmin ? adminSection : undefined}
     >
       <div className="dashboard-page__canvas" aria-hidden>
-        {isSpecialist || isClient ? (
+        {isSpecialist ? (
           <div className="dashboard-page__specialist-cosmos">
             <AuroraAtmosphere
               intensity="medium"
@@ -78,7 +78,7 @@ export function DashboardPageShell({
               className="dashboard-page__specialist-aurora"
             />
           </div>
-        ) : isAdmin ? (
+        ) : isClient ? null : isAdmin ? (
           <AdminCosmosBackdrop section={adminSection} />
         ) : (
           <div className="atmosphere-mesh">

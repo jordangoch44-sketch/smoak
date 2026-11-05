@@ -1,15 +1,30 @@
 /* Client dashboard — compact completion strip + profile rows */
 
 .dashboard-page--client {
-  --client-frost-bg: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.08) 0%,
-    rgba(18, 16, 28, 0.52) 42%,
-    rgba(10, 9, 16, 0.68) 100%
-  );
-  --client-frost-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 8px 28px rgba(0, 0, 0, 0.28);
+  background: #050609;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    var(--font-inter), system-ui, sans-serif;
+  --client-card: #14131b;
+  --client-tile: #0b0c11;
+  --client-line: rgba(255, 255, 255, 0.08);
+  --client-frost-bg: var(--client-card);
+  --client-frost-shadow: none;
+}
+
+.dashboard-page--client .atmosphere-vignette,
+.dashboard-page--client .atmosphere-grain,
+.dashboard-page--client .dashboard-page__header-glow {
+  display: none;
+}
+
+.client-training-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 1.05rem;
+  width: 100%;
+  max-width: 28.5rem;
+  margin-inline: auto;
 }
 
 .client-dash-progress {
@@ -252,13 +267,13 @@
 .client-profile-home__avatar {
   position: relative;
   flex-shrink: 0;
-  width: 4.65rem;
-  height: 4.65rem;
+  width: 4.5rem;
+  height: 4.5rem;
   padding: 2px;
   border: none;
   border-radius: 999px;
-  background: linear-gradient(135deg, #e879f9, #8b5cf6 55%, #60a5fa);
-  box-shadow: 0 0 22px rgba(139, 92, 246, 0.45);
+  background: linear-gradient(135deg, #ff8aa3, #e879f9 38%, #8b5cf6 68%, #67e8f9);
+  box-shadow: none;
   cursor: pointer;
 }
 
@@ -325,10 +340,10 @@
   margin: 0;
   min-width: 0;
   overflow: hidden;
-  font-size: 1.7rem;
-  font-weight: 650;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #fff;
@@ -375,9 +390,9 @@
   min-height: 2rem;
   padding: 0 0.75rem;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -437,15 +452,11 @@ button.client-profile-home__chip {
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  padding: 0.95rem 0.95rem 1rem;
-  border-radius: 1.35rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015)),
-    rgba(16, 14, 28, 0.72);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 28px rgba(0, 0, 0, 0.22);
+  padding: 1rem 0.95rem 1rem;
+  border-radius: 1.65rem;
+  border: 1px solid var(--client-line, rgba(255, 255, 255, 0.08));
+  background: var(--client-card, #14131b);
+  box-shadow: none;
 }
 
 .client-profile-home__card-top {
@@ -502,9 +513,9 @@ button.client-profile-home__chip {
 
 .client-profile-home__goal-title {
   margin: 0;
-  font-size: 1.05rem;
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
   color: #fff;
 }
 
@@ -524,19 +535,24 @@ button.client-profile-home__chip {
 
 .client-profile-home__fact {
   display: flex;
-  aspect-ratio: 1;
   width: 100%;
   min-width: 0;
+  min-height: 5.55rem;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.28rem;
-  padding: 0.35rem 0.25rem;
-  border-radius: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(8, 7, 16, 0.55);
+  gap: 0.22rem;
+  padding: 0.65rem 0.28rem 0.6rem;
+  border-radius: 1.05rem;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--client-tile, #0b0c11);
   text-align: center;
   cursor: pointer;
+}
+
+.client-profile-home__fact-icon {
+  display: flex;
+  color: #c4b5fd;
 }
 
 .client-profile-home__fact-label {
@@ -547,10 +563,10 @@ button.client-profile-home__chip {
 }
 
 .client-profile-home__fact-value {
-  font-size: 0.6875rem;
+  font-size: 0.72rem;
   font-weight: 650;
   line-height: 1.2;
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff;
   overflow-wrap: anywhere;
 }
 
@@ -791,11 +807,13 @@ button.client-profile-home__chip {
   display: inline-flex;
   max-width: 100%;
   align-items: center;
-  padding: 0.42rem 0.8rem;
-  border: 1px solid rgba(96, 165, 250, 0.72);
+  padding: 0.38rem 0.85rem;
+  border: 1px solid transparent;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.22);
-  color: #dbeafe;
+  background:
+    linear-gradient(#16141f, #16141f) padding-box,
+    linear-gradient(100deg, #7dd3fc, #a78bfa 55%, #f472b6) border-box;
+  color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.2;
@@ -834,9 +852,9 @@ button.client-profile-home__chip {
   width: 100%;
   min-height: 2.9rem;
   padding: 0 1rem 0 2.6rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.95rem;
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  background: #0c0d12;
   font-size: 16px;
   color: #fff;
   outline: none;

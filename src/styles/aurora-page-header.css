@@ -1,0 +1,98 @@
+/* Editorial header shared by Workouts and Profile. */
+
+.aurora-page-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  margin: 0;
+  isolation: isolate;
+}
+
+.aurora-page-header__light.aurora-light {
+  position: absolute;
+  z-index: 0;
+  top: -2.6rem;
+  right: -22%;
+  left: auto;
+  width: 108%;
+  height: 12.5rem;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.aurora-page-header--soft .aurora-page-header__light.aurora-light {
+  opacity: 0.48;
+}
+
+.aurora-page-header__body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.aurora-page-header__eyebrow {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f0b4d4;
+}
+
+.aurora-page-header__title {
+  margin: 0.28rem 0 0;
+  font-size: clamp(2.15rem, 8.4vw, 2.65rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  color: #fff;
+}
+
+.aurora-page-header__subtitle {
+  max-width: 16.75rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.98rem;
+  font-weight: 400;
+  line-height: 1.38;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.aurora-page-header__rule {
+  display: block;
+  width: 6.5rem;
+  height: 2px;
+  margin-top: 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #ff6b4a 0%,
+    #f472b6 36%,
+    #a855f7 68%,
+    #67e8f9 100%
+  );
+}
+
+.aurora-page-header--profile .aurora-page-header__light.aurora-light {
+  top: -3.1rem;
+  right: -28%;
+  width: 100%;
+  height: 11rem;
+}
+
+.aurora-page-header--profile .aurora-page-header__body {
+  gap: 0.85rem;
+}
+
+.aurora-page-header--profile .aurora-page-header__rule {
+  margin-top: 0.15rem;
+}
+
+.aurora-page-header--profile .client-profile-home__hero {
+  width: 100%;
+}

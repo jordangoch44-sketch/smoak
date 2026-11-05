@@ -5,6 +5,13 @@ import { cn } from "@/lib/utils";
 
 export interface AuroraLightProps {
   className?: string;
+  /**
+   * `cool` is the marketplace ribbon.
+   * `spectrum` adds coral and cyan for Workouts and Profile.
+   */
+  palette?: "cool" | "spectrum";
+  /** Path morph duration. Ignored when Reduce Motion is on. */
+  duration?: string;
 }
 
 /**
@@ -27,7 +34,20 @@ const RIBBON_PHASES = [
  * A faint ribbon behind the headline. The curve itself changes, so the light
  * flows along the type instead of sliding past as a fixed band.
  */
-export function AuroraLight({ className }: AuroraLightProps) {
+const SPECTRUM_STOPS: { offset: string; color: string; opacity: number }[] = [
+  { offset: "0%", color: "#ff6b4a", opacity: 0 },
+  { offset: "14%", color: "#ff7a8a", opacity: 0.55 },
+  { offset: "34%", color: "#e879f9", opacity: 0.5 },
+  { offset: "52%", color: "#a855f7", opacity: 0.48 },
+  { offset: "74%", color: "#67e8f9", opacity: 0.42 },
+  { offset: "100%", color: "#4c1d95", opacity: 0 },
+];
+
+export function AuroraLight({
+  className,
+  palette = "cool",
+  duration = "12s",
+}: AuroraLightProps) {
   const id = useId().replace(/:/g, "");
   const gradientId = `aurora-light-grad-${id}`;
   const blurId = `aurora-light-blur-${id}`;
@@ -57,12 +77,25 @@ export function AuroraLight({ className }: AuroraLightProps) {
             x2="1000"
             y2="0"
           >
-            <stop offset="0%" stopColor="#4c1d95" stopOpacity="0" />
-            <stop offset="16%" stopColor="#5b21b6" stopOpacity="0.7" />
-            <stop offset="38%" stopColor="#67e8f9" stopOpacity="0.55" />
-            <stop offset="58%" stopColor="#93c5fd" stopOpacity="0.5" />
-            <stop offset="80%" stopColor="#c084fc" stopOpacity="0.65" />
-            <stop offset="100%" stopColor="#4c1d95" stopOpacity="0" />
+            {palette === "spectrum" ? (
+              SPECTRUM_STOPS.map((stop) => (
+                <stop
+                  key={stop.offset}
+                  offset={stop.offset}
+                  stopColor={stop.color}
+                  stopOpacity={stop.opacity}
+                />
+              ))
+            ) : (
+              <>
+                <stop offset="0%" stopColor="#4c1d95" stopOpacity="0" />
+                <stop offset="16%" stopColor="#5b21b6" stopOpacity="0.7" />
+                <stop offset="38%" stopColor="#67e8f9" stopOpacity="0.55" />
+                <stop offset="58%" stopColor="#93c5fd" stopOpacity="0.5" />
+                <stop offset="80%" stopColor="#c084fc" stopOpacity="0.65" />
+                <stop offset="100%" stopColor="#4c1d95" stopOpacity="0" />
+              </>
+            )}
           </linearGradient>
           <filter id={blurId} x="-50%" y="-140%" width="200%" height="380%">
             <feGaussianBlur stdDeviation="34" />
@@ -77,7 +110,7 @@ export function AuroraLight({ className }: AuroraLightProps) {
           {reduceMotion ? null : (
             <animate
               attributeName="d"
-              dur="12s"
+              dur={duration}
               repeatCount="indefinite"
               calcMode="linear"
               values={RIBBON_PHASES.join(";")}
