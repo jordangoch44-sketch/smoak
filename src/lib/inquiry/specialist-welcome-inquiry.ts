@@ -45,7 +45,7 @@ export function buildSmoacWelcomeInquiryBody(firstName?: string): string {
 
 Clients reach you in Inquiries — the chat icon on Live view. Reply there to keep everything in one thread.
 
-Use Edit Profile for photos and how you show up on Marketplace. Membership and Boost live under Plan, or Overview if you’re on Pro.
+Use Edit Profile for photos and how you show up on Marketplace. Membership and Boost live under Plan, or Business if you’re on Pro.
 
 We’ll only send this once. Reply here if you need help.`;
 }

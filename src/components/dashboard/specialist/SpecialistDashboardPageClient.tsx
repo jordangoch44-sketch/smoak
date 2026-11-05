@@ -18,7 +18,6 @@ import {
   SubscriptionCard,
 } from "@/components/dashboard/specialist/cards";
 import {
-  OverviewPeriodChip,
   SpecialistOverviewBoard,
 } from "@/components/dashboard/specialist/SpecialistOverviewBoard";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
@@ -29,6 +28,7 @@ import { SpecialistFirstTour } from "@/components/dashboard/specialist/Specialis
 import { SpecialistLockedOverview } from "@/components/dashboard/specialist/SpecialistLockedOverview";
 import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
 import { SpecialistPendingOverview } from "@/components/dashboard/specialist/SpecialistPendingOverview";
+import { AuroraPageHeader } from "@/components/ui/AuroraPageHeader";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useCoachingRoster } from "@/hooks/useCoachingRoster";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
@@ -96,12 +96,12 @@ const welcomeDismissedThisRuntime = new Set<string>();
 let appBillingLaunchThisRuntime = false;
 
 const FREE_TABS: ReadonlyArray<{ id: FreeDashboardTab; label: string }> = [
-  { id: "overview", label: "Overview" },
+  { id: "overview", label: "Business" },
   { id: "profile", label: "Profile" },
 ];
 
 const PREMIUM_TABS: ReadonlyArray<{ id: PremiumDashboardTab; label: string }> = [
-  { id: "overview", label: "Overview" },
+  { id: "overview", label: "Business" },
   { id: "profile", label: "Profile" },
 ];
 
@@ -688,7 +688,7 @@ export function SpecialistDashboardPageClient() {
 
   const planBadgeTone = membershipBadgeToneForSession(session);
 
-  /* Plan badge sits on Profile. Overview keeps the period chip on the eyebrow row. */
+  /* Plan badge sits on Profile. Overview ranges live on the chart. */
   const roleLabel =
     headerSurface === "profile" ? profilePlanLabel : undefined;
 
@@ -697,7 +697,7 @@ export function SpecialistDashboardPageClient() {
   const headerCopy =
     headerSurface === "overview"
       ? {
-          eyebrow: "Overview",
+          eyebrow: "Business",
           title: (
             <>
               Good to see you, {firstName}
@@ -705,7 +705,7 @@ export function SpecialistDashboardPageClient() {
             </>
           ),
           subtitle:
-            "Here's how your profile performed in the last 30 days.",
+            "Visibility, profile visits, and the next thing worth finishing.",
         }
       : headerSurface === "profile"
         ? {
@@ -740,6 +740,9 @@ export function SpecialistDashboardPageClient() {
       smoacRating={rankingRating.rating}
       smoacReviewCount={rankingRating.reviewCount}
       sampleReputation={showSampleMetrics}
+      welcomeTasks={welcomeTasks}
+      live={!showSampleMetrics}
+      canSuggestIntroVideo={isPremium}
       categoryLabel={
         trainer ? resolveTrainerProfessionCategory(trainer) : undefined
       }
@@ -758,14 +761,7 @@ export function SpecialistDashboardPageClient() {
       roleLabel={roleLabel}
       roleLabelTone={roleLabelTone}
       headerClassName={`dashboard-page__header--${headerSurface}`}
-      headerEyebrowAside={
-        premiumDashboard && headerSurface === "overview" ? (
-          <OverviewPeriodChip label={analytics.periodLabel} />
-        ) : undefined
-      }
-      hideHeader={
-        headerSurface === "profile" || freeOverview || pendingOverview
-      }
+      hideHeader={headerSurface === "profile" || headerSurface === "overview"}
       statusLabel={
         profileFirst || isLivePublished || freeOverview || pendingOverview
           ? null
@@ -774,6 +770,19 @@ export function SpecialistDashboardPageClient() {
       statusTone={statusTone}
     >
       <div className="specialist-dash-layout">
+        {headerSurface === "overview" && !pendingOverview ? (
+          <AuroraPageHeader
+            className="aurora-page-header--business"
+            eyebrow="Business"
+            title={
+              <>
+                Good to see you, {firstName}
+                {liveDot}
+              </>
+            }
+            subtitle={headerCopy.subtitle}
+          />
+        ) : null}
         {showLastChance &&
         headerSurface !== "profile" &&
         !freeOverview &&

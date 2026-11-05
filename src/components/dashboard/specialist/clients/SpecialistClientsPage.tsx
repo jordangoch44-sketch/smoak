@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
+import { AuroraLight } from "@/components/ui/AuroraLight";
 import {
   AlertTriangleIcon,
   CalendarIcon,
@@ -507,6 +508,7 @@ export function SpecialistClientsPage({
   return (
     <div className="roster-page">
       <header className="roster-page__head" data-tour="clients">
+        <AuroraLight className="roster-page__aurora" />
         <div className="roster-page__intro">
           <h1 className="roster-page__title">Clients</h1>
           <p className="roster-page__subtitle">

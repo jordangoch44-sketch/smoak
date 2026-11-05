@@ -261,6 +261,12 @@ function mapTargetSectionToSectionId(target: string | null | undefined): Section
       return "profile-style";
     case "featured-specialties":
       return "specialties";
+    case "philosophy":
+    case "coaching-style":
+      return "philosophy";
+    case "ideal-clients":
+    case "ideal":
+      return "ideal-clients";
     default:
       return null;
   }

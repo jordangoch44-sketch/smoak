@@ -5,7 +5,7 @@ import "@/styles/aurora-page-header.css";
 
 export interface AuroraPageHeaderProps {
   eyebrow?: string;
-  title?: string;
+  title?: ReactNode;
   subtitle?: string;
   /** Accent line under the copy. Defaults on. */
   showRule?: boolean;
@@ -16,7 +16,7 @@ export interface AuroraPageHeaderProps {
 }
 
 /**
- * Editorial header for Workouts and Profile.
+ * Editorial header for Workouts, Profile, and Business.
  * The ribbon is decorative and does not receive touches.
  */
 export function AuroraPageHeader({

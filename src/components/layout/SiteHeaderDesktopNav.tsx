@@ -84,8 +84,8 @@ function SiteHeaderDesktopNavInner({
               ? pendingId === item.id
               : isActiveNavItem(item.id, pathname, searchParams);
           const label =
-            item.id === "saved" && item.label === "Overview"
-              ? "Overview"
+            item.id === "saved" && item.label === "Business"
+              ? "Business"
               : DESKTOP_NAV_LABELS[item.id];
 
           return (

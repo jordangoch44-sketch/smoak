@@ -471,7 +471,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       data-tour={
         item.id === "clients"
           ? "clients-tab"
-          : item.id === "saved" && item.label === "Overview"
+          : item.id === "saved" && item.label === "Business"
             ? "overview-tab"
             : undefined
       }

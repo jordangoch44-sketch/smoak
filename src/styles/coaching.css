@@ -158,10 +158,30 @@
 }
 
 .roster-page__head {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.9rem;
+  overflow: visible;
+}
+
+.roster-page__aurora.aurora-light {
+  position: absolute;
+  z-index: 0;
+  top: -2.5rem;
+  left: -14%;
+  width: 118%;
+  height: 11.5rem;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.roster-page__intro,
+.roster-page__add {
+  position: relative;
+  z-index: 1;
 }
 
 .roster-page__intro {

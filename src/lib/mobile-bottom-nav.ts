@@ -166,7 +166,7 @@ export function getMobileBottomNavItems(
       ? {
           id: "saved",
           href: SPECIALIST_DASHBOARD_OVERVIEW_HREF,
-          label: "Overview",
+          label: "Business",
           glyph: "chart",
         }
       : {

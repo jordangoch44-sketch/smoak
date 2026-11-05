@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AuroraPageHeader } from "@/components/ui/AuroraPageHeader";
 import {
   BookmarkIcon,
   ChartIcon,
@@ -83,21 +84,12 @@ export function SpecialistPendingOverview({
   const submittedLabel = formatSubmittedDate(submittedAt);
 
   return (
-    <section
-      className="specialist-pending-overview"
-      aria-labelledby="specialist-pending-overview-title"
-    >
-      <header className="specialist-pending-overview__header">
-        <h1
-          id="specialist-pending-overview-title"
-          className="specialist-pending-overview__title"
-        >
-          Overview
-        </h1>
-        <p className="specialist-pending-overview__lede">
-          Your performance at a glance
-        </p>
-      </header>
+    <section className="specialist-pending-overview" aria-label="Business">
+      <AuroraPageHeader
+        className="aurora-page-header--business"
+        title="Business"
+        subtitle="Your performance at a glance"
+      />
 
       <div
         className="specialist-pending-overview__review"
