@@ -342,6 +342,12 @@ export function applicationToProfileOverrides(
     ...(app.media?.trainingVideoUrls?.trim()
       ? { photoNotes: app.media.trainingVideoUrls.trim() }
       : {}),
+    ...(app.media?.introVideoUrl?.trim()
+      ? { introVideoUrl: app.media.introVideoUrl.trim() }
+      : {}),
+    ...(app.media?.profileVideoUrls?.trim()
+      ? { videoNotes: app.media.profileVideoUrls.trim() }
+      : {}),
     slideshowFramesJson: app.media?.slideshowFramesJson?.trim() ?? "",
     bookingAvailability: buildSessionExperience(app).join(", "),
     profileStyle: app.profileStyle

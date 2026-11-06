@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  DashboardButton,
   DashboardLoadingState,
   DashboardPageShell,
   BoostVisibilityModal,
@@ -17,17 +16,17 @@ import {
   BoostProfileCard,
   SubscriptionCard,
 } from "@/components/dashboard/specialist/cards";
+import { SpecialistOverviewBoard } from "@/components/dashboard/specialist/SpecialistOverviewBoard";
 import {
-  SpecialistOverviewBoard,
-} from "@/components/dashboard/specialist/SpecialistOverviewBoard";
+  SpecialistActivationBoard,
+  SpecialistProfileStrengthCard,
+} from "@/components/dashboard/specialist/SpecialistActivationBoard";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
 import { WorkoutFinishedBanner } from "@/components/dashboard/specialist/WorkoutFinishedBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistFirstTour } from "@/components/dashboard/specialist/SpecialistFirstTour";
 import { SpecialistLockedOverview } from "@/components/dashboard/specialist/SpecialistLockedOverview";
-import { SpecialistPendingApprovalNotice } from "@/components/dashboard/specialist/SpecialistPendingApprovalNotice";
-import { SpecialistPendingOverview } from "@/components/dashboard/specialist/SpecialistPendingOverview";
 import { AuroraPageHeader } from "@/components/ui/AuroraPageHeader";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { useCoachingRoster } from "@/hooks/useCoachingRoster";
@@ -39,6 +38,12 @@ import {
   VIEW_FINISHED_WORKOUT_EVENT,
 } from "@/lib/coaching/coach-workout";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
+import { syncApprovedProfileFromApplicationAsync } from "@/lib/managed-specialist-profile";
+import {
+  profileMeetsPublicationMinimum,
+  resolveSpecialistActivationPhase,
+  scoreSavedProfile,
+} from "@/lib/specialist-profile-strength";
 import {
   SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
@@ -51,7 +56,6 @@ import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
 import {
   canShowSpecialistGrowthAds,
   showsPremiumDashboard,
-  showsProfileFirstDashboard,
 } from "@/lib/specialist-dashboard-mode";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import {
@@ -153,7 +157,6 @@ function hrefForDashboardTab(tab: FreeDashboardTab | PremiumDashboardTab): strin
 export function SpecialistDashboardPageClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const justSubmitted = searchParams.get("submitted") === "1";
   const tabParam = searchParams.get("tab");
   const conversationParam = searchParams.get("c")?.trim() || "";
   const inquiriesView = searchParams.get("view") === "inquiries";
@@ -187,6 +190,8 @@ export function SpecialistDashboardPageClient() {
   const [requestReviewError, setRequestReviewError] = useState<string | null>(
     null
   );
+  const [publishBusy, setPublishBusy] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const {
     isReady,
@@ -194,6 +199,9 @@ export function SpecialistDashboardPageClient() {
     data,
     trainer,
     application,
+    formDefaults,
+    catalogPublished,
+    catalogKnown,
     welcomeTasks,
     welcomeAvatarUrl,
     welcomeDisplayName,
@@ -434,6 +442,19 @@ export function SpecialistDashboardPageClient() {
     );
   }
 
+  async function handlePublishProfile() {
+    if (!application || application.profileStatus !== "APPROVED") return;
+    setPublishBusy(true);
+    setPublishError(null);
+    try {
+      const result = await syncApprovedProfileFromApplicationAsync(application);
+      if (!result.ok) {
+        setPublishError(result.message || "Unable to publish your profile.");
+      }
+    } finally {
+      setPublishBusy(false);
+    }
+  }
   async function handleRequestReview() {
     if (!application?.id) return;
     setRequestReviewBusy(true);
@@ -470,8 +491,31 @@ export function SpecialistDashboardPageClient() {
         ? "rejected"
         : "pending";
 
-  const profileFirst = showsProfileFirstDashboard(dashboardMode);
-  const premiumDashboard = showsPremiumDashboard(dashboardMode);
+  const profileStrength = scoreSavedProfile(formDefaults);
+  const activationPhase = resolveSpecialistActivationPhase({
+    profileStatus: application?.profileStatus,
+    catalogPublished,
+    catalogKnown,
+  });
+  const showActivationBoard =
+    activationPhase === "under-review" ||
+    activationPhase === "changes-requested" ||
+    activationPhase === "approved-unpublished";
+  const activationEdit =
+    showActivationBoard &&
+    (editView ||
+      Boolean(searchParams.get("focus") || searchParams.get("section")));
+  const activationPreview =
+    showActivationBoard &&
+    searchParams.get("view") === "preview" &&
+    !activationEdit;
+  const canPublish =
+    activationPhase === "approved-unpublished" &&
+    formDefaults != null &&
+    profileMeetsPublicationMinimum(formDefaults);
+
+  const premiumDashboard =
+    showsPremiumDashboard(dashboardMode) && !showActivationBoard;
   const hasProfilePreview = Boolean(application && trainer);
   const cityRanking =
     data.ranking && trainer
@@ -482,37 +526,29 @@ export function SpecialistDashboardPageClient() {
         }
       : null;
   const showsInquiries =
-    dashboardMode === "approved-free" ||
-    dashboardMode === "approved-premium" ||
-    dashboardMode === "demo-premium";
-  const isPendingGate =
-    dashboardMode === "pending" || dashboardMode === "rejected";
-  const pendingOverview =
-    dashboardMode === "pending" && freeTab === "overview";
-  const showPendingLiveView =
-    dashboardMode === "pending" && hasProfilePreview && !pendingOverview;
-  const isFreeLive = dashboardMode === "approved-free";
+    !showActivationBoard &&
+    (dashboardMode === "approved-free" ||
+      dashboardMode === "approved-premium" ||
+      dashboardMode === "demo-premium");
+
+  const isFreeLive = dashboardMode === "approved-free" && !showActivationBoard;
   const onProTrial = Boolean(session.premiumTrialActive);
   const hadProTrial = Boolean(session.premiumTrialUsed);
   const isProPlus = isProPlusPlan(session.membershipPlan);
   const showLastChance = showProTrialLastChance(session);
 
   const freeOverview = isFreeLive && freeTab === "overview";
-  const headerSurface: SpecialistDashHeaderSurface = showPendingLiveView
-    ? "profile"
-    : pendingOverview
-      ? "overview"
-      : isPendingGate
-        ? "status"
-        : premiumDashboard
-          ? premiumTab === "profile"
-            ? "profile"
-            : "overview"
-          : isFreeLive
-            ? freeTab === "profile"
-              ? "profile"
-              : "overview"
-            : "status";
+  const headerSurface: SpecialistDashHeaderSurface = showActivationBoard
+    ? "status"
+    : premiumDashboard
+      ? premiumTab === "profile"
+        ? "profile"
+        : "overview"
+      : isFreeLive
+        ? freeTab === "profile"
+          ? "profile"
+          : "overview"
+        : "status";
   const finishedNotices = unseenCoachCompletions(coachingRoster.workouts).filter(
     (workout) => !locallySeenFinished.includes(workout.id)
   );
@@ -761,22 +797,28 @@ export function SpecialistDashboardPageClient() {
       roleLabel={roleLabel}
       roleLabelTone={roleLabelTone}
       headerClassName={`dashboard-page__header--${headerSurface}`}
-      hideHeader={headerSurface === "profile" || headerSurface === "overview"}
+      hideHeader={
+        headerSurface === "profile" ||
+        headerSurface === "overview" ||
+        showActivationBoard
+      }
       statusLabel={
-        profileFirst || isLivePublished || freeOverview || pendingOverview
+        showActivationBoard || isLivePublished || freeOverview
           ? null
           : profileStatusLabel
       }
       statusTone={statusTone}
     >
       <div className="specialist-dash-layout">
-        {headerSurface === "overview" && !pendingOverview ? (
+        {headerSurface === "overview" ? (
           <AuroraPageHeader
             className="aurora-page-header--business"
             eyebrow="Business"
             title={
               <>
-                Good to see you, {firstName}
+                <span className="aurora-page-header__title-text">
+                  Good to see you, {firstName}
+                </span>
                 {liveDot}
               </>
             }
@@ -786,7 +828,7 @@ export function SpecialistDashboardPageClient() {
         {showLastChance &&
         headerSurface !== "profile" &&
         !freeOverview &&
-        !pendingOverview ? (
+        !showActivationBoard ? (
           <ProTrialLastChanceBanner
             daysRemaining={session.premiumTrialDaysRemaining}
             onUpgrade={() => setUpgradeOpen(true)}
@@ -796,7 +838,7 @@ export function SpecialistDashboardPageClient() {
         {showsInquiries &&
         headerSurface !== "profile" &&
         !freeOverview &&
-        !pendingOverview ? (
+        !showActivationBoard ? (
           <InquiryNotificationBanner
             unreadCount={inquiryUnreadCount}
             latestSummary={latestInquirySummary}
@@ -808,7 +850,7 @@ export function SpecialistDashboardPageClient() {
         ) : null}
 
         {premiumDashboard &&
-        !pendingOverview &&
+        !showActivationBoard &&
         (headerSurface === "overview" || searchParams.get("tab") === "clients") &&
         finishedNotices.length > 0 ? (
           <WorkoutFinishedBanner
@@ -881,6 +923,11 @@ export function SpecialistDashboardPageClient() {
                   <SpecialistLockedOverview
                     restoreTrial={hadProTrial}
                     holdUnlock={upgradeOpen}
+                    leading={
+                      formDefaults ? (
+                        <SpecialistProfileStrengthCard strength={profileStrength} />
+                      ) : null
+                    }
                     onUnlock={() => {
                       setTrialEndedOpen(false);
                       openUpgrade({ skipPick: true });
@@ -929,96 +976,54 @@ export function SpecialistDashboardPageClient() {
           </>
         ) : null}
 
-        {profileFirst && !isFreeLive ? (
-          <>
-            {pendingOverview ? (
-              <SpecialistPendingOverview
-                submittedAt={application?.submittedAt}
-              />
-            ) : showPendingLiveView ? (
-              <SpecialistDashboardProfilePreview
-                trainer={trainer!}
-                editable={false}
-                isPremium={isPremium}
-                isProPlus={isProPlus}
-                isLivePublished={false}
-                chromeStatus="pending"
-                cityRanking={cityRanking}
-                onSignOut={() => setSignOutConfirmOpen(true)}
-              />
-            ) : (
-              <>
-            {isPendingGate ? (
-              <SpecialistPendingApprovalNotice
-                variant={
-                  dashboardMode === "rejected"
-                    ? "rejected"
-                    : application
-                      ? "pending"
-                      : "missing"
-                }
-                justSubmitted={
-                  justSubmitted &&
-                  dashboardMode === "pending" &&
-                  Boolean(application)
-                }
-                rejectionReason={application?.rejectionReason}
-                onRequestReview={
-                  dashboardMode === "rejected" ? handleRequestReview : undefined
-                }
-                requestReviewBusy={requestReviewBusy}
-                requestReviewError={requestReviewError}
-              />
-            ) : null}
-
-            {hasProfilePreview ? (
-              <div
-                className={
-                  isPendingGate
-                    ? "specialist-dash-pending-preview"
-                    : undefined
-                }
-              >
-                <div
-                  className={
-                    isPendingGate
-                      ? "specialist-dash-pending-preview__content"
-                      : undefined
-                  }
-                >
-                  <SpecialistDashboardProfilePreview
-                    trainer={trainer!}
-                    editable={false}
-                    isPremium={isPremium}
-                    isProPlus={isProPlus}
-                    cityRanking={cityRanking}
-                  />
-                </div>
-              </div>
-            ) : isPendingGate ? (
-              <p className="specialist-dash-notice__text">
-                Your submitted details will appear here once your application
-                finishes saving. Pull to refresh if this keeps happening.
-              </p>
-            ) : null}
-
-            {isPendingGate && dashboardMode === "rejected" ? (
-              <DashboardButton
-                href="/specialist-dashboard/edit-profile"
-                className="specialist-dash-layout__edit-btn"
-              >
-                Edit submitted profile
-              </DashboardButton>
-            ) : null}
-            {dashboardMode === "rejected" ? (
-              <p className="specialist-dash-notice__text">
-                After approval, come back here to finish your full in-depth
-                profile — pricing, availability, media, and more.
-              </p>
-            ) : null}
-              </>
-            )}
-          </>
+        {showActivationBoard && activationPhase ? (
+          activationEdit && hasProfilePreview ? (
+            <SpecialistDashboardProfilePreview
+              trainer={trainer!}
+              editable
+              isPremium={isPremium}
+              isProPlus={isProPlus}
+              isLivePublished={false}
+              chromeStatus="pending"
+              cityRanking={cityRanking}
+              focusSection={focusSection}
+              onClearFocus={() => setFocusSection(null)}
+              onUpgrade={() => setUpgradeOpen(true)}
+              onSignOut={() => setSignOutConfirmOpen(true)}
+            />
+          ) : activationPreview && hasProfilePreview ? (
+            <SpecialistDashboardProfilePreview
+              trainer={trainer!}
+              editable={false}
+              isPremium={isPremium}
+              isProPlus={isProPlus}
+              isLivePublished={false}
+              chromeStatus="pending"
+              cityRanking={cityRanking}
+              onSignOut={() => setSignOutConfirmOpen(true)}
+            />
+          ) : hasProfilePreview || application ? (
+            <SpecialistActivationBoard
+              phase={activationPhase}
+              strength={profileStrength}
+              rejectionReason={application?.rejectionReason}
+              canPublish={canPublish}
+              publishBusy={publishBusy}
+              publishError={publishError}
+              onPublish={() => void handlePublishProfile()}
+              onRequestReview={
+                activationPhase === "changes-requested"
+                  ? () => void handleRequestReview()
+                  : undefined
+              }
+              requestReviewBusy={requestReviewBusy}
+              requestReviewError={requestReviewError}
+            />
+          ) : (
+            <p className="specialist-dash-notice__text">
+              Your application is still saving. Pull to refresh if this stays here.
+            </p>
+          )
         ) : null}
 
         {premiumDashboard ? (
@@ -1056,6 +1061,9 @@ export function SpecialistDashboardPageClient() {
                   aria-labelledby="specialist-dash-tab-premium-overview"
                   className="specialist-dash-panel"
                 >
+                  {formDefaults ? (
+                    <SpecialistProfileStrengthCard strength={profileStrength} />
+                  ) : null}
                   {overviewBoard(isPremium)}
                 </div>
               ) : null}

@@ -216,6 +216,7 @@ export function SpecialistOverviewBoard({
       : ranking.listingTitle
     : "Not on a city board yet";
   const metricMeta = METRICS.find((item) => item.id === metric) ?? METRICS[1];
+  const loading = live && status === "loading";
   const series = chart?.series[metric] ?? [];
   const selectedChange = chart?.metrics[metric];
   const selectedTrend = trendText(selectedChange);
@@ -243,7 +244,8 @@ export function SpecialistOverviewBoard({
 
   return (
     <div className="specialist-overview-board">
-      <section className="overview-chart" aria-label="Performance">
+      <section className="overview-chart" aria-label="Performance" aria-busy={loading}>
+        {loading ? <p className="sr-only">Loading performance</p> : null}
         <div className="overview-chart__metrics" role="tablist" aria-label="Metric">
           {METRICS.map((item) => (
             <button
@@ -263,27 +265,33 @@ export function SpecialistOverviewBoard({
         </div>
         <div className="overview-chart__head">
           <div>
-            <p className="overview-chart__total">
-              {live && status === "ready" && selectedChange
-                ? formatAnalyticsMetricValue(selectedChange.total)
-                : live
-                  ? "—"
-                  : formatAnalyticsMetricValue(sampleTotals[metric])}
-            </p>
-            <p className={cn("overview-chart__delta", `overview-chart__delta--${selectedTrend.direction}`)}>
-              {live && status === "ready" ? (
-                <>
-                  <span>{selectedTrend.label}</span>
-                  <span>vs the previous {days} days</span>
-                </>
-              ) : live && status === "error" ? (
-                "Couldn’t load this period."
-              ) : live ? (
-                "Loading performance…"
-              ) : (
-                "Example total. Daily history is only shown from tracked events."
-              )}
-            </p>
+            {loading ? (
+              <span className="overview-shimmer overview-shimmer--total" />
+            ) : (
+              <p className="overview-chart__total">
+                {live && status === "ready" && selectedChange
+                  ? formatAnalyticsMetricValue(selectedChange.total)
+                  : live
+                    ? "—"
+                    : formatAnalyticsMetricValue(sampleTotals[metric])}
+              </p>
+            )}
+            {loading ? (
+              <span className="overview-shimmer overview-shimmer--delta" />
+            ) : (
+              <p className={cn("overview-chart__delta", `overview-chart__delta--${selectedTrend.direction}`)}>
+                {live && status === "ready" ? (
+                  <>
+                    <span>{selectedTrend.label}</span>
+                    <span>vs the previous {days} days</span>
+                  </>
+                ) : live && status === "error" ? (
+                  "Couldn’t load this period."
+                ) : (
+                  "Example total. Daily history is only shown from tracked events."
+                )}
+              </p>
+            )}
           </div>
           <div className="overview-chart__ranges" role="group" aria-label="Time range">
             {RANGES.map((range) => (
@@ -304,6 +312,8 @@ export function SpecialistOverviewBoard({
         </div>
         {live && status === "ready" ? (
           <OverviewPerformanceChart points={series} metricLabel={metricMeta.label} />
+        ) : loading ? (
+          <ChartLoadingPlot />
         ) : (
           <div className="overview-chart__empty">
             {live && status === "error" ? (
@@ -311,11 +321,7 @@ export function SpecialistOverviewBoard({
                 Try again
               </button>
             ) : (
-              <p>
-                {live
-                  ? "Loading the daily chart…"
-                  : "A daily line appears once this profile is collecting its own events."}
-              </p>
+              <p>A daily line appears once this profile is collecting its own events.</p>
             )}
           </div>
         )}
@@ -347,7 +353,12 @@ export function SpecialistOverviewBoard({
       </section>
 
       <div className="overview-split">
-        <TrafficDonut traffic={chart?.traffic ?? null} live={live} ready={status === "ready"} />
+        <TrafficDonut
+          traffic={chart?.traffic ?? null}
+          live={live}
+          ready={status === "ready"}
+          loading={loading}
+        />
         <ul className="overview-metrics">
           <MetricCard
             label="Profile views"
@@ -356,6 +367,7 @@ export function SpecialistOverviewBoard({
             sample={sampleTotals.profileViews}
             live={live}
             ready={status === "ready"}
+            loading={loading}
           />
           <MetricCard
             label="Search appearances"
@@ -364,6 +376,7 @@ export function SpecialistOverviewBoard({
             sample={sampleTotals.searchAppearances}
             live={live}
             ready={status === "ready"}
+            loading={loading}
           />
           <MetricCard
             label="Saved by clients"
@@ -372,6 +385,7 @@ export function SpecialistOverviewBoard({
             sample={sampleTotals.savedByClients}
             live={live}
             ready={status === "ready"}
+            loading={loading}
           />
           <MetricCard
             label="Contact clicks"
@@ -380,11 +394,12 @@ export function SpecialistOverviewBoard({
             sample={sampleTotals.contactClicks}
             live={live}
             ready={status === "ready"}
+            loading={loading}
           />
         </ul>
       </div>
 
-      <Funnel funnel={chart?.funnel ?? null} live={live} ready={status === "ready"} />
+      <Funnel funnel={chart?.funnel ?? null} live={live} ready={status === "ready"} loading={loading} />
 
       <article className="overview-rank" aria-label={`City ranking ${rankValue}`}>
         <p className="overview-rank__label">City ranking</p>
@@ -421,6 +436,28 @@ export function SpecialistOverviewBoard({
   );
 }
 
+function ChartLoadingPlot() {
+  return (
+    <div className="overview-chart__plot overview-chart__plot--loading" aria-hidden>
+      <svg className="overview-chart__svg" viewBox="0 0 320 168">
+        {[40, 78, 116].map((y) => (
+          <line key={y} className="overview-chart__grid" x1={28} x2={312} y1={y} y2={y} />
+        ))}
+        <line className="overview-chart__axis" x1={28} x2={28} y1={16} y2={140} />
+        <line className="overview-chart__axis" x1={28} x2={312} y1={140} y2={140} />
+        <path
+          d="M 28 126 L 312 126"
+          fill="none"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="2.25"
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="overview-shimmer overview-shimmer--plot" />
+    </div>
+  );
+}
+
 function MetricCard({
   label,
   icon,
@@ -428,6 +465,7 @@ function MetricCard({
   sample,
   live,
   ready,
+  loading,
 }: {
   label: string;
   icon: ReactNode;
@@ -435,25 +473,34 @@ function MetricCard({
   sample: number;
   live: boolean;
   ready: boolean;
+  loading: boolean;
 }) {
   const trend = trendText(change);
   return (
     <li>
-      <article className="overview-metric" aria-label={label}>
+      <article className="overview-metric" aria-label={label} aria-busy={loading}>
         <span className="overview-metric__icon" aria-hidden>
           {icon}
         </span>
         <p className="overview-metric__label">{label}</p>
-        <p className="overview-metric__value">
-          {live && ready && change
-            ? formatAnalyticsMetricValue(change.total)
-            : live
-              ? "—"
-              : formatAnalyticsMetricValue(sample)}
-        </p>
-        <p className={cn("overview-metric__trend", `overview-metric__trend--${live ? trend.direction : "flat"}`)}>
-          {live && ready ? trend.label : live ? "" : "Example"}
-        </p>
+        {loading ? (
+          <span className="overview-shimmer overview-shimmer--metric" />
+        ) : (
+          <p className="overview-metric__value">
+            {live && ready && change
+              ? formatAnalyticsMetricValue(change.total)
+              : live
+                ? "—"
+                : formatAnalyticsMetricValue(sample)}
+          </p>
+        )}
+        {loading ? (
+          <span className="overview-shimmer overview-shimmer--trend" />
+        ) : (
+          <p className={cn("overview-metric__trend", `overview-metric__trend--${live ? trend.direction : "flat"}`)}>
+            {live && ready ? trend.label : live ? "" : "Example"}
+          </p>
+        )}
       </article>
     </li>
   );
@@ -463,10 +510,12 @@ function TrafficDonut({
   traffic,
   live,
   ready,
+  loading,
 }: {
   traffic: ChartPayload["traffic"] | null;
   live: boolean;
   ready: boolean;
+  loading: boolean;
 }) {
   const slices = traffic?.slices ?? [];
   const total = traffic?.total ?? 0;
@@ -474,7 +523,7 @@ function TrafficDonut({
   const circ = 2 * Math.PI * radius;
   let offset = 0;
   return (
-    <section className="overview-traffic" aria-label="Traffic sources">
+    <section className="overview-traffic" aria-label="Traffic sources" aria-busy={loading}>
       <h2>Traffic sources</h2>
       <p className="overview-traffic__measure">Profile views</p>
       <div className="overview-traffic__donut">
@@ -505,7 +554,11 @@ function TrafficDonut({
             : null}
         </svg>
         <p className="overview-traffic__total">
-          <strong>{live && ready ? total.toLocaleString() : "—"}</strong>
+          {loading ? (
+            <span className="overview-shimmer overview-shimmer--donut" />
+          ) : (
+            <strong>{live && ready ? total.toLocaleString() : "—"}</strong>
+          )}
           <span>views</span>
         </p>
       </div>
@@ -517,7 +570,11 @@ function TrafficDonut({
             <li key={id}>
               <i style={{ background: TRAFFIC_COLOR[id] }} />
               <span>{TRAFFIC_LABEL[id]}</span>
-              <b>{live && ready && total > 0 ? `${pct}%` : "—"}</b>
+              {loading ? (
+                <span className="overview-shimmer overview-shimmer--pct" />
+              ) : (
+                <b>{live && ready && total > 0 ? `${pct}%` : "—"}</b>
+              )}
             </li>
           );
         })}
@@ -533,10 +590,12 @@ function Funnel({
   funnel,
   live,
   ready,
+  loading,
 }: {
   funnel: ChartPayload["funnel"] | null;
   live: boolean;
   ready: boolean;
+  loading: boolean;
 }) {
   const steps = [
     {
@@ -565,7 +624,7 @@ function Funnel({
   ];
   const max = Math.max(1, ...steps.map((step) => step.value));
   return (
-    <section className="overview-funnel" aria-label="Discovery funnel">
+    <section className="overview-funnel" aria-label="Discovery funnel" aria-busy={loading}>
       <h2>Discovery</h2>
       <p className="overview-funnel__note">
         Event counts for this period, not unique people. A contact click is not a booking.
@@ -575,10 +634,17 @@ function Funnel({
           <li key={step.label}>
             <div className="overview-funnel__top">
               <span>{step.label}</span>
-              <strong>{live && ready ? step.value.toLocaleString() : "—"}</strong>
+              {loading ? (
+                <span className="overview-shimmer overview-shimmer--funnel" />
+              ) : (
+                <strong>{live && ready ? step.value.toLocaleString() : "—"}</strong>
+              )}
             </div>
-            <div className="overview-funnel__track" aria-hidden>
-              <span style={{ width: live && ready ? `${(step.value / max) * 100}%` : "0%" }} />
+            <div
+              className={cn("overview-funnel__track", loading && "overview-funnel__track--loading")}
+              aria-hidden
+            >
+              <span style={{ width: loading ? "46%" : live && ready ? `${(step.value / max) * 100}%` : "0%" }} />
             </div>
             <p>{step.note}</p>
           </li>

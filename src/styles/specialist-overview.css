@@ -454,6 +454,106 @@
   text-align: center;
 }
 
+.overview-shimmer {
+  display: block;
+  border-radius: 999px;
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.22) 45%,
+    rgba(255, 255, 255, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: overview-shimmer 1.4s ease-in-out infinite;
+}
+
+.overview-shimmer--total {
+  width: 5.6rem;
+  height: 2.15rem;
+  margin: 0.15rem 0 0.15rem;
+}
+
+.overview-shimmer--delta {
+  width: 8.75rem;
+  height: 0.7rem;
+  margin-top: 0.55rem;
+}
+
+.overview-shimmer--metric {
+  width: 2.7rem;
+  height: 1.2rem;
+  margin-top: 0.2rem;
+}
+
+.overview-shimmer--trend {
+  width: 1.7rem;
+  height: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.overview-shimmer--donut {
+  width: 2.5rem;
+  height: 1.05rem;
+}
+
+.overview-shimmer--pct {
+  width: 1.7rem;
+  height: 0.65rem;
+  justify-self: end;
+}
+
+.overview-shimmer--funnel {
+  width: 1.8rem;
+  height: 0.75rem;
+}
+
+.overview-chart__plot--loading {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.85rem;
+}
+
+.overview-shimmer--plot {
+  position: absolute;
+  inset: 8% 3% 18% 10%;
+  border-radius: 0.7rem;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 46%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  pointer-events: none;
+}
+
+.overview-funnel__track--loading span {
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.28) 45%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: overview-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes overview-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview-shimmer,
+  .overview-funnel__track--loading span {
+    animation: none;
+  }
+}
+
 .overview-chart__retry {
   padding: 0.55rem 0.9rem;
   border-radius: 999px;

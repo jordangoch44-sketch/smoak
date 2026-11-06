@@ -97,6 +97,25 @@
   width: 100%;
 }
 
+.aurora-page-header--business .aurora-page-header__title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.42rem;
+  width: 100%;
+  font-size: clamp(1.95rem, 7.6vw, 2.45rem);
+}
+
+.aurora-page-header--business .aurora-page-header__title-text {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.aurora-page-header--business .dashboard-live-indicator {
+  flex: none;
+  margin-left: 0;
+}
+
 .aurora-page-header--business .aurora-page-header__subtitle {
   max-width: 24rem;
 }

@@ -9306,6 +9306,20 @@ body.specialist-full-editor-open .mobile-bottom-nav {
   pointer-events: none;
 }
 
+.specialist-overview-gate__stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(100%, 24.5rem);
+  max-height: 100%;
+  overflow: auto;
+  pointer-events: none;
+}
+
+.specialist-overview-gate__stack > * {
+  pointer-events: auto;
+}
+
 .specialist-overview-gate__card {
   pointer-events: auto;
   position: relative;
@@ -11174,6 +11188,19 @@ body:has(.specialist-overview-gate) .site-footer {
   background: rgba(20, 16, 8, 0.94);
   border-bottom: 1px solid rgba(251, 191, 36, 0.32);
   box-shadow: inset 0 1px 0 rgba(251, 191, 36, 0.12);
+}
+
+.specialist-live-pending-banner__back {
+  display: inline;
+  margin-left: 0.35rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -14010,4 +14037,267 @@ html.native-app
   .dashboard-page--specialist
   .dashboard-page__content:not(:has(> .dashboard-page__utility-bar)) {
   padding-top: calc(var(--site-header-total-height, 0px) + 1.15rem);
+}
+
+.specialist-activation,
+.specialist-strength-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  width: min(100%, 40rem);
+  margin: 0 auto;
+  color: #fff;
+}
+
+.specialist-activation__welcome {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.specialist-activation__status {
+  align-self: flex-start;
+  margin: 0;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.specialist-activation__status--approved-unpublished {
+  color: #d1fae5;
+  border-color: rgba(74, 222, 128, 0.28);
+}
+
+.specialist-activation__status--changes-requested {
+  color: #fde68a;
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+.specialist-activation__title {
+  margin: 0;
+  font-size: clamp(1.85rem, 4vw, 2.45rem);
+  font-weight: 560;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.specialist-activation__subtitle,
+.specialist-activation__private,
+.specialist-activation__item-text,
+.specialist-strength-card__note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.specialist-activation__reason {
+  margin: 0;
+  padding: 0.95rem 1rem;
+  border-radius: 1.1rem;
+  background: #16181d;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+}
+
+.specialist-activation__reason-label {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.specialist-strength__meter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1rem 1.05rem 1.1rem;
+  border-radius: 1.25rem;
+  background: #14161a;
+}
+
+.specialist-strength__meter-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.specialist-strength__meter-label,
+.specialist-strength__meter-value {
+  margin: 0;
+}
+
+.specialist-strength__meter-label {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.92rem;
+}
+
+.specialist-strength__meter-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.specialist-strength__bar {
+  height: 0.4rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.specialist-strength__bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1d4ed8, #7dd3fc);
+  transition: width 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.specialist-activation__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.specialist-activation__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 1.15rem;
+  background: #121418;
+  color: inherit;
+  text-decoration: none;
+}
+
+.specialist-activation__item:not(.specialist-activation__item--done) {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.specialist-activation__icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.specialist-activation__icon-svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.specialist-activation__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.specialist-activation__item-title {
+  font-size: 0.98rem;
+  font-weight: 600;
+}
+
+.specialist-activation__check {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: #4ade80;
+}
+
+.specialist-activation__chevron,
+.specialist-strength-card__chevron {
+  width: 1rem;
+  height: 1rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.specialist-activation__next,
+.specialist-strength-card {
+  padding: 1.05rem 1.05rem 1.15rem;
+  border-radius: 1.25rem;
+  background: #14161a;
+}
+
+.specialist-strength-card {
+  width: 100%;
+  gap: 0.85rem;
+  margin: 0 0 1rem;
+}
+
+.specialist-activation__next-kicker {
+  margin: 0 0 0.35rem;
+  color: rgba(255, 255, 255, 0.48);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.specialist-activation__next-text {
+  margin: 0 0 0.9rem;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.specialist-activation__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.specialist-activation__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.specialist-activation__error {
+  margin: 0;
+  color: #fecaca;
+  font-size: 0.88rem;
+}
+
+.specialist-strength-card__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.specialist-strength__meter--compact {
+  padding: 0;
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .specialist-strength__bar-fill {
+    transition: none;
+  }
 }

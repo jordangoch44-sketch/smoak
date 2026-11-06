@@ -65,6 +65,10 @@ export interface SpecialistApplicationMedia {
    * New photos are baked 4:5 JPEGs; keep this for older listings and Adjust.
    */
   slideshowFramesJson?: string;
+  /** Pro intro clip. Same value as profile overrides `introVideoUrl`. */
+  introVideoUrl?: string;
+  /** PRO+ profile clips, one URL per line. Same value as overrides `videoNotes`. */
+  profileVideoUrls?: string;
 }
 
 export interface SpecialistApplicationSocial extends SocialLinks {

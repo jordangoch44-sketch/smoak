@@ -11,6 +11,8 @@ interface SpecialistLockedOverviewProps {
   /** Keep the collapsed spiral while the checkout overlay is covering this card. */
   holdUnlock?: boolean;
   onUnlock?: () => void;
+  /** Shown above the upgrade pitch. Stays tappable; the chart behind it does not. */
+  leading?: ReactNode;
   children: ReactNode;
 }
 
@@ -22,6 +24,7 @@ export function SpecialistLockedOverview({
   restoreTrial = false,
   holdUnlock = false,
   onUnlock,
+  leading = null,
   children,
 }: SpecialistLockedOverviewProps) {
   const [unlocking, setUnlocking] = useState(false);
@@ -58,12 +61,14 @@ export function SpecialistLockedOverview({
         {children}
       </div>
       <div className="specialist-overview-gate__overlay">
-        <div
-          className="specialist-overview-gate__card smoac-unlock-pitch"
-          role="dialog"
-          aria-labelledby="membership-unlock-title"
-          aria-describedby="membership-unlock-desc"
-        >
+        <div className="specialist-overview-gate__stack">
+          {leading}
+          <div
+            className="specialist-overview-gate__card smoac-unlock-pitch"
+            role="dialog"
+            aria-labelledby="membership-unlock-title"
+            aria-describedby="membership-unlock-desc"
+          >
           <div
             className="dashboard-modal__glow dashboard-upgrade__glow dashboard-upgrade__glow--pro"
             aria-hidden
@@ -73,6 +78,7 @@ export function SpecialistLockedOverview({
             busy={unlocking}
             onUnlock={handleUnlock}
           />
+          </div>
         </div>
       </div>
     </div>

@@ -55,21 +55,24 @@ function specialistFirstName(application: SpecialistApplication): string {
   );
 }
 
-const SPECIALIST_EDIT_PROFILE_PATH = `${SPECIALIST_DASHBOARD_PATH}/edit-profile`;
-
 function buildSpecialistConfirmationEmail(
   application: SpecialistApplication
 ): ConfirmationEmailPayload {
   const firstName = specialistFirstName(application);
+  const dashboardUrl = emailAbsoluteUrl(
+    buildLoginHref({
+      role: "specialist",
+      next: SPECIALIST_DASHBOARD_PATH,
+    })
+  );
   const text = `Hi ${firstName},
 
 Welcome to SMOAC — we received your specialist application.
 
-Every application is reviewed individually. We typically verify accounts within 24 hours. You'll receive another email when your account is approved — then your profile goes live on Marketplace, and you can deepen availability, media, and more anytime from your dashboard.
+Every application is reviewed individually. We typically verify accounts within 24 hours. While you wait, build the profile clients will see after approval: ${dashboardUrl}
 
 Thank you,
 SMOAC`;
-
   const html = wrapTransactionalEmailHtml({
     preheader: "Welcome to SMOAC — your application is under review",
     eyebrow: "Welcome",
@@ -78,9 +81,10 @@ SMOAC`;
       `Hi ${firstName},`,
       "Welcome to SMOAC — thank you for applying as a specialist.",
       "Every application is reviewed individually. We typically verify accounts within 24 hours.",
-      "You’ll receive another email when you’re approved — your profile goes live on Marketplace, and you can deepen availability, media, and credentials anytime from your dashboard.",
+      "While you wait, build the profile clients will see after approval. Photos, pricing, and a clear bio are the pieces that matter most.",
     ]),
-    footerNote: "No action needed right now — we’ll email you when you’re approved.",
+    cta: { label: "Build your profile", href: dashboardUrl },
+    footerNote: "You’ll get another email when you’re approved.",
   });
 
   return {
@@ -111,7 +115,7 @@ function buildSpecialistApprovalEmail(
     profileUrl,
     editProfileUrl: buildLoginHref({
       role: "specialist",
-      next: SPECIALIST_EDIT_PROFILE_PATH,
+      next: SPECIALIST_DASHBOARD_PATH,
     }),
     trialLine: specialistApprovalTrialLine({ isFounding, trialDays }),
   };

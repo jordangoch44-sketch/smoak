@@ -390,6 +390,8 @@ export function mergeProfileEditsIntoApplication(
       /* Legacy field name — stores header/gallery image URLs (not only videos). */
       trainingVideoUrls: form.photoNotes.trim(),
       slideshowFramesJson: form.slideshowFramesJson.trim(),
+      introVideoUrl: form.introVideoUrl.trim(),
+      profileVideoUrls: form.videoNotes.trim(),
     },
     profileStyle: normalizeProfileStyle({
       accent: form.profileAccent,

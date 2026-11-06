@@ -762,7 +762,7 @@ export function SpecialistDashboardProfilePreview({
   }, [showLiveChrome, previewMode]);
 
   function replacePreviewMode(next: ProfilePreviewMode) {
-    if (isPendingListing && next !== "live") return;
+    if (isPendingListing && next !== "live" && next !== "edit") return;
     setPreviewMode(next);
     if (next === "inquiries") {
       router.push(SPECIALIST_DASHBOARD_INQUIRIES_HREF, { scroll: false });
@@ -1551,7 +1551,7 @@ export function SpecialistDashboardProfilePreview({
     ) : null;
 
   /* Owner edit — Instagram-style list (does not change public profile layout). */
-  if (canEdit && formDefaults && previewMode === "edit" && !isPendingListing) {
+  if (canEdit && formDefaults && previewMode === "edit") {
     const page = (
       <div
         className="specialist-edit-profile-page"
@@ -1575,8 +1575,9 @@ export function SpecialistDashboardProfilePreview({
               onReplayWalkthrough={onReplayWalkthrough}
               footer={
                 <p className="ig-profile-edit__hint">
-                  Changes go live on Marketplace when you save. Clients still
-                  see your normal SMOAC profile layout.
+                  {isPendingListing
+                    ? "Saves stay private. Clients won’t see this profile until it is publicly listed."
+                    : "Changes go live on Marketplace when you save. Clients still see your normal SMOAC profile layout."}
                 </p>
               }
             />
@@ -1677,8 +1678,16 @@ export function SpecialistDashboardProfilePreview({
           <div className="specialist-live-page__body">
             {isPendingListing ? (
               <p className="specialist-live-pending-banner" role="status">
-                Under review — typically within 24 hours. You’ll get an email
-                when you’re approved.
+                {application?.profileStatus === "APPROVED"
+                  ? "Private preview — this profile is not publicly listed yet."
+                  : "Under review — this preview is private until your application is approved."}{" "}
+                <button
+                  type="button"
+                  className="specialist-live-pending-banner__back"
+                  onClick={() => router.push(SPECIALIST_DASHBOARD_PATH)}
+                >
+                  Back to dashboard
+                </button>
               </p>
             ) : null}
             <TrainerProfileView

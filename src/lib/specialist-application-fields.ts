@@ -215,6 +215,8 @@ export function normalizeSpecialistApplicationShape(
         media?.slideshowFramesJson,
         defaults.media.slideshowFramesJson ?? ""
       ),
+      introVideoUrl: asString(media?.introVideoUrl),
+      profileVideoUrls: asString(media?.profileVideoUrls),
     },
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   DEMO_SPECIALIST_ID,
   DEV_SPECIALIST_DASHBOARD_ID,
@@ -15,6 +15,13 @@ import {
 import { fetchSpecialistReviewAggregates } from "@/lib/reviews/specialist-reviews-client";
 import { getLiveTrainerCityRanking } from "@/lib/smoac-rankings";
 import { useAuthSession } from "@/hooks/useAuthSession";
+import {
+  getApprovedSpecialistProfilesHydratedServerSnapshot,
+  getApprovedSpecialistProfilesHydratedSnapshot,
+  getApprovedSpecialistProfilesServerSnapshot,
+  getApprovedSpecialistProfilesSnapshot,
+  subscribeApprovedSpecialistProfiles,
+} from "@/lib/approved-specialist-profiles-store";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { afterLogoutNavigation } from "@/lib/logout-with-toast";
@@ -76,6 +83,20 @@ export function useSpecialistDashboard() {
   } = useManagedSpecialistProfile();
 
   const useDemoData = isDemoSpecialistDashboard(trainerId, session?.email);
+  const catalogSnapshot = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesSnapshot,
+    getApprovedSpecialistProfilesServerSnapshot
+  );
+  const catalogHydrated = useSyncExternalStore(
+    subscribeApprovedSpecialistProfiles,
+    getApprovedSpecialistProfilesHydratedSnapshot,
+    getApprovedSpecialistProfilesHydratedServerSnapshot
+  );
+  const catalogPublished = useDemoData
+    ? true
+    : Boolean(trainerId && catalogSnapshot[trainerId]);
+  const catalogKnown = useDemoData || catalogHydrated;
   const demoData = getDemoSpecialistDashboardData(session);
 
   const [inquiryLeads, setInquiryLeads] = useState<SpecialistLead[]>([]);
@@ -386,6 +407,9 @@ export function useSpecialistDashboard() {
     trainer,
     trainerId,
     application,
+    formDefaults,
+    catalogPublished,
+    catalogKnown,
     welcomeTasks,
     welcomeAvatarUrl,
     welcomeDisplayName,
