@@ -1,9 +1,25 @@
 "use client";
 
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+
+const INTERVIEW_SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
+
+const interviewCardSlide = {
+  enter: (direction: number) => ({
+    x: direction >= 0 ? "100%" : "-100%",
+    opacity: 0,
+  }),
+  center: { x: 0, opacity: 1 },
+  exit: (direction: number) => ({
+    x: direction >= 0 ? "-100%" : "100%",
+    opacity: 0,
+    pointerEvents: "none" as const,
+  }),
+};
 import {
   AGE_CONFIRMATION_ERROR,
   LegalAgreementNotice,
@@ -167,6 +183,7 @@ export function SpecialistOnboardingWizard({
   const [cardPhase, setCardPhase] = useState<"idle" | "enter-pop" | "from-back">(
     "idle"
   );
+  const [slideDirection, setSlideDirection] = useState(1);
   const lastAdvanceAtRef = useRef(0);
   const stateRef = useRef(state);
   const remoteSyncInFlightRef = useRef(false);
@@ -211,7 +228,7 @@ export function SpecialistOnboardingWizard({
   const beat = beats[beatIndex] ?? beats[0];
   const currentBeatId = beat?.id ?? "professional-type";
   const step: OnboardingStep = beat?.section ?? 1;
-  const upcomingBeats = beats.slice(beatIndex + 1, beatIndex + 9);
+  const upcomingBeats = beats.slice(beatIndex + 1);
   const progressPercent =
     beats.length <= 1
       ? 0
@@ -398,14 +415,6 @@ export function SpecialistOnboardingWizard({
   useEffect(() => {
     const page = pageRef.current;
 
-    function pinScroll() {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      const main = document.querySelector(".app-main");
-      if (main instanceof HTMLElement) main.scrollTop = 0;
-    }
-
     function setKeyboardCompact(active: boolean) {
       document.body.classList.toggle(INTERVIEW_KEYBOARD_CLASS, active);
       keyboardOpenRef.current = active;
@@ -413,12 +422,16 @@ export function SpecialistOnboardingWizard({
     }
 
     function keyboardIsOpen() {
-      const focusedInside =
-        page != null &&
-        isInterviewEditableField(document.activeElement) &&
-        page.contains(document.activeElement);
-      const mobile = window.matchMedia("(max-width: 1023px)").matches;
-      return readInterviewKeyboardInset() > 0 || (focusedInside && mobile);
+      if (readInterviewKeyboardInset() <= 0) return false;
+      const active = document.activeElement;
+      if (!page || !isInterviewEditableField(active) || !page.contains(active)) {
+        return false;
+      }
+      const rect = active.getBoundingClientRect();
+      const viewport = window.visualViewport;
+      const visibleBottom =
+        (viewport?.offsetTop ?? 0) + (viewport?.height ?? window.innerHeight);
+      return rect.bottom > visibleBottom - 8;
     }
 
     function scheduleCompactRelease() {
@@ -443,17 +456,79 @@ export function SpecialistOnboardingWizard({
           window.clearTimeout(compactReleaseTimerRef.current);
           compactReleaseTimerRef.current = null;
         }
-        pinScroll();
         setKeyboardCompact(true);
         return;
       }
       scheduleCompactRelease();
     }
 
+    function textEntryFrom(target: EventTarget | null) {
+      if (!(target instanceof Element) || !page?.contains(target)) return null;
+      const node =
+        target.closest("input, textarea") ??
+        target.closest("label")?.querySelector("input, textarea") ??
+        null;
+      if (node instanceof HTMLTextAreaElement) {
+        return node.disabled || node.readOnly ? null : node;
+      }
+      if (!(node instanceof HTMLInputElement)) return null;
+      if (node.disabled || node.readOnly) return null;
+      const type = node.type;
+      if (
+        type === "button" ||
+        type === "submit" ||
+        type === "checkbox" ||
+        type === "radio" ||
+        type === "file" ||
+        type === "range" ||
+        type === "color" ||
+        type === "hidden" ||
+        type === "reset" ||
+        type === "image"
+      ) {
+        return null;
+      }
+      return node;
+    }
+
+    function releaseLockedFields(focus: boolean) {
+      page?.querySelectorAll("[data-smoac-unlock]").forEach((node) => {
+        if (!(node instanceof HTMLInputElement || node instanceof HTMLTextAreaElement)) return;
+        node.readOnly = false;
+        delete node.dataset.smoacUnlock;
+        if (!focus) return;
+        if (document.activeElement === node) node.blur();
+        try {
+          node.focus({ preventScroll: true });
+        } catch {
+          node.focus();
+        }
+      });
+    }
+
+    function onTouchStart(event: TouchEvent) {
+      const field = textEntryFrom(event.target);
+      if (!field || document.activeElement === field) return;
+      /* Locking an email field hides the keyboard’s address suggestion. */
+      if (field instanceof HTMLInputElement && field.type === "email") return;
+      /* Readonly at the moment of focus stops iOS from scrolling the page. */
+      field.dataset.smoacUnlock = "1";
+      field.readOnly = true;
+    }
+
+    function onTouchEnd(event: TouchEvent) {
+      if (!page?.querySelector("[data-smoac-unlock]")) return;
+      event.preventDefault();
+      releaseLockedFields(true);
+    }
+
+    function onTouchCancel() {
+      releaseLockedFields(false);
+    }
+
     function onFocusIn(event: FocusEvent) {
       if (!page?.contains(event.target as Node)) return;
       if (!isInterviewEditableField(event.target)) return;
-      pinScroll();
       window.setTimeout(syncKeyboard, 60);
     }
 
@@ -468,10 +543,17 @@ export function SpecialistOnboardingWizard({
     viewport?.addEventListener("resize", syncKeyboard);
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
+    page?.addEventListener("touchstart", onTouchStart, { capture: true });
+    page?.addEventListener("touchend", onTouchEnd, { capture: true, passive: false });
+    page?.addEventListener("touchcancel", onTouchCancel, { capture: true });
     return () => {
       viewport?.removeEventListener("resize", syncKeyboard);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
+      page?.removeEventListener("touchstart", onTouchStart, true);
+      page?.removeEventListener("touchend", onTouchEnd, true);
+      page?.removeEventListener("touchcancel", onTouchCancel, true);
+      releaseLockedFields(false);
       if (compactReleaseTimerRef.current != null) {
         window.clearTimeout(compactReleaseTimerRef.current);
         compactReleaseTimerRef.current = null;
@@ -496,6 +578,21 @@ export function SpecialistOnboardingWizard({
       if (!(el instanceof HTMLInputElement)) return;
       el.enterKeyHint = index === fields.length - 1 ? "go" : "next";
     });
+  }, [currentBeatId]);
+
+  /* Drop the slide transform once the card is resting, or iOS scrolls it on tap. */
+  useLayoutEffect(() => {
+    const root = pageRef.current;
+    root?.querySelectorAll(".interview-card").forEach((card) => {
+      card.removeAttribute("data-settled");
+    });
+    const timer = window.setTimeout(() => {
+      const card = pageRef.current?.querySelector(
+        ".interview-card-viewport > .interview-card"
+      );
+      card?.setAttribute("data-settled", "true");
+    }, 520);
+    return () => window.clearTimeout(timer);
   }, [currentBeatId]);
 
   /* Each Continue / Back question should land at the heading — not the CTA. */
@@ -594,10 +691,13 @@ export function SpecialistOnboardingWizard({
     const resolved = resolveSpecialistInterviewBeatId(nextId) ?? nextId;
     holdCompactThroughAdvance();
     if (resolved === beatId) return;
+    const focused = document.activeElement;
+    if (focused instanceof HTMLElement) focused.blur();
     lastAdvanceAtRef.current = performance.now();
     setError(null);
     setInvalidFieldLabels([]);
     setStackMotion(motion);
+    setSlideDirection(motion === "back" ? -1 : 1);
     setBeatId(resolved);
     if (reducedMotion) {
       setCardPhase("idle");
@@ -610,7 +710,7 @@ export function SpecialistOnboardingWizard({
   }
 
   function isAdvanceLocked(): boolean {
-    return performance.now() - lastAdvanceAtRef.current < 90;
+    return performance.now() - lastAdvanceAtRef.current < (reducedMotion ? 90 : 480);
   }
 
   function goToNextBeat() {
@@ -1077,24 +1177,29 @@ export function SpecialistOnboardingWizard({
             </p>
           </div>
 
-          <form
+          <div className="interview-card-viewport">
+          <AnimatePresence initial={false} custom={slideDirection} mode="popLayout">
+          <motion.form
             key={currentBeatId}
+            custom={slideDirection}
+            variants={interviewCardSlide}
+            initial={reducedMotion ? false : "enter"}
+            animate="center"
+            exit="exit"
+            transition={
+              reducedMotion
+                ? { duration: 0 }
+                : { duration: 0.46, ease: INTERVIEW_SLIDE_EASE }
+            }
             className={cn(
               "login-card wizard-card interview-card",
               currentBeatId === "preview" && "interview-card--preview",
-              cardPhase === "enter-pop" && "interview-card--enter-pop",
-              cardPhase === "from-back" && "interview-card--from-back"
+              beat &&
+                isLastAccountInterviewBeat(beat.id, interviewContext) &&
+                !accountAlreadyCreated &&
+                "interview-card--account-gate"
             )}
             noValidate
-            onAnimationEnd={(event) => {
-              if (event.target !== event.currentTarget) return;
-              if (cardPhase === "enter-pop" || cardPhase === "from-back") {
-                cardPhaseRef.current = "idle";
-                setCardPhase("idle");
-                holdCompactRef.current = false;
-                scheduleCompactReleaseRef.current();
-              }
-            }}
             onSubmit={(event) => {
               event.preventDefault();
               void handleContinue();
@@ -1257,7 +1362,9 @@ export function SpecialistOnboardingWizard({
                 />
               )}
             </div>
-          </form>
+          </motion.form>
+          </AnimatePresence>
+          </div>
 
           {upcomingBeats.length > 0 ? (
             <ol
@@ -1327,8 +1434,6 @@ export function SpecialistOnboardingWizard({
               >
                 <div className="wizard-incomplete-modal__backdrop" aria-hidden />
                 <div className="wizard-email-otp-panel">
-                  <div className="wizard-email-otp-panel__glow" aria-hidden />
-                  <div className="wizard-email-otp-panel__sheen" aria-hidden />
                   <header className="wizard-email-otp-panel__header">
                     <h2
                       id="wizard-confirm-email-title"

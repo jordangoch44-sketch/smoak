@@ -8,6 +8,8 @@ type PasswordInputVariant = "login" | "internal";
 export interface PasswordInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, "type"> {
   variant?: PasswordInputVariant;
+  /** Show a green check when this value matches its pair. */
+  matched?: boolean;
 }
 
 const VARIANT_INPUT_CLASS: Record<PasswordInputVariant, string> = {
@@ -57,6 +59,7 @@ export function PasswordInput({
   className,
   id: idProp,
   disabled,
+  matched = false,
   ...inputProps
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
@@ -64,7 +67,7 @@ export function PasswordInput({
   const id = idProp ?? autoId;
 
   return (
-    <div className="password-input">
+    <div className={matched ? "password-input password-input--matched" : "password-input"}>
       <input
         {...inputProps}
         id={id}
@@ -78,6 +81,25 @@ export function PasswordInput({
           .filter(Boolean)
           .join(" ")}
       />
+      {matched ? (
+        <span className="password-input__match">
+          <svg
+            className="password-input__match-icon"
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#4ade80"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M4.5 12.75l6 6 9-13.5" />
+          </svg>
+          <span className="sr-only">Passwords match</span>
+        </span>
+      ) : null}
       <button
         type="button"
         className="password-input__toggle"

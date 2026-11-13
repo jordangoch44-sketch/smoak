@@ -1,5 +1,4 @@
-/* Full-screen photo crop / reposition modal — portaled to document.body */
-/* Luxury SMOAK frosted dark glass aesthetic */
+/* Full-screen photo crop — solid dark, no frosted glass */
 
 .profile-photo-cropper {
   position: fixed;
@@ -14,10 +13,7 @@
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
-  background: rgba(5, 5, 9, 0.96);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  isolation: isolate;
+  background: #000;
   color: #fff;
   font-family: inherit;
 }
@@ -25,57 +21,53 @@
 .profile-photo-cropper__header {
   position: relative;
   flex-shrink: 0;
-  padding: max(1rem, env(safe-area-inset-top, 0px)) 1.25rem 0.75rem;
+  padding: max(0.7rem, env(safe-area-inset-top, 0px)) 3.25rem 0.85rem;
   text-align: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(10, 10, 16, 0.65);
+  background: #000;
 }
 
 .profile-photo-cropper__close-btn {
   position: absolute;
-  top: max(0.875rem, env(safe-area-inset-top, 0px));
-  right: 1.125rem;
+  top: max(0.65rem, env(safe-area-inset-top, 0px));
+  right: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 0;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.75);
-  font-size: 1.125rem;
+  background: #3a3a3c;
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
 }
 
 .profile-photo-cropper__close-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.25);
+  background: #48484a;
 }
 
 .profile-photo-cropper__badge-wrap {
   display: flex;
   justify-content: center;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.15rem;
 }
 
 .profile-photo-cropper__badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.625rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: rgba(var(--aurora-lavender-rgb), 0.95);
-  background: rgba(var(--aurora-lavender-rgb), 0.12);
-  border: 1px solid rgba(var(--aurora-lavender-rgb), 0.28);
-  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(235, 235, 245, 0.6);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
 }
 
 .profile-photo-cropper__title {
@@ -87,10 +79,11 @@
 }
 
 .profile-photo-cropper__lead {
-  margin: 0.25rem 0 0;
+  margin: 0.2rem auto 0;
+  max-width: 22rem;
   font-size: 0.8125rem;
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.35;
+  color: rgba(235, 235, 245, 0.6);
 }
 
 .profile-photo-cropper__stage {
@@ -99,7 +92,21 @@
   min-height: 0;
   width: 100%;
   overflow: hidden;
-  background: radial-gradient(circle at center, rgba(20, 20, 30, 0.4) 0%, rgba(3, 3, 6, 0.9) 100%);
+  background: #000;
+}
+
+.profile-photo-cropper .reactEasyCrop_CropArea:not(.reactEasyCrop_CropAreaRound) {
+  border-radius: 16px;
+}
+
+.profile-photo-cropper .reactEasyCrop_CropArea {
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  color: rgba(0, 0, 0, 0.62);
+}
+
+.profile-photo-cropper .reactEasyCrop_CropAreaGrid::before,
+.profile-photo-cropper .reactEasyCrop_CropAreaGrid::after {
+  border-color: rgba(255, 255, 255, 0.72);
 }
 
 /*
@@ -134,112 +141,135 @@
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  padding: 0.875rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(8, 8, 14, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  gap: 0.9rem;
+  padding: 0.85rem 1.25rem calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
+  background: #000;
 }
 
-/* Toolbar: Rotate, Reset, Zoom */
 .profile-photo-cropper__toolbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.7rem;
 }
 
 .profile-photo-cropper__tool-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1.15rem;
 }
 
 .profile-photo-cropper__tool-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.35rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.8);
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  margin: 0;
+  padding: 0.15rem 0;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .profile-photo-cropper__tool-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(235, 235, 245, 0.72);
 }
 
 .profile-photo-cropper__tool-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .profile-photo-cropper__zoom-wrap {
-  flex: 1;
-  min-width: 140px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .profile-photo-cropper__zoom-label {
   flex-shrink: 0;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(235, 235, 245, 0.45);
 }
 
 .profile-photo-cropper__zoom-step-btn {
-  width: 24px;
-  height: 24px;
+  width: 1.75rem;
+  height: 1.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  font-size: 0.875rem;
+  font-size: 1.15rem;
+  font-weight: 400;
   line-height: 1;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.profile-photo-cropper__zoom-step-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.14);
   color: #fff;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
 }
 
 .profile-photo-cropper__zoom-step-btn:disabled {
-  opacity: 0.35;
+  opacity: 0.28;
   cursor: not-allowed;
 }
 
 .profile-photo-cropper__zoom-input {
   flex: 1;
-  min-width: 60px;
-  height: 4px;
-  border-radius: 2px;
-  accent-color: rgba(var(--aurora-lavender-rgb), 0.95);
+  min-width: 0;
+  height: 22px;
+  margin: 0;
+  background: transparent;
+  accent-color: #fff;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.profile-photo-cropper__zoom-input::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.profile-photo-cropper__zoom-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -10px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.profile-photo-cropper__zoom-input::-moz-range-track {
+  height: 2px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.profile-photo-cropper__zoom-input::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
 }
 
 .profile-photo-cropper__error {
   margin: 0;
   font-size: 0.8125rem;
-  color: #f87171;
+  color: #ff453a;
   text-align: center;
 }
 
@@ -263,21 +293,20 @@
   min-height: 2.5rem;
   margin: 0;
   padding: 0.5rem 0.65rem;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
+  border-radius: 12px;
+  border: 0;
+  background: #2c2c2e;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
   line-height: 1.2;
   text-align: center;
   cursor: pointer;
 }
 
 .profile-photo-cropper__photo-action--on {
-  border-color: rgba(37, 99, 235, 0.85);
-  background: rgba(37, 99, 235, 0.22);
+  background: #0a84ff;
   color: #fff;
 }
 
@@ -289,64 +318,52 @@
 
 .profile-photo-cropper__footer--simple {
   display: grid;
-  grid-template-columns: 1fr 1.35fr;
+  grid-template-columns: 1fr 1.4fr;
   gap: 0.625rem;
 }
 
 .profile-photo-cropper__footer--simple .profile-photo-cropper__btn {
   flex: initial;
-  min-height: 2.75rem;
+  min-height: 3rem;
 }
 
 .profile-photo-cropper__btn {
   flex: 1;
-  padding: 0.625rem 1rem;
-  font-size: 0.875rem;
+  padding: 0.7rem 1rem;
+  font-size: 1.0625rem;
   font-weight: 600;
-  border-radius: 10px;
+  letter-spacing: -0.02em;
+  border: 0;
+  border-radius: 14px;
   cursor: pointer;
-  transition: all 0.15s ease;
   text-align: center;
 }
 
 .profile-photo-cropper__btn--cancel {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #2c2c2e;
+  color: #fff;
 }
 
 .profile-photo-cropper__btn--cancel:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  background: #3a3a3c;
 }
 
 .profile-photo-cropper__btn--confirm {
-  background: linear-gradient(135deg, rgba(var(--aurora-lavender-rgb), 0.95) 0%, rgba(130, 95, 220, 0.95) 100%);
+  background: #0a84ff;
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 16px rgba(130, 95, 220, 0.35);
 }
 
 .profile-photo-cropper__btn--confirm:hover:not(:disabled) {
-  filter: brightness(1.1);
-  box-shadow: 0 4px 20px rgba(130, 95, 220, 0.5);
+  background: #0070e0;
 }
 
 .profile-photo-cropper__btn:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-/*
- * WebKit paints <video> as a black box when any ancestor has backdrop-filter.
- * The photo cropper needs the blur; this picker uses a solid ground instead.
- */
 .profile-video-frame-picker {
-  background: #07070c;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  isolation: auto;
+  background: #000;
 }
 
 .profile-video-frame-picker__loading {
@@ -357,7 +374,7 @@
   align-items: center;
   justify-content: center;
   margin: 0;
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(235, 235, 245, 0.6);
   font-size: 0.8125rem;
   pointer-events: none;
 }
@@ -374,7 +391,5 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(5, 5, 9, 0.78);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.72);
 }

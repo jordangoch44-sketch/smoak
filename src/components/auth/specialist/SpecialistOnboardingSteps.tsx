@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
@@ -15,6 +16,29 @@ import { SpecialistServiceAreaFields } from "@/components/auth/specialist/Specia
 import { SpecialistTrainingOptionsFields } from "@/components/auth/specialist/SpecialistTrainingOptionsFields";
 import type { SpecialistInterviewBeatId } from "@/lib/specialist-onboarding-interview";
 import type { useProfilePhotoCropSession } from "@/hooks/useProfilePhotoCropSession";
+
+const COVER_PHOTO_LIMIT = 3;
+
+const PROFILE_CROP = {
+  cropShape: "round" as const,
+  title: "Profile photo",
+  lead: "Drag to reposition. This is the round photo on your card.",
+};
+
+const COVER_CROP = {
+  aspect: 1,
+  cropShape: "rect" as const,
+  title: "Cover photo",
+  lead: "Drag to reposition. Cover photos show across your profile.",
+};
+
+function readCoverPhotos(value: string): string[] {
+  return value
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, COVER_PHOTO_LIMIT);
+}
 
 export interface SpecialistOnboardingStepsProps {
   beatId: SpecialistInterviewBeatId;
@@ -47,17 +71,27 @@ export function SpecialistOnboardingSteps({
   emailLocked = false,
   invalidFieldLabels = [],
 }: SpecialistOnboardingStepsProps) {
+  const profileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const coverIndexRef = useRef(0);
+  const coverPhotos = readCoverPhotos(state.media.trainingVideoUrls);
+
   function handleProfilePhotoFile(file: File) {
-    profilePhotoCrop.openCropFromFile(file, (payload) => {
-      onPatch({
-        media: {
-          ...state.media,
-          profilePhotoUrl: payload.croppedImageData,
-          profilePhotoOriginalUrl: payload.originalImageData,
-          profilePhotoCrop: payload.cropSettings,
-        },
-      });
-    });
+    profilePhotoCrop.openCropFromFile(
+      file,
+      (payload) => {
+        onPatch({
+          media: {
+            ...state.media,
+            profilePhotoUrl: payload.croppedImageData,
+            profilePhotoOriginalUrl: payload.originalImageData,
+            profilePhotoCrop: payload.cropSettings,
+          },
+        });
+      },
+      state.media.profilePhotoCrop,
+      PROFILE_CROP
+    );
   }
 
   function handleEditProfilePhotoCrop() {
@@ -77,8 +111,43 @@ export function SpecialistOnboardingSteps({
           },
         });
       },
-      state.media.profilePhotoCrop
+      state.media.profilePhotoCrop,
+      PROFILE_CROP
     );
+  }
+
+  function openCoverPicker(index: number) {
+    coverIndexRef.current = index;
+    coverInputRef.current?.click();
+  }
+
+  function handleCoverPhotoFile(file: File) {
+    const index = coverIndexRef.current;
+    profilePhotoCrop.openCropFromFile(
+      file,
+      (payload) => {
+        const next = readCoverPhotos(state.media.trainingVideoUrls);
+        next[index] = payload.croppedImageData;
+        onPatch({
+          media: {
+            ...state.media,
+            trainingVideoUrls: next.filter(Boolean).slice(0, COVER_PHOTO_LIMIT).join("\n"),
+          },
+        });
+      },
+      null,
+      COVER_CROP
+    );
+  }
+
+  function removeCoverPhoto(index: number) {
+    const next = coverPhotos.filter((_, itemIndex) => itemIndex !== index);
+    onPatch({
+      media: {
+        ...state.media,
+        trainingVideoUrls: next.join("\n"),
+      },
+    });
   }
 
   switch (beatId) {
@@ -127,7 +196,6 @@ export function SpecialistOnboardingSteps({
               autoComplete="name"
               placeholder="Jane Doe"
               aria-required="true"
-              autoFocus
             />
           </label>
           <div
@@ -177,7 +245,6 @@ export function SpecialistOnboardingSteps({
               onChange={(e) => onPatch({ displayName: e.target.value })}
               placeholder="How clients will see you"
               aria-required="true"
-              autoFocus
             />
           </label>
           <label className="login-field">
@@ -194,21 +261,29 @@ export function SpecialistOnboardingSteps({
       );
 
     case "email":
-    case "password":
+    case "password": {
+      const passwordsMatch =
+        state.password.length > 0 &&
+        confirmPassword.length > 0 &&
+        state.password === confirmPassword;
       return (
         <div className="login-fields interview-combined-fields">
           <label className="login-field">
             <span className="login-field__label">Email</span>
             <input
               type="email"
+              name="email"
               className="login-field__input"
               value={state.email}
               onChange={(e) => onPatch({ email: e.target.value })}
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              inputMode="email"
               placeholder="you@studio.com"
               readOnly={emailLocked}
               aria-readonly={emailLocked}
-              autoFocus={!emailLocked}
             />
           </label>
           {hidePasswordFields ? null : (
@@ -229,6 +304,7 @@ export function SpecialistOnboardingSteps({
                   placeholder="At least 8 characters"
                   aria-required="true"
                   aria-invalid={passwordFieldsError}
+                  matched={passwordsMatch}
                 />
               </label>
               <label className="login-field">
@@ -240,6 +316,7 @@ export function SpecialistOnboardingSteps({
                   placeholder="Re-enter your password"
                   aria-required="true"
                   aria-invalid={passwordFieldsError}
+                  matched={passwordsMatch}
                 />
               </label>
               {passwordFieldsError ? (
@@ -253,6 +330,7 @@ export function SpecialistOnboardingSteps({
           )}
         </div>
       );
+    }
 
     case "phone":
       return (
@@ -266,48 +344,128 @@ export function SpecialistOnboardingSteps({
             autoComplete="tel"
             placeholder="(555) 555-5555"
             aria-required="true"
-            autoFocus
           />
         </label>
       );
 
     case "photo":
       return (
-        <label className="login-field">
-          <span className="sr-only">Profile photo</span>
+        <div className="interview-photo-setup">
           <input
+            ref={profileInputRef}
             type="file"
             accept="image/*"
-            className="login-field__input wizard-file-input"
-            aria-required="true"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
+            className="interview-cover-photos__input"
+            aria-label="Profile photo"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
               if (file) handleProfilePhotoFile(file);
-              e.target.value = "";
+              event.target.value = "";
             }}
           />
-          {state.media.profilePhotoUrl ? (
-            <div className="wizard-profile-photo-preview">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={state.media.profilePhotoUrl}
-                alt="Profile preview"
-                className="wizard-profile-photo-preview__img"
-              />
-              <button
-                type="button"
-                className="wizard-edit-crop-link"
-                onClick={handleEditProfilePhotoCrop}
-              >
-                Edit crop
-              </button>
+          <div className="interview-profile-row">
+            <span className="interview-profile-ring">
+              {state.media.profilePhotoUrl ? (
+                <button
+                  type="button"
+                  className="interview-profile-photo"
+                  onClick={() => profileInputRef.current?.click()}
+                  aria-label="Replace profile photo"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={state.media.profilePhotoUrl}
+                    alt=""
+                    className="wizard-profile-photo-preview__img"
+                  />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="interview-profile-slot"
+                  onClick={() => profileInputRef.current?.click()}
+                  aria-label="Add profile photo"
+                >
+                  <span aria-hidden>+</span>
+                </button>
+              )}
+            </span>
+            <div className="interview-profile-copy">
+              <p className="interview-profile-copy__name">
+                {state.displayName.trim() || "Your business"}
+              </p>
+              <p className="interview-profile-copy__type">
+                {state.professionalType.trim() || "Specialist"}
+              </p>
+              {state.media.profilePhotoUrl ? (
+                <button
+                  type="button"
+                  className="wizard-edit-crop-link"
+                  onClick={handleEditProfilePhotoCrop}
+                >
+                  Edit crop
+                </button>
+              ) : null}
             </div>
-          ) : (
-            <p className="wizard-field-hint">
-              Add a clear face or brand photo — clients see this on your card.
+          </div>
+
+          <div className="interview-cover-photos">
+            <p className="interview-cover-photos__title">Cover photos</p>
+            <p className="interview-cover-photos__hint">
+              Optional. Add up to 3 to start strong — you can add more later.
             </p>
-          )}
-        </label>
+            <div className="interview-cover-photos__row">
+              {Array.from({ length: COVER_PHOTO_LIMIT }, (_, index) => {
+                const photo = coverPhotos[index];
+                if (!photo) {
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      className="interview-cover-slot"
+                      onClick={() => openCoverPicker(coverPhotos.length)}
+                      aria-label={`Add cover photo ${coverPhotos.length + 1} of ${COVER_PHOTO_LIMIT}`}
+                    >
+                      <span aria-hidden>+</span>
+                    </button>
+                  );
+                }
+                return (
+                  <div key={index} className="interview-cover-slot interview-cover-slot--filled">
+                    <button
+                      type="button"
+                      className="interview-cover-slot__photo"
+                      onClick={() => openCoverPicker(index)}
+                      aria-label={`Replace cover photo ${index + 1}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={photo} alt="" />
+                    </button>
+                    <button
+                      type="button"
+                      className="interview-cover-slot__remove"
+                      onClick={() => removeCoverPhoto(index)}
+                      aria-label={`Remove cover photo ${index + 1}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <input
+              ref={coverInputRef}
+              type="file"
+              accept="image/*"
+              className="interview-cover-photos__input"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) handleCoverPhotoFile(file);
+                event.target.value = "";
+              }}
+            />
+          </div>
+        </div>
       );
 
     case "service-type":

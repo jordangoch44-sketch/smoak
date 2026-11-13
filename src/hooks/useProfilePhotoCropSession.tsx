@@ -11,7 +11,14 @@ export interface ProfilePhotoCropSavePayload {
   cropSettings: ProfilePhotoCropSettings;
 }
 
-interface CropSession {
+export interface ProfilePhotoCropChrome {
+  aspect?: number;
+  cropShape?: "rect" | "round";
+  title?: string;
+  lead?: string;
+}
+
+interface CropSession extends ProfilePhotoCropChrome {
   imageSrc: string;
   originalImageData: string;
   initialCrop: { x: number; y: number };
@@ -26,7 +33,8 @@ export function useProfilePhotoCropSession() {
     (
       file: File,
       onSave: (payload: ProfilePhotoCropSavePayload) => void,
-      existingCrop?: ProfilePhotoCropSettings | null
+      existingCrop?: ProfilePhotoCropSettings | null,
+      chrome?: ProfilePhotoCropChrome
     ) => {
       void readFileAsDataUrl(file).then((originalImageData) => {
         setSession({
@@ -38,6 +46,7 @@ export function useProfilePhotoCropSession() {
           },
           initialZoom: existingCrop?.zoom ?? 1,
           onSave,
+          ...chrome,
         });
       });
     },
@@ -48,7 +57,8 @@ export function useProfilePhotoCropSession() {
     (
       originalImageData: string,
       onSave: (payload: ProfilePhotoCropSavePayload) => void,
-      existingCrop?: ProfilePhotoCropSettings | null
+      existingCrop?: ProfilePhotoCropSettings | null,
+      chrome?: ProfilePhotoCropChrome
     ) => {
       if (!originalImageData.trim()) return;
       setSession({
@@ -60,6 +70,7 @@ export function useProfilePhotoCropSession() {
         },
         initialZoom: existingCrop?.zoom ?? 1,
         onSave,
+        ...chrome,
       });
     },
     []
@@ -75,7 +86,10 @@ export function useProfilePhotoCropSession() {
         imageSrc={session.imageSrc}
         initialCrop={session.initialCrop}
         initialZoom={session.initialZoom}
-        aspect={1}
+        aspect={session.aspect ?? 1}
+        cropShape={session.cropShape ?? "rect"}
+        {...(session.title ? { title: session.title } : {})}
+        {...(session.lead ? { lead: session.lead } : {})}
         onCancel={closeCrop}
         onSave={async (croppedImageData, cropSettings) => {
           await Promise.resolve(

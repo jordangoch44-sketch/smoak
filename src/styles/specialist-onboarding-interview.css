@@ -159,15 +159,8 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
   }
 }
 
-.login-page--interview-keyboard .interview-legal,
-.login-page--interview-keyboard .interview-intro {
-  display: none;
-}
-
-.login-page--interview-keyboard .interview-stage {
-  justify-content: flex-start;
-  gap: 0.35rem;
-}
+/* Keyboard overlays this screen. Hiding the heading here yanks the card up
+   before the keyboard animation finishes. */
 
 @media (max-width: 1023px) {
   .login-page--wizard.login-page--specialist-onboarding .interview-stage {
@@ -212,6 +205,38 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
 
 .login-page--specialist-onboarding .interview-stage:has(.interview-card--preview) {
   overflow: hidden;
+}
+
+/* The photo step is taller than the screen. Scroll this stage, not the page.
+   The frame is wider than the card so the blue card glow is not cut off. */
+.login-page--specialist-onboarding .interview-stage:has(.interview-card--account-gate) {
+  align-self: center;
+  width: calc(100% + 2 * var(--login-pad-x));
+  max-width: none;
+  box-sizing: border-box;
+  padding-inline: var(--login-pad-x);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+
+.login-page--specialist-onboarding .interview-stage:has(.interview-card--account-gate)::-webkit-scrollbar {
+  display: none;
+}
+
+.login-page--specialist-onboarding .interview-stage:has(.interview-card--account-gate) .interview-trail {
+  flex: 0 0 auto;
+  overflow: visible;
+  max-height: none;
+}
+
+@media (max-width: 1023px) {
+  .login-page--specialist-onboarding .interview-stage:has(.interview-card--account-gate) {
+    padding-bottom: calc(var(--mobile-bottom-nav-offset, 5.25rem) + 0.75rem);
+  }
 }
 
 .login-page--specialist-onboarding
@@ -282,6 +307,37 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
   color: rgba(255, 255, 255, 0.5);
 }
 
+.login-page--specialist-onboarding .interview-card-viewport {
+  display: grid;
+  position: relative;
+  align-items: start;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+}
+
+.login-page--specialist-onboarding .interview-card-viewport > .interview-card {
+  grid-area: 1 / 1;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+}
+
+/* A leftover slide transform makes iOS scroll the card when a field is tapped. */
+.login-page--specialist-onboarding .interview-card[data-settled="true"] {
+  transform: none !important;
+  will-change: auto !important;
+}
+
+@supports (-webkit-touch-callout: none) {
+  .login-page--specialist-onboarding .interview-card,
+  .login-page--specialist-onboarding .interview-card .login-field__input,
+  .login-page--specialist-onboarding .interview-card .password-input__field {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 .login-page--wizard.login-page--specialist-onboarding .interview-card {
   display: flex;
   position: relative;
@@ -292,7 +348,6 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
   min-height: min-content;
   max-height: 100%;
   margin: 0;
-  overflow: hidden;
   padding: 0.95rem 1rem 1.15rem;
   border-radius: 1.5rem;
   border: 1px solid rgba(var(--interview-accent-bright-rgb), 0.18);
@@ -302,6 +357,9 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
       rgba(36, 28, 58, 0.88) 0%,
       rgba(18, 14, 32, 0.82) 100%
     );
+  /* Glow is on the card so it slides with the transition.
+     overflow stays visible so iPhone does not square off the shadow. */
+  overflow: visible;
   box-shadow:
     0 0 0 1px rgba(var(--interview-accent-rgb), 0.12),
     0 18px 50px rgba(0, 0, 0, 0.42),
@@ -317,6 +375,15 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
   flex: 1 1 auto;
   min-height: 0;
   max-height: 100%;
+}
+
+.login-page--wizard.login-page--specialist-onboarding
+  .interview-card:has(.wizard-scroll-options) {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  height: min(31rem, calc(100svh - var(--site-header-total-height) - 12rem));
+  max-height: min(31rem, calc(100svh - var(--site-header-total-height) - 12rem));
+  min-height: 0;
 }
 
 .login-page--specialist-onboarding
@@ -343,6 +410,11 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
     display: none;
   }
 
+  /* This step creates the account. The age box has to be visible or Continue stays off. */
+  .login-page--specialist-onboarding .interview-card--account-gate .interview-legal {
+    display: flex;
+  }
+
   .login-page--wizard.login-page--specialist-onboarding .interview-card {
     flex: 0 0 auto;
     height: auto;
@@ -356,10 +428,10 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
   .login-page--wizard.login-page--specialist-onboarding
     .interview-card:has(.specialty-picker),
   .login-page--wizard.login-page--specialist-onboarding .interview-card--preview {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
-    max-height: 100%;
-    height: auto;
+    height: min(31rem, calc(100svh - var(--site-header-total-height) - 12rem));
+    max-height: min(31rem, calc(100svh - var(--site-header-total-height) - 12rem));
   }
 }
 
@@ -435,6 +507,11 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
   gap: 0.65rem;
   min-height: 0;
   overflow: hidden;
+}
+
+.login-page--specialist-onboarding .interview-card__field:has(.wizard-scroll-options) {
+  position: relative;
+  flex: 1 1 0%;
 }
 
 .login-page--specialist-onboarding .interview-card__field:not(:has(.wizard-scroll-options)):not(:has(.specialty-picker)):not(:has(.wizard-preview-scroll)) {
@@ -568,7 +645,7 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
 .login-page--specialist-onboarding
   .interview-card:has(.wizard-scroll-options)
   .interview-card__footer {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 .login-page--specialist-onboarding .interview-signin {
@@ -617,62 +694,48 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
   gap: 0.75rem;
   width: 100%;
   min-height: 0;
-  margin: 0.45rem 0 0;
-  padding: 0.2rem 0.65rem 0;
-  overflow: visible;
+  margin: 0.15rem 0 0;
+  padding: 0.85rem 0.65rem 1.25rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
   list-style: none;
-  pointer-events: none;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 1.65rem);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 1.65rem);
+}
+
+.login-page--specialist-onboarding .interview-trail::-webkit-scrollbar {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .login-page--wizard.login-page--specialist-onboarding.login-page--interview-flow .interview-stage {
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.login-page--specialist-onboarding .interview-stage:has(.wizard-scroll-options) .interview-trail,
+.login-page--specialist-onboarding .interview-stage:has(.specialty-picker) .interview-trail,
+.login-page--specialist-onboarding .interview-stage:has(.interview-card--preview) .interview-trail {
+  flex: 1 1 0%;
+  max-height: none;
+  min-height: 0;
 }
 
 @media (max-width: 1023px) {
   .login-page--wizard.login-page--specialist-onboarding .interview-trail {
-    margin-top: 0.55rem;
-  }
-
-  .login-page--wizard.login-page--specialist-onboarding
-    .interview-stage:has(.wizard-scroll-options)
-    .interview-trail,
-  .login-page--wizard.login-page--specialist-onboarding
-    .interview-stage:has(.specialty-picker)
-    .interview-trail,
-  .login-page--wizard.login-page--specialist-onboarding
-    .interview-stage:has(.interview-card--preview)
-    .interview-trail {
-    flex: 0 0 0;
-    overflow: hidden;
+    margin-top: 0.2rem;
   }
 }
 
 .login-page--specialist-onboarding .interview-trail__item {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 0.85rem;
-}
-
-.login-page--specialist-onboarding .interview-trail__item--1 {
-  opacity: 0.62;
-}
-
-.login-page--specialist-onboarding .interview-trail__item--2 {
-  opacity: 0.48;
-}
-
-.login-page--specialist-onboarding .interview-trail__item--3 {
-  opacity: 0.36;
-}
-
-.login-page--specialist-onboarding .interview-trail__item--4 {
-  opacity: 0.26;
-}
-
-.login-page--specialist-onboarding .interview-trail__item--5 {
-  opacity: 0.18;
-}
-
-.login-page--specialist-onboarding .interview-trail__item--6,
-.login-page--specialist-onboarding .interview-trail__item--7,
-.login-page--specialist-onboarding .interview-trail__item--8 {
-  opacity: 0.12;
 }
 
 .login-page--specialist-onboarding .interview-trail__icon {
@@ -728,12 +791,17 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
 }
 
 .login-page--specialist-onboarding .interview-card .wizard-scroll-options {
-  flex: 1 1 auto;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 0 0.15rem 0.35rem 0;
+  touch-action: pan-y;
+  padding: 0 0.15rem 0.75rem 0;
   gap: 0.4rem;
 }
 
@@ -1095,4 +1163,203 @@ body:has(.login-page--interview-flow):not(:has(.login-page--create-account)) .mo
     color: rgba(255, 255, 255, 0.96);
     -webkit-text-fill-color: rgba(255, 255, 255, 0.96);
   }
+}
+
+.login-page--specialist-onboarding .interview-photo-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.login-page--specialist-onboarding .interview-profile-row {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: 0.95rem;
+  width: 100%;
+}
+
+.login-page--specialist-onboarding .interview-profile-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.login-page--specialist-onboarding .interview-profile-copy__name {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.login-page--specialist-onboarding .interview-profile-copy__type {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.login-page--specialist-onboarding .interview-profile-copy .wizard-edit-crop-link {
+  margin-top: 0.35rem;
+}
+
+.login-page--specialist-onboarding .interview-profile-ring {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 5.5rem;
+  height: 5.5rem;
+  padding: 2.5px;
+  border-radius: 50%;
+  background: var(--smoac-color);
+  box-shadow: var(--smoac-color-glow);
+}
+
+.login-page--specialist-onboarding .interview-profile-slot,
+.login-page--specialist-onboarding .interview-profile-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 50%;
+  background: #14101f;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.login-page--specialist-onboarding .interview-profile-photo .wizard-profile-photo-preview,
+.login-page--specialist-onboarding .interview-photo-setup > .wizard-profile-photo-preview {
+  align-items: center;
+  align-self: center;
+}
+
+.login-page--specialist-onboarding .interview-photo-setup .wizard-profile-photo-preview__img {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.login-page--specialist-onboarding .interview-cover-photos {
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
+  width: 100%;
+  gap: 0.45rem;
+}
+
+.login-page--specialist-onboarding .interview-cover-photos__title {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.login-page--specialist-onboarding .interview-cover-photos__hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.login-page--specialist-onboarding .interview-cover-photos__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.login-page--specialist-onboarding .interview-cover-photos__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.login-page--specialist-onboarding .interview-cover-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 1.5px dashed rgba(255, 255, 255, 0.28);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.login-page--specialist-onboarding .interview-cover-slot--filled {
+  position: relative;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.14);
+  background: transparent;
+  cursor: default;
+}
+
+.login-page--specialist-onboarding .interview-cover-slot__photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+}
+
+.login-page--specialist-onboarding .interview-cover-slot__photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.login-page--specialist-onboarding .interview-cover-slot__remove {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
 }

@@ -133,7 +133,7 @@ const ALL_BEATS: readonly SpecialistInterviewBeat[] = [
     section: 2,
     required: true,
     title: "Add a profile photo",
-    subtitle: "A clear face or brand photo — clients see this on your card.",
+    subtitle: "A profile photo is required. Cover photos are optional.",
     trailTitle: "Profile photo",
     trailHint: "Shown on your marketplace card",
     trailIcon: "camera",

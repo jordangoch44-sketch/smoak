@@ -50,6 +50,8 @@ export function forceDocumentScrollTop(): void {
 
 function recoverStuckIosOverscroll(): void {
   if (documentTouchCount > 0) return;
+  /* Onboarding text fields: this snap fights the keyboard and jumps the page. */
+  if (document.querySelector(".login-page--specialist-onboarding")) return;
   const y = window.scrollY || document.documentElement.scrollTop || 0;
   /* Only unstick a parked pull-to-refresh at the top — never yank a scrolled page. */
   if (y > 1) return;
