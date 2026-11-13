@@ -450,6 +450,97 @@ body:has(.profile-hub) .site-footer__glow {
   .profile-hub__card {
     padding: 2rem 1.65rem 1.7rem;
   }
+
+  html:not(.native-app) .profile-hub {
+    min-height: calc(100svh - var(--site-header-total-height, 0px));
+    padding: 1.5rem 0 2.5rem;
+  }
+
+  html:not(.native-app) .profile-hub__shell {
+    max-width: min(100% - 4rem, 68rem);
+    gap: 1.85rem;
+  }
+
+  html:not(.native-app) .profile-hub__card {
+    display: grid;
+    grid-template-columns: minmax(18rem, 24rem) minmax(22rem, 1fr);
+    grid-template-areas:
+      "badge features"
+      "title features"
+      "lede features"
+      "actions features";
+    column-gap: clamp(2.25rem, 4vw, 3.75rem);
+    align-items: center;
+    padding: 2.85rem 3.15rem 2.55rem;
+    text-align: left;
+  }
+
+  html:not(.native-app) .profile-hub__hero-badge {
+    grid-area: badge;
+    margin: 0 0 1.2rem;
+  }
+
+  html:not(.native-app) .profile-hub__title {
+    grid-area: title;
+    font-size: clamp(2.65rem, 3.4vw, 3.4rem);
+  }
+
+  html:not(.native-app) .profile-hub__lede {
+    grid-area: lede;
+    margin-top: 0.7rem;
+    font-size: 1.05rem;
+  }
+
+  html:not(.native-app) .profile-hub__divider {
+    display: none;
+  }
+
+  html:not(.native-app) .profile-hub__features {
+    grid-area: features;
+    align-self: center;
+    gap: 1.35rem;
+    margin: 0;
+    padding-left: 2.15rem;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  html:not(.native-app) .profile-hub__feature {
+    align-items: center;
+    gap: 1rem;
+  }
+
+  html:not(.native-app) .profile-hub__feature-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  html:not(.native-app) .profile-hub__feature-glyph {
+    width: 1.3rem;
+    height: 1.3rem;
+  }
+
+  html:not(.native-app) .profile-hub__feature-title {
+    font-size: 1.02rem;
+  }
+
+  html:not(.native-app) .profile-hub__feature-desc {
+    font-size: 0.9rem;
+  }
+
+  html:not(.native-app) .profile-hub__actions {
+    grid-area: actions;
+    align-items: flex-start;
+    margin-top: 1.85rem;
+  }
+
+  html:not(.native-app) .profile-hub__cta-primary {
+    width: min(100%, 18.5rem);
+  }
+
+  html:not(.native-app) .profile-hub__footer-tagline {
+    max-width: 24rem;
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 1023px) {

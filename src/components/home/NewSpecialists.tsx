@@ -84,6 +84,7 @@ export function NewSpecialists({
         <HorizontalCarousel
           className="home-new__carousel"
           ariaLabel="New specialists"
+          desktopArrows
         >
           {trainers.map((trainer, index) => (
             <HomePortraitSpecialistCard

@@ -767,18 +767,99 @@ html.native-app .client-workouts-gate {
 }
 
 @media (min-width: 1024px) {
-  .client-workouts-gate {
+  html.native-app .client-workouts-gate {
     padding-top: 1.5rem;
     padding-bottom: 2.5rem;
   }
 
-  .client-workouts-gate__stage {
+  html.native-app .client-workouts-gate__stage {
     flex: none;
     height: 24rem;
     margin-top: 0.85rem;
   }
 
-  .client-workouts-gate__features {
+  html.native-app .client-workouts-gate__features {
     margin-top: 0.85rem;
+  }
+
+  html:not(.native-app) .client-workouts-gate {
+    display: grid;
+    grid-template-columns: minmax(20rem, 27rem) minmax(22rem, 1fr);
+    grid-template-rows: 1fr auto auto auto auto 1fr;
+    grid-template-areas:
+      ". stage"
+      "copy stage"
+      "features stage"
+      "signup stage"
+      "login stage"
+      ". stage";
+    align-items: center;
+    column-gap: clamp(1.75rem, 2.6vw, 2.4rem);
+    width: min(100% - 4rem, 76rem);
+    min-height: calc(100svh - var(--site-header-total-height));
+    margin-inline: auto;
+    padding: 1.5rem 0 2rem;
+  }
+
+  html:not(.native-app) .client-workouts-gate__copy {
+    grid-area: copy;
+    text-align: left;
+  }
+
+  html:not(.native-app) .client-workouts-gate__title {
+    font-size: clamp(3.1rem, 4.2vw, 4.15rem);
+  }
+
+  html:not(.native-app) .client-workouts-gate__lede {
+    margin-top: 0.85rem;
+    font-size: 1.05rem;
+  }
+
+  html:not(.native-app) .client-workouts-gate__stage {
+    grid-area: stage;
+    align-self: stretch;
+    height: auto;
+    min-height: min(34rem, calc(100svh - var(--site-header-total-height) - 3rem));
+    margin-top: 0;
+  }
+
+  html:not(.native-app) .client-workouts-gate__phone--cal,
+  html:not(.native-app) .client-workouts-gate__phone--log {
+    left: 48%;
+  }
+
+  html:not(.native-app) .client-workouts-gate__features {
+    grid-area: features;
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+    margin-top: 1.75rem;
+  }
+
+  html:not(.native-app) .client-workouts-gate__features li {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.8rem;
+    text-align: left;
+    font-size: 0.95rem;
+  }
+
+  html:not(.native-app) .client-workouts-gate__feature-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  html:not(.native-app) .client-workouts-gate__signup {
+    grid-area: signup;
+    width: min(100%, 18.5rem);
+    justify-self: start;
+    margin-top: 1.6rem;
+  }
+
+  html:not(.native-app) .client-workouts-gate__login {
+    grid-area: login;
+    margin-top: 0.85rem;
+    text-align: left;
+    font-size: 0.9rem;
   }
 }

@@ -90,6 +90,7 @@ export function FreeFirstSessionSpecialists({
         <HorizontalCarousel
           className="home-free-first__carousel"
           ariaLabel={FREE_FIRST_SESSION_RAIL_TITLE}
+          desktopArrows
         >
           {trainers.map((trainer, index) => (
             <HomePortraitSpecialistCard

@@ -84,6 +84,7 @@ export function SponsoredSpecialists({
         <HorizontalCarousel
           className="home-sponsored__carousel"
           ariaLabel="Sponsored specialists"
+          desktopArrows
         >
           {trainers.map((trainer, index) => (
             <HomePortraitSpecialistCard

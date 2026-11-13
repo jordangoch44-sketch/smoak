@@ -1230,7 +1230,7 @@ html.native-app .home-page--discovery > .home-hero.home-hero--discovery {
 
   .home-page--discovery .home-specialty__header,
   .home-page--discovery .home-specialty__grid {
-    grid-column: 1;
+    grid-column: 1 / -1;
   }
 
   .home-page--discovery .home-specialty .home-section__header {
@@ -1244,16 +1244,28 @@ html.native-app .home-page--discovery > .home-hero.home-hero--discovery {
     margin-inline: 0;
     padding-inline: 0;
     scroll-padding-inline: 0;
+    gap: 1.15rem;
+  }
+
+  .home-page--discovery .home-specialty-card {
+    flex-basis: 7.35rem;
+    width: 7.35rem;
   }
 
   .home-page--discovery .home-specialty-card__icon {
-    width: 4.75rem;
-    height: 4.75rem;
+    width: 7rem;
+    height: 7rem;
+    border-radius: 1.65rem;
+  }
+
+  .home-page--discovery .home-specialty-card__svg {
+    width: 2.55rem;
+    height: 2.55rem;
   }
 
   .home-page--discovery .home-specialty-card__name {
-    max-width: 6.5rem;
-    font-size: 0.8125rem;
+    max-width: 7.35rem;
+    font-size: 0.875rem;
   }
 
   .home-page--discovery .home-new .home-portrait-card,

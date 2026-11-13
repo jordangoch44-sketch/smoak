@@ -783,6 +783,69 @@ button.smoked-glass:hover {
   }
 }
 
+/* Desktop side arrows. Phones and the native app keep the touch rail only. */
+.horizontal-carousel--desktop-nav .horizontal-carousel__nav {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  html:not(.native-app) .horizontal-carousel--desktop-nav .horizontal-carousel__nav:not([hidden]) {
+    position: absolute;
+    z-index: 95;
+    top: var(--carousel-nav-center, 46%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: rgba(12, 12, 18, 0.78);
+    color: #fff;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 10px 24px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  html:not(.native-app) .horizontal-carousel--desktop-nav .horizontal-carousel__nav--prev {
+    left: 0.2rem;
+  }
+
+  html:not(.native-app) .horizontal-carousel--desktop-nav .horizontal-carousel__nav--next {
+    right: 0.2rem;
+  }
+
+  html:not(.native-app) .horizontal-carousel--desktop-nav .horizontal-carousel__nav:hover {
+    background: rgba(24, 22, 34, 0.92);
+    border-color: rgba(196, 181, 253, 0.45);
+  }
+
+  html:not(.native-app) .horizontal-carousel--desktop-nav .horizontal-carousel__nav:focus-visible {
+    outline: 2px solid rgba(168, 130, 255, 0.7);
+    outline-offset: 3px;
+  }
+
+  html:not(.native-app) .horizontal-carousel--desktop-nav .horizontal-carousel__nav-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  html:not(.native-app) .horizontal-carousel--desktop-nav .horizontal-carousel__nav {
+    transition: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .home-hero__canvas .atmosphere-blob {
     animation: none;

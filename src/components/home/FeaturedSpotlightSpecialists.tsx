@@ -92,6 +92,7 @@ export function FeaturedSpotlightSpecialists({
         <HorizontalCarousel
           className="home-featured__carousel"
           ariaLabel="Featured specialists"
+          desktopArrows
         >
           {trainers.map((trainer, index) => (
             <HomePortraitSpecialistCard
