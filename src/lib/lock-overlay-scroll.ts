@@ -35,6 +35,8 @@ export function lockOverlayDocumentScroll(): () => void {
       return;
     }
 
+    if (target.closest(".mobile-bottom-nav")) return;
+
     const scroller = target.closest(
       ".inquiry-inbox-page__body, .inquiry-thread__scroller, .client-workouts-body, .client-workouts-day__body, .exercise-howto__scroll, .exercise-picker__list, .workout-share__body"
     );

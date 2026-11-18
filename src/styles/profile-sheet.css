@@ -110,6 +110,10 @@
   min-width: 0;
 }
 
+.profile-intercept-dialog .profile-hero__content {
+  padding-top: 2.95rem;
+}
+
 .profile-intercept-dialog .profile-page--styled > .mx-auto {
   max-width: none;
   padding-left: 1.35rem;

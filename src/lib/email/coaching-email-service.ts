@@ -14,7 +14,7 @@ import {
 import { formatWorkoutDayHeading } from "@/lib/workouts/client-workout";
 
 const DASHBOARD_PATH = "/client-dashboard";
-const SPECIALIST_CLIENTS_PATH = "/specialist-dashboard?tab=clients";
+const SPECIALIST_INQUIRIES_PATH = "/specialist-dashboard?tab=profile&view=inquiries";
 
 function greeting(firstName: string): string {
   return `Hi ${firstName.trim() || "there"},`;
@@ -54,11 +54,11 @@ export async function sendCoachingRequestEmail(input: {
   clientFirstName: string;
 }): Promise<EmailSendResult> {
   const client = input.clientFirstName.trim() || "A client";
-  const url = emailAbsoluteUrl(SPECIALIST_CLIENTS_PATH);
+  const url = emailAbsoluteUrl(SPECIALIST_INQUIRIES_PATH);
   const paragraphs = [
     greeting(input.specialistFirstName),
     `${client} wants to add you as their specialist on SMOAC.`,
-    "If you accept, you can send workouts to their calendar. You only see the workouts you send, not the rest of their log.",
+    "Reply in Inquiries to keep the conversation in one thread.",
   ];
   return sendOutboundEmail({
     to: input.to,
@@ -82,22 +82,22 @@ export async function sendRosterJoinedEmail(input: {
   specialistName: string;
 }): Promise<EmailSendResult> {
   const client = input.clientFirstName.trim() || "A new client";
-  const url = emailAbsoluteUrl(SPECIALIST_CLIENTS_PATH);
+  const url = emailAbsoluteUrl(SPECIALIST_INQUIRIES_PATH);
   const paragraphs = [
     greeting(input.specialistName.trim().split(/\s+/)[0] ?? ""),
-    `${client} accepted your invite and is now on your client roster.`,
-    "Send their first workout from the Clients tab — it lands right on their calendar.",
+    `${client} accepted your invite.`,
+    "You can keep talking with them in Inquiries.",
   ];
   return sendOutboundEmail({
     to: input.to,
-    subject: `${client} joined your roster`,
-    text: [...paragraphs, `Open Clients: ${url}`, "— SMOAC"].join("\n\n"),
+    subject: `${client} accepted your invite`,
+    text: [...paragraphs, `Open Inquiries: ${url}`, "— SMOAC"].join("\n\n"),
     html: wrapTransactionalEmailHtml({
-      preheader: `${client} is now one of your clients`,
-      eyebrow: "New client",
-      title: `${client} joined your roster`,
+      preheader: `${client} accepted your invite`,
+      eyebrow: "Inquiries",
+      title: `${client} accepted your invite`,
       bodyHtml: renderEmailParagraphs(paragraphs),
-      cta: { label: "Open Clients", href: url },
+      cta: { label: "Open Inquiries", href: url },
     }),
     kind: "coaching_roster_joined",
   });

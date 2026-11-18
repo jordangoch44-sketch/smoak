@@ -234,7 +234,7 @@ export function ExploreSearchOverlay({
                 value={draft}
                 onChange={(event) => onDraftChange(event.target.value)}
                 placeholder={EXPLORE_SEARCH_PLACEHOLDER}
-                aria-label="Search specialists"
+                aria-label="Search specialists by name or business"
                 className="smoac-control explore-search-overlay__input"
               />
               {draft.trim() ? (

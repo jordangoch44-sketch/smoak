@@ -8,14 +8,14 @@ import { SITE_ROUTES } from "@/lib/navigation";
 
 export const metadata = {
   title: "Pricing",
-  description: "How pricing works for clients and specialists on SMOAC.",
+  description: "SMOAC is free for clients and specialists while the marketplace grows.",
 };
 
 export default function PricingPage() {
   return (
     <LegalDocumentPage
       title="Pricing"
-      description="Client discovery is free. Specialists can subscribe to Pro or PRO+ and run Boost campaigns."
+      description="Clients and specialists use SMOAC for free. Specialists set their own session rates."
       effectiveDate={LEGAL_EFFECTIVE_DATE}
       sections={PRICING_SECTIONS}
       related={[

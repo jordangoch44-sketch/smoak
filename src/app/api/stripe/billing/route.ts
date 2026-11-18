@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import {
   createBillingSetupIntent,
   loadManageBilling,
@@ -29,6 +30,13 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!isMonetizationEnabled()) {
+    return NextResponse.json(
+      { error: "SMOAC profiles are free right now." },
+      { status: 403 }
+    );
+  }
+
   const auth = await requireSpecialistBillingContext();
   if (!auth.ok) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });

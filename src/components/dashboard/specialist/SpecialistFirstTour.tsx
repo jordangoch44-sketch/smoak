@@ -161,8 +161,8 @@ function findTourNode(name: string): HTMLElement | null {
 
 /** Toolbar steps spotlight the bottom-nav switch when that bar is on screen. */
 function resolveTourTarget(step: SpecialistTourStep): HTMLElement | null {
-  if (step.id === "clients") {
-    return findTourNode("clients-tab") ?? findTourNode(step.target);
+  if (step.id === "inquiries") {
+    return findTourNode("inquiries-tab") ?? findTourNode(step.target);
   }
   if (step.id === "overview") {
     return findTourNode("overview-tab") ?? findTourNode(step.target);
@@ -177,14 +177,14 @@ function scrollStepTarget(step: SpecialistTourStep) {
     step.id === "live" ||
     step.id === "edit" ||
     step.id === "inquiries" ||
-    name === "clients-tab" ||
+    name === "inquiries-tab" ||
     name === "overview-tab"
   ) {
     return;
   }
   if (step.id === "client-view") {
     const price = document.querySelector(
-      '[data-tour="client-view"] .profile-hero__meta'
+      '[data-tour="client-view"] .profile-hero__offer'
     );
     const scroller = document.querySelector(".specialist-live-page__body");
     if (price && scroller instanceof HTMLElement) {
@@ -210,7 +210,7 @@ function measureHole(step: SpecialistTourStep): Hole | null {
 
   if (step.id === "client-view") {
     const identity = root.querySelector(".profile-hero__identity");
-    const meta = root.querySelector(".profile-hero__meta");
+    const meta = root.querySelector(".profile-hero__offer");
     const base =
       unionOf([identity, meta].filter((node): node is Element => Boolean(node))) ??
       rect;
@@ -237,7 +237,7 @@ function measureHole(step: SpecialistTourStep): Hole | null {
 
   const pad = spotlightTab
     ? 4
-    : step.id === "overview" || step.id === "clients" || step.id === "client-view"
+    : step.id === "overview" || step.id === "client-view"
       ? 8
       : 6;
   const edge = spotlightTab ? 2 : 8;

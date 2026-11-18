@@ -16,13 +16,7 @@ import {
   pinAllowList,
   specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
-import {
-  ADD_INTRO_VIDEO_CTA_LABEL,
-  isTrainerIntroVideoUnlocked,
-  meetCtaLabel,
-} from "@/lib/specialist-intro-video";
 import { isTrainerProPlus } from "@/lib/specialist-premium";
-import type { TrainerIntroVideo } from "@/types/trainer";
 import {
   getProfileAccentRgb,
   normalizeProfileStyle,
@@ -36,18 +30,30 @@ import {
 } from "@/lib/free-first-session";
 import { TrainerDistanceLabel } from "@/components/trainers/TrainerDistanceLabel";
 import { TrainerProfessionLabel } from "@/components/trainers/TrainerProfessionLabel";
-import { LockIcon, PhotosStackIcon, PinIcon } from "@/components/ui/icons";
+import {
+  CalendarIcon,
+  LockIcon,
+  PhotosStackIcon,
+  PinIcon,
+  SendIcon,
+  TicketIcon,
+} from "@/components/ui/icons";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { MEDIA_TAP_SLOP_PX } from "@/hooks/useFastActivate";
 import { ProfileHeroCoverGallery } from "./ProfileHeroCoverGallery";
 import { ProfileHeroAvatar } from "./ProfileHeroAvatar";
-import { ProfileHeroBio } from "./ProfileHeroBio";
-import { ProfileHeroMeetCta } from "./ProfileHeroMeetCta";
 import { ProfileGalleryModal } from "./ProfileGalleryModal";
 import { ProfileHeroToolbar } from "./ProfileHeroToolbar";
 import { ProfileRankBadge } from "./ProfileRankBadge";
 import { ProfileReviewMeta } from "./ProfileReviewMeta";
-import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
+import {
+  trainerFirstName,
+  type SpecialistReviewAggregate,
+} from "@/lib/reviews/specialist-review-types";
+import {
+  hasSessionPrice,
+  resolveTrainerSessionPriceRange,
+} from "@/lib/session-price";
 import { cn } from "@/lib/utils";
 
 interface ProfileHeroProps {
@@ -61,14 +67,12 @@ interface ProfileHeroProps {
   variant?: "public" | "specialist-live";
   /** Owner Live — Free pin teaser with lock overlays. Never used on Marketplace. */
   lockedPreviewPins?: string[];
-  /** Owner Live — Free intro-video teaser. Never used on Marketplace. */
-  lockedPreviewIntro?: TrainerIntroVideo;
   /** Live tab — Edit chip on the circular profile photo */
   onEditProfilePhoto?: () => void;
-  /** Owner Live — empty intro chip opens the intro-video editor. Never Marketplace. */
-  onAddIntroVideo?: () => void;
   /** Public profile — claim CTA opens inquire */
   onClaimFreeSession?: () => void;
+  /** Opens the inquiry sheet. Book Consultation is visual until booking is wired. */
+  onInquire: () => void;
   onUpgrade?: () => void;
 }
 
@@ -81,10 +85,9 @@ export function ProfileHero({
   onLeaveReview,
   variant = "public",
   lockedPreviewPins,
-  lockedPreviewIntro,
   onEditProfilePhoto,
-  onAddIntroVideo,
   onClaimFreeSession,
+  onInquire,
   onUpgrade,
 }: ProfileHeroProps) {
   const isSpecialistLive = variant === "specialist-live";
@@ -143,27 +146,15 @@ export function ProfileHero({
     remainingPhotoCount > 0 && pinnedPhotos.length === 0;
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [introOpen, setIntroOpen] = useState(false);
-  const bio = typeof trainer.bio === "string" ? trainer.bio.trim() : "";
-  const introUnlocked = isTrainerIntroVideoUnlocked(trainer);
-  const liveIntro = introUnlocked ? trainer.introVideo : undefined;
-  const lockedIntro =
-    isSpecialistLive && !introUnlocked ? lockedPreviewIntro : undefined;
-  const introVideo =
-    liveIntro?.src?.trim()
-      ? liveIntro
-      : lockedIntro?.src?.trim()
-        ? lockedIntro
-        : undefined;
-  const introLocked = Boolean(introVideo && lockedIntro && !liveIntro);
-  const canAddIntro =
-    isSpecialistLive &&
-    introUnlocked &&
-    !introVideo &&
-    Boolean(onAddIntroVideo);
-  const meetLabel = canAddIntro
-    ? ADD_INTRO_VIDEO_CTA_LABEL
-    : meetCtaLabel(trainer);
+  const showSessionPrice = hasSessionPrice(
+    resolveTrainerSessionPriceRange(trainer)
+  );
+  const showFreeSession = isTrainerFreeFirstSessionEligible(trainer);
+  const showPricing = showSessionPrice || showFreeSession;
+  const leaveReview =
+    !isSpecialistLive && canLeaveReview && onLeaveReview
+      ? onLeaveReview
+      : undefined;
 
   const openGallery = useCallback(
     (startUrl?: string) => {
@@ -199,6 +190,14 @@ export function ProfileHero({
         data-tour={isSpecialistLive ? "client-view" : undefined}
       >
         <div className="profile-hero__stage relative w-full">
+          {isSpecialistLive ? null : (
+            <ProfileHeroToolbar
+              trainerId={trainer.id}
+              trainerName={trainer.name}
+              slug={trainer.slug}
+              instagram={isPaidPlan ? trainer.social?.instagram : null}
+            />
+          )}
           <ProfileHeroCoverGallery
             slides={galleryMedia.map((item) =>
               item.type === "video"
@@ -278,79 +277,6 @@ export function ProfileHero({
 
         <div className="profile-hero__content relative px-4 pb-5 sm:px-6 sm:pb-7 lg:pb-8">
           <div className="mx-auto max-w-7xl">
-            {introVideo || canAddIntro || bio ? (
-              <div className="profile-hero__intro">
-                {introVideo ? (
-                  <ProfileHeroMeetCta
-                    label={meetLabel}
-                    video={introVideo}
-                    locked={introLocked}
-                    onPlay={() => {
-                      if (introLocked) {
-                        onUpgrade?.();
-                        return;
-                      }
-                      setIntroOpen(true);
-                    }}
-                  />
-                ) : canAddIntro && onAddIntroVideo ? (
-                  <ProfileHeroMeetCta
-                    label={meetLabel}
-                    add
-                    onPlay={onAddIntroVideo}
-                  />
-                ) : null}
-                {bio ? <ProfileHeroBio bio={bio} /> : null}
-              </div>
-            ) : null}
-
-            <div className="profile-hero__meta">
-              <div className="profile-hero__meta-primary">
-                <ProfileReviewMeta
-                  trainer={trainer}
-                  smoacAggregate={smoacAggregate}
-                  canLeaveReview={isSpecialistLive ? false : canLeaveReview}
-                  hasOwnReview={isSpecialistLive ? false : hasOwnReview}
-                  onLeaveReview={isSpecialistLive ? undefined : onLeaveReview}
-                />
-                <div className="profile-hero__meta-offer">
-                  <SessionPrice
-                    trainer={trainer}
-                    variant="hero"
-                    className="profile-hero__meta-price shrink-0"
-                  />
-                  {isTrainerFreeFirstSessionEligible(trainer) ? (
-                    onClaimFreeSession ? (
-                      <FastActivateButton
-                        className="smoac-control profile-hero__free-session"
-                        onActivate={onClaimFreeSession}
-                      >
-                        <span className="profile-hero__free-session-label">
-                          {FREE_FIRST_SESSION_CLAIM_LABEL}
-                        </span>
-                      </FastActivateButton>
-                    ) : (
-                      <span className="profile-hero__free-session">
-                        <span className="profile-hero__free-session-label">
-                          {FREE_FIRST_SESSION_CLAIM_LABEL}
-                        </span>
-                      </span>
-                    )
-                  ) : null}
-                </div>
-              </div>
-              {showMetaGalleryButton ? (
-                <FastActivateButton
-                  className="profile-hero__view-gallery"
-                  aria-label="View specialist gallery"
-                  onActivate={() => openGallery()}
-                >
-                  <PhotosStackIcon className="profile-hero__view-gallery-icon" />
-                  View Gallery
-                </FastActivateButton>
-              ) : null}
-            </div>
-
             {pinnedPhotos.length > 0 ? (
               <div
                 className={cn(
@@ -427,6 +353,89 @@ export function ProfileHero({
                 ) : null}
               </div>
             ) : null}
+
+            <div className="profile-hero__offer">
+              <div className="profile-hero__offer-row">
+                <ProfileReviewMeta
+                  trainer={trainer}
+                  smoacAggregate={smoacAggregate}
+                  hasOwnReview={isSpecialistLive ? false : hasOwnReview}
+                  onLeaveReview={leaveReview}
+                />
+                {showPricing ? (
+                  <>
+                    <span className="profile-hero__offer-rule" aria-hidden />
+                    <div className="profile-hero__meta-offer">
+                      {showSessionPrice ? (
+                        <SessionPrice
+                          trainer={trainer}
+                          variant="hero"
+                          className="profile-hero__meta-price shrink-0"
+                        />
+                      ) : null}
+                      {showFreeSession ? (
+                        onClaimFreeSession ? (
+                          <FastActivateButton
+                            className="smoac-control profile-hero__free-session"
+                            aria-label="Free session"
+                            onActivate={onClaimFreeSession}
+                          >
+                            <span className="profile-hero__free-session-label">
+                              {FREE_FIRST_SESSION_CLAIM_LABEL}
+                            </span>
+                            <TicketIcon className="profile-hero__free-session-icon" />
+                          </FastActivateButton>
+                        ) : (
+                          <span className="profile-hero__free-session">
+                            <span className="profile-hero__free-session-label">
+                              {FREE_FIRST_SESSION_CLAIM_LABEL}
+                            </span>
+                            <TicketIcon className="profile-hero__free-session-icon" />
+                          </span>
+                        )
+                      ) : null}
+                    </div>
+                  </>
+                ) : null}
+              </div>
+              <div className="profile-hero__offer-actions">
+                <FastActivateButton
+                  className="smoac-control profile-hero__inquire"
+                  onActivate={onInquire}
+                >
+                  <SendIcon className="profile-hero__offer-icon" />
+                  Inquire Now
+                </FastActivateButton>
+                <button type="button" className="smoac-control profile-hero__consult">
+                  <CalendarIcon className="profile-hero__offer-icon" />
+                  Book Consultation
+                </button>
+              </div>
+              {leaveReview ? (
+                <FastActivateButton
+                  className="smoac-control profile-hero__leave-review"
+                  onActivate={leaveReview}
+                >
+                  Trained with {trainerFirstName(trainer.name)}? Leave a review
+                </FastActivateButton>
+              ) : null}
+              {!isSpecialistLive && hasOwnReview ? (
+                <p className="profile-hero__reviewed-status">
+                  You reviewed this specialist
+                </p>
+              ) : null}
+            </div>
+
+            {showMetaGalleryButton ? (
+              <FastActivateButton
+                className="profile-hero__view-gallery"
+                aria-label="View specialist gallery"
+                onActivate={() => openGallery()}
+              >
+                <PhotosStackIcon className="profile-hero__view-gallery-icon" />
+                View Gallery
+              </FastActivateButton>
+            ) : null}
           </div>
         </div>
       </section>
@@ -439,34 +448,6 @@ export function ProfileHero({
         onClose={closeGallery}
       />
 
-      <ProfileGalleryModal
-        open={introOpen}
-        media={
-          introVideo
-            ? [
-                {
-                  id: "intro-video",
-                  type: "video",
-                  url: introVideo.src,
-                  thumbnail: introVideo.poster,
-                  duration: introVideo.duration,
-                  alt: meetLabel,
-                },
-              ]
-            : []
-        }
-        trainerName={trainer.name}
-        onClose={() => setIntroOpen(false)}
-      />
-
-      {isSpecialistLive ? null : (
-        <ProfileHeroToolbar
-          trainerId={trainer.id}
-          trainerName={trainer.name}
-          slug={trainer.slug}
-          instagram={isPaidPlan ? trainer.social?.instagram : null}
-        />
-      )}
     </>
   );
 }

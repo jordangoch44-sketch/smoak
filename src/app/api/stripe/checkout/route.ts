@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getSiteUrlForStripe,
@@ -28,6 +29,13 @@ import {
  * Boosts prefer embedded Payment Element via `/api/stripe/subscription-intent`.
  */
 export async function POST(request: Request) {
+  if (!isMonetizationEnabled()) {
+    return NextResponse.json(
+      { error: "SMOAC profiles are free right now." },
+      { status: 403 }
+    );
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Stripe is not configured yet." },

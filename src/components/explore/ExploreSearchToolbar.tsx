@@ -174,7 +174,7 @@ export function ExploreSearchToolbar({
                 onFocus={handleFocus}
                 onClick={overlayActivate.onClick}
                 placeholder={EXPLORE_SEARCH_PLACEHOLDER}
-                aria-label="Search specialists"
+                aria-label="Search specialists by name or business"
                 aria-expanded={overlayOpen}
                 aria-controls="explore-search-overlay-panel"
                 className="smoac-control explore-search-shell__input"

@@ -1,14 +1,9 @@
-import { trainerOffersFreeFirstSession } from "@/lib/free-first-session";
 import {
   PINNED_PHOTOS_MAX,
   normalizePinnedPhotos,
-  specialistMediaLimitsForPlan,
 } from "@/lib/specialist-media-limits";
-import {
-  isProPlusPlan,
-  parseMembershipPlan,
-} from "@/lib/specialist-premium";
-import type { Trainer, TrainerIntroVideo, TrainerMediaItem } from "@/types/trainer";
+import { isMonetizationEnabled } from "@/lib/monetization";
+import type { Trainer, TrainerIntroVideo } from "@/types/trainer";
 
 function orderedPublicImageUrls(trainer: Trainer): string[] {
   if (trainer.galleryImages?.length) {
@@ -20,76 +15,31 @@ function orderedPublicImageUrls(trainer: Trainer): string[] {
     .filter(Boolean);
 }
 
-function orderedPublicVideos(trainer: Trainer): TrainerMediaItem[] {
-  return (Array.isArray(trainer.gallery) ? trainer.gallery : []).filter(
-    (item) => item.type === "video" && item.src.trim()
-  );
-}
-
 /**
- * Marketplace view of a listing. Stored Pro extras stay in specialist_profiles;
- * this only hides them from clients until the specialist restores a paid plan.
+ * Public listing. Profile media stays visible.
+ * While SMOAC is not selling placement, paid rails and sort pins are cleared.
  */
 export function applyPublicMembershipVisibility(trainer: Trainer): Trainer {
-  const plan = parseMembershipPlan(trainer.membershipPlan);
-  const isPremium =
-    trainer.isPremium === true || plan === "premium" || plan === "platinum";
-  const isProPlus = isProPlusPlan(plan);
-  const limits = specialistMediaLimitsForPlan(isPremium, isProPlus);
-
-  const liveImageUrls = orderedPublicImageUrls(trainer).slice(0, limits.images);
-  const liveImageSet = new Set(liveImageUrls);
-  const liveVideos = isProPlus
-    ? orderedPublicVideos(trainer).slice(0, limits.videos)
-    : [];
-  const liveVideoSet = new Set(liveVideos.map((item) => item.src));
-
-  const gallery = (Array.isArray(trainer.gallery) ? trainer.gallery : []).filter(
-    (item) => {
-      if (item.type === "video") return liveVideoSet.has(item.src);
-      if (item.type === "image") {
-        return liveImageSet.size > 0
-          ? liveImageSet.has(item.src)
-          : liveImageUrls.includes(item.src);
-      }
-      return false;
-    }
-  );
-
-  const heroImage =
-    (trainer.heroImage && liveImageSet.has(trainer.heroImage)
-      ? trainer.heroImage
-      : liveImageUrls[0]) || trainer.heroImage;
-
-  return {
-    ...trainer,
-    gallery,
-    galleryImages: liveImageUrls,
-    heroImage,
-    pinnedPhotos: isPremium ? trainer.pinnedPhotos : [],
-    clientTransformations: isProPlus ? trainer.clientTransformations : [],
-    introVideo: isPremium ? trainer.introVideo : undefined,
-    offersFreeFirstSession:
-      isPremium && trainerOffersFreeFirstSession(trainer),
-  };
+  if (!isMonetizationEnabled()) {
+    return {
+      ...trainer,
+      sponsored: false,
+      featured: false,
+      categorySpotlight: false,
+      topRanked: false,
+    };
+  }
+  return trainer;
 }
 
-/**
- * Owner Live tab only — Free specialists still see the intro clip they
- * would have on Pro. Marketplace keeps it stripped via
- * `applyPublicMembershipVisibility`.
- */
+/** Owner Live tab — intro clip saved on the listing. */
 export function resolveOwnerLiveLockedIntro(
   trainer: Trainer
 ): TrainerIntroVideo | undefined {
   return trainer.introVideo?.src?.trim() ? trainer.introVideo : undefined;
 }
 
-/**
- * Owner Live tab only — Free specialists still see the pin row they would
- * have on Pro (saved pins, or gallery photos if they never pinned).
- * Marketplace keeps pins stripped via `applyPublicMembershipVisibility`.
- */
+/** Owner Live tab — saved pins, or the first gallery photos if none are pinned. */
 export function resolveOwnerLiveLockedPins(trainer: Trainer): string[] {
   const galleryUrls = orderedPublicImageUrls(trainer);
   const savedPins = normalizePinnedPhotos(trainer.pinnedPhotos, galleryUrls);

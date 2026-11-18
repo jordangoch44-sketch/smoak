@@ -3,69 +3,29 @@
 import Image from "next/image";
 import { SmoacStarRating } from "@/components/reviews/SmoacStarRating";
 import { LOGO_SRC } from "@/lib/brand";
-import {
-  trainerFirstName,
-  type SpecialistReviewAggregate,
-} from "@/lib/reviews/specialist-review-types";
-import { resolveTrainerReviewDisplay } from "@/lib/trainer-reviews";
-import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { formatTrainerRating } from "@/lib/utils";
+import type { SpecialistReviewAggregate } from "@/lib/reviews/specialist-review-types";
 import type { Trainer } from "@/types";
 import { ProfileGoogleReviewsLink } from "./ProfileGoogleReviewsLink";
 
 interface ProfileReviewMetaProps {
   trainer: Trainer;
   smoacAggregate?: SpecialistReviewAggregate | null;
-  canLeaveReview?: boolean;
   hasOwnReview?: boolean;
   onLeaveReview?: () => void;
 }
 
+/** SMOAC and Google rows under the profile photo. Counts stay separate. */
 export function ProfileReviewMeta({
   trainer,
   smoacAggregate,
-  canLeaveReview = false,
   hasOwnReview = false,
   onLeaveReview,
 }: ProfileReviewMetaProps) {
-  const { total, sourceLabels } = resolveTrainerReviewDisplay(trainer);
   const smoacCount = smoacAggregate?.reviewCount ?? 0;
   const smoacAvg = smoacAggregate?.avgRating ?? null;
-  const firstName = trainerFirstName(trainer.name);
-  const hasClassicReviews = total > 0;
 
   return (
-    <div className="profile-hero__reviews shrink-0">
-      {hasClassicReviews ? (
-        <>
-          <div className="profile-hero__reviews-rating">
-            <span className="profile-hero__reviews-star" aria-hidden>
-              ★
-            </span>
-            <span className="profile-hero__reviews-score">
-              {formatTrainerRating(trainer.rating)}
-            </span>
-          </div>
-          <p className="profile-hero__reviews-total">
-            {total} total review{total === 1 ? "" : "s"}
-          </p>
-          {sourceLabels.length > 0 ? (
-            <p className="profile-hero__reviews-sources">
-              {sourceLabels.map((label, index) => (
-                <span key={label} className="profile-hero__reviews-source-item">
-                  {index > 0 ? (
-                    <span className="profile-hero__reviews-sources-dot" aria-hidden>
-                      ·
-                    </span>
-                  ) : null}
-                  <span className="profile-hero__reviews-source-tag">{label}</span>
-                </span>
-              ))}
-            </p>
-          ) : null}
-        </>
-      ) : null}
-
+    <div className="profile-hero__reviews">
       <div className="profile-hero__reviews-smoac">
         <span className="profile-hero__reviews-mark-slot" aria-hidden>
           <Image
@@ -86,21 +46,6 @@ export function ProfileReviewMeta({
       </div>
 
       <ProfileGoogleReviewsLink trainer={trainer} variant="hero" />
-
-      {canLeaveReview && onLeaveReview ? (
-        <FastActivateButton
-          className="smoac-control profile-hero__leave-review"
-          onActivate={onLeaveReview}
-        >
-          Trained with {firstName}? Leave a review
-        </FastActivateButton>
-      ) : null}
-
-      {hasOwnReview ? (
-        <p className="profile-hero__reviewed-status">
-          You reviewed this specialist
-        </p>
-      ) : null}
     </div>
   );
 }

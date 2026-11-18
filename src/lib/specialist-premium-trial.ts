@@ -7,6 +7,7 @@
  * that never got one.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { readActiveAdminOverride } from "@/lib/admin-plan-override";
 import {
   listingMembershipFromRow,
@@ -195,6 +196,8 @@ export async function grantSpecialistPremiumTrialIfNeeded(
   userId: string,
   specialistProfileId?: string | null
 ): Promise<PremiumTrialGrantResult> {
+  if (!isMonetizationEnabled()) return emptyGrantResult();
+
   const founding = await specialistIsFoundingInvite(
     supabase,
     userId,
@@ -483,6 +486,7 @@ export async function resolveAndSyncSpecialistPremiumAccess(
 
 /** Cron / batch: expire all due trials (service role). */
 export async function expireDuePremiumTrials(): Promise<number> {
+  if (!isMonetizationEnabled()) return 0;
   const supabase = createSupabaseServiceClient();
   if (!supabase) return 0;
 
@@ -527,6 +531,7 @@ export async function sendDuePremiumTrialReminderEmails(): Promise<{
   lastDay: number;
 }> {
   const empty = { day10: 0, day20: 0, lastDay: 0 };
+  if (!isMonetizationEnabled()) return empty;
   const supabase = createSupabaseServiceClient();
   if (!supabase) return empty;
 

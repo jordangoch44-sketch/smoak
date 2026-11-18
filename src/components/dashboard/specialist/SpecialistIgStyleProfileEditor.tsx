@@ -12,6 +12,11 @@ import {
 } from "@/components/dashboard/shared/DashboardModalScrim";
 import { resolveTrainerProfessionCategory } from "@/lib/profession-category";
 import { formatDualLocationPreview } from "@/lib/specialist-work-spots";
+import { DeleteAccountButton } from "@/components/dashboard/shared/DeleteAccountButton";
+import {
+  growthProfileAccess,
+  isMonetizationEnabled,
+} from "@/lib/monetization";
 import { formatMembershipShortLabel, isProPlusPlan, isTrainerProPlus, membershipBadgeToneForSession, membershipRoleBadgeClassName } from "@/lib/specialist-premium";
 import { FREE_FIRST_SESSION_LABEL, trainerOffersFreeFirstSession } from "@/lib/free-first-session";
 import { profileStyleAccentLabel } from "@/lib/specialist-profile-style";
@@ -238,9 +243,13 @@ export function SpecialistIgStyleProfileEditor({
   const { session } = useAuthSession();
   const [walkthroughAskOpen, setWalkthroughAskOpen] = useState(false);
   const showWalkthrough = isSampleSpecialistTourAccount(session?.email);
-  const isPremium = Boolean(session?.isPremium);
-  const isProPlus =
-    isProPlusPlan(session?.membershipPlan) || isTrainerProPlus(trainer);
+  const profileAccess = growthProfileAccess({
+    isPremium: Boolean(session?.isPremium),
+    isProPlus:
+      isProPlusPlan(session?.membershipPlan) || isTrainerProPlus(trainer),
+  });
+  const isPremium = profileAccess.isPremium;
+  const isProPlus = profileAccess.isProPlus;
   const resolvedPlanLabel = formatMembershipShortLabel(session);
   const planBadgeTone = membershipBadgeToneForSession(session);
 
@@ -388,15 +397,17 @@ export function SpecialistIgStyleProfileEditor({
           >
             {hasPhoto ? "Edit photo" : "Add photo"}
           </button>
-          <span
-            className={cn(
-              "ig-profile-edit__plan-badge",
-              membershipRoleBadgeClassName(planBadgeTone)
-            )}
-            aria-label={`Current plan: ${resolvedPlanLabel}`}
-          >
-            {resolvedPlanLabel}
-          </span>
+          {isMonetizationEnabled() ? (
+            <span
+              className={cn(
+                "ig-profile-edit__plan-badge",
+                membershipRoleBadgeClassName(planBadgeTone)
+              )}
+              aria-label={`Current plan: ${resolvedPlanLabel}`}
+            >
+              {resolvedPlanLabel}
+            </span>
+          ) : null}
         </div>
       </div>
 
@@ -659,24 +670,28 @@ export function SpecialistIgStyleProfileEditor({
           highlighted={isHighlighted("contact")}
           onClick={() => onEditSection("contact")}
         />
-        <IgEditRow
-          id="ig-edit-row-plan"
-          sectionKey="plan"
-          label="Plan"
-          value={resolvedPlanLabel}
-          settings
-          highlighted={isHighlighted("plan")}
-          onClick={() => onEditSection("plan")}
-        />
-        <IgEditRow
-          id="ig-edit-row-billing"
-          sectionKey="billing"
-          label="Billing"
-          value="Payment & invoices"
-          settings
-          highlighted={isHighlighted("billing")}
-          onClick={() => onEditSection("billing")}
-        />
+        {isMonetizationEnabled() ? (
+          <>
+            <IgEditRow
+              id="ig-edit-row-plan"
+              sectionKey="plan"
+              label="Plan"
+              value={resolvedPlanLabel}
+              settings
+              highlighted={isHighlighted("plan")}
+              onClick={() => onEditSection("plan")}
+            />
+            <IgEditRow
+              id="ig-edit-row-billing"
+              sectionKey="billing"
+              label="Billing"
+              value="Payment & invoices"
+              settings
+              highlighted={isHighlighted("billing")}
+              onClick={() => onEditSection("billing")}
+            />
+          </>
+        ) : null}
         {showWalkthrough ? (
           <IgEditRow
             id="ig-edit-row-walkthrough"
@@ -694,6 +709,12 @@ export function SpecialistIgStyleProfileEditor({
           />
         ) : null}
       </div>
+
+      {isMonetizationEnabled() ? null : (
+        <div className="ig-profile-edit__footer">
+          <DeleteAccountButton role="specialist" />
+        </div>
+      )}
 
       <WalkthroughAskDialog
         open={walkthroughAskOpen}

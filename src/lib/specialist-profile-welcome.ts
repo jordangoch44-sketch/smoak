@@ -3,6 +3,7 @@
  * comparison. Opens on every third login, not every visit.
  */
 import { parseCoachingStyleSelection } from "@/constants/specialist-onboarding-options";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import {
   hasSessionPrice,
   resolveTrainerSessionPriceRange,
@@ -238,6 +239,7 @@ export function profileWelcomeTrialHeadline(
 export function resolveProfileWelcomeMembership(
   session: SpecialistProfileWelcomeSession | null | undefined
 ): ProfileWelcomeMembershipPrompt | null {
+  if (!isMonetizationEnabled()) return null;
   if (!session || session.role !== "specialist") return null;
 
   if (session.premiumTrialActive) {

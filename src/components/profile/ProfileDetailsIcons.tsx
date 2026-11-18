@@ -2,12 +2,14 @@ import type { ComponentType } from "react";
 import {
   AppleFruitIcon,
   BoxingGloveIcon,
+  CalendarIcon,
   DumbbellIcon,
   HybridFormatIcon,
   LayoutGridIcon,
   LocationMarkIcon,
   MeditationIcon,
   MedicalCrossIcon,
+  MessageBubbleIcon,
   RunningFigureIcon,
   TravelRangeIcon,
   TrophyIcon,
@@ -15,6 +17,7 @@ import {
   UsersIcon,
   VirtualFormatIcon,
 } from "@/components/ui/icons";
+import type { SpecialistPricingOfferingType } from "@/types/specialist-pricing";
 import type {
   ProfileSpecialtyIconId,
   TrainingOptionKind,
@@ -132,6 +135,29 @@ export function ProfileTrainingKindIcon({
   className?: string;
 }) {
   const Icon = TRAINING_ICONS[kind] ?? DumbbellIcon;
+  return <Icon className={className} />;
+}
+
+const PRICING_ICONS: Record<
+  SpecialistPricingOfferingType,
+  ComponentType<{ className?: string }>
+> = {
+  "one-on-one": UserIcon,
+  "monthly-membership": CalendarIcon,
+  package: LayoutGridIcon,
+  "drop-in": BoltGlyph,
+  "online-coaching": VirtualFormatIcon,
+  "free-consult": MessageBubbleIcon,
+};
+
+export function ProfilePricingKindIcon({
+  kind,
+  className,
+}: {
+  kind: SpecialistPricingOfferingType;
+  className?: string;
+}) {
+  const Icon = PRICING_ICONS[kind] ?? DumbbellIcon;
   return <Icon className={className} />;
 }
 

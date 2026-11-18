@@ -32,9 +32,7 @@ import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import {
   ChevronLeftIcon,
   MenuPencilIcon,
-  MessageBubbleIcon,
 } from "@/components/ui/icons";
-import { SpecialistClientsPage } from "@/components/dashboard/specialist/clients/SpecialistClientsPage";
 import { useToast } from "@/components/ui/toast";
 import { useManagedSpecialistProfile } from "@/hooks/useManagedSpecialistProfile";
 import { useTrainerWithOverrides } from "@/hooks/useTrainerWithOverrides";
@@ -79,12 +77,12 @@ import type { Trainer } from "@/types/trainer";
 import type { TrainerCityRanking } from "@/data/city-rankings";
 import type { SpecialistLead } from "@/types/specialist-dashboard";
 import {
-  SPECIALIST_DASHBOARD_CLIENTS_HREF,
   SPECIALIST_DASHBOARD_EDIT_HREF,
   SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
 } from "@/lib/auth-routes";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { parseMembershipPlan } from "@/lib/specialist-premium";
 import {
   applyPublicMembershipVisibility,
@@ -93,12 +91,11 @@ import {
 } from "@/lib/specialist-public-listing";
 import { getApprovedSpecialistProfileById } from "@/lib/approved-specialist-profiles-store";
 import { overlayGoogleSocialIfMissing } from "@/lib/google-reviews-display";
-import { inquiryThreadHref } from "@/lib/inquiry/inquiry-paths";
 import { trainerMatchesPublicKey } from "@/lib/trainer-profile-path";
 import { updatePassword } from "@/lib/auth/marketplace-auth";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 
-type ProfilePreviewMode = "edit" | "live" | "inquiries" | "clients";
+type ProfilePreviewMode = "edit" | "live" | "inquiries";
 const LOCK_CLASS = "specialist-live-edit-open";
 const EDIT_PAGE_LOCK_CLASS = "specialist-edit-profile-open";
 const MIN_PASSWORD_LENGTH = 8;
@@ -111,7 +108,6 @@ function previewModeFromSearch(
 ): ProfilePreviewMode {
   if (conversationParam || viewParam === "inquiries") return "inquiries";
   if (viewParam === "edit") return "edit";
-  if (viewParam === "clients") return "clients";
   return "live";
 }
 
@@ -177,7 +173,6 @@ interface SpecialistDashboardProfilePreviewProps {
   cityRanking?: TrainerCityRanking | null;
   inquiryLeads?: SpecialistLead[];
   inquirySenderUserId?: string;
-  inquiryUnreadCount?: number;
   initialConversationId?: string | null;
   onOpenInquiryLead?: (lead: SpecialistLead) => void;
   onCloseInquiryThread?: () => void;
@@ -469,16 +464,10 @@ function LiveEditSheet({
 
 function LiveProfileChrome({
   status = "live",
-  showInquiries,
-  inquiryUnreadCount,
-  onOpenInquiries,
   onOpenEdit,
   onSignOut,
 }: {
   status?: "live" | "pending";
-  showInquiries: boolean;
-  inquiryUnreadCount: number;
-  onOpenInquiries: () => void;
   onOpenEdit: () => void;
   onSignOut?: () => void;
 }) {
@@ -490,27 +479,7 @@ function LiveProfileChrome({
         isPending && "specialist-live-chrome--pending"
       )}
     >
-      {showInquiries && !isPending ? (
-        <FastActivateButton
-          className="smoac-control specialist-live-chrome__btn specialist-live-chrome__btn--messages"
-          aria-label={
-            inquiryUnreadCount > 0
-              ? `Inquiries, ${inquiryUnreadCount} unread`
-              : "Inquiries"
-          }
-          data-tour="inquiries"
-          onActivate={onOpenInquiries}
-        >
-          <MessageBubbleIcon className="specialist-live-chrome__icon" />
-          {inquiryUnreadCount > 0 ? (
-            <span className="specialist-live-chrome__badge">
-              {inquiryUnreadCount > 9 ? "9+" : inquiryUnreadCount}
-            </span>
-          ) : null}
-        </FastActivateButton>
-      ) : (
-        <span className="specialist-live-chrome__spacer" aria-hidden />
-      )}
+      <span className="specialist-live-chrome__spacer" aria-hidden />
       <h1
         className={cn(
           "specialist-live-chrome__title",
@@ -581,8 +550,8 @@ function EditProfilePageChrome({
 }
 
 /**
- * Specialist Profile tab — live marketplace view by default; edit and
- * inquiries open from the live header.
+ * Specialist Profile tab — live marketplace view by default. Edit opens
+ * from the live header. Inquiries is its own tab.
  */
 export function SpecialistDashboardProfilePreview({
   trainer: trainerProp,
@@ -599,7 +568,6 @@ export function SpecialistDashboardProfilePreview({
   cityRanking = null,
   inquiryLeads = [],
   inquirySenderUserId,
-  inquiryUnreadCount = 0,
   initialConversationId = null,
   onOpenInquiryLead,
   onCloseInquiryThread,
@@ -689,16 +657,14 @@ export function SpecialistDashboardProfilePreview({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [billingOpen, setBillingOpen] = useState(false);
   const [planOpen, setPlanOpen] = useState(false);
-  // Opens the thread on the next paint. The clients tab ignores `view` until
-  // the URL catches up, which made Message look like a no-op.
+  // Opens the thread on the next paint before the URL catches up.
   const [pendingThreadId, setPendingThreadId] = useState<string | null>(null);
   const urlConversationId = searchParams.get("c")?.trim() || "";
   const conversationParam = pendingThreadId || urlConversationId;
-  // Clients is its own bottom-nav tab but renders inside the profile surface.
   const viewParam = pendingThreadId
     ? "inquiries"
     : searchParams.get("tab") === "clients"
-      ? "clients"
+      ? "inquiries"
       : searchParams.get("view")?.trim() || "";
   const [previewMode, setPreviewMode] = useState<ProfilePreviewMode>(() =>
     previewModeFromSearch(viewParam, conversationParam)
@@ -710,8 +676,6 @@ export function SpecialistDashboardProfilePreview({
       trainerId &&
       trainerMatchesPublicKey(liveTrainer, trainerId)
   );
-  const showInquiries =
-    canEdit && Boolean(inquirySenderUserId) && !isPendingListing;
   const showLiveChrome = canEdit || isPendingListing;
 
   useEffect(() => {
@@ -726,13 +690,6 @@ export function SpecialistDashboardProfilePreview({
     if (!pendingThreadId) return;
     if (urlConversationId === pendingThreadId) setPendingThreadId(null);
   }, [pendingThreadId, urlConversationId]);
-
-  function openRosterConversation(conversationId: string) {
-    const id = conversationId.trim();
-    if (!id) return;
-    setPendingThreadId(id);
-    router.push(inquiryThreadHref("specialist", id), { scroll: false });
-  }
 
   useEffect(() => {
     if (previewMode !== "edit") {
@@ -770,10 +727,6 @@ export function SpecialistDashboardProfilePreview({
     }
     if (next === "edit") {
       router.push(SPECIALIST_DASHBOARD_EDIT_HREF, { scroll: false });
-      return;
-    }
-    if (next === "clients") {
-      router.push(SPECIALIST_DASHBOARD_CLIENTS_HREF, { scroll: false });
       return;
     }
     router.push(SPECIALIST_DASHBOARD_PROFILE_TAB_HREF, { scroll: false });
@@ -818,6 +771,9 @@ export function SpecialistDashboardProfilePreview({
   }, [focusSection, searchParams, onClearFocus, viewParam, router]);
 
   function openEditSection(id: IgEditRowId) {
+    if (id === "plan" || id === "billing") {
+      if (!isMonetizationEnabled()) return;
+    }
     if (id === "plan") {
       setPlanOpen(true);
       return;
@@ -1620,30 +1576,6 @@ export function SpecialistDashboardProfilePreview({
           onHideLead={onHideInquiryLead}
           onMarkRead={onMarkInquiryLeadsRead}
           onMarkUnread={onMarkInquiryLeadsUnread}
-          onBack={() => {
-            setPendingThreadId(null);
-            replacePreviewMode("live");
-          }}
-          specialistId={trainerId}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-        />
-      </div>
-    );
-  }
-
-  if (canEdit && previewMode === "clients" && trainerId) {
-    return (
-      <div
-        id={LIVE_PROFILE_ANCHOR_ID}
-        className="specialist-profile-mode specialist-profile-mode--clients"
-      >
-        <SpecialistClientsPage
-          specialistId={trainerId}
-          specialistName={trainer.name}
-          isPremium={isPremium}
-          onUpgrade={onUpgrade}
-          onOpenConversation={openRosterConversation}
         />
       </div>
     );
@@ -1669,9 +1601,6 @@ export function SpecialistDashboardProfilePreview({
         <>
           <LiveProfileChrome
             status={liveChromeStatus}
-            showInquiries={showInquiries}
-            inquiryUnreadCount={inquiryUnreadCount}
-            onOpenInquiries={() => replacePreviewMode("inquiries")}
             onOpenEdit={() => replacePreviewMode("edit")}
             onSignOut={onSignOut}
           />

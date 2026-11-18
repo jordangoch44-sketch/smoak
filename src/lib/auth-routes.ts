@@ -9,14 +9,13 @@ export const SPECIALIST_DASHBOARD_PROFILE_TAB_HREF = `${SPECIALIST_DASHBOARD_PAT
 export const SPECIALIST_DASHBOARD_WELCOME_HREF = `${SPECIALIST_DASHBOARD_PROFILE_TAB_HREF}&welcome=1`;
 export const SPECIALIST_DASHBOARD_EDIT_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=edit`;
 export const SPECIALIST_DASHBOARD_INQUIRIES_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=profile&view=inquiries`;
+/** Old roster URL. The dashboard sends this to Inquiries. */
 export const SPECIALIST_DASHBOARD_CLIENTS_HREF = `${SPECIALIST_DASHBOARD_PATH}?tab=clients`;
-/** Opens the logged sets for one finished coach workout on the Clients tab. */
+/** Kept so older finished-workout links still parse. They open Inquiries. */
 export const SPECIALIST_FINISHED_WORKOUT_PARAM = "finishedWorkout";
 
-export function specialistFinishedWorkoutHref(workoutId: string): string {
-  const id = workoutId.trim();
-  if (!id) return SPECIALIST_DASHBOARD_CLIENTS_HREF;
-  return `${SPECIALIST_DASHBOARD_CLIENTS_HREF}&${SPECIALIST_FINISHED_WORKOUT_PARAM}=${encodeURIComponent(id)}`;
+export function specialistFinishedWorkoutHref(_workoutId: string): string {
+  return SPECIALIST_DASHBOARD_INQUIRIES_HREF;
 }
 export const LOGIN_PATH = "/login";
 

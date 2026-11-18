@@ -2,7 +2,7 @@ import {
   CLIENT_DASHBOARD_PATH,
   getDashboardPathForRole,
   LOGIN_PATH,
-  SPECIALIST_DASHBOARD_CLIENTS_HREF,
+  SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   SPECIALIST_DASHBOARD_OVERVIEW_HREF,
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
@@ -91,17 +91,30 @@ export function isSpecialistDashboardProfileTab(
     return true;
   }
   if (pathname !== SPECIALIST_DASHBOARD_PATH) return false;
+  if (isSpecialistInquiriesTab(pathname, searchParams)) return false;
   const tab = specialistDashboardTab(searchParams);
   return tab !== "overview" && tab !== "plan" && tab !== "clients";
 }
 
-/** Specialist roster — center bottom-nav slot. */
-export function isSpecialistDashboardClientsTab(
+/** Specialist Inquiries tab. `tab=clients` is the old roster URL. */
+export function isSpecialistInquiriesTab(
   pathname: string,
   searchParams?: URLSearchParams | null
 ): boolean {
   if (pathname !== SPECIALIST_DASHBOARD_PATH) return false;
+  const view = searchParams?.get("view")?.trim().toLowerCase() ?? "";
+  if (view === "inquiries" || Boolean(searchParams?.get("c")?.trim())) {
+    return true;
+  }
   return specialistDashboardTab(searchParams) === "clients";
+}
+
+/** @deprecated Use isSpecialistInquiriesTab. */
+export function isSpecialistDashboardClientsTab(
+  pathname: string,
+  searchParams?: URLSearchParams | null
+): boolean {
+  return isSpecialistInquiriesTab(pathname, searchParams);
 }
 
 /** Specialist dashboard overview / plan tab — Overview slot when logged in. */
@@ -160,7 +173,13 @@ export function getMobileBottomNavItems(
       label: "Search",
     },
     ...(isSpecialist
-      ? [{ id: "clients" as const, href: SPECIALIST_DASHBOARD_CLIENTS_HREF, label: "Clients" }]
+      ? [
+          {
+            id: "clients" as const,
+            href: SPECIALIST_DASHBOARD_INQUIRIES_HREF,
+            label: "Inquiries",
+          },
+        ]
       : []),
     isSpecialist
       ? {
@@ -249,7 +268,7 @@ export function isActiveNavItem(
     case "search":
       return isExplorePath(pathname);
     case "clients":
-      return isSpecialistDashboardClientsTab(pathname, searchParams);
+      return isSpecialistInquiriesTab(pathname, searchParams);
     case "saved":
       return (
         isWorkoutsNavPath(pathname) ||

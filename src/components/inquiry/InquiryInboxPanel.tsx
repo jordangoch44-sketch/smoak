@@ -40,7 +40,23 @@ import {
 import { InquiryThreadView } from "./InquiryThreadView";
 import "@/styles/inquiry-thread.css";
 
+function isTypingField(target: EventTarget | null): boolean {
+  if (target instanceof HTMLTextAreaElement) return !target.disabled && !target.readOnly;
+  if (target instanceof HTMLInputElement) {
+    return (
+      target.type !== "button" &&
+      target.type !== "checkbox" &&
+      target.type !== "radio" &&
+      !target.disabled &&
+      !target.readOnly
+    );
+  }
+  return false;
+}
+
 const PAGE_LOCK_CLASS = "inquiry-inbox-open";
+/** List stays on screen with the bottom bar. A thread uses PAGE_LOCK_CLASS. */
+const TAB_LOCK_CLASS = "inquiry-inbox-tab-open";
 
 interface InquiryInboxPanelProps {
   viewer: "client" | "specialist";
@@ -59,13 +75,14 @@ interface InquiryInboxPanelProps {
   onHideConversation?: (id: string) => void | Promise<void>;
   onMarkConversationsRead?: (ids: string[]) => void | Promise<void>;
   onMarkConversationsUnread?: (ids: string[]) => void | Promise<void>;
-  /** Leave the full-page inquiries overlay (back to live profile). */
+  /** Leave the full-page inquiries overlay (client messages). */
   onExitPage?: () => void;
   /**
-   * `page` — full-viewport overlay (specialist profile Inquiries).
-   * `embedded` — same chrome/list/thread, inline under client dashboard tabs.
+   * `page` — full-viewport overlay with a back arrow (client messages).
+   * `tab` — specialist Inquiries tab. The bottom bar stays on the list.
+   * `embedded` — same chrome, inline under client dashboard tabs.
    */
-  variant?: "card" | "page" | "embedded";
+  variant?: "card" | "page" | "embedded" | "tab";
   listTitle?: string;
   /** Header control for a saved conversation (specialist “Add to roster”). */
   renderThreadAction?: (conversationId: string) => ReactNode;
@@ -93,8 +110,9 @@ export function InquiryInboxPanel({
 }: InquiryInboxPanelProps) {
   const titleId = useId();
   const isPage = variant === "page";
+  const isTab = variant === "tab";
   const isEmbedded = variant === "embedded";
-  const usesPageChrome = isPage || isEmbedded;
+  const usesPageChrome = isPage || isEmbedded || isTab;
   const [mounted, setMounted] = useState(false);
   const [openId, setOpenId] = useState<string | null>(
     initialConversationId?.trim() || null
@@ -110,6 +128,7 @@ export function InquiryInboxPanel({
   const [clientPreview, setClientPreview] = useState<InquiryClientPreview | null>(
     null
   );
+  const pageRef = useRef<HTMLDivElement>(null);
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const sendingRef = useRef(false);
@@ -176,16 +195,94 @@ export function InquiryInboxPanel({
   }, []);
 
   useEffect(() => {
-    if (!isPage) return;
-    document.body.classList.add(PAGE_LOCK_CLASS);
-    document.documentElement.classList.add(PAGE_LOCK_CLASS);
+    if (!isPage && !isTab) return;
     const unlock = lockOverlayDocumentScroll();
+    if (isTab) {
+      document.body.classList.add(TAB_LOCK_CLASS);
+      document.documentElement.classList.add(TAB_LOCK_CLASS);
+    }
     return () => {
       unlock();
+      if (isTab) {
+        document.body.classList.remove(TAB_LOCK_CLASS);
+        document.documentElement.classList.remove(TAB_LOCK_CLASS);
+      }
+    };
+  }, [isPage, isTab]);
+
+  useEffect(() => {
+    const lockPage = isPage || (isTab && Boolean(openId));
+    if (!lockPage) return;
+    document.body.classList.add(PAGE_LOCK_CLASS);
+    document.documentElement.classList.add(PAGE_LOCK_CLASS);
+    return () => {
       document.body.classList.remove(PAGE_LOCK_CLASS);
       document.documentElement.classList.remove(PAGE_LOCK_CLASS);
     };
-  }, [isPage]);
+  }, [isPage, isTab, openId]);
+
+  const trackKeyboard = Boolean(openId) && (isPage || variant === "tab");
+
+  useEffect(() => {
+    if (!trackKeyboard) return;
+
+    let resting = Math.max(window.innerHeight, window.visualViewport?.height ?? 0);
+
+    function releasePage() {
+      const page = pageRef.current;
+      if (!page) return;
+      page.style.top = "";
+      page.style.height = "";
+      page.style.bottom = "";
+      page.style.transform = "";
+      const composer = page.querySelector(".inquiry-thread-overlay .inquiry-thread__composer");
+      if (composer instanceof HTMLElement) {
+        composer.style.paddingBottom = "";
+        composer.style.transform = "";
+      }
+    }
+
+    function syncPageToKeyboard() {
+      const page = pageRef.current;
+      const viewport = window.visualViewport;
+      const typing = isTypingField(document.activeElement);
+      if (!page || !viewport || viewport.scale > 1.01 || !typing) {
+        if (viewport && viewport.offsetTop < 40) {
+          resting = Math.max(resting, viewport.height, window.innerHeight);
+        }
+        releasePage();
+        return;
+      }
+
+      // A collapsed frame would squash the thread into a bar at the top.
+      if (viewport.height < resting * 0.4) return;
+
+      page.style.top = `${Math.round(viewport.offsetTop)}px`;
+      page.style.height = `${Math.round(viewport.height)}px`;
+      page.style.bottom = "auto";
+      page.style.transform = "none";
+      const composer = page.querySelector(".inquiry-thread-overlay .inquiry-thread__composer");
+      if (composer instanceof HTMLElement) {
+        composer.style.transform = "none";
+        composer.style.paddingBottom = "0.4rem";
+      }
+    }
+
+    syncPageToKeyboard();
+    window.visualViewport?.addEventListener("resize", syncPageToKeyboard);
+    window.visualViewport?.addEventListener("scroll", syncPageToKeyboard);
+    window.addEventListener("resize", syncPageToKeyboard);
+    document.addEventListener("focusin", syncPageToKeyboard);
+    document.addEventListener("focusout", syncPageToKeyboard);
+    return () => {
+      window.visualViewport?.removeEventListener("resize", syncPageToKeyboard);
+      window.visualViewport?.removeEventListener("scroll", syncPageToKeyboard);
+      window.removeEventListener("resize", syncPageToKeyboard);
+      document.removeEventListener("focusin", syncPageToKeyboard);
+      document.removeEventListener("focusout", syncPageToKeyboard);
+      releasePage();
+    };
+  }, [trackKeyboard]);
 
   useEffect(() => {
     const id = initialConversationId?.trim() || "";
@@ -478,11 +575,15 @@ export function InquiryInboxPanel({
   if (usesPageChrome) {
     const page = (
       <div
-        className={
-          isEmbedded
-            ? "inquiry-inbox-page inquiry-inbox-page--embedded"
-            : "inquiry-inbox-page"
-        }
+        ref={pageRef}
+        className={[
+          "inquiry-inbox-page",
+          isEmbedded ? "inquiry-inbox-page--embedded" : "",
+          isTab ? "inquiry-inbox-page--tab" : "",
+          isTab && openId ? "inquiry-inbox-page--thread" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         role={isPage ? "dialog" : "region"}
         aria-modal={isPage ? true : undefined}
         aria-labelledby={titleId}

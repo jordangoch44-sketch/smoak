@@ -1,19 +1,22 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { ChevronDownIcon } from "@/components/ui/icons";
+import { CheckIcon } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import type { TrainingOptionCard } from "@/lib/profile-details-visual";
 import { ProfileTrainingKindIcon } from "./ProfileDetailsIcons";
 
 export function ProfileTrainingOptionRow({
   card,
+  open,
+  onToggle,
 }: {
   card: TrainingOptionCard;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const detailsId = useId();
-  const [open, setOpen] = useState(false);
 
   return (
     <li className={cn("profile-train-tile", open && "profile-train-tile--open")}>
@@ -21,26 +24,35 @@ export function ProfileTrainingOptionRow({
         className="smoac-control profile-train-tile__toggle"
         aria-expanded={open}
         aria-controls={detailsId}
-        onActivate={() => setOpen((value) => !value)}
+        onActivate={onToggle}
       >
-        <span className="profile-train-tile__icon" aria-hidden>
-          <ProfileTrainingKindIcon
-            kind={card.kind}
-            className="profile-train-tile__glyph"
-          />
+        <span className="profile-train-tile__head">
+          <span className="profile-train-tile__icon" aria-hidden>
+            <ProfileTrainingKindIcon
+              kind={card.kind}
+              className="profile-train-tile__glyph"
+            />
+          </span>
+          <span className="profile-train-tile__copy">
+            <span className="profile-train-tile__label">{card.title}</span>
+            <span className="profile-train-tile__summary">{card.description}</span>
+          </span>
         </span>
-        <span className="profile-train-tile__label">{card.title}</span>
-        <ChevronDownIcon
-          aria-hidden
-          className={cn(
-            "profile-train-tile__chevron",
-            open && "profile-train-tile__chevron--open"
-          )}
-        />
+        <span
+          id={detailsId}
+          className="profile-train-tile__rundown"
+          hidden={!open}
+        >
+          <ul className="profile-train-tile__points">
+            {card.points.map((point) => (
+              <li key={point}>
+                <CheckIcon className="profile-train-tile__check" />
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </span>
       </FastActivateButton>
-      <p id={detailsId} className="profile-train-tile__details" hidden={!open}>
-        {card.description}
-      </p>
     </li>
   );
 }

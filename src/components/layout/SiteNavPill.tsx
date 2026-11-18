@@ -19,14 +19,14 @@ import {
   DumbbellIcon,
   HeartIcon,
   HomeIcon,
+  MessageBubbleIcon,
   SearchIcon,
   UserIcon,
-  UsersIcon,
 } from "@/components/ui/icons";
 import { useBeginBottomNavTransition } from "@/contexts/MobileBottomNavTransitionContext";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { useAuthSession } from "@/hooks/useAuthSession";
-import { useClientNavAttention } from "@/hooks/useClientNavAttention";
+import { useSpecialistInquiryNavCount } from "@/hooks/useSpecialistInquiryNavCount";
 import { useWorkoutNavAttention } from "@/hooks/useWorkoutNavAttention";
 import { useMobileBottomNavProfilePhoto } from "@/hooks/useMobileBottomNavProfilePhoto";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
@@ -37,7 +37,7 @@ import {
   getMobileBottomNavProfileAuthState,
   getMobileBottomNavProfilePresentation,
   isActiveNavItem,
-  isSpecialistDashboardClientsTab,
+  isSpecialistInquiriesTab,
   isWorkoutsNavPath,
   type MobileBottomNavItem,
   type MobileBottomNavItemId,
@@ -76,7 +76,7 @@ const NavIcon = memo(function NavIcon({
     case "search":
       return <SearchIcon className={className} />;
     case "clients":
-      return <UsersIcon className={className} />;
+      return <MessageBubbleIcon className={className} />;
     case "saved":
       if (glyph === "chart") {
         return <ChartIcon className={className} />;
@@ -414,7 +414,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       ? "Open My Profile"
       : "Open Profile"
     : item.id === "clients" && clientAttentionCount > 0
-      ? `Clients, ${clientAttentionCount} new`
+      ? `Inquiries, ${clientAttentionCount} unread`
       : item.id === "saved" && item.href === "/saved" && showSaveBadge
         ? `${item.label}, ${savedCount} saved`
         : item.glyph === "dumbbell" && workoutAlertCount > 0
@@ -470,7 +470,7 @@ const BottomNavItemLink = memo(function BottomNavItemLink({
       data-nav-id={item.id}
       data-tour={
         item.id === "clients"
-          ? "clients-tab"
+          ? "inquiries-tab"
           : item.id === "saved" && item.label === "Business"
             ? "overview-tab"
             : undefined
@@ -646,9 +646,8 @@ function SiteNavPillShell({
     isSavesReady &&
     canSaveSpecialists(session) &&
     savedCount > 0;
-  const viewingClients = isSpecialistDashboardClientsTab(pathname, routeSearch);
-  const clientAttention =
-    useClientNavAttention(viewingClients);
+  const viewingInquiries = isSpecialistInquiriesTab(pathname, routeSearch);
+  const clientAttention = useSpecialistInquiryNavCount(viewingInquiries);
   const clientAttentionCount = pendingId === "clients" ? 0 : clientAttention;
   const viewingWorkouts = isWorkoutsNavPath(pathname);
   const unseenWorkouts = useWorkoutNavAttention(viewingWorkouts);

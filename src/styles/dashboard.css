@@ -11301,25 +11301,6 @@ body:has(.specialist-overview-gate) .site-footer {
   height: 1.55rem;
 }
 
-.specialist-live-chrome__badge {
-  position: absolute;
-  top: 0.22rem;
-  left: 1.35rem;
-  display: inline-flex;
-  min-width: 1.05rem;
-  height: 1.05rem;
-  align-items: center;
-  justify-content: center;
-  padding: 0 0.22rem;
-  border-radius: 9999px;
-  background: var(--smoac-color-indigo, #7c6cff);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 0 0 1.5px #080b10;
-}
-
 .specialist-profile-subchrome {
   display: flex;
   align-items: center;
@@ -11382,7 +11363,7 @@ body.specialist-edit-profile-open .mobile-bottom-nav,
 body.inquiry-inbox-open .mobile-bottom-nav,
 body.client-workouts-open .mobile-bottom-nav,
 body:has(.specialist-edit-profile-page) .mobile-bottom-nav,
-body:has(.inquiry-inbox-page:not(.inquiry-inbox-page--embedded)) .mobile-bottom-nav {
+body:has(.inquiry-inbox-page:not(.inquiry-inbox-page--embedded):not(.inquiry-inbox-page--tab)) .mobile-bottom-nav {
   display: none !important;
 }
 

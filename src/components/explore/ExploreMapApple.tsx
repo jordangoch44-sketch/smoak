@@ -88,6 +88,7 @@ function applyAppleCamera(
   clusters: ExploreMapCluster[],
   radiusMiles: number,
   pinAnnotations: MapKitAnnotation[],
+  fitResults = false,
   immediate = false
 ) {
   const place = (region: ReturnType<typeof regionForRadiusMiles>) => {
@@ -97,6 +98,31 @@ function applyAppleCamera(
     }
     map.setRegionAnimated(region, false);
   };
+  if (fitResults && clusters.length > 0) {
+    if (clusters.length === 1) {
+      place(regionForRadiusMiles(mapkit, clusters[0], 4));
+      return;
+    }
+    let minLat = clusters[0].latitude;
+    let maxLat = clusters[0].latitude;
+    let minLng = clusters[0].longitude;
+    let maxLng = clusters[0].longitude;
+    for (const cluster of clusters) {
+      minLat = Math.min(minLat, cluster.latitude);
+      maxLat = Math.max(maxLat, cluster.latitude);
+      minLng = Math.min(minLng, cluster.longitude);
+      maxLng = Math.max(maxLng, cluster.longitude);
+    }
+    const latDelta = Math.max(0.04, (maxLat - minLat) * 1.6);
+    const lngDelta = Math.max(0.04, (maxLng - minLng) * 1.6);
+    place(
+      new mapkit.CoordinateRegion(
+        new mapkit.Coordinate((minLat + maxLat) / 2, (minLng + maxLng) / 2),
+        new mapkit.CoordinateSpan(latDelta, lngDelta)
+      )
+    );
+    return;
+  }
   if (origin) {
     place(regionForRadiusMiles(mapkit, origin, radiusMiles));
     return;
@@ -173,6 +199,7 @@ export function ExploreMapApple({
   locked = true,
   variant = "panel",
   showNotes = true,
+  resultFrameKey = "",
 }: ExploreMapProps) {
   const router = useRouter();
   const routerRef = useRef(router);
@@ -200,6 +227,8 @@ export function ExploreMapApple({
   const areaCenterRef = useRef(areaCenter);
   areaCenterRef.current = areaCenter;
   const activeSearchAreaRef = useRef(activeSearchArea);
+  const resultFrameKeyRef = useRef(resultFrameKey);
+  resultFrameKeyRef.current = resultFrameKey;
   activeSearchAreaRef.current = activeSearchArea;
   const onPendingRef = useRef(onPendingSearchAreaChange);
   onPendingRef.current = onPendingSearchAreaChange;
@@ -607,6 +636,9 @@ export function ExploreMapApple({
     if (cameraHold > suppressUntilRef.current) {
       suppressUntilRef.current = cameraHold;
     }
+    const fitResults = Boolean(
+      resultFrameKeyRef.current && currentClusters.length > 0
+    );
     applyAppleCamera(
       mapkit,
       map,
@@ -614,9 +646,14 @@ export function ExploreMapApple({
       currentClusters,
       radius,
       pinAnnotationsRef.current,
+      fitResults,
       immediate
     );
-    if (origin) {
+    if (fitResults) {
+      framedOriginRef.current = `results:${resultFrameKeyRef.current}`;
+    } else if (resultFrameKeyRef.current) {
+      framedOriginRef.current = `results-wait:${resultFrameKeyRef.current}`;
+    } else if (origin) {
       framedOriginRef.current = `${origin.latitude.toFixed(4)},${origin.longitude.toFixed(4)}`;
     } else if (currentClusters.length > 0) {
       framedOriginRef.current = clustersFrameKey(currentClusters);
@@ -780,10 +817,19 @@ export function ExploreMapApple({
     const el = containerRef.current;
     if (!el) return;
 
+    let lastHeight = 0;
     const observer = new ResizeObserver(() => {
       const map = mapRef.current;
       if (!map) return;
+      const height = el.getBoundingClientRect().height;
+      const jumped = Math.abs(height - lastHeight) > 24;
+      lastHeight = height;
       recaptureAppleMapSize(map, el, mapSizeKeyRef, suppressUntilRef);
+      if (!jumped || !resultFrameKeyRef.current || clustersRef.current.length === 0) {
+        return;
+      }
+      framedOriginRef.current = "";
+      applyLiveCamera(true);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -803,7 +849,13 @@ export function ExploreMapApple({
     const mapkit = mapkitRef.current;
     if (!map || !mapkit || mapPaused) return;
 
-    const key = areaCenter ? areaKey : clustersFrameKey(clusters);
+    const key = resultFrameKey
+      ? clusters.length > 0
+        ? `results:${resultFrameKey}`
+        : `results-wait:${resultFrameKey}`
+      : areaCenter
+        ? areaKey
+        : clustersFrameKey(clusters);
     if (framedOriginRef.current === key) return;
 
     suppressMoves(280);
@@ -812,6 +864,7 @@ export function ExploreMapApple({
     areaCenter,
     areaKey,
     clusters,
+    resultFrameKey,
     activeSearchArea?.radiusMiles,
     mapPaused,
     mapEpoch,

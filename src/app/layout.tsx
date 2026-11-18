@@ -46,7 +46,11 @@ export const viewport = {
   viewportFit: "cover" as const,
   themeColor: "#020203",
   /* Keep pinch-zoom. Do not set maximumScale / userScalable — iOS ignores
-   * locks for a11y, and locking causes worse focus/layout bugs. */
+   * locks for a11y, and locking causes worse focus/layout bugs.
+   * Resize the layout to the keyboard so a bottom sheet meets the keys.
+   * A fixed sheet clipped to the visual viewport leaves the profile visible
+   * in the strip above the keyboard. */
+  interactiveWidget: "resizes-content" as const,
 };
 
 

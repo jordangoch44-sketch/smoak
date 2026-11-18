@@ -3,6 +3,7 @@
  * Going live includes a complimentary Pro trial (30 days, or 90 for Founding 100
  * and the next-100 signup offer). After that, $19.99/mo via Stripe.
  */
+import { isMonetizationEnabled } from "@/lib/monetization";
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
 
 export const SMOAC_PRO_PRICE_LABEL = "$19.99/mo";
@@ -190,10 +191,10 @@ export function isProPlusPlan(
   return plan === "platinum";
 }
 
-export function isTrainerProPlus(trainer: {
+export function isTrainerProPlus(_trainer: {
   membershipPlan?: string | null;
 }): boolean {
-  return trainer.membershipPlan === "platinum";
+  return true;
 }
 
 /** Compact plan name on badges. Display is PRO+ — never PROPLUS / Pro Plus. */
@@ -269,6 +270,7 @@ export function showSpecialistFreeTrialPromo(session: {
   premiumTrialEndsAt?: string;
   isPremium?: boolean;
 } | null | undefined): boolean {
+  if (!isMonetizationEnabled()) return false;
   if (!session || session.role !== "specialist") return false;
   if (isSpecialistPayingPro(session)) return false;
   if (session.premiumTrialUsed) return false;
@@ -284,6 +286,7 @@ export function showSpecialistPaidUpgradePromo(session: {
   premiumTrialActive?: boolean;
   isPremium?: boolean;
 } | null | undefined): boolean {
+  if (!isMonetizationEnabled()) return false;
   if (!session || session.role !== "specialist") return false;
   return !isSpecialistPayingPro(session);
 }
@@ -293,6 +296,7 @@ export function showProTrialLastChance(session: {
   premiumTrialActive?: boolean;
   premiumTrialDaysRemaining?: number;
 } | null | undefined): boolean {
+  if (!isMonetizationEnabled()) return false;
   if (!session?.premiumTrialActive) return false;
   const days = session.premiumTrialDaysRemaining;
   return typeof days === "number" && days <= 1;
@@ -493,6 +497,7 @@ export function showSpecialistHeaderProBadge(session: {
   premiumTrialActive?: boolean;
   membershipPlan?: string | null;
 } | null | undefined): boolean {
+  if (!isMonetizationEnabled()) return false;
   if (!session || session.role !== "specialist") return false;
   if (isProPlusPlan(session.membershipPlan)) return true;
   return Boolean(session.isPremium || session.premiumTrialActive);

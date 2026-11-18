@@ -7,6 +7,7 @@ import {
   getAuthSessionSnapshot,
   setAuthSession,
 } from "@/lib/auth-session-store";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import type { SpecialistDashboardMode } from "@/lib/specialist-dashboard-mode";
 
 export const SAMPLE_SPECIALIST_TOUR_EMAIL = "jordan@otgtrain.com";
@@ -19,10 +20,9 @@ export type SpecialistTourStepId =
   | "client-view"
   | "edit"
   | "inquiries"
-  | "clients"
   | "overview";
 
-export type SpecialistTourSurface = "profile" | "clients" | "overview";
+export type SpecialistTourSurface = "profile" | "overview";
 
 export interface SpecialistTourStep {
   id: SpecialistTourStepId;
@@ -58,16 +58,9 @@ export const SPECIALIST_TOUR_STEPS: readonly SpecialistTourStep[] = [
   {
     id: "inquiries",
     surface: "profile",
-    target: "inquiries",
+    target: "inquiries-tab",
     title: "Inquiries",
-    body: "When a client writes you, it lands here. You’ll also get an email.",
-  },
-  {
-    id: "clients",
-    surface: "clients",
-    target: "clients",
-    title: "Clients",
-    body: "After someone starts training with you, invite them here. You can message them, send workouts, and see what they finish.",
+    body: "When a client writes you, it lands in Inquiries. You’ll also get an email.",
   },
   {
     id: "overview",
@@ -195,6 +188,7 @@ export function specialistTourTrialNote(session: {
   premiumTrialActive?: boolean;
   premiumTrialDaysRemaining?: number | null;
 } | null | undefined): string | null {
+  if (!isMonetizationEnabled()) return null;
   if (!session?.premiumTrialActive) return null;
   const days = session.premiumTrialDaysRemaining;
   if (typeof days !== "number") {
@@ -219,7 +213,6 @@ export function specialistTourSurfaceMatches(
   const view = searchParams.get("view");
   const conversation = searchParams.get("c");
   if (view || conversation) return false;
-  if (surface === "clients") return tab === "clients";
   if (surface === "overview") return tab === "overview";
   return tab !== "overview" && tab !== "clients" && tab !== "plan";
 }

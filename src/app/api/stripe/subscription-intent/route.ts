@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import type Stripe from "stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripe, getStripePriceId, isStripeConfigured } from "@/lib/stripe/config";
@@ -28,6 +29,13 @@ import {
  * for in-modal Stripe checkout (Apple Pay, Google Pay, Link, or card).
  */
 export async function POST(request: Request) {
+  if (!isMonetizationEnabled()) {
+    return NextResponse.json(
+      { error: "SMOAC profiles are free right now." },
+      { status: 403 }
+    );
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Stripe is not configured yet." },

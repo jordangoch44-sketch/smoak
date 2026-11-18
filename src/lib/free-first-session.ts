@@ -7,7 +7,7 @@ export const FREE_FIRST_SESSION_RAIL_TITLE = "Try a Trainer for Free";
 export const FREE_FIRST_SESSION_LABEL = "Free first session";
 
 /** Public profile sheet CTA — opens inquire. */
-export const FREE_FIRST_SESSION_CLAIM_LABEL = "Claim your free session";
+export const FREE_FIRST_SESSION_CLAIM_LABEL = "Free session";
 
 export function isFreeFirstSessionBadge(
   label: string | null | undefined
@@ -41,25 +41,12 @@ export function trainerOffersFreeFirstSession(
   return normalizeOffersFreeFirstSession(trainer.offersFreeFirstSession);
 }
 
-/** Pro, PRO+, or complimentary Pro trial (`isPremium`). */
-export function isTrainerProOrProPlus(
-  trainer: Pick<Trainer, "isPremium" | "membershipPlan">
-): boolean {
-  if (trainer.isPremium === true) return true;
-  return (
-    trainer.membershipPlan === "premium" || trainer.membershipPlan === "platinum"
-  );
-}
-
 /**
  * Marketplace Free 1st session rail + public profile chip.
- * The stored opt-in flag stays on the listing after a trial ends; clients
- * only see it while the specialist is on Pro / PRO+ / an active trial.
+ * Shown when the specialist leaves the offer on.
  */
 export function isTrainerFreeFirstSessionEligible(
   trainer: Pick<Trainer, "offersFreeFirstSession" | "isPremium" | "membershipPlan">
 ): boolean {
-  return (
-    isTrainerProOrProPlus(trainer) && trainerOffersFreeFirstSession(trainer)
-  );
+  return trainerOffersFreeFirstSession(trainer);
 }

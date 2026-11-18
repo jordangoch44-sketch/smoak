@@ -15,31 +15,57 @@ export const SPECIALIST_TRAINING_OPTIONS: readonly {
   id: SpecialistTrainingOptionId;
   label: string;
   description: string;
+  points: readonly string[];
 }[] = [
   {
     id: "one-on-one",
     label: "One-on-one",
-    description: "In-person solo session.",
+    description: "A private session, just you and your specialist.",
+    points: [
+      "The hour is yours alone",
+      "Coaching paced to your goals",
+      "You train together in person",
+    ],
   },
   {
     id: "semi-private",
     label: "Semi-private",
-    description: "Small-group session with a few clients.",
+    description: "A few clients, with coaching still on you.",
+    points: [
+      "A small group, not a full class",
+      "You still get hands-on cues",
+      "Shared energy, individual attention",
+    ],
   },
   {
     id: "class",
     label: "Class",
-    description: "Scheduled group class.",
+    description: "A scheduled session with the group.",
+    points: [
+      "You train alongside other clients",
+      "Your specialist leads the room",
+      "The time is set on the schedule",
+    ],
   },
   {
     id: "online",
     label: "Online",
-    description: "Virtual session from anywhere.",
+    description: "The same coaching, from anywhere.",
+    points: [
+      "You meet on a video session",
+      "No commute to the gym",
+      "Coaching stays with your specialist",
+    ],
   },
   {
     id: "hybrid",
     label: "Hybrid",
-    description: "Mix of in-person and online.",
+    description: "In person when you can, online when you can't.",
+    points: [
+      "Some sessions together, some virtual",
+      "One specialist across both",
+      "Easier to stay consistent",
+    ],
   },
 ] as const;
 

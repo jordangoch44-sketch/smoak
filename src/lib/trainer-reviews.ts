@@ -8,8 +8,8 @@
  * when Supabase is off.
  *
  * Do **not** merge counts with `lib/reviews/specialist-reviews-client.ts` (live SMOAC) or
- * `lib/specialist-reputation.ts` (dashboard mock hub). Hero shows catalog total separately
- * from the SMOAC line in `ProfileReviewMeta`.
+ * `lib/specialist-reputation.ts` (dashboard mock hub). The profile hero shows the SMOAC
+ * line and the Google line separately in `ProfileReviewMeta`.
  */
 import { TRAINER_DEMO_REVIEW_SOURCES } from "@/constants/trainer-reputation-demo";
 import { isMarketplaceSupabaseActive } from "@/lib/auth/marketplace-auth";

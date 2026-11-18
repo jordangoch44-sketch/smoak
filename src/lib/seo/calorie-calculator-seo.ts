@@ -53,7 +53,7 @@ export const CALORIE_CALCULATOR_FAQS: ReadonlyArray<{
   {
     question: "Can I find a trainer after using the calculator?",
     answer:
-      "Yes. Results include trainers and specialists matched to your goal — including sponsored placements and organic suggestions near you — so you can move from calorie math into real coaching on SMOAC.",
+      "Yes. Results include trainers and specialists matched to your goal near you, so you can move from calorie math into real coaching on SMOAC.",
   },
 ];
 

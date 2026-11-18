@@ -88,6 +88,11 @@ export interface Trainer {
    * Optional so seed/demo rows stay unchanged.
    */
   specialistFirstName?: string;
+  /**
+   * Personal name for marketplace search (first + last).
+   * Listing name stays `name`. Not shown on cards.
+   */
+  specialistPersonName?: string;
   /** Main profession category on cards — one of MAIN_PROFESSION_CATEGORIES */
   profession: string;
   /** Short positioning line on profile */

@@ -374,7 +374,8 @@
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.94);
   font: inherit;
-  font-size: 0.9rem;
+  /* 16px keeps iOS from zooming the page when the field is tapped. */
+  font-size: 16px;
   line-height: 1.35;
 }
 
@@ -996,4 +997,20 @@
 
 .inquiry-inbox-page--embedded .inquiry-thread-overlay {
   top: 0;
+}
+
+/* Specialist Inquiries tab: the list sits above the bottom bar. */
+@media (max-width: 1023px) {
+  .inquiry-inbox-page--tab:not(.inquiry-inbox-page--thread) {
+    z-index: calc(var(--z-mobile-bottom-nav) - 1);
+    padding-bottom: var(--mobile-bottom-nav-offset);
+  }
+
+  .inquiry-inbox-page--tab:not(.inquiry-inbox-page--thread) .inquiry-inbox-page__footer {
+    padding-bottom: 0.45rem;
+  }
+}
+
+.inquiry-inbox-page--tab.inquiry-inbox-page--thread {
+  z-index: calc(var(--z-site-header) - 5);
 }

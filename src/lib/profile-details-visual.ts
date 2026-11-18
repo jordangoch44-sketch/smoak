@@ -24,6 +24,7 @@ export interface TrainingOptionCard {
   kind: TrainingOptionKind;
   title: string;
   description: string;
+  points: readonly string[];
 }
 
 export function specialtyIconId(label: string): ProfileSpecialtyIconId {
@@ -55,6 +56,7 @@ export function trainingOptionCardsFromTrainer(
     kind: option.id,
     title: option.label,
     description: option.description,
+    points: option.points,
   }));
 }
 

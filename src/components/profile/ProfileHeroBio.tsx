@@ -9,10 +9,15 @@ const BIO_OVERFLOW_SLACK_PX = 2;
 
 interface ProfileHeroBioProps {
   bio: string;
+  /** Lines shown before View more. */
+  lines?: number;
 }
 
-/** Full specialist bio under the hero — clamps with a fade + caret to expand. */
-export function ProfileHeroBio({ bio }: ProfileHeroBioProps) {
+/** Specialist bio — clamps with a fade + caret to expand. */
+export function ProfileHeroBio({
+  bio,
+  lines = BIO_CLAMP_LINES,
+}: ProfileHeroBioProps) {
   const text = bio.trim();
   const textId = useId();
   const measureRef = useRef<HTMLParagraphElement>(null);
@@ -33,7 +38,7 @@ export function ProfileHeroBio({ bio }: ProfileHeroBioProps) {
       const lineHeight = Number.parseFloat(getComputedStyle(el).lineHeight);
       const maxHeight =
         (Number.isFinite(lineHeight) && lineHeight > 0 ? lineHeight : 25) *
-        BIO_CLAMP_LINES;
+        lines;
       setNeedsToggle(el.scrollHeight > maxHeight + BIO_OVERFLOW_SLACK_PX);
     }
 
@@ -42,7 +47,7 @@ export function ProfileHeroBio({ bio }: ProfileHeroBioProps) {
     ro.observe(node);
     if (node.parentElement) ro.observe(node.parentElement);
     return () => ro.disconnect();
-  }, [text]);
+  }, [text, lines]);
 
   if (!text) return null;
 
@@ -64,6 +69,11 @@ export function ProfileHeroBio({ bio }: ProfileHeroBioProps) {
           clamp && "profile-hero-bio__text--clamped",
           clamp && "profile-hero-bio__text--faded"
         )}
+        style={
+          clamp
+            ? { WebkitLineClamp: lines, lineClamp: lines }
+            : undefined
+        }
       >
         {text}
       </p>

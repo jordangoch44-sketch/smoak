@@ -1,5 +1,19 @@
 /* Routed page transitions — content only; chrome & backdrop stay fixed */
 
+/* Clips sideways overflow without becoming the containing block for the
+   fixed header or the bottom toolbar, which sit outside this frame. */
+.app-frame {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+  box-sizing: border-box;
+}
+
 .app-main {
   position: relative;
   z-index: 0;

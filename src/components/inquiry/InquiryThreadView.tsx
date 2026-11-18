@@ -3,6 +3,7 @@
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type FormEvent,
@@ -33,6 +34,18 @@ interface InquiryThreadViewProps {
   headerAction?: ReactNode;
 }
 
+const KEYBOARD_INSET_PX = 80;
+
+/** Visible slice of the screen while the keyboard is up. */
+function readKeyboardFrame(): { open: boolean; top: number; height: number } {
+  const viewport = window.visualViewport;
+  const height = viewport?.height ?? window.innerHeight;
+  const top = viewport?.offsetTop ?? 0;
+  const inset = Math.max(0, window.innerHeight - height - top);
+  if (inset <= KEYBOARD_INSET_PX) return { open: false, top: 0, height: 0 };
+  return { open: true, top: Math.round(top), height: Math.round(height) };
+}
+
 function formatBubbleTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
@@ -54,7 +67,12 @@ export function InquiryThreadView({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [draft, setDraft] = useState("");
-  const [keyboardInset, setKeyboardInset] = useState(0);
+  const [keyboardFrame, setKeyboardFrame] = useState({
+    open: false,
+    top: 0,
+    height: 0,
+  });
+  const pinnedToBottomRef = useRef(true);
   const [trustMode, setTrustMode] = useState<"report" | "block" | null>(null);
 
   const counterpartName =
@@ -64,32 +82,39 @@ export function InquiryThreadView({
 
   useEffect(() => {
     const node = scrollerRef.current;
-    if (!node) return;
+    if (!node || !pinnedToBottomRef.current) return;
     node.scrollTop = node.scrollHeight;
   }, [thread.messages.length, sending]);
 
   useEffect(() => {
-    function syncKeyboardInset() {
-      const viewport = window.visualViewport;
-      if (!viewport) {
-        setKeyboardInset(0);
-        return;
-      }
-      const inset = Math.max(
-        0,
-        window.innerHeight - viewport.height - viewport.offsetTop
+    if (layout !== "page") return;
+
+    function syncKeyboardFrame() {
+      const next = readKeyboardFrame();
+      setKeyboardFrame((current) =>
+        current.open === next.open &&
+        current.top === next.top &&
+        current.height === next.height
+          ? current
+          : next
       );
-      setKeyboardInset(inset > 80 ? inset : 0);
     }
 
-    syncKeyboardInset();
-    window.visualViewport?.addEventListener("resize", syncKeyboardInset);
-    window.visualViewport?.addEventListener("scroll", syncKeyboardInset);
+    syncKeyboardFrame();
+    window.visualViewport?.addEventListener("resize", syncKeyboardFrame);
+    window.visualViewport?.addEventListener("scroll", syncKeyboardFrame);
     return () => {
-      window.visualViewport?.removeEventListener("resize", syncKeyboardInset);
-      window.visualViewport?.removeEventListener("scroll", syncKeyboardInset);
+      window.visualViewport?.removeEventListener("resize", syncKeyboardFrame);
+      window.visualViewport?.removeEventListener("scroll", syncKeyboardFrame);
     };
-  }, []);
+  }, [layout]);
+
+  useLayoutEffect(() => {
+    if (!keyboardFrame.open) return;
+    const node = scrollerRef.current;
+    if (!node || !pinnedToBottomRef.current) return;
+    node.scrollTop = node.scrollHeight;
+  }, [keyboardFrame.open]);
 
   function resizeTextarea() {
     const node = textareaRef.current;
@@ -129,14 +154,10 @@ export function InquiryThreadView({
     <div
       className={cn(
         "inquiry-thread",
-        layout === "page" && "inquiry-thread--page"
+        layout === "page" && "inquiry-thread--page",
+        keyboardFrame.open && "inquiry-thread--keyboard"
       )}
       aria-labelledby={titleId}
-      style={
-        keyboardInset > 0
-          ? { paddingBottom: keyboardInset }
-          : undefined
-      }
     >
       <header className="inquiry-thread__header">
         <button
@@ -183,7 +204,15 @@ export function InquiryThreadView({
         ) : null}
       </header>
 
-      <div className="inquiry-thread__scroller" ref={scrollerRef}>
+      <div
+        className="inquiry-thread__scroller"
+        ref={scrollerRef}
+        onScroll={(event) => {
+          const node = event.currentTarget;
+          pinnedToBottomRef.current =
+            node.scrollHeight - node.scrollTop - node.clientHeight < 48;
+        }}
+      >
         {thread.messages.length === 0 ? (
           <p className="inquiry-thread__empty">No messages yet.</p>
         ) : (

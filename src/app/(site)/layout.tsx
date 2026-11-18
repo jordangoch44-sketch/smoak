@@ -67,10 +67,12 @@ export default function SiteLayout({
           <IpLocationHintBoot />
           <SiteLocationGate />
           <SiteHeader />
-          <AppMain>{children}</AppMain>
-          {/* Soft-nav profile intercept — previous page stays mounted in AppMain */}
-          {modal}
-          <Footer />
+          <div className="app-frame">
+            <AppMain>{children}</AppMain>
+            {/* Soft-nav profile intercept — previous page stays mounted in AppMain */}
+            {modal}
+            <Footer />
+          </div>
           <MobileBottomNav />
         </AppProviders>
       </ToastProvider>

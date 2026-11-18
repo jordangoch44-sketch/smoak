@@ -47,6 +47,10 @@ import {
 } from "@/lib/specialist-dashboard-mode";
 import { getSpecialistSubscriptionForSession } from "@/lib/specialist-dashboard-subscription";
 import {
+  growthProfileAccess,
+  isMonetizationEnabled,
+} from "@/lib/monetization";
+import {
   formatProTrialBadgeLabel,
   isProPlusPlan,
   isTrainerProPlus,
@@ -249,9 +253,13 @@ export function SpecialistEditProfilePageClient({
     router,
   ]);
 
-  const isPremium = Boolean(session?.isPremium);
-  const isProPlus =
-    isProPlusPlan(session?.membershipPlan) || isTrainerProPlus(trainer ?? {});
+  const profileAccess = growthProfileAccess({
+    isPremium: Boolean(session?.isPremium),
+    isProPlus:
+      isProPlusPlan(session?.membershipPlan) || isTrainerProPlus(trainer ?? {}),
+  });
+  const isPremium = profileAccess.isPremium;
+  const isProPlus = profileAccess.isProPlus;
   const onProTrial = Boolean(session?.premiumTrialActive);
   const profileFirst = showsProfileFirstDashboard(dashboardMode);
   const profilePlanLabel = onProTrial
@@ -542,7 +550,7 @@ export function SpecialistEditProfilePageClient({
         </div>
 
         <div className="specialist-edit-profile__title-bubble">
-          {profilePlanLabel ? (
+          {isMonetizationEnabled() && profilePlanLabel ? (
             <div className="ig-profile-edit__badge-wrap">
               <span className={membershipRoleBadgeClassName(planBadgeTone)}>
                 {profilePlanLabel}
@@ -1104,7 +1112,11 @@ export function SpecialistEditProfilePageClient({
                 {isPremium ? (
                   <ProfileEditInputField
                     label={FREE_FIRST_SESSION_LABEL}
-                    hint="Appear in the marketplace Try a Trainer for Free slider. Pro and PRO+ only."
+                    hint={
+                      isMonetizationEnabled()
+                        ? "Appear in the marketplace Try a Trainer for Free slider. Pro and PRO+ only."
+                        : "Appear in the marketplace Try a Trainer for Free slider."
+                    }
                   >
                     <div
                       className="dashboard-edit-chip-grid"

@@ -98,13 +98,11 @@ export function ProfileHeroToolbar({
     }
   }
 
-  if (!canPortal) return null;
-
   const toolbar = (
     <div
       className={cn(
         "profile-toolbar",
-        Boolean(sheetHostEl) && "profile-toolbar--in-sheet"
+        sheetHostEl ? "profile-toolbar--in-sheet" : "profile-toolbar--anchored"
       )}
       aria-hidden={false}
     >
@@ -193,10 +191,12 @@ export function ProfileHeroToolbar({
    * Wait for the host — portaling to document.body puts a full-viewport
    * overlay under/over the sheet and freezes taps on iOS. */
   if (toolbarHost) {
-    if (!sheetHostEl) return null;
+    if (!canPortal || !sheetHostEl) return null;
     return createPortal(toolbar, sheetHostEl);
   }
 
-  /* Desktop full-page profile: keep fixed viewport chrome. */
+  /* Full page: portal to body so page overflow clipping cannot carry the
+   * bar with the scroll. The host is zero-height; only the buttons paint. */
+  if (!canPortal) return toolbar;
   return createPortal(toolbar, document.body);
 }

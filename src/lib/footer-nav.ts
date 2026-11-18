@@ -18,7 +18,6 @@ export const FOOTER_NAV_GROUPS: readonly FooterNavGroup[] = [
       { label: "Explore Specialists", href: SITE_ROUTES.explore },
       { label: "Calorie Calculator", href: SITE_ROUTES.calorieCalculator },
       { label: "Become a Specialist", href: SITE_ROUTES.join },
-      { label: "Pricing", href: SITE_ROUTES.pricing },
     ],
   },
   {

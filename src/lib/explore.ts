@@ -53,6 +53,8 @@ function matchesSearchQuery(trainer: Trainer, query: string): boolean {
 
   const haystack = [
     trainer.name,
+    trainer.specialistPersonName,
+    trainer.specialistFirstName,
     trainer.profession,
     trainer.title,
     trainer.city,
@@ -70,6 +72,25 @@ function matchesSearchQuery(trainer: Trainer, query: string): boolean {
     return haystack.includes(q);
   }
   return tokens.some((token) => haystack.includes(token));
+}
+
+/** Business listing or personal name — a direct lookup, not a category word. */
+function queryMatchesSpecialistIdentity(
+  trainer: Trainer,
+  query: string
+): boolean {
+  const q = query.trim().toLowerCase();
+  if (q.length < 2) return false;
+
+  const names = [trainer.name, trainer.specialistPersonName, trainer.specialistFirstName]
+    .filter((part) => Boolean(part?.trim()))
+    .join(" ")
+    .toLowerCase();
+  if (!names) return false;
+
+  const tokens = q.split(/\s+/).filter((token) => token.length > 1);
+  if (tokens.length <= 1) return names.includes(q);
+  return tokens.every((token) => names.includes(token));
 }
 
 /** Combines sidebar filters + search bar query for Explore results */
@@ -196,7 +217,15 @@ export function filterExploreTrainersInArea(
   const named = typedPlace
     ? base.filter((trainer) => trainerMatchesTypedPlace(trainer, filters))
     : [];
-  const inArea = typedPlace ? uniqueTrainers([named, inRadius]) : inRadius;
+  /* A typed person or business name stays in the list outside the radius. */
+  const identityMatches = searchQuery.trim()
+    ? trainers.filter((trainer) =>
+        queryMatchesSpecialistIdentity(trainer, searchQuery)
+      )
+    : [];
+  const inArea = typedPlace
+    ? uniqueTrainers([named, inRadius, identityMatches])
+    : uniqueTrainers([inRadius, identityMatches]);
   const areaEmpty = Boolean(
     origin &&
       options.radiusMiles != null &&

@@ -11,14 +11,16 @@ import {
   getProfileAccentRgb,
   normalizeProfileStyle,
 } from "@/lib/specialist-profile-style";
-import { ProfileContactCta } from "./ProfileContactCta";
 import { ProfileDiscoveryRails } from "./ProfileDiscoveryRails";
 import { ProfileHero } from "./ProfileHero";
+import { ProfilePricing } from "./ProfilePricing";
+import { ProfileSessionExperience } from "./ProfileSessionExperience";
 import {
   ProfileSheetTabs,
   type ProfileSheetTabId,
 } from "./ProfileSheetTabs";
 import { ProfileTrainerSpecs } from "./ProfileTrainerSpecs";
+import { ProfileTransformations } from "./ProfileTransformations";
 import { SmoacReviewsSection } from "./SmoacReviewsSection";
 
 /**
@@ -56,7 +58,7 @@ export function TrainerProfileView({
   const hydrated = useHydrated();
   const isSpecialistLive = variant === "specialist-live";
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
-  const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("details");
+  const [sheetTab, setSheetTab] = useState<ProfileSheetTabId>("overview");
   const {
     aggregate,
     reviews: smoacReviews,
@@ -119,7 +121,6 @@ export function TrainerProfileView({
         trainer={trainer}
         variant={variant}
         lockedPreviewPins={isSpecialistLive ? lockedPreviewPins : undefined}
-        lockedPreviewIntro={isSpecialistLive ? lockedPreviewIntro : undefined}
         smoacAggregate={aggregate}
         cityRanking={cityRanking}
         canLeaveReview={isSpecialistLive ? false : canLeaveReview}
@@ -135,10 +136,10 @@ export function TrainerProfileView({
         onClaimFreeSession={
           offersFreeFirstSession ? onClaimFreeSession : undefined
         }
+        onInquire={onInquire}
         onEditProfilePhoto={
           isSpecialistLive ? onEditProfilePhoto : undefined
         }
-        onAddIntroVideo={isSpecialistLive ? onAddIntroVideo : undefined}
         onUpgrade={isSpecialistLive ? onUpgrade : undefined}
       />
 
@@ -147,7 +148,26 @@ export function TrainerProfileView({
           <ProfileSheetTabs
             value={sheetTab}
             onChange={setSheetTab}
-            details={<ProfileTrainerSpecs trainer={trainer} />}
+            overview={
+              <ProfileTrainerSpecs
+                trainer={trainer}
+                variant={variant}
+                lockedPreviewIntro={
+                  isSpecialistLive ? lockedPreviewIntro : undefined
+                }
+                onAddIntroVideo={
+                  isSpecialistLive ? onAddIntroVideo : undefined
+                }
+                onUpgrade={isSpecialistLive ? onUpgrade : undefined}
+              />
+            }
+            services={
+              <>
+                <ProfileSessionExperience trainer={trainer} />
+                <ProfilePricing trainer={trainer} />
+              </>
+            }
+            results={<ProfileTransformations trainer={trainer} />}
             reviews={
               <SmoacReviewsSection
                 specialistId={trainer.id}
@@ -164,14 +184,6 @@ export function TrainerProfileView({
                 onSubmitted={applySubmittedReview}
                 canLeaveReview={isSpecialistLive ? false : canLeaveReview}
                 trainer={trainer}
-              />
-            }
-            inquire={
-              <ProfileContactCta
-                specialistId={trainer.id}
-                specialistName={trainer.name}
-                onContact={onInquire}
-                showReport={!isSpecialistLive}
               />
             }
           />

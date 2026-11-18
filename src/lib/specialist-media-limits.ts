@@ -1,8 +1,6 @@
 /**
- * Marketplace media caps for specialist public profiles.
- * Free: header slideshow images only.
- * Pro: more images + pins.
- * PRO+: same images + up to 5 profile videos (45 seconds each, from the phone).
+ * Marketplace media caps. Every specialist listing uses the full profile cap:
+ * 8 header images and up to 5 phone videos, 45 seconds each.
  */
 export const SPECIALIST_MEDIA_LIMITS = {
   free: { images: 4, videos: 0 },
@@ -25,12 +23,10 @@ export function specialistVideoTooLargeMessage(): string {
 export type SpecialistMediaPlan = keyof typeof SPECIALIST_MEDIA_LIMITS;
 
 export function specialistMediaLimitsForPlan(
-  isPremium: boolean,
-  isProPlus = false
+  _isPremium?: boolean,
+  _isProPlus = false
 ) {
-  if (isProPlus) return SPECIALIST_MEDIA_LIMITS.proPlus;
-  if (isPremium) return SPECIALIST_MEDIA_LIMITS.premium;
-  return SPECIALIST_MEDIA_LIMITS.free;
+  return SPECIALIST_MEDIA_LIMITS.proPlus;
 }
 
 export function parseMediaUrlList(value: string): string[] {

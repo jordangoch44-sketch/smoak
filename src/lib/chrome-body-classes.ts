@@ -55,6 +55,7 @@ const STALE_OVERLAY_ROOTS: ReadonlyArray<readonly [string, string]> = [
   ["complete-account-lock", ".complete-account-lock-shell, .login-page--complete-account"],
   ["client-workouts-open", ".client-workouts-root"],
   ["inquiry-inbox-open", ".inquiry-inbox-page"],
+  ["inquiry-inbox-tab-open", ".inquiry-inbox-page--tab"],
   ["specialist-edit-profile-open", ".specialist-edit-profile-page"],
   ["specialist-live-profile-open", ".specialist-live-page"],
 ];

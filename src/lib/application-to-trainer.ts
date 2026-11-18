@@ -2,7 +2,10 @@ import { normalizeOffersFreeFirstSession } from "@/lib/free-first-session";
 import { getDefaultZipForMarketplaceCity } from "@/lib/marketplace-city-default-zip";
 import { zipCodeToCoordinates } from "@/lib/geo/zip-centroids";
 import { enrichSpecialistApplicationFields } from "@/lib/specialist-application-fields";
-import { firstNameFromPersonName } from "@/lib/specialist-display-name";
+import {
+  firstNameFromPersonName,
+  specialistPersonNameForSearch,
+} from "@/lib/specialist-display-name";
 import { parseTravelToClients } from "@/types/specialist-service-area";
 import { parseTrainingOptions } from "@/types/specialist-training-options";
 import {
@@ -121,6 +124,10 @@ export function applicationToTrainer(
     id,
     slug: app.slug?.trim() || undefined,
     name: app.displayName?.trim() || app.fullName?.trim() || "Specialist",
+    specialistPersonName: specialistPersonNameForSearch(
+      app.fullName?.trim() ?? "",
+      app.displayName?.trim() ?? ""
+    ),
     specialistFirstName: (() => {
       const full = app.fullName?.trim() ?? "";
       const display = app.displayName?.trim() ?? "";

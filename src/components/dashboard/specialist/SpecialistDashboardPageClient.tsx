@@ -22,21 +22,13 @@ import {
   SpecialistProfileStrengthCard,
 } from "@/components/dashboard/specialist/SpecialistActivationBoard";
 import { InquiryNotificationBanner } from "@/components/dashboard/specialist/InquiryNotificationBanner";
-import { WorkoutFinishedBanner } from "@/components/dashboard/specialist/WorkoutFinishedBanner";
 import { ProTrialLastChanceBanner } from "@/components/dashboard/specialist/ProTrialLastChanceBanner";
 import { SpecialistDashboardProfilePreview } from "@/components/dashboard/specialist/SpecialistDashboardProfilePreview";
 import { SpecialistFirstTour } from "@/components/dashboard/specialist/SpecialistFirstTour";
 import { SpecialistLockedOverview } from "@/components/dashboard/specialist/SpecialistLockedOverview";
 import { AuroraPageHeader } from "@/components/ui/AuroraPageHeader";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
-import { useCoachingRoster } from "@/hooks/useCoachingRoster";
 import { useSpecialistDashboard } from "@/hooks/useSpecialistDashboard";
-import {
-  rememberLocalFinishedSeen,
-  readLocalFinishedSeen,
-  unseenCoachCompletions,
-  VIEW_FINISHED_WORKOUT_EVENT,
-} from "@/lib/coaching/coach-workout";
 import { resubmitSpecialistApplicationForReviewAsync } from "@/lib/admin-applications-service";
 import { syncApprovedProfileFromApplicationAsync } from "@/lib/managed-specialist-profile";
 import {
@@ -50,9 +42,12 @@ import {
   SPECIALIST_DASHBOARD_PATH,
   SPECIALIST_DASHBOARD_PROFILE_TAB_HREF,
   SPECIALIST_DASHBOARD_WELCOME_HREF,
-  SPECIALIST_FINISHED_WORKOUT_PARAM,
 } from "@/lib/auth-routes";
 import { SPECIALIST_ONBOARDING_RESUME_HREF } from "@/lib/join-flow";
+import {
+  growthProfileAccess,
+  isMonetizationEnabled,
+} from "@/lib/monetization";
 import {
   canShowSpecialistGrowthAds,
   showsPremiumDashboard,
@@ -207,7 +202,7 @@ export function SpecialistDashboardPageClient() {
     welcomeDisplayName,
     profileStatusLabel,
     analytics,
-    isPremium,
+    isPremium: sessionIsPremium,
     rankingRating,
     firstName,
     dashboardMode,
@@ -222,12 +217,14 @@ export function SpecialistDashboardPageClient() {
     isHydrated,
     showSampleMetrics,
   } = useSpecialistDashboard();
-  const coachingRoster = useCoachingRoster(trainer?.id ?? null);
-  const [locallySeenFinished, setLocallySeenFinished] = useState<string[]>(() =>
-    readLocalFinishedSeen()
-  );
 
   useEffect(() => {
+    if (searchParams.get("tab") !== "clients") return;
+    router.replace(SPECIALIST_DASHBOARD_INQUIRIES_HREF, { scroll: false });
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!isMonetizationEnabled()) return;
     if (appBillingLaunchThisRuntime || readAppBillingLaunch(searchParams)) return;
     if (session?.premiumTrialJustEnded) {
       setTrialEndedOpen(true);
@@ -235,6 +232,7 @@ export function SpecialistDashboardPageClient() {
   }, [session?.premiumTrialJustEnded, searchParams]);
 
   useEffect(() => {
+    if (!isMonetizationEnabled()) return;
     if (!isReady || !isHydrated) return;
     const launch = readAppBillingLaunch(searchParams);
     if (!launch) return;
@@ -359,8 +357,7 @@ export function SpecialistDashboardPageClient() {
     const step = SPECIALIST_TOUR_STEPS[tourStep];
     if (!step) return;
     const params = new URLSearchParams();
-    if (step.surface === "clients") params.set("tab", "clients");
-    else if (step.surface === "overview") params.set("tab", "overview");
+    if (step.surface === "overview") params.set("tab", "overview");
     else params.set("tab", "profile");
     if (tourForce) params.set("tour", "1");
     const href = `${SPECIALIST_DASHBOARD_PATH}?${params.toString()}`;
@@ -534,7 +531,12 @@ export function SpecialistDashboardPageClient() {
   const isFreeLive = dashboardMode === "approved-free" && !showActivationBoard;
   const onProTrial = Boolean(session.premiumTrialActive);
   const hadProTrial = Boolean(session.premiumTrialUsed);
-  const isProPlus = isProPlusPlan(session.membershipPlan);
+  const profileAccess = growthProfileAccess({
+    isPremium: sessionIsPremium,
+    isProPlus: isProPlusPlan(session.membershipPlan),
+  });
+  const isPremium = profileAccess.isPremium;
+  const isProPlus = profileAccess.isProPlus;
   const showLastChance = showProTrialLastChance(session);
 
   const freeOverview = isFreeLive && freeTab === "overview";
@@ -549,9 +551,6 @@ export function SpecialistDashboardPageClient() {
           ? "profile"
           : "overview"
         : "status";
-  const finishedNotices = unseenCoachCompletions(coachingRoster.workouts).filter(
-    (workout) => !locallySeenFinished.includes(workout.id)
-  );
 
   function openProfileInquiries() {
     const latest = data.newLeads.find((lead) => lead.unread);
@@ -566,7 +565,6 @@ export function SpecialistDashboardPageClient() {
     ? {
         inquiryLeads: data.newLeads,
         inquirySenderUserId: session.userId,
-        inquiryUnreadCount,
         initialConversationId: conversationParam || null,
         onOpenInquiryLead: (lead: (typeof data.newLeads)[number]) => {
           void handleOpenInquiryLead(lead);
@@ -665,6 +663,7 @@ export function SpecialistDashboardPageClient() {
     skipPick?: boolean;
     product?: SmoacMembershipProduct;
   }) {
+    if (!isMonetizationEnabled()) return;
     setUpgradeProduct(options?.product);
     setUpgradeSkipPick(Boolean(options?.skipPick));
     setUpgradeOpen(true);
@@ -677,6 +676,7 @@ export function SpecialistDashboardPageClient() {
   }
 
   function openWelcomeMembership(action: "join" | "upgrade" | "boost") {
+    if (!isMonetizationEnabled()) return;
     dismissProfileWelcome();
     if (action === "boost") {
       setBoostOpen(true);
@@ -724,9 +724,11 @@ export function SpecialistDashboardPageClient() {
 
   const planBadgeTone = membershipBadgeToneForSession(session);
 
-  /* Plan badge sits on Profile. Overview ranges live on the chart. */
+  /* Plan badge sits on Profile while billing is on. Overview ranges live on the chart. */
   const roleLabel =
-    headerSurface === "profile" ? profilePlanLabel : undefined;
+    isMonetizationEnabled() && headerSurface === "profile"
+      ? profilePlanLabel
+      : undefined;
 
   const roleLabelTone = roleLabel ? planBadgeTone : "default";
 
@@ -782,8 +784,12 @@ export function SpecialistDashboardPageClient() {
       categoryLabel={
         trainer ? resolveTrainerProfessionCategory(trainer) : undefined
       }
-      onOpenBoost={() => setBoostOpen(true)}
-      onUpgrade={() => setUpgradeOpen(true)}
+      onOpenBoost={
+        isMonetizationEnabled() ? () => setBoostOpen(true) : undefined
+      }
+      onUpgrade={
+        isMonetizationEnabled() ? () => setUpgradeOpen(true) : undefined
+      }
     />
   );
 
@@ -845,42 +851,6 @@ export function SpecialistDashboardPageClient() {
             onReview={openProfileInquiries}
             onDismiss={() => {
               void handleDismissInquiryNotifications();
-            }}
-          />
-        ) : null}
-
-        {premiumDashboard &&
-        !showActivationBoard &&
-        (headerSurface === "overview" || searchParams.get("tab") === "clients") &&
-        finishedNotices.length > 0 ? (
-          <WorkoutFinishedBanner
-            notices={finishedNotices.map((workout) => ({
-              id: workout.id,
-              clientFirstName:
-                coachingRoster.roster.find((item) => item.id === workout.relationshipId)
-                  ?.clientFirstName ?? "Your client",
-              title: workout.title.trim() || "their workout",
-            }))}
-            onView={() => {
-              const workout = finishedNotices[0];
-              if (!workout) return;
-              const params = new URLSearchParams(searchParams.toString());
-              params.set("tab", "clients");
-              params.delete("view");
-              params.delete("c");
-              params.set(SPECIALIST_FINISHED_WORKOUT_PARAM, workout.id);
-              router.push(`${SPECIALIST_DASHBOARD_PATH}?${params.toString()}`, {
-                scroll: false,
-              });
-              window.dispatchEvent(
-                new CustomEvent(VIEW_FINISHED_WORKOUT_EVENT, { detail: workout.id })
-              );
-            }}
-            onDismiss={() => {
-              const ids = finishedNotices.map((workout) => workout.id);
-              rememberLocalFinishedSeen(ids);
-              setLocallySeenFinished((current) => [...new Set([...current, ...ids])]);
-              void coachingRoster.dismissFinished(ids);
             }}
           />
         ) : null}
@@ -967,7 +937,7 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
-                  {editView ? (
+                  {editView && isMonetizationEnabled() ? (
                     <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
                   ) : null}
                 </div>
@@ -1097,7 +1067,7 @@ export function SpecialistDashboardPageClient() {
                     </p>
                   )}
 
-                  {editView ? (
+                  {editView && isMonetizationEnabled() ? (
                     <>
                       <BoostProfileCard onOpenBoost={() => setBoostOpen(true)} />
 

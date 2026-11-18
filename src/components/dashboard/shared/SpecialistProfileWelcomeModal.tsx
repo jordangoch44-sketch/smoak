@@ -21,6 +21,7 @@ import {
   type ProfileWelcomeMembershipPrompt,
   type ProfileWelcomeTask,
 } from "@/lib/specialist-profile-welcome";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { getInitials } from "@/lib/utils";
 import { DashboardButton } from "./DashboardButton";
 import {
@@ -210,9 +211,13 @@ export function SpecialistProfileWelcomeModal({
     onUpgrade?.();
   }
 
-  const subtitle = nextStep
-    ? SMOAC_PROFILE_WELCOME.subtitle
-    : SMOAC_PROFILE_WELCOME.subtitleComplete;
+  const subtitle = !isMonetizationEnabled()
+    ? nextStep
+      ? "Finish a few profile items so clients know what to expect."
+      : "Your profile looks complete."
+    : nextStep
+      ? SMOAC_PROFILE_WELCOME.subtitle
+      : SMOAC_PROFILE_WELCOME.subtitleComplete;
 
   return createPortal(
     <DashboardModalScrim

@@ -3,6 +3,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import { fetchGooglePlaceSnapshot } from "@/lib/google-places";
 import { applyGooglePlaceSnapshotToSocial } from "@/lib/google-reviews-display";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { resolveAndSyncSpecialistPremiumAccess } from "@/lib/specialist-premium-trial";
 import { specialistProfileFromRow } from "@/lib/profiles/specialist-profiles-db";
 import type { SpecialistProfileRow } from "@/types/database";
@@ -50,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   const access = await resolveAndSyncSpecialistPremiumAccess(supabase, user.id);
-  if (!access.isPremium) {
+  if (isMonetizationEnabled() && !access.isPremium) {
     return NextResponse.json(
       {
         ok: false,

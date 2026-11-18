@@ -1,4 +1,5 @@
 import { getAdminSpecialistMeta } from "@/lib/admin-specialist-meta-store";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import type { Trainer } from "@/types";
 
 /**
@@ -7,6 +8,7 @@ import type { Trainer } from "@/types";
  * If nobody is paying, the homepage rail stays hidden.
  */
 export function isTrainerSponsored(trainer: Trainer): boolean {
+  if (!isMonetizationEnabled()) return false;
   if (trainer.sponsored === true) return true;
   const meta = getAdminSpecialistMeta(trainer.id);
   return meta.sponsored === true;
@@ -35,6 +37,7 @@ export function partitionSponsoredTrainers(trainers: readonly Trainer[]): {
 export function isTrainerVerified(
   trainer: Pick<Trainer, "isPremium" | "membershipPlan">
 ): boolean {
+  if (!isMonetizationEnabled()) return false;
   if (trainer.isPremium) return true;
   return (
     trainer.membershipPlan === "premium" ||

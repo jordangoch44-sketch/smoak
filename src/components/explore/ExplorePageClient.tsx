@@ -134,6 +134,13 @@ export function ExplorePageClient() {
     return <ExploreRouteLoading mapShell={isMobile} />;
   }
 
+  const placeSearch = Boolean(
+    filters.city.trim() || filters.neighborhood.trim()
+  );
+  const resultFrameKey =
+    hasSearch && !placeSearch ? displayQuery.trim() : "";
+  const searchHalf = isMobile && hasSearch;
+
   const searchToolbar = (
     <ExploreSearchToolbar
       searchQuery={displayQuery}
@@ -203,6 +210,7 @@ export function ExplorePageClient() {
       className={cn(
         "explore-page explore-page--results",
         isMobile && "explore-page--map-hero explore-page--map-shell",
+        searchHalf && "explore-page--search-half",
         isDesktopSplit && "explore-page--desktop-split"
       )}
     >
@@ -230,6 +238,7 @@ export function ExplorePageClient() {
               locked={false}
               variant="hero"
               showNotes={false}
+              resultFrameKey={resultFrameKey}
             />
             <div className="explore-map-hero__controls">
               {searchToolbar}
@@ -240,12 +249,16 @@ export function ExplorePageClient() {
         )}
 
         {isMobile ? (
-          <ExploreResultsSheet
-            resultCount={filtered.length}
-            searchLoading={mapSearchLoading}
-          >
-            {resultsMain}
-          </ExploreResultsSheet>
+          searchHalf ? (
+            <div className="explore-search-half__results">{resultsMain}</div>
+          ) : (
+            <ExploreResultsSheet
+              resultCount={filtered.length}
+              searchLoading={mapSearchLoading}
+            >
+              {resultsMain}
+            </ExploreResultsSheet>
+          )
         ) : isDesktopSplit ? (
           <div className="explore-page__layout explore-page__layout--split">
             <aside className="explore-page__map-rail" aria-label="Search map">
@@ -263,6 +276,7 @@ export function ExplorePageClient() {
                   locked={false}
                   variant="column"
                   showNotes={false}
+                  resultFrameKey={resultFrameKey}
                 />
                 <div className="explore-page__map-rail-controls">
                   {searchToolbar}

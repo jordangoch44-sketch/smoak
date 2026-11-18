@@ -6,12 +6,12 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useAuthSession } from "@/hooks/useAuthSession";
 import { useSavedTrainers } from "@/hooks/useSavedTrainers";
 import { useStableClientState } from "@/hooks/useStableClientState";
-import { useClientNavAttention } from "@/hooks/useClientNavAttention";
+import { useSpecialistInquiryNavCount } from "@/hooks/useSpecialistInquiryNavCount";
 import { useWorkoutNavAttention } from "@/hooks/useWorkoutNavAttention";
 import {
   getMobileBottomNavItems,
   isActiveNavItem,
-  isSpecialistDashboardClientsTab,
+  isSpecialistInquiriesTab,
   isWorkoutsNavPath,
   type MobileBottomNavItemId,
 } from "@/lib/mobile-bottom-nav";
@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 const DESKTOP_NAV_LABELS: Record<MobileBottomNavItemId, string> = {
   home: "Marketplace",
   search: "Search",
-  clients: "Clients",
+  clients: "Inquiries",
   saved: "Workouts",
   profile: "Profile",
 };
@@ -67,8 +67,8 @@ function SiteHeaderDesktopNavInner({
     isSavesReady &&
     canSaveSpecialists(session) &&
     savedCount > 0;
-  const viewingClients = isSpecialistDashboardClientsTab(pathname, searchParams);
-  const clientAttention = useClientNavAttention(viewingClients);
+  const viewingInquiries = isSpecialistInquiriesTab(pathname, searchParams);
+  const clientAttention = useSpecialistInquiryNavCount(viewingInquiries);
   const clientAttentionCount = pendingId === "clients" ? 0 : clientAttention;
   const viewingWorkouts = isWorkoutsNavPath(pathname);
   const unseenWorkouts = useWorkoutNavAttention(viewingWorkouts);
@@ -99,7 +99,7 @@ function SiteHeaderDesktopNavInner({
                 aria-current={active ? "page" : undefined}
                 aria-label={
                   item.id === "clients" && clientAttentionCount > 0
-                    ? `Clients, ${clientAttentionCount} new`
+                    ? `Inquiries, ${clientAttentionCount} unread`
                     : item.glyph === "dumbbell" && workoutAlertCount > 0
                       ? `Workouts, ${workoutAlertCount} new`
                       : undefined

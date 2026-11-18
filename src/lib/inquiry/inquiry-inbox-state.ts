@@ -291,10 +291,46 @@ export async function hideInquiryForViewer(
   if (!persisted) hideInquiryId(owner, id);
 }
 
+type SharedInboxChannel = {
+  count: number;
+  timer: number;
+  removeTimer: number;
+  channel: ReturnType<
+    NonNullable<ReturnType<typeof getMarketplaceAuthClient>>["channel"]
+  >;
+};
+
+/** One realtime channel per inbox. A second `.on()` after subscribe throws. */
+const sharedInboxChannels = new Map<string, SharedInboxChannel>();
+
+function releaseSharedInboxChannel(
+  supabase: NonNullable<ReturnType<typeof getMarketplaceAuthClient>>,
+  channelName: string
+) {
+  const current = sharedInboxChannels.get(channelName);
+  if (!current) return;
+  current.count -= 1;
+  window.clearTimeout(current.removeTimer);
+  if (current.count > 0) {
+    current.removeTimer = 0;
+    return;
+  }
+  // Strict mode unmounts and remounts in the same turn. Wait so the
+  // remount can keep this channel instead of subscribing twice.
+  current.removeTimer = window.setTimeout(() => {
+    const latest = sharedInboxChannels.get(channelName);
+    if (!latest || latest.count > 0) return;
+    sharedInboxChannels.delete(channelName);
+    window.clearTimeout(latest.timer);
+    void supabase.removeChannel(latest.channel);
+  }, 0);
+}
+
 /**
  * Live inbox updates for an open dashboard.
  * Dispatches `smoac:inquiry-updated` so list and open thread reload together.
  * Falls back to focus refresh when Realtime is not enabled yet.
+ * Safe to call from more than one component for the same inbox.
  */
 export function subscribeInquiryInbox(scope: {
   column: "client_user_id" | "specialist_id";
@@ -304,45 +340,59 @@ export function subscribeInquiryInbox(scope: {
   const value = scope.value.trim();
   if (!supabase || !value || typeof window === "undefined") return () => {};
 
-  let timer = 0;
-  const notify = () => {
-    window.clearTimeout(timer);
-    timer = window.setTimeout(() => {
-      window.dispatchEvent(new Event("smoac:inquiry-updated"));
-    }, 400);
-  };
-
   const channelName = `inquiry-inbox:${scope.column}:${value}`.replace(
     /[^a-zA-Z0-9:_-]/g,
     ""
   );
 
-  const channel = supabase
-    .channel(channelName)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "inquiry_conversations",
-        filter: `${scope.column}=eq.${value}`,
-      },
-      notify
-    )
-    .on(
-      "postgres_changes",
-      { event: "INSERT", schema: "public", table: "inquiry_messages" },
-      notify
-    )
-    .on(
-      "postgres_changes",
-      { event: "UPDATE", schema: "public", table: "inquiry_messages" },
-      notify
-    )
-    .subscribe();
+  const existing = sharedInboxChannels.get(channelName);
+  if (existing) {
+    existing.count += 1;
+    window.clearTimeout(existing.removeTimer);
+    existing.removeTimer = 0;
+    return () => releaseSharedInboxChannel(supabase, channelName);
+  }
 
-  return () => {
-    window.clearTimeout(timer);
-    void supabase.removeChannel(channel);
+  const channel = supabase.channel(channelName);
+  const alreadyLive = channel.state === "joined" || channel.state === "joining";
+  const entry: SharedInboxChannel = {
+    count: 1,
+    timer: 0,
+    removeTimer: 0,
+    channel,
   };
+  sharedInboxChannels.set(channelName, entry);
+
+  if (!alreadyLive) {
+    const notify = () => {
+      window.clearTimeout(entry.timer);
+      entry.timer = window.setTimeout(() => {
+        window.dispatchEvent(new Event("smoac:inquiry-updated"));
+      }, 400);
+    };
+    channel
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "inquiry_conversations",
+          filter: `${scope.column}=eq.${value}`,
+        },
+        notify
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "inquiry_messages" },
+        notify
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "inquiry_messages" },
+        notify
+      )
+      .subscribe();
+  }
+
+  return () => releaseSharedInboxChannel(supabase, channelName);
 }

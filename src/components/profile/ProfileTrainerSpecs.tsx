@@ -1,15 +1,17 @@
-import type { Trainer } from "@/types";
+import type { Trainer, TrainerIntroVideo } from "@/types";
 import { Bio } from "./Bio";
 import { Certifications } from "./Certifications";
 import { ProfileCoachingStyle } from "./ProfileCoachingStyle";
-import { ProfilePricing } from "./ProfilePricing";
+import { ProfileOverviewAbout } from "./ProfileOverviewAbout";
 import { ProfileRightFit } from "./ProfileRightFit";
 import { ProfileServiceArea } from "./ProfileServiceArea";
-import { ProfileSessionExperience } from "./ProfileSessionExperience";
-import { ProfileTransformations } from "./ProfileTransformations";
 
 interface ProfileTrainerSpecsProps {
   trainer: Trainer;
+  variant?: "public" | "specialist-live";
+  lockedPreviewIntro?: TrainerIntroVideo;
+  onAddIntroVideo?: () => void;
+  onUpgrade?: () => void;
 }
 
 function nonEmptyStrings(items: string[] | null | undefined): string[] {
@@ -17,17 +19,27 @@ function nonEmptyStrings(items: string[] | null | undefined): string[] {
   return items.filter((item) => typeof item === "string" && item.trim().length > 0);
 }
 
-export function ProfileTrainerSpecs({ trainer }: ProfileTrainerSpecsProps) {
+export function ProfileTrainerSpecs({
+  trainer,
+  variant = "public",
+  lockedPreviewIntro,
+  onAddIntroVideo,
+  onUpgrade,
+}: ProfileTrainerSpecsProps) {
   const accolades = nonEmptyStrings(trainer.resultsSnapshot ?? []);
 
   return (
-    <section className="profile-trainer-specs" aria-label="Full specialist profile">
+    <section className="profile-trainer-specs" aria-label="Overview">
       <div className="profile-trainer-specs__stack">
+        <ProfileOverviewAbout
+          trainer={trainer}
+          variant={variant}
+          lockedPreviewIntro={lockedPreviewIntro}
+          onAddIntroVideo={onAddIntroVideo}
+          onUpgrade={onUpgrade}
+        />
         <Bio trainer={trainer} />
-        <ProfileTransformations trainer={trainer} />
         <ProfileRightFit trainer={trainer} />
-        <ProfileSessionExperience trainer={trainer} />
-        <ProfilePricing trainer={trainer} />
         <ProfileServiceArea trainer={trainer} />
         <Certifications
           certifications={trainer.certifications}

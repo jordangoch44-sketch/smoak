@@ -152,8 +152,10 @@ html {
   max-width: 100%;
   /* auto — smooth fights touch momentum / mid-scroll stalls on iOS Safari */
   scroll-behavior: auto;
-  /* clip does not force overflow-y:auto the way hidden does */
-  overflow-x: clip;
+  /* visible — overflow-x:clip on html traps position:fixed chrome (header +
+     bottom toolbar) so they scroll with the page. Clip page content in
+     .app-frame instead. */
+  overflow-x: visible;
   box-sizing: border-box;
 }
 
@@ -167,7 +169,9 @@ body,
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow-x: clip;
+  /* visible — the fixed header lives here. overflow-x:clip would make it
+     scroll away with Business and every other long page. */
+  overflow-x: visible;
 }
 
 body {
@@ -209,6 +213,7 @@ body.location-selector-open,
 body.profile-sheet-open,
 body.inquiry-sheet-open,
 body.inquiry-inbox-open,
+body.inquiry-inbox-tab-open,
 body.specialist-edit-profile-open,
 body.specialist-live-profile-open,
 body.review-modal-open,
@@ -235,6 +240,7 @@ body.seo-browse-open {
   body.profile-sheet-open,
   body.inquiry-sheet-open,
   body.inquiry-inbox-open,
+  body.inquiry-inbox-tab-open,
   body.specialist-edit-profile-open,
   body.specialist-live-profile-open,
   body.review-modal-open,
@@ -259,6 +265,7 @@ html.review-modal-open,
   body.profile-sheet-open .app-main,
   body.inquiry-sheet-open .app-main,
   body.inquiry-inbox-open .app-main,
+  body.inquiry-inbox-tab-open .app-main,
   body.specialist-edit-profile-open .app-main,
   body.specialist-live-profile-open .app-main,
   body.review-modal-open .app-main,
@@ -283,6 +290,7 @@ html.review-modal-open,
   html.client-profile-sheet-open,
   html.client-workouts-open,
   html.inquiry-inbox-open,
+  html.inquiry-inbox-tab-open,
   html.specialist-edit-profile-open,
   html.specialist-live-profile-open {
     overflow: visible;

@@ -74,6 +74,13 @@ export interface ExploreMapProps {
   /** `split` = compact height; `panel` = full map view; `hero` = full-bleed under header; `column` = desktop split rail */
   variant?: "panel" | "split" | "hero" | "column";
   showNotes?: boolean;
+  /**
+   * When set, the camera frames the current result pins instead of the
+   * user’s area. Place searches leave this empty so the map stays on that area.
+   * The value is the search text — panning does not change it, so the camera
+   * does not jump back after a map move.
+   */
+  resultFrameKey?: string;
 }
 
 const FALLBACK_CENTER: ExploreMapArea = defaultMarketplaceCenter();
@@ -162,6 +169,7 @@ export function ExploreMapLeaflet({
   locked = true,
   variant = "panel",
   showNotes = true,
+  resultFrameKey = "",
 }: ExploreMapProps) {
   const router = useRouter();
   const routerRef = useRef(router);
@@ -176,6 +184,8 @@ export function ExploreMapLeaflet({
   areaCenterRef.current = areaCenter;
   const activeSearchAreaRef = useRef(activeSearchArea);
   activeSearchAreaRef.current = activeSearchArea;
+  const resultFrameKeyRef = useRef(resultFrameKey);
+  resultFrameKeyRef.current = resultFrameKey;
   const onPendingRef = useRef(onPendingSearchAreaChange);
   onPendingRef.current = onPendingSearchAreaChange;
   const onMapSearchStartRef = useRef(onMapSearchStart);
@@ -345,7 +355,18 @@ export function ExploreMapLeaflet({
       suppressUntilRef.current = Date.now() + 1000;
       const origin = areaCenterRef.current;
       const currentClusters = clustersRef.current;
-      if (origin) {
+      if (resultFrameKeyRef.current && currentClusters.length > 0) {
+        fitMappedClusters(map, L, currentClusters);
+        framedOriginRef.current = `results:${resultFrameKeyRef.current}`;
+      } else if (resultFrameKeyRef.current) {
+        if (origin) {
+          const radius =
+            activeSearchAreaRef.current?.radiusMiles ??
+            DEFAULT_EXPLORE_RADIUS_MILES;
+          frameRadiusMiles(map, L, origin, radius);
+        }
+        framedOriginRef.current = `results-wait:${resultFrameKeyRef.current}`;
+      } else if (origin) {
         const radius =
           activeSearchAreaRef.current?.radiusMiles ??
           DEFAULT_EXPLORE_RADIUS_MILES;
@@ -542,8 +563,21 @@ export function ExploreMapLeaflet({
     const el = containerRef.current;
     if (!el) return;
 
+    let lastHeight = 0;
     const observer = new ResizeObserver(() => {
-      safeInvalidateMapSize(mapRef.current);
+      const map = mapRef.current;
+      const L = leafletRef.current;
+      const el = containerRef.current;
+      if (!map || !L || !el) return;
+      const height = el.getBoundingClientRect().height;
+      const jumped = Math.abs(height - lastHeight) > 24;
+      lastHeight = height;
+      if (!safeInvalidateMapSize(map)) return;
+      if (!jumped || !resultFrameKeyRef.current || clustersRef.current.length === 0) {
+        return;
+      }
+      framedOriginRef.current = "";
+      applyLiveCamera(map, L);
     });
     observer.observe(el);
     return () => observer.disconnect();
@@ -554,9 +588,13 @@ export function ExploreMapLeaflet({
     const L = leafletRef.current;
     if (!map || !L || mapPaused) return;
 
-    const key = areaCenter
-      ? areaKey
-      : clustersFrameKey(clusters);
+    const key = resultFrameKey
+      ? clusters.length > 0
+        ? `results:${resultFrameKey}`
+        : `results-wait:${resultFrameKey}`
+      : areaCenter
+        ? areaKey
+        : clustersFrameKey(clusters);
     if (framedOriginRef.current === key) return;
 
     suppressMoves(280);
@@ -565,6 +603,7 @@ export function ExploreMapLeaflet({
     areaCenter,
     areaKey,
     clusters,
+    resultFrameKey,
     activeSearchArea?.radiusMiles,
     mapPaused,
     mapEpoch,

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseServiceClient } from "@/lib/supabase/service";
 import {
@@ -9,6 +10,13 @@ import {
 
 /** Stripe Customer Portal — manage/cancel subscription. */
 export async function POST() {
+  if (!isMonetizationEnabled()) {
+    return NextResponse.json(
+      { error: "SMOAC profiles are free right now." },
+      { status: 403 }
+    );
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Stripe is not configured yet." },

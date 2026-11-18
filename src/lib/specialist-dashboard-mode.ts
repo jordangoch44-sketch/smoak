@@ -1,5 +1,6 @@
 import type { SpecialistApplication } from "@/types/specialist-application";
 import type { SpecialistSubscription } from "@/types/specialist-dashboard";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { isSpecialistPremium } from "@/lib/specialist-premium";
 import { isDemoSpecialistDashboard } from "@/lib/managed-specialist-profile";
 
@@ -32,13 +33,9 @@ export function resolveSpecialistDashboardMode(input: {
   if (status === "PENDING_APPROVAL") return "pending";
   if (status === "REJECTED") return "rejected";
 
-  if (status === "APPROVED") {
-    return isPremium ? "approved-premium" : "approved-free";
-  }
+  if (status === "APPROVED") return "approved-premium";
 
-  if (isDemo) {
-    return isPremium ? "demo-premium" : "approved-free";
-  }
+  if (isDemo) return "demo-premium";
 
   /* Auth exists but no submitted application — resume onboarding, not admin review. */
   return "onboarding";
@@ -55,6 +52,7 @@ export function showsPremiumDashboard(mode: SpecialistDashboardMode): boolean {
 export function canShowSpecialistGrowthAds(
   mode: SpecialistDashboardMode
 ): boolean {
+  if (!isMonetizationEnabled()) return false;
   return (
     mode === "approved-free" ||
     mode === "approved-premium" ||

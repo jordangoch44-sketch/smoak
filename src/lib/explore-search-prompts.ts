@@ -20,7 +20,7 @@ export type ExploreSearchPromptGroup = {
 
 /** Closed bar + overlay input — teaches what clients can type or tap. */
 export const EXPLORE_SEARCH_PLACEHOLDER =
-  "Search — profession, price, gender, specialty";
+  "Search — name, business, profession, specialty";
 
 function promptsFromLabels(
   prefix: string,

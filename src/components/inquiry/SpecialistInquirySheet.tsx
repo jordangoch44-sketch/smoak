@@ -4,8 +4,10 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -18,7 +20,7 @@ import {
 import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
-import { CloseIcon } from "@/components/ui/icons";
+import { CheckIcon, CloseIcon, LockIcon } from "@/components/ui/icons";
 import {
   QuickClientAccountAuthActions,
   QuickClientAccountAuthError,
@@ -58,6 +60,16 @@ import { cn } from "@/lib/utils";
 const DISMISS_OFFSET_PX = 110;
 const DISMISS_VELOCITY = 650;
 const KEYBOARD_INSET_PX = 80;
+/** Extra sheet color below the visual viewport so the page cannot show above the keys. */
+const KEYBOARD_BLEED_PX = 320;
+/** Matches the iOS keyboard dismiss so the sheet lands with the keys. */
+const KEYBOARD_RETURN_S = 0.34;
+
+function topicDisplayLabel(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed) return label;
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+}
 
 function isEditableField(target: EventTarget | null): target is HTMLElement {
   if (!(target instanceof HTMLElement)) return false;
@@ -67,16 +79,38 @@ function isEditableField(target: EventTarget | null): target is HTMLElement {
   return target.isContentEditable;
 }
 
-function readKeyboardViewport(): { inset: number; top: number; height: number } {
+function readKeyboardViewport(restingLayout: number): {
+  inset: number;
+  top: number;
+  height: number;
+} {
   const viewport = window.visualViewport;
   const height = viewport?.height ?? window.innerHeight;
   const top = viewport?.offsetTop ?? 0;
-  const inset = Math.max(0, window.innerHeight - height - top);
+  const layout = window.innerHeight;
+  const inset = Math.max(0, layout - height - top);
+  const resting = Math.max(restingLayout, layout);
+  /* Layout viewport already ends at the keyboard (interactive-widget).
+     A shorter fixed sheet leaves the profile visible above the keys. */
+  if (resting - layout > KEYBOARD_INSET_PX && inset <= KEYBOARD_INSET_PX) {
+    return { inset: 0, top: 0, height: layout };
+  }
   return {
     inset: inset > KEYBOARD_INSET_PX ? inset : 0,
     top,
     height,
   };
+}
+
+/** Drop a stuck document scroll. Do not fight the keyboard pan (offsetTop > 0) — that leaves a gap above the keys. */
+function pinInquiryPageScroll(): void {
+  const offset = window.visualViewport?.offsetTop ?? 0;
+  if (offset > 1 || window.scrollY <= 1) return;
+  try {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  } catch {
+    window.scrollTo(0, 0);
+  }
 }
 
 type SheetView = "compose" | "signup" | "signin" | "awaiting_email" | "success";
@@ -145,6 +179,7 @@ export function SpecialistInquirySheet({
   preselectTopicId,
 }: SpecialistInquirySheetProps) {
   const titleId = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const dragControls = useDragControls();
   const reduceMotion = useReducedMotion();
@@ -175,7 +210,21 @@ export function SpecialistInquirySheet({
     inset: 0,
     top: 0,
     height: 0,
+    cover: 0,
   });
+  const keyboardFrameRef = useRef(keyboardViewport);
+  keyboardFrameRef.current = keyboardViewport;
+  const restingLayoutRef = useRef(0);
+  /** Where the sheet was when the keyboard started closing, and where it rests. */
+  const returnFromRef = useRef<{ top: number; height: number } | null>(null);
+  const returnToRef = useRef<{ top: number; height: number } | null>(null);
+  const returnPhaseRef = useRef<"idle" | "measure" | "hold" | "slide">("idle");
+  const [returnShift, setReturnShift] = useState<{
+    y: number;
+    height: number;
+    stage: "hold" | "arm" | "slide";
+  } | null>(null);
+  const returnPlayingRef = useRef(false);
 
   const openKey = open
     ? `${specialistId}:${profilePath}:${preselectTopicId ?? ""}`
@@ -239,15 +288,90 @@ export function SpecialistInquirySheet({
     if (!open) return;
 
     function syncKeyboardViewport() {
-      setKeyboardViewport(readKeyboardViewport());
+      pinInquiryPageScroll();
+      const layout = window.innerHeight;
+      if (restingLayoutRef.current === 0) restingLayoutRef.current = layout;
+      const frame = readKeyboardViewport(restingLayoutRef.current);
+      if (frame.inset === 0) {
+        restingLayoutRef.current = Math.max(restingLayoutRef.current, layout);
+      }
+      const phase = returnPhaseRef.current;
+
+      if (frame.inset > 0) {
+        if (phase !== "idle") {
+          returnPhaseRef.current = "idle";
+          returnPlayingRef.current = false;
+          returnFromRef.current = null;
+          returnToRef.current = null;
+          setReturnShift(null);
+        }
+        setKeyboardViewport((current) => {
+          if (
+            current.inset === frame.inset &&
+            current.top === frame.top &&
+            current.height === frame.height
+          ) {
+            return current;
+          }
+          return { ...frame, cover: current.cover };
+        });
+        return;
+      }
+
+      if (phase === "measure" || phase === "hold" || phase === "slide") return;
+
+      const current = keyboardFrameRef.current;
+      if (current.inset > 0) {
+        const rect = sheetRef.current?.getBoundingClientRect();
+        returnFromRef.current = rect
+          ? { top: rect.top, height: rect.height }
+          : null;
+        returnPhaseRef.current = returnFromRef.current ? "measure" : "idle";
+        setKeyboardViewport({ inset: 0, top: 0, height: 0, cover: 0 });
+        return;
+      }
     }
 
+    let keyboardPaintTimer = 0;
+    function paintInquiryKeyboard() {
+      document.documentElement.classList.add("inquiry-keyboard-open");
+      document.body.classList.add("inquiry-keyboard-open");
+    }
+    function clearInquiryKeyboard() {
+      document.documentElement.classList.remove("inquiry-keyboard-open");
+      document.body.classList.remove("inquiry-keyboard-open");
+    }
     function onFocusIn(event: FocusEvent) {
       if (!isEditableField(event.target)) return;
+      if (!rootRef.current?.contains(event.target)) return;
+      window.clearTimeout(keyboardPaintTimer);
+      paintInquiryKeyboard();
       const field = event.target;
+      const scroller = field.closest(".inquiry-sheet__body");
       window.setTimeout(() => {
-        field.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        pinInquiryPageScroll();
+        if (!(scroller instanceof HTMLElement)) return;
+        const fieldRect = field.getBoundingClientRect();
+        const scrollerRect = scroller.getBoundingClientRect();
+        const overflow = fieldRect.bottom - (scrollerRect.bottom - 12);
+        if (overflow > 0) scroller.scrollTop += overflow;
       }, 280);
+    }
+    function onFocusOut(event: FocusEvent) {
+      if (!isEditableField(event.target)) return;
+      if (!rootRef.current?.contains(event.target)) return;
+      window.clearTimeout(keyboardPaintTimer);
+      keyboardPaintTimer = window.setTimeout(() => {
+        const active = document.activeElement;
+        if (
+          active instanceof HTMLElement &&
+          rootRef.current?.contains(active) &&
+          isEditableField(active)
+        ) {
+          return;
+        }
+        clearInquiryKeyboard();
+      }, 480);
     }
 
     syncKeyboardViewport();
@@ -255,14 +379,103 @@ export function SpecialistInquirySheet({
     window.visualViewport?.addEventListener("scroll", syncKeyboardViewport);
     window.addEventListener("resize", syncKeyboardViewport);
     document.addEventListener("focusin", onFocusIn);
+    document.addEventListener("focusout", onFocusOut);
 
     return () => {
+      window.clearTimeout(keyboardPaintTimer);
+      clearInquiryKeyboard();
       window.visualViewport?.removeEventListener("resize", syncKeyboardViewport);
       window.visualViewport?.removeEventListener("scroll", syncKeyboardViewport);
       window.removeEventListener("resize", syncKeyboardViewport);
       document.removeEventListener("focusin", onFocusIn);
+      document.removeEventListener("focusout", onFocusOut);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (open) return;
+    restingLayoutRef.current = 0;
+    returnPhaseRef.current = "idle";
+    returnPlayingRef.current = false;
+    returnFromRef.current = null;
+    returnToRef.current = null;
+    setReturnShift(null);
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open || returnPhaseRef.current !== "measure") return;
+    const from = returnFromRef.current;
+    const sheet = sheetRef.current;
+    const root = rootRef.current;
+    if (!from || !sheet || !root || reduceMotion) {
+      returnPhaseRef.current = "idle";
+      returnFromRef.current = null;
+      return;
+    }
+    const to = sheet.getBoundingClientRect();
+    const rootRect = root.getBoundingClientRect();
+    /* Desktop keeps the sheet centered. Only the phone sheet rides the keyboard. */
+    if (rootRect.bottom - to.bottom > 2) {
+      returnPhaseRef.current = "idle";
+      returnFromRef.current = null;
+      return;
+    }
+    const y = from.top - (rootRect.bottom - from.height);
+    if (Math.abs(y) < 0.5 && Math.abs(from.height - to.height) < 0.5) {
+      returnPhaseRef.current = "idle";
+      returnFromRef.current = null;
+      return;
+    }
+    returnToRef.current = { top: to.top, height: to.height };
+    returnPhaseRef.current = "hold";
+    setReturnShift({ y, height: from.height, stage: "hold" });
+  }, [open, keyboardViewport, reduceMotion]);
+
+  useEffect(() => {
+    if (!returnShift || returnShift.stage !== "hold" || returnPlayingRef.current) {
+      return;
+    }
+    const to = returnToRef.current;
+    if (!to) return;
+    returnPlayingRef.current = true;
+    window.setTimeout(() => {
+      setReturnShift((current) =>
+        current && current.stage === "hold" ? { ...current, stage: "arm" } : current
+      );
+    }, 20);
+    window.setTimeout(() => {
+      if (returnPhaseRef.current === "idle") return;
+      returnPhaseRef.current = "slide";
+      setReturnShift({ y: 0, height: to.height, stage: "slide" });
+    }, 48);
+  }, [returnShift]);
+
+  useEffect(() => {
+    if (!returnShift || returnShift.stage !== "slide") return;
+    const timer = window.setTimeout(() => {
+      if (returnPhaseRef.current !== "slide") return;
+      returnPhaseRef.current = "idle";
+      returnPlayingRef.current = false;
+      returnFromRef.current = null;
+      returnToRef.current = null;
+      setReturnShift(null);
+    }, KEYBOARD_RETURN_S * 1000 + 50);
+    return () => window.clearTimeout(timer);
+  }, [returnShift]);
+
+  useLayoutEffect(() => {
+    if (!open || keyboardViewport.inset <= 0) return;
+    const sheet = sheetRef.current;
+    const viewport = window.visualViewport;
+    if (!sheet || !viewport) return;
+    /* visualViewport and getBoundingClientRect share the same origin. */
+    const gap = viewport.height - sheet.getBoundingClientRect().bottom;
+    if (gap <= 1) return;
+    const cover = Math.min(320, keyboardViewport.cover + Math.ceil(gap));
+    setKeyboardViewport((current) =>
+      current.cover === cover ? current : { ...current, cover }
+    );
+  }, [open, keyboardViewport]);
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
@@ -452,11 +665,15 @@ export function SpecialistInquirySheet({
 
   const messageLen = draft.message.length;
   const keyboardOpen = keyboardViewport.inset > 0;
+  const keyboardReturning = returnShift != null;
 
   return createPortal(
+    <>
+    <div className="inquiry-keyboard-scrim" aria-hidden />
     <AnimatePresence>
       {open ? (
         <div
+          ref={rootRef}
           className={cn(
             "inquiry-sheet-root",
             keyboardOpen && "inquiry-sheet-root--keyboard"
@@ -464,14 +681,28 @@ export function SpecialistInquirySheet({
           role="presentation"
           style={
             keyboardOpen
-              ? {
+              ? ({
                   top: keyboardViewport.top,
-                  height: keyboardViewport.height,
+                  height:
+                    keyboardViewport.height +
+                    keyboardViewport.cover +
+                    KEYBOARD_BLEED_PX,
                   bottom: "auto",
-                }
+                  "--inquiry-keyboard-pane": `${Math.round(keyboardViewport.height + keyboardViewport.cover)}px`,
+                } as CSSProperties)
               : undefined
           }
         >
+          {keyboardOpen || keyboardReturning ? (
+            <div
+              className={cn(
+                "inquiry-sheet__keyboard-fill",
+                !keyboardOpen && "inquiry-sheet__keyboard-fill--return"
+              )}
+              aria-hidden
+            />
+          ) : null}
+
           <motion.button
             type="button"
             aria-label="Close inquiry"
@@ -489,16 +720,33 @@ export function SpecialistInquirySheet({
             ref={sheetRef}
             className={cn(
               "inquiry-sheet",
-              keyboardOpen && "inquiry-sheet--keyboard"
+              keyboardOpen && "inquiry-sheet--keyboard",
+              keyboardReturning && "inquiry-sheet--returning",
+              keyboardReturning &&
+                returnShift.stage !== "slide" &&
+                "inquiry-sheet--returning-hold"
             )}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
             initial={{ y: "100%" }}
-            animate={{ y: 0 }}
+            animate={keyboardReturning ? { y: returnShift.y } : { y: 0 }}
             exit={{ y: "100%" }}
-            transition={sheetTransition}
-            drag="y"
+            transition={
+              keyboardReturning
+                ? returnShift.stage === "slide" && !reduceMotion
+                  ? { duration: KEYBOARD_RETURN_S, ease: [0.32, 0.72, 0, 1] }
+                  : { duration: 0 }
+                : sheetTransition
+            }
+            style={
+              keyboardReturning
+                ? { height: returnShift.height }
+                : keyboardOpen
+                  ? undefined
+                  : { height: "auto" }
+            }
+            drag={keyboardReturning ? false : "y"}
             dragControls={dragControls}
             dragListener={false}
             dragConstraints={{ top: 0, bottom: 0 }}
@@ -521,12 +769,13 @@ export function SpecialistInquirySheet({
                 <div className="inquiry-sheet__heading">
                   {view === "compose" ? (
                     <>
-                      <p className="inquiry-sheet__eyebrow">
-                        Inquire for specialist
-                      </p>
+                      <p className="inquiry-sheet__eyebrow">New inquiry</p>
                       <h2 id={titleId} className="inquiry-sheet__title">
                         {specialistName}
                       </h2>
+                      <p className="inquiry-sheet__subtitle">
+                        Send a private message to this specialist.
+                      </p>
                     </>
                   ) : (
                     <h2 id={titleId} className="inquiry-sheet__title">
@@ -547,7 +796,7 @@ export function SpecialistInquirySheet({
                   disabled={sending}
                   data-sheet-initial-focus
                 >
-                  <CloseIcon className="h-5 w-5" />
+                  <CloseIcon className="h-4 w-4" />
                 </FastActivateButton>
               </div>
             </div>
@@ -555,56 +804,66 @@ export function SpecialistInquirySheet({
             <div className="inquiry-sheet__body">
               {view === "compose" ? (
                 <>
-                  <p className="inquiry-sheet__label">How can we help?</p>
-                  <div className="inquiry-sheet__topics">
-                    {topicOptions.map((topic) => {
-                      const selected = draft.inquiryTopics.includes(topic.id);
-                      return (
-                        <FastActivateButton
-                          key={topic.id}
-                          aria-pressed={selected}
-                          className={cn(
-                            "smoac-control inquiry-sheet__topic",
-                            selected && "inquiry-sheet__topic--selected"
-                          )}
-                          onActivate={() => toggleTopic(topic.id)}
-                        >
-                          <span
+                  <div className="inquiry-sheet__section">
+                    <p className="inquiry-sheet__section-title">
+                      What are you interested in?
+                    </p>
+                    <p className="inquiry-sheet__section-hint">
+                      Select all that apply.
+                    </p>
+                    <div className="inquiry-sheet__topics">
+                      {topicOptions.map((topic) => {
+                        const selected = draft.inquiryTopics.includes(topic.id);
+                        return (
+                          <FastActivateButton
+                            key={topic.id}
+                            aria-pressed={selected}
                             className={cn(
-                              "inquiry-sheet__check",
-                              selected && "inquiry-sheet__check--on"
+                              "smoac-control inquiry-sheet__topic",
+                              selected && "inquiry-sheet__topic--selected"
                             )}
-                            aria-hidden
-                          />
-                          {topic.label}
-                        </FastActivateButton>
-                      );
-                    })}
+                            onActivate={() => toggleTopic(topic.id)}
+                          >
+                            {selected ? (
+                              <CheckIcon className="inquiry-sheet__topic-check" />
+                            ) : null}
+                            {topicDisplayLabel(topic.label)}
+                          </FastActivateButton>
+                        );
+                      })}
+                    </div>
                   </div>
 
-                  <label className="inquiry-sheet__label" htmlFor="inquiry-message">
-                    Message
-                  </label>
-                  <textarea
-                    id="inquiry-message"
-                    className="inquiry-sheet__textarea"
-                    rows={5}
-                    maxLength={INQUIRY_MESSAGE_MAX_LENGTH}
-                    placeholder="Tell them what you’re looking for."
-                    value={draft.message}
-                    onChange={(event) =>
-                      persistDraft({
-                        ...draft,
-                        message: event.target.value.slice(
-                          0,
-                          INQUIRY_MESSAGE_MAX_LENGTH
-                        ),
-                      })
-                    }
-                  />
-                  <p className="inquiry-sheet__count">
-                    {messageLen}/{INQUIRY_MESSAGE_MAX_LENGTH}
-                  </p>
+                  <div className="inquiry-sheet__section">
+                    <label
+                      className="inquiry-sheet__section-title"
+                      htmlFor="inquiry-message"
+                    >
+                      Your message
+                    </label>
+                    <div className="inquiry-sheet__field">
+                      <textarea
+                        id="inquiry-message"
+                        className="inquiry-sheet__textarea"
+                        rows={4}
+                        maxLength={INQUIRY_MESSAGE_MAX_LENGTH}
+                        placeholder="Hi! I’d love to learn more about your training options..."
+                        value={draft.message}
+                        onChange={(event) =>
+                          persistDraft({
+                            ...draft,
+                            message: event.target.value.slice(
+                              0,
+                              INQUIRY_MESSAGE_MAX_LENGTH
+                            ),
+                          })
+                        }
+                      />
+                      <p className="inquiry-sheet__count">
+                        {messageLen}/{INQUIRY_MESSAGE_MAX_LENGTH}
+                      </p>
+                    </div>
+                  </div>
                 </>
               ) : null}
 
@@ -734,8 +993,17 @@ export function SpecialistInquirySheet({
                       disabled={sending}
                       onActivate={handleSendClick}
                     >
-                      {sending ? "Sending…" : "Send Message"}
+                      {sending ? "Sending…" : "Send Inquiry"}
+                      {sending ? null : (
+                        <span className="inquiry-sheet__submit-arrow" aria-hidden>
+                          →
+                        </span>
+                      )}
                     </FastActivateButton>
+                    <p className="inquiry-sheet__privacy">
+                      <LockIcon className="inquiry-sheet__privacy-icon" />
+                      Your message goes directly to the specialist.
+                    </p>
                     {!isSignedIn ? (
                       <p className="inquiry-sheet__helper">
                         Next you’ll add your name and email — then we send it.
@@ -798,7 +1066,8 @@ export function SpecialistInquirySheet({
           </motion.div>
         </div>
       ) : null}
-    </AnimatePresence>,
+    </AnimatePresence>
+    </>,
     document.body
   );
 }

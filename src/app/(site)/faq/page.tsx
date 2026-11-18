@@ -12,7 +12,7 @@ export default function FaqPage() {
   return (
     <LegalDocumentPage
       title="FAQ"
-      description="Quick answers about specialists, the workout journal, coaching, and your account."
+      description="Quick answers about specialists, the workout journal, and your account."
       effectiveDate={LEGAL_EFFECTIVE_DATE}
       sections={FAQ_SECTIONS}
       related={[

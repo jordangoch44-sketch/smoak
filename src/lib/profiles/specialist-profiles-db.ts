@@ -260,6 +260,11 @@ function trainerFromProfileData(
       typeof profileData.specialistFirstName === "string"
         ? profileData.specialistFirstName
         : undefined,
+    specialistPersonName:
+      typeof profileData.specialistPersonName === "string" &&
+      profileData.specialistPersonName.trim()
+        ? profileData.specialistPersonName.trim()
+        : undefined,
     profession: asString(profileData.profession),
     title: asString(profileData.title),
     location: asString(profileData.location),
@@ -471,6 +476,59 @@ export async function enrichTrainersWithSpecialistFirstNames(
   });
 }
 
+/**
+ * Anon catalog reads cannot select `profiles`. This security-definer list
+ * supplies the personal name used by marketplace search. A missing function
+ * must not block the catalog.
+ */
+let skipPersonNameQuery = false;
+let loggedPersonNameSkip = false;
+
+async function attachSpecialistPersonNames(
+  supabase: SupabaseClient,
+  trainers: Trainer[]
+): Promise<Trainer[]> {
+  if (trainers.length === 0 || skipPersonNameQuery) return trainers;
+
+  const { data, error } = await supabase.rpc(
+    "list_public_specialist_person_names"
+  );
+
+  if (error || !Array.isArray(data)) {
+    if (error) {
+      const unavailable =
+        /list_public_specialist_person_names|could not find|does not exist|permission denied|schema cache/i.test(
+          error.message
+        );
+      if (unavailable) skipPersonNameQuery = true;
+      if (!loggedPersonNameSkip) {
+        loggedPersonNameSkip = true;
+        console.warn(
+          "[SMOAC profiles] specialist person-name search skipped:",
+          error.message
+        );
+      }
+    }
+    return trainers;
+  }
+
+  const nameById = new Map<string, string>();
+  for (const row of data) {
+    if (!row || typeof row !== "object") continue;
+    const record = row as { id?: unknown; person_name?: unknown };
+    const id = String(record.id ?? "").trim();
+    const personName = String(record.person_name ?? "").trim();
+    if (id && personName) nameById.set(id, personName);
+  }
+  if (nameById.size === 0) return trainers;
+
+  return trainers.map((trainer) => {
+    const personName = nameById.get(trainer.id);
+    if (!personName) return trainer;
+    return { ...trainer, specialistPersonName: personName };
+  });
+}
+
 export function specialistProfileFromRow(row: SpecialistProfileRow): {
   trainer: Trainer;
   overrides: SpecialistProfileOverrides;
@@ -643,10 +701,11 @@ export async function fetchApprovedSpecialistProfiles(
     rows,
     profiles
   );
+  const withPersonNames = await attachSpecialistPersonNames(supabase, enriched);
 
   return {
     ok: true,
-    profiles: hydrateTrainerPublicSlugs(enriched),
+    profiles: hydrateTrainerPublicSlugs(withPersonNames),
     overridesById,
   };
 }

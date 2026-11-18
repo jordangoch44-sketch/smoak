@@ -68,16 +68,22 @@ export function isSameBottomNavDestination(
   }
 
   if (target.pathname === "/specialist-dashboard") {
-    const targetTab =
-      new URLSearchParams(target.search.slice(1)).get("tab") ?? "";
+    const targetParams = new URLSearchParams(target.search.slice(1));
+    const targetTab = targetParams.get("tab") ?? "";
+    const targetView = targetParams.get("view") ?? "";
     const currentTab = searchParams.get("tab") ?? "";
-    const normalizeDashTab = (tab: string) =>
+    const currentView = searchParams.get("view") ?? "";
+    const currentThread = searchParams.get("c")?.trim() ?? "";
+    const normalizeDashTab = (tab: string, view: string, thread = "") =>
       tab === "overview" || tab === "plan"
         ? "overview"
-        : tab === "clients"
-          ? "clients"
+        : tab === "clients" || view === "inquiries" || thread
+          ? "inquiries"
           : "profile";
-    return normalizeDashTab(targetTab) === normalizeDashTab(currentTab);
+    return (
+      normalizeDashTab(targetTab, targetView) ===
+      normalizeDashTab(currentTab, currentView, currentThread)
+    );
   }
 
   if (target.search) {

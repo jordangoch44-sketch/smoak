@@ -165,7 +165,7 @@ export function HomeSearchBar() {
             onPointerUp={overlayActivate.onPointerUp}
             onFocus={handleFocus}
             onClick={overlayActivate.onClick}
-            aria-label="Search specialists"
+            aria-label="Search specialists by name or business"
             aria-expanded={overlayOpen}
             aria-controls="explore-search-overlay-panel"
             placeholder={EXPLORE_SEARCH_PLACEHOLDER}

@@ -1,6 +1,6 @@
 import {
   CLIENT_DASHBOARD_PATH,
-  SPECIALIST_DASHBOARD_CLIENTS_HREF,
+  SPECIALIST_DASHBOARD_INQUIRIES_HREF,
   WORKOUTS_PATH,
   specialistFinishedWorkoutHref,
 } from "@/lib/auth-routes";
@@ -52,7 +52,7 @@ export async function sendCoachingRequestPush(input: {
     userId: input.specialistUserId,
     title: "Connection request",
     body: `${client} wants to connect`,
-    path: SPECIALIST_DASHBOARD_CLIENTS_HREF,
+    path: SPECIALIST_DASHBOARD_INQUIRIES_HREF,
     collapseId: input.relationshipId,
   });
 }
@@ -67,7 +67,7 @@ export async function sendRosterJoinedPush(input: {
     userId: input.specialistUserId,
     title: "New client",
     body: `${client} joined your roster`,
-    path: SPECIALIST_DASHBOARD_CLIENTS_HREF,
+    path: SPECIALIST_DASHBOARD_INQUIRIES_HREF,
     collapseId: input.relationshipId,
   });
 }

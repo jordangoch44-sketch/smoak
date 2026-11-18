@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMonetizationEnabled } from "@/lib/monetization";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/config";
 import { ensureSpecialistStripeCustomer } from "@/lib/stripe/ensure-customer";
@@ -14,6 +15,13 @@ import {
 import { isProPlusPlan } from "@/lib/stripe/pro-plus-boost";
 
 export async function POST(request: Request) {
+  if (!isMonetizationEnabled()) {
+    return NextResponse.json(
+      { error: "SMOAC profiles are free right now." },
+      { status: 403 }
+    );
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json(
       { error: "Stripe is not configured yet." },

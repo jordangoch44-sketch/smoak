@@ -22,18 +22,91 @@
   justify-content: flex-end;
 }
 
-/* Sit in the visual viewport so iOS keyboard does not cover the composer. */
+/* While a field is focused, Safari can still show the page in a strip above
+   the keyboard that fixed layers do not cover. Hide that page and paint the
+   inquiry background instead. */
+html.inquiry-keyboard-open,
+body.inquiry-keyboard-open {
+  background: #14151c;
+}
+
+html.inquiry-keyboard-open #root,
+html.inquiry-keyboard-open .profile-sheet-root,
+html.inquiry-keyboard-open .profile-toolbar,
+html.inquiry-keyboard-open .mobile-bottom-nav {
+  visibility: hidden;
+}
+
+.inquiry-keyboard-scrim {
+  display: none;
+  position: fixed;
+  z-index: var(--z-modal);
+  inset: 0;
+  background: #14151c;
+  pointer-events: none;
+}
+
+html.inquiry-keyboard-open .inquiry-keyboard-scrim {
+  display: block;
+}
+
+html.inquiry-keyboard-open .inquiry-sheet__backdrop {
+  background: #14151c;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Sit in the visual viewport, then bleed the sheet color past it so the
+   page cannot show between the composer and the keyboard. */
 .inquiry-sheet-root--keyboard {
-  max-height: 100%;
+  justify-content: flex-start;
+  overflow: visible;
 }
 
 .inquiry-sheet-root--keyboard .inquiry-sheet,
 .inquiry-sheet--keyboard {
-  max-height: 100%;
+  z-index: 2;
+  flex: 0 0 var(--inquiry-keyboard-pane, auto);
+  height: var(--inquiry-keyboard-pane, auto);
+  min-height: 0;
+  margin-top: 0;
+  max-height: none;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  overflow: hidden;
+}
+
+/* Solid sheet color over anything the keyboard viewport leaves uncovered. */
+.inquiry-sheet__keyboard-fill {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background: #14151c;
+  pointer-events: none;
+}
+
+.inquiry-sheet__keyboard-fill--return {
+  top: auto;
+  height: 70vh;
+}
+
+.inquiry-sheet.inquiry-sheet--returning {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  max-height: none;
+  overflow: visible;
+  transition: height 0.34s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.inquiry-sheet.inquiry-sheet--returning-hold {
+  transition: none;
 }
 
 .inquiry-sheet-root--keyboard .inquiry-sheet__footer {
-  padding-bottom: 0.875rem;
+  padding-bottom: 0.7rem;
 }
 
 .inquiry-sheet__backdrop {
@@ -55,16 +128,11 @@
   max-height: min(92dvh, 820px);
   flex-direction: column;
   overflow: hidden;
-  border-radius: 1.5rem 1.5rem 0 0;
-  border: 1px solid transparent;
+  border-radius: 1.65rem 1.65rem 0 0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom: none;
-  background:
-    var(--inquiry-navy-fill) padding-box,
-    var(--smoac-color) border-box;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 18px 48px rgba(0, 0, 0, 0.45),
-    var(--smoac-color-glow);
+  background: #14151c;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.48);
   touch-action: pan-y;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -80,8 +148,8 @@
   .inquiry-sheet {
     max-width: 28rem;
     max-height: min(90dvh, 760px);
-    border-radius: 1.25rem;
-    border-bottom: 1px solid transparent;
+    border-radius: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -93,18 +161,15 @@
   }
 
   .inquiry-sheet {
-    background:
-      var(--inquiry-navy-fill) padding-box,
-      var(--smoac-color) border-box;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 18px 48px rgba(0, 0, 0, 0.5);
+    background: #14151c;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
   }
 }
 
 .inquiry-sheet__chrome {
   flex-shrink: 0;
-  padding: 0.375rem 1rem 0;
+  padding: 0.2rem 1.15rem 0.95rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .inquiry-sheet__handle-hit {
@@ -125,10 +190,10 @@
 
 .inquiry-sheet__handle {
   display: block;
-  width: 2.5rem;
-  height: 0.3125rem;
+  width: 2.25rem;
+  height: 0.22rem;
   border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .inquiry-sheet__header {
@@ -146,35 +211,41 @@
 
 .inquiry-sheet__eyebrow {
   margin: 0;
-  font-size: 0.6875rem;
+  font-size: 0.68rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  background-image: var(--smoac-color);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .inquiry-sheet__title {
-  margin: 0.2rem 0 0;
-  font-size: 1.25rem;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
+  margin: 0.28rem 0 0;
+  font-size: 1.45rem;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.15;
   color: #fff;
+}
+
+.inquiry-sheet__subtitle {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.46);
 }
 
 .inquiry-sheet__close {
   display: inline-flex;
-  height: 2.75rem;
-  width: 2.75rem;
+  height: 2.15rem;
+  width: 2.15rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.62);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -190,7 +261,28 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 0.25rem 1.125rem 1.25rem;
+  padding: 1.15rem 1.15rem 0.5rem;
+}
+
+.inquiry-sheet__section + .inquiry-sheet__section {
+  margin-top: 1.35rem;
+}
+
+.inquiry-sheet__section-title {
+  display: block;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #fff;
+}
+
+.inquiry-sheet__section-hint {
+  margin: 0.22rem 0 0.75rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .inquiry-sheet__label {
@@ -209,77 +301,87 @@
 .inquiry-sheet__topics {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .inquiry-sheet__topic {
   display: flex;
-  min-height: 2.75rem;
+  min-height: 2.7rem;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.86);
-  font-size: 0.8125rem;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.84rem;
   font-weight: 500;
-  text-align: left;
+  letter-spacing: -0.01em;
+  text-align: center;
   touch-action: manipulation;
 }
 
 .inquiry-sheet__topic--selected {
-  border-color: rgba(var(--inquiry-blue-rgb), 0.55);
-  background: rgba(var(--inquiry-blue-rgb), 0.18);
+  border-color: rgba(196, 181, 253, 0.85);
+  background: rgba(167, 139, 250, 0.16);
   color: #fff;
 }
 
-.inquiry-sheet__check {
+.inquiry-sheet__topic-check {
+  width: 0.85rem;
+  height: 0.85rem;
   flex-shrink: 0;
-  width: 1.05rem;
-  height: 1.05rem;
-  border-radius: 0.3rem;
-  border: 1.5px solid rgba(255, 255, 255, 0.28);
-  background: transparent;
 }
 
-.inquiry-sheet__check--on {
-  border-color: rgba(var(--inquiry-blue-rgb), 0.95);
-  background: var(--inquiry-blue);
-  box-shadow: inset 0 0 0 2px rgba(10, 9, 16, 0.45);
+.inquiry-sheet__field {
+  position: relative;
+  overflow: hidden;
+  margin-top: 0.7rem;
 }
 
 .inquiry-sheet__textarea,
 .inquiry-sheet__input {
   width: 100%;
-  border-radius: 0.875rem;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgb(18, 16, 26);
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
   color: #fff;
   /* 16px minimum — iOS Safari zooms inputs under 16px and breaks the sheet layout */
   font-size: 16px;
   line-height: 1.45;
-  padding: 0.85rem 0.95rem;
+  padding: 0.9rem 0.95rem;
   touch-action: manipulation;
 }
 
 .inquiry-sheet__textarea {
-  resize: vertical;
-  min-height: 7.5rem;
+  display: block;
+  resize: none;
+  min-height: 6.75rem;
+  padding-bottom: 1.7rem;
+}
+
+.inquiry-sheet__textarea::placeholder,
+.inquiry-sheet__input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
 }
 
 .inquiry-sheet__textarea:focus,
 .inquiry-sheet__input:focus {
   outline: none;
-  border-color: rgba(var(--inquiry-blue-rgb), 0.65);
-  box-shadow: 0 0 0 3px rgba(var(--inquiry-blue-rgb), 0.18);
+  border-color: rgba(196, 181, 253, 0.55);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.14);
 }
 
 .inquiry-sheet__count {
-  margin: 0.4rem 0 0;
-  text-align: right;
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.45);
+  position: absolute;
+  right: 0.85rem;
+  bottom: 0.55rem;
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.32);
+  pointer-events: none;
 }
 
 .inquiry-sheet__support {
@@ -290,10 +392,21 @@
 }
 
 .inquiry-sheet__privacy {
-  margin: 0.85rem 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
   font-size: 0.75rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.48);
+  line-height: 1.35;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.inquiry-sheet__privacy-icon {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex-shrink: 0;
 }
 
 .inquiry-sheet__error {
@@ -367,30 +480,31 @@
 
 .inquiry-sheet__footer {
   flex-shrink: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(10, 9, 16, 0.96);
-  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.28);
-  padding: 0.875rem 1.125rem max(0.875rem, env(safe-area-inset-bottom, 0px));
+  background: #14151c;
+  padding: 0.85rem 1.15rem max(0.95rem, env(safe-area-inset-bottom, 0px));
 }
 
 .inquiry-sheet__submit {
   display: inline-flex;
   width: 100%;
-  min-height: 3.1rem;
+  min-height: 3.15rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  gap: 0.45rem;
+  border: none;
   border-radius: 9999px;
-  background: var(--smoac-color);
-  font-size: 0.975rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #fff;
+  background: #cbbdf8;
+  font-size: 1.02rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: #1b1430;
   cursor: pointer;
   touch-action: manipulation;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    var(--smoac-color-glow-strong);
+}
+
+.inquiry-sheet__submit-arrow {
+  font-size: 1.05rem;
+  line-height: 1;
 }
 
 .inquiry-sheet__submit:hover {

@@ -189,6 +189,30 @@ export function TrophyIcon({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
+export function TicketIcon({ className = "h-4 w-4" }: IconProps) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M4.75 8.25A2.25 2.25 0 017 6h10a2.25 2.25 0 012.25 2.25v.9a1.65 1.65 0 000 3.1v.9A2.25 2.25 0 0117 16h-10a2.25 2.25 0 01-2.25-2.25v-.9a1.65 1.65 0 000-3.1v-.9z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeDasharray="0.1 2.2"
+        d="M12 7.25v9.5"
+      />
+    </svg>
+  );
+}
+
 export function CalendarIcon({ className = "h-5 w-5" }: IconProps) {
   return (
     <svg
