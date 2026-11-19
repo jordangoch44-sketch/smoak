@@ -193,6 +193,7 @@ export function TrainerProfilePageClient({
       <ProfileInquiryAction
         specialistId={trainer.id}
         specialistName={trainer.name}
+        specialistImage={trainer.image}
         specialistProfession={
           resolveTrainerProfessionCategory(trainer) || trainer.profession
         }

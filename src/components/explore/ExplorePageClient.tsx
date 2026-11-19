@@ -15,7 +15,9 @@ import type { ExploreSearchArea } from "@/lib/explore-map-area";
 import type { ExploreBrowseCategory } from "@/lib/explore-browse-categories";
 import { useDrivingDistances } from "@/hooks/useDrivingDistances";
 import { usePreciseUserCoordinates } from "@/hooks/usePreciseUserCoordinates";
+import type { PublicCatalogMode } from "@/lib/public-catalog-mode";
 import { cn } from "@/lib/utils";
+import type { Trainer } from "@/types/trainer";
 import { ExplorePageHeader } from "./ExplorePageHeader";
 import { ExploreSearchToolbar } from "./ExploreSearchToolbar";
 import { ExploreFiltersDrawer } from "./ExploreFiltersDrawer";
@@ -23,7 +25,13 @@ import { ExploreMap } from "./ExploreMap";
 import { ExploreResults } from "./ExploreResults";
 import { ExploreResultsSheet } from "./ExploreResultsSheet";
 
-export function ExplorePageClient() {
+export function ExplorePageClient({
+  initialCatalog,
+  catalogMode: ssrCatalogMode,
+}: {
+  initialCatalog?: Trainer[];
+  catalogMode?: PublicCatalogMode;
+} = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isMobile = useMobileViewport(true);
@@ -33,6 +41,13 @@ export function ExplorePageClient() {
   const pendingMapAreaRef = useRef<ExploreSearchArea | null>(null);
   const searchIdleTimerRef = useRef<number | null>(null);
   const { trainers, catalogMode, catalogHydrated } = usePublicCatalog();
+  const resolvedCatalog =
+    catalogHydrated && trainers.length > 0
+      ? trainers
+      : (initialCatalog ?? trainers);
+  const resolvedMode = catalogHydrated
+    ? catalogMode
+    : (ssrCatalogMode ?? catalogMode);
   const [mapSearchLoading, setMapSearchLoading] = useState(false);
 
   const {
@@ -64,8 +79,8 @@ export function ExplorePageClient() {
   } = useExploreTrainers({
     initialSpecialty: searchParams.get("specialty") ?? "",
     initialQuery: searchParams.get("q") ?? "",
-    initialCatalog: trainers,
-    catalogMode,
+    initialCatalog: resolvedCatalog,
+    catalogMode: resolvedMode,
   });
   useDrivingDistances(areaEmpty ? suggestedTrainers : filtered);
 
@@ -130,7 +145,7 @@ export function ExplorePageClient() {
     clearFilters();
   }, [clearSearch, clearFilters]);
 
-  if (!catalogHydrated) {
+  if (!catalogHydrated && !(initialCatalog && initialCatalog.length > 0)) {
     return <ExploreRouteLoading mapShell={isMobile} />;
   }
 

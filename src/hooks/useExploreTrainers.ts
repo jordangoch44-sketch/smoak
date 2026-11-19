@@ -123,6 +123,16 @@ function applyExplicitUrlFilters(
   };
 }
 
+/** Same pin-face shuffle on the server and the first client render. */
+function stableUnitSeed(key: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < key.length; i += 1) {
+    hash ^= key.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0) / 4294967296;
+}
+
 function filtersEqual(a: TrainerFilters, b: TrainerFilters): boolean {
   return (
     a.zipCode === b.zipCode &&
@@ -589,7 +599,7 @@ export function useExploreTrainers({
   ) {
     pinFaceSeedRef.current = {
       key: pinFaceSearchKey,
-      seed: Math.random(),
+      seed: stableUnitSeed(pinFaceSearchKey),
     };
   }
   const pinFaceSeed = pinFaceSeedRef.current.seed;

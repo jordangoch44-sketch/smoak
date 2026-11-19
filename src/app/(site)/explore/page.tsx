@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { ExplorePageClient } from "@/components/explore/ExplorePageClient";
 import { ExploreRouteLoading } from "@/components/explore/ExploreRouteLoading";
+import { loadPublicCatalogForServer } from "@/lib/profiles/fetch-approved-catalog-server";
 
 export const metadata: Metadata = {
   title: "Search specialists near you",
@@ -14,15 +15,22 @@ export const metadata: Metadata = {
   },
 };
 
+/** Search results render from the approved catalog on the server. */
+async function ExploreCatalog() {
+  const { trainers, mode } = await loadPublicCatalogForServer();
+  return (
+    <ExplorePageClient initialCatalog={trainers} catalogMode={mode} />
+  );
+}
+
 /**
- * Sync shell — no server catalog await. Explore reads the session catalog
- * store (same as Marketplace) so Search tab soft-nav stays snappy.
- * Suspense wraps useSearchParams client tree to avoid nav render errors.
+ * Suspense covers the catalog read and useSearchParams. Results are in the
+ * server payload, so Search does not wait on a second browser fetch.
  */
 export default function ExplorePage() {
   return (
     <Suspense fallback={<ExploreRouteLoading />}>
-      <ExplorePageClient />
+      <ExploreCatalog />
     </Suspense>
   );
 }

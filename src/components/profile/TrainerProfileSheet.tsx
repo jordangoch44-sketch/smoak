@@ -10,12 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  animate,
-  motion,
-  useMotionValue,
-  useReducedMotion,
-} from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useOwnPointerDismiss } from "@/hooks/useFastActivate";
 import { useTabletViewport } from "@/hooks/useTabletViewport";
@@ -28,22 +23,14 @@ import {
   ProfileSheetToolbarHostProvider,
   useProfileSheetToolbarHost,
 } from "./ProfileSheetToolbarHostContext";
-import type { MotionValue } from "framer-motion";
 
-/** iOS sheet curve — long enough to read as a slide, not a jump. */
-const SHEET_EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
-const OPEN_TRANSITION = {
-  type: "tween" as const,
-  duration: 0.34,
-  ease: SHEET_EASE,
-};
-const DISMISS_EASE = SHEET_EASE;
-/** Unified exit — entire sheet + floating chrome slide down together. */
-const DISMISS_DURATION = 0.3;
-/** Covers the two-frame start delay in `afterNextPaint`. */
-const START_DELAY_MS = 60;
-/** Extra travel so iOS visualViewport < 100dvh never leaves a stuck strip. */
-const DISMISS_OVERFLOW_PX = 96;
+/**
+ * Compositor slide. JS tweens dropped frames while the profile painted.
+ * Durations match `.profile-sheet--to` / `.profile-sheet--dismiss`.
+ */
+const OPEN_MS = 500;
+const DISMISS_MS = 360;
+type SheetMotion = "from" | "to" | "dismiss" | "rest";
 
 interface TrainerProfileSheetProps {
   children: ReactNode;
@@ -52,27 +39,6 @@ interface TrainerProfileSheetProps {
   trainerId?: string;
   /** Soft-nav from a listing — cover the still-mounted previous page on desktop. */
   intercept?: boolean;
-}
-
-function viewportHeight(): number {
-  if (typeof window === "undefined") return 800;
-  return Math.max(
-    window.visualViewport?.height ?? 0,
-    window.innerHeight ?? 0,
-    document.documentElement?.clientHeight ?? 0,
-    800
-  );
-}
-
-/** How far to slide so the sheet fully clears the screen (Safari chrome safe). */
-function dismissTravelPx(root: HTMLElement | null, yNow: number): number {
-  const sheet = root?.querySelector(".profile-sheet");
-  const sheetH =
-    sheet instanceof HTMLElement
-      ? Math.max(sheet.offsetHeight, sheet.getBoundingClientRect().height)
-      : 0;
-  const vh = viewportHeight();
-  return Math.max(sheetH, vh, yNow + 48) + DISMISS_OVERFLOW_PX;
 }
 
 /**
@@ -150,19 +116,19 @@ export function TrainerProfileSheet({
   const overlayActive = !intercept || onProfilePath;
   const lockOwnerRef = useRef(0);
   const wasOnProfilePathRef = useRef(onProfilePath);
-  /* True while y is tweening. At rest we drop the transform so iOS hit-tests
-   * the X / heart / tabs / photos (transformed overlays swallow taps). */
+  /* True while the sheet is translating. At rest we drop the transform so
+   * iOS hit-tests the X / heart / tabs / photos (transformed overlays swallow taps). */
   const [sheetMoving, setSheetMoving] = useState(true);
-  /* Start off-screen so the first paint never flashes the open sheet. */
-  const y = useMotionValue(
-    typeof window !== "undefined" ? viewportHeight() : 800
-  );
-  const vhRef = useRef(viewportHeight());
+  /* Off-screen until the first paint, then a CSS transform transition. */
+  const [motionPhase, setMotionPhase] = useState<SheetMotion>("from");
   const rootRef = useRef<HTMLDivElement>(null);
   const dismissingRef = useRef(false);
   const finishOnceRef = useRef(false);
   const openAnimRef = useRef<{ stop: () => void } | null>(null);
   const programmaticNavRef = useRef(false);
+  const dismissFinishRef = useRef<(() => void) | null>(null);
+  const motionPhaseRef = useRef<SheetMotion>("from");
+  motionPhaseRef.current = motionPhase;
   /** Drop portal DOM after slide so soft-nav cannot leave a stuck strip. */
   const [exited, setExited] = useState(false);
 
@@ -176,9 +142,6 @@ export function TrainerProfileSheet({
       openAnimRef.current?.stop();
       openAnimRef.current = null;
       setSheetMoving(true);
-      rootRef.current
-        ?.querySelector(".profile-sheet")
-        ?.classList.add("profile-sheet--animating");
 
       /*
        * Restore site chrome immediately. Soft-nav can keep this tree mounted
@@ -198,6 +161,7 @@ export function TrainerProfileSheet({
       const finish = () => {
         if (finishOnceRef.current) return;
         finishOnceRef.current = true;
+        dismissFinishRef.current = null;
         clearSheetDismissing(lockOwnerRef.current);
         root?.classList.add("profile-sheet-root--exited");
         /* Unmount portal before/while soft-nav clears @modal — prevents
@@ -206,30 +170,23 @@ export function TrainerProfileSheet({
         if (options.navigate) navigateAway();
       };
 
-      const target = dismissTravelPx(root, y.get());
-
-      if (reduceMotion) {
-        y.set(target);
+      /* Still off-screen — nothing to slide down. */
+      if (reduceMotion || motionPhaseRef.current === "from") {
         finish();
         return;
       }
 
-      const safety = window.setTimeout(
-        finish,
-        DISMISS_DURATION * 1000 + START_DELAY_MS + 160
-      );
-      afterNextPaint(() => {
-        void animate(y, target, {
-          type: "tween",
-          duration: DISMISS_DURATION,
-          ease: DISMISS_EASE,
-        }).then(() => {
-          window.clearTimeout(safety);
-          finish();
-        });
+      dismissFinishRef.current = finish;
+      /* Hold at the open position for one paint, then transition down.
+       * Changing transform in the same frame the transition is added skips it. */
+      setMotionPhase("to");
+      const cancelStart = afterNextPaint(() => {
+        if (!dismissingRef.current) return;
+        setMotionPhase("dismiss");
       });
+      openAnimRef.current = { stop: cancelStart };
     },
-    [navigateAway, reduceMotion, y]
+    [navigateAway, reduceMotion]
   );
 
   const dismiss = useCallback(() => {
@@ -275,6 +232,8 @@ export function TrainerProfileSheet({
       dismissingRef.current = false;
       finishOnceRef.current = false;
       programmaticNavRef.current = false;
+      setMotionPhase("from");
+      setSheetMoving(true);
       setExited(false);
     }
   }, [exited, intercept, onProfilePath, trainerId]);
@@ -284,18 +243,9 @@ export function TrainerProfileSheet({
      * the soft-nav intercept, so crawlers are not left on a hidden shell. */
     if (!intercept || !isSheetViewport || !overlayActive) return;
 
-    const syncVh = () => {
-      vhRef.current = viewportHeight();
-    };
-    syncVh();
-    window.addEventListener("resize", syncVh);
-    window.visualViewport?.addEventListener("resize", syncVh);
-
     if (dismissingRef.current || exited) {
       const owner = lockOwnerRef.current;
       return () => {
-        window.removeEventListener("resize", syncVh);
-        window.visualViewport?.removeEventListener("resize", syncVh);
         unlockSheetChrome(owner);
         clearSheetDismissing(owner);
       };
@@ -315,21 +265,16 @@ export function TrainerProfileSheet({
     const owner = lockOwnerRef.current;
 
     if (reduceMotion) {
-      y.set(0);
+      setMotionPhase("rest");
       setSheetMoving(false);
       markSheetCovered(owner);
     } else {
-      y.set(vhRef.current);
+      setMotionPhase("from");
       setSheetMoving(true);
+      /* Paint the off-screen sheet first so iOS does not drop the opening frames. */
       const cancelStart = afterNextPaint(() => {
-        const controls = animate(y, 0, OPEN_TRANSITION);
-        openAnimRef.current = controls;
-        void controls.then(() => {
-          if (openAnimRef.current !== controls) return;
-          openAnimRef.current = null;
-          setSheetMoving(false);
-          markSheetCovered(owner);
-        });
+        if (dismissingRef.current) return;
+        setMotionPhase("to");
       });
       openAnimRef.current = { stop: cancelStart };
     }
@@ -337,12 +282,48 @@ export function TrainerProfileSheet({
     return () => {
       openAnimRef.current?.stop();
       openAnimRef.current = null;
-      window.removeEventListener("resize", syncVh);
-      window.visualViewport?.removeEventListener("resize", syncVh);
       unlockSheetChrome(owner);
       clearSheetDismissing(owner);
     };
-  }, [exited, intercept, isSheetViewport, overlayActive, reduceMotion, y]);
+  }, [exited, intercept, isSheetViewport, overlayActive, reduceMotion]);
+
+  /* CSS transition completion — compositor slide, so this only books the end. */
+  useEffect(() => {
+    if (!intercept || !isSheetViewport || reduceMotion) return;
+    if (motionPhase !== "to" && motionPhase !== "dismiss") return;
+    /* Dismiss parks on "to" for one frame. Don't treat that as the open landing. */
+    if (motionPhase === "to" && dismissingRef.current) return;
+    const sheet = rootRef.current?.querySelector(".profile-sheet");
+    if (!(sheet instanceof HTMLElement)) return;
+
+    let settled = false;
+    const settle = () => {
+      if (settled) return;
+      settled = true;
+      if (motionPhase === "dismiss") {
+        dismissFinishRef.current?.();
+        dismissFinishRef.current = null;
+        return;
+      }
+      if (dismissingRef.current) return;
+      setSheetMoving(false);
+      setMotionPhase("rest");
+      markSheetCovered(lockOwnerRef.current);
+    };
+
+    const onEnd = (event: TransitionEvent) => {
+      if (event.target !== sheet || event.propertyName !== "transform") return;
+      settle();
+    };
+    sheet.addEventListener("transitionend", onEnd);
+    const ms = motionPhase === "dismiss" ? DISMISS_MS : OPEN_MS;
+    const safety = window.setTimeout(settle, ms + 90);
+    return () => {
+      settled = true;
+      sheet.removeEventListener("transitionend", onEnd);
+      window.clearTimeout(safety);
+    };
+  }, [intercept, isSheetViewport, motionPhase, reduceMotion]);
 
   useLayoutEffect(() => {
     if (!intercept || !isSheetViewport || !trainerId || exited || dismissingRef.current) {
@@ -439,7 +420,11 @@ export function TrainerProfileSheet({
             onClick={backdropDismiss.onClick}
           />
 
-          <ProfileSheetChrome label={label} y={y} sheetMoving={sheetMoving}>
+          <ProfileSheetChrome
+            label={label}
+            motionPhase={motionPhase}
+            sheetMoving={sheetMoving}
+          >
             {children}
           </ProfileSheetChrome>
         </div>
@@ -506,28 +491,36 @@ function DesktopProfileIntercept({
 }
 
 /** Inner chrome so toolbar host callback ref can read context. */
+function sheetClassName(phase: SheetMotion, moving: boolean): string {
+  if (!moving || phase === "rest") return "profile-sheet profile-sheet--settled";
+  if (phase === "dismiss") {
+    return "profile-sheet profile-sheet--animating profile-sheet--dismiss";
+  }
+  if (phase === "to") {
+    return "profile-sheet profile-sheet--animating profile-sheet--to";
+  }
+  return "profile-sheet profile-sheet--animating profile-sheet--from";
+}
+
 function ProfileSheetChrome({
   label,
-  y,
+  motionPhase,
   sheetMoving,
   children,
 }: {
   label: string;
-  y: MotionValue<number>;
+  motionPhase: SheetMotion;
   sheetMoving: boolean;
   children: ReactNode;
 }) {
   const toolbarHost = useProfileSheetToolbarHost();
 
   return (
-    <motion.div
-      className={
-        sheetMoving ? "profile-sheet profile-sheet--animating" : "profile-sheet"
-      }
+    <div
+      className={sheetClassName(motionPhase, sheetMoving)}
       role="dialog"
       aria-modal="true"
       aria-label={label}
-      style={{ y }}
     >
       <div className="profile-sheet__chrome" aria-hidden>
         <div className="profile-sheet__handle-hit profile-sheet__handle-hit--static">
@@ -541,6 +534,6 @@ function ProfileSheetChrome({
       />
 
       <div className="profile-sheet__body">{children}</div>
-    </motion.div>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ import { SpecialistInquirySheet } from "./SpecialistInquirySheet";
 interface ProfileInquiryActionProps {
   specialistId: string;
   specialistName: string;
+  specialistImage?: string;
   specialistProfession?: string;
   /** Optional controlled open (e.g. from a secondary CTA) */
   open?: boolean;
@@ -21,6 +22,7 @@ interface ProfileInquiryActionProps {
 export function ProfileInquiryAction({
   specialistId,
   specialistName,
+  specialistImage = "",
   specialistProfession = "",
   open: controlledOpen,
   onOpenChange,
@@ -63,6 +65,7 @@ export function ProfileInquiryAction({
         onClose={() => setOpen(false)}
         specialistId={specialistId}
         specialistName={specialistName}
+        specialistImage={specialistImage}
         specialistProfession={specialistProfession}
         profilePath={profilePath || `/trainers/${specialistId}`}
         offersFreeFirstSession={offersFreeFirstSession}

@@ -158,7 +158,7 @@ html.profile-desktop-popup-open {
 }
 
 .profile-sheet__backdrop--fade-in {
-  animation: profile-sheet-backdrop-in 0.28s ease both;
+  animation: profile-sheet-backdrop-in 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 @keyframes profile-sheet-backdrop-in {
@@ -171,7 +171,7 @@ html.profile-desktop-popup-open {
 }
 
 .profile-sheet-root--dismissing .profile-sheet__backdrop {
-  animation: profile-sheet-backdrop-out 0.3s ease both;
+  animation: profile-sheet-backdrop-out 0.36s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 @keyframes profile-sheet-backdrop-out {
@@ -199,19 +199,44 @@ html.profile-desktop-popup-open {
     inset 0 1px 0 rgba(255, 255, 255, 0.1),
     0 -20px 64px rgba(0, 0, 0, 0.45);
   touch-action: pan-y;
+  /* Below the screen until --to. A missing class cannot flash the open sheet. */
+  transform: translate3d(0, 108%, 0);
 }
 
-/* During slide — GPU layer only while moving; pinch-zoom OOMs a permanent layer */
+/*
+ * Slide on the compositor. A JS tween stalled whenever the profile painted.
+ * Percent travel clears the sheet even when Safari's visual viewport is short.
+ */
 .profile-sheet--animating {
   will-change: transform;
-  transform: translate3d(0, 0, 0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
+/* A live scroll layer inside a moving sheet is what makes the slide stutter. */
+.profile-sheet--animating .profile-sheet__body {
+  overflow: hidden;
+}
+
+.profile-sheet--animating.profile-sheet--from {
+  transform: translate3d(0, 108%, 0);
+  transition: none;
+}
+
+.profile-sheet--animating.profile-sheet--to {
+  transform: translate3d(0, 0, 0);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.profile-sheet--animating.profile-sheet--dismiss {
+  transform: translate3d(0, 112%, 0);
+  transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 /* At rest: drop the compositor transform so iOS hit-tests X / heart / tabs. */
-.profile-sheet:not(.profile-sheet--animating) {
+.profile-sheet--settled {
   transform: none !important;
+  transition: none !important;
   will-change: auto;
 }
 
@@ -382,5 +407,10 @@ body.profile-sheet-dismissing {
   .profile-sheet__backdrop--fade-in,
   .profile-sheet-root--dismissing .profile-sheet__backdrop {
     animation: none;
+  }
+
+  .profile-sheet--animating.profile-sheet--to,
+  .profile-sheet--animating.profile-sheet--dismiss {
+    transition: none;
   }
 }

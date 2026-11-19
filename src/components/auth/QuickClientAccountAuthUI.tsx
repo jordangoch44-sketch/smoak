@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
 import { LegalAgreementNotice } from "@/components/legal/LegalAgreementNotice";
@@ -61,7 +62,7 @@ export interface QuickClientAccountSignupFieldsProps {
   onFirstNameChange: (value: string) => void;
   onEmailChange: (value: string) => void;
   /** Inquiry sheet — paragraph above fields */
-  supportText?: string;
+  supportText?: ReactNode;
   ofAge: boolean;
   onOfAgeChange: (value: boolean) => void;
 }

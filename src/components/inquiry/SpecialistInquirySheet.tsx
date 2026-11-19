@@ -18,9 +18,10 @@ import {
   type PanInfo,
 } from "framer-motion";
 import { SmoacSavingOverlay } from "@/components/brand/SmoacSavingMark";
+import { InquiryAvatar } from "@/components/inquiry/InquiryAvatar";
 import { FastActivateButton } from "@/components/ui/FastActivateButton";
 import { HeaderChromeLink } from "@/components/layout/HeaderChromeLink";
-import { CheckIcon, CloseIcon, LockIcon } from "@/components/ui/icons";
+import { CheckIcon, CloseIcon, LockIcon, SendIcon } from "@/components/ui/icons";
 import {
   QuickClientAccountAuthActions,
   QuickClientAccountAuthError,
@@ -120,6 +121,7 @@ interface SpecialistInquirySheetProps {
   onClose: () => void;
   specialistId: string;
   specialistName: string;
+  specialistImage?: string;
   specialistProfession?: string;
   profilePath: string;
   offersFreeFirstSession?: boolean;
@@ -173,6 +175,7 @@ export function SpecialistInquirySheet({
   onClose,
   specialistId,
   specialistName,
+  specialistImage = "",
   specialistProfession = "",
   profilePath,
   offersFreeFirstSession = false,
@@ -287,6 +290,37 @@ export function SpecialistInquirySheet({
   useEffect(() => {
     if (!open) return;
 
+    function scrollFieldAboveFooter(field: HTMLElement) {
+      const scroller = field.closest(".inquiry-sheet__body");
+      if (!(scroller instanceof HTMLElement)) return;
+      const footer = scroller.parentElement?.querySelector(
+        ".inquiry-sheet__footer"
+      );
+      const fieldRect = field.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+      const footerTop =
+        footer instanceof HTMLElement
+          ? footer.getBoundingClientRect().top
+          : scrollerRect.bottom;
+      const limitBottom = Math.min(scrollerRect.bottom, footerTop) - 16;
+      const limitTop = scrollerRect.top + 12;
+      const overflowBottom = fieldRect.bottom - limitBottom;
+      const overflowTop = limitTop - fieldRect.top;
+      if (overflowBottom > 1) scroller.scrollTop += overflowBottom;
+      else if (overflowTop > 1) scroller.scrollTop -= overflowTop;
+    }
+
+    function revealFocusedField() {
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLElement &&
+        rootRef.current?.contains(active) &&
+        isEditableField(active)
+      ) {
+        scrollFieldAboveFooter(active);
+      }
+    }
+
     function syncKeyboardViewport() {
       pinInquiryPageScroll();
       const layout = window.innerHeight;
@@ -315,6 +349,7 @@ export function SpecialistInquirySheet({
           }
           return { ...frame, cover: current.cover };
         });
+        window.requestAnimationFrame(revealFocusedField);
         return;
       }
 
@@ -330,6 +365,7 @@ export function SpecialistInquirySheet({
         setKeyboardViewport({ inset: 0, top: 0, height: 0, cover: 0 });
         return;
       }
+      window.requestAnimationFrame(revealFocusedField);
     }
 
     let keyboardPaintTimer = 0;
@@ -347,15 +383,13 @@ export function SpecialistInquirySheet({
       window.clearTimeout(keyboardPaintTimer);
       paintInquiryKeyboard();
       const field = event.target;
-      const scroller = field.closest(".inquiry-sheet__body");
+      const reveal = () => scrollFieldAboveFooter(field);
+      reveal();
       window.setTimeout(() => {
         pinInquiryPageScroll();
-        if (!(scroller instanceof HTMLElement)) return;
-        const fieldRect = field.getBoundingClientRect();
-        const scrollerRect = scroller.getBoundingClientRect();
-        const overflow = fieldRect.bottom - (scrollerRect.bottom - 12);
-        if (overflow > 0) scroller.scrollTop += overflow;
+        reveal();
       }, 280);
+      window.setTimeout(reveal, 560);
     }
     function onFocusOut(event: FocusEvent) {
       if (!isEditableField(event.target)) return;
@@ -770,22 +804,48 @@ export function SpecialistInquirySheet({
                   {view === "compose" ? (
                     <>
                       <p className="inquiry-sheet__eyebrow">New inquiry</p>
-                      <h2 id={titleId} className="inquiry-sheet__title">
-                        {specialistName}
-                      </h2>
-                      <p className="inquiry-sheet__subtitle">
-                        Send a private message to this specialist.
-                      </p>
+                      <div className="inquiry-sheet__identity">
+                        <InquiryAvatar
+                          name={specialistName}
+                          src={specialistImage}
+                          size="md"
+                        />
+                        <div className="inquiry-sheet__identity-copy">
+                          <h2 id={titleId} className="inquiry-sheet__title">
+                            {specialistName}
+                          </h2>
+                          <p className="inquiry-sheet__subtitle">
+                            Send a private message to this specialist.
+                          </p>
+                        </div>
+                      </div>
                     </>
+                  ) : view === "signup" ? (
+                    <div className="inquiry-sheet__identity inquiry-sheet__identity--title">
+                      <InquiryAvatar
+                        name={specialistName}
+                        src={specialistImage}
+                        size="md"
+                      />
+                      <div className="inquiry-sheet__identity-copy">
+                        <h2 id={titleId} className="inquiry-sheet__title">
+                          Last Step
+                          <span className="inquiry-sheet__title-send" aria-hidden>
+                            <SendIcon />
+                          </span>
+                        </h2>
+                        <p className="inquiry-sheet__support">
+                          {"Your message is ready "}<span className="inquiry-sheet__ready-check" aria-hidden>✓</span>
+                        </p>
+                      </div>
+                    </div>
                   ) : (
                     <h2 id={titleId} className="inquiry-sheet__title">
                       {view === "success"
                         ? "You're all set"
                         : view === "awaiting_email"
                           ? "Check your email"
-                          : view === "signup"
-                            ? "One quick step"
-                            : "Sign in to send"}
+                          : "Sign in to send"}
                     </h2>
                   )}
                 </div>
@@ -877,7 +937,7 @@ export function SpecialistInquirySheet({
                   onEmailChange={setEmail}
                   ofAge={ofAge}
                   onOfAgeChange={setOfAge}
-                  supportText={`Your message is ready. Enter your name and email so we can send it to ${specialistName}.`}
+                  supportText={`Enter your name and email so we can send it to ${specialistName}.`}
                 />
               ) : null}
 

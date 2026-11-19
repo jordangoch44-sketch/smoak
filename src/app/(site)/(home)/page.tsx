@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { Hero, Categories, HomeEssenceSlideshow } from "@/components/home";
 import { HomeDiscoveryClient } from "@/components/home/HomeDiscoveryClient";
+import { HomeRailsLoading } from "@/components/home/HomeRouteLoading";
 import { HomeScrollReset } from "@/components/home/HomeScrollReset";
 import { HomeSeoSpecialistLinks } from "@/components/home/HomeSeoSpecialistLinks";
 import { AuroraAtmosphere } from "@/components/ui/AuroraAtmosphere";
@@ -26,9 +27,17 @@ async function HomeSeoSpecialistIndex() {
   return <HomeSeoSpecialistLinks trainers={trainers} />;
 }
 
+/** Cards come from the approved catalog on the server. The hero stays sync. */
+async function HomeDiscoveryRails() {
+  const { trainers, mode } = await loadPublicCatalogForServer();
+  return (
+    <HomeDiscoveryClient initialCatalog={trainers} catalogMode={mode} />
+  );
+}
+
 /**
- * Sync shell so toolbar tabs don't wait on catalog RSC.
- * Discovery rails read the session catalog; SEO links stream in separately.
+ * Hero and categories paint immediately. Specialist cards stream from the
+ * server catalog so the first response includes the rails, not empty shells.
  */
 export default function HomePage() {
   return (
@@ -45,7 +54,9 @@ export default function HomePage() {
       <div className="home-page__sky" aria-hidden />
       <Hero />
       <Categories />
-      <HomeDiscoveryClient />
+      <Suspense fallback={<HomeRailsLoading />}>
+        <HomeDiscoveryRails />
+      </Suspense>
       <Suspense fallback={null}>
         <HomeSeoSpecialistIndex />
       </Suspense>
